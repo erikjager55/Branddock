@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/shared';
 
 /** Download All Data button — triggers full workspace JSON export */
 export function DataExportSection() {
+  const { t } = useTranslation('settings-account');
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
@@ -15,7 +17,7 @@ export function DataExportSection() {
       // M2 gates this endpoint behind owner/admin — surface an accurate message
       // instead of the generic "try again" (retrying never helps a viewer/member).
       if (res.status === 403) {
-        alert('Only owners and admins can export workspace data.');
+        alert(t('dataExport.forbidden'));
         return;
       }
       if (!res.ok) throw new Error('Export failed');
@@ -36,7 +38,7 @@ export function DataExportSection() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('[DataExportSection] Export failed:', error);
-      alert('Export failed. Please try again.');
+      alert(t('dataExport.failed'));
     } finally {
       setIsExporting(false);
     }
@@ -49,11 +51,8 @@ export function DataExportSection() {
           <Download className="w-5 h-5 text-primary" />
         </div>
         <div className="flex-1">
-          <h3 className="text-sm font-semibold text-gray-900">Download All Data</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Export all your workspace data as a single JSON file. Includes brand assets,
-            personas, products, campaigns, trends, strategies, and more.
-          </p>
+          <h3 className="text-sm font-semibold text-gray-900">{t('dataExport.title')}</h3>
+          <p className="mt-1 text-sm text-gray-500">{t('dataExport.description')}</p>
           <Button
             variant="secondary"
             size="sm"
@@ -62,7 +61,7 @@ export function DataExportSection() {
             onClick={handleExport}
             className="mt-3"
           >
-            {isExporting ? 'Exporting...' : 'Download All Data'}
+            {isExporting ? t('dataExport.exporting') : t('dataExport.title')}
           </Button>
         </div>
       </div>

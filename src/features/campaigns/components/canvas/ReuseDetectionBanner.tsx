@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Lightbulb, Loader2, X } from 'lucide-react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import type { InsertImageSelection } from './insert-image/types';
@@ -34,6 +35,7 @@ interface ReuseDetectionBannerProps {
 }
 
 export function ReuseDetectionBanner({ onPick }: ReuseDetectionBannerProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const visualBrief = useCanvasStore((s) => s.visualBrief);
   const briefingText = visualBrief.briefingText?.trim() ?? '';
   const [matches, setMatches] = React.useState<SimilarAsset[]>([]);
@@ -79,7 +81,7 @@ export function ReuseDetectionBanner({ onPick }: ReuseDetectionBannerProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-1">
             <span className="text-xs font-semibold text-emerald-900">
-              A similar image already exists in your library
+              {t('reuseBanner.title')}
             </span>
             {loading ? (
               <Loader2 className="h-3 w-3 animate-spin text-emerald-700" />
@@ -88,17 +90,15 @@ export function ReuseDetectionBanner({ onPick }: ReuseDetectionBannerProps) {
                 type="button"
                 onClick={() => setDismissed(true)}
                 className="text-emerald-600 hover:text-emerald-900 transition-colors"
-                title="Ignore suggestion and generate anyway"
-                aria-label="Hide banner"
+                title={t('reuseBanner.ignoreTitle')}
+                aria-label={t('reuseBanner.hideLabel')}
               >
                 <X className="h-3 w-3" />
               </button>
             )}
           </div>
           <p className="text-[11px] text-emerald-800 leading-snug mb-2">
-            Reusing saves a generation call (≈ $0.13) and improves visual
-            consistency across content items. Click an asset to insert it,
-            or dismiss with the cross to generate a new one anyway.
+            {t('reuseBanner.body')}
           </p>
           {matches.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -114,7 +114,7 @@ export function ReuseDetectionBanner({ onPick }: ReuseDetectionBannerProps) {
                     })
                   }
                   className="group relative rounded-md overflow-hidden border-2 border-emerald-300 hover:border-emerald-600 transition-colors w-20 h-20"
-                  title={`${m.name} — ${Math.round(m.similarity * 100)}% match${m.aiDescription ? `\n${m.aiDescription}` : ''}`}
+                  title={`${t('reuseBanner.matchTooltip', { name: m.name, pct: Math.round(m.similarity * 100) })}${m.aiDescription ? `\n${m.aiDescription}` : ''}`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img

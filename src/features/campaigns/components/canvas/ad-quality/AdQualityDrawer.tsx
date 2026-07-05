@@ -15,6 +15,7 @@
 // =============================================================
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, AlertTriangle, XCircle, ChevronRight, AlertCircle } from 'lucide-react';
 import type { RuleResult, RuleCategory, RuleStatus, L2JudgeResult } from '@/lib/ad-validation/types';
 import { isFallback } from '@/lib/ad-validation/types';
@@ -41,12 +42,6 @@ const STATUS_COLOR: Record<RuleStatus, string> = {
   fail: 'text-red-600',
 };
 
-const CATEGORY_LABEL: Record<RuleCategory, string> = {
-  mechanical: 'Mechanical',
-  structural: 'Structural',
-  coverage: 'Coverage',
-};
-
 export function AdQualityDrawer({
   open,
   onClose,
@@ -56,6 +51,7 @@ export function AdQualityDrawer({
   l2Results,
   onFocusField,
 }: AdQualityDrawerProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const [tab, setTab] = useState<'rules' | 'dimensions'>('rules');
 
   if (!open) return null;
@@ -69,7 +65,7 @@ export function AdQualityDrawer({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <p className="text-sm font-semibold text-gray-900">
-              Ad Strength breakdown · {ratingLabel} · {score}/100
+              {t('adQualityDrawer.breakdown', { label: ratingLabel, score })}
             </p>
           </div>
           <button
@@ -77,16 +73,16 @@ export function AdQualityDrawer({
             onClick={onClose}
             className="text-xs text-gray-500 hover:text-gray-700"
           >
-            Hide details
+            {t('adQualityDrawer.hideDetails')}
           </button>
         </div>
 
         <div className="flex gap-1 mb-3 border-b border-gray-200">
           <TabButton active={tab === 'rules'} onClick={() => setTab('rules')}>
-            Rules ({l1Results.length})
+            {t('adQualityDrawer.rulesTab', { count: l1Results.length })}
           </TabButton>
           <TabButton active={tab === 'dimensions'} onClick={() => setTab('dimensions')}>
-            AI Dimensions {!l2Fallback && `(${Object.keys(l2Results.dimensions).length})`}
+            {t('adQualityDrawer.dimensionsTab')} {!l2Fallback && `(${Object.keys(l2Results.dimensions).length})`}
           </TabButton>
         </div>
 
@@ -98,7 +94,7 @@ export function AdQualityDrawer({
               return (
                 <section key={cat}>
                   <h4 className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 mb-1.5">
-                    {CATEGORY_LABEL[cat]} ({rules.length})
+                    {t(`adQuality.category.${cat}`)} ({rules.length})
                   </h4>
                   <ul className="space-y-1.5">
                     {rules.map((r, idx) => {
@@ -118,7 +114,7 @@ export function AdQualityDrawer({
                               onClick={() => onFocusField(r.fieldGroup!)}
                               className="text-xs text-blue-600 hover:underline flex items-center gap-0.5 flex-shrink-0"
                             >
-                              Go to field
+                              {t('adQualityDrawer.goToField')}
                               <ChevronRight className="h-3 w-3" />
                             </button>
                           )}
@@ -138,10 +134,9 @@ export function AdQualityDrawer({
               <div className="bg-amber-50 border border-amber-200 rounded p-3 flex items-start gap-2.5">
                 <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-amber-900">AI judge unavailable</p>
+                  <p className="text-sm font-semibold text-amber-900">{t('adQualityDrawer.judgeUnavailable')}</p>
                   <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-                    The AI quality judge could not be reached for this scoring. The score above
-                    reflects mechanical checks only. {l2Results.error && <span className="block mt-1 font-mono text-[10px] opacity-70">{l2Results.error}</span>}
+                    {t('adQualityDrawer.judgeUnavailableBody')} {l2Results.error && <span className="block mt-1 font-mono text-[10px] opacity-70">{l2Results.error}</span>}
                   </p>
                 </div>
               </div>
@@ -175,7 +170,7 @@ export function AdQualityDrawer({
                 {l2Results.summary && (
                   <div className="bg-blue-50 border border-blue-200 rounded p-3">
                     <p className="text-[11px] uppercase tracking-wide font-semibold text-blue-700 mb-1">
-                      Judge summary
+                      {t('adQualityDrawer.judgeSummary')}
                     </p>
                     <p className="text-sm text-blue-900 leading-relaxed">{l2Results.summary}</p>
                   </div>

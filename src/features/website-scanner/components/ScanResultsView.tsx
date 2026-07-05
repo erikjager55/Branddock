@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Shield, Users, Package, Swords, Lightbulb, TrendingUp } from 'lucide-react';
 import { useWebsiteScannerStore } from '../stores/useWebsiteScannerStore';
 import { useScanProgress } from '../hooks';
@@ -11,6 +12,7 @@ interface ScanResultsViewProps {
 }
 
 export function ScanResultsView({ onNavigate }: ScanResultsViewProps) {
+  const { t } = useTranslation('website-scanner');
   const { jobId, openApplyModal } = useWebsiteScannerStore();
   const { data: progress } = useScanProgress(jobId);
   const results = progress?.results;
@@ -18,43 +20,47 @@ export function ScanResultsView({ onNavigate }: ScanResultsViewProps) {
   if (!results) {
     return (
       <div className="text-center py-12 text-gray-500">
-        No results available
+        {t('results.none')}
       </div>
     );
   }
 
   const categories = [
     {
-      title: 'Brand Foundation',
+      id: 'brandAssets',
+      title: t('categories.brandAssets'),
       icon: Shield,
       color: 'teal',
       items: results.brandAssets,
       count: results.brandAssets.length,
-      description: `${results.brandAssets.length} brand asset fields populated`,
+      description: t('categoryDescription.brandAssets', { count: results.brandAssets.length }),
     },
     {
-      title: 'Personas',
+      id: 'personas',
+      title: t('categories.personas'),
       icon: Users,
       color: 'blue',
       items: results.personas,
       count: results.personas.length,
-      description: `${results.personas.length} persona${results.personas.length !== 1 ? 's' : ''} identified`,
+      description: t('categoryDescription.personas', { count: results.personas.length }),
     },
     {
-      title: 'Products & Services',
+      id: 'products',
+      title: t('categories.products'),
       icon: Package,
       color: 'purple',
       items: results.products,
       count: results.products.length,
-      description: `${results.products.length} product${results.products.length !== 1 ? 's' : ''} found`,
+      description: t('categoryDescription.products', { count: results.products.length }),
     },
     {
-      title: 'Competitors',
+      id: 'competitors',
+      title: t('categories.competitors'),
       icon: Swords,
       color: 'amber',
       items: results.competitors,
       count: results.competitors.length,
-      description: `${results.competitors.length} competitor${results.competitors.length !== 1 ? 's' : ''} detected`,
+      description: t('categoryDescription.competitors', { count: results.competitors.length }),
     },
   ];
 
@@ -72,9 +78,13 @@ export function ScanResultsView({ onNavigate }: ScanResultsViewProps) {
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Scan Complete</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('results.complete')}</h2>
             <p className="text-sm text-gray-500 mt-0.5">
-              Found {totalItems} items across {categories.filter(c => c.count > 0).length} categories with {avgConfidence}% average confidence
+              {t('results.summary', {
+                items: totalItems,
+                categories: categories.filter(c => c.count > 0).length,
+                confidence: avgConfidence,
+              })}
             </p>
           </div>
           <button
@@ -82,7 +92,7 @@ export function ScanResultsView({ onNavigate }: ScanResultsViewProps) {
             className="px-6 py-2.5 text-white text-sm font-medium rounded-lg"
             style={{ backgroundColor: '#0D9488' }}
           >
-            Apply All Results
+            {t('results.applyAll')}
           </button>
         </div>
       </div>
@@ -91,7 +101,7 @@ export function ScanResultsView({ onNavigate }: ScanResultsViewProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {categories.map((cat) => (
           <CategoryResultCard
-            key={cat.title}
+            key={cat.id}
             title={cat.title}
             icon={cat.icon}
             color={cat.color}
@@ -108,7 +118,7 @@ export function ScanResultsView({ onNavigate }: ScanResultsViewProps) {
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Lightbulb className="h-4 w-4 text-amber-500" />
-                <h3 className="text-sm font-semibold text-gray-900">Strategy Hints</h3>
+                <h3 className="text-sm font-semibold text-gray-900">{t('results.strategyHints')}</h3>
               </div>
               <ul className="space-y-1.5">
                 {results.strategyHints.objectives.map((obj, i) => (
@@ -124,7 +134,7 @@ export function ScanResultsView({ onNavigate }: ScanResultsViewProps) {
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <div className="flex items-center gap-2 mb-3">
                 <TrendingUp className="h-4 w-4 text-blue-500" />
-                <h3 className="text-sm font-semibold text-gray-900">Trend Signals</h3>
+                <h3 className="text-sm font-semibold text-gray-900">{t('results.trendSignals')}</h3>
               </div>
               <ul className="space-y-1.5">
                 {results.trendSignals.map((trend, i) => (

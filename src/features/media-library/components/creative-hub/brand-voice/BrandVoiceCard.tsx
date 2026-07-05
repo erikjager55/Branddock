@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Mic, Star, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import type { BrandVoiceWithMeta } from '@/features/media-library/types/media.types';
@@ -22,6 +23,7 @@ export const BrandVoiceCard = React.memo(function BrandVoiceCard({
   onClick,
   onDelete,
 }: BrandVoiceCardProps) {
+  const { t } = useTranslation('media-library');
   return (
     <div
       className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer group"
@@ -56,7 +58,7 @@ export const BrandVoiceCard = React.memo(function BrandVoiceCard({
         {voice.isDefault && (
           <div className="absolute top-2 right-2">
             <Badge variant="teal" size="sm" icon={Star}>
-              Default
+              {t('badges.default')}
             </Badge>
           </div>
         )}
@@ -69,7 +71,7 @@ export const BrandVoiceCard = React.memo(function BrandVoiceCard({
             onDelete(voice.id);
           }}
           className="absolute top-2 left-2 p-1 rounded-md bg-white/80 text-gray-400 hover:text-red-500 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
-          aria-label={`Delete ${voice.name}`}
+          aria-label={t('actions.deleteNamed', { name: voice.name })}
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -104,7 +106,7 @@ export const BrandVoiceCard = React.memo(function BrandVoiceCard({
         {/* Secondary text: accent + pace */}
         {(voice.voiceAccent || voice.speakingPace) && (
           <p className="text-xs text-gray-500 line-clamp-1">
-            {[voice.voiceAccent, voice.speakingPace ? `${voice.speakingPace} pace` : null]
+            {[voice.voiceAccent, voice.speakingPace ? t('brandVoice.card.pace', { pace: voice.speakingPace }) : null]
               .filter(Boolean)
               .join(' \u00B7 ')}
           </p>

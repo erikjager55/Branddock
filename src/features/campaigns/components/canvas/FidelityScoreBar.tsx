@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import { canvasKeys } from '../../hooks/canvas.hooks';
@@ -25,14 +26,16 @@ const ZONE_HEX = {
   pureAi: '#ef4444', // red-500
 } as const;
 
-const VERDICT_LABELS: Record<'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI', string> = {
-  TOP_TIER: 'Sounds very human',
-  HUMAN_BASELINE: 'Sounds human',
-  AI_LEANING: 'Feels AI-like',
-  PURE_AI: 'Sounds like AI',
+// Verdict → i18n key. Object keys are the enum verdict values (data), the values
+// are translation keys resolved with `t()` at render-time inside each component.
+const VERDICT_LABEL_KEYS: Record<'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI', string> = {
+  TOP_TIER: 'verdict.topTier',
+  HUMAN_BASELINE: 'verdict.humanBaseline',
+  AI_LEANING: 'verdict.aiLeaning',
+  PURE_AI: 'verdict.pureAi',
 };
 
-const VERDICT_COLOR: Record<keyof typeof VERDICT_LABELS, string> = {
+const VERDICT_COLOR: Record<keyof typeof VERDICT_LABEL_KEYS, string> = {
   TOP_TIER: ZONE_HEX.topTier,
   HUMAN_BASELINE: ZONE_HEX.humanBaseline,
   AI_LEANING: ZONE_HEX.aiLeaning,
@@ -73,6 +76,7 @@ interface FidelityScoreBarProps {
  *   - complete:       full position-bar + composite badge + pillar breakdown
  */
 export function FidelityScoreBar({ compact = false, deliverableId = null, variantIndex = null, suppressAutoIterateCta = false }: FidelityScoreBarProps) {
+  const { t } = useTranslation('campaigns-canvas-page');
   // F9 (audit 2026-05-13): per-variant scoring. Lees score voor currently-
   // selected variant uit fidelityScoresByVariantIndex map. Fall back op
   // legacy fidelityScore wanneer geen variant-specific entry (b.v. wanneer
@@ -120,16 +124,16 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-teal-600" />
-            Brand fidelity score
+            {t('fidelity.title')}
             {isComputing && !isComplete && !isSkipped && (
               <span className="inline-flex items-center gap-1 text-xs font-normal text-gray-500 ml-2">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                measuring…
+                {t('fidelity.measuring')}
               </span>
             )}
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            How well does this text fit your brand?
+            {t('fidelity.subtitle')}
           </p>
         </div>
 
@@ -151,8 +155,8 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
       <div className="space-y-1">
         <PositionBar position={position} />
         <div className="flex items-center justify-between text-[10px] text-gray-500 font-medium uppercase tracking-wide">
-          <span>← Sounds like AI</span>
-          <span>Sounds human + brand-fit →</span>
+          <span>{t('fidelity.axisLeft')}</span>
+          <span>{t('fidelity.axisRight')}</span>
         </div>
       </div>
 
@@ -160,14 +164,14 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
       {verdict && !isSkipped && (
         <div className="mt-2 text-xs">
           <span className="font-medium" style={{ color: VERDICT_COLOR[verdict] }}>
-            {VERDICT_LABELS[verdict]}
+            {t(VERDICT_LABEL_KEYS[verdict])}
           </span>
-          <span className="text-gray-400"> — measures AI patterns. </span>
+          <span className="text-gray-400">{t('fidelity.verdictSuffix')}</span>
           <span className="text-gray-500">
-            The score at the top combines this with brand style + strategy.
+            {t('fidelity.verdictExplain')}
           </span>
           {isComplete && fidelity.elapsedMs !== null && (
-            <span className="text-gray-500"> · measured in {(fidelity.elapsedMs / 1000).toFixed(0)}s</span>
+            <span className="text-gray-500">{t('fidelity.measuredIn', { seconds: (fidelity.elapsedMs / 1000).toFixed(0) })}</span>
           )}
         </div>
       )}
@@ -181,12 +185,12 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
         <div className="mt-2 text-xs text-gray-500 italic space-y-1">
           <div>
             {verdict
-              ? `${VERDICT_LABELS[verdict]} — detailed score not available.`
-              : 'Score could not be calculated.'}
+              ? t('skipped.detailNotAvailable', { verdict: t(VERDICT_LABEL_KEYS[verdict]) })
+              : t('skipped.notCalculated')}
           </div>
           {fidelity.skippedReason && (
             <div className="text-[11px] not-italic text-amber-700">
-              Reason: {fidelity.skippedReason}
+              {t('skipped.reason', { reason: fidelity.skippedReason })}
             </div>
           )}
         </div>
@@ -201,9 +205,8 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
         fidelity.thresholdMet === false &&
         (verdict === 'TOP_TIER' || verdict === 'HUMAN_BASELINE') && (
           <div className="mt-2 rounded-md bg-amber-50/60 border border-amber-200/60 px-2.5 py-1.5 text-[11px] text-amber-900 leading-relaxed">
-            <span className="font-medium">Sounds human, but doesn&apos;t fit the brand yet.</span>{' '}
-            The detector sees few AI patterns (pin on the left), but brand style + strategy
-            are lower than ideal. See the pillar breakdown below for where to improve.
+            <span className="font-medium">{t('discrepancy.title')}</span>{' '}
+            {t('discrepancy.body')}
           </div>
         )}
 
@@ -212,9 +215,9 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
         <div className="mt-3 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2 flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-violet-900">Branddock is improving the output…</p>
+            <p className="text-sm font-medium text-violet-900">{t('strictRunning.title')}</p>
             <p className="text-xs text-violet-700">
-              The text still sounds AI-like — we&apos;re making it more human. ~15-30s.
+              {t('strictRunning.body')}
             </p>
           </div>
         </div>
@@ -235,9 +238,9 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
         <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-emerald-900">Auto-iterate is improving the score…</p>
+            <p className="text-sm font-medium text-emerald-900">{t('autoIterate.running.title')}</p>
             <p className="text-xs text-emerald-700">
-              Initial {autoIterate.initialScore} / threshold {autoIterate.threshold} — feedback-driven rewrite.
+              {t('autoIterate.running.body', { initial: autoIterate.initialScore, threshold: autoIterate.threshold })}
             </p>
           </div>
         </div>
@@ -267,7 +270,7 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
             onClick={() => setShowPillars((v) => !v)}
             className="w-full flex items-center justify-between text-xs font-medium text-gray-700 hover:text-gray-900"
           >
-            <span>See how this score is built up</span>
+            <span>{t('fidelity.pillarsToggle')}</span>
             {showPillars ? (
               <ChevronUp className="w-3.5 h-3.5" />
             ) : (
@@ -276,9 +279,9 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
           </button>
           {showPillars && (
             <div className="mt-2 grid grid-cols-3 gap-2">
-              <PillarChip label="Brand style" sublabel="Uses your words" score={fidelity.pillars.style} />
-              <PillarChip label="Strategy" sublabel="AI assessment" score={fidelity.pillars.judge} />
-              <PillarChip label="Human" sublabel="No AI patterns" score={fidelity.pillars.rules} />
+              <PillarChip label={t('pillar.style.label')} sublabel={t('pillar.style.sublabel')} score={fidelity.pillars.style} />
+              <PillarChip label={t('pillar.strategy.label')} sublabel={t('pillar.strategy.sublabel')} score={fidelity.pillars.judge} />
+              <PillarChip label={t('pillar.human.label')} sublabel={t('pillar.human.sublabel')} score={fidelity.pillars.rules} />
             </div>
           )}
         </div>
@@ -311,6 +314,7 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
 // AutoIterateImprovedBlock zodra complete.
 
 function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
+  const { t } = useTranslation('campaigns-canvas-page');
   const autoIterate = useCanvasStore((s) => s.autoIterate);
   const [busy, setBusy] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
@@ -342,7 +346,7 @@ function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
       });
       if (!res.ok || !res.body) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error ?? `Failed to start iteration (${res.status})`);
+        throw new Error(body?.error ?? t('autoIterate.errors.startFailed', { status: res.status }));
       }
       // Lees SSE-stream en route naar canvas-store via dezelfde setters
       // die de orchestrator gebruikt. Re-import store voor concurrency-safe
@@ -403,17 +407,17 @@ function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
               stopReason: typeof data.stopReason === 'string' ? data.stopReason : 'max_iterations',
             });
           } else if (eventName === 'error') {
-            const errMsg = typeof data.message === 'string' ? data.message : 'Iteration failed';
+            const errMsg = typeof data.message === 'string' ? data.message : t('autoIterate.errors.iterationFailed');
             throw new Error(errMsg);
           }
         }
       }
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Iteration failed');
+      setErrorMsg(err instanceof Error ? err.message : t('autoIterate.errors.iterationFailed'));
     } finally {
       setBusy(false);
     }
-  }, [deliverableId]);
+  }, [deliverableId, t]);
 
   const isRunning = busy || autoIterate.stage === 'iterating';
 
@@ -423,11 +427,10 @@ function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
         <Sparkles className="w-5 h-5 text-teal-700 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900">
-            Score below threshold — want Branddock to improve it automatically?
+            {t('autoIterate.cta.title')}
           </p>
           <p className="text-xs text-gray-600 mt-0.5">
-            Branddock rewrites the text up to 5× and stops as soon as the score rises
-            above the threshold or no longer improves. Takes ~30-90 seconds.
+            {t('autoIterate.cta.body')}
           </p>
           <button
             type="button"
@@ -438,14 +441,17 @@ function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
             {isRunning ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Improving…
+                {t('autoIterate.cta.improving')}
                 {autoIterate.attemptsExecuted > 0 &&
-                  ` (attempt ${autoIterate.attemptsExecuted}, score ${autoIterate.finalScore ?? '—'})`}
+                  t('autoIterate.cta.improvingProgress', {
+                    attempt: autoIterate.attemptsExecuted,
+                    score: autoIterate.finalScore ?? '—',
+                  })}
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                Improve automatically
+                {t('autoIterate.cta.improveAutomatically')}
               </>
             )}
           </button>
@@ -477,6 +483,7 @@ function AutoIterateImprovedBlock({
   appliedTemplates: string[];
   deliverableId: string | null;
 }) {
+  const { t } = useTranslation('campaigns-canvas-page');
   const [applyState, setApplyState] = React.useState<'idle' | 'applying' | 'applied' | 'error'>('idle');
   const [applyError, setApplyError] = React.useState<string | null>(null);
   const delta = finalScore - initialScore;
@@ -494,7 +501,7 @@ function AutoIterateImprovedBlock({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error ?? `Apply failed: ${res.status}`);
+        throw new Error(body?.error ?? t('autoIterate.errors.applyFailedStatus', { status: res.status }));
       }
       // F19 fix (audit 2026-05-13): in-place refresh zonder page reload.
       // Branddock is een hybride SPA waarbij window.location.reload() de user
@@ -530,10 +537,10 @@ function AutoIterateImprovedBlock({
       });
       setApplyState('applied');
     } catch (err) {
-      setApplyError(err instanceof Error ? err.message : 'Apply failed');
+      setApplyError(err instanceof Error ? err.message : t('autoIterate.errors.applyFailed'));
       setApplyState('error');
     }
-  }, [deliverableId, finalScore, queryClient]);
+  }, [deliverableId, finalScore, queryClient, t]);
 
   // F17 fix (audit 2026-05-13): drie copy-varianten naargelang of iteratie
   // werkelijk verbetering opleverde. Bij gelijke score / regressie geen
@@ -555,21 +562,21 @@ function AutoIterateImprovedBlock({
   const accentClass = improved ? 'text-emerald-700' : 'text-amber-700';
   const iconClass = improved ? 'text-emerald-600' : 'text-amber-600';
 
-  const attempts = `${attemptsExecuted} ${attemptsExecuted === 1 ? 'attempt' : 'attempts'}`;
+  const attempts = t('autoIterate.attempts', { count: attemptsExecuted });
   const stopReasonLabel = improved
     ? thresholdMet
-      ? `Improved from ${initialScore} to ${finalScore} — ready to publish`
+      ? t('autoIterate.result.improvedReady', { initial: initialScore, final: finalScore })
       : stopReason === 'early_stop_stagnation'
-        ? `Improved from ${initialScore} to ${finalScore} — further iterations yield little`
+        ? t('autoIterate.result.improvedStagnation', { initial: initialScore, final: finalScore })
         : stopReason === 'max_iterations'
-          ? `Improved from ${initialScore} to ${finalScore} in ${attempts} — adjust the brief for further improvement`
-          : `Improved from ${initialScore} to ${finalScore}`
+          ? t('autoIterate.result.improvedMaxIterations', { initial: initialScore, final: finalScore, attempts })
+          : t('autoIterate.result.improved', { initial: initialScore, final: finalScore })
     : regressed
       ? // Regressie: eindscore is lager dan start — auto-iterate maakte het slechter,
         // orchestrator heeft daarom origineel behouden.
-        `Score dropped from ${initialScore} to ${finalScore} in ${attempts} — kept original content (auto-iterate yielded no gain)`
+        t('autoIterate.result.dropped', { initial: initialScore, final: finalScore, attempts })
       : // delta === 0: stagnatie, geen verschuiving.
-        `Score stayed at ${initialScore} across ${attempts} — kept original content`;
+        t('autoIterate.result.stayed', { initial: initialScore, attempts });
 
   return (
     <div className={`mt-3 rounded-lg border px-3 py-2.5 ${bannerClass}`}>
@@ -578,18 +585,20 @@ function AutoIterateImprovedBlock({
         <span className={`text-sm font-semibold ${titleClass}`}>{stopReasonLabel}</span>
       </div>
       <div className={`text-xs ${subClass}`}>
-        Score: <span className="font-medium">{initialScore}</span>
+        {t('autoIterate.scoreLabel')} <span className="font-medium">{initialScore}</span>
         <span className="mx-1.5">→</span>
         <span className="font-medium">{finalScore}</span>
         <span className={`ml-1 ${accentClass}`}>
-          ({delta >= 0 ? '+' : ''}
-          {delta} points in {attemptsExecuted} {attemptsExecuted === 1 ? 'attempt' : 'attempts'})
+          {t('autoIterate.pointsDelta', {
+            signedDelta: `${delta >= 0 ? '+' : ''}${delta}`,
+            attempts,
+          })}
         </span>
       </div>
 
       {appliedTemplates.length > 0 && improved && (
         <div className={`mt-2 text-[11px] ${accentClass}`}>
-          Applied: {appliedTemplates.slice(0, 3).join(' · ')}
+          {t('autoIterate.applied', { templates: appliedTemplates.slice(0, 3).join(' · ') })}
           {appliedTemplates.length > 3 && ` +${appliedTemplates.length - 3}`}
         </div>
       )}
@@ -607,12 +616,12 @@ function AutoIterateImprovedBlock({
           {applyState === 'applying' ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Applying…
+              {t('autoIterate.applyingButton')}
             </>
           ) : (
             <>
               <Sparkles className="w-3.5 h-3.5" />
-              Use improved version
+              {t('autoIterate.useImproved')}
             </>
           )}
         </button>
@@ -620,14 +629,14 @@ function AutoIterateImprovedBlock({
 
       {!improved && (
         <div className="mt-2 text-[11px] text-amber-700 italic">
-          Tip: make the brief more specific (concrete CTA, sharper keyMessage) or adjust the voiceguide for this content type.
+          {t('autoIterate.tip')}
         </div>
       )}
 
       {applyState === 'applied' && (
         <div className="mt-2 text-xs text-emerald-700 font-medium inline-flex items-center gap-1">
           <ShieldCheck className="w-3.5 h-3.5" />
-          Applied — improved text is loaded
+          {t('autoIterate.appliedLoaded')}
         </div>
       )}
 
@@ -651,6 +660,7 @@ function StrictImprovedBlock({
   rewritePreview: string | null;
   deliverableId: string | null;
 }) {
+  const { t } = useTranslation('campaigns-canvas-page');
   const [showPreview, setShowPreview] = React.useState(false);
   const [applyState, setApplyState] = React.useState<'idle' | 'applying' | 'applied' | 'error'>('idle');
   const [applyError, setApplyError] = React.useState<string | null>(null);
@@ -667,25 +677,25 @@ function StrictImprovedBlock({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error ?? `Apply failed: ${res.status}`);
+        throw new Error(body?.error ?? t('autoIterate.errors.applyFailedStatus', { status: res.status }));
       }
       setApplyState('applied');
     } catch (err) {
-      setApplyError(err instanceof Error ? err.message : 'Apply failed');
+      setApplyError(err instanceof Error ? err.message : t('autoIterate.errors.applyFailed'));
       setApplyState('error');
     }
-  }, [deliverableId]);
+  }, [deliverableId, t]);
 
   return (
     <div className="mt-3 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5">
       <div className="flex items-center gap-1.5 mb-1">
         <Sparkles className="w-4 h-4 text-violet-600" />
-        <span className="text-sm font-semibold text-violet-900">Branddock made the text more human</span>
+        <span className="text-sm font-semibold text-violet-900">{t('strict.improvedTitle')}</span>
       </div>
       <div className="text-xs text-violet-800">
-        Was: <span className="font-medium">{VERDICT_LABELS[before.verdict]}</span>
+        {t('strict.was')} <span className="font-medium">{t(VERDICT_LABEL_KEYS[before.verdict])}</span>
         <span className="mx-1.5">→</span>
-        Now: <span className="font-medium">{VERDICT_LABELS[after.verdict]}</span>
+        {t('strict.now')} <span className="font-medium">{t(VERDICT_LABEL_KEYS[after.verdict])}</span>
       </div>
 
       {rewritePreview && (
@@ -695,7 +705,7 @@ function StrictImprovedBlock({
             onClick={() => setShowPreview((v) => !v)}
             className="w-full flex items-center justify-between text-xs font-medium text-violet-700 hover:text-violet-900"
           >
-            <span>{showPreview ? 'Hide' : 'View'} the more human version</span>
+            <span>{showPreview ? t('strict.hidePreview') : t('strict.viewPreview')}</span>
             {showPreview ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
           {showPreview && (
@@ -717,12 +727,12 @@ function StrictImprovedBlock({
               {applyState === 'applying' ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Applying…
+                  {t('strict.applyingButton')}
                 </>
               ) : (
                 <>
                   <Sparkles className="w-3.5 h-3.5" />
-                  Use this version
+                  {t('strict.useThisVersion')}
                 </>
               )}
             </button>
@@ -731,7 +741,7 @@ function StrictImprovedBlock({
           {applyState === 'applied' && (
             <div className="mt-2 text-xs text-violet-700 font-medium inline-flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" />
-              Applied — refresh the page to see the new text
+              {t('strict.appliedRefresh')}
             </div>
           )}
 
@@ -751,6 +761,7 @@ function StrictImprovedBlock({
 // ─── Sub-components ────────────────────────────────
 
 function PositionBar({ position }: { position: number }) {
+  const { t } = useTranslation('campaigns-canvas-page');
   // UX-overhaul 2026-05-13: PositionBar gebruikt nu compositeScore (0-100)
   // i.p.v. humanBaselinePosition. Pin-positie matcht score, kleur-zones
   // matchen threshold-semantiek. As-flip: links rood (klinkt als AI / niet
@@ -769,25 +780,26 @@ function PositionBar({ position }: { position: number }) {
       <div
         className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow-md"
         style={{ left: `${clamped}%`, backgroundColor: '#111827' }}
-        aria-label={`Score ${clamped} of 100`}
+        aria-label={t('positionBar.scoreAria', { score: clamped })}
       />
     </div>
   );
 }
 
 function ThresholdBadge({ thresholdMet, threshold }: { thresholdMet: boolean; threshold: number }) {
+  const { t } = useTranslation('campaigns-canvas-page');
   if (thresholdMet) {
     return (
       <div className="inline-flex items-center gap-1 text-[11px] text-emerald-700">
         <ShieldCheck className="w-3 h-3" />
-        above threshold ({threshold})
+        {t('threshold.above', { threshold })}
       </div>
     );
   }
   return (
     <div className="inline-flex items-center gap-1 text-[11px] text-amber-700">
       <AlertTriangle className="w-3 h-3" />
-      below threshold ({threshold})
+      {t('threshold.below', { threshold })}
     </div>
   );
 }
@@ -801,6 +813,7 @@ function PillarChip({
   sublabel: string;
   score: number | null;
 }) {
+  const { t } = useTranslation('campaigns-canvas-page');
   const skipped = score === null;
   return (
     <div
@@ -811,7 +824,7 @@ function PillarChip({
       <div className="flex items-baseline justify-between">
         <span className="text-[11px] font-semibold text-gray-700">{label}</span>
         <span className={`text-sm font-bold ${skipped ? 'text-gray-400' : 'text-gray-900'}`}>
-          {skipped ? 'N/A' : `${score}`}
+          {skipped ? t('pillar.na') : `${score}`}
         </span>
       </div>
       <div className="text-[10px] text-gray-500 mt-0.5">{sublabel}</div>

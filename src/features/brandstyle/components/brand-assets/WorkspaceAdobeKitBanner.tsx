@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Sparkles, Check, ExternalLink } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { brandstyleKeys } from "../../hooks/useBrandstyleHooks";
@@ -42,6 +43,7 @@ async function updateAdobeKit(
  * served via Adobe Fonts — rendering it otherwise would be noise.
  */
 export function WorkspaceAdobeKitBanner({ kitId, canEdit }: WorkspaceAdobeKitBannerProps) {
+  const { t } = useTranslation("brandstyle");
   const qc = useQueryClient();
   // Keep a local query so the banner can auto-refresh from the server
   // even when the parent styleguide query hasn't been refetched yet
@@ -71,7 +73,7 @@ export function WorkspaceAdobeKitBanner({ kitId, canEdit }: WorkspaceAdobeKitBan
       qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
     },
     onError: (err) =>
-      setLocalError(err instanceof Error ? err.message : "Failed to save kit"),
+      setLocalError(err instanceof Error ? err.message : t("adobeKit.saveFailed")),
   });
 
   const handleSave = () => {
@@ -80,7 +82,7 @@ export function WorkspaceAdobeKitBanner({ kitId, canEdit }: WorkspaceAdobeKitBan
   };
 
   const handleClear = () => {
-    if (!window.confirm("Remove the workspace Adobe Fonts kit?")) return;
+    if (!window.confirm(t("adobeKit.confirmRemove"))) return;
     setDraft("");
     mutation.mutate(null);
   };
@@ -93,12 +95,10 @@ export function WorkspaceAdobeKitBanner({ kitId, canEdit }: WorkspaceAdobeKitBan
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-indigo-900">
-            Adobe Fonts kit for this workspace
+            {t("adobeKit.title")}
           </p>
           <p className="text-xs text-indigo-700 mt-0.5 leading-snug">
-            Paste your own Adobe Fonts kit ID (with the brand fonts published) to render
-            live previews everywhere. Auto-detected kits from scanned sites are domain-locked
-            and won&apos;t serve fonts here.
+            {t("adobeKit.body")}
           </p>
 
           {editing && canEdit ? (
@@ -107,7 +107,7 @@ export function WorkspaceAdobeKitBanner({ kitId, canEdit }: WorkspaceAdobeKitBan
                 type="text"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder="e.g. abc1def"
+                placeholder={t("adobeKit.placeholder")}
                 maxLength={32}
                 className="flex-1 min-w-[160px] border border-indigo-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 font-mono"
               />
@@ -118,7 +118,7 @@ export function WorkspaceAdobeKitBanner({ kitId, canEdit }: WorkspaceAdobeKitBan
                 className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white rounded text-xs font-medium hover:bg-indigo-700 disabled:opacity-50"
               >
                 <Check className="h-3 w-3" />
-                Save
+                {t("actions.save")}
               </button>
               {effective && (
                 <button
@@ -130,7 +130,7 @@ export function WorkspaceAdobeKitBanner({ kitId, canEdit }: WorkspaceAdobeKitBan
                   }}
                   className="text-xs text-gray-500 hover:text-gray-700"
                 >
-                  Cancel
+                  {t("actions.cancel")}
                 </button>
               )}
               <a
@@ -139,7 +139,7 @@ export function WorkspaceAdobeKitBanner({ kitId, canEdit }: WorkspaceAdobeKitBan
                 rel="noopener noreferrer"
                 className="ml-auto inline-flex items-center gap-1 text-xs text-indigo-700 hover:text-indigo-900"
               >
-                Find my kit ID
+                {t("adobeKit.findKit")}
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
@@ -149,7 +149,7 @@ export function WorkspaceAdobeKitBanner({ kitId, canEdit }: WorkspaceAdobeKitBan
                 <>
                   <span className="text-xs text-emerald-700 inline-flex items-center gap-1">
                     <Check className="h-3 w-3" />
-                    Active: <code className="font-mono text-[11px] bg-white/70 border border-emerald-200 rounded px-1 py-0.5">{effective}</code>
+                    {t("adobeKit.activeLabel")} <code className="font-mono text-[11px] bg-white/70 border border-emerald-200 rounded px-1 py-0.5">{effective}</code>
                   </span>
                   {canEdit && (
                     <>
@@ -158,14 +158,14 @@ export function WorkspaceAdobeKitBanner({ kitId, canEdit }: WorkspaceAdobeKitBan
                         onClick={() => setEditing(true)}
                         className="text-xs text-indigo-700 underline hover:text-indigo-900"
                       >
-                        Replace
+                        {t("adobeKit.replace")}
                       </button>
                       <button
                         type="button"
                         onClick={handleClear}
                         className="text-xs text-gray-500 hover:text-gray-700"
                       >
-                        Remove
+                        {t("adobeKit.remove")}
                       </button>
                     </>
                   )}
@@ -177,7 +177,7 @@ export function WorkspaceAdobeKitBanner({ kitId, canEdit }: WorkspaceAdobeKitBan
                     onClick={() => setEditing(true)}
                     className="text-xs font-medium text-indigo-700 underline hover:text-indigo-900"
                   >
-                    Set kit ID
+                    {t("adobeKit.setKit")}
                   </button>
                 )
               )}

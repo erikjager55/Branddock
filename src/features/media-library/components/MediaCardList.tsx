@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Heart, Trash2, Image, FileText, Video, Music } from 'lucide-react';
 import { MEDIA_TYPE_ICONS, MEDIA_CATEGORY_CONFIG, formatFileSize } from '../constants/media-constants';
 import type { MediaAssetWithMeta } from '../types/media.types';
@@ -20,28 +22,20 @@ const FALLBACK_ICONS: Record<string, typeof Image> = {
   AUDIO: Music,
 };
 
-/** Format a date string into a human-readable short date. */
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
 /** Table-style list view of media assets. */
 export function MediaCardList({ assets, onSelect, onFavorite, onDelete }: MediaCardListProps) {
+  const { t } = useTranslation(['media-library', 'media-registry']);
+  const { formatDate } = useFormat();
   return (
     <div>
       {/* Header row */}
       <div className="grid grid-cols-12 gap-4 px-4 py-2 text-xs font-medium text-gray-500 uppercase border-b">
-        <div className="col-span-4">Name</div>
-        <div className="col-span-2">Type</div>
-        <div className="col-span-2">Category</div>
-        <div className="col-span-1">Size</div>
-        <div className="col-span-2">Date</div>
-        <div className="col-span-1">Actions</div>
+        <div className="col-span-4">{t('list.name')}</div>
+        <div className="col-span-2">{t('list.type')}</div>
+        <div className="col-span-2">{t('list.category')}</div>
+        <div className="col-span-1">{t('list.size')}</div>
+        <div className="col-span-2">{t('list.date')}</div>
+        <div className="col-span-1">{t('list.actions')}</div>
       </div>
 
       {/* Asset rows */}
@@ -90,13 +84,13 @@ export function MediaCardList({ assets, onSelect, onFavorite, onDelete }: MediaC
                 className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 ${typeConfig.color}`}
               >
                 <typeConfig.icon className="w-3 h-3" />
-                {typeConfig.label}
+                {t(`media-registry:type.${asset.mediaType}`, { defaultValue: typeConfig.label })}
               </span>
             </div>
 
             {/* Category */}
             <div className="col-span-2">
-              <span className="text-sm text-gray-600">{categoryConfig.label}</span>
+              <span className="text-sm text-gray-600">{t(`media-registry:category.${asset.category}`, { defaultValue: categoryConfig.label })}</span>
             </div>
 
             {/* Size */}
@@ -106,7 +100,11 @@ export function MediaCardList({ assets, onSelect, onFavorite, onDelete }: MediaC
 
             {/* Date */}
             <div className="col-span-2">
-              <span className="text-sm text-gray-500">{formatDate(asset.createdAt)}</span>
+              <span className="text-sm text-gray-500">{formatDate(asset.createdAt, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}</span>
             </div>
 
             {/* Actions */}
@@ -118,7 +116,7 @@ export function MediaCardList({ assets, onSelect, onFavorite, onDelete }: MediaC
                   onFavorite(asset.id);
                 }}
                 className="p-1 rounded hover:bg-gray-100 transition-colors"
-                aria-label={asset.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                aria-label={asset.isFavorite ? t('actions.removeFavorite') : t('actions.addFavorite')}
               >
                 <Heart
                   className={`w-4 h-4 ${
@@ -133,7 +131,7 @@ export function MediaCardList({ assets, onSelect, onFavorite, onDelete }: MediaC
                   onDelete(asset.id);
                 }}
                 className="p-1 rounded hover:bg-gray-100 transition-colors"
-                aria-label="Delete asset"
+                aria-label={t('actions.deleteAsset')}
               >
                 <Trash2 className="w-4 h-4 text-gray-400" />
               </button>

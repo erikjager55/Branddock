@@ -8,7 +8,8 @@
 "use client";
 
 import React from "react";
-import { getCampaignDisplayConfig } from "../../lib/campaign-type-display";
+import { useTranslation } from "react-i18next";
+import { classifyCampaign, getCampaignDisplayConfig } from "../../lib/campaign-type-display";
 
 interface CampaignTypePillProps {
   type: string;
@@ -17,7 +18,9 @@ interface CampaignTypePillProps {
 }
 
 export function CampaignTypePill({ type, confidence, size = "sm" }: CampaignTypePillProps) {
+  const { t } = useTranslation();
   const config = getCampaignDisplayConfig(type, confidence);
+  const displayType = classifyCampaign(type, confidence);
   const Icon = config.icon;
 
   const sizeClasses = size === "sm"
@@ -34,7 +37,7 @@ export function CampaignTypePill({ type, confidence, size = "sm" }: CampaignType
       }}
     >
       <Icon className={size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"} />
-      {config.label}
+      {t(`campaigns-cards:typePill.${displayType}`, { defaultValue: config.label })}
     </span>
   );
 }

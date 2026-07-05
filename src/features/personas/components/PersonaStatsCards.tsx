@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle, AlertTriangle, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { PersonaStats } from "../types/persona.types";
 import type { LucideIcon } from "lucide-react";
 
@@ -19,9 +20,10 @@ interface StatsCardConfig {
 }
 
 export function PersonaStatsCards({ stats }: PersonaStatsCardsProps) {
+  const { t } = useTranslation('personas');
   const cards: StatsCardConfig[] = [
     {
-      label: "Ready for strategic use",
+      label: t('stats.ready'),
       value: stats.ready,
       icon: CheckCircle,
       iconBg: "bg-emerald-100",
@@ -30,7 +32,7 @@ export function PersonaStatsCards({ stats }: PersonaStatsCardsProps) {
       valueColor: "text-emerald-600",
     },
     {
-      label: "Need more research",
+      label: t('stats.needsWork'),
       value: stats.needsWork,
       icon: AlertTriangle,
       iconBg: "bg-amber-100",
@@ -39,7 +41,7 @@ export function PersonaStatsCards({ stats }: PersonaStatsCardsProps) {
       valueColor: "text-amber-500",
     },
     {
-      label: "Total personas",
+      label: t('stats.total'),
       value: stats.total,
       icon: Users,
       iconBg: "bg-gray-100",

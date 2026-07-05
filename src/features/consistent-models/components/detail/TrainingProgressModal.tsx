@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { Modal, Button, ProgressBar } from "@/components/shared";
 import { useTrainingStatus } from "../../hooks";
@@ -14,12 +15,6 @@ interface TrainingProgressModalProps {
   onComplete: () => void;
 }
 
-const STEPS: { status: ConsistentModelStatus; label: string }[] = [
-  { status: "UPLOADING", label: "Uploading reference images" },
-  { status: "TRAINING", label: "Fine-tuning AI model" },
-  { status: "READY", label: "Generating samples" },
-];
-
 /** Real-time training status modal with polling */
 export function TrainingProgressModal({
   isOpen,
@@ -28,6 +23,12 @@ export function TrainingProgressModal({
   modelName,
   onComplete,
 }: TrainingProgressModalProps) {
+  const { t } = useTranslation("consistent-models");
+  const STEPS: { status: ConsistentModelStatus; label: string }[] = [
+    { status: "UPLOADING", label: t("trainingModal.steps.UPLOADING") },
+    { status: "TRAINING", label: t("trainingModal.steps.TRAINING") },
+    { status: "READY", label: t("trainingModal.steps.READY") },
+  ];
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const isTraining = isOpen;
@@ -84,7 +85,7 @@ export function TrainingProgressModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Training: ${modelName}`}
+      title={t("trainingModal.modalTitle", { name: modelName })}
       size="md"
       showCloseButton={true}
     >
@@ -94,10 +95,10 @@ export function TrainingProgressModal({
           {currentStatus === "TRAINING" && !isFailed && (
             <p className="mt-1.5 text-center text-sm font-medium text-teal-600">
               {status?.inQueue
-                ? "Waiting for GPU..."
+                ? t("shared.waitingForGpu")
                 : status?.progress != null
                   ? `${status.progress}%`
-                  : "Starting..."}
+                  : t("shared.starting")}
             </p>
           )}
         </div>
@@ -141,13 +142,13 @@ export function TrainingProgressModal({
         {/* Elapsed time */}
         <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
           <Clock className="h-4 w-4" />
-          <span>Elapsed: {formatTime(elapsedSeconds)}</span>
+          <span>{t("trainingModal.elapsed", { time: formatTime(elapsedSeconds) })}</span>
         </div>
 
         {/* Background training info */}
         {isActive && (
           <p className="text-center text-xs text-gray-400">
-            Training continues in the background if you close this window.
+            {t("trainingModal.backgroundInfo")}
           </p>
         )}
 
@@ -156,9 +157,9 @@ export function TrainingProgressModal({
           <div className="flex items-start gap-2 rounded-lg bg-red-50 p-4 text-sm text-red-700">
             <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
-              <p className="font-medium">Training failed</p>
+              <p className="font-medium">{t("trainingModal.failedTitle")}</p>
               <p className="mt-1 text-red-600">
-                {status?.trainingError ?? "An unexpected error occurred. Please try again."}
+                {status?.trainingError ?? t("trainingModal.failedFallback")}
               </p>
             </div>
           </div>
@@ -168,7 +169,7 @@ export function TrainingProgressModal({
         {isComplete && status?.sampleImageUrls?.length ? (
           <div className="space-y-3">
             <p className="text-center text-sm font-medium text-emerald-700">
-              Training complete! Here are your sample images:
+              {t("trainingModal.completeMessage")}
             </p>
             <div className="grid grid-cols-3 gap-2">
               {status.sampleImageUrls.slice(0, 3).map((url, i) => (
@@ -178,7 +179,7 @@ export function TrainingProgressModal({
                 >
                   <img
                     src={url}
-                    alt={`Sample ${i + 1}`}
+                    alt={t("trainingModal.sampleAlt", { index: i + 1 })}
                     className="h-full w-full object-cover"
                   />
                 </div>
@@ -191,12 +192,12 @@ export function TrainingProgressModal({
         <div className="flex justify-end gap-3">
           {isFailed && (
             <Button variant="secondary" onClick={onClose}>
-              Close
+              {t("trainingModal.close")}
             </Button>
           )}
           {isComplete && (
             <Button variant="primary" onClick={onClose}>
-              View Model
+              {t("trainingModal.viewModel")}
             </Button>
           )}
         </div>

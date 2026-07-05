@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ShoppingBag, Plus, X } from "lucide-react";
 import { Input } from "@/components/shared";
 import type { CompetitorDetail } from "../../types/competitor.types";
@@ -27,6 +28,7 @@ export function OfferingsSection({
   editPricingDetails,
   setEditPricingDetails,
 }: OfferingsSectionProps) {
+  const { t } = useTranslation("competitors");
   const [newOffering, setNewOffering] = useState("");
 
   const addOffering = () => {
@@ -46,11 +48,11 @@ export function OfferingsSection({
       <div className="rounded-lg border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <ShoppingBag className="h-4 w-4 text-gray-500" />
-          Offerings & Pricing
+          {t("offerings.title")}
         </h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Main Offerings</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("offerings.mainOfferings")}</label>
             <div className="space-y-2 mb-2">
               {editMainOfferings.map((o, idx) => (
                 <div key={idx} className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">
@@ -63,7 +65,7 @@ export function OfferingsSection({
             </div>
             <div className="flex gap-2">
               <Input
-                placeholder="Add offering..."
+                placeholder={t("offerings.addOffering")}
                 value={newOffering}
                 onChange={(e) => setNewOffering(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addOffering(); } }}
@@ -73,14 +75,14 @@ export function OfferingsSection({
               </button>
             </div>
           </div>
-          <Input label="Pricing Model" value={editPricingModel} onChange={(e) => setEditPricingModel(e.target.value)} placeholder="e.g. SaaS, Freemium" />
+          <Input label={t("offerings.pricingModelLabel")} value={editPricingModel} onChange={(e) => setEditPricingModel(e.target.value)} placeholder={t("offerings.pricingModelPlaceholder")} />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Pricing Details</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("offerings.pricingDetailsLabel")}</label>
             <textarea
               value={editPricingDetails}
               onChange={(e) => setEditPricingDetails(e.target.value)}
               rows={2}
-              placeholder="Additional pricing information..."
+              placeholder={t("offerings.pricingDetailsPlaceholder")}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
@@ -95,16 +97,16 @@ export function OfferingsSection({
     <div className="rounded-lg border border-gray-200 bg-white p-5">
       <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
         <ShoppingBag className="h-4 w-4 text-gray-500" />
-        Offerings & Pricing
+        {t("offerings.title")}
       </h3>
 
       {!hasContent ? (
-        <p className="text-sm text-gray-400 italic">No offerings data available yet.</p>
+        <p className="text-sm text-gray-400 italic">{t("offerings.empty")}</p>
       ) : (
         <div className="space-y-4">
           {competitor.mainOfferings.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-2">Main Offerings</p>
+              <p className="text-xs font-medium text-gray-500 mb-2">{t("offerings.mainOfferings")}</p>
               <ul className="space-y-1.5">
                 {competitor.mainOfferings.map((o, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
@@ -117,7 +119,7 @@ export function OfferingsSection({
           )}
           {(competitor.pricingModel || competitor.pricingDetails) && (
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">Pricing</p>
+              <p className="text-xs font-medium text-gray-500 mb-1">{t("offerings.pricing")}</p>
               {competitor.pricingModel && (
                 <p className="text-sm font-medium text-gray-700">{competitor.pricingModel}</p>
               )}

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 
 interface DeletePersonaConfirmDialogProps {
   personaName: string;
@@ -16,6 +17,7 @@ export function DeletePersonaConfirmDialog({
   onConfirm,
   onCancel,
 }: DeletePersonaConfirmDialogProps) {
+  const { t } = useTranslation('personas');
   const [confirmText, setConfirmText] = useState('');
   const isConfirmed = confirmText === 'DELETE';
 
@@ -32,20 +34,29 @@ export function DeletePersonaConfirmDialog({
             <Trash2 className="h-5 w-5 text-red-600" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Delete Persona</h2>
-            <p className="text-sm text-gray-500">This action cannot be undone</p>
+            <h2 className="text-base font-semibold text-gray-900">{t('deleteDialog.title')}</h2>
+            <p className="text-sm text-gray-500">{t('deleteDialog.cannotUndo')}</p>
           </div>
         </div>
 
         {/* Description */}
         <p className="text-sm text-gray-600 mb-4">
-          Are you sure you want to delete <span className="font-semibold text-gray-900">{personaName}</span>? All associated data including chat history, research, and versions will be permanently removed.
+          <Trans
+            i18nKey="deleteDialog.confirm"
+            ns="personas"
+            values={{ name: personaName }}
+            components={{ b: <span className="font-semibold text-gray-900" /> }}
+          />
         </p>
 
         {/* Confirm input */}
         <div className="mb-5">
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Type <span className="font-mono font-bold text-red-600">DELETE</span> to confirm
+            <Trans
+              i18nKey="deleteDialog.typeToConfirm"
+              ns="personas"
+              components={{ code: <span className="font-mono font-bold text-red-600" /> }}
+            />
           </label>
           <input
             type="text"
@@ -65,14 +76,14 @@ export function DeletePersonaConfirmDialog({
               style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
               className="w-full px-4 py-2.5 text-sm font-semibold rounded-lg transition-opacity hover:opacity-90"
             >
-              {isDeleting ? 'Deleting...' : 'Delete Persona'}
+              {isDeleting ? t('deleteDialog.deleting') : t('deleteDialog.title')}
             </button>
           ) : (
             <div
               style={{ backgroundColor: '#f3f4f6', color: '#9ca3af', borderColor: '#e5e7eb' }}
               className="w-full px-4 py-2.5 text-sm font-medium text-center rounded-lg border cursor-not-allowed select-none"
             >
-              Delete Persona
+              {t('deleteDialog.title')}
             </div>
           )}
           <button
@@ -80,7 +91,7 @@ export function DeletePersonaConfirmDialog({
             style={{ borderColor: '#e5e7eb' }}
             className="w-full px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border"
           >
-            Cancel
+            {t('actions.cancel')}
           </button>
         </div>
       </div>

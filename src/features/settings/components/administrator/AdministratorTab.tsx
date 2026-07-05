@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { ExplorationConfigData } from '@/lib/ai/exploration/config.types';
 import { ConfigListView } from './ConfigListView';
@@ -44,6 +45,7 @@ async function deleteConfig(id: string) {
 // ─── Component ─────────────────────────────────────────────
 
 export function AdministratorTab() {
+  const { t } = useTranslation('settings-admin');
   const queryClient = useQueryClient();
   const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -58,7 +60,7 @@ export function AdministratorTab() {
     mutationFn: deleteConfig,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'exploration-configs'] });
-      toast.success('Configuration deleted');
+      toast.success(t('toast.configDeleted'));
       setSelectedConfigId(null);
     },
   });
@@ -94,10 +96,10 @@ export function AdministratorTab() {
   }, []);
 
   const handleDeleteConfig = useCallback((id: string) => {
-    if (confirm('Are you sure you want to delete this configuration?')) {
+    if (confirm(t('confirm.deleteConfig'))) {
       deleteMutation.mutate(id);
     }
-  }, [deleteMutation]);
+  }, [deleteMutation, t]);
 
   const handleCancel = useCallback(() => {
     setSelectedConfigId(null);
@@ -110,15 +112,15 @@ export function AdministratorTab() {
     queryClient.invalidateQueries({ queryKey: ['admin', 'exploration-configs'] });
     setIsCreating(false);
     setDuplicateData(null);
-    toast.success('Configuration created');
-  }, [queryClient]);
+    toast.success(t('toast.configCreated'));
+  }, [queryClient, t]);
 
   const handleSaveUpdate = useCallback(async (configData: Record<string, unknown>) => {
     if (!selectedConfigId) return;
     await updateConfig(selectedConfigId, configData);
     queryClient.invalidateQueries({ queryKey: ['admin', 'exploration-configs'] });
-    toast.success('Configuration saved');
-  }, [selectedConfigId, queryClient]);
+    toast.success(t('toast.configSaved'));
+  }, [selectedConfigId, queryClient, t]);
 
   // ─── Loading state ─────────────────────────────────────
 

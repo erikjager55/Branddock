@@ -13,6 +13,7 @@ import {
   Calendar as CalendarIcon,
   Inbox,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   stripTime,
   dateKey,
@@ -197,6 +198,7 @@ export function ContentLibraryCalendarView({
   onDuplicateItem,
   duplicatingIds,
 }: ContentLibraryCalendarViewProps) {
+  const { t } = useTranslation("campaigns-content-library");
   // ─── Item placement ──────────────────────────────────────────
   const { placedByDate, unscheduledItems } = useMemo(() => {
     const byDate = new Map<string, PlacedItem[]>();
@@ -433,9 +435,9 @@ export function ContentLibraryCalendarView({
     return (
       <div className="flex flex-col items-center justify-center text-center py-12 bg-gray-50 rounded-xl border border-gray-100">
         <Inbox className="w-8 h-8 text-gray-300 mb-2" />
-        <p className="text-sm text-gray-500">No content yet</p>
+        <p className="text-sm text-gray-500">{t("calendar.emptyTitle")}</p>
         <p className="text-xs text-gray-400 mt-1">
-          Create your first piece to see it on the calendar.
+          {t("calendar.emptyDescription")}
         </p>
       </div>
     );
@@ -450,7 +452,7 @@ export function ContentLibraryCalendarView({
             type="button"
             onClick={handlePrev}
             className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors"
-            aria-label="Previous month"
+            aria-label={t("calendar.prevMonth")}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -461,7 +463,7 @@ export function ContentLibraryCalendarView({
             type="button"
             onClick={handleNext}
             className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors"
-            aria-label="Next month"
+            aria-label={t("calendar.nextMonth")}
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -470,14 +472,14 @@ export function ContentLibraryCalendarView({
             onClick={handleToday}
             className="ml-2 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            Today
+            {t("calendar.today")}
           </button>
         </div>
 
         {/* Status counters */}
         <div className="flex items-center gap-3 text-xs">
           {totalThisMonth === 0 ? (
-            <span className="text-gray-400">No content this month</span>
+            <span className="text-gray-400">{t("calendar.noContentThisMonth")}</span>
           ) : (
             <>
               {monthCounts.overdue > 0 && (
@@ -486,7 +488,7 @@ export function ContentLibraryCalendarView({
                     className="w-1.5 h-1.5 rounded-full"
                     style={{ backgroundColor: STATE_META.overdue.iconColor }}
                   />
-                  {monthCounts.overdue} overdue
+                  {t("calendar.overdue", { n: monthCounts.overdue })}
                 </span>
               )}
               {monthCounts.scheduled > 0 && (
@@ -495,7 +497,7 @@ export function ContentLibraryCalendarView({
                     className="w-1.5 h-1.5 rounded-full"
                     style={{ backgroundColor: STATE_META.scheduled.iconColor }}
                   />
-                  {monthCounts.scheduled} scheduled
+                  {t("calendar.scheduled", { n: monthCounts.scheduled })}
                 </span>
               )}
               {monthCounts.published > 0 && (
@@ -504,7 +506,7 @@ export function ContentLibraryCalendarView({
                     className="w-1.5 h-1.5 rounded-full"
                     style={{ backgroundColor: STATE_META.published.iconColor }}
                   />
-                  {monthCounts.published} published
+                  {t("calendar.published", { n: monthCounts.published })}
                 </span>
               )}
             </>
@@ -512,7 +514,7 @@ export function ContentLibraryCalendarView({
           {unscheduledItems.length > 0 && (
             <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs text-gray-500 bg-gray-100">
               <Inbox className="w-3 h-3" />
-              {unscheduledItems.length} unscheduled
+              {t("calendar.unscheduled", { n: unscheduledItems.length })}
             </span>
           )}
         </div>
@@ -530,11 +532,11 @@ export function ContentLibraryCalendarView({
           <div className="rounded-lg border border-gray-200 bg-gray-50/60 p-3">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-semibold text-gray-700 uppercase tracking-wide">
-                Unscheduled ({unscheduledItems.length})
+                {t("calendar.unscheduledHeading", { n: unscheduledItems.length })}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-gray-500">
-                  Drag onto a date or use the date picker
+                  {t("calendar.dragHint")}
                 </span>
                 {showPagination && (
                   <div className="flex items-center gap-1 ml-2">
@@ -544,7 +546,7 @@ export function ContentLibraryCalendarView({
                       onClick={() => setUnscheduledPage((p) => Math.max(0, p - 1))}
                       className="px-1.5 py-0.5 rounded text-[11px] font-medium border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
-                      Prev
+                      {t("common.prev")}
                     </button>
                     <span className="text-[11px] text-gray-600 tabular-nums">
                       {safePage + 1}/{totalPages}
@@ -555,7 +557,7 @@ export function ContentLibraryCalendarView({
                       onClick={() => setUnscheduledPage((p) => Math.min(totalPages - 1, p + 1))}
                       className="px-1.5 py-0.5 rounded text-[11px] font-medium border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
-                      Next
+                      {t("common.next")}
                     </button>
                   </div>
                 )}
@@ -737,7 +739,7 @@ export function ContentLibraryCalendarView({
                         onClick={() => toggleDayExpansion(d.key)}
                         className="text-[10px] text-gray-500 hover:text-gray-700 text-left px-1.5 py-0.5 rounded hover:bg-gray-100 transition-colors"
                       >
-                        +{overflowCount} more
+                        {t("common.more", { n: overflowCount })}
                       </button>
                     )}
                     {isExpanded && placed.length > 2 && (
@@ -746,7 +748,7 @@ export function ContentLibraryCalendarView({
                         onClick={() => toggleDayExpansion(d.key)}
                         className="text-[10px] text-gray-500 hover:text-gray-700 text-left px-1.5 py-0.5 rounded hover:bg-gray-100 transition-colors"
                       >
-                        Show less
+                        {t("common.showLess")}
                       </button>
                     )}
                   </div>
@@ -760,10 +762,7 @@ export function ContentLibraryCalendarView({
       {/* ── Helper note ── */}
       <p className="text-[11px] text-gray-400 flex items-center gap-1.5">
         <CalendarIcon className="w-3 h-3" />
-        Drag a card onto a date or hover the card and click the date icon to
-        pick an exact day. Default time follows channel best-practice (LinkedIn
-        14:00, Instagram 11:00, else 10:00). Moving a scheduled item preserves
-        its time.
+        {t("calendar.helperNote")}
       </p>
 
     </div>

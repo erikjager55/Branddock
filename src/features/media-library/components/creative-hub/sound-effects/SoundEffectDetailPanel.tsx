@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { X, Music2, Star, Wand2 } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
@@ -8,14 +10,6 @@ import { useSoundEffectDetail, useUpdateSoundEffect } from '@/features/media-lib
 import { VoicePreviewPlayer } from '../brand-voice/VoicePreviewPlayer';
 
 // ─── Constants ──────────────────────────────────────────────
-
-const SOUND_TYPE_LABELS: Record<string, string> = {
-  SFX: 'SFX',
-  JINGLE: 'Jingle',
-  SOUND_LOGO: 'Sound Logo',
-  AMBIENT: 'Ambient',
-  MUSIC: 'Music',
-};
 
 function formatDuration(seconds: number | null): string {
   if (seconds == null || !isFinite(seconds)) return '—';
@@ -36,6 +30,8 @@ interface SoundEffectDetailPanelProps {
 
 /** Inline detail panel shown when a sound effect is selected. */
 export function SoundEffectDetailPanel({ effectId, onClose }: SoundEffectDetailPanelProps) {
+  const { t } = useTranslation('media-library');
+  const { formatDate } = useFormat();
   const { data: effect, isLoading, isError } = useSoundEffectDetail(effectId);
   const updateSoundEffect = useUpdateSoundEffect(effectId);
   const mutate = updateSoundEffect.mutate;
@@ -59,9 +55,9 @@ export function SoundEffectDetailPanel({ effectId, onClose }: SoundEffectDetailP
   if (isError) {
     return (
       <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6 text-center">
-        <p className="text-sm text-red-500">Failed to load sound effect details.</p>
+        <p className="text-sm text-red-500">{t('soundEffects.detail.loadError')}</p>
         <Button variant="secondary" onClick={onClose} className="mt-3">
-          Close
+          {t('actions.close')}
         </Button>
       </div>
     );
@@ -85,12 +81,12 @@ export function SoundEffectDetailPanel({ effectId, onClose }: SoundEffectDetailP
               <h3 className="text-base font-semibold text-gray-900">{effect.name}</h3>
               {effect.isDefault && (
                 <Badge variant="info" size="sm" icon={Star}>
-                  Default
+                  {t('badges.default')}
                 </Badge>
               )}
             </div>
             <p className="text-xs text-gray-500">
-              Created {new Date(effect.createdAt).toLocaleDateString('en-US', {
+              {t('detail.createdPrefix')} {formatDate(effect.createdAt, {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
@@ -98,7 +94,7 @@ export function SoundEffectDetailPanel({ effectId, onClose }: SoundEffectDetailP
             </p>
           </div>
         </div>
-        <Button variant="ghost" onClick={onClose} aria-label="Close detail panel">
+        <Button variant="ghost" onClick={onClose} aria-label={t('actions.closeDetail')}>
           <X className="w-4 h-4" />
         </Button>
       </div>
@@ -108,7 +104,7 @@ export function SoundEffectDetailPanel({ effectId, onClose }: SoundEffectDetailP
         {/* Audio preview */}
         <div>
           <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-1">
-            Audio Preview
+            {t('soundEffects.detail.audioPreview')}
           </span>
           <VoicePreviewPlayer audioUrl={effect.fileUrl} voiceName={effect.name} />
         </div>
@@ -116,27 +112,27 @@ export function SoundEffectDetailPanel({ effectId, onClose }: SoundEffectDetailP
         {/* Metadata grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Type</span>
-            <span className="text-sm text-gray-900">{SOUND_TYPE_LABELS[effect.soundType] ?? effect.soundType}</span>
+            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.type')}</span>
+            <span className="text-sm text-gray-900">{t(`soundTypes.${effect.soundType}`, { defaultValue: effect.soundType })}</span>
           </div>
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Duration</span>
+            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.duration')}</span>
             <span className="text-sm text-gray-900">{formatDuration(effect.duration)}</span>
           </div>
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">File Size</span>
+            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.fileSize')}</span>
             <span className="text-sm text-gray-900">{formatFileSize(effect.fileSize)}</span>
           </div>
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Format</span>
+            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.format')}</span>
             <span className="text-sm text-gray-900">{effect.fileType}</span>
           </div>
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Source</span>
+            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.source')}</span>
             <div className="flex items-center gap-1">
               {effect.source === 'AI_GENERATED' && <Wand2 className="w-3 h-3 text-purple-500" />}
               <span className="text-sm text-gray-900">
-                {effect.source === 'AI_GENERATED' ? 'AI Generated' : 'Upload'}
+                {effect.source === 'AI_GENERATED' ? t('badges.aiGenerated') : t('badges.upload')}
               </span>
             </div>
           </div>
@@ -145,13 +141,13 @@ export function SoundEffectDetailPanel({ effectId, onClose }: SoundEffectDetailP
         {/* AI prompt section */}
         {effect.source === 'AI_GENERATED' && effect.prompt && (
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-1">AI Prompt</span>
+            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-1">{t('soundEffects.detail.aiPrompt')}</span>
             <p className="text-sm text-gray-700 bg-purple-50 rounded-lg px-3 py-2 whitespace-pre-wrap">
               {effect.prompt}
             </p>
             {effect.promptInfluence != null && (
               <p className="text-xs text-gray-400 mt-1">
-                Prompt influence: {Math.round(effect.promptInfluence * 100)}%
+                {t('soundEffects.detail.promptInfluence', { value: Math.round(effect.promptInfluence * 100) })}
               </p>
             )}
           </div>
@@ -160,15 +156,15 @@ export function SoundEffectDetailPanel({ effectId, onClose }: SoundEffectDetailP
         {/* Update error */}
         {updateSoundEffect.isError && (
           <p className="text-xs text-red-500" role="alert">
-            Failed to update sound effect. Please try again.
+            {t('soundEffects.detail.updateError')}
           </p>
         )}
 
         {/* Set as Default toggle */}
         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
           <div>
-            <span className="text-sm font-medium text-gray-700">Default Sound Effect</span>
-            <p className="text-xs text-gray-500">Use as the default sound for this workspace</p>
+            <span className="text-sm font-medium text-gray-700">{t('soundEffects.detail.defaultLabel')}</span>
+            <p className="text-xs text-gray-500">{t('soundEffects.detail.defaultHelp')}</p>
           </div>
           <button
             type="button"

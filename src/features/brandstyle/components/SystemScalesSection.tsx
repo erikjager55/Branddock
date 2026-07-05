@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Layers, Ruler, Square } from "lucide-react";
 import { Card } from "@/components/shared";
 import { parseSemanticTokens } from "../utils/semantic-tokens";
@@ -15,6 +16,7 @@ const SPACING_ORDER = ['xs', 'sm', 'md', 'lg', 'xl'] as const;
 const ELEVATION_ORDER = ['1', '2', '3', '4', '5'] as const;
 
 export function SystemScalesSection({ styleguide }: Props) {
+  const { t } = useTranslation("brandstyle");
   const tokens = useMemo(
     () => parseSemanticTokens(styleguide.semanticTokens),
     [styleguide.semanticTokens],
@@ -34,9 +36,9 @@ export function SystemScalesSection({ styleguide }: Props) {
       <div className="flex items-start gap-3 mb-4">
         <Layers className="h-5 w-5 text-teal-600 shrink-0 mt-0.5" />
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">System Scales</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t("systemScales.title")}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Named scales emitted in DESIGN.md, DTCG and Tailwind exports.
+            {t("systemScales.subtitle")}
           </p>
         </div>
       </div>
@@ -51,13 +53,14 @@ export function SystemScalesSection({ styleguide }: Props) {
 }
 
 function RoundedScaleStrip({ rounded }: { rounded: Record<string, number> }) {
+  const { t } = useTranslation("brandstyle");
   const entries = ROUNDED_ORDER.filter((k) => rounded[k] !== undefined);
   if (entries.length === 0) return null;
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
         <Square className="h-3.5 w-3.5 text-gray-400" />
-        <span className="text-xs font-medium text-gray-700">Rounded</span>
+        <span className="text-xs font-medium text-gray-700">{t("systemScales.rounded")}</span>
       </div>
       <div className="flex flex-wrap gap-3">
         {entries.map((k) => {
@@ -84,13 +87,14 @@ function RoundedScaleStrip({ rounded }: { rounded: Record<string, number> }) {
 }
 
 function SpacingScaleStrip({ spacing }: { spacing: Record<string, number> }) {
+  const { t } = useTranslation("brandstyle");
   const entries = SPACING_ORDER.filter((k) => spacing[k] !== undefined);
   if (entries.length === 0) return null;
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
         <Ruler className="h-3.5 w-3.5 text-gray-400" />
-        <span className="text-xs font-medium text-gray-700">Spacing</span>
+        <span className="text-xs font-medium text-gray-700">{t("systemScales.spacing")}</span>
       </div>
       <div className="flex items-end gap-3">
         {entries.map((k) => {
@@ -114,16 +118,17 @@ function SpacingScaleStrip({ spacing }: { spacing: Record<string, number> }) {
 }
 
 function ElevationStrip({ elevation }: { elevation: Record<string, string> }) {
+  const { t } = useTranslation("brandstyle");
   const entries = ELEVATION_ORDER.filter((k) => elevation[k]);
   if (entries.length === 0) {
     return (
       <div>
         <div className="flex items-center gap-2 mb-2">
           <Layers className="h-3.5 w-3.5 text-gray-400" />
-          <span className="text-xs font-medium text-gray-700">Elevation</span>
+          <span className="text-xs font-medium text-gray-700">{t("systemScales.elevation")}</span>
         </div>
         <p className="text-xs text-gray-500 italic">
-          No shadows detected — this brand uses borders and tonal layers for hierarchy.
+          {t("systemScales.elevationEmpty")}
         </p>
       </div>
     );
@@ -132,7 +137,7 @@ function ElevationStrip({ elevation }: { elevation: Record<string, string> }) {
     <div>
       <div className="flex items-center gap-2 mb-2">
         <Layers className="h-3.5 w-3.5 text-gray-400" />
-        <span className="text-xs font-medium text-gray-700">Elevation</span>
+        <span className="text-xs font-medium text-gray-700">{t("systemScales.elevation")}</span>
       </div>
       <div className="flex flex-wrap gap-4">
         {entries.map((level) => (
@@ -142,7 +147,7 @@ function ElevationStrip({ elevation }: { elevation: Record<string, string> }) {
               style={{ boxShadow: elevation[level] }}
             />
             <div className="text-center">
-              <div className="font-mono text-[11px] text-gray-700">level {level}</div>
+              <div className="font-mono text-[11px] text-gray-700">{t("systemScales.level", { level })}</div>
             </div>
           </div>
         ))}

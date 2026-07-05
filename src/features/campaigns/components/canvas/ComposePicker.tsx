@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, Search, X, Image as ImageIcon, Heart, Sparkles, AlertCircle } from 'lucide-react';
 import { useMediaAssets } from '@/features/media-library/hooks';
@@ -10,15 +11,15 @@ import { useCanvasStore } from '../../stores/useCanvasStore';
 import type { MediaAssetWithMeta, MediaCategory } from '@/features/media-library/types/media.types';
 import type { CanvasImageVariant } from '../../types/canvas.types';
 
-const CATEGORY_CHIPS: Array<{ value: MediaCategory; label: string }> = [
-  { value: 'HERO_IMAGE', label: 'Hero' },
-  { value: 'LIFESTYLE', label: 'Lifestyle' },
-  { value: 'PRODUCT_PHOTO', label: 'Product' },
-  { value: 'TEAM_PHOTO', label: 'Team' },
-  { value: 'EVENT_PHOTO', label: 'Event' },
-  { value: 'PHOTOGRAPHY', label: 'Photography' },
-  { value: 'ILLUSTRATION', label: 'Illustration' },
-  { value: 'INFOGRAPHIC', label: 'Infographic' },
+const CATEGORY_CHIPS: MediaCategory[] = [
+  'HERO_IMAGE',
+  'LIFESTYLE',
+  'PRODUCT_PHOTO',
+  'TEAM_PHOTO',
+  'EVENT_PHOTO',
+  'PHOTOGRAPHY',
+  'ILLUSTRATION',
+  'INFOGRAPHIC',
 ];
 
 interface ComposePickerProps {
@@ -43,6 +44,7 @@ const MAX_PICKS = 9;
  * generate-visual-compose endpoint (which reads them server-side).
  */
 export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: ComposePickerProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const visualBrief = useCanvasStore((s) => s.visualBrief);
   const setVisualBriefField = useCanvasStore((s) => s.setVisualBriefField);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
@@ -63,8 +65,8 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
 
   // 300ms debounce for search input — same pattern as LibraryAssetPicker.
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
+    return () => clearTimeout(timer);
   }, [searchInput]);
 
   const { data, isLoading, isFetching } = useMediaAssets({
@@ -123,7 +125,7 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
       // De source-persist IS de gate-garantie: faalt 'ie, dan zou generate met
       // een stale source 400'en met een misleidende melding. Surface 'm direct.
       if (!flushResp.ok) {
-        throw new Error(`Could not save the Visual Brief (HTTP ${flushResp.status}) — please try again.`);
+        throw new Error(t('trainedStyle.errSaveBrief', { status: flushResp.status }));
       }
 
       const result = await generateCanvasVisualCompose(deliverableId, target ? { target } : undefined);
@@ -165,7 +167,7 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
       }
       onGenerated?.();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to generate composed visual';
+      const message = err instanceof Error ? err.message : t('compose.errGenerate');
       setError(message);
     } finally {
       setSubmitting(false);
@@ -177,21 +179,20 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
       {/* Compose instruction */}
       <div className="space-y-1.5">
         <label htmlFor="compose-instruction" className="block text-xs font-medium text-gray-700">
-          Compose instruction
+          {t('compose.instructionLabel')}
         </label>
         <textarea
           id="compose-instruction"
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
-          placeholder="Describe the composition. e.g. &quot;Sarah holding the product in a coffee shop, late afternoon light&quot;"
+          placeholder={t('compose.instructionPlaceholder')}
           rows={2}
           maxLength={1000}
           disabled={submitting}
           className="w-full px-2.5 py-2 text-sm border border-gray-200 rounded resize-none focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
         />
         <p className="text-[11px] text-gray-500">
-          The model uses your reference images as visual ingredients and the instruction as the
-          recipe.
+          {t('compose.instructionHint')}
         </p>
       </div>
 
@@ -202,14 +203,14 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search references by name, tag, AI description..."
+          placeholder={t('compose.searchPlaceholder')}
           className="w-full pl-9 pr-9 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-400"
         />
         {searchInput && (
           <button
             type="button"
             onClick={() => setSearchInput('')}
-            aria-label="Clear search"
+            aria-label={t('compose.clearSearch')}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600"
           >
             <X className="h-3.5 w-3.5" />
@@ -228,22 +229,22 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
               : 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
           }
         >
-          All categories
+          {t('compose.allCategories')}
         </button>
-        {CATEGORY_CHIPS.map((chip) => {
-          const active = category === chip.value;
+        {CATEGORY_CHIPS.map((cat) => {
+          const active = category === cat;
           return (
             <button
-              key={chip.value}
+              key={cat}
               type="button"
-              onClick={() => setCategory(active ? null : chip.value)}
+              onClick={() => setCategory(active ? null : cat)}
               className={
                 active
                   ? 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-teal-50 text-teal-700 border border-teal-300'
                   : 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
               }
             >
-              {chip.label}
+              {t(`compose.category.${cat}`)}
             </button>
           );
         })}
@@ -258,7 +259,7 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
           aria-pressed={favoritesOnly}
         >
           <Heart className={`h-3 w-3 ${favoritesOnly ? 'fill-current' : ''}`} />
-          Favorites
+          {t('compose.favorites')}
         </button>
       </div>
 
@@ -266,10 +267,10 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
       {!isLoading && (
         <p className="text-[11px] text-gray-400">
           {total === 0
-            ? 'No matches'
+            ? t('compose.countNone')
             : total === 1
-              ? '1 image'
-              : `${total} images${assets.length < total ? ` — showing first ${assets.length}` : ''}`}
+              ? t('compose.countOne')
+              : `${t('compose.countMany', { total })}${assets.length < total ? t('compose.showingFirst', { shown: assets.length }) : ''}`}
           {hasFilters && (
             <button
               type="button"
@@ -280,10 +281,10 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
               }}
               className="ml-2 text-teal-700 hover:text-teal-800"
             >
-              Clear filters
+              {t('compose.clearFilters')}
             </button>
           )}
-          {isFetching && <span className="ml-2 text-gray-400">refreshing…</span>}
+          {isFetching && <span className="ml-2 text-gray-400">{t('compose.refreshing')}</span>}
         </p>
       )}
 
@@ -291,7 +292,7 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
       {isLoading ? (
         <div className="flex items-center justify-center py-12 gap-2 text-sm text-gray-500">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading library...
+          {t('compose.loadingLibrary')}
         </div>
       ) : assets.length === 0 ? (
         <EmptyState hasFilters={hasFilters} search={debouncedSearch} />
@@ -325,10 +326,10 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
         <p className="text-xs text-gray-500">
           {picked.length === 0
-            ? `Pick ${MIN_PICKS}-${MAX_PICKS} reference images`
+            ? t('compose.pickPrompt', { min: MIN_PICKS, max: MAX_PICKS })
             : picked.length < MIN_PICKS
-              ? `${picked.length} picked — pick at least ${MIN_PICKS}`
-              : `${picked.length} of ${MAX_PICKS} selected`}
+              ? t('compose.pickedAtLeast', { count: picked.length, min: MIN_PICKS })
+              : t('compose.pickedSelected', { count: picked.length, max: MAX_PICKS })}
         </p>
         <div className="flex items-center gap-2">
           {onCancel && (
@@ -338,7 +339,7 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
               disabled={submitting}
               className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50"
             >
-              Cancel
+              {t('actions.cancel')}
             </button>
           )}
           <button
@@ -350,12 +351,12 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
             {submitting ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Composing...
+                {t('compose.composing')}
               </>
             ) : (
               <>
                 <Sparkles className="h-3.5 w-3.5" />
-                Generate composition
+                {t('compose.generate')}
               </>
             )}
           </button>
@@ -398,18 +399,19 @@ function AssetTile({
 }
 
 function EmptyState({ hasFilters, search }: { hasFilters: boolean; search: string }) {
+  const { t } = useTranslation('campaigns-canvas');
   return (
     <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
       <div className="rounded-full bg-gray-100 p-3">
         <ImageIcon className="h-5 w-5 text-gray-400" />
       </div>
-      <p className="text-sm text-gray-600 font-medium">No images found</p>
+      <p className="text-sm text-gray-600 font-medium">{t('compose.emptyTitle')}</p>
       <p className="text-xs text-gray-500 max-w-xs">
         {hasFilters
           ? search
-            ? `No assets match "${search}" with the current filters. Try widening the search or clear filters.`
-            : 'No assets match the current filters. Try clearing them.'
-          : 'Your media library is empty. Upload images via the Media Library section, then return here to compose.'}
+            ? t('compose.emptySearchFilters', { query: search })
+            : t('compose.emptyFilters')
+          : t('compose.emptyLibrary')}
       </p>
     </div>
   );

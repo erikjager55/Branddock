@@ -18,6 +18,7 @@ import {
   Check,
   X,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAddFocusArea, useUpdateFocusArea, useDeleteFocusArea } from '../../hooks';
 import type { FocusAreaDetail } from '../../types/business-strategy.types';
 
@@ -64,6 +65,7 @@ function FocusAreaCard({
   fa: FocusAreaDetail;
   strategyId: string;
 }) {
+  const { t } = useTranslation('business-strategy');
   const updateFocusArea = useUpdateFocusArea(strategyId);
   const deleteFocusArea = useDeleteFocusArea(strategyId);
   const [isEditing, setIsEditing] = useState(false);
@@ -85,7 +87,7 @@ function FocusAreaCard({
   };
 
   const handleDelete = () => {
-    if (confirm(`Delete focus area "${fa.name}"?`)) {
+    if (confirm(t('confirm.deleteFocusArea', { name: fa.name }))) {
       deleteFocusArea.mutate(fa.id);
     }
   };
@@ -100,7 +102,7 @@ function FocusAreaCard({
           type="button"
           onClick={() => { setEditName(fa.name); setIsEditing(true); }}
           className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100"
-          title="Edit"
+          title={t('actions.edit')}
         >
           <Pencil className="w-3 h-3" />
         </button>
@@ -108,7 +110,7 @@ function FocusAreaCard({
           type="button"
           onClick={handleDelete}
           className="p-1 text-gray-400 hover:text-red-500 rounded hover:bg-red-50"
-          title="Delete"
+          title={t('actions.delete')}
         >
           <Trash2 className="w-3 h-3" />
         </button>
@@ -147,13 +149,14 @@ function FocusAreaCard({
         <p className="text-sm font-medium text-gray-900 truncate">{fa.name}</p>
       )}
       <p className="text-xs text-gray-500 mt-0.5">
-        {fa.objectiveCount} objective{fa.objectiveCount !== 1 ? 's' : ''}
+        {t('card.objectivesCount', { count: fa.objectiveCount })}
       </p>
     </div>
   );
 }
 
 export function FocusAreaCards({ focusAreas, strategyId }: FocusAreaCardsProps) {
+  const { t } = useTranslation('business-strategy');
   const addFocusArea = useAddFocusArea(strategyId);
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -174,7 +177,7 @@ export function FocusAreaCards({ focusAreas, strategyId }: FocusAreaCardsProps) 
 
   return (
     <div className="p-6 bg-white border border-gray-200 rounded-lg">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Focus Areas</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('focusAreas.title')}</h2>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {focusAreas.map((fa) => (
@@ -187,7 +190,7 @@ export function FocusAreaCards({ focusAreas, strategyId }: FocusAreaCardsProps) 
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Area name..."
+              placeholder={t('focusAreas.namePlaceholder')}
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleAdd();
@@ -201,13 +204,13 @@ export function FocusAreaCards({ focusAreas, strategyId }: FocusAreaCardsProps) 
                 disabled={!newName.trim()}
                 className="px-2 py-0.5 text-xs bg-emerald-500 text-white rounded hover:bg-emerald-600 disabled:opacity-50"
               >
-                Add
+                {t('actions.add')}
               </button>
               <button
                 onClick={() => { setIsAdding(false); setNewName(''); }}
                 className="px-2 py-0.5 text-xs text-gray-500 hover:text-gray-700"
               >
-                Cancel
+                {t('actions.cancel')}
               </button>
             </div>
           </div>
@@ -217,7 +220,7 @@ export function FocusAreaCards({ focusAreas, strategyId }: FocusAreaCardsProps) 
             className="border-2 border-dashed border-gray-300 rounded-lg p-3 flex flex-col items-center justify-center gap-1 hover:border-emerald-400 hover:bg-emerald-50/50 transition-colors cursor-pointer"
           >
             <Plus className="w-5 h-5 text-gray-400" />
-            <span className="text-xs text-gray-500">Add Focus Area</span>
+            <span className="text-xs text-gray-500">{t('focusAreas.add')}</span>
           </button>
         )}
       </div>

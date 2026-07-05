@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { History, Sparkles, User, RotateCcw, Loader2, AlertCircle } from 'lucide-react';
 import {
   useContentVersions,
@@ -8,6 +9,7 @@ import {
 } from '../../hooks/content-versions.hooks';
 import type { ContentVersionListItem } from '../../api/content-versions.api';
 import { Button } from '@/components/shared';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 interface VersionHistorySidebarProps {
   deliverableId: string;
@@ -24,6 +26,7 @@ interface VersionHistorySidebarProps {
  * Width recommendation: w-80 (320px), flex-shrink-0.
  */
 export function VersionHistorySidebar({ deliverableId, onRestored }: VersionHistorySidebarProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const { data, isLoading, error } = useContentVersions(deliverableId);
   const restoreMutation = useRestoreContentVersion(deliverableId);
   const [confirmingRestore, setConfirmingRestore] = useState<string | null>(null);
@@ -42,9 +45,9 @@ export function VersionHistorySidebar({ deliverableId, onRestored }: VersionHist
     <aside className="w-80 flex-shrink-0 border-l border-gray-200 bg-white flex flex-col h-full">
       <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
         <History className="h-4 w-4 text-gray-600" />
-        <h2 className="text-sm font-semibold text-gray-900">Version history</h2>
+        <h2 className="text-sm font-semibold text-gray-900">{t('versionHistory.title')}</h2>
         {data && (
-          <span className="text-xs text-gray-500 ml-auto">{data.total} versions</span>
+          <span className="text-xs text-gray-500 ml-auto">{t('versionHistory.count', { count: data.total })}</span>
         )}
       </div>
 
@@ -89,11 +92,12 @@ function VersionRow({
   isRestoring: boolean;
   disabled: boolean;
 }) {
+  const { t } = useTranslation('campaigns-canvas');
+  const { formatDate } = useFormat();
   const isAi = version.createdBy === 'AI';
   const Icon = isAi ? Sparkles : User;
   const iconColor = isAi ? 'text-emerald-600' : 'text-blue-600';
-  const date = new Date(version.createdAt);
-  const dateLabel = date.toLocaleString('en-US', {
+  const dateLabel = formatDate(version.createdAt, {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
@@ -111,7 +115,7 @@ function VersionRow({
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <span className={`text-xs px-1.5 py-0.5 rounded ${isAi ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
-              {isAi ? 'AI' : 'User'}
+              {isAi ? t('versionHistory.ai') : t('versionHistory.user')}
             </span>
             {version.editType && (
               <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">
@@ -130,7 +134,7 @@ function VersionRow({
           size="sm"
           onClick={onRestore}
           disabled={disabled}
-          aria-label={`Restore v${version.versionNumber}`}
+          aria-label={t('versionHistory.restoreAria', { version: version.versionNumber })}
         >
           {isRestoring ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -144,21 +148,23 @@ function VersionRow({
 }
 
 function LoadingState() {
+  const { t } = useTranslation('campaigns-canvas');
   return (
     <div className="px-4 py-8 flex items-center justify-center gap-2 text-sm text-gray-500">
       <Loader2 className="h-4 w-4 animate-spin" />
-      Loading…
+      {t('versionHistory.loading')}
     </div>
   );
 }
 
 function ErrorState({ message }: { message: string }) {
+  const { t } = useTranslation('campaigns-canvas');
   return (
     <div className="px-4 py-6 text-sm text-red-700 bg-red-50 border-l-2 border-red-400 mx-3 my-3 rounded">
       <div className="flex items-start gap-2">
         <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
         <div>
-          <div className="font-medium">Failed to load versions</div>
+          <div className="font-medium">{t('versionHistory.loadFailed')}</div>
           <div className="text-xs text-red-600 mt-1 break-words">{message}</div>
         </div>
       </div>
@@ -167,10 +173,11 @@ function ErrorState({ message }: { message: string }) {
 }
 
 function EmptyState() {
+  const { t } = useTranslation('campaigns-canvas');
   return (
     <div className="px-4 py-12 text-center text-sm text-gray-500">
       <History className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-      No versions yet. Generate or edit content to build up a trail here.
+      {t('versionHistory.empty')}
     </div>
   );
 }
@@ -184,24 +191,25 @@ function RestoreConfirm({
   onCancel: () => void;
   isPending: boolean;
 }) {
+  const { t } = useTranslation('campaigns-canvas');
   return (
     <div className="flex-shrink-0 border-t border-gray-200 bg-amber-50 px-4 py-3">
       <p className="text-xs text-amber-900 mb-2">
-        Restore overwrites the current content. This action is itself recorded as a new version.
+        {t('versionHistory.restoreWarning')}
       </p>
       <div className="flex gap-2">
         <Button variant="primary" size="sm" onClick={onConfirm} disabled={isPending}>
           {isPending ? (
             <>
               <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              Restoring…
+              {t('versionHistory.restoring')}
             </>
           ) : (
-            'Confirm restore'
+            t('versionHistory.confirmRestore')
           )}
         </Button>
         <Button variant="secondary" size="sm" onClick={onCancel} disabled={isPending}>
-          Cancel
+          {t('actions.cancel')}
         </Button>
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Package, Plus, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/shared";
 import { useProductsStore } from "@/features/products/stores/useProductsStore";
@@ -19,6 +20,7 @@ export function LinkedProductsCard({
   isLocked,
   onNavigate,
 }: LinkedProductsCardProps) {
+  const { t } = useTranslation("competitors");
   const { data, isLoading } = useCompetitorProducts(competitorId);
   const unlinkProduct = useUnlinkProduct(competitorId);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
@@ -31,7 +33,7 @@ export function LinkedProductsCard({
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           <Package className="h-4 w-4 text-gray-500" />
-          Linked Products
+          {t("linkedProducts.title")}
         </h3>
         {!isLocked && (
           <Button
@@ -40,7 +42,7 @@ export function LinkedProductsCard({
             onClick={() => setIsSelectorOpen(true)}
           >
             <Plus className="h-3.5 w-3.5 mr-1" />
-            Link
+            {t("linkedProducts.link")}
           </Button>
         )}
       </div>
@@ -50,7 +52,7 @@ export function LinkedProductsCard({
           <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
         </div>
       ) : products.length === 0 ? (
-        <p className="text-sm text-gray-400 italic">No products linked yet.</p>
+        <p className="text-sm text-gray-400 italic">{t("linkedProducts.empty")}</p>
       ) : (
         <div className="space-y-2">
           {products.map((product) => (
@@ -73,7 +75,7 @@ export function LinkedProductsCard({
                   type="button"
                   onClick={() => unlinkProduct.mutate(product.id)}
                   className="text-gray-400 hover:text-red-500 flex-shrink-0"
-                  title="Unlink product"
+                  title={t("linkedProducts.unlink")}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>

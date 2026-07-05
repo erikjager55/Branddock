@@ -2,6 +2,7 @@
 
 import React, { useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ChevronLeft, ChevronRight, CheckCircle, Rocket, Globe, ArrowRight } from 'lucide-react';
 import { Checkbox } from '../ui/checkbox';
@@ -14,35 +15,35 @@ interface OnboardingWizardProps {
 
 // ─── Step Data ─────────────────────────────────────────────
 
-const STEP_1_FEATURES = [
-  'Build your brand foundation with proven frameworks',
-  'Validate assets through professional research',
-  'Generate AI-powered strategies in minutes',
+const STEP_1_FEATURE_KEYS = [
+  'onboarding.step1.features.foundation',
+  'onboarding.step1.features.validate',
+  'onboarding.step1.features.generate',
 ];
 
 const STEP_2_PROCESS = [
   {
     number: 1,
-    title: 'Define Your Brand',
-    description: 'Create strategic assets like Golden Circle, Vision, and Mission',
+    titleKey: 'onboarding.step2.process1.title',
+    descriptionKey: 'onboarding.step2.process1.description',
   },
   {
     number: 2,
-    title: 'Research & Validate',
-    description: 'Use 4 methods: Workshops, Surveys, Interviews, or AI Exploration',
+    titleKey: 'onboarding.step2.process2.title',
+    descriptionKey: 'onboarding.step2.process2.description',
   },
   {
     number: 3,
-    title: 'Generate Strategy',
-    description: 'AI creates campaigns, GTM plans, and customer journeys from your data',
+    titleKey: 'onboarding.step2.process3.title',
+    descriptionKey: 'onboarding.step2.process3.description',
   },
 ];
 
-const STEP_3_CHECKLIST = [
-  'Create your first brand asset (Golden Circle)',
-  'Define your target persona',
-  'Plan your first research session',
-  'Generate your first campaign strategy',
+const STEP_3_CHECKLIST_KEYS = [
+  'onboarding.step3.checklist.brandAsset',
+  'onboarding.step3.checklist.persona',
+  'onboarding.step3.checklist.research',
+  'onboarding.step3.checklist.campaign',
 ];
 
 // ─── SVG Illustrations ─────────────────────────────────────
@@ -153,6 +154,7 @@ function ProcessIllustration() {
 // ─── Component ──────────────────────────────────────────────
 
 export function OnboardingWizard({ onNavigate }: OnboardingWizardProps = {}) {
+  const { t } = useTranslation('dashboard');
   const {
     showOnboarding,
     onboardingStep,
@@ -237,19 +239,19 @@ export function OnboardingWizard({ onNavigate }: OnboardingWizardProps = {}) {
             <div className="flex items-center gap-4">
               <Image
                 src="/Logo_Branddock_RGB.png"
-                alt="Branddock"
+                alt={t('brand.name', { ns: 'common' })}
                 width={130}
                 height={23}
                 priority
               />
               <span className="text-sm text-gray-400 font-medium">
-                Step {step} of 3
+                {t('onboarding.stepOf', { step })}
               </span>
             </div>
             <button
               onClick={handleClose}
               className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Close onboarding"
+              aria-label={t('onboarding.close')}
             >
               <X className="h-5 w-5" />
             </button>
@@ -271,7 +273,7 @@ export function OnboardingWizard({ onNavigate }: OnboardingWizardProps = {}) {
                   scale: s === step ? 1 : 0.9,
                 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                aria-label={`Go to step ${s}`}
+                aria-label={t('onboarding.goToStep', { step: s })}
               />
             ))}
           </div>
@@ -326,7 +328,7 @@ export function OnboardingWizard({ onNavigate }: OnboardingWizardProps = {}) {
                   checked={dontShowAgain}
                   onCheckedChange={() => toggleDontShowAgain()}
                 />
-                <span className="text-sm text-gray-500">Don&apos;t show this again</span>
+                <span className="text-sm text-gray-500">{t('onboarding.dontShowAgain')}</span>
               </label>
 
               {/* Right: Navigation buttons */}
@@ -337,7 +339,7 @@ export function OnboardingWizard({ onNavigate }: OnboardingWizardProps = {}) {
                     className="flex items-center gap-1.5 px-4 py-2.5 border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Previous
+                    {t('onboarding.previous')}
                   </button>
                 )}
 
@@ -347,7 +349,7 @@ export function OnboardingWizard({ onNavigate }: OnboardingWizardProps = {}) {
                     onClick={handleClose}
                     className="px-4 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
                   >
-                    Skip Tour
+                    {t('onboarding.skipTour')}
                   </button>
                 )}
 
@@ -367,7 +369,7 @@ export function OnboardingWizard({ onNavigate }: OnboardingWizardProps = {}) {
                     }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    Get Started
+                    {t('onboarding.getStarted')}
                     <Rocket className="h-4 w-4" />
                   </motion.button>
                 ) : (
@@ -379,7 +381,7 @@ export function OnboardingWizard({ onNavigate }: OnboardingWizardProps = {}) {
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#0F766E'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#0D9488'; }}
                   >
-                    Next
+                    {t('onboarding.next')}
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 )}
@@ -388,7 +390,7 @@ export function OnboardingWizard({ onNavigate }: OnboardingWizardProps = {}) {
 
             {/* Keyboard hint */}
             <p className="text-xs text-center text-gray-400 mt-4 pt-3 border-t border-gray-50">
-              Tip: Use arrow keys &larr; &rarr; to navigate, or press ESC to skip
+              {t('onboarding.keyboardHint')}
             </p>
           </div>
         </motion.div>
@@ -400,27 +402,28 @@ export function OnboardingWizard({ onNavigate }: OnboardingWizardProps = {}) {
 // ─── Step Content Components ────────────────────────────────
 
 function Step1Content() {
+  const { t } = useTranslation('dashboard');
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-          Welcome to Branddock
+          {t('onboarding.step1.title')}
         </h2>
         <p className="text-base text-gray-500 leading-relaxed">
-          Transform your brand from intuition-driven to data-backed strategy in weeks, not months.
+          {t('onboarding.step1.subtitle')}
         </p>
       </div>
       <ul className="space-y-3">
-        {STEP_1_FEATURES.map((feature, i) => (
+        {STEP_1_FEATURE_KEYS.map((featureKey, i) => (
           <motion.li
-            key={i}
+            key={featureKey}
             initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.1 + 0.2 }}
             className="flex items-start gap-3"
           >
             <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-            <span className="text-sm text-gray-600">{feature}</span>
+            <span className="text-sm text-gray-600">{t(featureKey)}</span>
           </motion.li>
         ))}
       </ul>
@@ -429,14 +432,15 @@ function Step1Content() {
 }
 
 function Step2Content() {
+  const { t } = useTranslation('dashboard');
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-          How It Works
+          {t('onboarding.step2.title')}
         </h2>
         <p className="text-base text-gray-500 leading-relaxed">
-          A simple 3-step process to go from brand assets to validated strategies.
+          {t('onboarding.step2.subtitle')}
         </p>
       </div>
       <div className="space-y-3">
@@ -453,8 +457,8 @@ function Step2Content() {
               {item.number}
             </div>
             <div className="min-w-0">
-              <h4 className="text-sm font-semibold text-gray-900">{item.title}</h4>
-              <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+              <h4 className="text-sm font-semibold text-gray-900">{t(item.titleKey)}</h4>
+              <p className="text-xs text-gray-500 mt-0.5">{t(item.descriptionKey)}</p>
             </div>
           </motion.div>
         ))}
@@ -464,23 +468,24 @@ function Step2Content() {
 }
 
 function Step3Content() {
+  const { t } = useTranslation('dashboard');
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-          Let&apos;s Get Started!
+          {t('onboarding.step3.title')}
         </h2>
         <p className="text-base text-gray-500 leading-relaxed">
-          Follow our Quick Start checklist to unlock the full power of the platform.
+          {t('onboarding.step3.subtitle')}
         </p>
       </div>
       <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-          You&apos;ll complete:
+          {t('onboarding.step3.completeLabel')}
         </p>
-        {STEP_3_CHECKLIST.map((item, i) => (
+        {STEP_3_CHECKLIST_KEYS.map((itemKey, i) => (
           <motion.div
-            key={i}
+            key={itemKey}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.15 + 0.2 }}
@@ -489,7 +494,7 @@ function Step3Content() {
             <div className="w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
               {i + 1}
             </div>
-            <span className="text-sm text-gray-700">{item}</span>
+            <span className="text-sm text-gray-700">{t(itemKey)}</span>
           </motion.div>
         ))}
       </div>
@@ -498,6 +503,7 @@ function Step3Content() {
 }
 
 function ScanWebsiteCTA({ onScan }: { onScan: () => void }) {
+  const { t } = useTranslation('dashboard');
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -510,10 +516,10 @@ function ScanWebsiteCTA({ onScan }: { onScan: () => void }) {
       </div>
       <div>
         <h3 className="text-base font-semibold text-gray-900 mb-1">
-          Have a website?
+          {t('onboarding.scan.title')}
         </h3>
         <p className="text-sm text-gray-500 leading-relaxed">
-          Scan it to auto-populate your brand profile in minutes.
+          {t('onboarding.scan.description')}
         </p>
       </div>
       <button
@@ -523,7 +529,7 @@ function ScanWebsiteCTA({ onScan }: { onScan: () => void }) {
         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#0F766E'; }}
         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#0D9488'; }}
       >
-        Start Scan
+        {t('onboarding.scan.cta')}
         <ArrowRight className="h-4 w-4" />
       </button>
     </motion.div>

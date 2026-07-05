@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -30,6 +31,7 @@ interface GoldenCircleCanvasProps {
 }
 
 export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData, isLocked = false }: GoldenCircleCanvasProps) {
+  const { t } = useTranslation('canvases');
   const [isEditing, setIsEditing] = useState(false);
   const [editingSection, setEditingSection] = useState<'why' | 'how' | 'what' | null>(null);
   const [expandedSections, setExpandedSections] = useState({ why: true, how: true, what: true });
@@ -125,14 +127,14 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
                   <Sparkles className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold">Golden Circle Framework</h3>
-                  <p className="text-sm text-muted-foreground">Start with why, then how, then what</p>
+                  <h3 className="text-xl font-semibold">{t('goldenCircle.title')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('goldenCircle.subtitle')}</p>
                 </div>
               </div>
               {sessionData?.sources && (
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300">
                   <Info className="h-3 w-3 mr-1" />
-                  Generated from AI session
+                  {t('goldenCircle.generatedFromAi')}
                 </Badge>
               )}
             </div>
@@ -153,8 +155,8 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
                         <Info className="h-4 w-4 text-white" />
                       </div>
                       <div>
-                        <h4 className="font-medium text-purple-900 dark:text-purple-100">Canvas Example & Explanation</h4>
-                        <p className="text-xs text-purple-700 dark:text-purple-300">See how the Golden Circle framework works</p>
+                        <h4 className="font-medium text-purple-900 dark:text-purple-100">{t('goldenCircle.exampleTitle')}</h4>
+                        <p className="text-xs text-purple-700 dark:text-purple-300">{t('goldenCircle.exampleSubtitle')}</p>
                       </div>
                     </div>
                     {exampleOpen ? <ChevronUp className="h-5 w-5 text-purple-700 dark:text-purple-300" /> : <ChevronDown className="h-5 w-5 text-purple-700 dark:text-purple-300" />}
@@ -167,7 +169,7 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
                   
                   <div className="space-y-3">
                     <p className="text-sm text-purple-900 dark:text-purple-100">
-                      The Golden Circle framework, developed by Simon Sinek, helps organizations communicate from the inside out. Most companies tell you WHAT they do, some explain HOW they do it, but very few can clearly articulate WHY they do it.
+                      {t('goldenCircle.explanation')}
                     </p>
                     
                     <div className="bg-white dark:bg-gray-900 rounded-lg p-4 space-y-3 border border-purple-200 dark:border-purple-800">
@@ -177,14 +179,14 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-blue-700 dark:text-blue-300">WHY</span>
-                            <span className="text-xs text-muted-foreground">• Purpose</span>
+                            <span className="font-semibold text-blue-700 dark:text-blue-300">{t('goldenCircle.exampleWhyTag')}</span>
+                            <span className="text-xs text-muted-foreground">{t('goldenCircle.exampleWhySub')}</span>
                           </div>
                           <p className="text-sm text-muted-foreground italic">
-                            Example: "To challenge the status quo and think differently."
+                            {t('goldenCircle.exampleWhyExample')}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            This is your core belief - the reason you get out of bed in the morning.
+                            {t('goldenCircle.exampleWhyHint')}
                           </p>
                         </div>
                       </div>
@@ -195,14 +197,14 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-green-700 dark:text-green-300">HOW</span>
-                            <span className="text-xs text-muted-foreground">• Process</span>
+                            <span className="font-semibold text-green-700 dark:text-green-300">{t('goldenCircle.exampleHowTag')}</span>
+                            <span className="text-xs text-muted-foreground">{t('goldenCircle.exampleHowSub')}</span>
                           </div>
                           <p className="text-sm text-muted-foreground italic">
-                            Example: "By making beautifully designed products that are simple to use."
+                            {t('goldenCircle.exampleHowExample')}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            These are your unique differentiators - what makes you special.
+                            {t('goldenCircle.exampleHowHint')}
                           </p>
                         </div>
                       </div>
@@ -213,14 +215,14 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-orange-700 dark:text-orange-300">WHAT</span>
-                            <span className="text-xs text-muted-foreground">• Product</span>
+                            <span className="font-semibold text-orange-700 dark:text-orange-300">{t('goldenCircle.exampleWhatTag')}</span>
+                            <span className="text-xs text-muted-foreground">{t('goldenCircle.exampleWhatSub')}</span>
                           </div>
                           <p className="text-sm text-muted-foreground italic">
-                            Example: "We make computers, smartphones, and tablets."
+                            {t('goldenCircle.exampleWhatExample')}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            These are your tangible products or services.
+                            {t('goldenCircle.exampleWhatHint')}
                           </p>
                         </div>
                       </div>
@@ -228,7 +230,7 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
                     
                     <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
                       <p className="text-xs text-purple-900 dark:text-purple-100">
-                        <strong>Key Insight:</strong> People don't buy WHAT you do, they buy WHY you do it. Starting with WHY creates an emotional connection that drives loyalty and inspires action.
+                        <strong>{t('goldenCircle.keyInsightLabel')}</strong> {t('goldenCircle.keyInsight')}
                       </p>
                     </div>
                   </div>
@@ -282,7 +284,7 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                {isLocked ? 'Locked - Cannot Edit' : `Edit ${section.title}`}
+                                {isLocked ? t('status.lockedCannotEdit') : t('goldenCircle.editSection', { section: section.title })}
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -312,9 +314,9 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
                           <div className="flex items-start gap-2">
                             <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                             <div className="text-xs text-muted-foreground">
-                              {section.id === 'why' && "Focus on your core belief and the impact you want to create. This should inspire and motivate."}
-                              {section.id === 'how' && "Describe your unique approach and what differentiates you from others in the market."}
-                              {section.id === 'what' && "Clearly state what you offer - products, services, or solutions you provide to customers."}
+                              {section.id === 'why' && t('goldenCircle.tipWhy')}
+                              {section.id === 'how' && t('goldenCircle.tipHow')}
+                              {section.id === 'what' && t('goldenCircle.tipWhat')}
                             </div>
                           </div>
                         </div>
@@ -329,17 +331,17 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
             <div className="flex items-center justify-center gap-3 py-4 text-muted-foreground">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                <span className="text-sm">Start with WHY</span>
+                <span className="text-sm">{t('goldenCircle.flowWhy')}</span>
               </div>
               <ArrowRight className="h-4 w-4" />
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span className="text-sm">Define HOW</span>
+                <span className="text-sm">{t('goldenCircle.flowHow')}</span>
               </div>
               <ArrowRight className="h-4 w-4" />
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                <span className="text-sm">Deliver WHAT</span>
+                <span className="text-sm">{t('goldenCircle.flowWhat')}</span>
               </div>
             </div>
           </div>
@@ -355,10 +357,10 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Edit className="h-5 w-5" />
-              Edit Golden Circle
+              {t('goldenCircle.editTitle')}
             </DialogTitle>
             <DialogDescription>
-              Refine your brand's purpose, process, and product to create a compelling narrative
+              {t('goldenCircle.editDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
@@ -380,11 +382,11 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
                   <Textarea
                     value={editData[section.id]}
                     onChange={(e) => setEditData({...editData, [section.id]: e.target.value})}
-                    placeholder={`Describe your ${section.subtitle.toLowerCase()}...`}
+                    placeholder={t('goldenCircle.sectionPlaceholder', { subtitle: section.subtitle.toLowerCase() })}
                     className="min-h-24 resize-none"
                   />
                   <div className="mt-2 text-xs text-muted-foreground">
-                    {editData[section.id].length} characters
+                    {t('goldenCircle.characters', { count: editData[section.id].length })}
                   </div>
                 </div>
               );
@@ -393,11 +395,11 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
           <div className="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" onClick={handleCancel}>
               <X className="h-4 w-4 mr-2" />
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button onClick={handleSave} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
               <Save className="h-4 w-4 mr-2" />
-              Save Changes
+              {t('actions.saveChanges')}
             </Button>
           </div>
         </DialogContent>

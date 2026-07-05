@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Upload, AlertTriangle, Image } from 'lucide-react';
 import { Button } from '@/components/shared';
 import { PageShell, PageHeader } from '@/components/ui/layout';
@@ -24,14 +25,11 @@ import { CreateCollectionModal } from './collections/CreateCollectionModal';
 import { AddToCollectionModal } from './collections/AddToCollectionModal';
 import { TagFilterPills } from './tags/TagFilterPills';
 import { TagManagerModal } from './tags/TagManagerModal';
-const TABS = [
-  { key: 'library', label: 'Library' },
-  { key: 'collections', label: 'Collections' },
-  { key: 'tags', label: 'Tags' },
-] as const;
+const TAB_KEYS = ['library', 'collections', 'tags'] as const;
 
 /** Main orchestrator component for the Media Library feature. */
 export function MediaLibraryPage() {
+  const { t } = useTranslation('media-library');
   const store = useMediaLibraryStore();
 
   const filterParams: MediaListParams = {
@@ -71,8 +69,8 @@ export function MediaLibraryPage() {
       <div data-testid="media-library-page">
         <PageHeader
           moduleKey="media-library"
-          title="Media Library"
-          subtitle="Your central media asset hub"
+          title={t('page.title')}
+          subtitle={t('page.subtitle')}
           actions={
             <Button
               onClick={() => store.setUploadModalOpen(true)}
@@ -80,7 +78,7 @@ export function MediaLibraryPage() {
               data-testid="upload-media-button"
             >
               <Upload className="h-4 w-4" />
-              Add Media
+              {t('actions.addMedia')}
             </Button>
           }
         />
@@ -88,21 +86,21 @@ export function MediaLibraryPage() {
         {/* Tab Bar */}
         <div className="px-8 pt-4 pb-2">
           <div className="flex gap-2">
-            {TABS.map((tab) => (
+            {TAB_KEYS.map((tabKey) => (
               <button
-                key={tab.key}
+                key={tabKey}
                 type="button"
-                onClick={() => store.setActiveTab(tab.key)}
+                onClick={() => store.setActiveTab(tabKey)}
                 className={`
                   rounded-full px-4 py-1.5 text-sm font-medium transition-colors
-                  ${store.activeTab === tab.key
+                  ${store.activeTab === tabKey
                     ? 'text-white shadow-sm'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }
                 `}
-                style={store.activeTab === tab.key ? { backgroundColor: '#0D9488' } : undefined}
+                style={store.activeTab === tabKey ? { backgroundColor: '#0D9488' } : undefined}
               >
-                {tab.label}
+                {t(`tabs.${tabKey}`)}
               </button>
             ))}
           </div>
@@ -137,10 +135,10 @@ export function MediaLibraryPage() {
                 <div data-testid="error-message" className="text-center py-16">
                   <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-3" />
                   <h3 className="text-sm font-medium text-foreground mb-1">
-                    Something went wrong
+                    {t('errors.somethingWrong')}
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Failed to load media assets. Please try again later.
+                    {t('errors.loadAssets')}
                   </p>
                 </div>
               ) : isLoading ? (
@@ -153,10 +151,10 @@ export function MediaLibraryPage() {
                 <div data-testid="empty-state" className="text-center py-16">
                   <Image className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
                   <h3 className="text-sm font-medium text-foreground mb-1">
-                    No media assets found
+                    {t('empty.assets.title')}
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Try adjusting your filters or upload a new asset.
+                    {t('empty.assets.description')}
                   </p>
                 </div>
               ) : store.viewMode === 'grid' ? (
@@ -211,7 +209,7 @@ export function MediaLibraryPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <Image className="h-10 w-10 text-gray-300" />
-                    <p className="mt-3 text-sm text-gray-500">No assets with this tag</p>
+                    <p className="mt-3 text-sm text-gray-500">{t('empty.tagAssets')}</p>
                   </div>
                 )
               )}

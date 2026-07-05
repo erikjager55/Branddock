@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Clock } from "lucide-react";
 import { Badge } from "@/components/shared";
 import { SelectionCard } from "@/components/ui/layout";
@@ -21,6 +22,8 @@ export function AssetSelectorGrid({
   selectedIds,
   onToggle,
 }: AssetSelectorGridProps) {
+  const { t } = useTranslation("research");
+
   return (
     <div data-testid="asset-selector-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {assets.map((asset) => {
@@ -41,7 +44,7 @@ export function AssetSelectorGrid({
                   {asset.estimatedDuration}
                 </span>
                 {asset.isRecommended && (
-                  <Badge variant="success" size="sm">Recommended</Badge>
+                  <Badge variant="success" size="sm">{t("assetSelector.recommended")}</Badge>
                 )}
               </div>
             }

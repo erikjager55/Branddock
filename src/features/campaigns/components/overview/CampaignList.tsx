@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { EmptyState, ProgressBar } from "@/components/shared";
 import { CalendarDays, Megaphone } from "lucide-react";
 import { CampaignOverflowMenu } from "./CampaignOverflowMenu";
@@ -17,13 +19,6 @@ interface CampaignListProps {
   onDelete: (id: string) => void;
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export function CampaignList({
   campaigns,
   isLoading,
@@ -31,6 +26,8 @@ export function CampaignList({
   onArchive,
   onDelete,
 }: CampaignListProps) {
+  const { t } = useTranslation("campaigns-overview");
+  const { formatDate } = useFormat();
   const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
@@ -48,8 +45,8 @@ export function CampaignList({
     return (
       <EmptyState
         icon={Megaphone}
-        title="No campaigns found"
-        description="Create your first campaign or quick content to get started."
+        title={t("empty.title")}
+        description={t("empty.description")}
       />
     );
   }
@@ -73,12 +70,12 @@ export function CampaignList({
         }}
       >
         <div />
-        <div>Campaign</div>
-        <div>Type</div>
-        <div>Readiness</div>
-        <div>Progress</div>
-        <div>Content</div>
-        <div>Scheduled</div>
+        <div>{t("list.columns.campaign")}</div>
+        <div>{t("list.columns.type")}</div>
+        <div>{t("list.columns.readiness")}</div>
+        <div>{t("list.columns.progress")}</div>
+        <div>{t("list.columns.content")}</div>
+        <div>{t("list.columns.scheduled")}</div>
         <div />
       </div>
 
@@ -87,7 +84,8 @@ export function CampaignList({
         const progress = campaign.deliverableCount > 0
           ? Math.round((campaign.completedDeliverableCount / campaign.deliverableCount) * 100)
           : 0;
-        const { light, label: lightLabel } = deriveCampaignTrafficLight(campaign);
+        const { light, label: lightLabel, key: lightKey, progress: lightProgress } = deriveCampaignTrafficLight(campaign);
+        const lightText = t(`campaigns-cards:trafficLight.${lightKey}`, { progress: lightProgress, defaultValue: lightLabel });
         const tl = TRAFFIC_LIGHT[light];
 
         return (
@@ -130,7 +128,7 @@ export function CampaignList({
                 style={{ backgroundColor: `${tl.stripe}18`, color: tl.text }}
               >
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tl.dot }} />
-                {lightLabel}
+                {lightText}
               </span>
             </div>
 
@@ -154,7 +152,7 @@ export function CampaignList({
               {campaign.startDate ? (
                 <span className="inline-flex items-center gap-1 text-xs text-teal-600">
                   <CalendarDays className="w-3 h-3" />
-                  {formatDate(campaign.startDate)}
+                  {formatDate(campaign.startDate, { month: "short", day: "numeric" })}
                 </span>
               ) : (
                 <span className="text-xs text-gray-400">—</span>

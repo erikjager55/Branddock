@@ -1,9 +1,11 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle } from 'lucide-react';
 import { Modal, Button } from '@/components/shared';
 import { useBrandAlignmentStore } from '@/stores/useBrandAlignmentStore';
 
 export function ScanCompleteModal() {
+  const { t } = useTranslation('brand-alignment');
   const isOpen = useBrandAlignmentStore((s) => s.isScanCompleteModalOpen);
   const score = useBrandAlignmentStore((s) => s.scanResultScore);
   const issues = useBrandAlignmentStore((s) => s.scanResultIssues);
@@ -24,15 +26,15 @@ export function ScanCompleteModal() {
         </div>
 
         <h3 className="text-lg font-semibold text-gray-900 mb-1">
-          Alignment Scan Complete
+          {t('scanComplete.title')}
         </h3>
 
         <p className="text-sm text-gray-500 mb-6">
-          Score: {score ?? 0}% &middot; {issues ?? 0} issues found
+          {t('scanComplete.scoreLine', { score: score ?? 0, count: issues ?? 0 })}
         </p>
 
         <Button variant="primary" onClick={closeScanCompleteModal}>
-          View Results
+          {t('scanComplete.viewResults')}
         </Button>
       </div>
     </Modal>

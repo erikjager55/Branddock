@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { X, Video, Heart, Download, FolderPlus, Check } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
@@ -17,6 +19,8 @@ interface AiVideoDetailPanelProps {
 
 /** Inline detail panel shown when an AI-generated video is selected. */
 export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps) {
+  const { t } = useTranslation('media-library');
+  const { formatDate } = useFormat();
   const { data: video, isLoading, isError } = useAiVideoDetail(videoId);
   const updateVideo = useUpdateAiVideo(videoId);
   const sendToLibrary = useSendAiVideoToLibrary();
@@ -41,9 +45,9 @@ export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps
   if (isError) {
     return (
       <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6 text-center">
-        <p className="text-sm text-red-500">Failed to load video details.</p>
+        <p className="text-sm text-red-500">{t('aiVideos.detail.loadError')}</p>
         <Button variant="secondary" onClick={onClose} className="mt-3">
-          Close
+          {t('actions.close')}
         </Button>
       </div>
     );
@@ -73,7 +77,7 @@ export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps
               )}
             </div>
             <p className="text-xs text-gray-500">
-              Created {new Date(video.createdAt).toLocaleDateString('en-US', {
+              {t('detail.createdPrefix')} {formatDate(video.createdAt, {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
@@ -81,7 +85,7 @@ export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps
             </p>
           </div>
         </div>
-        <Button variant="ghost" onClick={onClose} aria-label="Close detail panel">
+        <Button variant="ghost" onClick={onClose} aria-label={t('actions.closeDetail')}>
           <X className="w-4 h-4" />
         </Button>
       </div>
@@ -109,32 +113,32 @@ export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps
         {/* Metadata grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Provider</span>
+            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.provider')}</span>
             <span className="text-sm text-gray-900">{video.provider === 'RUNWAY' ? 'Runway ML' : video.provider}</span>
           </div>
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Model</span>
+            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.model')}</span>
             <span className="text-sm text-gray-900">{video.model}</span>
           </div>
           {video.duration != null && (
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Duration</span>
+              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.duration')}</span>
               <span className="text-sm text-gray-900">{video.duration.toFixed(1)}s</span>
             </div>
           )}
           {video.width && video.height && (
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Resolution</span>
+              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.resolution')}</span>
               <span className="text-sm text-gray-900">{video.width} x {video.height}</span>
             </div>
           )}
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">File Size</span>
+            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.fileSize')}</span>
             <span className="text-sm text-gray-900">{formatFileSize(video.fileSize)}</span>
           </div>
           {video.aspectRatio && (
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Aspect Ratio</span>
+              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.aspectRatio')}</span>
               <span className="text-sm text-gray-900">{video.aspectRatio}</span>
             </div>
           )}
@@ -142,7 +146,7 @@ export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps
 
         {/* Prompt section */}
         <div>
-          <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-1">Prompt</span>
+          <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-1">{t('meta.prompt')}</span>
           <p className="text-sm text-gray-700 bg-indigo-50 rounded-lg px-3 py-2 whitespace-pre-wrap">
             {video.prompt}
           </p>
@@ -151,7 +155,7 @@ export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps
         {/* Update error */}
         {updateVideo.isError && (
           <p className="text-xs text-red-500" role="alert">
-            Failed to update video. Please try again.
+            {t('aiVideos.detail.updateError')}
           </p>
         )}
 
@@ -160,8 +164,8 @@ export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps
           <div className="flex items-center gap-3">
             {/* Favorite toggle */}
             <div>
-              <span className="text-sm font-medium text-gray-700">Favorite</span>
-              <p className="text-xs text-gray-500">Mark this video as a favorite</p>
+              <span className="text-sm font-medium text-gray-700">{t('aiVideos.detail.favoriteLabel')}</span>
+              <p className="text-xs text-gray-500">{t('aiVideos.detail.favoriteHelp')}</p>
             </div>
             <button
               type="button"
@@ -197,12 +201,12 @@ export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps
               {sendToLibrary.isSuccess ? (
                 <>
                   <Check className="w-3.5 h-3.5" />
-                  Saved
+                  {t('actions.saved')}
                 </>
               ) : (
                 <>
                   <FolderPlus className="w-3.5 h-3.5" />
-                  {sendToLibrary.isPending ? 'Saving...' : 'Save to Library'}
+                  {sendToLibrary.isPending ? t('actions.saving') : t('actions.saveToLibrary')}
                 </>
               )}
             </button>
@@ -215,7 +219,7 @@ export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
-                Download
+                {t('actions.download')}
               </a>
             )}
           </div>

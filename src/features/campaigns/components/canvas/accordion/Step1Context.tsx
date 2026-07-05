@@ -1,12 +1,14 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { Building2, Lightbulb, Route, Monitor, BookOpen, Plus, X, Sparkles, Search, Trash2, FileText, Image as ImageIcon, Star, Pencil } from 'lucide-react';
 import { Badge, Skeleton, SkeletonText } from '@/components/shared';
 import { WEBSITE_DELIVERABLE_TYPES } from '@/lib/ai/seo-pipeline.types';
 import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
+import { CONTENT_LANGUAGE_OPTIONS } from '@/lib/content-locale/shipped-languages';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
 import type { VisualBriefSource, VisualStyleDirection } from '@/lib/ai/canvas-context';
@@ -48,6 +50,9 @@ interface Step1ContextProps {
 }
 
 export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
+  const { t } = useTranslation(['campaigns-canvas-accordion', 'campaigns-content-inputs']);
+  // Content-locale Fase 2: per-generatie doeltaal ('' = workspace-default).
+  const [targetLanguage, setTargetLanguage] = React.useState('');
   const contextStack = useCanvasStore((s) => s.contextStack);
   const additionalContextItems = useCanvasStore((s) => s.additionalContextItems);
   const removeContextItem = useCanvasStore((s) => s.removeContextItem);
@@ -95,7 +100,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
     const fields: FormFillField[] = [
       {
         key: 'objective',
-        label: 'Objective',
+        label: t('step1.brief.objective'),
         currentValue: brief.objective.trim() || null,
         setter: (value) => setBriefField('objective', String(value ?? '')),
         groupId: 'brief',
@@ -103,7 +108,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
       },
       {
         key: 'keyMessage',
-        label: 'Key message',
+        label: t('step1.brief.keyMessage'),
         currentValue: brief.keyMessage.trim() || null,
         setter: (value) => setBriefField('keyMessage', String(value ?? '')),
         groupId: 'brief',
@@ -111,7 +116,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
       },
       {
         key: 'toneDirection',
-        label: 'Tone of voice',
+        label: t('step1.brief.toneOfVoice'),
         currentValue: brief.toneDirection.trim() || null,
         setter: (value) =>
           setBriefField(
@@ -123,7 +128,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
       },
       {
         key: 'callToAction',
-        label: 'Call to action',
+        label: t('step1.brief.callToAction'),
         currentValue: brief.callToAction.trim() || null,
         setter: (value) => setBriefField('callToAction', String(value ?? '')),
         groupId: 'brief',
@@ -131,7 +136,11 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
       },
       ...contentTypeFields.map<FormFillField>((field) => ({
         key: field.key,
-        label: field.label,
+        label: t(`campaigns-content-inputs:byType.${contentType ?? ''}.${field.key}.label`, {
+          defaultValue: t(`campaigns-content-inputs:fields.${field.key}.label`, {
+            defaultValue: field.label,
+          }),
+        }),
         currentValue: formatCurrentValue(contentTypeInputs[field.key]),
         setter: (value) => setContentTypeInput(field.key, value as ContentTypeInputValue),
       })),
@@ -145,11 +154,13 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
     brief.keyMessage,
     brief.toneDirection,
     brief.callToAction,
+    contentType,
     contentTypeInputs,
     deliverableId,
     contentTypeFields,
     setBriefField,
     setContentTypeInput,
+    t,
   ]);
 
   // When content has already been generated (variants exist in the store,
@@ -170,8 +181,13 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
       if (typeof value === 'string') return value.trim().length === 0;
       if (Array.isArray(value)) return value.length === 0;
       return false;
-    }).map((f) => ({ key: f.key, label: f.label }));
-  }, [contentType, contentTypeInputs]);
+    }).map((f) => ({
+      key: f.key,
+      label: t(`campaigns-content-inputs:byType.${contentType}.${f.key}.label`, {
+        defaultValue: t(`campaigns-content-inputs:fields.${f.key}.label`, { defaultValue: f.label }),
+      }),
+    }));
+  }, [contentType, contentTypeInputs, t]);
 
   const hasMissingRequired = missingRequired.length > 0;
 
@@ -180,20 +196,20 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
   // together; picker-sources only trigger text and route the user to
   // the asset picker in Step 2.
   const generateCtaLabel = React.useMemo(() => {
-    if (isGenerating) return 'Generating…';
+    if (isGenerating) return t('step1.generate.generating');
     switch (visualBriefSource) {
       case 'generate':
-        return 'Generate text & visual';
+        return t('step1.generate.textAndVisual');
       case 'photography-request':
-        return 'Generate text & photo brief';
+        return t('step1.generate.textAndPhotoBrief');
       case 'none':
-        return 'Generate text variants';
+        return t('step1.generate.textVariants');
       default:
         // library, compose, trained-style, upload, url, stock — visual
         // asset is picked manually in Step 2.
-        return 'Generate text — pick visual in Step 2';
+        return t('step1.generate.textPickVisual');
     }
-  }, [isGenerating, visualBriefSource]);
+  }, [isGenerating, visualBriefSource, t]);
 
   const handleContinue = () => {
     onAdvance?.();
@@ -298,7 +314,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
       })();
 
       // Trigger content generation (SSE auto-advance handles step 2 transition)
-      await generate();
+      await generate(targetLanguage ? { targetLanguage } : undefined);
       // Visual gen runs in parallel — we don't await it so the user can
       // already see text-variants land while the image finishes.
       void visualGenPromise;
@@ -311,13 +327,13 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
       const knowledgeCount = state.additionalContextItems.size;
 
       const summaryParts: string[] = [];
-      if (brand?.brandName) summaryParts.push(`Brand: ${brand.brandName}`);
+      if (brand?.brandName) summaryParts.push(t('step1.summary.brand', { name: brand.brandName }));
       if (medium?.platform && medium?.format) summaryParts.push(`${medium.platform}/${medium.format}`);
-      if (phase?.phase) summaryParts.push(`${phase.phase} phase`);
-      if (knowledgeCount > 0) summaryParts.push(`${knowledgeCount} knowledge items`);
+      if (phase?.phase) summaryParts.push(t('step1.summary.phase', { phase: phase.phase }));
+      if (knowledgeCount > 0) summaryParts.push(t('step1.summary.knowledgeItems', { count: knowledgeCount }));
 
       state.setStepSummary('context', {
-        label: summaryParts.join(' | ') || 'Context reviewed',
+        label: summaryParts.join(' | ') || t('step1.summary.contextReviewed'),
       });
     } catch (err) {
       console.error('[Step1Context] Generation failed:', err);
@@ -339,12 +355,12 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
       {/* Context cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Brand */}
-        <ContextCard icon={<Building2 className="h-4 w-4" />} title="Brand">
+        <ContextCard icon={<Building2 className="h-4 w-4" />} title={t('step1.cards.brand')}>
           <BrandContent brand={contextStack.brand} />
         </ContextCard>
 
         {/* Campaign Concept */}
-        <ContextCard icon={<Lightbulb className="h-4 w-4" />} title="Campaign Concept">
+        <ContextCard icon={<Lightbulb className="h-4 w-4" />} title={t('step1.cards.campaignConcept')}>
           {contextStack.concept ? (
             <>
               {contextStack.concept.campaignTheme && (
@@ -362,12 +378,12 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
               )}
             </>
           ) : (
-            <p className="text-xs text-gray-400 italic">No concept data available</p>
+            <p className="text-xs text-gray-400 italic">{t('step1.cards.noConceptData')}</p>
           )}
         </ContextCard>
 
         {/* Journey Phase */}
-        <ContextCard icon={<Route className="h-4 w-4" />} title="Journey Phase">
+        <ContextCard icon={<Route className="h-4 w-4" />} title={t('step1.cards.journeyPhase')}>
           {contextStack.journeyPhase ? (
             <>
               <Badge variant="info" size="sm">{contextStack.journeyPhase.phase}</Badge>
@@ -379,18 +395,16 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
             </>
           ) : (
             <div className="space-y-1">
-              <p className="text-xs text-gray-400 italic">No phase data available</p>
+              <p className="text-xs text-gray-400 italic">{t('step1.cards.noPhaseData')}</p>
               <p className="text-[11px] text-gray-400">
-                This content item isn&apos;t tied to a campaign blueprint phase yet.
-                Generate a campaign blueprint to add awareness/consideration/conversion
-                phases — or skip and the AI will infer tone from the briefing.
+                {t('step1.cards.noPhaseHint')}
               </p>
             </div>
           )}
         </ContextCard>
 
         {/* Medium */}
-        <ContextCard icon={<Monitor className="h-4 w-4" />} title="Medium">
+        <ContextCard icon={<Monitor className="h-4 w-4" />} title={t('step1.cards.medium')}>
           {contextStack.medium ? (
             <>
               <div className="flex gap-2">
@@ -406,7 +420,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
               )}
             </>
           ) : (
-            <p className="text-xs text-gray-400 italic">No medium data available</p>
+            <p className="text-xs text-gray-400 italic">{t('step1.cards.noMediumData')}</p>
           )}
         </ContextCard>
       </div>
@@ -443,7 +457,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
       <div className="rounded-lg border border-gray-200 bg-white p-3">
         <div className="flex items-center gap-2 mb-2">
           <BookOpen className="h-4 w-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700">Knowledge Context</span>
+          <span className="text-sm font-medium text-gray-700">{t('step1.knowledge.title')}</span>
         </div>
 
         {additionalContextItems.size > 0 ? (
@@ -452,7 +466,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
               {Array.from(additionalContextItems.entries()).map(([key, item]) => (
                 <span
                   key={key}
-                  title={item.note?.trim() ? `Guidance: ${item.note.trim()}` : undefined}
+                  title={item.note?.trim() ? t('step1.knowledge.guidancePrefix', { note: item.note.trim() }) : undefined}
                   className={`inline-flex items-center gap-1 max-w-full px-2 py-0.5 text-xs rounded-md ${
                     item.priority === 'primary'
                       ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-300'
@@ -460,16 +474,16 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
                   }`}
                 >
                   {item.priority === 'primary' && (
-                    <Star className="h-3 w-3 flex-shrink-0" aria-label="Source material" />
+                    <Star className="h-3 w-3 flex-shrink-0" aria-label={t('step1.knowledge.sourceMaterial')} />
                   )}
                   <span className="truncate">{item.title}</span>
                   {item.note?.trim() && (
-                    <Pencil className="h-3 w-3 flex-shrink-0 text-gray-400" aria-label="Has guidance note" />
+                    <Pencil className="h-3 w-3 flex-shrink-0 text-gray-400" aria-label={t('step1.knowledge.hasGuidanceNote')} />
                   )}
                   <button
                     type="button"
                     onClick={() => handleRemoveContextItem(key)}
-                    aria-label={`Remove ${item.title}`}
+                    aria-label={t('step1.knowledge.removeItem', { title: item.title })}
                     className="p-0.5 rounded-full hover:bg-gray-200 text-gray-400 hover:text-gray-600 flex-shrink-0"
                   >
                     <X className="h-3 w-3" />
@@ -483,13 +497,13 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
               className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <Plus className="h-3.5 w-3.5" />
-              Add or manage knowledge
+              {t('step1.knowledge.addOrManage')}
             </button>
           </>
         ) : (
           <div className="space-y-2">
             <p className="text-xs text-gray-500">
-              Add a link, PDF or library item as extra context the AI uses while generating this content.
+              {t('step1.knowledge.emptyHint')}
             </p>
             <button
               type="button"
@@ -497,7 +511,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-dashed border-teal-300 bg-teal-50/50 text-sm font-medium text-teal-700 hover:bg-teal-50 hover:border-teal-400 transition-colors"
             >
               <BookOpen className="h-4 w-4" />
-              Add knowledge context
+              {t('step1.knowledge.addContext')}
             </button>
           </div>
         )}
@@ -520,7 +534,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
             <span className="text-amber-600 mt-0.5">*</span>
             <div className="flex-1">
               <p className="font-semibold">
-                Fill in required field{missingRequired.length > 1 ? 's' : ''} above to continue:
+                {t('step1.missingRequired', { count: missingRequired.length })}
               </p>
               <ul className="mt-0.5 list-disc list-inside">
                 {missingRequired.map((f) => (
@@ -531,6 +545,23 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
           </div>
         )}
 
+        <div className="flex items-center gap-2 pb-1">
+          <label htmlFor="canvas-target-lang" className="text-xs text-gray-500 whitespace-nowrap">
+            {t('step1.generate.targetLanguageLabel', { defaultValue: 'Output language' })}
+          </label>
+          <select
+            id="canvas-target-lang"
+            value={targetLanguage}
+            onChange={(e) => setTargetLanguage(e.target.value)}
+            disabled={isGenerating}
+            className="rounded-lg border border-gray-300 px-2 py-1 text-xs focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none disabled:opacity-50"
+          >
+            <option value="">{t('step1.generate.targetLanguageDefault', { defaultValue: 'Workspace default' })}</option>
+            {CONTENT_LANGUAGE_OPTIONS.map((l) => (
+              <option key={l.code} value={l.code}>{l.label}</option>
+            ))}
+          </select>
+        </div>
         {hasExistingContent ? (
           <>
             <button
@@ -538,21 +569,21 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
               onClick={handleContinue}
               disabled={hasMissingRequired}
               aria-disabled={hasMissingRequired}
-              title={hasMissingRequired ? 'Fill in required fields first' : undefined}
+              title={hasMissingRequired ? t('step1.generate.fillRequiredFirst') : undefined}
               className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Sparkles className="h-4 w-4" />
-              Continue to Variants
+              {t('step1.generate.continueToVariants')}
             </button>
             <button
               type="button"
               onClick={handleGenerate}
               disabled={isGenerating || hasMissingRequired}
               aria-busy={isGenerating}
-              title={hasMissingRequired ? 'Fill in required fields first' : undefined}
+              title={hasMissingRequired ? t('step1.generate.fillRequiredFirst') : undefined}
               className="w-full text-xs text-gray-500 hover:text-gray-700 underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
             >
-              {isGenerating ? 'Regenerating...' : 'Regenerate from scratch'}
+              {isGenerating ? t('step1.generate.regenerating') : t('step1.generate.regenerateFromScratch')}
             </button>
           </>
         ) : (
@@ -561,7 +592,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
             onClick={handleGenerate}
             disabled={isGenerating || hasMissingRequired}
             aria-busy={isGenerating}
-            title={hasMissingRequired ? 'Fill in required fields first' : undefined}
+            title={hasMissingRequired ? t('step1.generate.fillRequiredFirst') : undefined}
             className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <Sparkles className="h-4 w-4" />
@@ -605,6 +636,7 @@ function firstSentence(text: string | undefined): string | null {
 }
 
 function BrandContent({ brand }: { brand: BrandContextBlock }) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const filledFields = [
     brand.brandPurpose, brand.goldenCircle, brand.brandEssence,
     brand.brandPromise, brand.brandMission, brand.brandVision,
@@ -624,7 +656,7 @@ function BrandContent({ brand }: { brand: BrandContextBlock }) {
         <p className="text-xs text-gray-500 line-clamp-2">{purposeSummary}</p>
       )}
       {brand.targetAudience && (
-        <p className="text-xs text-gray-500">Audience: {brand.targetAudience}</p>
+        <p className="text-xs text-gray-500">{t('step1.cards.audience', { audience: brand.targetAudience })}</p>
       )}
     </div>
   );
@@ -763,6 +795,7 @@ function BriefField({
 
 
 function SeoInputCard() {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const seoInput = useCanvasStore((s) => s.seoInput);
   const setSeoInput = useCanvasStore((s) => s.setSeoInput);
 
@@ -785,24 +818,24 @@ function SeoInputCard() {
     <div className="rounded-lg border border-teal-200 bg-teal-50/50 p-3 space-y-3">
       <div className="flex items-center gap-2">
         <Search className="h-4 w-4 text-teal-600" />
-        <span className="text-sm font-medium text-teal-800">SEO Research</span>
-        <span className="text-xs text-teal-600 bg-teal-100 px-1.5 py-0.5 rounded">8-step pipeline</span>
+        <span className="text-sm font-medium text-teal-800">{t('step1.seo.title')}</span>
+        <span className="text-xs text-teal-600 bg-teal-100 px-1.5 py-0.5 rounded">{t('step1.seo.pipelineBadge')}</span>
       </div>
       <p className="text-xs text-teal-700">
-        Add a primary keyword to activate the SEO research pipeline. This runs keyword research, competitor analysis, E-E-A-T mapping, and editorial review before generating content.
+        {t('step1.seo.intro')}
       </p>
 
       {/* Primary keyword */}
       <div>
         <label htmlFor="seo-keyword" className="block text-xs font-medium text-gray-700 mb-1">
-          Primary Keyword
+          {t('step1.seo.primaryKeyword')}
         </label>
         <input
           id="seo-keyword"
           type="text"
           value={seoInput.primaryKeyword}
           onChange={(e) => setSeoInput({ primaryKeyword: e.target.value })}
-          placeholder="e.g. brand strategy software"
+          placeholder={t('step1.seo.primaryKeywordPlaceholder')}
           className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
         />
       </div>
@@ -810,7 +843,7 @@ function SeoInputCard() {
       {/* Funnel stage */}
       <div>
         <label htmlFor="seo-funnel" className="block text-xs font-medium text-gray-700 mb-1">
-          Funnel Stage
+          {t('step1.seo.funnelStage')}
         </label>
         <select
           id="seo-funnel"
@@ -818,9 +851,9 @@ function SeoInputCard() {
           onChange={(e) => setSeoInput({ funnelStage: e.target.value as 'awareness' | 'consideration' | 'decision' })}
           className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 bg-white"
         >
-          <option value="awareness">Awareness — Educational, problem-aware</option>
-          <option value="consideration">Consideration — Comparing solutions</option>
-          <option value="decision">Decision — Ready to buy/sign up</option>
+          <option value="awareness">{t('step1.seo.funnelAwareness')}</option>
+          <option value="consideration">{t('step1.seo.funnelConsideration')}</option>
+          <option value="decision">{t('step1.seo.funnelDecision')}</option>
         </select>
       </div>
 
@@ -828,7 +861,7 @@ function SeoInputCard() {
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="text-xs font-medium text-gray-700">
-            Competitor URLs <span className="text-gray-400 font-normal">(optional, max 5)</span>
+            {t('step1.seo.competitorUrls')} <span className="text-gray-400 font-normal">{t('step1.seo.competitorUrlsOptional')}</span>
           </label>
           {seoInput.competitorUrls.length < 5 && (
             <button
@@ -836,13 +869,13 @@ function SeoInputCard() {
               onClick={addCompetitorUrl}
               className="text-xs text-teal-600 hover:text-teal-700 font-medium flex items-center gap-0.5"
             >
-              <Plus className="h-3 w-3" /> Add URL
+              <Plus className="h-3 w-3" /> {t('step1.seo.addUrl')}
             </button>
           )}
         </div>
         {seoInput.competitorUrls.length === 0 && (
           <p className="text-xs text-gray-400 italic">
-            Leave empty for automatic competitor discovery via Google Search
+            {t('step1.seo.autoDiscoverHint')}
           </p>
         )}
         {seoInput.competitorUrls.map((url, i) => (
@@ -851,15 +884,15 @@ function SeoInputCard() {
               type="url"
               value={url}
               onChange={(e) => updateCompetitorUrl(i, e.target.value)}
-              placeholder="https://competitor.com/their-page"
-              aria-label={`Competitor URL ${i + 1}`}
+              placeholder={t('step1.seo.competitorUrlPlaceholder')}
+              aria-label={t('step1.seo.competitorUrlAria', { number: i + 1 })}
               className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500"
             />
             <button
               type="button"
               onClick={() => removeCompetitorUrl(i)}
               className="p-1.5 text-gray-400 hover:text-red-500 rounded"
-              aria-label={`Remove competitor URL ${i + 1}`}
+              aria-label={t('step1.seo.removeCompetitorUrlAria', { number: i + 1 })}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -900,6 +933,7 @@ function SkeletonContextCard() {
  *      the AI output but never block.
  */
 function ContentBriefSection() {
+  const { t } = useTranslation(['campaigns-canvas-accordion', 'campaigns-content-inputs']);
   const contentType = useCanvasStore((s) => s.contentType);
   const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
   const setContentTypeInput = useCanvasStore((s) => s.setContentTypeInput);
@@ -920,14 +954,24 @@ function ContentBriefSection() {
     [fields],
   );
 
-  const toneSuggestions = React.useMemo(
-    () => (contentType ? getToneSuggestions(contentType) : null),
-    [contentType],
-  );
-  const ctaSuggestions = React.useMemo(
-    () => (contentType ? getCtaSuggestions(contentType) : null),
-    [contentType],
-  );
+  const toneSuggestions = React.useMemo(() => {
+    const raw = contentType ? getToneSuggestions(contentType) : null;
+    return raw
+      ? raw.map((s) => ({
+          value: s.value,
+          label: t(`campaigns-content-inputs:tone.${s.value}`, { defaultValue: s.label }),
+        }))
+      : null;
+  }, [contentType, t]);
+  const ctaSuggestions = React.useMemo(() => {
+    const raw = contentType ? getCtaSuggestions(contentType) : null;
+    return raw
+      ? raw.map((s) => ({
+          value: s.value,
+          label: t(`campaigns-content-inputs:cta.${s.value}`, { defaultValue: s.label }),
+        }))
+      : null;
+  }, [contentType, t]);
 
   const handleChange = React.useCallback(
     (key: string, value: ContentTypeInputValue) => {
@@ -969,10 +1013,10 @@ function ContentBriefSection() {
           <FileText
             className={`h-4 w-4 ${hasMissingRequired ? 'text-amber-600' : 'text-teal-600'}`}
           />
-          <span className="text-sm font-medium text-gray-700">Content Brief</span>
+          <span className="text-sm font-medium text-gray-700">{t('step1.brief.sectionTitle')}</span>
         </div>
         {hasMissingRequired ? (
-          <Badge variant="warning" size="sm">{missingRequiredCount} required</Badge>
+          <Badge variant="warning" size="sm">{t('step1.brief.requiredBadge', { count: missingRequiredCount })}</Badge>
         ) : totalFilled > 0 ? (
           <Badge variant="teal" size="sm">{totalFilled}/{totalFields}</Badge>
         ) : null}
@@ -981,32 +1025,32 @@ function ContentBriefSection() {
       {/* ── Strategy ── */}
       <div className="space-y-2.5">
         <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-          Strategy
+          {t('step1.brief.strategy')}
         </p>
         <BriefField
-          label="Objective"
-          placeholder="What this content should achieve"
+          label={t('step1.brief.objective')}
+          placeholder={t('step1.brief.objectivePlaceholder')}
           value={brief.objective}
           onChange={(v) => setBriefField('objective', v)}
         />
         <BriefField
-          label="Key message"
-          placeholder="The single thing the audience should take away"
+          label={t('step1.brief.keyMessage')}
+          placeholder={t('step1.brief.keyMessagePlaceholder')}
           value={brief.keyMessage}
           onChange={(v) => setBriefField('keyMessage', v)}
         />
         <TonePillsField
-          label="Tone of voice"
+          label={t('step1.brief.toneOfVoice')}
           value={brief.toneDirection}
           onChange={(v) => setBriefField('toneDirection', v)}
           suggestions={toneSuggestions}
         />
         <BriefField
-          label="Call to action"
+          label={t('step1.brief.callToAction')}
           placeholder={
             ctaSuggestions
-              ? 'What should the audience do next? Pick a suggestion or write your own'
-              : 'What should the audience do next?'
+              ? t('step1.brief.ctaPlaceholderWithSuggestions')
+              : t('step1.brief.ctaPlaceholder')
           }
           value={brief.callToAction}
           onChange={(v) => setBriefField('callToAction', v)}
@@ -1018,7 +1062,7 @@ function ContentBriefSection() {
       {contentType && fields.length > 0 && (
         <div className="mt-4 pt-4 border-t border-gray-100">
           <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">
-            {hasMissingRequired ? 'Type-specific (required)' : 'Type-specific'}
+            {hasMissingRequired ? t('step1.brief.typeSpecificRequired') : t('step1.brief.typeSpecific')}
           </p>
 
           {requiredFields.length > 0 && (
@@ -1038,10 +1082,10 @@ function ContentBriefSection() {
               {requiredFields.length > 0 && (
                 <div className="border-t border-gray-100 pt-3 mb-2">
                   <p className="text-xs font-medium text-gray-500 mb-1">
-                    Optional fields ({optionalFields.length})
+                    {t('step1.brief.optionalFields', { count: optionalFields.length })}
                   </p>
                   <p className="text-xs text-gray-400 mb-2">
-                    These tweak the AI output. Empty is fine — the AI will derive sensible defaults.
+                    {t('step1.brief.optionalHint')}
                   </p>
                 </div>
               )}
@@ -1065,77 +1109,33 @@ function ContentBriefSection() {
 // F35 (audit 2026-05-13): 8 sources — voorheen waren upload/url/stock alleen
 // bereikbaar via Step 3 InsertImageModal (los van visualBrief). Nu eerste-class
 // in Visual Brief zodat Step 2 + Step 3 één panel delen.
+// Labels/descriptions live in the i18n catalog (step1.visualSources.<value>);
+// resolved at render via t() keyed by `value`.
 const VISUAL_SOURCES: Array<{
   value: VisualBriefSource;
-  label: string;
-  description: string;
   ready: boolean;
 }> = [
-  {
-    value: 'generate',
-    label: 'Generate',
-    description: 'AI creates the visual from scratch (Imagen / DALL-E / Flux)',
-    ready: true,
-  },
-  {
-    value: 'library',
-    label: 'From library',
-    description: 'Pick existing assets from your Media Library',
-    ready: true,
-  },
-  {
-    value: 'upload',
-    label: 'Upload',
-    description: 'Upload a new image file from your device',
-    ready: true,
-  },
-  {
-    value: 'url',
-    label: 'Import URL',
-    description: 'Paste a public image URL — Branddock imports it',
-    ready: true,
-  },
-  {
-    value: 'stock',
-    label: 'Stock photos',
-    description: 'Search Pexels stock photos by keyword',
-    ready: true,
-  },
-  {
-    value: 'compose',
-    label: 'Compose',
-    description: 'Combine 2-9 library images via natural language (e.g. "model holding the product")',
-    ready: true,
-  },
-  {
-    value: 'trained-style',
-    label: 'Trained style',
-    description: 'Apply your trained AI Model (illustration / photography / brand style)',
-    ready: true,
-  },
-  {
-    value: 'photography-request',
-    label: 'Real photography',
-    description: 'F42: AI genereert fotograaf-briefing; user upload-after-photo. Voor case-studies, testimonials, locatie-content.',
-    ready: true,
-  },
-  {
-    value: 'none',
-    label: 'No visual',
-    description: 'Skip image generation for this content item',
-    ready: true,
-  },
+  { value: 'generate', ready: true },
+  { value: 'library', ready: true },
+  { value: 'upload', ready: true },
+  { value: 'url', ready: true },
+  { value: 'stock', ready: true },
+  { value: 'compose', ready: true },
+  { value: 'trained-style', ready: true },
+  { value: 'photography-request', ready: true },
+  { value: 'none', ready: true },
 ];
 
-const STYLE_CHIPS: Array<{ value: VisualStyleDirection; label: string; description: string }> = [
-  { value: 'lifestyle', label: 'Lifestyle', description: 'People in real situations using the product/service' },
-  { value: 'product-shot', label: 'Product shot', description: 'Clean isolated subject, controlled lighting' },
-  { value: 'quote-text', label: 'Quote / text', description: 'Typography-led, no central subject' },
-  { value: 'behind-the-scenes', label: 'Behind the scenes', description: 'Candid team / process / workspace shots' },
-  { value: 'ugc', label: 'UGC', description: 'User-generated style: handheld, raw, authentic' },
-  { value: 'infographic', label: 'Infographic', description: 'Data viz, icons, structured layout' },
-  { value: 'illustration', label: 'Illustration', description: 'Drawn / vector style' },
-  { value: 'data-driven', label: 'Data-driven', description: 'Chart-led editorial, numbers in focus' },
+// Labels/descriptions live in the i18n catalog (step1.styleChips.<value>).
+const STYLE_CHIPS: Array<{ value: VisualStyleDirection }> = [
+  { value: 'lifestyle' },
+  { value: 'product-shot' },
+  { value: 'quote-text' },
+  { value: 'behind-the-scenes' },
+  { value: 'ugc' },
+  { value: 'infographic' },
+  { value: 'illustration' },
+  { value: 'data-driven' },
 ];
 
 /**
@@ -1153,6 +1153,7 @@ const STYLE_CHIPS: Array<{ value: VisualStyleDirection; label: string; descripti
  *     plain input below the chips.
  */
 function VisualBriefSection() {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const contentType = useCanvasStore((s) => s.contentType);
   const visualBrief = useCanvasStore((s) => s.visualBrief);
   const setSource = useCanvasStore((s) => s.setVisualBriefSource);
@@ -1207,7 +1208,7 @@ function VisualBriefSection() {
         // useful case is the 400 "Insufficient context — add a key message,
         // persona, or product first" which the user can act on directly.
         // Falls back to a generic message for 5xx or non-JSON bodies.
-        const fallback = 'Briefing suggestion failed — source and style still applied';
+        const fallback = t('step1.visualBrief.suggestionFailed');
         let detail: string | null = null;
         try {
           const body = (await res.json()) as { error?: unknown };
@@ -1227,11 +1228,11 @@ function VisualBriefSection() {
       }
     } catch (err) {
       console.error('[VisualBriefSection] suggest-setup briefing failed', err);
-      setSuggestError('Network error — source and style still applied');
+      setSuggestError(t('step1.visualBrief.networkError'));
     } finally {
       setSuggestLoading(false);
     }
-  }, [deliverableId, defaults, setSource, setStyleDirection, setBriefingText]);
+  }, [deliverableId, defaults, setSource, setStyleDirection, setBriefingText, t]);
 
   // "Continue with suggestion" — source/chip/briefing already applied,
   // just collapse the panel and let the user proceed in the normal form.
@@ -1271,11 +1272,10 @@ function VisualBriefSection() {
     <div className="rounded-lg border border-gray-200 bg-white p-3">
       <div className="flex items-center gap-2 mb-3">
         <ImageIcon className="h-4 w-4" style={{ color: ACTIVE_HEX }} />
-        <span className="text-sm font-medium text-gray-700">Visual Brief</span>
+        <span className="text-sm font-medium text-gray-700">{t('step1.visualBrief.title')}</span>
       </div>
       <p className="text-xs text-gray-500 mb-3">
-        How the visual gets made. Source picks the pipeline, style direction
-        steers both what the AI writes and what it generates.
+        {t('step1.visualBrief.intro')}
       </p>
 
       {/* F-LinkedIn-1d (audit 2026-05-15): three-state flow.
@@ -1297,14 +1297,14 @@ function VisualBriefSection() {
             }}
           >
             <Sparkles className="h-3.5 w-3.5" />
-            {suggestLoading ? 'Suggesting…' : 'Suggest setup from content'}
+            {suggestLoading ? t('step1.visualBrief.suggesting') : t('step1.visualBrief.suggestSetup')}
           </button>
           <button
             type="button"
             onClick={() => setSetupState('manual')}
             className="w-full text-center text-[11px] text-slate-500 hover:text-slate-700 underline"
           >
-            Or set it up manually
+            {t('step1.visualBrief.setupManually')}
           </button>
         </div>
       )}
@@ -1331,18 +1331,18 @@ function VisualBriefSection() {
               below (style notes belong in styleDirectionFreeText). */}
           <div className="space-y-1.5 mb-4">
             <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-              Briefing
+              {t('step1.visualBrief.briefing')}
             </p>
             <textarea
               value={briefingText}
               onChange={(e) => setBriefingText(e.target.value || null)}
-              placeholder="Describe what the visual should show — who, where, what, mood"
+              placeholder={t('step1.visualBrief.briefingPlaceholder')}
               rows={2}
               className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 resize-y"
               style={{ outlineColor: ACTIVE_HEX }}
             />
             <p className="text-[11px] text-gray-500">
-              Subject for the visual. Overrules your key message when filled.
+              {t('step1.visualBrief.briefingHint')}
             </p>
             {suggestError && (
               <p className="text-[11px] text-red-600">{suggestError}</p>
@@ -1352,7 +1352,7 @@ function VisualBriefSection() {
           {/* Source — radio cards */}
           <div className="space-y-2 mb-4">
             <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-              Source
+              {t('step1.visualBrief.source')}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {VISUAL_SOURCES.map((opt) => {
@@ -1379,13 +1379,13 @@ function VisualBriefSection() {
                         className="text-sm font-medium"
                         style={{ color: active ? '#4c1d95' : '#111827' }}
                       >
-                        {opt.label}
+                        {t(`step1.visualSources.${opt.value}.label`)}
                       </span>
                       {!opt.ready && (
-                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">soon</span>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">{t('step1.visualBrief.soon')}</span>
                       )}
                     </div>
-                    <p className="text-[11px] text-gray-500 leading-snug mt-0.5">{opt.description}</p>
+                    <p className="text-[11px] text-gray-500 leading-snug mt-0.5">{t(`step1.visualSources.${opt.value}.description`)}</p>
                   </button>
                 );
               })}
@@ -1399,7 +1399,7 @@ function VisualBriefSection() {
       {setupState === 'manual' && visualBrief.source !== 'none' && (
         <div className="space-y-2">
           <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-            Style direction
+            {t('step1.visualBrief.styleDirection')}
           </p>
           <div className="flex flex-wrap gap-1.5">
             {STYLE_CHIPS.map((chip) => {
@@ -1409,7 +1409,7 @@ function VisualBriefSection() {
                   key={chip.value}
                   type="button"
                   onClick={() => setStyleDirection(active ? null : chip.value)}
-                  title={chip.description}
+                  title={t(`step1.styleChips.${chip.value}.description`)}
                   className="inline-flex items-center px-2 py-0.5 text-xs rounded-full transition-colors"
                   style={{
                     backgroundColor: active ? CHIP_ACTIVE_BG : '#f9fafb',
@@ -1417,7 +1417,7 @@ function VisualBriefSection() {
                     border: `1px solid ${active ? CHIP_ACTIVE_BORDER : '#e5e7eb'}`,
                   }}
                 >
-                  {chip.label}
+                  {t(`step1.styleChips.${chip.value}.label`)}
                 </button>
               );
             })}
@@ -1427,8 +1427,8 @@ function VisualBriefSection() {
             onChange={(e) => setStyleDirection(filledChip, e.target.value)}
             placeholder={
               filledChip
-                ? 'Add extra direction (mood, colors, references) — optional'
-                : 'Or describe the visual direction in free text'
+                ? t('step1.visualBrief.styleFreeTextWithChip')
+                : t('step1.visualBrief.styleFreeText')
             }
             rows={2}
             className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 resize-y"
@@ -1470,6 +1470,7 @@ function VisualBriefSuggestionPanel({
   onChangeSource: () => void;
   onDoMyself: () => void;
 }) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const { data: modelsData } = useConsistentModels();
   const hasTrainedLora = React.useMemo(() => {
     const models = modelsData?.models ?? [];
@@ -1514,18 +1515,18 @@ function VisualBriefSuggestionPanel({
         <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0 text-slate-600" />
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold text-slate-900">
-            Current source: <span className="text-teal-700">{SOURCE_LABELS[currentSource]}</span>
+            {t('step1.suggestion.currentSource')} <span className="text-teal-700">{SOURCE_LABELS[currentSource]}</span>
           </p>
 
           {sourceMatches ? (
             <p className="text-[11px] mt-1 text-slate-700 leading-relaxed">
-              <span className="font-medium text-emerald-700">Matches Branddock&apos;s recommendation.</span>{' '}
+              <span className="font-medium text-emerald-700">{t('step1.suggestion.matchesRecommendation')}</span>{' '}
               {suggestion.sourceReasoning}
             </p>
           ) : (
             <p className="text-[11px] mt-1 text-slate-700 leading-relaxed">
-              Branddock recommends{' '}
-              <span className="font-medium text-teal-700">{suggestion.sourceLabel}</span> for this content:{' '}
+              {t('step1.suggestion.recommendsPrefix')}{' '}
+              <span className="font-medium text-teal-700">{suggestion.sourceLabel}</span> {t('step1.suggestion.recommendsSuffix')}{' '}
               {suggestion.sourceReasoning}
             </p>
           )}
@@ -1535,14 +1536,14 @@ function VisualBriefSuggestionPanel({
               {anchorCount > 0 ? (
                 <>
                   <span className="font-medium text-emerald-700">
-                    {anchorCount} brand-style anchor{anchorCount === 1 ? '' : 's'} active
+                    {t('step1.suggestion.anchorsActive', { count: anchorCount })}
                   </span>{' '}
-                  — each generation uses these as style reference for a consistent brand look.
+                  {t('step1.suggestion.anchorsActiveSuffix')}
                 </>
               ) : (
                 <>
-                  <span className="font-medium text-amber-700">No brand-style anchors</span> —
-                  configure 3–10 reference images in Brand Foundation for stronger cross-campaign consistency.
+                  <span className="font-medium text-amber-700">{t('step1.suggestion.noAnchors')}</span>{' '}
+                  {t('step1.suggestion.noAnchorsSuffix')}
                 </>
               )}
             </div>
@@ -1564,15 +1565,15 @@ function VisualBriefSuggestionPanel({
           purple #7c3aed — restant van legacy chip-styling). */}
       <div className="pt-2 border-t border-slate-200/70 space-y-1">
         <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-          Briefing
+          {t('step1.visualBrief.briefing')}
         </p>
         <textarea
           value={briefingText}
           onChange={(e) => onBriefingChange(e.target.value || null)}
           placeholder={
             briefingLoading
-              ? 'Generating briefing from content…'
-              : 'Describe what the visual should show — who, where, what, mood'
+              ? t('step1.suggestion.briefingLoadingPlaceholder')
+              : t('step1.visualBrief.briefingPlaceholder')
           }
           rows={7}
           disabled={briefingLoading}
@@ -1589,21 +1590,21 @@ function VisualBriefSuggestionPanel({
           onClick={onAccept}
           className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded bg-teal-600 text-white hover:bg-teal-700"
         >
-          Continue with suggestion
+          {t('step1.suggestion.continue')}
         </button>
         <button
           type="button"
           onClick={onChangeSource}
           className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
         >
-          Change source, keep briefing
+          {t('step1.suggestion.changeSource')}
         </button>
         <button
           type="button"
           onClick={onDoMyself}
           className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded text-slate-500 hover:text-slate-700"
         >
-          I&apos;ll do it myself
+          {t('step1.suggestion.doMyself')}
         </button>
       </div>
     </div>

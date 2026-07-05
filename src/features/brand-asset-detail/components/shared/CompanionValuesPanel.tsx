@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Info, ChevronDown, ChevronUp, Package, Heart, Crown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface CompanionValuesPanelProps {
   companionName: string;
@@ -25,12 +26,13 @@ export function CompanionValuesPanel({
   values,
   perspective,
 }: CompanionValuesPanelProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const [isOpen, setIsOpen] = useState(false);
   const hasValues = values.functional || values.emotional || values.selfExpressive;
 
   const label = perspective === 'identity'
-    ? `These describe who your brand IS at its core. Compare with ${companionName} (what you deliver).`
-    : `These articulate what you deliver to customers. Compare with ${companionName} (who you are).`;
+    ? t('companionValues.identityLabel', { companion: companionName })
+    : t('companionValues.commitmentLabel', { companion: companionName });
 
   return (
     <div className="border border-blue-100 rounded-lg overflow-hidden mb-4">
@@ -51,7 +53,7 @@ export function CompanionValuesPanel({
       {isOpen && (
         <div className="p-3 bg-blue-50/30 border-t border-blue-100 space-y-2">
           {hasValues ? (
-            VALUE_FIELDS.map(({ key, icon: Icon, label: fieldLabel, iconBg, iconColor }) => {
+            VALUE_FIELDS.map(({ key, icon: Icon, iconBg, iconColor }) => {
               const value = values[key];
               if (!value) return null;
               return (
@@ -60,7 +62,7 @@ export function CompanionValuesPanel({
                     <Icon className={`h-3 w-3 ${iconColor}`} />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-xs font-medium text-gray-500">{fieldLabel}:</span>
+                    <span className="text-xs font-medium text-gray-500">{t(`companionValues.fields.${key}`)}:</span>
                     <p className="text-xs text-gray-700 leading-relaxed">{value}</p>
                   </div>
                 </div>
@@ -68,7 +70,7 @@ export function CompanionValuesPanel({
             })
           ) : (
             <p className="text-xs text-gray-500 italic">
-              Not yet defined — fill in {companionName} first.
+              {t('companionValues.notDefined', { companion: companionName })}
             </p>
           )}
         </div>

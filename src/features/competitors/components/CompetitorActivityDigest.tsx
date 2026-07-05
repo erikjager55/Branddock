@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Activity, AlertTriangle, Building2 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 import { Badge, Card, Skeleton } from "@/components/shared";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { useCompetitorActivitySummary } from "../hooks/use-competitor-activities";
 import { useCompetitorsStore } from "../stores/useCompetitorsStore";
 import {
@@ -26,6 +27,8 @@ const SEVERITY_VARIANT: Record<ActivitySeverity, BadgeVariant> = {
  *  het overzicht; toont severity-tellers, top recent events en hot
  *  competitors per window. Return null indien geen events in window. */
 export function CompetitorActivityDigest({ onNavigateToDetail }: CompetitorActivityDigestProps) {
+  const { t } = useTranslation("competitors");
+  const { formatRelative } = useFormat();
   const [window, setWindow] = useState<"7d" | "30d">("7d");
   const { data, isLoading, isError } = useCompetitorActivitySummary(window);
 
@@ -47,7 +50,7 @@ export function CompetitorActivityDigest({ onNavigateToDetail }: CompetitorActiv
       <Card>
         <div className="flex items-center gap-2 text-red-600 text-sm">
           <AlertTriangle className="h-4 w-4" />
-          Couldn't load activity digest
+          {t("digest.loadError")}
         </div>
       </Card>
     );
@@ -75,7 +78,9 @@ export function CompetitorActivityDigest({ onNavigateToDetail }: CompetitorActiv
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-emerald-600" />
           <h3 className="text-sm font-semibold text-gray-900">
-            Competitor signals ({window === "7d" ? "this week" : "30 days"})
+            {t("digest.title", {
+              window: window === "7d" ? t("digest.windowThisWeek") : t("digest.window30Days"),
+            })}
           </h3>
         </div>
         <div className="flex gap-1">
@@ -89,15 +94,15 @@ export function CompetitorActivityDigest({ onNavigateToDetail }: CompetitorActiv
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-4">
-        <TotalChip label="Major" value={data.totals.major} variant="danger" />
-        <TotalChip label="Notable" value={data.totals.notable} variant="warning" />
-        <TotalChip label="Info" value={data.totals.info} variant="info" />
+        <TotalChip label={t("digest.major")} value={data.totals.major} variant="danger" />
+        <TotalChip label={t("digest.notable")} value={data.totals.notable} variant="warning" />
+        <TotalChip label={t("digest.info")} value={data.totals.info} variant="info" />
       </div>
 
       {data.topEvents.length > 0 && (
         <div className="mb-4">
           <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">
-            Top events
+            {t("digest.topEvents")}
           </div>
           <ul className="divide-y divide-gray-100">
             {data.topEvents.slice(0, 5).map((event) => (
@@ -122,7 +127,7 @@ export function CompetitorActivityDigest({ onNavigateToDetail }: CompetitorActiv
                     </p>
                   </div>
                   <span className="text-xs text-gray-400 flex-shrink-0">
-                    {safeRelativeTime(event.detectedAt)}
+                    {safeRelativeTime(formatRelative, event.detectedAt)}
                   </span>
                 </button>
               </li>
@@ -134,7 +139,7 @@ export function CompetitorActivityDigest({ onNavigateToDetail }: CompetitorActiv
       {data.hotCompetitors.length > 0 && (
         <div>
           <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">
-            Most signals
+            {t("digest.mostSignals")}
           </div>
           <div className="flex flex-wrap gap-2">
             {data.hotCompetitors.map((c) => (
@@ -219,9 +224,12 @@ function Logo({ url, alt, size = 8 }: LogoProps) {
   );
 }
 
-function safeRelativeTime(iso: string): string {
+function safeRelativeTime(
+  formatRelative: (value: Date | string | number) => string,
+  iso: string,
+): string {
   try {
-    return formatDistanceToNow(new Date(iso), { addSuffix: true });
+    return formatRelative(iso);
   } catch {
     return iso;
   }

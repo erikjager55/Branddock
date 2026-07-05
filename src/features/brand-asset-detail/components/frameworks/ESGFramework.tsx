@@ -1,13 +1,14 @@
 "use client";
 
 import { Leaf, Users, Shield } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Badge, Card } from "@/components/shared";
 import type { ESGFrameworkData, ESGPillar } from "../../types/framework.types";
 
 const PILLAR_CONFIG = {
-  environmental: { label: "Environmental", icon: Leaf, color: "text-emerald-600" },
-  social: { label: "Social", icon: Users, color: "text-blue-600" },
-  governance: { label: "Governance", icon: Shield, color: "text-purple-600" },
+  environmental: { icon: Leaf, color: "text-emerald-600" },
+  social: { icon: Users, color: "text-blue-600" },
+  governance: { icon: Shield, color: "text-purple-600" },
 } as const;
 
 const IMPACT_VARIANTS: Record<string, "success" | "warning" | "default"> = {
@@ -23,6 +24,7 @@ function PillarCard({
   pillarKey: keyof typeof PILLAR_CONFIG;
   pillar: ESGPillar;
 }) {
+  const { t } = useTranslation("brand-asset-detail");
   const config = PILLAR_CONFIG[pillarKey];
   const Icon = config.icon;
 
@@ -35,9 +37,9 @@ function PillarCard({
           </div>
           <div className="flex-1 space-y-2">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium text-gray-900">{config.label}</h4>
+              <h4 className="font-medium text-gray-900">{t(`esg.${pillarKey}`)}</h4>
               <Badge variant={IMPACT_VARIANTS[pillar.impact] ?? "default"} size="sm">
-                {pillar.impact} impact
+                {t("esg.impact", { level: pillar.impact })}
               </Badge>
             </div>
             <p className="text-sm text-gray-600">{pillar.description}</p>

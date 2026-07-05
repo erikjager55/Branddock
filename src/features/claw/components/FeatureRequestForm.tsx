@@ -2,17 +2,19 @@
 
 import React, { useState } from 'react';
 import { Lightbulb, X, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useClawStore } from '@/stores/useClawStore';
 import type { FeatureImpact } from '@/stores/useClawStore';
 
-const IMPACTS: { value: FeatureImpact; label: string; color: string }[] = [
-  { value: 'nice-to-have', label: 'Nice to have', color: 'bg-gray-100 text-gray-700 ring-gray-200' },
-  { value: 'useful', label: 'Useful', color: 'bg-blue-100 text-blue-700 ring-blue-200' },
-  { value: 'important', label: 'Important', color: 'bg-amber-100 text-amber-700 ring-amber-200' },
-  { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-700 ring-red-200' },
+const IMPACTS: { value: FeatureImpact; color: string }[] = [
+  { value: 'nice-to-have', color: 'bg-gray-100 text-gray-700 ring-gray-200' },
+  { value: 'useful', color: 'bg-blue-100 text-blue-700 ring-blue-200' },
+  { value: 'important', color: 'bg-amber-100 text-amber-700 ring-amber-200' },
+  { value: 'critical', color: 'bg-red-100 text-red-700 ring-red-200' },
 ];
 
 export function FeatureRequestForm() {
+  const { t } = useTranslation('claw');
   const { featureRequestForm, updateFeatureRequestForm, closeFeatureRequestForm, addMessage } =
     useClawStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,7 +27,7 @@ export function FeatureRequestForm() {
 
   const handleSubmit = async () => {
     if (!canSubmit) {
-      setError('Title and description are required');
+      setError(t('feature.required'));
       return;
     }
 
@@ -50,13 +52,16 @@ export function FeatureRequestForm() {
       addMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `Feature request submitted: **${featureRequestForm.title.trim()}** (${featureRequestForm.impact}). Thanks — we'll review it.`,
+        content: t('feature.submitted', {
+          title: featureRequestForm.title.trim(),
+          impact: featureRequestForm.impact,
+        }),
         createdAt: new Date().toISOString(),
       });
 
       closeFeatureRequestForm();
     } catch {
-      setError('Failed to submit. Please try again.');
+      setError(t('feature.submitFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -70,7 +75,7 @@ export function FeatureRequestForm() {
           <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center">
             <Lightbulb size={14} className="text-emerald-700" />
           </div>
-          <h3 className="text-sm font-semibold text-gray-900">Request a Feature</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t('feature.title')}</h3>
         </div>
         <button
           onClick={closeFeatureRequestForm}
@@ -82,7 +87,7 @@ export function FeatureRequestForm() {
 
       {/* Page */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Page / Section</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{t('feature.pageLabel')}</label>
         <input
           type="text"
           value={featureRequestForm.page}
@@ -93,12 +98,12 @@ export function FeatureRequestForm() {
 
       {/* Title */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{t('feature.titleLabel')}</label>
         <input
           type="text"
           value={featureRequestForm.title}
           onChange={(e) => updateFeatureRequestForm({ title: e.target.value })}
-          placeholder="A short summary of the feature"
+          placeholder={t('feature.titlePlaceholder')}
           maxLength={200}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
         />
@@ -106,7 +111,7 @@ export function FeatureRequestForm() {
 
       {/* Impact */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1.5">Impact</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('feature.impactLabel')}</label>
         <div className="flex flex-wrap gap-2">
           {IMPACTS.map((i) => (
             <button
@@ -118,7 +123,7 @@ export function FeatureRequestForm() {
                   : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
               }`}
             >
-              {i.label}
+              {t(`feature.impacts.${i.value}`)}
             </button>
           ))}
         </div>
@@ -126,11 +131,11 @@ export function FeatureRequestForm() {
 
       {/* Description */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{t('feature.descriptionLabel')}</label>
         <textarea
           value={featureRequestForm.description}
           onChange={(e) => updateFeatureRequestForm({ description: e.target.value })}
-          placeholder="What would you like to be able to do? What problem does it solve?"
+          placeholder={t('feature.descriptionPlaceholder')}
           rows={4}
           maxLength={5000}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-emerald-400"
@@ -140,13 +145,13 @@ export function FeatureRequestForm() {
       {/* Reference link (optional) */}
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">
-          Reference link (optional)
+          {t('feature.referenceLabel')}
         </label>
         <input
           type="text"
           value={featureRequestForm.screenshot}
           onChange={(e) => updateFeatureRequestForm({ screenshot: e.target.value })}
-          placeholder="Paste a URL to a mockup or example..."
+          placeholder={t('feature.referencePlaceholder')}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
         />
       </div>
@@ -179,13 +184,13 @@ export function FeatureRequestForm() {
             }
           }}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit Feature Request'}
+          {isSubmitting ? t('feature.submitting') : t('feature.submit')}
         </button>
         <button
           onClick={closeFeatureRequestForm}
           className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
         >
-          Cancel
+          {t('feature.cancel')}
         </button>
       </div>
     </div>

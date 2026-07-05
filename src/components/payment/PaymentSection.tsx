@@ -6,6 +6,7 @@ import { paymentProfileService } from '../../services/PaymentProfileService';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { CreditCard, AlertCircle, Lock } from 'lucide-react';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 interface PaymentSectionProps {
   amount: number;
@@ -20,6 +21,7 @@ export function PaymentSection({
   onCancel,
   actionLabel = 'Pay',
 }: PaymentSectionProps) {
+  const { formatCurrency } = useFormat();
   const [profileVariant, setProfileVariant] = useState<ProfileVariant>('empty');
   const [profile, setProfile] = useState(paymentProfileService.getProfile());
   const [showMethodSelection, setShowMethodSelection] = useState(false);
@@ -174,7 +176,7 @@ export function PaymentSection({
 
         <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
           <span className="font-medium">Total Amount</span>
-          <span className="text-2xl font-bold">${amount.toLocaleString()}</span>
+          <span className="text-2xl font-bold">{formatCurrency(amount, 'USD')}</span>
         </div>
 
         <div className="flex gap-3 pt-2">
@@ -186,7 +188,7 @@ export function PaymentSection({
             className="flex-1 bg-primary"
             disabled={isProcessing}
           >
-            {isProcessing ? 'Processing...' : `${actionLabel} $${amount.toLocaleString()}`}
+            {isProcessing ? 'Processing...' : `${actionLabel} ${formatCurrency(amount, 'USD')}`}
           </Button>
         </div>
 
@@ -369,7 +371,7 @@ export function PaymentSection({
           className="flex-1 bg-primary"
           disabled={isProcessing}
         >
-          {isProcessing ? 'Processing...' : `${actionLabel} $${amount.toLocaleString()}`}
+          {isProcessing ? 'Processing...' : `${actionLabel} ${formatCurrency(amount, 'USD')}`}
         </Button>
       </div>
     </form>

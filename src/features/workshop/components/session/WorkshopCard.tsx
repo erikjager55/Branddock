@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Badge } from '@/components/shared';
 import { Calendar, Clock, User, Layers } from 'lucide-react';
 import type { Workshop } from '../../types/workshop.types';
@@ -10,8 +12,10 @@ interface WorkshopCardProps {
 }
 
 export function WorkshopCard({ workshop, onStart }: WorkshopCardProps) {
+  const { t } = useTranslation('workshop');
+  const { formatDate } = useFormat();
   const scheduledDate = workshop.scheduledDate
-    ? new Date(workshop.scheduledDate).toLocaleDateString('en-US', {
+    ? formatDate(workshop.scheduledDate, {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -25,13 +29,15 @@ export function WorkshopCard({ workshop, onStart }: WorkshopCardProps) {
     >
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-medium text-gray-900 line-clamp-1">
-          {workshop.title || 'Canvas Workshop'}
+          {workshop.title || t('common.defaultTitle')}
         </h3>
         <Badge
           variant={workshop.status === 'SCHEDULED' ? 'info' : 'warning'}
           size="sm"
         >
-          {workshop.status === 'SCHEDULED' ? 'Scheduled' : 'Purchased'}
+          {workshop.status === 'SCHEDULED'
+            ? t('session.card.scheduled')
+            : t('session.card.purchased')}
         </Badge>
       </div>
 
@@ -51,12 +57,12 @@ export function WorkshopCard({ workshop, onStart }: WorkshopCardProps) {
         {workshop.hasFacilitator && (
           <Badge variant="info" size="sm" className="bg-purple-50 text-purple-700">
             <User className="w-3 h-3" />
-            Facilitator
+            {t('common.facilitator')}
           </Badge>
         )}
         <span className="flex items-center gap-1">
           <Layers className="w-3.5 h-3.5" />
-          {workshop.selectedAssetIds.length} assets
+          {t('session.card.assetCount', { count: workshop.selectedAssetIds.length })}
         </span>
       </div>
     </button>

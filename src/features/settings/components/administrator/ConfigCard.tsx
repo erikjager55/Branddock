@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bot, MoreVertical, Pencil, Copy, Trash2, MessageCircle, BookOpen } from 'lucide-react';
 import { Card, Badge } from '@/components/shared';
 import { EXPLORATION_AI_MODELS } from '@/lib/ai/exploration/config.types';
@@ -18,6 +19,7 @@ interface ConfigCardProps {
 // ─── Component ──────────────────────────────────────────────
 
 export function ConfigCard({ config, onSelect, onDuplicate, onDelete }: ConfigCardProps) {
+  const { t } = useTranslation('settings-admin');
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -62,7 +64,7 @@ export function ConfigCard({ config, onSelect, onDuplicate, onDelete }: ConfigCa
           </div>
           <div className="flex items-center gap-2">
             <Badge variant={config.isActive ? 'success' : 'default'} size="sm">
-              {config.isActive ? 'Active' : 'Inactive'}
+              {config.isActive ? t('status.active') : t('status.inactive')}
             </Badge>
             {/* Overflow menu */}
             <div ref={menuRef} className="relative">
@@ -86,7 +88,7 @@ export function ConfigCard({ config, onSelect, onDuplicate, onDelete }: ConfigCa
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   >
                     <Pencil className="w-3.5 h-3.5" />
-                    Edit
+                    {t('actions.edit')}
                   </button>
                   <button
                     onClick={(e) => {
@@ -97,7 +99,7 @@ export function ConfigCard({ config, onSelect, onDuplicate, onDelete }: ConfigCa
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   >
                     <Copy className="w-3.5 h-3.5" />
-                    Duplicate
+                    {t('actions.duplicate')}
                   </button>
                   <div className="border-t border-gray-100 my-1" />
                   <button
@@ -109,7 +111,7 @@ export function ConfigCard({ config, onSelect, onDuplicate, onDelete }: ConfigCa
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    Delete
+                    {t('actions.delete')}
                   </button>
                 </div>
               )}
@@ -124,11 +126,11 @@ export function ConfigCard({ config, onSelect, onDuplicate, onDelete }: ConfigCa
           </div>
           <div className="flex items-center gap-1 text-xs text-gray-400">
             <MessageCircle className="w-3 h-3" />
-            <span>{dimensionCount} dimensions</span>
+            <span>{t('dimensionsCount', { count: dimensionCount })}</span>
           </div>
           <div className="flex items-center gap-1 text-xs text-gray-400">
             <BookOpen className="w-3 h-3" />
-            <span>temp {config.temperature.toFixed(1)}</span>
+            <span>{t('card.temp', { value: config.temperature.toFixed(1) })}</span>
           </div>
         </div>
       </div>

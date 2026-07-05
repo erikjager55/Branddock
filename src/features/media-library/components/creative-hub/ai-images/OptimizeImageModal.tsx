@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sparkles, Image, X, ChevronRight, Loader2 } from 'lucide-react';
 import { Modal, Button, Input } from '@/components/shared';
 import { useOptimizeAiImage, useAiImages, useMediaAssets } from '@/features/media-library/hooks';
@@ -38,6 +39,7 @@ interface OptimizeImageModalProps {
 // ─── Component ──────────────────────────────────────────────
 
 export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps) {
+  const { t } = useTranslation('media-library');
   const optimizeImage = useOptimizeAiImage();
 
   const { data: aiImages } = useAiImages();
@@ -112,7 +114,7 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
 
   const handleSelectImage = (img: SourceImage) => {
     setSourceImage(img);
-    setName(`${img.name} — optimized`);
+    setName(t('aiImages.optimizeModal.defaultName', { name: img.name }));
     setStep('pick-action');
   };
 
@@ -139,21 +141,21 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
   const isValid = name.trim().length > 0 && sourceImage !== null && hasValidPrompt;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Optimize Image" size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('aiImages.optimize')} size="lg">
       <div className="space-y-5">
 
         {/* ── Step 1: Pick source image ── */}
         {step === 'pick-image' && (
           <div className="space-y-3">
             <p className="text-sm text-gray-600">
-              Select an image from your Media Library to optimize.
+              {t('aiImages.optimizeModal.pickImageHint')}
             </p>
 
             {availableImages.length === 0 ? (
               <div className="text-center py-8">
                 <Image className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                 <p className="text-sm text-gray-400">
-                  No images found. Upload images to your Media Library first.
+                  {t('aiImages.optimizeModal.noImages')}
                 </p>
               </div>
             ) : (
@@ -190,7 +192,7 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
               className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
             >
               <ChevronRight className="w-3 h-3 rotate-180" />
-              Change image
+              {t('aiImages.optimizeModal.changeImage')}
             </button>
 
             {/* Source image preview */}
@@ -203,7 +205,7 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{sourceImage.name}</p>
-                  <p className="text-xs text-gray-500">Source image</p>
+                  <p className="text-xs text-gray-500">{t('aiImages.optimizeModal.sourceImage')}</p>
                 </div>
                 <button
                   type="button"
@@ -217,20 +219,20 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
 
             {/* Name */}
             <Input
-              label="Output name"
+              label={t('aiImages.optimizeModal.outputName')}
               value={name}
               onChange={(e) => setName(e.target.value.slice(0, 200))}
-              placeholder="e.g. Hero image — upscaled 4x"
+              placeholder={t('aiImages.optimizeModal.outputPlaceholder')}
             />
 
             {/* Provider section: category filter pills + flat provider grid */}
             <div className="rounded-lg border border-gray-200 bg-white p-5">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-500" />
-                <h3 className="text-sm font-semibold text-gray-900">AI Optimization Model</h3>
+                <h3 className="text-sm font-semibold text-gray-900">{t('aiImages.optimizeModal.modelTitle')}</h3>
               </div>
               <p className="mt-1 text-sm text-gray-500">
-                Pick a category to narrow the list, then choose a model.
+                {t('aiImages.generateModal.providerHint')}
               </p>
 
               {/* Category filter pills */}
@@ -244,7 +246,7 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
                       : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  All models
+                  {t('aiImages.optimizeModal.allModels')}
                 </button>
                 {OPTIMIZE_CATEGORIES.map((cat) => (
                   <button
@@ -296,7 +298,7 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
             {isStyleTransfer && (
               <div>
                 <label htmlFor="style-transfer-style" className="block text-sm font-medium text-gray-700 mb-1">
-                  Target style
+                  {t('aiImages.optimizeModal.targetStyle')}
                 </label>
                 <select
                   id="style-transfer-style"
@@ -304,7 +306,7 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
                   onChange={(e) => setPrompt(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 >
-                  <option value="" disabled>Choose a style...</option>
+                  <option value="" disabled>{t('aiImages.optimizeModal.chooseStyle')}</option>
                   {STYLE_TRANSFER_TARGET_STYLES.map((style) => (
                     <option key={style} value={style}>{formatStyleLabel(style)}</option>
                   ))}
@@ -320,8 +322,8 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
               return (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {isEdit ? 'What should change?' : (
-                      <>Enhancement prompt <span className="text-gray-400 font-normal">(optional)</span></>
+                    {isEdit ? t('aiImages.optimizeModal.whatChanges') : (
+                      <>{t('aiImages.optimizeModal.enhancementPrompt')} <span className="text-gray-400 font-normal">{t('fields.optional')}</span></>
                     )}
                   </label>
                   <textarea
@@ -329,8 +331,8 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
                     onChange={(e) => setPrompt(e.target.value.slice(0, 1000))}
                     placeholder={
                       isEdit
-                        ? 'e.g. "Change the background to a modern office", "Make the lighting warmer", "Add a subtle gradient overlay"...'
-                        : 'Describe what to enhance or add detail to...'
+                        ? t('aiImages.optimizeModal.editPlaceholder')
+                        : t('aiImages.optimizeModal.enhancePlaceholder')
                     }
                     rows={3}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-y"
@@ -345,7 +347,7 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
               <div className="flex items-center gap-2 rounded-lg border p-3" style={{ backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' }}>
                 <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#0d9488' }} />
                 <p className="text-sm" style={{ color: '#065f46' }}>
-                  Optimizing image... This may take 10–30 seconds.
+                  {t('aiImages.optimizeModal.progress')}
                 </p>
               </div>
             )}
@@ -354,7 +356,7 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
             {optimizeImage.isError && (
               <div className="rounded-lg bg-red-50 border border-red-200 p-3" role="alert">
                 <p className="text-sm text-red-700">
-                  {(optimizeImage.error as Error)?.message || 'Failed to optimize image.'}
+                  {(optimizeImage.error as Error)?.message || t('aiImages.optimizeModal.error')}
                 </p>
               </div>
             )}
@@ -362,7 +364,7 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="secondary" onClick={handleClose} disabled={optimizeImage.isPending}>
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button
                 icon={Sparkles}
@@ -370,7 +372,7 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
                 disabled={!isValid || optimizeImage.isPending}
                 isLoading={optimizeImage.isPending}
               >
-                {optimizeImage.isPending ? 'Optimizing...' : 'Optimize Image'}
+                {optimizeImage.isPending ? t('aiImages.optimizeModal.optimizing') : t('aiImages.optimize')}
               </Button>
             </div>
           </>

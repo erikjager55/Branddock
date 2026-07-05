@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Star, TrendingUp, Tag } from "lucide-react";
 import { BUNDLE_BADGES } from "../../constants/research-constants";
 
@@ -22,6 +23,7 @@ const BADGE_ICONS = {
 // ─── Component ───────────────────────────────────────────────
 
 export function BundleBadge({ type, discount }: BundleBadgeProps) {
+  const { t } = useTranslation("research");
   const Icon = BADGE_ICONS[type];
 
   let bg: string;
@@ -31,12 +33,12 @@ export function BundleBadge({ type, discount }: BundleBadgeProps) {
   if (type === "save") {
     bg = "bg-blue-100";
     text = "text-blue-700";
-    label = discount ? `Save ${discount}%` : "Save";
+    label = discount ? t("bundleBadge.savePercent", { discount }) : t("bundleBadge.save");
   } else {
     const config = BUNDLE_BADGES[type];
     bg = config.bg;
     text = config.text;
-    label = config.label;
+    label = t(`bundleBadge.${type}`);
   }
 
   return (

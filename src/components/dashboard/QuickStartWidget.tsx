@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { ChevronDown, Check, Rocket } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useDashboardStore } from '../../stores/useDashboardStore';
 import { useDashboardPreferences, useCompleteQuickStart } from '../../hooks/use-dashboard';
 
@@ -8,6 +9,7 @@ interface QuickStartWidgetProps {
 }
 
 export function QuickStartWidget({ onNavigate }: QuickStartWidgetProps) {
+  const { t } = useTranslation('dashboard');
   const { showQuickStart, quickStartCollapsed, dismissQuickStart, toggleQuickStartCollapse } = useDashboardStore();
   const { data: preferences } = useDashboardPreferences();
   const completeItem = useCompleteQuickStart();
@@ -32,10 +34,10 @@ export function QuickStartWidget({ onNavigate }: QuickStartWidgetProps) {
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
           <Rocket className="h-4 w-4 text-green-600" />
-          <h3 className="text-sm font-semibold text-gray-900">Quick Start</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t('quickStart.title')}</h3>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-500">{completedCount}/{items.length} complete</span>
+          <span className="text-xs text-gray-500">{t('quickStart.progress', { completed: completedCount, total: items.length })}</span>
           <button data-testid="quick-start-collapse-btn" onClick={() => toggleQuickStartCollapse()} className="text-gray-400 hover:text-gray-600">
             <ChevronDown className={`h-4 w-4 transition-transform ${quickStartCollapsed ? '-rotate-90' : ''}`} />
           </button>
@@ -94,7 +96,7 @@ export function QuickStartWidget({ onNavigate }: QuickStartWidgetProps) {
           onClick={() => dismissQuickStart()}
           className="text-xs text-gray-400 hover:text-gray-600 mt-3"
         >
-          Dismiss
+          {t('quickStart.dismiss')}
         </button>
       )}
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Edit3, Save, X, Building2, Trash2 } from "lucide-react";
 import { Button, Badge, SkeletonCard, Modal, Select } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
@@ -38,6 +39,7 @@ export function CompetitorDetailPage({
   onBack,
   onNavigate,
 }: CompetitorDetailPageProps) {
+  const { t } = useTranslation(["competitors", "trends-personas-registry"]);
   const { data: competitor, isLoading } = useCompetitorDetail(competitorId);
   const updateCompetitor = useUpdateCompetitor(competitorId);
   const deleteCompetitor = useDeleteCompetitor(competitorId);
@@ -58,12 +60,12 @@ export function CompetitorDetailPage({
   const lock = useLockState({
     entityType: "competitors",
     entityId: competitorId,
-    entityName: competitor?.name ?? "Competitor",
+    entityName: competitor?.name ?? t("detail.entityFallback"),
     initialState: {
       isLocked: competitor?.isLocked ?? false,
       lockedAt: competitor?.lockedAt ?? null,
       lockedBy: competitor?.lockedBy
-        ? { id: competitor.lockedBy.id, name: competitor.lockedBy.name ?? "Unknown" }
+        ? { id: competitor.lockedBy.id, name: competitor.lockedBy.name ?? t("detail.unknownUser") }
         : null,
     },
     onLockChange: () => {
@@ -146,7 +148,7 @@ export function CompetitorDetailPage({
       })
       .then(() => setIsEditing(false))
       .catch((err: unknown) => {
-        setSaveError(err instanceof Error ? err.message : "Failed to save changes");
+        setSaveError(err instanceof Error ? err.message : t("detail.saveError"));
       });
   };
 
@@ -157,7 +159,7 @@ export function CompetitorDetailPage({
       onBack();
     }).catch((err: unknown) => {
       setIsDeleteConfirmOpen(false);
-      setSaveError(err instanceof Error ? err.message : "Failed to delete competitor");
+      setSaveError(err instanceof Error ? err.message : t("detail.deleteError"));
     });
   };
 
@@ -176,9 +178,9 @@ export function CompetitorDetailPage({
     return (
       <PageShell>
         <div className="text-center py-12">
-          <p className="text-gray-500">Competitor not found</p>
+          <p className="text-gray-500">{t("detail.notFound")}</p>
           <Button variant="ghost" onClick={onBack} className="mt-4">
-            Back to Competitors
+            {t("actions.backToCompetitors")}
           </Button>
         </div>
       </PageShell>
@@ -198,7 +200,7 @@ export function CompetitorDetailPage({
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Competitors
+          {t("actions.backToCompetitors")}
         </button>
 
         {/* Header */}
@@ -220,8 +222,8 @@ export function CompetitorDetailPage({
                 <h1 className="text-2xl font-bold text-gray-900">
                   {isEditing ? editName : competitor.name}
                 </h1>
-                {tierConfig && <Badge variant={tierConfig.variant}>{tierConfig.label}</Badge>}
-                {statusConfig && <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>}
+                {tierConfig && <Badge variant={tierConfig.variant}>{t(`trends-personas-registry:competitorTier.${competitor.tier}`, { defaultValue: tierConfig.label })}</Badge>}
+                {statusConfig && <Badge variant={statusConfig.variant}>{t(`trends-personas-registry:competitorStatus.${competitor.status}`, { defaultValue: statusConfig.label })}</Badge>}
               </div>
               {competitor.tagline && !isEditing && (
                 <p className="text-sm text-gray-500 mt-0.5">{competitor.tagline}</p>
@@ -241,26 +243,26 @@ export function CompetitorDetailPage({
               onClick={lock.requestToggle}
               isLoading={lock.isToggling}
             >
-              {lock.isLocked ? "Unlock" : "Lock"}
+              {lock.isLocked ? t("actions.unlock") : t("actions.lock")}
             </Button>
             {!lock.isLocked && (
               <>
                 {isEditing ? (
                   <>
                     <Button variant="ghost" size="sm" onClick={() => { setIsEditing(false); setSaveError(null); }}>
-                      <X className="h-4 w-4 mr-1" /> Cancel
+                      <X className="h-4 w-4 mr-1" /> {t("actions.cancel")}
                     </Button>
                     <Button size="sm" onClick={handleSave} isLoading={updateCompetitor.isPending}>
-                      <Save className="h-4 w-4 mr-1" /> Save
+                      <Save className="h-4 w-4 mr-1" /> {t("actions.save")}
                     </Button>
                   </>
                 ) : (
                   <>
                     <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
-                      <Edit3 className="h-4 w-4 mr-1" /> Edit
+                      <Edit3 className="h-4 w-4 mr-1" /> {t("actions.edit")}
                     </Button>
                     <Button variant="danger" size="sm" onClick={() => setIsDeleteConfirmOpen(true)}>
-                      <Trash2 className="h-4 w-4 mr-1" /> Delete
+                      <Trash2 className="h-4 w-4 mr-1" /> {t("actions.delete")}
                     </Button>
                   </>
                 )}
@@ -290,10 +292,10 @@ export function CompetitorDetailPage({
               {isEditing && (
                 <div className="mb-6 max-w-xs">
                   <Select
-                    label="Competitor tier"
+                    label={t("detail.tierLabel")}
                     value={editTier}
                     onChange={(v) => setEditTier(v ?? "DIRECT")}
-                    options={TIER_OPTIONS.map((t) => ({ value: t.value, label: t.label }))}
+                    options={TIER_OPTIONS.map((opt) => ({ value: opt.value, label: t(`trends-personas-registry:competitorTier.${opt.value}`, { defaultValue: opt.label }) }))}
                   />
                 </div>
               )}
@@ -395,25 +397,25 @@ export function CompetitorDetailPage({
       <Modal
         isOpen={isDeleteConfirmOpen}
         onClose={() => setIsDeleteConfirmOpen(false)}
-        title="Delete Competitor"
+        title={t("detail.deleteTitle")}
         size="sm"
         footer={
           <div className="flex items-center justify-end gap-3">
             <Button variant="ghost" onClick={() => setIsDeleteConfirmOpen(false)}>
-              Cancel
+              {t("actions.cancel")}
             </Button>
             <Button
               variant="danger"
               onClick={handleDelete}
               isLoading={deleteCompetitor.isPending}
             >
-              Delete
+              {t("actions.delete")}
             </Button>
           </div>
         }
       >
         <p className="text-sm text-gray-600">
-          Are you sure you want to delete &ldquo;{competitor.name}&rdquo;? This action cannot be undone.
+          {t("detail.deleteConfirm", { name: competitor.name })}
         </p>
       </Modal>
     </PageShell>

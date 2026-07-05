@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -219,6 +220,7 @@ const mockProjects: ResearchProject[] = [
 ];
 
 export function ResearchValidationPage() {
+  const { t } = useTranslation('research-pages');
   const [projects] = useState<ResearchProject[]>(mockProjects);
 
   return (
@@ -231,9 +233,9 @@ export function ResearchValidationPage() {
               <FlaskConical className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-semibold mb-1">Validation Research</h1>
+              <h1 className="text-3xl font-semibold mb-1">{t('validation.header.title')}</h1>
               <p className="text-muted-foreground">
-                Test your strategies with market validation
+                {t('validation.header.subtitle')}
               </p>
             </div>
           </div>
@@ -245,7 +247,7 @@ export function ResearchValidationPage() {
         {/* Top Section: Methods Selector */}
         <div className="mb-12">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
-            Start Validation
+            {t('validation.startValidation')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {researchMethods.map((method) => {
@@ -265,10 +267,10 @@ export function ResearchValidationPage() {
                       <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                     <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors">
-                      {method.shortName}
+                      {t(`validation.method.${method.id}.shortName`, { defaultValue: method.shortName })}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      {method.description}
+                      {t(`validation.method.${method.id}.description`, { defaultValue: method.description })}
                     </p>
                   </CardContent>
                 </Card>
@@ -280,9 +282,9 @@ export function ResearchValidationPage() {
         {/* Main Section: Active Research Pipeline */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold">Active Research Projects</h2>
+            <h2 className="text-2xl font-semibold">{t('validation.activeProjects')}</h2>
             <Badge variant="outline" className="text-xs px-3 py-1">
-              {projects.length} Active
+              {t('validation.activeBadge', { count: projects.length })}
             </Badge>
           </div>
 
@@ -317,13 +319,16 @@ export function ResearchValidationPage() {
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <div className="flex items-center gap-1.5">
                               <Calendar className="h-3.5 w-3.5" />
-                              <span>Started {project.startDate}</span>
+                              <span>{t('validation.project.started', { date: project.startDate })}</span>
                             </div>
                             {project.participants !== undefined && (
                               <div className="flex items-center gap-1.5">
                                 <Users className="h-3.5 w-3.5" />
                                 <span>
-                                  {project.participants}/{project.targetParticipants} participants
+                                  {t('validation.project.participants', {
+                                    current: project.participants,
+                                    target: project.targetParticipants,
+                                  })}
                                 </span>
                               </div>
                             )}
@@ -336,7 +341,7 @@ export function ResearchValidationPage() {
                           className="flex-shrink-0"
                           onClick={() => console.log('View details:', project.id)}
                         >
-                          View Details
+                          {t('validation.project.viewDetails')}
                           <ChevronRight className="h-4 w-4 ml-1" />
                         </Button>
                       </div>
@@ -345,7 +350,7 @@ export function ResearchValidationPage() {
                       <div>
                         <div className="mb-3">
                           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                            Linked Assets {project.scope.length > 1 && `(${project.scope.length})`}
+                            {t('validation.project.linkedAssets')} {project.scope.length > 1 && `(${project.scope.length})`}
                           </span>
                         </div>
                         
@@ -365,7 +370,7 @@ export function ResearchValidationPage() {
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs text-muted-foreground leading-none">
-                                    {assetConfig.label}
+                                    {t(`validation.assetType.${asset.type}`, { defaultValue: assetConfig.label })}
                                   </span>
                                   <span className="text-sm font-medium leading-tight mt-0.5">
                                     {asset.name}
@@ -381,7 +386,7 @@ export function ResearchValidationPage() {
                           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                             <Target className="h-3.5 w-3.5 text-primary" />
                             <span>
-                              Multi-asset validation • Insights will trace back to all {project.scope.length} linked assets
+                              {t('validation.project.traceHint', { count: project.scope.length })}
                             </span>
                           </div>
                         )}
@@ -417,12 +422,10 @@ export function ResearchValidationPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">
-                      Multi-Asset Research
+                      {t('validation.multiAssetCard.title')}
                     </h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Link multiple knowledge assets to a single research project for comprehensive validation. 
-                      Insights automatically trace back to all connected assets, creating a unified knowledge graph 
-                      that powers your strategic decisions.
+                      {t('validation.multiAssetCard.description')}
                     </p>
                   </div>
                 </div>

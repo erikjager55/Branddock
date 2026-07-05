@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { MessageSquare, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { openClawWithPrompt } from '../lib/open-with-prompt';
 
 interface BrandAssistantCTAProps {
@@ -32,9 +33,13 @@ interface BrandAssistantCTAProps {
 export function BrandAssistantCTA({
   prompts,
   variant = 'card',
-  title = 'Ask the Brand Assistant',
-  subtitle = 'Describe what you want in plain language — Claw handles the rest.',
+  title,
+  subtitle,
 }: BrandAssistantCTAProps) {
+  const { t } = useTranslation('claw');
+  const resolvedTitle = title ?? t('cta.defaultTitle');
+  const resolvedSubtitle = subtitle ?? t('cta.defaultSubtitle');
+
   if (variant === 'tip') {
     // Compact one-liner for use above Add forms.
     const firstPrompt = prompts?.[0];
@@ -42,7 +47,7 @@ export function BrandAssistantCTA({
       <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-teal-50 border border-teal-100 text-[12px] text-teal-900">
         <Sparkles className="h-4 w-4 flex-shrink-0 mt-0.5 text-teal-600" />
         <div className="flex-1 flex flex-wrap items-center gap-x-1 gap-y-0.5">
-          <span>Quick tip — you can also ask the Brand Assistant:</span>
+          <span>{t('cta.quickTip')}</span>
           {firstPrompt && (
             <button
               type="button"
@@ -64,8 +69,8 @@ export function BrandAssistantCTA({
           <MessageSquare className="h-5 w-5 text-teal-700" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-          <p className="mt-1 text-[13px] text-gray-600">{subtitle}</p>
+          <h3 className="text-sm font-semibold text-gray-900">{resolvedTitle}</h3>
+          <p className="mt-1 text-[13px] text-gray-600">{resolvedSubtitle}</p>
           {prompts && prompts.length > 0 && (
             <ul className="mt-3 space-y-1.5">
               {prompts.map((prompt) => (

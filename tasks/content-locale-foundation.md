@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 2-3 weken
 owner: claude-code
-status: open
+status: done
 created: 2026-06-28
-completed: -
+completed: 2026-07-03
 related-adr: docs/adr/2026-06-28-multilingual-i18n-and-multi-market-content.md
 related-spec: -
 worktree: -
@@ -81,3 +81,15 @@ Bouw de **Content-language**-selector in de levende Workspaces-tab (schrijft `Wo
 
 - Splits de taal-gebonden tekst die nu in de globale `BrandStyleguide` zit (`designPhilosophy`, `fixtureSamples`, `archetypeReasoning`) conceptueel naar de overlay (`localizedAssets`) met default op de kern, zodat de "globale kern" geen markt-taal lekt zodra overlays landen.
 - Vervolg: `[[content-locale-target-picker]]`.
+
+# Status 2026-07-03 — GELAND (branch `feat/content-locale-foundation`) — changelog #354
+
+Uitgevoerd in gated fasen (elk tsc 0 / lint 0 / separation 3/3 / build groen):
+- **A+C** `1b8fc776` — schema (Brand + BrandLocaleProfile + nullable localeProfileId + LandingPage locale-key-flip) + backfill (17 ws → 17 default-profielen, 0 orphans) + seed + LandingPage compound-key-code (`publish-page.ts`/`p/[slug]`/publish-route; reads via `findFirst`).
+- **B** `787c39e0` — `getBrandContext(workspaceId, localeProfileId?)` + cache-key `${workspaceId}:${localeProfileId ?? 'default'}` + `invalidateBrandContext` wist alle varianten; `resolveLocaleForBrand(workspaceId, requestedLocale?)`. **Default-pad byte-identiek** (17-workspace baseline-diff). Vereenvoudigd t.o.v. plan: profiel wordt alléén gelezen bij een EXPLICIET gekozen `localeProfileId` (Fase 2) — default-pad ongewijzigd (voiceguide → Workspace.contentLanguage), dus de per-merk voiceguide-override blijft werken zonder sync-drift.
+- **D** `67fb8b71` — live Content-language-control (WorkspacesTab rij + create-form) + POST maakt Brand+profiel + PATCH synct profiel/mirror + `invalidateBrandContext` (fixt bestaande stale-cache-bug) + `src/lib/content-locale/default-profile.ts`.
+- **E** (deze commit) — smoke `scripts/smoke-tests/content-locale-foundation.ts` (46/46) + changelog #354 + deze notitie.
+
+**Bewust NIET gedaan** (buiten scope / Fase 2+): per-generatie target-locale picker + de 4 analyze-route `Accept-Language`-lekken → `content-locale-target-picker`. Transcreatie-fan-out / `voiceOverrides`/`localizedAssets` consumeren / hreflang-emissie / multi-select markten → `multi-market-transcreation-enterprise` (Fase 4-5). Volledige Playwright-E2E-specs voor workspace-create/switch: de invariant is bewezen via de byte-identiek-baseline + de smoke; formele E2E-spec-uitbreiding is een follow-up.
+
+**Openstaand**: PR + merge (branch heeft de Vercel-prisma-generate-fix nog niet — merge `main` in vóór de PR); `task-finalize` (user triggert).

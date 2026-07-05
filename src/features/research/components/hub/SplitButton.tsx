@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, ChevronDown, Sliders, Package } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────
@@ -12,6 +13,7 @@ interface SplitButtonProps {
 // ─── Component ───────────────────────────────────────────────
 
 export function SplitButton({ onNavigate }: SplitButtonProps) {
+  const { t } = useTranslation("research");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +50,7 @@ export function SplitButton({ onNavigate }: SplitButtonProps) {
         className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-l-lg text-sm font-medium transition-colors"
       >
         <Plus className="w-4 h-4" />
-        New Research Plan
+        {t("splitButton.newPlan")}
       </button>
 
       <button
@@ -66,14 +68,14 @@ export function SplitButton({ onNavigate }: SplitButtonProps) {
             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
           >
             <Sliders className="w-4 h-4 text-gray-400" />
-            Custom Research Plan
+            {t("splitButton.customPlan")}
           </button>
           <button
             onClick={() => handleMenuItemClick("research-bundles")}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
           >
             <Package className="w-4 h-4 text-gray-400" />
-            Browse Research Bundles
+            {t("splitButton.browseBundles")}
           </button>
         </div>
       )}

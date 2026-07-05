@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -25,6 +26,7 @@ interface MissionStatementCanvasProps {
 }
 
 export function MissionStatementCanvas({ onRerender, onEdit, assetData, sessionData, isLocked = false }: MissionStatementCanvasProps) {
+  const { t } = useTranslation('canvases');
   const [isEditing, setIsEditing] = useState(false);
   
   // Use session data if available, otherwise fall back to default data
@@ -61,21 +63,21 @@ export function MissionStatementCanvas({ onRerender, onEdit, assetData, sessionD
       <CardContent className="p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h3 className="text-xl font-semibold mb-2">Mission Statement Canvas</h3>
-            <p className="text-muted-foreground">Your organization's purpose and approach</p>
+            <h3 className="text-xl font-semibold mb-2">{t('mission.title')}</h3>
+            <p className="text-muted-foreground">{t('mission.subtitle')}</p>
             {sessionData?.sources && (
               <p className="text-xs text-blue-600 mt-1">
-                Data from: {sessionData.sources.join(', ')}
+                {t('common.dataFrom', { sources: sessionData.sources.join(', ') })}
               </p>
             )}
           </div>
           <div className="flex items-center space-x-2">
             <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
-              Completed
+              {t('status.completed')}
             </Badge>
             {sessionData && (
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                Session Data Applied
+                {t('status.sessionDataApplied')}
               </Badge>
             )}
           </div>
@@ -89,8 +91,8 @@ export function MissionStatementCanvas({ onRerender, onEdit, assetData, sessionD
                 <Target className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <h4 className="text-lg font-semibold text-green-900 dark:text-green-100">Our Mission</h4>
-                <p className="text-sm text-green-600 dark:text-green-400">Purpose in action</p>
+                <h4 className="text-lg font-semibold text-green-900 dark:text-green-100">{t('mission.ourMission')}</h4>
+                <p className="text-sm text-green-600 dark:text-green-400">{t('mission.purposeInAction')}</p>
               </div>
             </div>
             
@@ -104,7 +106,7 @@ export function MissionStatementCanvas({ onRerender, onEdit, assetData, sessionD
                 <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-4">
                   <div className="flex items-center mb-2">
                     <Users className="h-4 w-4 text-blue-600 mr-2" />
-                    <span className="font-semibold text-green-900 dark:text-green-100">Who</span>
+                    <span className="font-semibold text-green-900 dark:text-green-100">{t('mission.who')}</span>
                   </div>
                   <p className="text-sm text-gray-700 dark:text-gray-300">{editData.components.who}</p>
                 </div>
@@ -112,7 +114,7 @@ export function MissionStatementCanvas({ onRerender, onEdit, assetData, sessionD
                 <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-4">
                   <div className="flex items-center mb-2">
                     <Zap className="h-4 w-4 text-orange-600 mr-2" />
-                    <span className="font-semibold text-green-900 dark:text-green-100">What</span>
+                    <span className="font-semibold text-green-900 dark:text-green-100">{t('mission.what')}</span>
                   </div>
                   <p className="text-sm text-gray-700 dark:text-gray-300">{editData.components.what}</p>
                 </div>
@@ -122,7 +124,7 @@ export function MissionStatementCanvas({ onRerender, onEdit, assetData, sessionD
                 <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-4">
                   <div className="flex items-center mb-2">
                     <Target className="h-4 w-4 text-green-600 mr-2" />
-                    <span className="font-semibold text-green-900 dark:text-green-100">How</span>
+                    <span className="font-semibold text-green-900 dark:text-green-100">{t('mission.how')}</span>
                   </div>
                   <p className="text-sm text-gray-700 dark:text-gray-300">{editData.components.how}</p>
                 </div>
@@ -130,7 +132,7 @@ export function MissionStatementCanvas({ onRerender, onEdit, assetData, sessionD
                 <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-4">
                   <div className="flex items-center mb-2">
                     <Heart className="h-4 w-4 text-red-600 mr-2" />
-                    <span className="font-semibold text-green-900 dark:text-green-100">Why</span>
+                    <span className="font-semibold text-green-900 dark:text-green-100">{t('mission.why')}</span>
                   </div>
                   <p className="text-sm text-gray-700 dark:text-gray-300">{editData.components.why}</p>
                 </div>
@@ -144,43 +146,43 @@ export function MissionStatementCanvas({ onRerender, onEdit, assetData, sessionD
           <DialogTrigger asChild>
             <Button variant="outline" className="w-full" disabled={isLocked}>
               <Edit className="h-4 w-4 mr-2" />
-              {isLocked ? 'Locked - Cannot Edit' : 'Edit Mission Statement'}
+              {isLocked ? t('status.lockedCannotEdit') : t('mission.editButton')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Edit Mission Statement</DialogTitle>
+              <DialogTitle>{t('mission.editTitle')}</DialogTitle>
               <DialogDescription>
-                Define your organization's purpose and approach
+                {t('mission.editDescription')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
               <div>
-                <label className="text-sm font-medium mb-2 block">Mission Statement</label>
+                <label className="text-sm font-medium mb-2 block">{t('mission.missionLabel')}</label>
                 <Textarea
                   value={editData.mission}
                   onChange={(e) => setEditData({...editData, mission: e.target.value})}
-                  placeholder="Describe your organization's purpose and approach..."
+                  placeholder={t('mission.missionPlaceholder')}
                   className="min-h-24"
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Who (Target Audience)</label>
+                  <label className="text-sm font-medium mb-2 block">{t('mission.whoLabel')}</label>
                   <Textarea
                     value={editData.components.who}
                     onChange={(e) => setEditData({...editData, components: {...editData.components, who: e.target.value}})}
-                    placeholder="Who do you serve?"
+                    placeholder={t('mission.whoPlaceholder')}
                     className="min-h-16"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">What (Products/Services)</label>
+                  <label className="text-sm font-medium mb-2 block">{t('mission.whatLabel')}</label>
                   <Textarea
                     value={editData.components.what}
                     onChange={(e) => setEditData({...editData, components: {...editData.components, what: e.target.value}})}
-                    placeholder="What do you offer?"
+                    placeholder={t('mission.whatPlaceholder')}
                     className="min-h-16"
                   />
                 </div>
@@ -188,20 +190,20 @@ export function MissionStatementCanvas({ onRerender, onEdit, assetData, sessionD
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">How (Approach/Method)</label>
+                  <label className="text-sm font-medium mb-2 block">{t('mission.howLabel')}</label>
                   <Textarea
                     value={editData.components.how}
                     onChange={(e) => setEditData({...editData, components: {...editData.components, how: e.target.value}})}
-                    placeholder="How do you deliver value?"
+                    placeholder={t('mission.howPlaceholder')}
                     className="min-h-16"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Why (Purpose/Impact)</label>
+                  <label className="text-sm font-medium mb-2 block">{t('mission.whyLabel')}</label>
                   <Textarea
                     value={editData.components.why}
                     onChange={(e) => setEditData({...editData, components: {...editData.components, why: e.target.value}})}
-                    placeholder="Why does this matter?"
+                    placeholder={t('mission.whyPlaceholder')}
                     className="min-h-16"
                   />
                 </div>
@@ -210,11 +212,11 @@ export function MissionStatementCanvas({ onRerender, onEdit, assetData, sessionD
             <div className="flex justify-end space-x-2 mt-6">
               <Button variant="outline" onClick={handleCancel}>
                 <X className="h-4 w-4 mr-2" />
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button onClick={handleSave}>
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                {t('actions.saveChanges')}
               </Button>
             </div>
           </DialogContent>

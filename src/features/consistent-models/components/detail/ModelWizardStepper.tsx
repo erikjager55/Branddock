@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
 
 interface ModelWizardStepperProps {
@@ -17,6 +18,7 @@ export function ModelWizardStepper({
   onStepClick,
   optionalSteps = [],
 }: ModelWizardStepperProps) {
+  const { t } = useTranslation("consistent-models");
   return (
     <div className="flex items-center justify-center w-full">
       {labels.map((label, index) => {
@@ -60,7 +62,7 @@ export function ModelWizardStepper({
                   {label}
                 </span>
                 {optionalSteps.includes(stepNumber) && (
-                  <span className="text-[10px] text-gray-400">(optional)</span>
+                  <span className="text-[10px] text-gray-400">{t("stepper.optional")}</span>
                 )}
               </div>
             </div>

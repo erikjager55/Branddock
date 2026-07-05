@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -160,10 +161,22 @@ const tagStyles = {
 };
 
 export function NewStrategyPage() {
+  const { t } = useTranslation('strategy-pages');
   const [selectedFramework, setSelectedFramework] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [selectedTimeRange, setSelectedTimeRange] = useState<string>('all');
+
+  // English tag labels (used as filter identity) mapped back to their stable variant
+  // so the render-edge translation keys stay stable regardless of display locale.
+  // Note: a plain record — not `new Map()` — because the `Map` identifier here
+  // resolves to the lucide-react icon import, not the global constructor.
+  const tagVariantByLabel: Record<string, string> = {};
+  frameworks.forEach((f) => {
+    if (f.tag) tagVariantByLabel[f.tag.label] = f.tag.variant;
+  });
+  const tagLabel = (label: string) =>
+    t(`tags.${tagVariantByLabel[label] ?? label}`, { defaultValue: label });
 
   // Mock tool data for Campaign Strategy Generator
   const campaignStrategyTool = {
@@ -244,9 +257,9 @@ export function NewStrategyPage() {
               <Rocket className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-semibold mb-1">New Strategy</h1>
+              <h1 className="text-3xl font-semibold mb-1">{t('header.title')}</h1>
               <p className="text-muted-foreground">
-                Choose a strategy type to begin
+                {t('header.subtitle')}
               </p>
             </div>
           </div>
@@ -259,7 +272,7 @@ export function NewStrategyPage() {
         <div className="mt-6 flex gap-3">
           {/* Search Input */}
           <Input
-            placeholder="Search strategies..."
+            placeholder={t('filters.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full"
@@ -271,14 +284,14 @@ export function NewStrategyPage() {
             onValueChange={(value) => setSelectedTag(value)}
           >
             <SelectTrigger className="w-40">
-              <SelectValue placeholder="Tag">
-                {selectedTag === 'all' ? 'All Tags' : selectedTag}
+              <SelectValue placeholder={t('filters.tagPlaceholder')}>
+                {selectedTag === 'all' ? t('filters.allTags') : tagLabel(selectedTag)}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Tags</SelectItem>
+              <SelectItem value="all">{t('filters.allTags')}</SelectItem>
               {allTags.map(tag => (
-                <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                <SelectItem key={tag} value={tag}>{tagLabel(tag)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -289,18 +302,18 @@ export function NewStrategyPage() {
             onValueChange={(value) => setSelectedTimeRange(value)}
           >
             <SelectTrigger className="w-40">
-              <SelectValue placeholder="Duration">
-                {selectedTimeRange === 'all' && 'All Durations'}
-                {selectedTimeRange === 'quick' && 'Quick (≤15 min)'}
-                {selectedTimeRange === 'medium' && 'Medium (15-25 min)'}
-                {selectedTimeRange === 'extended' && 'Extended (>25 min)'}
+              <SelectValue placeholder={t('filters.durationPlaceholder')}>
+                {selectedTimeRange === 'all' && t('filters.duration.all')}
+                {selectedTimeRange === 'quick' && t('filters.duration.quick')}
+                {selectedTimeRange === 'medium' && t('filters.duration.medium')}
+                {selectedTimeRange === 'extended' && t('filters.duration.extended')}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Durations</SelectItem>
-              <SelectItem value="quick">Quick (≤15 min)</SelectItem>
-              <SelectItem value="medium">Medium (15-25 min)</SelectItem>
-              <SelectItem value="extended">Extended (&gt;25 min)</SelectItem>
+              <SelectItem value="all">{t('filters.duration.all')}</SelectItem>
+              <SelectItem value="quick">{t('filters.duration.quick')}</SelectItem>
+              <SelectItem value="medium">{t('filters.duration.medium')}</SelectItem>
+              <SelectItem value="extended">{t('filters.duration.extended')}</SelectItem>
             </SelectContent>
           </Select>
           
@@ -320,7 +333,7 @@ export function NewStrategyPage() {
         {/* Results Count */}
         {hasActiveFilters && (
           <div className="mt-3 text-sm text-muted-foreground">
-            Showing {filteredFrameworks.length} of {frameworks.length} {filteredFrameworks.length === 1 ? 'strategy' : 'strategies'}
+            {t('results', { count: filteredFrameworks.length, total: frameworks.length })}
           </div>
         )}
 
@@ -345,7 +358,7 @@ export function NewStrategyPage() {
                           variant="outline"
                           className={`${tagStyles[framework.tag.variant]} border font-medium px-3 py-1`}
                         >
-                          {framework.tag.label}
+                          {t(`tags.${framework.tag.variant}`, { defaultValue: framework.tag.label })}
                         </Badge>
                       )}
 
@@ -357,12 +370,12 @@ export function NewStrategyPage() {
 
                     {/* Title */}
                     <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
-                      {framework.title}
+                      {t(`frameworks.${framework.id}.title`, { defaultValue: framework.title })}
                     </h3>
 
                     {/* Description */}
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {framework.description}
+                      {t(`frameworks.${framework.id}.description`, { defaultValue: framework.description })}
                     </p>
 
                     {/* Features */}
@@ -371,7 +384,7 @@ export function NewStrategyPage() {
                         {framework.features.map((feature, idx) => (
                           <div key={idx} className="flex items-center gap-2 text-xs text-muted-foreground">
                             <CheckCircle2 className="h-3 w-3 text-primary flex-shrink-0" />
-                            <span>{feature}</span>
+                            <span>{t(`frameworks.${framework.id}.features.${idx}`, { defaultValue: feature })}</span>
                           </div>
                         ))}
                       </div>
@@ -392,7 +405,7 @@ export function NewStrategyPage() {
                           setSelectedFramework(framework.id);
                         }}
                       >
-                        Start Draft
+                        {t('card.startDraft')}
                         <ArrowRight className="h-4 w-4 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
                       </Button>
                     </div>
@@ -409,12 +422,12 @@ export function NewStrategyPage() {
             <div className="inline-flex p-4 rounded-full bg-muted/50 mb-4">
               <Search className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">No strategies found</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('empty.title')}</h3>
             <p className="text-muted-foreground mb-4">
-              Try adjusting your filters or search query
+              {t('empty.description')}
             </p>
             <Button variant="outline" onClick={handleReset}>
-              Clear all filters
+              {t('empty.clearFilters')}
             </Button>
           </div>
         )}
@@ -430,10 +443,9 @@ export function NewStrategyPage() {
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-1">AI-Powered Strategy Generation</h4>
+                  <h4 className="font-semibold mb-1">{t('info.title')}</h4>
                   <p className="text-sm text-muted-foreground">
-                    All frameworks leverage your knowledge hub assets—brand positioning, personas, 
-                    market insights—to generate contextual, data-driven strategies tailored to your goals.
+                    {t('info.description')}
                   </p>
                 </div>
               </div>

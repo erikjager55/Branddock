@@ -1,16 +1,16 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle } from 'lucide-react';
 import { useDeleteAccount } from '@/hooks/use-settings';
 import { Button } from '@/components/shared';
 
 export function DangerZone() {
+  const { t } = useTranslation('settings-account');
   const deleteAccount = useDeleteAccount();
 
   function handleDelete() {
-    const confirmed = window.confirm(
-      'Are you sure you want to delete your account? This action cannot be undone. All your data, workspaces, and team memberships will be permanently removed.',
-    );
+    const confirmed = window.confirm(t('dangerZone.confirmDelete'));
 
     if (confirmed) {
       deleteAccount.mutate();
@@ -22,11 +22,8 @@ export function DangerZone() {
       <div className="flex items-start gap-3">
         <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
         <div className="flex-1">
-          <h3 className="text-base font-semibold text-gray-900">Delete Account</h3>
-          <p className="mt-1 text-sm text-gray-600">
-            Permanently delete your account and all associated data. This action cannot be undone
-            and will remove all your workspaces, brand assets, and team memberships.
-          </p>
+          <h3 className="text-base font-semibold text-gray-900">{t('dangerZone.title')}</h3>
+          <p className="mt-1 text-sm text-gray-600">{t('dangerZone.description')}</p>
 
           <div className="mt-4">
             <Button
@@ -35,7 +32,7 @@ export function DangerZone() {
               onClick={handleDelete}
               isLoading={deleteAccount.isPending}
             >
-              Delete Account
+              {t('dangerZone.deleteButton')}
             </Button>
           </div>
         </div>

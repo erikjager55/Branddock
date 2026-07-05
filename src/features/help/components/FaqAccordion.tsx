@@ -1,17 +1,19 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFaq } from '@/hooks/use-help';
 import { Skeleton } from '@/components/shared';
 import { FaqItem } from './FaqItem';
 
 export function FaqAccordion() {
+  const { t } = useTranslation('help');
   const { data: faqItems, isLoading } = useFaq();
 
   return (
     <section>
       <h2 className="text-lg font-semibold text-gray-900 mb-4">
-        Frequently Asked Questions
+        {t('faq.title')}
       </h2>
 
       {isLoading ? (
@@ -29,7 +31,7 @@ export function FaqAccordion() {
           ))}
         </div>
       ) : (
-        <p className="text-sm text-gray-500">No FAQ items available.</p>
+        <p className="text-sm text-gray-500">{t('faq.empty')}</p>
       )}
     </section>
   );

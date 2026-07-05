@@ -7,6 +7,7 @@ import { signIn, signUp, authClient } from '@/lib/auth-client';
 import { SocialLoginButtons } from './SocialLoginButtons';
 import { AuthDivider } from './AuthDivider';
 import { trackBrowserEvent } from '@/lib/analytics/posthog-browser';
+import { useTranslation } from 'react-i18next';
 
 type AuthView = 'login' | 'register' | 'forgot-password';
 
@@ -18,6 +19,7 @@ export function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
+  const { t } = useTranslation('common');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +32,7 @@ export function AuthPage() {
     });
 
     if (authError) {
-      setError(authError.message || 'Login failed');
+      setError(authError.message || t('auth.loginFailed'));
     } else {
       void trackBrowserEvent('login_succeeded', { method: 'email' });
     }
@@ -49,7 +51,7 @@ export function AuthPage() {
     });
 
     if (authError) {
-      setError(authError.message || 'Registration failed');
+      setError(authError.message || t('auth.registrationFailed'));
     } else {
       void trackBrowserEvent('signup_completed', { method: 'email' });
     }
@@ -74,9 +76,9 @@ export function AuthPage() {
       if (resetError) {
         const msg = resetError.message || '';
         if (msg.includes("isn't enabled")) {
-          setError('Password reset is not yet configured. Please contact support.');
+          setError(t('auth.resetNotConfigured'));
         } else {
-          setError(msg || 'Something went wrong. Please try again.');
+          setError(msg || t('auth.genericError'));
         }
       } else {
         setResetSent(true);
@@ -122,23 +124,23 @@ export function AuthPage() {
           {/* Forgot Password View */}
           {activeView === 'forgot-password' ? (
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-1">Reset password</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('auth.resetPasswordTitle')}</h2>
               <p className="text-sm text-gray-500 mb-6">
-                Enter your email and we&apos;ll send you a reset link.
+                {t('auth.resetPasswordSubtitle')}
               </p>
 
               {resetSent ? (
                 <div data-testid="reset-sent" className="text-center py-4">
                   <CheckCircle className="w-10 h-10 text-primary mx-auto mb-3" />
                   <p className="text-sm text-gray-700">
-                    If an account exists with this email, you&apos;ll receive a reset link.
+                    {t('auth.resetSent')}
                   </p>
                   <button
                     type="button"
                     onClick={backToLogin}
                     className="mt-4 text-sm text-primary hover:text-primary-700 hover:underline font-medium"
                   >
-                    Back to login
+                    {t('auth.backToLogin')}
                   </button>
                 </div>
               ) : (
@@ -152,7 +154,7 @@ export function AuthPage() {
 
                   <form onSubmit={handleForgotPassword} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.emailLabel')}</label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
@@ -160,7 +162,7 @@ export function AuthPage() {
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          placeholder="name@company.com"
+                          placeholder={t('auth.emailPlaceholder')}
                           required
                           className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
                         />
@@ -173,7 +175,7 @@ export function AuthPage() {
                       className="w-full bg-primary hover:bg-primary/90 text-white py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                      {loading ? 'Sending...' : 'Send Reset Link'}
+                      {loading ? t('auth.sending') : t('auth.sendResetLink')}
                     </button>
                   </form>
 
@@ -183,7 +185,7 @@ export function AuthPage() {
                     className="mt-4 w-full flex items-center justify-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
-                    Back to login
+                    {t('auth.backToLogin')}
                   </button>
                 </>
               )}
@@ -202,7 +204,7 @@ export function AuthPage() {
                   }`}
                 >
                   <LogIn className="w-4 h-4" />
-                  Sign in
+                  {t('auth.signIn')}
                 </button>
                 <button
                   data-testid="register-tab"
@@ -214,7 +216,7 @@ export function AuthPage() {
                   }`}
                 >
                   <UserPlus className="w-4 h-4" />
-                  Register
+                  {t('auth.register')}
                 </button>
               </div>
 
@@ -234,7 +236,7 @@ export function AuthPage() {
               {activeView === 'login' && (
                 <form data-testid="login-form" onSubmit={handleLogin} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.emailLabel')}</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
@@ -250,13 +252,13 @@ export function AuthPage() {
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-sm font-medium text-gray-700">Password</label>
+                      <label className="block text-sm font-medium text-gray-700">{t('auth.passwordLabel')}</label>
                       <button
                         type="button"
                         onClick={showForgotPassword}
                         className="text-sm text-primary hover:text-primary-700 hover:underline cursor-pointer"
                       >
-                        Forgot password?
+                        {t('auth.forgotPassword')}
                       </button>
                     </div>
                     <div className="relative">
@@ -266,7 +268,7 @@ export function AuthPage() {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter password"
+                        placeholder={t('auth.passwordPlaceholder')}
                         required
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
                       />
@@ -279,7 +281,7 @@ export function AuthPage() {
                     className="w-full bg-primary hover:bg-primary/90 text-white py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-                    {loading ? 'Signing in...' : 'Sign in'}
+                    {loading ? t('auth.signingIn') : t('auth.signIn')}
                   </button>
                 </form>
               )}
@@ -288,7 +290,7 @@ export function AuthPage() {
               {activeView === 'register' && (
                 <form data-testid="register-form" onSubmit={handleRegister} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.nameLabel')}</label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
@@ -296,14 +298,14 @@ export function AuthPage() {
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="Your full name"
+                        placeholder={t('auth.namePlaceholder')}
                         required
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.emailLabel')}</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
@@ -318,7 +320,7 @@ export function AuthPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.passwordLabel')}</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
@@ -326,7 +328,7 @@ export function AuthPage() {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Minimum 8 characters"
+                        placeholder={t('auth.passwordMinPlaceholder')}
                         required
                         minLength={8}
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
@@ -340,7 +342,7 @@ export function AuthPage() {
                     className="w-full bg-primary hover:bg-primary/90 text-white py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-                    {loading ? 'Creating...' : 'Create account'}
+                    {loading ? t('auth.creating') : t('auth.createAccount')}
                   </button>
                 </form>
               )}

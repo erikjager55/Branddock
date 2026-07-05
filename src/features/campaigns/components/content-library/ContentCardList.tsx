@@ -2,6 +2,8 @@
 
 import React, { useMemo, useState } from "react";
 import { ExternalLink, Heart, CalendarDays, Trash2, Copy, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { Badge } from "@/components/shared";
 import { deriveTrafficLight, TRAFFIC_LIGHT, getPhaseConfig, InlineRenameField } from "../shared/calendar-cards";
 import { formatContentType } from "../../lib/format-content-type";
@@ -75,16 +77,6 @@ interface ContentCardListProps {
   duplicatingIds?: Set<string>;
 }
 
-// ─── Helpers ──────────────────────────────────────────────
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 // ─── Component ────────────────────────────────────────────
 
 export function ContentCardList({
@@ -96,6 +88,8 @@ export function ContentCardList({
   onDuplicate,
   duplicatingIds,
 }: ContentCardListProps) {
+  const { t } = useTranslation("campaigns-content-library");
+  const { formatDate } = useFormat();
   const sort = useContentLibraryStore((s) => s.sort);
   const setSort = useContentLibraryStore((s) => s.setSort);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; campaignId: string; title: string } | null>(null);
@@ -121,23 +115,27 @@ export function ContentCardList({
         }}
       >
         <div />
-        <SortableHeader label="Title" field="title" currentSort={sort} onSort={setSort} />
-        <SortableHeader label="Type" field="contentType" currentSort={sort} onSort={setSort} />
-        <SortableHeader label="Campaign" field="campaignName" currentSort={sort} onSort={setSort} />
-        <div>Readiness</div>
-        <div>Phase</div>
-        <SortableHeader label="Scheduled" field="scheduledPublishDate" currentSort={sort} onSort={setSort} />
-        <div>Actions</div>
+        <SortableHeader label={t("list.title")} field="title" currentSort={sort} onSort={setSort} />
+        <SortableHeader label={t("list.type")} field="contentType" currentSort={sort} onSort={setSort} />
+        <SortableHeader label={t("list.campaign")} field="campaignName" currentSort={sort} onSort={setSort} />
+        <div>{t("list.readiness")}</div>
+        <div>{t("list.phase")}</div>
+        <SortableHeader label={t("list.scheduled")} field="scheduledPublishDate" currentSort={sort} onSort={setSort} />
+        <div>{t("list.actions")}</div>
       </div>
 
       {/* Rows */}
       {items.map((item) => {
-        const { light, label: lightLabel } = deriveTrafficLight(
+        const { light, label: lightLabel, key: lightKey, overdue: lightOverdue } = deriveTrafficLight(
           item.isPublishReady,
           item.status,
           item.publishedAt ? "published" : item.scheduledPublishDate ? "scheduled" : "unscheduled",
           item.hasContent,
         );
+        const statusBase = t(`campaigns-cards:contentStatus.${lightKey}`, { defaultValue: lightLabel });
+        const statusLabel = lightOverdue
+          ? `${statusBase} · ${t("campaigns-cards:overdue", { defaultValue: "overdue" })}`
+          : statusBase;
         const tl = TRAFFIC_LIGHT[light];
 
         return (
@@ -154,7 +152,7 @@ export function ContentCardList({
             <div
               className="w-1.5 h-full rounded-full self-stretch"
               style={{ backgroundColor: tl.stripe }}
-              title={lightLabel}
+              title={statusLabel}
             />
 
             {/* Title + favorite */}
@@ -174,7 +172,7 @@ export function ContentCardList({
               </button>
               {onRename ? (
                 <InlineRenameField
-                  placeholder={`Untitled ${formatContentType(item.type)}`}
+                  placeholder={t("card.untitledPlaceholder", { type: t(`campaigns-content-types:types.${item.type}`, { defaultValue: formatContentType(item.type) }) })}
                   currentValue={item.title.toLowerCase() === item.type.toLowerCase() ? undefined : item.title}
                   className="text-sm font-medium text-gray-900 truncate"
                   onRename={(t) => onRename(item.id, item.campaignId, t)}
@@ -188,7 +186,7 @@ export function ContentCardList({
 
             {/* Type */}
             <div className="overflow-hidden">
-              <Badge size="sm">{formatContentType(item.type)}</Badge>
+              <Badge size="sm">{t(`campaigns-content-types:types.${item.type}`, { defaultValue: formatContentType(item.type) })}</Badge>
             </div>
 
             {/* Campaign */}
@@ -203,13 +201,13 @@ export function ContentCardList({
               <span
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
                 style={{ backgroundColor: `${tl.stripe}18`, color: tl.text }}
-                title={item.readinessHint ?? lightLabel}
+                title={item.readinessHint ?? statusLabel}
               >
                 <span
                   className="w-1.5 h-1.5 rounded-full"
                   style={{ backgroundColor: tl.dot }}
                 />
-                {lightLabel}
+                {statusLabel}
               </span>
             </div>
 
@@ -235,7 +233,10 @@ export function ContentCardList({
               {item.scheduledPublishDate ? (
                 <span className="inline-flex items-center gap-1 text-xs text-teal-600">
                   <CalendarDays className="w-3 h-3" />
-                  {formatDate(item.scheduledPublishDate)}
+                  {formatDate(item.scheduledPublishDate, {
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </span>
               ) : (
                 <span className="text-xs text-gray-400">—</span>
@@ -249,10 +250,10 @@ export function ContentCardList({
                 onClick={() => onOpenInStudio(item.id, item.campaignId)}
                 className="inline-flex items-center gap-1 text-xs font-medium text-white bg-primary hover:bg-primary-600 rounded-md transition-colors"
                 style={{ padding: "4px 8px" }}
-                title="Open in Canvas"
+                title={t("card.openInCanvas")}
               >
                 <ExternalLink className="w-3 h-3" />
-                Canvas
+                {t("card.canvas")}
               </button>
               {item.hasContent && !item.isPublishReady && (
                 <QuickPublishMenu
@@ -268,7 +269,7 @@ export function ContentCardList({
                   onClick={() => onDuplicate(item.id, item.campaignId)}
                   disabled={duplicatingIds?.has(item.id)}
                   className="p-1 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
-                  title="Duplicate"
+                  title={t("card.duplicate")}
                 >
                   <Copy className="w-3.5 h-3.5 text-gray-400 hover:text-gray-700" />
                 </button>
@@ -278,7 +279,7 @@ export function ContentCardList({
                   type="button"
                   onClick={() => setDeleteTarget({ id: item.id, campaignId: item.campaignId, title: item.title })}
                   className="p-1 rounded hover:bg-red-50 transition-colors"
-                  title="Delete"
+                  title={t("card.delete")}
                 >
                   <Trash2 className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
                 </button>

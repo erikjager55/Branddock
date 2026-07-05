@@ -31,6 +31,7 @@ import {
   X,
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 interface ValidationPlanLandingPageProps {
   onBack: () => void;
@@ -236,6 +237,7 @@ const validationMethods = [
 ];
 
 export function ValidationPlanLandingPage({ onBack, onStartPlan }: ValidationPlanLandingPageProps) {
+  const { formatCurrency } = useFormat();
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
   const [selectedMethods, setSelectedMethods] = useState<string[]>(['interviews', 'questionnaire']); // Default recommended
   const [methodQuantities, setMethodQuantities] = useState<Record<string, number>>({
@@ -655,10 +657,10 @@ export function ValidationPlanLandingPage({ onBack, onStartPlan }: ValidationPla
                                   <div className="mt-2 p-2 bg-muted rounded text-xs">
                                     <div className="flex items-center justify-between">
                                       <span className="text-muted-foreground">
-                                        {quantity} × {selectedAssets.length} asset{selectedAssets.length !== 1 ? 's' : ''} × ${method.pricePerAsset}
+                                        {quantity} × {selectedAssets.length} asset{selectedAssets.length !== 1 ? 's' : ''} × {formatCurrency(method.pricePerAsset, 'USD')}
                                       </span>
                                       <span className="font-medium">
-                                        ${(quantity * selectedAssets.length * method.pricePerAsset).toLocaleString()}
+                                        {formatCurrency(quantity * selectedAssets.length * method.pricePerAsset, 'USD')}
                                       </span>
                                     </div>
                                   </div>
@@ -831,7 +833,7 @@ export function ValidationPlanLandingPage({ onBack, onStartPlan }: ValidationPla
                           <span className="text-muted-foreground">
                             {method.shortName} ({quantity}) × {selectedAssets.length}
                           </span>
-                          <span className="font-medium">${subtotal.toLocaleString()}</span>
+                          <span className="font-medium">{formatCurrency(subtotal, 'USD')}</span>
                         </div>
                       );
                     })}
@@ -841,7 +843,7 @@ export function ValidationPlanLandingPage({ onBack, onStartPlan }: ValidationPla
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Total Investment</span>
-                    <span className="text-2xl font-bold">${totalPrice.toLocaleString()}</span>
+                    <span className="text-2xl font-bold">{formatCurrency(totalPrice, 'USD')}</span>
                   </div>
 
                   {selectedAssets.length > 0 && selectedMethods.length > 0 && (

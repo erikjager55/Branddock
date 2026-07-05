@@ -9,6 +9,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Megaphone, FolderOpen, Sparkles } from "lucide-react";
 import { Modal, Input, Badge, Button } from "@/components/shared";
 import { useCampaigns } from "../../hooks";
@@ -36,6 +37,7 @@ export function AddContentModal({
   onSelectCampaign,
   onStartWizard,
 }: AddContentModalProps) {
+  const { t } = useTranslation('campaigns-core');
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [isNewFormat, setIsNewFormat] = useState(false);
   const [formatName, setFormatName] = useState("");
@@ -83,7 +85,7 @@ export function AddContentModal({
     <Modal
       isOpen={isOpen}
       onClose={resetAndClose}
-      title="Add Content"
+      title={t('addContent.title')}
       size="md"
       footer={
         <div className="flex justify-end gap-3">
@@ -92,10 +94,10 @@ export function AddContentModal({
             onClick={resetAndClose}
             className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
           >
-            Cancel
+            {t('actions.cancel')}
           </button>
           <Button onClick={handleConfirm} disabled={!canConfirm}>
-            {isNewFormat ? 'Create Format' : 'Continue'}
+            {isNewFormat ? t('addContent.createFormat') : t('actions.continue')}
           </Button>
         </div>
       }
@@ -123,7 +125,7 @@ export function AddContentModal({
                 <span className="truncate">{c.title}</span>
               </span>
               <Badge variant={isFormat ? "default" : "teal"} size="sm">
-                {isFormat ? "Format" : "Campaign"}
+                {isFormat ? t('addContent.badge.format') : t('addContent.badge.campaign')}
               </Badge>
             </button>
           );
@@ -140,7 +142,7 @@ export function AddContentModal({
             }`}
           >
             <Plus className="w-4 h-4" />
-            Create new format
+            {t('addContent.createNewFormat')}
           </button>
 
           {isNewFormat && (
@@ -148,11 +150,11 @@ export function AddContentModal({
               <Input
                 value={formatName}
                 onChange={(e) => setFormatName(e.target.value)}
-                placeholder="e.g. Weekly LinkedIn Insights, Klant-in-beeld serie..."
+                placeholder={t('addContent.formatNamePlaceholder')}
                 required
               />
               <p className="text-xs text-gray-400 mt-1.5">
-                A format is a reusable strategy + creative concept for producing content.
+                {t('addContent.formatHelp')}
               </p>
             </div>
           )}

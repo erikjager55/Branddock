@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 
 interface FindingItem {
@@ -13,6 +14,7 @@ interface KeyFindingsCardProps {
 }
 
 export function KeyFindingsCard({ findings }: KeyFindingsCardProps) {
+  const { t } = useTranslation('workshop');
   const safeFindings = Array.isArray(findings) ? findings : [];
   if (safeFindings.length === 0) return null;
 
@@ -20,7 +22,7 @@ export function KeyFindingsCard({ findings }: KeyFindingsCardProps) {
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-3">
         <Search className="w-5 h-5 text-emerald-600" />
-        <h3 className="text-lg font-semibold text-gray-900">Key Findings</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t('results.findings.title')}</h3>
       </div>
       <div className="space-y-3">
         {safeFindings.map((finding) => (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageShell } from "@/components/ui/layout";
 import { Button } from "@/components/shared";
@@ -51,6 +52,15 @@ interface ModelDetailPageProps {
   onNavigateToStudio?: () => void;
 }
 
+/** Maps the raw English WIZARD_STEPS_* label to its i18n slug key. */
+const WIZARD_STEP_I18N_KEYS: Record<string, string> = {
+  Upload: "upload",
+  "Training & Showcase": "trainingShowcase",
+  "Generate References": "generateReferences",
+  "Upload & Curate": "uploadCurate",
+  "AI Style Analysis": "aiStyleAnalysis",
+};
+
 /** Detail page orchestrator — 2-column layout (8/4 split) with wizard stepper */
 export function ModelDetailPage({
   modelId,
@@ -58,6 +68,7 @@ export function ModelDetailPage({
   onViewShowcase,
   onNavigateToStudio,
 }: ModelDetailPageProps) {
+  const { t } = useTranslation(["consistent-models", "consistent-models-registry"]);
   const { data: model, isLoading } = useConsistentModelDetail(modelId);
   const { data: generationsData } = useGenerations(modelId);
   const updateModel = useUpdateModel(modelId);
@@ -246,7 +257,7 @@ export function ModelDetailPage({
         openTrainingModal();
       },
       onError: (error: Error) => {
-        window.alert(`Training failed: ${error.message}`);
+        window.alert(t("detail.trainingFailedAlert", { message: error.message }));
       },
     });
   };
@@ -276,7 +287,7 @@ export function ModelDetailPage({
 
   const handleDelete = () => {
     const confirmed = window.confirm(
-      `Are you sure you want to delete "${model.name}"? This will permanently remove the model, all reference images, and all generated images. This action cannot be undone.`
+      t("detail.confirmDelete", { name: model.name })
     );
     if (!confirmed) return;
     deleteModel.mutate(undefined, {
@@ -418,14 +429,14 @@ export function ModelDetailPage({
 
         return (
           <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-gray-900">Overview</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t("detail.overviewTitle")}</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-500">Name</span>
+                <span className="text-gray-500">{t("detail.name")}</span>
                 <p className="font-medium text-gray-900">{model.modelName || model.name}</p>
               </div>
               <div>
-                <span className="text-gray-500">Type</span>
+                <span className="text-gray-500">{t("detail.type")}</span>
                 <p className="font-medium text-gray-900 capitalize">{model.type.replace("_", " ").toLowerCase()}</p>
               </div>
               {/* Illustration-specific params */}
@@ -433,7 +444,7 @@ export function ModelDetailPage({
                 <>
                   {illustrationParams.illustrationStyle && (
                     <div>
-                      <span className="text-gray-500">Illustration Style</span>
+                      <span className="text-gray-500">{t("detail.illustrationStyle")}</span>
                       <p className="font-medium text-gray-900">
                         {ILLUSTRATION_STYLE_OPTIONS.illustrationStyle.find(o => o.value === illustrationParams.illustrationStyle)?.label ?? illustrationParams.illustrationStyle}
                       </p>
@@ -441,7 +452,7 @@ export function ModelDetailPage({
                   )}
                   {illustrationParams.colorApproach && (
                     <div>
-                      <span className="text-gray-500">Color Approach</span>
+                      <span className="text-gray-500">{t("detail.colorApproach")}</span>
                       <p className="font-medium text-gray-900">
                         {ILLUSTRATION_STYLE_OPTIONS.colorApproach.find(o => o.value === illustrationParams.colorApproach)?.label ?? illustrationParams.colorApproach}
                       </p>
@@ -449,7 +460,7 @@ export function ModelDetailPage({
                   )}
                   {illustrationParams.lineQuality && (
                     <div>
-                      <span className="text-gray-500">Line Quality</span>
+                      <span className="text-gray-500">{t("detail.lineQuality")}</span>
                       <p className="font-medium text-gray-900">
                         {ILLUSTRATION_STYLE_OPTIONS.lineQuality.find(o => o.value === illustrationParams.lineQuality)?.label ?? illustrationParams.lineQuality}
                       </p>
@@ -457,7 +468,7 @@ export function ModelDetailPage({
                   )}
                   {illustrationParams.detailLevel && (
                     <div>
-                      <span className="text-gray-500">Detail Level</span>
+                      <span className="text-gray-500">{t("detail.detailLevel")}</span>
                       <p className="font-medium text-gray-900">
                         {ILLUSTRATION_STYLE_OPTIONS.detailLevel.find(o => o.value === illustrationParams.detailLevel)?.label ?? illustrationParams.detailLevel}
                       </p>
@@ -465,7 +476,7 @@ export function ModelDetailPage({
                   )}
                   {illustrationParams.mood && (
                     <div className="col-span-2">
-                      <span className="text-gray-500">Mood / Atmosphere</span>
+                      <span className="text-gray-500">{t("detail.mood")}</span>
                       <p className="font-medium text-gray-900">{illustrationParams.mood}</p>
                     </div>
                   )}
@@ -473,28 +484,28 @@ export function ModelDetailPage({
               )}
               {model.modelDescription && (
                 <div className="col-span-2">
-                  <span className="text-gray-500">Description</span>
+                  <span className="text-gray-500">{t("detail.description")}</span>
                   <p className="font-medium text-gray-900">{model.modelDescription}</p>
                 </div>
               )}
               {model.stylePrompt && (
                 <div className="col-span-2">
-                  <span className="text-gray-500">Style Prompt</span>
+                  <span className="text-gray-500">{t("detail.stylePrompt")}</span>
                   <p className="font-medium text-gray-900">{model.stylePrompt}</p>
                 </div>
               )}
               {model.negativePrompt && (
                 <div className="col-span-2">
-                  <span className="text-gray-500">Negative Prompt</span>
+                  <span className="text-gray-500">{t("detail.negativePrompt")}</span>
                   <p className="font-medium text-gray-900">{model.negativePrompt}</p>
                 </div>
               )}
               <div>
-                <span className="text-gray-500">Reference Images</span>
+                <span className="text-gray-500">{t("detail.referenceImages")}</span>
                 <p className="font-medium text-gray-900">{model.referenceImages.length}</p>
               </div>
               <div>
-                <span className="text-gray-500">Status</span>
+                <span className="text-gray-500">{t("detail.status")}</span>
                 <p className="font-medium text-gray-900 capitalize">{model.status.toLowerCase()}</p>
               </div>
             </div>
@@ -523,7 +534,11 @@ export function ModelDetailPage({
       {stepLabels.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <ModelWizardStepper
-            labels={stepLabels}
+            labels={stepLabels.map((label) =>
+              t(`consistent-models-registry:wizardStep.${WIZARD_STEP_I18N_KEYS[label] ?? label}`, {
+                defaultValue: label,
+              }),
+            )}
             currentStep={wizardStep}
             onStepClick={setWizardStep}
           />
@@ -547,12 +562,12 @@ export function ModelDetailPage({
               {wizardStep > 1 ? (
                 <Button variant="secondary" onClick={prevWizardStep}>
                   <ChevronLeft className="mr-1 h-4 w-4" />
-                  Back
+                  {t("detail.back")}
                 </Button>
               ) : isTrainable && trainingMode ? (
                 <Button variant="secondary" onClick={() => setTrainingMode(null)}>
                   <ChevronLeft className="mr-1 h-4 w-4" />
-                  Change method
+                  {t("detail.changeMethod")}
                 </Button>
               ) : (
                 <div />
@@ -570,7 +585,7 @@ export function ModelDetailPage({
                   onClick={nextWizardStep}
                   disabled={!canProceed}
                 >
-                  Continue
+                  {t("detail.continue")}
                   <ChevronRight className="ml-1 h-4 w-4" />
                 </Button>
               )}

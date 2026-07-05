@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Pencil, Plus, Trash2, Sparkles } from "lucide-react";
 import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
@@ -76,6 +77,7 @@ function TypeScaleList({
   roleMap: Map<string, string>;
   substituteFor: SubstituteResolver;
 }) {
+  const { t } = useTranslation("brandstyle");
   // Group rows by the font they render in (heading-font vs body-font).
   // Preserves original ordering inside each group. `displayName` = de schone
   // family-naam (NIET de volledige css-stack) zodat het groepslabel
@@ -100,7 +102,7 @@ function TypeScaleList({
       {Array.from(groups.entries()).map(([fontKey, group], gi) => {
         // Determine if this group is heading or body styles for the label
         const allHeadings = group.rows.every((r) => /^h[1-6]$/i.test(r.level.trim()));
-        const groupLabel = allHeadings ? 'Heading styles' : 'Body styles';
+        const groupLabel = allHeadings ? t("typography.typeScale.headingStyles") : t("typography.typeScale.bodyStyles");
         return (
           <div key={fontKey + gi}>
             <p className="text-[11px] font-semibold tracking-wider text-gray-500 uppercase mb-5">
@@ -141,6 +143,7 @@ function TypeScaleRow({
   font: string | null;
   designMdRole?: string;
 }) {
+  const { t } = useTranslation("brandstyle");
   return (
     <div className="flex items-baseline gap-4 py-4 first:pt-0 last:pb-0">
       <div className="w-36 flex-shrink-0 flex flex-col gap-0.5">
@@ -150,7 +153,7 @@ function TypeScaleRow({
         {designMdRole && (
           <span
             className="inline-flex items-center self-start text-[10px] font-mono text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded"
-            title={`DESIGN.md typography role`}
+            title={t("typography.typeScale.designMdRoleTitle")}
           >
             {designMdRole}
           </span>
@@ -168,7 +171,7 @@ function TypeScaleRow({
           fontFamily: font ?? undefined,
         }}
       >
-        {row.name || 'Sample text'}
+        {row.name || t("typography.typeScale.sampleText")}
       </span>
 
       <div className="flex-shrink-0 flex items-center gap-2 text-[11px] text-gray-500 font-mono whitespace-nowrap">
@@ -219,6 +222,7 @@ function InContextPreview({
   additionalFonts: string[];
   substituteFor: SubstituteResolver;
 }) {
+  const { t } = useTranslation("brandstyle");
   const findByLevel = (predicate: (lvl: string) => boolean): TypeScaleLevel | undefined =>
     typeScale.find((l) => predicate(l.level.trim().toLowerCase()));
 
@@ -263,14 +267,14 @@ function InContextPreview({
           fontFamily: h1 ? getFontForLevel(h1.level, primaryFont, additionalFonts, substituteFor) : headingFontFamily,
         }}
       >
-        {h1?.name || 'Hero Heading Example'}
+        {h1?.name || t("typography.inContext.heroHeading")}
       </h1>
 
       <p
         className="mt-3 max-w-2xl text-gray-500 leading-relaxed"
         style={{ fontFamily: bodyFontFamily, fontSize: '15px' }}
       >
-        A concise lede sentence that introduces the page and sets the tone for the body copy that follows.
+        {t("typography.inContext.lede")}
       </p>
 
       <h2
@@ -282,24 +286,22 @@ function InContextPreview({
           fontFamily: h2 ? getFontForLevel(h2.level, primaryFont, additionalFonts, substituteFor) : headingFontFamily,
         }}
       >
-        {h2?.name || 'A Section Heading Below'}
+        {h2?.name || t("typography.inContext.sectionHeading")}
       </h2>
 
       <p
         className="mt-3 max-w-2xl text-gray-700 leading-relaxed"
         style={mockStyle(body, 15)}
       >
-        This paragraph demonstrates the rhythm between the heading font and the body font in a realistic
-        composition. Together they create the visual hierarchy a reader uses to scan the page — headings
-        anchor attention, body text carries the substance.
+        {t("typography.inContext.bodyPara")}
       </p>
 
       <ul
         className="mt-4 max-w-2xl list-disc pl-6 space-y-1.5 text-gray-700"
         style={mockStyle(body, 15)}
       >
-        <li>A bulleted item demonstrating list rhythm in body style.</li>
-        <li>Another item showing how the line-height and weight read in flow.</li>
+        <li>{t("typography.inContext.listItem1")}</li>
+        <li>{t("typography.inContext.listItem2")}</li>
       </ul>
 
       <h3
@@ -311,22 +313,21 @@ function InContextPreview({
           fontFamily: h3 ? getFontForLevel(h3.level, primaryFont, additionalFonts, substituteFor) : headingFontFamily,
         }}
       >
-        {h3?.name || 'A Subsection Below'}
+        {h3?.name || t("typography.inContext.subsection")}
       </h3>
 
       <p
         className="mt-3 max-w-2xl text-gray-700 leading-relaxed"
         style={mockStyle(body, 15)}
       >
-        A second paragraph follows the subsection. The body font carries the weight of the content
-        while the headings provide structural punctuation throughout the page.
+        {t("typography.inContext.bodyPara2")}
       </p>
 
       <p
         className="mt-6 text-gray-500 italic"
         style={mockStyle(small, 13)}
       >
-        {small?.name || 'A small caption sits at the bottom of the page.'}
+        {small?.name || t("typography.inContext.caption")}
       </p>
     </div>
   );
@@ -385,6 +386,7 @@ function FontDisplayCard({
   /** True wanneer een workspace Adobe-kit de echte font wél serveert. */
   hasWorkspaceKit?: boolean;
 }) {
+  const { t } = useTranslation("brandstyle");
   const hasFont = Boolean(name);
   // De stack bevat de substitute zodat een commerciële font in de substitute
   // rendert i.p.v. de browser-default serif.
@@ -396,10 +398,10 @@ function FontDisplayCard({
         <p className="text-[10px] font-semibold tracking-wider text-gray-500 uppercase mb-3">
           {role} · {usage}
         </p>
-        <div className="text-sm text-gray-400 italic">Not detected on the site</div>
+        <div className="text-sm text-gray-400 italic">{t("typography.notDetectedOnSite")}</div>
         {hasFont && (
           <p className="mt-1.5 text-xs text-gray-400">
-            AI suggestion: <span className="text-gray-500">{name}</span>
+            {t("typography.aiSuggestionLabel")} <span className="text-gray-500">{name}</span>
           </p>
         )}
       </div>
@@ -459,7 +461,7 @@ function FontDisplayCard({
         className="text-base text-gray-700 leading-relaxed"
         style={{ fontFamily: fontStack }}
       >
-        The quick brown fox jumps over the lazy dog.
+        {t("typography.pangram")}
       </p>
 
       {/* Substitute-badge — wanneer de echte (commerciële) font niet direct
@@ -469,8 +471,8 @@ function FontDisplayCard({
         <p className="inline-flex items-start gap-1.5 text-[11px] text-gray-500 leading-snug">
           <Sparkles className="h-3 w-3 mt-0.5 flex-shrink-0 text-indigo-400" />
           <span>
-            Preview with <span className="font-medium text-gray-700">{substituteFont}</span> —{" "}
-            {availability === "COMMERCIAL" ? "upload the .woff2 for the real font" : "real font via your own Adobe Fonts kit"}.
+            {t("typography.previewWith")} <span className="font-medium text-gray-700">{substituteFont}</span> —{" "}
+            {availability === "COMMERCIAL" ? t("typography.substituteDetailCommercial") : t("typography.substituteDetailAdobe")}.
           </span>
         </p>
       )}
@@ -485,7 +487,7 @@ function FontDisplayCard({
           rel="noopener noreferrer"
           className="text-xs text-primary hover:text-primary-700 self-start"
         >
-          View on Google Fonts →
+          {t("typography.viewOnGoogleFonts")}
         </a>
       )}
     </div>
@@ -493,6 +495,7 @@ function FontDisplayCard({
 }
 
 export function TypographySection({ styleguide, canEdit }: TypographySectionProps) {
+  const { t } = useTranslation("brandstyle");
   const typeScale = useMemo(
     () => (styleguide.typeScale ?? []) as TypeScaleLevel[],
     [styleguide.typeScale],
@@ -641,12 +644,12 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
       {/* Font Preview */}
       <Card>
         <div className="flex items-center justify-between gap-3 mb-5">
-          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Brand Fonts</h3>
+          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">{t("typography.brandFonts.title")}</h3>
           {canEdit && !isEditingFont && (
             <button
               onClick={startEditFont}
               className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0"
-              title="Edit"
+              title={t("actions.edit")}
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
@@ -656,29 +659,29 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
         {isEditingFont ? (
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Font Name</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t("typography.brandFonts.fontName")}</label>
               <input
                 value={editFontName}
                 onChange={(e) => setEditFontName(e.target.value)}
-                placeholder="e.g. Inter"
+                placeholder={t("typography.brandFonts.namePlaceholder")}
                 className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Font URL</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t("typography.brandFonts.fontUrl")}</label>
               <input
                 value={editFontUrl}
                 onChange={(e) => setEditFontUrl(e.target.value)}
-                placeholder="https://fonts.google.com/..."
+                placeholder={t("typography.brandFonts.urlPlaceholder")}
                 className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div className="flex gap-2 pt-2">
               <Button variant="primary" size="sm" onClick={saveFont} isLoading={updateTypography.isPending}>
-                Save
+                {t("actions.save")}
               </Button>
               <Button variant="secondary" size="sm" onClick={cancelEditFont}>
-                Cancel
+                {t("actions.cancel")}
               </Button>
             </div>
           </div>
@@ -687,8 +690,8 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
             {/* Two-column layout: Primary (body) + Secondary (heading) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FontDisplayCard
-                role="Primary"
-                usage="Body, UI, running copy"
+                role={t("typography.brandFonts.primaryRole")}
+                usage={t("typography.brandFonts.primaryUsage")}
                 name={styleguide.primaryFontName}
                 url={styleguide.primaryFontUrl}
                 availability={availabilityFor(styleguide.primaryFontName)}
@@ -697,8 +700,8 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                 hasWorkspaceKit={availabilityFor(styleguide.primaryFontName) === "ADOBE_FONTS" && !!workspaceKitId}
               />
               <FontDisplayCard
-                role="Secondary"
-                usage="Headings, display, emphasis"
+                role={t("typography.brandFonts.secondaryRole")}
+                usage={t("typography.brandFonts.secondaryUsage")}
                 name={styleguide.additionalFonts?.[0] ?? null}
                 url={googleFontsViewUrl(styleguide.additionalFonts?.[0])}
                 availability={availabilityFor(styleguide.additionalFonts?.[0])}
@@ -711,7 +714,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
             {/* Also-detected fonts — subtle list of weaker signals (Roboto/etc.) */}
             {(styleguide.additionalFonts?.length ?? 0) > 1 && (
               <div className="border-t border-gray-100 pt-4 mt-2">
-                <p className="text-xs font-medium text-gray-500 uppercase mb-2">Also detected on site</p>
+                <p className="text-xs font-medium text-gray-500 uppercase mb-2">{t("typography.brandFonts.alsoDetected")}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {styleguide.additionalFonts.slice(1).map((f) => (
                     <span
@@ -743,7 +746,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
             section="brand-assets-fonts"
             reviews={reviews}
             canEdit={canEdit}
-            label="Review fonts"
+            label={t("typography.reviewFonts")}
           />
         }
       />
@@ -751,12 +754,12 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
       {/* Type Scale */}
       <Card>
         <div className="flex items-center justify-between gap-3 mb-5">
-          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Type Scale</h3>
+          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">{t("typography.typeScale.title")}</h3>
           {canEdit && !isEditingScale && (
             <button
               onClick={startEditScale}
               className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0"
-              title="Edit type scale"
+              title={t("typography.typeScale.editTitle")}
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
@@ -769,12 +772,12 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="text-left py-2 pr-2 text-xs font-medium text-gray-500 uppercase">Level</th>
-                    <th className="text-left py-2 pr-2 text-xs font-medium text-gray-500 uppercase">Size</th>
-                    <th className="text-left py-2 pr-2 text-xs font-medium text-gray-500 uppercase">Weight</th>
-                    <th className="text-left py-2 pr-2 text-xs font-medium text-gray-500 uppercase">Line Height</th>
-                    <th className="text-left py-2 pr-2 text-xs font-medium text-gray-500 uppercase">Color</th>
-                    <th className="text-left py-2 pr-2 text-xs font-medium text-gray-500 uppercase">Usage</th>
+                    <th className="text-left py-2 pr-2 text-xs font-medium text-gray-500 uppercase">{t("typography.typeScale.headings.level")}</th>
+                    <th className="text-left py-2 pr-2 text-xs font-medium text-gray-500 uppercase">{t("typography.typeScale.headings.size")}</th>
+                    <th className="text-left py-2 pr-2 text-xs font-medium text-gray-500 uppercase">{t("typography.typeScale.headings.weight")}</th>
+                    <th className="text-left py-2 pr-2 text-xs font-medium text-gray-500 uppercase">{t("typography.typeScale.headings.lineHeight")}</th>
+                    <th className="text-left py-2 pr-2 text-xs font-medium text-gray-500 uppercase">{t("typography.typeScale.headings.color")}</th>
+                    <th className="text-left py-2 pr-2 text-xs font-medium text-gray-500 uppercase">{t("typography.typeScale.headings.usage")}</th>
                     <th className="w-8" />
                   </tr>
                 </thead>
@@ -794,7 +797,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                           {LEVEL_PRESETS.map((p) => (
                             <option key={p} value={p}>{p}</option>
                           ))}
-                          <option value="__custom__">Custom...</option>
+                          <option value="__custom__">{t("typography.typeScale.custom")}</option>
                         </select>
                         {!LEVEL_PRESETS.includes(row.level) && (
                           <input
@@ -803,7 +806,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                               updateScaleRow(i, "level", e.target.value);
                               updateScaleRow(i, "name", e.target.value);
                             }}
-                            placeholder="Custom"
+                            placeholder={t("typography.typeScale.customPlaceholder")}
                             className="w-full text-xs px-2 py-1 mt-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
                           />
                         )}
@@ -812,7 +815,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                         <input
                           value={row.size}
                           onChange={(e) => updateScaleRow(i, "size", e.target.value)}
-                          placeholder="36px"
+                          placeholder={t("typography.typeScale.sizePlaceholder")}
                           className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono"
                         />
                       </td>
@@ -820,7 +823,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                         <input
                           value={row.weight}
                           onChange={(e) => updateScaleRow(i, "weight", e.target.value)}
-                          placeholder="bold"
+                          placeholder={t("typography.typeScale.weightPlaceholder")}
                           className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono"
                         />
                       </td>
@@ -828,7 +831,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                         <input
                           value={row.lineHeight}
                           onChange={(e) => updateScaleRow(i, "lineHeight", e.target.value)}
-                          placeholder="1.2"
+                          placeholder={t("typography.typeScale.lineHeightPlaceholder")}
                           className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono"
                         />
                       </td>
@@ -836,7 +839,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                         <input
                           value={row.color ?? ""}
                           onChange={(e) => updateScaleRow(i, "color", e.target.value)}
-                          placeholder="#111827"
+                          placeholder={t("typography.typeScale.colorPlaceholder")}
                           className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono"
                         />
                       </td>
@@ -844,7 +847,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                         <input
                           value={row.usage ?? ""}
                           onChange={(e) => updateScaleRow(i, "usage", e.target.value)}
-                          placeholder="Page titles"
+                          placeholder={t("typography.typeScale.usagePlaceholder")}
                           className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </td>
@@ -853,7 +856,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                           type="button"
                           onClick={() => removeScaleRow(i)}
                           className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                          title="Remove level"
+                          title={t("typography.typeScale.removeLevel")}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -870,15 +873,15 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
               className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Add level
+              {t("typography.typeScale.addLevel")}
             </button>
 
             <div className="flex gap-2 pt-2">
               <Button variant="primary" size="sm" onClick={saveScale} isLoading={updateTypography.isPending}>
-                Save
+                {t("actions.save")}
               </Button>
               <Button variant="secondary" size="sm" onClick={cancelEditScale}>
-                Cancel
+                {t("actions.cancel")}
               </Button>
             </div>
           </div>
@@ -892,7 +895,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
           />
         ) : (
           <div className="py-6 text-center text-sm text-gray-400">
-            <p>No type scale defined yet.</p>
+            <p>{t("typography.typeScale.empty")}</p>
             {canEdit && (
               <button
                 type="button"
@@ -903,7 +906,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                 className="mt-2 inline-flex items-center gap-1.5 text-primary hover:text-primary-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                Add type scale
+                {t("typography.typeScale.addScale")}
               </button>
             )}
           </div>
@@ -914,8 +917,8 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
       {typeScale.length > 0 && (
         <Card>
           <div className="flex items-center justify-between gap-3 mb-5">
-            <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">In Context</h3>
-            <p className="text-xs text-gray-400">How the styles combine on a real page</p>
+            <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">{t("typography.inContext.title")}</h3>
+            <p className="text-xs text-gray-400">{t("typography.inContext.subtitle")}</p>
           </div>
           <InContextPreview
             typeScale={typeScale}

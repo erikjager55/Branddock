@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Wand2, AlertTriangle, ImageIcon, Heart } from 'lucide-react';
 import { Button, EmptyState, SkeletonCard } from '@/components/shared';
 import { useAiImages, useDeleteAiImage, useUpdateAiImage } from '@/features/media-library/hooks';
@@ -55,6 +56,7 @@ interface AiImagesTabProps {
 
 /** Tab component displaying a grid of AI-generated images. */
 export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModels, autoOpenGenerate }: AiImagesTabProps = {}) {
+  const { t } = useTranslation('media-library');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const { data, isLoading, isError } = useAiImages(showFavoritesOnly || undefined);
   const deleteAiImage = useDeleteAiImage();
@@ -75,7 +77,7 @@ export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModel
   const images: GeneratedImageWithMeta[] = data ?? [];
 
   const handleDelete = (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this image?')) return;
+    if (!window.confirm(t('aiImages.confirmDelete'))) return;
     deleteAiImage.mutate(id, {
       onSuccess: () => {
         setSelectedImageId((prev) => (prev === id ? null : prev));
@@ -88,9 +90,9 @@ export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModel
       {/* Header row */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">AI Images</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('aiImages.title')}</h3>
           <p className="text-sm text-gray-500 mt-0.5">
-            Generate images with AI — powered by Imagen 4, DALL-E 3, Flux Pro, Recraft V3, and Ideogram V2.
+            {t('aiImages.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -104,14 +106,14 @@ export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModel
             }`}
           >
             <Heart className={`w-3.5 h-3.5 ${showFavoritesOnly ? 'fill-red-500' : ''}`} />
-            Favorites
+            {t('actions.favorites')}
           </button>
           <Button
             icon={Wand2}
             onClick={() => setIsGenerateModalOpen(true)}
             data-testid="generate-image-button"
           >
-            Generate Image
+            {t('aiImages.generate')}
           </Button>
         </div>
       </div>
@@ -121,10 +123,10 @@ export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModel
         <div data-testid="error-message" className="text-center py-16">
           <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-3" />
           <h3 className="text-sm font-medium text-gray-900 mb-1">
-            Something went wrong
+            {t('errors.somethingWrong')}
           </h3>
           <p className="text-xs text-gray-500">
-            Failed to load AI images. Please try again later.
+            {t('aiImages.loadError')}
           </p>
         </div>
       ) : isLoading ? (
@@ -139,17 +141,17 @@ export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModel
       ) : images.length === 0 ? (
         <EmptyState
           icon={ImageIcon}
-          title={showFavoritesOnly ? 'No favorite images yet' : 'No AI images yet'}
+          title={showFavoritesOnly ? t('aiImages.empty.favoritesTitle') : t('aiImages.empty.title')}
           description={
             showFavoritesOnly
-              ? 'Mark images as favorites to see them here.'
-              : 'Generate your first image with one of our 5 AI models.'
+              ? t('aiImages.empty.favoritesDescription')
+              : t('aiImages.empty.description')
           }
           action={
             showFavoritesOnly
               ? undefined
               : {
-                  label: 'Generate Image',
+                  label: t('aiImages.generate'),
                   onClick: () => setIsGenerateModalOpen(true),
                 }
           }
@@ -172,14 +174,14 @@ export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModel
       {deleteAiImage.isError && (
         <div className="flex items-center gap-2 mt-2" role="alert">
           <p className="text-xs text-red-500">
-            Failed to delete image. Please try again.
+            {t('aiImages.deleteError')}
           </p>
           <button
             type="button"
             onClick={() => deleteAiImage.reset()}
             className="text-xs text-gray-400 hover:text-gray-600 underline"
           >
-            Dismiss
+            {t('actions.dismiss')}
           </button>
         </div>
       )}

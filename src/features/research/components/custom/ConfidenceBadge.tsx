@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Shield } from "lucide-react";
 import { CONFIDENCE_BADGES } from "../../constants/research-constants";
 
@@ -13,6 +14,7 @@ interface ConfidenceBadgeProps {
 // ─── Component ───────────────────────────────────────────────
 
 export function ConfidenceBadge({ confidence }: ConfidenceBadgeProps) {
+  const { t } = useTranslation("research");
   const config = CONFIDENCE_BADGES[confidence as keyof typeof CONFIDENCE_BADGES];
 
   const bg = config?.bg ?? "bg-gray-100";
@@ -23,7 +25,7 @@ export function ConfidenceBadge({ confidence }: ConfidenceBadgeProps) {
       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${bg} ${text}`}
     >
       <Shield className="w-3 h-3" />
-      Confidence: {confidence}
+      {t("confidenceBadge.label", { confidence })}
     </span>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { CheckCircle, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { CircularProgress } from '@/features/personas/components/detail/CircularProgress';
 import type { BrandAssetDetail } from '../../types/brand-asset-detail.types';
 import { getAssetCompletenessFields } from '@/lib/brand-asset-completeness';
@@ -12,6 +13,7 @@ interface AssetCompletenessCardProps {
 }
 
 export function AssetCompletenessCard({ asset }: AssetCompletenessCardProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const fields = getAssetCompletenessFields(asset);
   const filledCount = fields.filter(f => f.filled).length;
   const percentage = fields.length > 0 ? Math.round((filledCount / fields.length) * 100) : 0;
@@ -21,8 +23,8 @@ export function AssetCompletenessCard({ asset }: AssetCompletenessCardProps) {
       <div className="flex items-center gap-3 mb-4">
         <CircularProgress percentage={percentage} size={48} strokeWidth={4} />
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Asset Completeness</h3>
-          <p className="text-xs text-gray-500">{filledCount}/{fields.length} sections filled</p>
+          <h3 className="text-sm font-semibold text-gray-900">{t('completeness.title')}</h3>
+          <p className="text-xs text-gray-500">{t('completeness.sectionsFilled', { filled: filledCount, total: fields.length })}</p>
         </div>
       </div>
       <div className="space-y-2">

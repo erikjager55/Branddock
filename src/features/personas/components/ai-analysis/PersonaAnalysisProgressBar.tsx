@@ -1,32 +1,34 @@
 'use client';
 
 import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface PersonaAnalysisProgressBarProps {
   progress: number;
   answeredDimensions: number;
 }
 
-const DIMENSIONS = [
-  'Demographics',
-  'Goals & Motivations',
-  'Challenges',
-  'Value Proposition',
+const DIMENSION_KEYS = [
+  'analysis.dimensions.demographics',
+  'analysis.dimensions.goalsMotivations',
+  'analysis.dimensions.challenges',
+  'analysis.dimensions.valueProposition',
 ];
 
 export function PersonaAnalysisProgressBar({
   answeredDimensions,
 }: PersonaAnalysisProgressBarProps) {
+  const { t } = useTranslation('personas');
   return (
     <div className="space-y-2">
       {/* Step dots with connecting lines */}
       <div className="flex items-center">
-        {DIMENSIONS.map((label, i) => {
+        {DIMENSION_KEYS.map((labelKey, i) => {
           const isComplete = i < answeredDimensions;
           const isCurrent = i === answeredDimensions;
 
           return (
-            <div key={label} className="flex items-center flex-1 last:flex-none">
+            <div key={labelKey} className="flex items-center flex-1 last:flex-none">
               <div className="flex flex-col items-center gap-1.5">
                 {/* Step circle */}
                 <div
@@ -52,11 +54,11 @@ export function PersonaAnalysisProgressBar({
                       : 'text-muted-foreground'
                   }`}
                 >
-                  {label}
+                  {t(labelKey)}
                 </span>
               </div>
               {/* Connecting line */}
-              {i < DIMENSIONS.length - 1 && (
+              {i < DIMENSION_KEYS.length - 1 && (
                 <div
                   className={`h-0.5 flex-1 mx-2 mt-[-18px] transition-colors ${
                     i < answeredDimensions

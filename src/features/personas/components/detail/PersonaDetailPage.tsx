@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
@@ -103,6 +104,7 @@ interface PersonaDetailPageProps {
 }
 
 export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, initialEditing }: PersonaDetailPageProps) {
+  const { t } = useTranslation('personas');
   const { data: persona, isLoading } = usePersonaDetail(personaId);
   const updatePersona = useUpdatePersona(personaId);
   const generateImplications = useGenerateImplications(personaId);
@@ -169,7 +171,7 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
   const lockState = useLockState({
     entityType: 'personas',
     entityId: personaId,
-    entityName: persona?.name ?? 'Persona',
+    entityName: persona?.name ?? t('detail.entityFallback'),
     initialState: {
       isLocked: persona?.isLocked ?? false,
       lockedAt: persona?.lockedAt ?? null,
@@ -253,7 +255,7 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
     return (
       <PageShell maxWidth="7xl">
         <div className="text-center text-gray-500">
-          Persona not found.
+          {t('detail.notFound')}
         </div>
       </PageShell>
     );
@@ -264,18 +266,18 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
       onNavigateToAnalysis();
     } else {
       const labels: Record<string, string> = {
-        INTERVIEWS: 'Interview module',
-        QUESTIONNAIRE: 'Questionnaire module',
-        USER_TESTING: 'User Testing module',
+        INTERVIEWS: t('detail.stubModule.interviews'),
+        QUESTIONNAIRE: t('detail.stubModule.questionnaire'),
+        USER_TESTING: t('detail.stubModule.userTesting'),
       };
-      setStubMessage(`${labels[method] ?? method} coming in a future sprint`);
+      setStubMessage(t('detail.comingSoon', { module: labels[method] ?? method }));
       setTimeout(() => setStubMessage(null), 3000);
     }
   };
 
   const handleSave = () => {
     setEditing(false);
-    toast.success('Persona saved successfully');
+    toast.success(t('detail.savedSuccess'));
   };
 
   const handleCancelEdit = () => {
@@ -286,12 +288,12 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
     deletePersona.mutate(undefined, {
       onSuccess: () => {
         setShowDeleteConfirm(false);
-        toast.success('Persona deleted');
+        toast.success(t('detail.deletedSuccess'));
         onBack();
       },
       onError: (error) => {
         setShowDeleteConfirm(false);
-        const message = error instanceof Error ? error.message : 'Failed to delete persona';
+        const message = error instanceof Error ? error.message : t('detail.deleteFailed');
         toast.error(message);
       },
     });
@@ -307,7 +309,7 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Personas
+          {t('detail.backToPersonas')}
         </button>
 
         {/* Hero Header */}
@@ -510,7 +512,7 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
         {/* Delete Confirm Dialog */}
         {showDeleteConfirm && (
           <DeletePersonaConfirmDialog
-            personaName={persona?.name ?? 'this persona'}
+            personaName={persona?.name ?? t('detail.thisPersona')}
             isDeleting={deletePersona.isPending}
             onConfirm={handleDelete}
             onCancel={() => setShowDeleteConfirm(false)}

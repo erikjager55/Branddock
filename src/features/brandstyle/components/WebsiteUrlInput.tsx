@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Globe, Sparkles } from "lucide-react";
 import { Button, Card } from "@/components/shared";
 import { normaliseUserUrl, INVALID_URL_MESSAGE } from "@/lib/utils/normalise-url";
@@ -8,6 +9,7 @@ import { useAnalyzeUrl } from "../hooks/useBrandstyleHooks";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 
 export function WebsiteUrlInput() {
+  const { t } = useTranslation("brandstyle");
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const analyzeUrl = useAnalyzeUrl();
@@ -30,7 +32,7 @@ export function WebsiteUrlInput() {
         startAnalysis(data.jobId);
       },
       onError: () => {
-        setError("Failed to start analysis. Please try again.");
+        setError(t("errors.startAnalysis"));
       },
     });
   };
@@ -40,7 +42,7 @@ export function WebsiteUrlInput() {
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
           <Globe className="w-4 h-4" />
-          Enter your website URL
+          {t("urlInput.label")}
         </div>
 
         <div className="flex gap-3">
@@ -56,7 +58,7 @@ export function WebsiteUrlInput() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && url) handleAnalyze();
               }}
-              placeholder="https://your-brand.com"
+              placeholder={t("urlInput.placeholder")}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             {error && (
@@ -71,12 +73,12 @@ export function WebsiteUrlInput() {
             disabled={!url}
             data-testid="analyze-button"
           >
-            Analyze
+            {t("urlInput.analyze")}
           </Button>
         </div>
 
         <p className="text-xs text-gray-400">
-          We'll scan your website to extract colors, typography, and brand style elements.
+          {t("urlInput.hint")}
         </p>
       </div>
     </Card>

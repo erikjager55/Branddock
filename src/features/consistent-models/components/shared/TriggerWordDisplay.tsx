@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Copy, Check } from "lucide-react";
 
 interface TriggerWordDisplayProps {
@@ -9,6 +10,7 @@ interface TriggerWordDisplayProps {
 
 /** Copyable trigger word display */
 export function TriggerWordDisplay({ triggerWord }: TriggerWordDisplayProps) {
+  const { t } = useTranslation("consistent-models");
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -22,7 +24,7 @@ export function TriggerWordDisplay({ triggerWord }: TriggerWordDisplayProps) {
       type="button"
       onClick={handleCopy}
       className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1 text-sm font-mono text-gray-700 hover:bg-gray-200 transition-colors"
-      title="Click to copy"
+      title={t("triggerWord.clickToCopy")}
     >
       <code>{triggerWord}</code>
       {copied ? (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Users, ExternalLink, ArrowRightLeft, AlertCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/shared";
 
 /**
@@ -28,6 +29,7 @@ interface PersonalityCompanionCardProps {
 }
 
 export function PersonalityCompanionCard({ onNavigateToPersonality }: PersonalityCompanionCardProps) {
+  const { t } = useTranslation("brandvoice");
   const [data, setData] = useState<PersonalityVoiceFields | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export function PersonalityCompanionCard({ onNavigateToPersonality }: Personalit
         const res = await fetch("/api/brand-assets?category=BRAND_PERSONALITY", {
           credentials: "include",
         });
-        if (!res.ok) throw new Error("Could not load BrandPersonality");
+        if (!res.ok) throw new Error(t("companion.loadError"));
         const payload = await res.json();
         const list = payload?.assets ?? payload?.data ?? [];
         const personality = list.find((a: { frameworkType?: string }) => a.frameworkType === "BRAND_PERSONALITY");
@@ -47,14 +49,14 @@ export function PersonalityCompanionCard({ onNavigateToPersonality }: Personalit
         const fw = (personality?.frameworkData ?? {}) as PersonalityVoiceFields;
         setData(fw);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Load failed");
+        if (!cancelled) setError(e instanceof Error ? e.message : t("companion.loadFailed"));
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [t]);
 
   if (loading) {
     return (
@@ -89,11 +91,10 @@ export function PersonalityCompanionCard({ onNavigateToPersonality }: Personalit
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="flex items-center gap-2 mb-1">
           <Users className="w-4 h-4 text-gray-500" />
-          <h3 className="text-xs font-semibold text-gray-700">Brand Personality</h3>
+          <h3 className="text-xs font-semibold text-gray-700">{t("companion.title")}</h3>
         </div>
         <p className="text-xs text-gray-500">
-          No voice-fields filled in there. Voice DNA, vocabulary and channel-tones
-          live here in the voiceguide now.
+          {t("companion.emptyHint")}
         </p>
       </div>
     );
@@ -104,27 +105,26 @@ export function PersonalityCompanionCard({ onNavigateToPersonality }: Personalit
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-violet-600" />
-          <h3 className="text-xs font-semibold text-gray-900">Brand Personality (read-only)</h3>
+          <h3 className="text-xs font-semibold text-gray-900">{t("companion.titleReadOnly")}</h3>
         </div>
         <ArrowRightLeft className="w-3.5 h-3.5 text-gray-400" />
       </div>
       <p className="text-xs text-gray-500 mb-3">
-        These fields still exist in your legacy BrandPersonality asset. They will be
-        ignored once you've migrated.
+        {t("companion.migratedHint")}
       </p>
 
       <div className="space-y-2 text-xs">
         {data?.brandVoiceDescription && (
-          <Item label="Voice description" value={data.brandVoiceDescription} />
+          <Item label={t("companion.fields.voiceDescription")} value={data.brandVoiceDescription} />
         )}
         {!!data?.wordsWeUse?.length && (
-          <Item label="Words we use" value={data.wordsWeUse.join(", ")} />
+          <Item label={t("companion.fields.wordsWeUse")} value={data.wordsWeUse.join(", ")} />
         )}
         {!!data?.wordsWeAvoid?.length && (
-          <Item label="Words we avoid" value={data.wordsWeAvoid.join(", ")} />
+          <Item label={t("companion.fields.wordsWeAvoid")} value={data.wordsWeAvoid.join(", ")} />
         )}
         {data?.writingSample && (
-          <Item label="Writing sample" value={data.writingSample.slice(0, 200) + (data.writingSample.length > 200 ? "…" : "")} />
+          <Item label={t("companion.fields.writingSample")} value={data.writingSample.slice(0, 200) + (data.writingSample.length > 200 ? "…" : "")} />
         )}
       </div>
 
@@ -132,7 +132,7 @@ export function PersonalityCompanionCard({ onNavigateToPersonality }: Personalit
         <div className="mt-3 pt-3 border-t border-gray-100">
           <Button variant="ghost" size="sm" onClick={onNavigateToPersonality} className="w-full justify-start">
             <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-            Open Brand Personality
+            {t("companion.open")}
           </Button>
         </div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Edit3, Save, X, ExternalLink, Download, Trash2 } from "lucide-react";
 import { Button, SkeletonCard, Select } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
@@ -16,6 +17,7 @@ import {
   CATEGORY_OPTIONS,
   CATEGORY_GROUPS,
 } from "../../constants/product-constants";
+import { categoryGroupKey } from "../../constants/category-i18n";
 import { DescriptionCard } from "./DescriptionCard";
 import { PricingModelCard } from "./PricingModelCard";
 import { FeaturesSpecsSection } from "./FeaturesSpecsSection";
@@ -37,6 +39,20 @@ export function ProductDetailPage({
   onBack,
   onNavigate,
 }: ProductDetailPageProps) {
+  const { t } = useTranslation(["products", "products-registry"]);
+  const categoryGroups = useMemo(
+    () =>
+      CATEGORY_GROUPS.map((group) => ({
+        label: t(`products-registry:categoryGroup.${categoryGroupKey(group.label)}`, {
+          defaultValue: group.label,
+        }),
+        options: group.options.map((opt) => ({
+          value: opt.value,
+          label: t(`products-registry:category.${opt.value}`, { defaultValue: opt.label }),
+        })),
+      })),
+    [t],
+  );
   const { data: product, isLoading } = useProductDetail(productId);
   const { data: personasData } = useProductPersonas(productId);
   const unlinkPersona = useUnlinkPersona(productId);
@@ -113,7 +129,7 @@ export function ProductDetailPage({
     }).then(() => {
       setIsEditing(false);
     }).catch((err: unknown) => {
-      const message = err instanceof Error ? err.message : "Failed to save changes";
+      const message = err instanceof Error ? err.message : t("detail.saveFailed");
       setSaveError(message);
     });
   };
@@ -202,7 +218,7 @@ export function ProductDetailPage({
             Back to Products
           </button>
           <div className="text-center py-12">
-            <p className="text-gray-500">Product not found</p>
+            <p className="text-gray-500">{t("detail.notFound")}</p>
           </div>
         </div>
       </PageShell>
@@ -221,15 +237,17 @@ export function ProductDetailPage({
 
   const linkedPersonaIds = personas.map((p) => p.id);
 
-  const sourceBadge = SOURCE_BADGES[product.source] ?? SOURCE_BADGES["MANUAL"];
-  const statusBadge = STATUS_BADGES[product.status] ?? STATUS_BADGES["DRAFT"];
+  const sourceKey = SOURCE_BADGES[product.source] ? product.source : "MANUAL";
+  const statusKey = STATUS_BADGES[product.status] ? product.status : "DRAFT";
+  const sourceBadge = SOURCE_BADGES[sourceKey];
+  const statusBadge = STATUS_BADGES[statusKey];
 
   const handleRemovePersona = (personaId: string) => {
     unlinkPersona.mutate(personaId);
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
+    if (!window.confirm(t("detail.confirmDelete", { name: product.name }))) return;
     try {
       await deleteProduct.mutateAsync();
       // Cancel inflight refetches (triggered by mutation's onSuccess), then wipe all product caches
@@ -253,7 +271,7 @@ export function ProductDetailPage({
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Products
+          {t("backToProducts")}
         </button>
 
         {/* Header */}
@@ -278,24 +296,27 @@ export function ProductDetailPage({
                 <Select
                   value={editCategory}
                   onChange={setEditCategory}
-                  options={CATEGORY_OPTIONS}
-                  groups={CATEGORY_GROUPS}
-                  placeholder="Category..."
+                  groups={categoryGroups}
+                  placeholder={t("fields.categoryShort")}
                 />
               ) : product.category ? (
                 <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                  {CATEGORY_OPTIONS.find((o) => o.value === product.category)?.label ?? product.category}
+                  {t(`products-registry:category.${product.category}`, {
+                    defaultValue:
+                      CATEGORY_OPTIONS.find((o) => o.value === product.category)?.label ??
+                      product.category,
+                  })}
                 </span>
               ) : null}
               <span
                 className={`inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium ${sourceBadge.color}`}
               >
-                {sourceBadge.label}
+                {t(`products-registry:source.${sourceKey}`, { defaultValue: sourceBadge.label })}
               </span>
               <span
                 className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}
               >
-                {statusBadge.label}
+                {t(`products-registry:status.${statusKey}`, { defaultValue: statusBadge.label })}
               </span>
               <VersionPill
                 resourceType="PRODUCT"
@@ -313,7 +334,7 @@ export function ProductDetailPage({
                   className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
                 >
                   <ExternalLink className="h-3 w-3" />
-                  Source URL
+                  {t("detail.sourceUrl")}
                 </a>
               )}
             </div>
@@ -339,10 +360,10 @@ export function ProductDetailPage({
                   onClick={handleSave}
                   isLoading={updateProduct.isPending}
                 >
-                  Save
+                  {t("actions.save")}
                 </Button>
                 <Button variant="ghost" icon={X} onClick={handleCancelEdit}>
-                  Cancel
+                  {t("actions.cancel")}
                 </Button>
               </>
             ) : (
@@ -352,7 +373,7 @@ export function ProductDetailPage({
                   icon={Download}
                   onClick={handleDownload}
                 >
-                  Download
+                  {t("actions.download")}
                 </Button>
                 <Button
                   variant="danger"
@@ -362,7 +383,7 @@ export function ProductDetailPage({
                   isLoading={deleteProduct.isPending}
                   disabled={lock.isLocked}
                 >
-                  Delete
+                  {t("actions.delete")}
                 </Button>
                 <Button
                   data-testid="product-edit-button"
@@ -371,7 +392,7 @@ export function ProductDetailPage({
                   onClick={() => setIsEditing(true)}
                   disabled={!lock.canEdit}
                 >
-                  Edit
+                  {t("actions.edit")}
                 </Button>
               </>
             )}
@@ -392,7 +413,7 @@ export function ProductDetailPage({
         {canEdit ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-5">
-              <label className="text-sm font-semibold text-gray-900 mb-2 block">Description</label>
+              <label className="text-sm font-semibold text-gray-900 mb-2 block">{t("fields.description")}</label>
               <textarea
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
@@ -402,7 +423,7 @@ export function ProductDetailPage({
             </div>
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 space-y-3">
               <div>
-                <label className="text-sm font-semibold text-gray-900 mb-1 block">Pricing Model</label>
+                <label className="text-sm font-semibold text-gray-900 mb-1 block">{t("fields.pricingModel")}</label>
                 <input
                   type="text"
                   value={editPricingModel}
@@ -411,7 +432,7 @@ export function ProductDetailPage({
                 />
               </div>
               <div>
-                <label className="text-sm font-semibold text-gray-900 mb-1 block">Pricing Details</label>
+                <label className="text-sm font-semibold text-gray-900 mb-1 block">{t("fields.pricingDetails")}</label>
                 <textarea
                   value={editPricingDetails}
                   onChange={(e) => setEditPricingDetails(e.target.value)}

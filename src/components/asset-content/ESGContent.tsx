@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Textarea } from '../ui/textarea';
@@ -13,6 +14,7 @@ interface ESGContentProps {
 }
 
 export function ESGContent({ assetId, isEditing, config, hasToolbar = false }: ESGContentProps) {
+  const { t } = useTranslation('asset-content');
   const [content, setContent] = useState({
     environmental: {
       text: config.defaultContent?.environmental?.text || '',
@@ -34,8 +36,8 @@ export function ESGContent({ assetId, isEditing, config, hasToolbar = false }: E
   const dimensions = [
     {
       key: 'environmental' as const,
-      title: 'Environmental',
-      description: 'Environmental sustainability and ecological impact',
+      title: t('esg.dimensions.environmental.title'),
+      description: t('esg.dimensions.environmental.description'),
       icon: Leaf,
       gradient: 'from-green-500 to-emerald-500',
       bgLight: 'bg-green-50 dark:bg-green-900/20',
@@ -44,8 +46,8 @@ export function ESGContent({ assetId, isEditing, config, hasToolbar = false }: E
     },
     {
       key: 'social' as const,
-      title: 'Social',
-      description: 'Social responsibility and community impact',
+      title: t('esg.dimensions.social.title'),
+      description: t('esg.dimensions.social.description'),
       icon: Users2,
       gradient: 'from-blue-500 to-indigo-500',
       bgLight: 'bg-blue-50 dark:bg-blue-900/20',
@@ -54,8 +56,8 @@ export function ESGContent({ assetId, isEditing, config, hasToolbar = false }: E
     },
     {
       key: 'governance' as const,
-      title: 'Governance',
-      description: 'Corporate governance and ethical practices',
+      title: t('esg.dimensions.governance.title'),
+      description: t('esg.dimensions.governance.description'),
       icon: Shield,
       gradient: 'from-purple-500 to-violet-500',
       bgLight: 'bg-purple-50 dark:bg-purple-900/20',
@@ -102,7 +104,7 @@ export function ESGContent({ assetId, isEditing, config, hasToolbar = false }: E
                   variant="outline"
                   className={`${getImpactBadgeClass(dimensionContent.impact)} text-xs font-semibold`}
                 >
-                  {dimensionContent.impact} impact
+                  {t(`esg.impact.${dimensionContent.impact}`)}
                 </Badge>
               </div>
 
@@ -123,7 +125,7 @@ export function ESGContent({ assetId, isEditing, config, hasToolbar = false }: E
                         [dimension.key]: { ...dimensionContent, text: e.target.value },
                       })
                     }
-                    placeholder={`Enter ${dimension.title.toLowerCase()} commitment...`}
+                    placeholder={t('esg.placeholder', { dimension: dimension.title.toLowerCase() })}
                     className="min-h-[100px] resize-none border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary"
                   />
                 </div>
@@ -131,7 +133,7 @@ export function ESGContent({ assetId, isEditing, config, hasToolbar = false }: E
                 <div className="space-y-3">
                   <div className={`p-4 rounded-lg ${dimension.bgLight} ${dimension.borderLight} border`}>
                     <p className="text-sm leading-relaxed">
-                      {dimensionContent.text || `No ${dimension.title.toLowerCase()} commitment defined yet.`}
+                      {dimensionContent.text || t('esg.empty', { dimension: dimension.title.toLowerCase() })}
                     </p>
                   </div>
                   

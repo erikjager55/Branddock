@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, Wand2, AlertTriangle, Music2 } from 'lucide-react';
 import { Button, EmptyState, SkeletonCard } from '@/components/shared';
 import { useSoundEffects, useDeleteSoundEffect } from '@/features/media-library/hooks';
@@ -14,6 +15,7 @@ import { SoundEffectDetailPanel } from './SoundEffectDetailPanel';
 
 /** Tab component displaying a grid of sound effects. */
 export function SoundEffectsTab() {
+  const { t } = useTranslation('media-library');
   const { data, isLoading, isError } = useSoundEffects();
   const deleteSoundEffect = useDeleteSoundEffect();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -23,7 +25,7 @@ export function SoundEffectsTab() {
   const effects: SoundEffectWithMeta[] = Array.isArray(data) ? data : [];
 
   const handleDelete = (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this sound effect?')) return;
+    if (!window.confirm(t('soundEffects.confirmDelete'))) return;
     deleteSoundEffect.mutate(id, {
       onSuccess: () => {
         setSelectedEffectId((prev) => (prev === id ? null : prev));
@@ -39,9 +41,9 @@ export function SoundEffectsTab() {
       {/* Header row */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Sound Effects</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('soundEffects.title')}</h3>
           <p className="text-sm text-gray-500 mt-0.5">
-            Manage your brand&apos;s audio library — upload sounds or generate with AI.
+            {t('soundEffects.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -51,14 +53,14 @@ export function SoundEffectsTab() {
             onClick={() => setIsUploadModalOpen(true)}
             data-testid="upload-sound-button"
           >
-            Upload Sound
+            {t('soundEffects.uploadSound')}
           </Button>
           <Button
             icon={Wand2}
             onClick={() => setIsGenerateModalOpen(true)}
             data-testid="generate-sound-button"
           >
-            Generate with AI
+            {t('soundEffects.generateWithAi')}
           </Button>
         </div>
       </div>
@@ -68,10 +70,10 @@ export function SoundEffectsTab() {
         <div data-testid="error-message" className="text-center py-16">
           <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-3" />
           <h3 className="text-sm font-medium text-gray-900 mb-1">
-            Something went wrong
+            {t('errors.somethingWrong')}
           </h3>
           <p className="text-xs text-gray-500">
-            Failed to load sound effects. Please try again later.
+            {t('soundEffects.loadError')}
           </p>
         </div>
       ) : isLoading ? (
@@ -86,10 +88,10 @@ export function SoundEffectsTab() {
       ) : effects.length === 0 ? (
         <EmptyState
           icon={Music2}
-          title="No sound effects yet"
-          description="Upload audio files or generate brand sounds with AI."
+          title={t('soundEffects.empty.title')}
+          description={t('soundEffects.empty.description')}
           action={{
-            label: 'Upload Sound',
+            label: t('soundEffects.uploadSound'),
             onClick: () => setIsUploadModalOpen(true),
           }}
         />
@@ -110,14 +112,14 @@ export function SoundEffectsTab() {
       {deleteSoundEffect.isError && (
         <div className="flex items-center gap-2 mt-2" role="alert">
           <p className="text-xs text-red-500">
-            Failed to delete sound effect. Please try again.
+            {t('soundEffects.deleteError')}
           </p>
           <button
             type="button"
             onClick={() => deleteSoundEffect.reset()}
             className="text-xs text-gray-400 hover:text-gray-600 underline"
           >
-            Dismiss
+            {t('actions.dismiss')}
           </button>
         </div>
       )}

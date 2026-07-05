@@ -35,6 +35,66 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ---
 
+## 2026-07
+
+### 356. Meertaligheid Fase 1-3 — launch-ready afgerond (docs + status)
+
+Afronding van het meertaligheid-programma tot een **launch-ready** staat, zodat `vercel-deployment` niet langer op i18n wacht. Fase 1-3 (`i18n-ui-foundation` + `content-locale-foundation` + `content-locale-target-picker`) zijn alle **done + gemerged op `main`** (#65/#68/#70/#71/#73/#74): en↔nl is live door de hele app en de twee-selector-visie (Display-language per gebruiker + Content-/Output-language per workspace/generatie) is compleet. Volledige gate-suite groen op main (tsc 0 / lint 0 / separation 3/3 / content-locale-foundation-smoke 46/46 / target-picker-smoke 8/8 / build). Deze commit: `i18n-ui-foundation` → done, roadmap §🌍 + START_HERE bijgewerkt naar launch-ready, alle open items expliciet **post-launch** geparkeerd.
+
+**Post-launch (niet-blokkerend)**: `i18n-ai-translation-pipeline` (automatische AI-vertaal-engine voor onderhoud + de/es/fr — nu is en/nl geseed door de extractie-waves), de deferred Fase-3-follow-ups (F-VAL scoort nog tegen de workspace-default-pack i.p.v. de target-pack + de campagne-bulk-generatie-UI-picker), en Fase 4-5 (`multi-market-transcreation-enterprise`). Bewust Engels gelaten: puck-config (SSR-safe), canvas-previews, PDF-export, dode/demo-code.
+
+- Task: [tasks/i18n-ui-foundation.md](../tasks/i18n-ui-foundation.md) (+ content-locale-foundation/target-picker → done)
+- ADR: [adr/2026-06-28-multilingual-i18n-and-multi-market-content.md](adr/2026-06-28-multilingual-i18n-and-multi-market-content.md)
+- Commit: (deze docs-commit)
+
+### 355. Content-locale Fase 2 — per-generatie target-locale picker (direct bruikbaar)
+
+Vervolg op #354: een operator kan nu **één deliverable in een gekozen taal laten genereren**. De Canvas-generatie-UI (Step1Context) heeft een **Output-language-picker** (default = workspace-standaard) die de geshipte talen biedt; kies je een taal zonder profiel → server-side **find-or-create** een niet-default `BrandLocaleProfile` (`resolveTargetProfile`, idempotent op `@@unique([workspaceId, locale])`). `targetLanguage` threadt door de bestaande pipeline (`orchestrate`/`bulk-generate` zod → `orchestrateContentGeneration` options → `assembleCanvasContext(…, localeProfileId)` → `getBrandContext(ws, profileId)`) en wordt gepersisteerd op `Deliverable.localeProfileId` (her-genereren behoudt de taal). **Default-pad ongewijzigd** (geen keuze → default-profiel-loos pad, byte-identiek). Daarnaast volgen de **4 analyze-routes** (products url/pdf, competitors url/refresh) nu de workspace-content-taal (`getContentOutputLanguage`) i.p.v. de browser-`Accept-Language` van de operator — **bewuste gedragswijziging** (UI-taal-lek gedicht). Client-safe `shipped-languages.ts` (geen prisma) als gedeelde talenlijst. Smoke `content-locale-target-picker.ts` 8/8. Gates per fase: tsc 0 / lint 0 / separation 3/3 / build.
+
+**Follow-ups** (bewust uitgesteld): F-VAL scoort nog tegen de workspace-default heuristics-pack i.p.v. de target-pack (de threading zit tangled buiten het hoofd-`runFidelityScoring`-pad — de content genereert al correct in de doeltaal, alleen de score-pack verschilt); een taal-picker in de campagne-bulk-generatie-UI (de `bulkGenerateSSE`-plumbing accepteert al `targetLanguage`).
+
+- Task: [tasks/content-locale-target-picker.md](../tasks/content-locale-target-picker.md)
+- ADR: [adr/2026-06-28-multilingual-i18n-and-multi-market-content.md](adr/2026-06-28-multilingual-i18n-and-multi-market-content.md) (analyze-route-gedragswijziging genoteerd)
+- Commit: 8dc13164 (P1+P2) · 548bd3ca (P4) · 69f848b7 (P5) · (P6 deze commit)
+
+### 354. Content-locale foundation — content-taal-selector + multi-markt-datamodel (Approach C)
+
+De tweede taal-as van het meertaligheid-programma: de **content-taal** (waarin de AI schrijft, per workspace), naast de al gelande UI-taal-as. Niet-brekend + forward-compatible multi-markt-fundament (ADR 2026-06-28). **Fase A+C**: additief schema — `Brand` (1:1 workspace) + `BrandLocaleProfile` (`@@unique([workspaceId, locale])`, gereserveerde JSON-deltas), nullable `localeProfileId` op `Deliverable`/`Persona`, `LandingPage` +`locale`+`localeProfileId` met unique-flip `[workspaceId,slug]` → `[workspaceId,locale,slug]` (compound-key-code in `publish-page.ts`/`p/[slug]`); backfill-script (17 workspaces → 17 default-profielen, 0 orphans) + seed-update. **Fase B**: `getBrandContext(workspaceId, localeProfileId?)` + cache-key `${workspaceId}:${localeProfileId ?? 'default'}` + `invalidateBrandContext` wist alle varianten; `resolveLocaleForBrand(workspaceId, requestedLocale?)`. Default-pad **byte-identiek** (geverifieerd tegen 17-workspace baseline); alleen een expliciet gekozen profiel (Fase 2) wint. **Fase D**: live Content-language-control in WorkspacesTab (per-workspace + create-form, onderscheiden van de Display-language), POST maakt Brand+profiel, PATCH synct profiel + mirror + invalideert de brand-context-cache (fixt een bestaande stale-cache-bug). Elke fase gate-groen (tsc 0 / lint 0 / separation 3/3 / build). Smoke `content-locale-foundation.ts` 46/46.
+
+- Task: [tasks/content-locale-foundation.md](../tasks/content-locale-foundation.md)
+- ADR: [adr/2026-06-28-multilingual-i18n-and-multi-market-content.md](adr/2026-06-28-multilingual-i18n-and-multi-market-content.md)
+- Spec: -
+- Commit: 1b8fc776 (A+C) · 787c39e0 (B) · 67fb8b71 (D) · (E deze commit)
+- Vervolg: `content-locale-target-picker` (per-generatie target-locale + analyze-route-lekken, Fase 2)
+
+### 353. Meertaligheid remediation — data-gedreven registries + gemiste clusters (5 waves)
+
+Na #352 bleek bij het switchen naar nl nog veel Engels. Een multi-agent audit vond twee structurele oorzaken die de JSXText-extractie van #352 niet kón raken: **(A) data-gedreven constant-registries** (namen/titels uit `src/*/lib/*` + `src/lib/` + `src/config/`, gerenderd via `{item.name}`) en **(B) gemiste `src/components/*`-clusters** (de extractie-waves liepen op `src/features/*`). Opgelost met het **render-edge-patroon** (constant blijft en-bron + stabiele key; render via `t('ns:key', { defaultValue })`) + migratie van de gemiste clusters, in 5 waves:
+- **Wave 1** — campagne-generator-registries: stepper (`wizard-steps`), campagnedoelen (`goal-types`), pipeline-config, `content-type-inputs` (726 keys), deliverable/content-item-namen.
+- **Wave 2** — hele Brand Foundation-pagina (`src/components/brand-foundation` + `brand-assets` + `asset-content`) + `canonical-brand-assets` op stabiele slug (vertaalde namen vloeien nooit naar de DB terug).
+- **Wave 3** — gedeelde AI-exploration-chat (dekt brand-asset + persona) + 17 merk-DNA-registry-groepen (234 keys).
+- **Wave 4** — resterende live-pagina's (StrategicResearchPlanner, TeamManagement, ResearchDashboard, NewStrategyPage, ResearchValidationPage) + shared/lock/billing/versioning/impact-primitieven + brandstyle review-sections + auth-chrome.
+- **Wave 5** — long-tail-registries met **liveness-verificatie** vooraf: products/media/consistent-models/trends-personas/claw-content render-edged (~328 keys); research-bundles/strategy-tools/business-strategy correct geskipt (DB-backed/dood/enum).
+
+Bewust Engels (geverifieerd, geen bug): AI-gegenereerde/user-editable merk-content, AI-prompt-strings, enum/icon/Tailwind-class/MIME-identifiers, `.toFixed`-bedragen, dode/demo-code, PDF-export (aparte track). Runtime browser-smoke: cookie `branddock-ui-locale=nl` → loginscherm + `<html lang>` volledig Nederlands. Elke wave per-commit gate-groen (tsc 0 / lint 0 / separation-smoke 3/3 / build groen).
+
+- Task: [tasks/i18n-ui-foundation.md](../tasks/i18n-ui-foundation.md)
+- ADR: [adr/2026-06-28-multilingual-i18n-and-multi-market-content.md](adr/2026-06-28-multilingual-i18n-and-multi-market-content.md)
+- Spec: -
+- PR: #70 (waves 1-4, gemerged) + Wave 5 (`feat/i18n-wave5-longtail`)
+- Commit: 4fd49c44 + 9889d73b + 239ab790 + f082554e + 1259d798 (via #70) · 0cd3d4c4 (wave 5)
+
+### 352. Meertaligheid Fase 1 follow-ups — chrome afgemaakt + feature-extractie (4 waves) + toLocale-sweep
+
+Vervolg op #351: de UI is nu grotendeels meertalig (en↔nl). **Chrome afgemaakt**: `SIDEBAR_NAV` item/section-labels render-edge via `t()`, `AuthPage` → `common:auth`, en `src/lib/ui-i18n/format.ts` (`useFormat()` — `Intl` + date-fns gebonden aan `i18n.language`). **Runtime**: lazy feature-namespaces via `i18next-resources-to-backend` (chrome blijft statisch). **Feature-extractie in 4 AI-gedreven Workflow-waves** (~35 namespaces; de extractie-agents genereerden en+nl direct): dashboard, campaigns (canvas/wizard/content-library/overview/core + canvas-medium/accordion/page), brandstyle, brand-asset-detail, media-library, business-strategy, competitors, personas, products, trend-radar, settings (account/team/billing/admin/misc), consistent-models, workshop, research, help, knowledge-library, claw, brandvoice, interviews, brand-alignment, website-scanner, commercial, white-label. Tot slot een **toLocale-sweep** (~130 datum/getal-sites → `useFormat`). Elke wave per-commit gate-groen (tsc 0 / lint 0 / separation-smoke 3/3 / build groen).
+
+Bewust Engels gelaten (gedocumenteerd, geen bug): `puck-config.tsx` (server-safe, `useTranslation` zou de `/p/[slug]`-SSR breken — de renderToStaticMarkup-gotcha), `canvas/previews/*` (social-platform mock-chrome, ambigu), losse top-level `src/components/*.tsx`, `ai-studio`/`ai-trainer`-shells, `.ts` lib/services-formattering + `.toFixed`-bedragen. De ESLint-guard-allowlist is bewust niet verbreed (migrated files houden opzettelijk-gelaten enum/data-strings; verbreden zou false-positives geven).
+
+- Task: [tasks/i18n-ui-foundation.md](../tasks/i18n-ui-foundation.md) (in-progress — follow-ups)
+- ADR: [adr/2026-06-28-multilingual-i18n-and-multi-market-content.md](adr/2026-06-28-multilingual-i18n-and-multi-market-content.md)
+- Spec: -
+- Commit: 96938871 + 23e5ad38 + 9b6ced14 + 81420d63 + 2c944ca3 + a4491867 + 34cf8111
+
 ## 2026-06
 
 ### 351. Meertaligheid Fase 1 — i18next UI-runtime + Display-language selector (per gebruiker)

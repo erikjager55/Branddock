@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { VerticalTab } from './VerticalTab';
 import { Step1Context } from './Step1Context';
@@ -28,6 +29,7 @@ function resolveStepComponent(componentKey: string) {
 }
 
 export function HorizontalAccordion({ deliverableId }: HorizontalAccordionProps) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const activeStep = useCanvasStore((s) => s.activeStep);
   const completedSteps = useCanvasStore((s) => s.completedSteps);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
@@ -145,7 +147,7 @@ export function HorizontalAccordion({ deliverableId }: HorizontalAccordionProps)
   return (
     <div className="flex h-full" style={{ minHeight: 0 }}>
       {/* Preceding step tabs + active step tab (left side) */}
-      <div className="flex flex-shrink-0 border-r border-gray-200" role="tablist" aria-orientation="vertical" aria-label="Content canvas steps">
+      <div className="flex flex-shrink-0 border-r border-gray-200" role="tablist" aria-orientation="vertical" aria-label={t('horizontalAccordion.stepsAriaLabel')}>
         {precedingSteps.map((step, idx) => (
           <VerticalTab
             key={step.id}

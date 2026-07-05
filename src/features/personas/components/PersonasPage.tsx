@@ -1,6 +1,7 @@
 "use client";
 
 import { Users, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { EmptyState, SkeletonCard, Button } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
 import { usePersonas } from "../hooks";
@@ -23,6 +24,7 @@ export function PersonasPage({
   onOpenChat,
   onNavigate,
 }: PersonasPageProps) {
+  const { t } = useTranslation('personas');
   const { searchQuery, filter } = usePersonasOverviewStore();
   const { data, isLoading } = usePersonas(searchQuery || undefined, filter);
 
@@ -30,12 +32,12 @@ export function PersonasPage({
     <PageShell>
       <PageHeader
         moduleKey="personas"
-        title="Personas"
-        subtitle="Strategic decision instruments prioritized by research coverage"
+        title={t('page.title')}
+        subtitle={t('page.subtitle')}
         actions={
           <Button data-testid="add-persona-button" onClick={() => onNavigateToCreate?.()} className="gap-2">
             <Plus className="h-4 w-4" />
-            Create Persona
+            {t('page.createPersona')}
           </Button>
         }
       />
@@ -57,10 +59,10 @@ export function PersonasPage({
       ) : !data?.personas?.length ? (
         <EmptyState
           icon={Users}
-          title="No personas yet"
-          description="Create your first persona to start building research-based audience representations."
+          title={t('page.emptyTitle')}
+          description={t('page.emptyDescription')}
           action={{
-            label: "Create Persona",
+            label: t('page.createPersona'),
             onClick: () => onNavigateToCreate?.(),
           }}
         />

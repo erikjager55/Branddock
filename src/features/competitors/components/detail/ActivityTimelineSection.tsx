@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import {
   Activity,
   AlertTriangle,
@@ -48,6 +49,7 @@ const INITIAL_LIMIT = 20;
  *  flow, and per-type diff-payload visualisation. Read-only — does not
  *  participate in the page edit-mode. */
 export function ActivityTimelineSection({ competitorId }: ActivityTimelineSectionProps) {
+  const { t } = useTranslation("competitors");
   const [severityFilter, setSeverityFilter] = useState<ActivitySeverity | undefined>(undefined);
   const [methodFilter, setMethodFilter] = useState<DetectionMethodFilter>(undefined);
   const [limit, setLimit] = useState(INITIAL_LIMIT);
@@ -85,14 +87,14 @@ export function ActivityTimelineSection({ competitorId }: ActivityTimelineSectio
       <div className="rounded-lg border border-red-200 bg-white p-5">
         <div className="flex items-center gap-2 text-red-600 mb-2">
           <AlertTriangle className="h-4 w-4" />
-          <span className="text-sm font-medium">Couldn't load activities</span>
+          <span className="text-sm font-medium">{t("activity.loadError")}</span>
         </div>
         <button
           type="button"
           onClick={() => refetch()}
           className="text-sm text-red-600 hover:text-red-700 underline"
         >
-          Try again
+          {t("activity.tryAgain")}
         </button>
       </div>
     );
@@ -111,7 +113,7 @@ export function ActivityTimelineSection({ competitorId }: ActivityTimelineSectio
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           <Activity className="h-4 w-4 text-gray-500" />
-          Activity
+          {t("activity.title")}
           {totalUnread > 0 && (
             <Badge variant="danger" className="ml-1">
               {totalUnread}
@@ -126,44 +128,44 @@ export function ActivityTimelineSection({ competitorId }: ActivityTimelineSectio
           isLoading={acknowledge.isPending}
         >
           <Check className="h-3.5 w-3.5 mr-1" />
-          Mark all as read
+          {t("activity.markAllRead")}
         </Button>
       </div>
 
       <div className="flex gap-2 mb-4 flex-wrap">
         <FilterChip active={severityFilter === undefined} onClick={() => setSeverityFilter(undefined)}>
-          All
+          {t("activity.filterAll")}
         </FilterChip>
         <FilterChip active={severityFilter === "MAJOR"} onClick={() => setSeverityFilter("MAJOR")}>
-          Major
+          {t("activity.severityMajor")}
         </FilterChip>
         <FilterChip active={severityFilter === "NOTABLE"} onClick={() => setSeverityFilter("NOTABLE")}>
-          Notable
+          {t("activity.severityNotable")}
         </FilterChip>
         <FilterChip active={severityFilter === "INFO"} onClick={() => setSeverityFilter("INFO")}>
-          Info
+          {t("activity.severityInfo")}
         </FilterChip>
         <span className="border-l border-gray-200 mx-1" />
         <FilterChip active={methodFilter === undefined} onClick={() => setMethodFilter(undefined)}>
-          All sources
+          {t("activity.allSources")}
         </FilterChip>
         <FilterChip
           active={methodFilter === "ai-classified"}
           onClick={() => setMethodFilter("ai-classified")}
         >
-          AI
+          {t("activity.methodAi")}
         </FilterChip>
         <FilterChip active={methodFilter === "hash-diff"} onClick={() => setMethodFilter("hash-diff")}>
-          Auto
+          {t("activity.methodAuto")}
         </FilterChip>
         <FilterChip active={methodFilter === "manual"} onClick={() => setMethodFilter("manual")}>
-          Manual
+          {t("activity.methodManual")}
         </FilterChip>
       </div>
 
       {items.length === 0 ? (
         <p className="text-sm text-gray-500 italic">
-          No detection events for this competitor yet.
+          {t("activity.empty")}
         </p>
       ) : (
         <ul className="divide-y divide-gray-100">
@@ -181,7 +183,7 @@ export function ActivityTimelineSection({ competitorId }: ActivityTimelineSectio
       {canLoadMore && (
         <div className="mt-4">
           <Button variant="ghost" size="sm" onClick={() => setLimit((l) => l + INITIAL_LIMIT)}>
-            Load more ({total - items.length})
+            {t("activity.loadMore", { count: total - items.length })}
           </Button>
         </div>
       )}
@@ -245,6 +247,8 @@ interface SnapshotGroupProps {
 }
 
 function SnapshotGroup({ group, onAcknowledge, ackPending }: SnapshotGroupProps) {
+  const { t } = useTranslation("competitors");
+  const { formatRelative } = useFormat();
   const showHeader = group.snapshotId !== null && group.items.length > 1;
   const [collapsed, setCollapsed] = useState(false);
   const items = !showHeader || !collapsed ? group.items : [];
@@ -260,7 +264,7 @@ function SnapshotGroup({ group, onAcknowledge, ackPending }: SnapshotGroupProps)
           >
             {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             <span>
-              Snapshot · {safeRelativeTime(group.detectedAt)} · {group.items.length} events
+              {t("activity.snapshot")} · {safeRelativeTime(formatRelative, group.detectedAt)} · {t("activity.eventCount", { count: group.items.length })}
             </span>
           </button>
         </li>
@@ -286,6 +290,8 @@ interface ActivityRowProps {
 }
 
 function ActivityRow({ item, onAcknowledge, ackPending }: ActivityRowProps) {
+  const { t } = useTranslation("competitors");
+  const { formatRelative } = useFormat();
   const [expanded, setExpanded] = useState(false);
   const isAcked = item.acknowledgedAt !== null;
 
@@ -305,7 +311,7 @@ function ActivityRow({ item, onAcknowledge, ackPending }: ActivityRowProps) {
               {METHOD_LABEL[item.detectionMethod] ?? item.detectionMethod}
             </span>
             <span className="text-xs text-gray-400">·</span>
-            <span className="text-xs text-gray-500">{safeRelativeTime(item.detectedAt)}</span>
+            <span className="text-xs text-gray-500">{safeRelativeTime(formatRelative, item.detectedAt)}</span>
           </div>
           <p className="text-sm text-gray-700">{item.summary}</p>
           <button
@@ -314,7 +320,7 @@ function ActivityRow({ item, onAcknowledge, ackPending }: ActivityRowProps) {
             className="mt-1.5 text-xs text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
           >
             {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            {expanded ? "Hide details" : "Show details"}
+            {expanded ? t("activity.hideDetails") : t("activity.showDetails")}
           </button>
           {expanded && (
             <div className="mt-2">
@@ -327,8 +333,8 @@ function ActivityRow({ item, onAcknowledge, ackPending }: ActivityRowProps) {
             <span
               title={
                 item.acknowledgedBy?.name
-                  ? `Ack'd by ${item.acknowledgedBy.name}`
-                  : "Ack'd"
+                  ? t("activity.ackdBy", { name: item.acknowledgedBy.name })
+                  : t("activity.ackd")
               }
               className="inline-flex items-center text-gray-400"
             >
@@ -341,7 +347,7 @@ function ActivityRow({ item, onAcknowledge, ackPending }: ActivityRowProps) {
               onClick={() => onAcknowledge(item.id)}
               className="text-xs text-emerald-700 hover:text-emerald-800 hover:underline disabled:opacity-50"
             >
-              Mark read
+              {t("activity.markRead")}
             </button>
           )}
         </div>
@@ -357,6 +363,7 @@ interface DiffPayloadRenderProps {
 }
 
 function DiffPayloadRender({ payload }: DiffPayloadRenderProps) {
+  const { t } = useTranslation("competitors");
   if (!payload || typeof payload !== "object") {
     return <FallbackJson value={payload} />;
   }
@@ -366,7 +373,7 @@ function DiffPayloadRender({ payload }: DiffPayloadRenderProps) {
   if (kind === "field-change") {
     return (
       <BeforeAfterGrid
-        label={typeof obj.field === "string" ? obj.field : "Field"}
+        label={typeof obj.field === "string" ? obj.field : t("activity.diff.field")}
         before={asString(obj.before)}
         after={asString(obj.after)}
       />
@@ -377,13 +384,13 @@ function DiffPayloadRender({ payload }: DiffPayloadRenderProps) {
     return (
       <div className="space-y-2">
         <BeforeAfterGrid
-          label="Pricing model"
+          label={t("activity.diff.pricingModel")}
           before={asString(obj.modelBefore)}
           after={asString(obj.modelAfter)}
         />
         {(asString(obj.detailsBefore) || asString(obj.detailsAfter)) && (
           <BeforeAfterGrid
-            label="Pricing details"
+            label={t("activity.diff.pricingDetails")}
             before={asString(obj.detailsBefore)}
             after={asString(obj.detailsAfter)}
           />
@@ -399,7 +406,7 @@ function DiffPayloadRender({ payload }: DiffPayloadRenderProps) {
       <div className="space-y-2 text-xs">
         {added.length > 0 && (
           <div>
-            <div className="text-gray-500 mb-1">Added</div>
+            <div className="text-gray-500 mb-1">{t("activity.diff.added")}</div>
             <div className="flex flex-wrap gap-1">
               {added.map((v) => (
                 <span
@@ -414,7 +421,7 @@ function DiffPayloadRender({ payload }: DiffPayloadRenderProps) {
         )}
         {removed.length > 0 && (
           <div>
-            <div className="text-gray-500 mb-1">Removed</div>
+            <div className="text-gray-500 mb-1">{t("activity.diff.removed")}</div>
             <div className="flex flex-wrap gap-1">
               {removed.map((v) => (
                 <span
@@ -434,7 +441,7 @@ function DiffPayloadRender({ payload }: DiffPayloadRenderProps) {
   if (kind === "workflow-change") {
     return (
       <BeforeAfterGrid
-        label={typeof obj.field === "string" ? obj.field : "Workflow"}
+        label={typeof obj.field === "string" ? obj.field : t("activity.diff.workflow")}
         before={asString(obj.before)}
         after={asString(obj.after)}
       />
@@ -447,7 +454,7 @@ function DiffPayloadRender({ payload }: DiffPayloadRenderProps) {
       <div className="space-y-2 text-xs">
         {typeof obj.rationale === "string" && (
           <p className="text-gray-700">
-            <strong>Rationale:</strong> {obj.rationale}
+            <strong>{t("activity.diff.rationale")}</strong> {obj.rationale}
           </p>
         )}
         {fields.length > 0 && (
@@ -481,7 +488,7 @@ function DiffPayloadRender({ payload }: DiffPayloadRenderProps) {
           </a>
         )}
         {publishedAt && (
-          <div className="text-gray-500">Published: {publishedAt}</div>
+          <div className="text-gray-500">{t("activity.diff.published", { date: publishedAt })}</div>
         )}
       </div>
     );
@@ -497,17 +504,18 @@ interface BeforeAfterGridProps {
 }
 
 function BeforeAfterGrid({ label, before, after }: BeforeAfterGridProps) {
+  const { t } = useTranslation("competitors");
   return (
     <div className="text-xs">
       <div className="text-gray-500 mb-1">{label}</div>
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded bg-red-50 p-2 text-red-800">
-          <div className="text-[10px] uppercase tracking-wide text-red-500 mb-1">Before</div>
-          <div className="line-through whitespace-pre-wrap break-words">{before ?? "(empty)"}</div>
+          <div className="text-[10px] uppercase tracking-wide text-red-500 mb-1">{t("activity.diff.before")}</div>
+          <div className="line-through whitespace-pre-wrap break-words">{before ?? t("activity.diff.empty")}</div>
         </div>
         <div className="rounded bg-emerald-50 p-2 text-emerald-800">
-          <div className="text-[10px] uppercase tracking-wide text-emerald-600 mb-1">After</div>
-          <div className="whitespace-pre-wrap break-words">{after ?? "(empty)"}</div>
+          <div className="text-[10px] uppercase tracking-wide text-emerald-600 mb-1">{t("activity.diff.after")}</div>
+          <div className="whitespace-pre-wrap break-words">{after ?? t("activity.diff.empty")}</div>
         </div>
       </div>
     </div>
@@ -534,9 +542,12 @@ function asString(v: unknown): string | null {
   return String(v);
 }
 
-function safeRelativeTime(iso: string): string {
+function safeRelativeTime(
+  formatRelative: (value: Date | string | number) => string,
+  iso: string,
+): string {
   try {
-    return formatDistanceToNow(new Date(iso), { addSuffix: true });
+    return formatRelative(iso);
   } catch {
     return iso;
   }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Link as LinkIcon,
   FileText,
@@ -30,6 +31,7 @@ type AddSourceTab = 'url' | 'pdf' | 'text';
  * any briefing sources at all.
  */
 export function BriefingSourcesField() {
+  const { t } = useTranslation('campaigns-wizard');
   const sources = useCampaignWizardStore((s) => s.briefingSources);
   const addSource = useCampaignWizardStore((s) => s.addBriefingSource);
   const updateSource = useCampaignWizardStore((s) => s.updateBriefingSource);
@@ -49,14 +51,14 @@ export function BriefingSourcesField() {
     setUrlError(null);
     const url = urlInput.trim();
     if (!url) {
-      setUrlError('Please enter a URL');
+      setUrlError(t('briefingSources.errorEnterUrl'));
       return;
     }
     try {
       // Basic shape validation — server does the real check
       new URL(url);
     } catch {
-      setUrlError('Not a valid URL');
+      setUrlError(t('briefingSources.errorInvalidUrl'));
       return;
     }
 
@@ -79,7 +81,7 @@ export function BriefingSourcesField() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error ?? `Parse failed (${res.status})`);
+        throw new Error(err?.error ?? t('briefingSources.errorParseFailed', { status: res.status }));
       }
       const data = await res.json();
       updateSource(id, {
@@ -90,7 +92,7 @@ export function BriefingSourcesField() {
     } catch (err) {
       updateSource(id, {
         status: 'error',
-        errorMessage: err instanceof Error ? err.message : 'Failed to parse URL',
+        errorMessage: err instanceof Error ? err.message : t('briefingSources.errorFailedParseUrl'),
       });
     }
   };
@@ -98,11 +100,11 @@ export function BriefingSourcesField() {
   // ─── PDF upload handler ─────────────────────────────────────
   const handleFileSelected = async (file: File) => {
     if (!file.name.toLowerCase().endsWith('.pdf')) {
-      setUrlError('Only PDF files are supported');
+      setUrlError(t('briefingSources.errorOnlyPdf'));
       return;
     }
     if (file.size > 20 * 1024 * 1024) {
-      setUrlError('File size exceeds 20MB');
+      setUrlError(t('briefingSources.errorFileTooLarge'));
       return;
     }
     setUrlError(null);
@@ -127,7 +129,7 @@ export function BriefingSourcesField() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error ?? `Upload failed (${res.status})`);
+        throw new Error(err?.error ?? t('briefingSources.errorUploadFailed', { status: res.status }));
       }
       const data = await res.json();
       updateSource(id, {
@@ -138,7 +140,7 @@ export function BriefingSourcesField() {
     } catch (err) {
       updateSource(id, {
         status: 'error',
-        errorMessage: err instanceof Error ? err.message : 'Failed to parse PDF',
+        errorMessage: err instanceof Error ? err.message : t('briefingSources.errorFailedParsePdf'),
       });
     } finally {
       setIsUploading(false);
@@ -150,7 +152,7 @@ export function BriefingSourcesField() {
   const handleAddManualText = () => {
     const text = manualText.trim();
     if (!text) {
-      setUrlError('Please enter some text');
+      setUrlError(t('briefingSources.errorEnterText'));
       return;
     }
     setUrlError(null);
@@ -158,7 +160,7 @@ export function BriefingSourcesField() {
     addSource({
       id,
       type: 'text',
-      title: manualTitle.trim() || 'Manual entry',
+      title: manualTitle.trim() || t('briefingSources.manualEntry'),
       extractedText: text,
       status: 'ready',
     });
@@ -168,17 +170,17 @@ export function BriefingSourcesField() {
   };
 
   const TAB_CONFIG: { id: AddSourceTab; label: string; icon: typeof Globe }[] = [
-    { id: 'url', label: 'Website URL', icon: Globe },
-    { id: 'pdf', label: 'PDF Upload', icon: FileText },
-    { id: 'text', label: 'Manual Entry', icon: PenLine },
+    { id: 'url', label: t('briefingSources.tabUrl'), icon: Globe },
+    { id: 'pdf', label: t('briefingSources.tabPdf'), icon: FileText },
+    { id: 'text', label: t('briefingSources.tabText'), icon: PenLine },
   ];
 
   return (
     <div>
       <label className="block text-xs font-medium text-gray-600 mb-1">
-        Additional context
+        {t('briefingSources.additionalContext')}
         <span className="text-gray-400 font-normal ml-1">
-          (optional — add a URL, PDF, or free text to enrich the briefing)
+          {t('briefingSources.additionalContextHint')}
         </span>
       </label>
 
@@ -202,7 +204,7 @@ export function BriefingSourcesField() {
           className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-700 transition-colors"
         >
           <Plus className="h-3 w-3" />
-          Add source
+          {t('briefingSources.addSource')}
         </button>
       )}
 
@@ -260,7 +262,7 @@ export function BriefingSourcesField() {
                       value={urlInput}
                       onChange={(e) => setUrlInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddUrl()}
-                      placeholder="https://example.com/article"
+                      placeholder={t('briefingSources.urlPlaceholder')}
                       className="block w-full rounded-md border border-gray-200 bg-white py-1.5 pl-8 pr-2 text-xs placeholder:text-gray-400 focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none"
                     />
                   </div>
@@ -270,7 +272,7 @@ export function BriefingSourcesField() {
                     disabled={!urlInput.trim()}
                     className="rounded-md bg-primary hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1.5 text-xs font-medium"
                   >
-                    Add URL
+                    {t('briefingSources.addUrl')}
                   </button>
                 </div>
               </>
@@ -280,7 +282,7 @@ export function BriefingSourcesField() {
             {activeTab === 'pdf' && (
               <label className="flex items-center justify-center gap-1.5 rounded-md border border-dashed border-gray-300 hover:border-gray-400 px-3 py-4 text-xs text-gray-600 cursor-pointer transition-colors">
                 <Paperclip className="h-3.5 w-3.5" />
-                {isUploading ? 'Uploading...' : 'Click to upload PDF (max 20 MB)'}
+                {isUploading ? t('briefingSources.uploading') : t('briefingSources.uploadPdf')}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -302,13 +304,13 @@ export function BriefingSourcesField() {
                   type="text"
                   value={manualTitle}
                   onChange={(e) => setManualTitle(e.target.value)}
-                  placeholder="Title (optional)"
+                  placeholder={t('briefingSources.titlePlaceholder')}
                   className="block w-full rounded-md border border-gray-200 bg-white py-1.5 px-2.5 text-xs placeholder:text-gray-400 focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none"
                 />
                 <textarea
                   value={manualText}
                   onChange={(e) => setManualText(e.target.value)}
-                  placeholder="Paste or type reference text here..."
+                  placeholder={t('briefingSources.textPlaceholder')}
                   rows={5}
                   className="block w-full rounded-md border border-gray-200 bg-white py-1.5 px-2.5 text-xs placeholder:text-gray-400 focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none resize-y"
                 />
@@ -318,7 +320,7 @@ export function BriefingSourcesField() {
                   disabled={!manualText.trim()}
                   className="rounded-md bg-primary hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1.5 text-xs font-medium"
                 >
-                  Add text
+                  {t('briefingSources.addText')}
                 </button>
               </>
             )}
@@ -339,8 +341,9 @@ export function BriefingSourcesField() {
 // ─── Sub-components ───────────────────────────────────────────
 
 function SourceRow({ source, onRemove }: { source: BriefingSource; onRemove: () => void }) {
+  const { t } = useTranslation('campaigns-wizard');
   const Icon = source.type === 'pdf' ? FileText : source.type === 'text' ? PenLine : LinkIcon;
-  const label = source.title || source.url || source.fileName || 'Manual entry';
+  const label = source.title || source.url || source.fileName || t('briefingSources.manualEntry');
   const subline =
     source.type === 'url'
       ? source.url
@@ -371,7 +374,7 @@ function SourceRow({ source, onRemove }: { source: BriefingSource; onRemove: () 
           type="button"
           onClick={onRemove}
           className="rounded p-0.5 text-gray-400 hover:text-red-500 hover:bg-red-50"
-          title="Remove source"
+          title={t('briefingSources.removeSource')}
         >
           <X className="h-3.5 w-3.5" />
         </button>

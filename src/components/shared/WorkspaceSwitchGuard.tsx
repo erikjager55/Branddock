@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RefreshCw, TriangleAlert } from 'lucide-react';
 import { useWorkspace } from '@/hooks/use-workspace';
 
@@ -29,6 +30,7 @@ export interface WorkspaceSwitchMessage {
  * Audit: docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md
  */
 export function WorkspaceSwitchGuard() {
+  const { t } = useTranslation('shared');
   const { workspaceId } = useWorkspace();
   // Workspace waarmee deze tab is geladen — eerste non-null resolutie wint;
   // latere refetches (die al de nieuwe cookie zien) mogen 'm niet bijwerken.
@@ -73,14 +75,13 @@ export function WorkspaceSwitchGuard() {
           </div>
           <div className="flex-1">
             <h2 id="workspace-switch-guard-title" className="text-base font-semibold text-gray-900">
-              Workspace changed in another tab
+              {t('workspaceSwitch.title')}
             </h2>
             <p className="mt-1.5 text-sm text-gray-600">
               {switchedTo.name
-                ? `The active workspace is now “${switchedTo.name}”.`
-                : 'The active workspace or organization has changed.'}{' '}
-              This tab was looking at a different workspace and cannot safely
-              continue — changes would be silently lost.
+                ? t('workspaceSwitch.nowNamed', { name: switchedTo.name })
+                : t('workspaceSwitch.changedGeneric')}{' '}
+              {t('workspaceSwitch.warning')}
             </p>
           </div>
         </div>
@@ -90,7 +91,7 @@ export function WorkspaceSwitchGuard() {
           className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
         >
           <RefreshCw className="h-4 w-4" />
-          Reload this tab
+          {t('workspaceSwitch.reload')}
         </button>
       </div>
     </div>

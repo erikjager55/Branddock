@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { MessageCircleQuestion, Sparkles, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { openClawWithPrompt } from '../lib/open-with-prompt';
 
 interface CanvasHelpButtonProps {
@@ -30,6 +31,7 @@ export function CanvasHelpButton({
   contentType,
   deliverableTitle,
 }: CanvasHelpButtonProps) {
+  const { t } = useTranslation('claw');
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -61,20 +63,20 @@ export function CanvasHelpButton({
     ? `"${deliverableTitle.trim()}"`
     : contentType
       ? contentType.replace(/-/g, ' ')
-      : 'this deliverable';
+      : t('canvasHelp.thisDeliverable');
 
   const prompts: Array<{ label: string; prompt: string }> = [
     {
-      label: 'Rewrite in a more formal tone',
-      prompt: `Rewrite the selected variant of ${subject} in a more formal, professional tone. Keep the core message intact.`,
+      label: t('canvasHelp.formalLabel'),
+      prompt: t('canvasHelp.formalPrompt', { subject }),
     },
     {
-      label: 'Shorten it',
-      prompt: `Shorten the selected variant of ${subject} by about 30%. Keep the hook and the call to action — cut supporting detail.`,
+      label: t('canvasHelp.shortenLabel'),
+      prompt: t('canvasHelp.shortenPrompt', { subject }),
     },
     {
-      label: 'Make it more direct',
-      prompt: `Rewrite the selected variant of ${subject} to be more direct and punchy. Lead with the benefit, drop filler words.`,
+      label: t('canvasHelp.directLabel'),
+      prompt: t('canvasHelp.directPrompt', { subject }),
     },
   ];
 
@@ -88,13 +90,13 @@ export function CanvasHelpButton({
         >
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-teal-50/40">
             <span className="text-xs font-semibold text-gray-900">
-              Ask about this deliverable
+              {t('canvasHelp.header')}
             </span>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="p-1 rounded hover:bg-gray-100 text-gray-400"
-              aria-label="Close"
+              aria-label={t('canvasHelp.close')}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -118,7 +120,7 @@ export function CanvasHelpButton({
             ))}
           </ul>
           <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 text-[11px] text-gray-500">
-            Or type your own question in the assistant.
+            {t('canvasHelp.footer')}
           </div>
         </div>
       )}
@@ -127,9 +129,9 @@ export function CanvasHelpButton({
         onClick={() => setOpen((o) => !o)}
         className="h-12 w-12 rounded-full shadow-lg flex items-center justify-center transition-colors hover:brightness-110"
         style={{ backgroundColor: open ? '#0f766e' : '#0d9488' }}
-        aria-label="Ask the Brand Assistant about this deliverable"
+        aria-label={t('canvasHelp.triggerAriaLabel')}
         aria-expanded={open}
-        title="Ask the Brand Assistant"
+        title={t('canvasHelp.triggerTitle')}
       >
         <MessageCircleQuestion className="h-6 w-6 text-white" />
       </button>

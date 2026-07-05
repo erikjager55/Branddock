@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Textarea } from '../ui/textarea';
 import { FileText } from 'lucide-react';
@@ -12,6 +13,7 @@ interface SimpleTextContentProps {
 }
 
 export function SimpleTextContent({ assetId, isEditing, config, hasToolbar = false }: SimpleTextContentProps) {
+  const { t } = useTranslation('asset-content');
   const [content, setContent] = useState(config.defaultContent?.simpleText || '');
 
   return (
@@ -26,9 +28,9 @@ export function SimpleTextContent({ assetId, isEditing, config, hasToolbar = fal
             <FileText className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-lg">Content</h3>
+            <h3 className="font-semibold text-lg">{t('simpleText.title')}</h3>
             <p className="text-sm text-muted-foreground">
-              Define the core content for this asset
+              {t('simpleText.subtitle')}
             </p>
           </div>
         </div>
@@ -38,13 +40,13 @@ export function SimpleTextContent({ assetId, isEditing, config, hasToolbar = fal
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Enter content..."
+            placeholder={t('simpleText.placeholder')}
             className="min-h-[200px] resize-none text-base leading-relaxed border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary"
           />
         ) : (
           <div className="p-6 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800">
             <p className="text-base leading-relaxed whitespace-pre-wrap">
-              {content || 'No content defined yet. Click "Edit Content" to add content.'}
+              {content || t('simpleText.empty')}
             </p>
           </div>
         )}

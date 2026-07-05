@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, Lightbulb, Eye, CheckCircle2, ArrowRight, ClipboardCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/shared";
@@ -28,12 +29,12 @@ const SEVERITY_META: Record<
 };
 
 /** Maps an ask's section to the styleguide tab the deep-link should open. */
-const SECTION_TAB: Record<CalibrationSection, { tab: StyleguideTab; label: string }> = {
-  logo: { tab: "brand_assets", label: "Logos" },
-  colors: { tab: "colors", label: "Colors" },
-  typography: { tab: "typography", label: "Typography" },
-  imagery: { tab: "imagery", label: "Imagery" },
-  "design-language": { tab: "visual_system", label: "Visual System" },
+const SECTION_TAB: Record<CalibrationSection, StyleguideTab> = {
+  logo: "brand_assets",
+  colors: "colors",
+  typography: "typography",
+  imagery: "imagery",
+  "design-language": "visual_system",
 };
 
 /**
@@ -43,6 +44,7 @@ const SECTION_TAB: Record<CalibrationSection, { tab: StyleguideTab; label: strin
  * as actionable asks with deep-links to the relevant tab.
  */
 export function BrandstyleCalibrationPanel({ styleguide, onJumpToTab }: BrandstyleCalibrationPanelProps) {
+  const { t } = useTranslation("brandstyle");
   // Calibration only makes sense once extraction has finished — computing for a
   // DRAFT/ANALYZING styleguide would surface alarming "missing" asks over partial
   // data. Gate inside the memo so the hook always runs (Rules of Hooks) and the
@@ -71,7 +73,7 @@ export function BrandstyleCalibrationPanel({ styleguide, onJumpToTab }: Brandsty
       >
         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
         <span className="text-sm font-medium text-emerald-700">
-          Calibration complete — no open items in the extracted styleguide.
+          {t("calibration.complete")}
         </span>
       </div>
     );
@@ -82,9 +84,9 @@ export function BrandstyleCalibrationPanel({ styleguide, onJumpToTab }: Brandsty
   );
 
   const summary = [
-    report.counts.critical > 0 ? `${report.counts.critical} critical` : null,
-    report.counts.suggestion > 0 ? `${report.counts.suggestion} to fix` : null,
-    report.counts.review > 0 ? `${report.counts.review} to review` : null,
+    report.counts.critical > 0 ? t("calibration.summaryCritical", { count: report.counts.critical }) : null,
+    report.counts.suggestion > 0 ? t("calibration.summaryToFix", { count: report.counts.suggestion }) : null,
+    report.counts.review > 0 ? t("calibration.summaryToReview", { count: report.counts.review }) : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -93,14 +95,14 @@ export function BrandstyleCalibrationPanel({ styleguide, onJumpToTab }: Brandsty
     <div data-testid="brandstyle-calibration-panel" className="mt-6 rounded-lg border border-gray-200 bg-white p-4">
       <div className="mb-3 flex items-center gap-2">
         <ClipboardCheck className="h-4 w-4 text-gray-500" />
-        <h3 className="text-sm font-semibold text-gray-900">Calibration</h3>
+        <h3 className="text-sm font-semibold text-gray-900">{t("calibration.title")}</h3>
         <span className="text-xs text-gray-500">{summary}</span>
       </div>
 
       <ul className="space-y-2">
         {sortedAsks.map((ask) => {
           const meta = SEVERITY_META[ask.severity];
-          const target = SECTION_TAB[ask.section];
+          const targetTab = SECTION_TAB[ask.section];
           const Icon = meta.icon;
           return (
             <li
@@ -118,8 +120,8 @@ export function BrandstyleCalibrationPanel({ styleguide, onJumpToTab }: Brandsty
                 </div>
                 <p className="text-xs text-gray-600">{ask.detail}</p>
               </div>
-              <Button variant="ghost" size="sm" className="shrink-0" onClick={() => onJumpToTab(target.tab)}>
-                {target.label}
+              <Button variant="ghost" size="sm" className="shrink-0" onClick={() => onJumpToTab(targetTab)}>
+                {t(`tabNav.${targetTab}`)}
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </li>

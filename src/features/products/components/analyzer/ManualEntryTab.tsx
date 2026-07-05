@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button, Input } from "@/components/shared";
 import { Select } from "@/components/shared";
 import { useCreateProduct } from "../../hooks";
-import { CATEGORY_OPTIONS, CATEGORY_GROUPS } from "../../constants/product-constants";
+import { CATEGORY_GROUPS } from "../../constants/product-constants";
+import { categoryGroupKey } from "../../constants/category-i18n";
 
 // ─── Component ────────────────────────────────────────────
 
@@ -17,6 +19,20 @@ export function ManualEntryTab({
   onBack,
   onNavigateToDetail,
 }: ManualEntryTabProps) {
+  const { t } = useTranslation(["products", "products-registry"]);
+  const categoryGroups = useMemo(
+    () =>
+      CATEGORY_GROUPS.map((group) => ({
+        label: t(`products-registry:categoryGroup.${categoryGroupKey(group.label)}`, {
+          defaultValue: group.label,
+        }),
+        options: group.options.map((opt) => ({
+          value: opt.value,
+          label: t(`products-registry:category.${opt.value}`, { defaultValue: opt.label }),
+        })),
+      })),
+    [t],
+  );
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -30,10 +46,10 @@ export function ManualEntryTab({
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!name.trim()) newErrors.name = "Product name is required";
-    if (!description.trim()) newErrors.description = "Description is required";
+    if (!name.trim()) newErrors.name = t("analyzer.manual.errorNameRequired");
+    if (!description.trim()) newErrors.description = t("analyzer.manual.errorDescriptionRequired");
     if (description.length > 2000)
-      newErrors.description = "Description must be under 2000 characters";
+      newErrors.description = t("analyzer.manual.errorDescriptionTooLong");
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -74,9 +90,9 @@ export function ManualEntryTab({
     <div className="space-y-6 max-w-2xl">
       {/* Product Name */}
       <Input
-        label="Product Name"
+        label={t("analyzer.manual.nameLabel")}
         required
-        placeholder="Enter product or service name"
+        placeholder={t("analyzer.manual.namePlaceholder")}
         value={name}
         onChange={(e) => setName(e.target.value)}
         error={errors.name}
@@ -86,12 +102,12 @@ export function ManualEntryTab({
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
           <span className="text-red-500 mr-0.5">*</span>
-          Description
+          {t("fields.description")}
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Describe your product or service..."
+          placeholder={t("analyzer.manual.descriptionPlaceholder")}
           maxLength={2000}
           rows={4}
           className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-shadow resize-none ${
@@ -112,18 +128,17 @@ export function ManualEntryTab({
 
       {/* Category */}
       <Select
-        label="Category"
+        label={t("fields.category")}
         value={category}
         onChange={setCategory}
-        options={CATEGORY_OPTIONS}
-        groups={CATEGORY_GROUPS}
-        placeholder="Select a category..."
+        groups={categoryGroups}
+        placeholder={t("fields.selectCategoryLong")}
       />
 
       {/* Pricing Model */}
       <Input
-        label="Pricing Model"
-        placeholder="e.g. Enterprise, \u20AC149/month, Custom"
+        label={t("fields.pricingModel")}
+        placeholder={t("analyzer.manual.pricingPlaceholder")}
         value={pricingModel}
         onChange={(e) => setPricingModel(e.target.value)}
       />
@@ -131,12 +146,12 @@ export function ManualEntryTab({
       {/* Key Features */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Key Features
+          {t("analyzer.manual.featuresLabel")}
         </label>
         <textarea
           value={features}
           onChange={(e) => setFeatures(e.target.value)}
-          placeholder="Enter one feature per line"
+          placeholder={t("analyzer.manual.featuresPlaceholder")}
           rows={4}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow resize-none font-mono"
         />
@@ -145,12 +160,12 @@ export function ManualEntryTab({
       {/* Key Benefits */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Key Benefits
+          {t("analyzer.manual.benefitsLabel")}
         </label>
         <textarea
           value={benefits}
           onChange={(e) => setBenefits(e.target.value)}
-          placeholder="Enter one benefit per line"
+          placeholder={t("analyzer.manual.benefitsPlaceholder")}
           rows={4}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow resize-none font-mono"
         />
@@ -159,12 +174,12 @@ export function ManualEntryTab({
       {/* Use Cases */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Use Cases
+          {t("analyzer.manual.useCasesLabel")}
         </label>
         <textarea
           value={useCases}
           onChange={(e) => setUseCases(e.target.value)}
-          placeholder="Enter one use case per line"
+          placeholder={t("analyzer.manual.useCasesPlaceholder")}
           rows={4}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow resize-none font-mono"
         />
@@ -173,14 +188,14 @@ export function ManualEntryTab({
       {/* Footer */}
       <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
         <Button variant="ghost" onClick={onBack}>
-          Cancel
+          {t("actions.cancel")}
         </Button>
         <Button
           variant="cta"
           onClick={handleSave}
           isLoading={createProduct.isPending}
         >
-          Save Product
+          {t("analyzer.manual.saveProduct")}
         </Button>
       </div>
     </div>

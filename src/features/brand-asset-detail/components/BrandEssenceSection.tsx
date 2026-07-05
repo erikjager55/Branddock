@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Diamond, Heart, Package, Sparkles, Target, Users, ShieldCheck, CheckCircle, Plus, X,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { BrandEssenceFrameworkData, BrandEssenceValidationScores } from '../types/framework.types';
 import { CompanionValuesPanel } from './shared/CompanionValuesPanel';
 import { ProofPointsGuidanceBanner } from './shared/ProofPointsGuidanceBanner';
@@ -78,6 +79,7 @@ function averageScore(scores: BrandEssenceValidationScores): number {
 // ─── Component ──────────────────────────────────────────────
 
 export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }: BrandEssenceSectionProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const [draft, setDraft] = useState<BrandEssenceFrameworkData>(() => normalize(data));
 
   useEffect(() => {
@@ -124,8 +126,8 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
             <Diamond className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Brand Essence</h2>
-            <p className="text-sm text-gray-500">The single most defining thought about your brand — timeless, in 1-3 words</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandEssence.core.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandEssence.core.subtitle')}</p>
           </div>
         </div>
 
@@ -134,14 +136,14 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
           <div className="space-y-3">
             <div>
               <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Essence Statement (adj-adj-noun format)
+                {t('brandEssence.core.statementLabel')}
               </label>
               <input
                 type="text"
                 value={draft.essenceStatement}
                 onChange={(e) => handleChange('essenceStatement', e.target.value)}
                 className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-lg font-semibold text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
-                placeholder="e.g. Authentic Athletic Performance"
+                placeholder={t('brandEssence.core.statementPlaceholder')}
               />
             </div>
             <textarea
@@ -149,7 +151,7 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
               onChange={(e) => handleChange('essenceNarrative', e.target.value)}
               className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={3}
-              placeholder="Explain in 2-3 sentences what this essence means for your brand..."
+              placeholder={t('brandEssence.core.narrativePlaceholder')}
             />
           </div>
         ) : d.essenceStatement ? (
@@ -162,12 +164,12 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
             )}
           </div>
         ) : (
-          <p className="text-sm italic text-gray-400">Define your brand essence...</p>
+          <p className="text-sm italic text-gray-400">{t('brandEssence.core.empty')}</p>
         )}
 
         {/* Examples */}
         <div className="mt-4 bg-gray-50 border border-gray-100 rounded-xl p-4">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Examples</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{t('brandEssence.examples')}</p>
           <div className="flex flex-wrap gap-2">
             {ESSENCE_EXAMPLES.map((ex) => (
               <span key={ex.brand} className="inline-flex items-center gap-1.5 text-xs bg-white border border-gray-200 rounded-full px-3 py-1">
@@ -186,13 +188,13 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
             <Heart className="h-5 w-5 text-rose-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Benefits</h2>
-            <p className="text-sm text-gray-500">What your brand delivers across three dimensions</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandEssence.benefits.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandEssence.benefits.subtitle')}</p>
           </div>
         </div>
 
         <CompanionValuesPanel
-          companionName="Brand Promise"
+          companionName={t('brandEssence.companion')}
           values={companionData ?? {}}
           perspective="identity"
         />
@@ -203,12 +205,12 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
             icon={Package}
             iconBg="bg-emerald-50"
             iconColor="text-emerald-600"
-            label="Functional Benefit"
-            description="What tangible quality is inseparable from your brand identity?"
+            label={t('brandEssence.benefits.functional.label')}
+            description={t('brandEssence.benefits.functional.description')}
             value={isEditing ? draft.functionalBenefit : d.functionalBenefit}
             isEditing={isEditing}
             onChange={(v) => handleChange('functionalBenefit', v)}
-            placeholder="Describe the tangible value your brand delivers..."
+            placeholder={t('brandEssence.benefits.functional.placeholder')}
           />
 
           {/* Emotional Benefit */}
@@ -216,12 +218,12 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
             icon={Heart}
             iconBg="bg-rose-50"
             iconColor="text-rose-600"
-            label="Emotional Benefit"
-            description="What feeling is intrinsically part of who you are?"
+            label={t('brandEssence.benefits.emotional.label')}
+            description={t('brandEssence.benefits.emotional.description')}
             value={isEditing ? draft.emotionalBenefit : d.emotionalBenefit}
             isEditing={isEditing}
             onChange={(v) => handleChange('emotionalBenefit', v)}
-            placeholder="Describe the feeling your brand evokes..."
+            placeholder={t('brandEssence.benefits.emotional.placeholder')}
           />
 
           {/* Self-Expressive Benefit */}
@@ -229,12 +231,12 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
             icon={Sparkles}
             iconBg="bg-amber-50"
             iconColor="text-amber-600"
-            label="Self-Expressive Benefit"
-            description="What does your brand enable people to express about themselves?"
+            label={t('brandEssence.benefits.selfExpressive.label')}
+            description={t('brandEssence.benefits.selfExpressive.description')}
             value={isEditing ? draft.selfExpressiveBenefit : d.selfExpressiveBenefit}
             isEditing={isEditing}
             onChange={(v) => handleChange('selfExpressiveBenefit', v)}
-            placeholder="Describe how customers express their identity through your brand..."
+            placeholder={t('brandEssence.benefits.selfExpressive.placeholder')}
           />
         </div>
       </div>
@@ -246,13 +248,13 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
             <Target className="h-5 w-5 text-violet-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Discriminator</h2>
-            <p className="text-sm text-gray-500">The single most compelling reason to choose your brand over competitors</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandEssence.discriminator.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandEssence.discriminator.subtitle')}</p>
           </div>
         </div>
 
         <div className="bg-violet-50/30 border border-violet-100 rounded-xl p-3 mb-3">
-          <p className="text-xs text-violet-600 italic">&ldquo;Only [your brand] can _____ because _____.&rdquo;</p>
+          <p className="text-xs text-violet-600 italic">{t('brandEssence.discriminator.formula')}</p>
         </div>
 
         {isEditing ? (
@@ -261,12 +263,12 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
             onChange={(e) => handleChange('discriminator', e.target.value)}
             className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
             rows={3}
-            placeholder="Only [brand] can... because..."
+            placeholder={t('brandEssence.discriminator.placeholder')}
           />
         ) : d.discriminator ? (
           <p className="text-sm text-gray-700 leading-relaxed">{d.discriminator}</p>
         ) : (
-          <p className="text-sm italic text-gray-400">Define what makes your brand the only choice...</p>
+          <p className="text-sm italic text-gray-400">{t('brandEssence.discriminator.empty')}</p>
         )}
       </div>
 
@@ -277,13 +279,13 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
             <Users className="h-5 w-5 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Audience Insight</h2>
-            <p className="text-sm text-gray-500">The deep human truth that connects your brand to its audience</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandEssence.audience.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandEssence.audience.subtitle')}</p>
           </div>
         </div>
 
         <div className="bg-blue-50/30 border border-blue-100 rounded-xl p-3 mb-3">
-          <p className="text-xs text-blue-600">Not who they are, but why they need it — the underlying tension, desire, or unmet need.</p>
+          <p className="text-xs text-blue-600">{t('brandEssence.audience.hint')}</p>
         </div>
 
         {isEditing ? (
@@ -292,14 +294,14 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
             onChange={(e) => handleChange('audienceInsight', e.target.value)}
             className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
             rows={3}
-            placeholder="Describe the deep human truth that connects your brand to its audience..."
+            placeholder={t('brandEssence.audience.placeholder')}
           />
         ) : d.audienceInsight ? (
           <div className="border-l-4 border-blue-300 pl-4 py-1">
             <p className="text-sm text-gray-700 leading-relaxed italic">{d.audienceInsight}</p>
           </div>
         ) : (
-          <p className="text-sm italic text-gray-400">Describe the deep human truth...</p>
+          <p className="text-sm italic text-gray-400">{t('brandEssence.audience.empty')}</p>
         )}
       </div>
 
@@ -310,14 +312,14 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
             <ShieldCheck className="h-5 w-5 text-gray-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Evidence</h2>
-            <p className="text-sm text-gray-500">Concrete proof that your brand essence is real</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandEssence.evidence.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandEssence.evidence.subtitle')}</p>
           </div>
         </div>
 
         {/* Proof Points */}
         <div className="mb-5">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Proof Points</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{t('brandEssence.evidence.proofPoints')}</p>
           <ProofPointsGuidanceBanner assetType="essence" />
           <StringListEditor
             items={isEditing ? draft.proofPoints : d.proofPoints}
@@ -325,22 +327,22 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
             onAdd={() => addListItem('proofPoints')}
             onUpdate={(i, v) => updateListItem('proofPoints', i, v)}
             onRemove={(i) => removeListItem('proofPoints', i)}
-            placeholder="Add a proof point..."
-            emptyText="No proof points defined yet"
+            placeholder={t('brandEssence.evidence.proofPlaceholder')}
+            emptyText={t('brandEssence.evidence.proofEmpty')}
           />
         </div>
 
         {/* Attributes */}
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Brand Attributes</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{t('brandEssence.evidence.attributes')}</p>
           <StringListEditor
             items={isEditing ? draft.attributes : d.attributes}
             isEditing={isEditing}
             onAdd={() => addListItem('attributes')}
             onUpdate={(i, v) => updateListItem('attributes', i, v)}
             onRemove={(i) => removeListItem('attributes', i)}
-            placeholder="Add a brand attribute..."
-            emptyText="No attributes defined yet"
+            placeholder={t('brandEssence.evidence.attrPlaceholder')}
+            emptyText={t('brandEssence.evidence.attrEmpty')}
           />
         </div>
       </div>
@@ -353,13 +355,13 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">Validation Score</h2>
+              <h2 className="text-lg font-bold text-gray-900">{t('brandEssence.validation.title')}</h2>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-primary-700">{avg.toFixed(1)}</span>
                 <span className="text-xs text-gray-400">/ 5.0</span>
               </div>
             </div>
-            <p className="text-sm text-gray-500">Rate your brand essence against 6 key criteria</p>
+            <p className="text-sm text-gray-500">{t('brandEssence.validation.subtitle')}</p>
           </div>
         </div>
 
@@ -383,8 +385,8 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
               <div key={criterion.key}>
                 <div className="flex items-center justify-between mb-1">
                   <div>
-                    <span className="text-sm font-medium text-gray-700">{criterion.label}</span>
-                    <p className="text-xs text-gray-400">{criterion.description}</p>
+                    <span className="text-sm font-medium text-gray-700">{t(`brandEssence.validation.criteria.${criterion.key}.label`)}</span>
+                    <p className="text-xs text-gray-400">{t(`brandEssence.validation.criteria.${criterion.key}.description`)}</p>
                   </div>
                   <span className="text-sm font-semibold text-gray-600 tabular-nums w-6 text-right">{value}</span>
                 </div>
@@ -469,6 +471,7 @@ interface StringListEditorProps {
 }
 
 function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeholder, emptyText }: StringListEditorProps) {
+  const { t } = useTranslation('brand-asset-detail');
   if (!isEditing) {
     if (items.length === 0) {
       return <p className="text-sm italic text-gray-400">{emptyText}</p>;
@@ -511,7 +514,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
         className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium"
       >
         <Plus className="h-4 w-4" />
-        Add item
+        {t('shared.addItem')}
       </button>
     </div>
   );

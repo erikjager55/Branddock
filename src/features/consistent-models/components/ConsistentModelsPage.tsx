@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Sparkles } from "lucide-react";
 import { EmptyState, SkeletonCard } from "@/components/shared";
 import { ModelStatsCards } from "./ModelStatsCards";
@@ -23,6 +24,7 @@ interface ConsistentModelsContentProps {
 export function ConsistentModelsContent({
   onNavigateToDetail,
 }: ConsistentModelsContentProps) {
+  const { t } = useTranslation("consistent-models");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -68,10 +70,10 @@ export function ConsistentModelsContent({
       ) : models.length === 0 ? (
         <EmptyState
           icon={Sparkles}
-          title="No AI models yet"
-          description="Create your first consistent AI model to generate on-brand imagery for people, products, and styles."
+          title={t("overview.empty.title")}
+          description={t("overview.empty.description")}
           action={{
-            label: "Create Model",
+            label: t("overview.empty.cta"),
             onClick: () => openCreateModal(),
           }}
         />

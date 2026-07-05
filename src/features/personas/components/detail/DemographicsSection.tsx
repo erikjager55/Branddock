@@ -2,17 +2,18 @@
 
 import { useState } from 'react';
 import { Calendar, MapPin, Building2, Users, GraduationCap, User, UserRound, Euro } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { LucideIcon } from 'lucide-react';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 
-const FIELDS: { key: keyof PersonaWithMeta; icon: LucideIcon; label: string }[] = [
-  { key: 'age', icon: Calendar, label: 'AGE' },
-  { key: 'gender', icon: UserRound, label: 'GENDER' },
-  { key: 'location', icon: MapPin, label: 'LOCATION' },
-  { key: 'occupation', icon: Building2, label: 'OCCUPATION' },
-  { key: 'education', icon: GraduationCap, label: 'EDUCATION' },
-  { key: 'income', icon: Euro, label: 'INCOME' },
-  { key: 'familyStatus', icon: Users, label: 'FAMILY STATUS' },
+const FIELDS: { key: keyof PersonaWithMeta; icon: LucideIcon; labelKey: string }[] = [
+  { key: 'age', icon: Calendar, labelKey: 'demographics.fields.age' },
+  { key: 'gender', icon: UserRound, labelKey: 'demographics.fields.gender' },
+  { key: 'location', icon: MapPin, labelKey: 'demographics.fields.location' },
+  { key: 'occupation', icon: Building2, labelKey: 'demographics.fields.occupation' },
+  { key: 'education', icon: GraduationCap, labelKey: 'demographics.fields.education' },
+  { key: 'income', icon: Euro, labelKey: 'demographics.fields.income' },
+  { key: 'familyStatus', icon: Users, labelKey: 'demographics.fields.familyStatus' },
 ];
 
 interface DemographicsSectionProps {
@@ -22,6 +23,7 @@ interface DemographicsSectionProps {
 }
 
 export function DemographicsSection({ persona, isEditing, onUpdate }: DemographicsSectionProps) {
+  const { t } = useTranslation('personas');
   const [draft, setDraft] = useState<Record<string, string>>({});
 
   const handleChange = (key: string, value: string) => {
@@ -43,8 +45,8 @@ export function DemographicsSection({ persona, isEditing, onUpdate }: Demographi
             <User className="h-4 w-4 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Demographics</h2>
-            <p className="text-xs text-gray-500">Key demographic information</p>
+            <h2 className="text-base font-semibold text-gray-900">{t('demographics.title')}</h2>
+            <p className="text-xs text-gray-500">{t('demographics.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -52,14 +54,14 @@ export function DemographicsSection({ persona, isEditing, onUpdate }: Demographi
       {/* 3×2 grid */}
       <div className="px-5 pb-4">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
-          {FIELDS.map(({ key, icon: Icon, label }) => {
+          {FIELDS.map(({ key, icon: Icon, labelKey }) => {
             const value = persona[key] as string | null;
 
             return (
               <div key={key} className="min-w-0">
                 <div className="flex items-center gap-1.5 mb-1">
                   <Icon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                  <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">{label}</span>
+                  <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t(labelKey)}</span>
                 </div>
                 {isEditing ? (
                   <input

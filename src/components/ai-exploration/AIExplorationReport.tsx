@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   ArrowRight,
@@ -37,6 +38,7 @@ interface AIExplorationReportProps {
 }
 
 export function AIExplorationReport({ config, insightsData, onViewSuggestions }: AIExplorationReportProps) {
+  const { t } = useTranslation('ai-exploration');
   const { messages, sessionId } = useAIExplorationStore();
   const dimensions = insightsData.dimensions ?? [];
   const totalDimensions = dimensions.length;
@@ -47,7 +49,7 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
   const recommendations = insightsData.recommendations ?? [];
   const executiveSummary =
     insightsData.executiveSummary ??
-    `The AI analysis of ${config.itemName} has analyzed ${totalDimensions} strategic dimensions and provides insights for market positioning and communication.`;
+    t('report.executiveSummaryFallback', { itemName: config.itemName, dimensionCount: totalDimensions });
   const suggestionCount = (insightsData.fieldSuggestions ?? []).length;
   const researchBoost = insightsData.researchBoostPercentage ?? 15;
 
@@ -83,7 +85,7 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
         style={{ color: '#6b7280' }}
       >
         <ArrowLeft className="w-4 h-4" />
-        {config.backLabel ?? 'Back'}
+        {config.backLabel ?? t('report.back')}
       </button>
 
       {/* Success Header */}
@@ -104,20 +106,20 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-semibold" style={{ color: '#064e3b' }}>
-              {config.pageTitle ?? 'AI Analysis'} Complete
+              {t('report.completeHeading', { title: config.pageTitle ?? t('report.defaultTitle') })}
             </h2>
             <p className="text-sm" style={{ color: '#047857', marginTop: '4px' }}>
-              {config.itemName} has been successfully analyzed across {totalDimensions} strategic dimensions.
+              {t('report.analyzedSummary', { itemName: config.itemName, dimensionCount: totalDimensions })}
             </p>
 
             <div className="grid grid-cols-2 gap-4" style={{ marginTop: '24px' }}>
               <div className="rounded-lg" style={{ padding: '16px', backgroundColor: 'rgba(255,255,255,0.6)', border: '1px solid rgba(110,231,183,0.5)' }}>
                 <div className="text-2xl font-bold" style={{ color: '#065f46' }}>{totalDimensions}</div>
-                <div className="text-sm" style={{ color: '#059669' }}>Dimensions analyzed</div>
+                <div className="text-sm" style={{ color: '#059669' }}>{t('report.dimensionsAnalyzed')}</div>
               </div>
               <div className="rounded-lg" style={{ padding: '16px', backgroundColor: 'rgba(255,255,255,0.6)', border: '1px solid rgba(110,231,183,0.5)' }}>
                 <div className="text-2xl font-bold" style={{ color: '#065f46' }}>+{researchBoost}%</div>
-                <div className="text-sm" style={{ color: '#059669' }}>Research confidence</div>
+                <div className="text-sm" style={{ color: '#059669' }}>{t('report.researchConfidence')}</div>
               </div>
             </div>
           </div>
@@ -133,7 +135,7 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
           style={{ padding: '8px 14px', color: '#374151', border: '1px solid #e5e7eb', backgroundColor: '#ffffff' }}
         >
           <FileText className="h-4 w-4" />
-          Export PDF
+          {t('report.exportPdf')}
         </button>
         <button
           onClick={handleExportJson}
@@ -141,7 +143,7 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
           style={{ padding: '8px 14px', color: '#374151', border: '1px solid #e5e7eb', backgroundColor: '#ffffff' }}
         >
           <FileJson className="h-4 w-4" />
-          Export JSON
+          {t('report.exportJson')}
         </button>
       </div>
 
@@ -149,7 +151,7 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
       <div className="rounded-xl" style={{ padding: '24px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
           <Sparkles className="h-5 w-5" style={{ color: '#14b8a6' }} />
-          <h3 className="text-lg font-semibold" style={{ color: '#111827' }}>Executive Summary</h3>
+          <h3 className="text-lg font-semibold" style={{ color: '#111827' }}>{t('report.executiveSummary')}</h3>
         </div>
         <p className="text-sm leading-relaxed" style={{ color: '#374151' }}>{executiveSummary}</p>
       </div>
@@ -166,7 +168,7 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
         <div className="rounded-xl" style={{ padding: '24px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <div className="flex items-center gap-2" style={{ marginBottom: '24px' }}>
             <Bot className="h-5 w-5" style={{ color: '#14b8a6' }} />
-            <h3 className="text-lg font-semibold" style={{ color: '#111827' }}>Key Findings</h3>
+            <h3 className="text-lg font-semibold" style={{ color: '#111827' }}>{t('report.keyFindings')}</h3>
           </div>
           <div className="space-y-5">
             {findings.map((finding, i) => {
@@ -193,7 +195,7 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
         <div className="rounded-xl" style={{ padding: '24px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <div className="flex items-center gap-2" style={{ marginBottom: '24px' }}>
             <TrendingUp className="h-5 w-5" style={{ color: '#14b8a6' }} />
-            <h3 className="text-lg font-semibold" style={{ color: '#111827' }}>Strategic Recommendations</h3>
+            <h3 className="text-lg font-semibold" style={{ color: '#111827' }}>{t('report.recommendations')}</h3>
           </div>
           <div className="space-y-4">
             {recommendations.map((rec, i) => (
@@ -216,7 +218,7 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
           style={{ padding: '10px 16px', color: '#4b5563', border: '1px solid #e5e7eb' }}
         >
           <ArrowLeft className="h-4 w-4" />
-          {config.backLabel ?? 'Back'}
+          {config.backLabel ?? t('report.back')}
         </button>
         {suggestionCount > 0 && onViewSuggestions && (
           <button
@@ -229,7 +231,7 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
             }}
           >
             <Lightbulb className="h-4 w-4" />
-            View {suggestionCount} Suggestions
+            {t('report.viewSuggestions', { count: suggestionCount })}
             <ArrowRight className="h-4 w-4" />
           </button>
         )}

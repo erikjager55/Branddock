@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Image as ImageIcon, Sparkles } from "lucide-react";
 import { Card } from "@/components/shared";
 import { ModelTypeBadge } from "./shared/ModelTypeBadge";
@@ -15,6 +16,7 @@ interface ModelCardProps {
 
 /** Model card for the overview grid */
 export function ModelCard({ model, onClick }: ModelCardProps) {
+  const { t } = useTranslation("consistent-models");
   const isReady = model.status === "READY";
   const isTrainable = TRAINABLE_TYPES.has(model.type);
   const [thumbFailed, setThumbFailed] = useState(false);
@@ -44,7 +46,7 @@ export function ModelCard({ model, onClick }: ModelCardProps) {
         )}
         {isReady && isTrainable && (
           <div className="absolute bottom-2 right-2 rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-medium text-white">
-            Ready
+            {t("overview.ready")}
           </div>
         )}
       </div>

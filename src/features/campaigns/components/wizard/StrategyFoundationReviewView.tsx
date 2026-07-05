@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Brain,
   Compass,
@@ -92,6 +93,7 @@ export function StrategyFoundationReviewView({
   onProceed,
   errorMessage,
 }: StrategyFoundationReviewViewProps) {
+  const { t } = useTranslation("campaigns-wizard");
   const strategyFeedback = useCampaignWizardStore((s) => s.strategyFeedback);
   const setStrategyFeedback = useCampaignWizardStore(
     (s) => s.setStrategyFeedback,
@@ -103,11 +105,10 @@ export function StrategyFoundationReviewView({
       {/* Header */}
       <div className="text-center">
         <h3 className="text-lg font-semibold text-gray-900 mb-1">
-          Strategy Foundation
+          {t("strategyFoundation.title")}
         </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          AI has built a behavioral science-driven strategy foundation. Review
-          the insights and provide feedback{skipConceptStep ? '.' : ' before creative concept generation.'}
+          {skipConceptStep ? t("strategyFoundation.subtitleSkip") : t("strategyFoundation.subtitleFull")}
         </p>
       </div>
 
@@ -119,7 +120,7 @@ export function StrategyFoundationReviewView({
               <Compass className="w-5 h-5 text-primary mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm font-medium text-primary-800 mb-1">
-                  Strategic Direction
+                  {t("strategyFoundation.strategicDirection")}
                 </p>
                 <p className="text-sm text-primary-700">
                   {toDisplayString(foundation.strategicDirection)}
@@ -133,7 +134,7 @@ export function StrategyFoundationReviewView({
               <Target className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm font-medium text-blue-800 mb-1">
-                  Suggested Approach
+                  {t("strategyFoundation.suggestedApproach")}
                 </p>
                 <p className="text-sm text-blue-700">
                   {toDisplayString(foundation.suggestedApproach)}
@@ -148,7 +149,7 @@ export function StrategyFoundationReviewView({
               <div className="flex items-start gap-3">
                 <Target className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-amber-800 mb-1">Core Message</p>
+                  <p className="text-sm font-medium text-amber-800 mb-1">{t("strategyFoundation.coreMessage")}</p>
                   <p className="text-sm text-amber-700">{toDisplayString(foundation.coreMessage)}</p>
                 </div>
               </div>
@@ -159,7 +160,7 @@ export function StrategyFoundationReviewView({
               <div className="flex items-start gap-3">
                 <Lightbulb className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-gray-800 mb-2">Proof Points</p>
+                  <p className="text-sm font-medium text-gray-800 mb-2">{t("strategyFoundation.proofPoints")}</p>
                   <ul className="space-y-1">
                     {(foundation.proofPoints ?? []).map((p, i) => (
                       <li key={i} className="text-sm text-gray-600">&bull; {toDisplayString(p)}</li>
@@ -174,7 +175,7 @@ export function StrategyFoundationReviewView({
               <div className="flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-rose-800 mb-1">Reason to Act Now</p>
+                  <p className="text-sm font-medium text-rose-800 mb-1">{t("strategyFoundation.reasonToAct")}</p>
                   <p className="text-sm text-rose-700">{toDisplayString(foundation.reasonToAct)}</p>
                 </div>
               </div>
@@ -187,10 +188,10 @@ export function StrategyFoundationReviewView({
       {skipConceptStep && (
         <div className="space-y-3">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Rate the strategic rationale
+            {t("strategyFoundation.rateRationale")}
           </p>
           <ElementRatingCard
-            label="Strategic Direction"
+            label={t("strategyFoundation.strategicDirection")}
             value={toDisplayString(foundation.strategicDirection)}
             ratingKey="strategicDirection"
             icon={Compass}
@@ -198,7 +199,7 @@ export function StrategyFoundationReviewView({
             highlightBg="bg-emerald-50"
           />
           <ElementRatingCard
-            label="Suggested Approach"
+            label={t("strategyFoundation.suggestedApproach")}
             value={toDisplayString(foundation.suggestedApproach)}
             ratingKey="suggestedApproach"
             icon={Target}
@@ -207,7 +208,7 @@ export function StrategyFoundationReviewView({
           />
           {foundation.coreMessage && (
             <ElementRatingCard
-              label="Core Message"
+              label={t("strategyFoundation.coreMessage")}
               value={toDisplayString(foundation.coreMessage)}
               ratingKey="coreMessage"
               icon={Target}
@@ -217,7 +218,7 @@ export function StrategyFoundationReviewView({
           )}
           {(foundation.proofPoints ?? []).length > 0 && (
             <ElementRatingCard
-              label="Proof Points"
+              label={t("strategyFoundation.proofPoints")}
               value={(foundation.proofPoints ?? []).map((p, i) => `${i + 1}. ${toDisplayString(p)}`).join('\n')}
               ratingKey="proofPoints"
               icon={Lightbulb}
@@ -225,7 +226,7 @@ export function StrategyFoundationReviewView({
           )}
           {foundation.reasonToAct && (
             <ElementRatingCard
-              label="Reason to Act Now"
+              label={t("strategyFoundation.reasonToAct")}
               value={toDisplayString(foundation.reasonToAct)}
               ratingKey="reasonToAct"
               icon={Sparkles}
@@ -233,7 +234,7 @@ export function StrategyFoundationReviewView({
           )}
           {foundation.behavioralStrategy?.summary && (
             <ElementRatingCard
-              label="Behavioral Strategy"
+              label={t("strategyFoundation.behavioralStrategy")}
               value={toDisplayString(foundation.behavioralStrategy.summary)}
               ratingKey="behavioralStrategy"
               icon={Sparkles}
@@ -241,8 +242,8 @@ export function StrategyFoundationReviewView({
           )}
           {foundation.elmRouteRecommendation?.rationale && (
             <ElementRatingCard
-              label="ELM Route"
-              value={`${foundation.elmRouteRecommendation.primaryRoute === 'central' ? 'Central' : 'Peripheral'} — ${toDisplayString(foundation.elmRouteRecommendation.rationale)}`}
+              label={t("strategyFoundation.elmRoute")}
+              value={`${foundation.elmRouteRecommendation.primaryRoute === 'central' ? t("strategyFoundation.central") : t("strategyFoundation.peripheral")} — ${toDisplayString(foundation.elmRouteRecommendation.rationale)}`}
               ratingKey="elmRoute"
               icon={Compass}
             />
@@ -256,13 +257,13 @@ export function StrategyFoundationReviewView({
           htmlFor="strategy-feedback"
           className="text-sm font-medium text-gray-700"
         >
-          Feedback or refinements (optional)
+          {t("strategyFoundation.feedbackLabel")}
         </label>
         <textarea
           id="strategy-feedback"
           className="w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-300 focus:ring-1 focus:ring-primary-300"
           rows={3}
-          placeholder="Any strategic direction you want to emphasize, audiences to focus on, or approaches to avoid..."
+          placeholder={t("strategyFoundation.feedbackPlaceholder")}
           value={strategyFeedback}
           onChange={(e) => setStrategyFeedback(e.target.value)}
         />
@@ -270,7 +271,7 @@ export function StrategyFoundationReviewView({
 
       {/* Behavioral Diagnosis */}
       <Section
-        title="Behavioral Diagnosis"
+        title={t("strategyFoundation.sections.behavioralDiagnosis")}
         icon={Brain}
         iconColor="text-purple-500"
       >
@@ -278,7 +279,7 @@ export function StrategyFoundationReviewView({
         {(foundation.targetBehaviors ?? []).length > 0 && (
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase mb-1.5">
-              Target Behaviors
+              {t("strategyFoundation.targetBehaviors")}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {(foundation.targetBehaviors ?? []).map((b, i) => (
@@ -295,7 +296,7 @@ export function StrategyFoundationReviewView({
             {(foundation.behavioralDiagnosis.behavioralBarriers ?? []).length > 0 && (
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase mb-1.5">
-                  Behavioral Barriers
+                  {t("strategyFoundation.behavioralBarriers")}
                 </p>
                 <ul className="space-y-1">
                   {(foundation.behavioralDiagnosis.behavioralBarriers ?? []).map(
@@ -311,7 +312,7 @@ export function StrategyFoundationReviewView({
             {(foundation.behavioralDiagnosis.desiredBehaviors ?? []).length > 0 && (
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase mb-1.5">
-                  Desired Behaviors
+                  {t("strategyFoundation.desiredBehaviors")}
                 </p>
                 <ul className="space-y-1">
                   {(foundation.behavioralDiagnosis.desiredBehaviors ?? []).map(
@@ -331,7 +332,7 @@ export function StrategyFoundationReviewView({
       {/* Behavioral Strategy */}
       {foundation.behavioralStrategy && (
         <Section
-          title="Behavioral Strategy"
+          title={t("strategyFoundation.sections.behavioralStrategy")}
           icon={Sparkles}
           iconColor="text-amber-500"
         >
@@ -341,7 +342,7 @@ export function StrategyFoundationReviewView({
           {(foundation.behavioralStrategy.selectedBCTs ?? []).length > 0 && (
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase mb-1.5">
-                Selected BCTs
+                {t("strategyFoundation.selectedBcts")}
               </p>
               <div className="space-y-1.5">
                 {(foundation.behavioralStrategy.selectedBCTs ?? []).map((bct, i) => (
@@ -367,7 +368,7 @@ export function StrategyFoundationReviewView({
       {/* ELM Route */}
       {foundation.elmRouteRecommendation && (
         <Section
-          title="ELM Route Recommendation"
+          title={t("strategyFoundation.sections.elmRecommendation")}
           icon={Compass}
           iconColor="text-indigo-500"
         >
@@ -380,8 +381,8 @@ export function StrategyFoundationReviewView({
               }
             >
               {foundation.elmRouteRecommendation.primaryRoute === "central"
-                ? "Central Route"
-                : "Peripheral Route"}
+                ? t("strategyFoundation.centralRoute")
+                : t("strategyFoundation.peripheralRoute")}
             </Badge>
           </div>
           <p className="text-sm text-gray-600">
@@ -392,7 +393,7 @@ export function StrategyFoundationReviewView({
 
       {/* Key Insights */}
       <Section
-        title="Key Insights"
+        title={t("strategyFoundation.sections.keyInsights")}
         icon={Lightbulb}
         iconColor="text-yellow-500"
       >
@@ -429,7 +430,7 @@ export function StrategyFoundationReviewView({
       {/* Audience Insights */}
       {(foundation.audienceInsights ?? []).length > 0 && (
         <Section
-          title="Audience Insights"
+          title={t("strategyFoundation.sections.audienceInsights")}
           icon={Users}
           iconColor="text-blue-500"
         >
@@ -441,9 +442,9 @@ export function StrategyFoundationReviewView({
               >
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-sm font-medium text-gray-800">
-                    {toDisplayString(ai.personaName) || "Unknown Persona"}
+                    {toDisplayString(ai.personaName) || t("strategyFoundation.unknownPersona")}
                   </span>
-                  <Badge variant="default">{toDisplayString(ai.ttmStage) || "Unknown"}</Badge>
+                  <Badge variant="default">{toDisplayString(ai.ttmStage) || t("strategyFoundation.unknown")}</Badge>
                   {ai.elmRoute && (
                     <Badge
                       variant={
@@ -482,7 +483,7 @@ export function StrategyFoundationReviewView({
       {/* MINDSPACE Assessment */}
       {(foundation.mindspaceAssessment ?? []).length > 0 && (
         <Section
-          title="MINDSPACE Assessment"
+          title={t("strategyFoundation.sections.mindspace")}
           icon={Brain}
           iconColor="text-violet-500"
         >
@@ -505,7 +506,7 @@ export function StrategyFoundationReviewView({
                     {toDisplayString(m.factor)}
                   </span>
                   {m.applicable && (
-                    <Badge variant="success">Active</Badge>
+                    <Badge variant="success">{t("strategyFoundation.active")}</Badge>
                   )}
                 </div>
                 <p

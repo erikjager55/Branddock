@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Link2, Plus, Search, X, Megaphone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button, Badge, EmptyState } from '@/components/shared';
 import { useLinkCampaign, useUnlinkCampaign, useSearchCampaigns } from '../../hooks';
 import type { LinkedCampaignItem } from '../../types/business-strategy.types';
@@ -23,6 +24,7 @@ export function LinkedCampaignsSection({
   linkedCampaigns,
   canEdit,
 }: LinkedCampaignsSectionProps) {
+  const { t } = useTranslation('business-strategy');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -52,7 +54,7 @@ export function LinkedCampaignsSection({
   return (
     <div className="p-6 bg-white border border-gray-200 rounded-lg">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Linked Campaigns</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{t('campaigns.title')}</h2>
         {canEdit && (
           <Button
             variant="ghost"
@@ -60,7 +62,7 @@ export function LinkedCampaignsSection({
             onClick={() => setIsSearchOpen(!isSearchOpen)}
           >
             {isSearchOpen ? <X className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
-            {isSearchOpen ? 'Close' : 'Link Campaign'}
+            {isSearchOpen ? t('campaigns.close') : t('campaigns.link')}
           </Button>
         )}
       </div>
@@ -73,7 +75,7 @@ export function LinkedCampaignsSection({
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search campaigns..."
+              placeholder={t('campaigns.searchPlaceholder')}
               className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
               autoFocus
             />
@@ -98,9 +100,9 @@ export function LinkedCampaignsSection({
               ))}
             </div>
           ) : searchQuery.length > 0 ? (
-            <p className="text-sm text-gray-400 italic px-3 py-2">No matching campaigns found</p>
+            <p className="text-sm text-gray-400 italic px-3 py-2">{t('campaigns.noMatch')}</p>
           ) : (
-            <p className="text-sm text-gray-400 italic px-3 py-2">Type to search campaigns</p>
+            <p className="text-sm text-gray-400 italic px-3 py-2">{t('campaigns.typeToSearch')}</p>
           )}
         </div>
       )}
@@ -126,7 +128,7 @@ export function LinkedCampaignsSection({
                   onClick={() => handleUnlink(lc.campaignId)}
                   disabled={unlinkCampaign.isPending}
                   className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
-                  title="Unlink campaign"
+                  title={t('campaigns.unlink')}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -137,8 +139,8 @@ export function LinkedCampaignsSection({
       ) : (
         <EmptyState
           icon={Link2}
-          title="No campaigns linked yet"
-          description="Link campaigns to track their alignment with this strategy."
+          title={t('campaigns.emptyTitle')}
+          description={t('campaigns.emptyDescription')}
         />
       )}
     </div>

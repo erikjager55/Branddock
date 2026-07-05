@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Zap, Cpu, Clock, ChevronRight, CheckCircle2, Loader2 } from "lucide-react";
 import { Button, Card, ProgressBar } from "@/components/shared";
 import { useTrainingStatus } from "../../hooks";
@@ -33,6 +34,7 @@ export function TrainingSection({
   onGenerate,
   isGenerating,
 }: TrainingSectionProps) {
+  const { t } = useTranslation("consistent-models");
   const autoStartedRef = useRef(false);
 
   const imageCount = model.referenceImages.filter((img) => img.isTrainingImage).length;
@@ -87,12 +89,15 @@ export function TrainingSection({
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-900">
-                {inQueue ? "Waiting for GPU..." : "Training in progress..."}
+                {inQueue ? t("shared.waitingForGpu") : t("shared.trainingInProgress")}
               </h3>
               <p className="mt-0.5 text-xs text-gray-500">
                 {inQueue
-                  ? "Your training job is queued and waiting for an available GPU. This can take a few minutes."
-                  : `Training with ${FAL_MODEL_CONFIG[model.type].label} at ${defaultSteps} steps.`}
+                  ? t("training.queuedHint")
+                  : t("training.trainingWith", {
+                      model: FAL_MODEL_CONFIG[model.type].label,
+                      steps: defaultSteps,
+                    })}
               </p>
             </div>
           </div>
@@ -108,10 +113,10 @@ export function TrainingSection({
             <div className="mt-1.5 flex items-center justify-between text-xs text-gray-500">
               <span>
                 {inQueue
-                  ? "Queued — waiting for GPU"
+                  ? t("training.queuedShort")
                   : progress != null
-                    ? `${progress}% complete`
-                    : "Starting training..."}
+                    ? t("shared.percentComplete", { progress })
+                    : t("training.startingTraining")}
               </span>
               {elapsed && (
                 <span className="flex items-center gap-1">
@@ -124,7 +129,13 @@ export function TrainingSection({
 
           <div className="mt-3 flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-500">
             <Cpu className="h-3.5 w-3.5 flex-shrink-0" />
-            <span>{imageCount} reference images &middot; {defaultSteps} steps &middot; {defaultResolution}px resolution</span>
+            <span>
+              {t("training.configSummary", {
+                images: imageCount,
+                steps: defaultSteps,
+                resolution: defaultResolution,
+              })}
+            </span>
           </div>
         </Card>
       )}
@@ -132,9 +143,9 @@ export function TrainingSection({
       {/* Training failed */}
       {isFailed && (
         <Card className="border-red-200 bg-red-50 p-6">
-          <h3 className="text-sm font-semibold text-red-800">Training failed</h3>
+          <h3 className="text-sm font-semibold text-red-800">{t("training.failedTitle")}</h3>
           <p className="mt-1 text-xs text-red-600">
-            Something went wrong during training. You can retry with the button below.
+            {t("training.failedBody")}
           </p>
           <div className="mt-4">
             <Button
@@ -144,7 +155,7 @@ export function TrainingSection({
               isLoading={isStarting}
             >
               <Zap className="mr-1.5 h-4 w-4" />
-              Retry Training
+              {t("training.retry")}
             </Button>
           </div>
         </Card>
@@ -157,9 +168,9 @@ export function TrainingSection({
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-6 w-6 flex-shrink-0 text-emerald-600" />
               <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold text-gray-900">Training complete</h3>
+                <h3 className="text-sm font-semibold text-gray-900">{t("training.completeTitle")}</h3>
                 <p className="mt-0.5 text-xs text-gray-500">
-                  Your model is ready to generate images.
+                  {t("training.completeBody")}
                 </p>
               </div>
             </div>
@@ -186,8 +197,10 @@ export function TrainingSection({
       {!isTraining && !isReady && !isFailed && !canTrain && (
         <Card className="p-6 text-center">
           <p className="text-sm text-gray-500">
-            Need at least {TRAINING_DEFAULTS.minReferenceImages} training images to start ({imageCount} available).
-            Go back to select more reference images.
+            {t("training.notEnoughImages", {
+              min: TRAINING_DEFAULTS.minReferenceImages,
+              count: imageCount,
+            })}
           </p>
         </Card>
       )}

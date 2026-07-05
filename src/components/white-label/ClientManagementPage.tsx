@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useWhiteLabel } from '../../contexts';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -19,9 +20,11 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Client } from '../../types/white-label';
-import { formatDistanceToNow } from 'date-fns';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 export function ClientManagementPage() {
+  const { t } = useTranslation('white-label');
+  const { formatRelative } = useFormat();
   const { clients, addClient, updateClient, removeClient } = useWhiteLabel();
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -35,14 +38,14 @@ export function ClientManagementPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-semibold mb-2">Client Management</h1>
+            <h1 className="text-3xl font-semibold mb-2">{t('clients.title')}</h1>
             <p className="text-muted-foreground">
-              Manage your agency's clients and their access to strategies
+              {t('clients.subtitle')}
             </p>
           </div>
           <Button onClick={() => setShowAddModal(true)} className="gap-2">
             <Plus className="h-4 w-4" />
-            Add Client
+            {t('clients.addClient')}
           </Button>
         </div>
 
@@ -50,19 +53,19 @@ export function ClientManagementPage() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Total Clients</CardDescription>
+              <CardDescription>{t('clients.stats.totalClients')}</CardDescription>
               <CardTitle className="text-3xl">{clients.length}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Active</CardDescription>
+              <CardDescription>{t('clients.stats.active')}</CardDescription>
               <CardTitle className="text-3xl text-green-600">{activeClients.length}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Total Projects</CardDescription>
+              <CardDescription>{t('clients.stats.totalProjects')}</CardDescription>
               <CardTitle className="text-3xl">
                 {clients.reduce((sum, c) => sum + c.projectsCount, 0)}
               </CardTitle>
@@ -70,7 +73,7 @@ export function ClientManagementPage() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Total Strategies</CardDescription>
+              <CardDescription>{t('clients.stats.totalStrategies')}</CardDescription>
               <CardTitle className="text-3xl">
                 {clients.reduce((sum, c) => sum + c.strategiesCount, 0)}
               </CardTitle>
@@ -106,22 +109,22 @@ export function ClientManagementPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => setSelectedClient(client)}>
                         <Eye className="h-3 w-3 mr-2" />
-                        View Details
+                        {t('clients.card.viewDetails')}
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         <Edit2 className="h-3 w-3 mr-2" />
-                        Edit
+                        {t('clients.card.edit')}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => {
-                          if (confirm(`Remove ${client.name}?`)) {
+                          if (confirm(t('clients.card.removeConfirm', { name: client.name }))) {
                             removeClient(client.id);
                           }
                         }}
                         className="text-destructive"
                       >
                         <Trash2 className="h-3 w-3 mr-2" />
-                        Remove
+                        {t('clients.card.remove')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -146,8 +149,8 @@ export function ClientManagementPage() {
 
                 <div className="flex items-center justify-between pt-2 border-t border-border">
                   <div className="text-xs text-muted-foreground">
-                    <div>{client.projectsCount} projects</div>
-                    <div>{client.strategiesCount} strategies</div>
+                    <div>{t('clients.card.projects', { count: client.projectsCount })}</div>
+                    <div>{t('clients.card.strategies', { count: client.strategiesCount })}</div>
                   </div>
                   <Badge variant={
                     client.status === 'active' ? 'default' : 
@@ -160,7 +163,7 @@ export function ClientManagementPage() {
                 {client.lastActivity && (
                   <div className="text-xs text-muted-foreground flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    Active {formatDistanceToNow(new Date(client.lastActivity), { addSuffix: true })}
+                    {t('clients.card.lastActive')} {formatRelative(new Date(client.lastActivity))}
                   </div>
                 )}
               </CardContent>
@@ -195,6 +198,7 @@ function AddClientModal({ open, onClose, onAdd }: {
   onClose: () => void;
   onAdd: (client: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'projectsCount' | 'strategiesCount'>) => void;
 }) {
+  const { t } = useTranslation('white-label');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -227,16 +231,16 @@ function AddClientModal({ open, onClose, onAdd }: {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add New Client</DialogTitle>
+          <DialogTitle>{t('clients.add.title')}</DialogTitle>
           <DialogDescription>
-            Add a new client to your agency
+            {t('clients.add.description')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Company Name *</Label>
+              <Label htmlFor="name">{t('clients.add.companyName')}</Label>
               <Input
                 id="name"
                 required
@@ -245,7 +249,7 @@ function AddClientModal({ open, onClose, onAdd }: {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Company Email *</Label>
+              <Label htmlFor="email">{t('clients.add.companyEmail')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -258,7 +262,7 @@ function AddClientModal({ open, onClose, onAdd }: {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="industry">Industry</Label>
+              <Label htmlFor="industry">{t('clients.add.industry')}</Label>
               <Input
                 id="industry"
                 value={formData.industry}
@@ -266,7 +270,7 @@ function AddClientModal({ open, onClose, onAdd }: {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="website">Website</Label>
+              <Label htmlFor="website">{t('clients.add.website')}</Label>
               <Input
                 id="website"
                 type="url"
@@ -277,10 +281,10 @@ function AddClientModal({ open, onClose, onAdd }: {
           </div>
 
           <div className="space-y-4">
-            <h4 className="font-medium">Primary Contact</h4>
+            <h4 className="font-medium">{t('clients.add.primaryContact')}</h4>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="contactName">Contact Name *</Label>
+                <Label htmlFor="contactName">{t('clients.add.contactName')}</Label>
                 <Input
                   id="contactName"
                   required
@@ -289,7 +293,7 @@ function AddClientModal({ open, onClose, onAdd }: {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contactEmail">Contact Email *</Label>
+                <Label htmlFor="contactEmail">{t('clients.add.contactEmail')}</Label>
                 <Input
                   id="contactEmail"
                   type="email"
@@ -300,7 +304,7 @@ function AddClientModal({ open, onClose, onAdd }: {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="contactPhone">Contact Phone</Label>
+              <Label htmlFor="contactPhone">{t('clients.add.contactPhone')}</Label>
               <Input
                 id="contactPhone"
                 type="tel"
@@ -312,10 +316,10 @@ function AddClientModal({ open, onClose, onAdd }: {
 
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t('clients.add.cancel')}
             </Button>
             <Button type="submit">
-              Add Client
+              {t('clients.add.submit')}
             </Button>
           </div>
         </form>
@@ -325,6 +329,7 @@ function AddClientModal({ open, onClose, onAdd }: {
 }
 
 function ClientDetailModal({ client, onClose }: { client: Client; onClose: () => void }) {
+  const { t } = useTranslation('white-label');
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
@@ -343,20 +348,20 @@ function ClientDetailModal({ client, onClose }: { client: Client; onClose: () =>
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardDescription>Projects</CardDescription>
+                <CardDescription>{t('clients.detail.projects')}</CardDescription>
                 <CardTitle className="text-2xl">{client.projectsCount}</CardTitle>
               </CardHeader>
             </Card>
             <Card>
               <CardHeader>
-                <CardDescription>Strategies</CardDescription>
+                <CardDescription>{t('clients.detail.strategies')}</CardDescription>
                 <CardTitle className="text-2xl">{client.strategiesCount}</CardTitle>
               </CardHeader>
             </Card>
           </div>
 
           <div className="space-y-3">
-            <h4 className="font-medium">Contact Information</h4>
+            <h4 className="font-medium">{t('clients.detail.contactInfo')}</h4>
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
@@ -381,7 +386,7 @@ function ClientDetailModal({ client, onClose }: { client: Client; onClose: () =>
 
           <div className="flex items-center justify-between">
             <Badge variant={client.portalAccess ? 'default' : 'secondary'}>
-              Portal Access: {client.portalAccess ? 'Enabled' : 'Disabled'}
+              {t('clients.detail.portalAccess', { status: client.portalAccess ? t('clients.detail.enabled') : t('clients.detail.disabled') })}
             </Badge>
             <Badge variant={client.status === 'active' ? 'default' : 'secondary'}>
               {client.status}

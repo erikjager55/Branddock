@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { X, ImageIcon, Heart, Sparkles, FolderPlus, Package } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
@@ -19,6 +21,8 @@ interface AiImageDetailPanelProps {
 
 /** Inline detail panel shown when an AI-generated image is selected. */
 export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImageDetailPanelProps) {
+  const { t } = useTranslation('media-library');
+  const { formatDate } = useFormat();
   const { data: image, isLoading, isError } = useAiImageDetail(imageId);
   const updateImage = useUpdateAiImage(imageId);
   const mutate = updateImage.mutate;
@@ -43,9 +47,9 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
   if (isError) {
     return (
       <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6 text-center">
-        <p className="text-sm text-red-500">Failed to load image details.</p>
+        <p className="text-sm text-red-500">{t('aiImages.detail.loadError')}</p>
         <Button variant="secondary" onClick={onClose} className="mt-3">
-          Close
+          {t('actions.close')}
         </Button>
       </div>
     );
@@ -78,7 +82,7 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
               )}
             </div>
             <p className="text-xs text-gray-500">
-              Created {new Date(image.createdAt).toLocaleDateString('en-US', {
+              {t('detail.createdPrefix')} {formatDate(image.createdAt, {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
@@ -86,7 +90,7 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
             </p>
           </div>
         </div>
-        <Button variant="ghost" onClick={onClose} aria-label="Close detail panel">
+        <Button variant="ghost" onClick={onClose} aria-label={t('actions.closeDetail')}>
           <X className="w-4 h-4" />
         </Button>
       </div>
@@ -112,38 +116,38 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
         {/* Metadata grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Provider</span>
+            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.provider')}</span>
             <span className="text-sm text-gray-900">{getProviderFullLabel(image.provider)}</span>
           </div>
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Model</span>
+            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.model')}</span>
             <span className="text-sm text-gray-900">{image.model}</span>
           </div>
           {image.width && image.height && (
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Dimensions</span>
+              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.dimensions')}</span>
               <span className="text-sm text-gray-900">{image.width} x {image.height}</span>
             </div>
           )}
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">File Size</span>
+            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.fileSize')}</span>
             <span className="text-sm text-gray-900">{formatFileSize(image.fileSize)}</span>
           </div>
           {image.aspectRatio && (
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Aspect Ratio</span>
+              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.aspectRatio')}</span>
               <span className="text-sm text-gray-900">{image.aspectRatio}</span>
             </div>
           )}
           {image.style && (
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Style</span>
+              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.style')}</span>
               <span className="text-sm text-gray-900 capitalize">{image.style}</span>
             </div>
           )}
           {image.quality && (
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Quality</span>
+              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('meta.quality')}</span>
               <span className="text-sm text-gray-900 uppercase">{image.quality}</span>
             </div>
           )}
@@ -151,7 +155,7 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
 
         {/* Prompt section */}
         <div>
-          <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-1">Prompt</span>
+          <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-1">{t('meta.prompt')}</span>
           <p className="text-sm text-gray-700 bg-purple-50 rounded-lg px-3 py-2 whitespace-pre-wrap">
             {image.prompt}
           </p>
@@ -162,7 +166,7 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
           <div>
             <div className="flex items-center gap-1 mb-1">
               <Sparkles className="w-3 h-3 text-indigo-500" />
-              <span className="text-[10px] uppercase tracking-wider text-gray-400">Revised Prompt</span>
+              <span className="text-[10px] uppercase tracking-wider text-gray-400">{t('aiImages.detail.revisedPrompt')}</span>
             </div>
             <p className="text-sm text-gray-700 bg-indigo-50 rounded-lg px-3 py-2 whitespace-pre-wrap">
               {image.revisedPrompt}
@@ -173,7 +177,7 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
         {/* Update error */}
         {updateImage.isError && (
           <p className="text-xs text-red-500" role="alert">
-            Failed to update image. Please try again.
+            {t('aiImages.detail.updateError')}
           </p>
         )}
 
@@ -186,7 +190,7 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
               onClick={onSendToLibrary}
               className="flex-1"
             >
-              Save to Library
+              {t('actions.saveToLibrary')}
             </Button>
           </div>
         )}
@@ -194,8 +198,8 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
         {/* Favorite toggle */}
         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
           <div>
-            <span className="text-sm font-medium text-gray-700">Favorite</span>
-            <p className="text-xs text-gray-500">Mark this image as a favorite</p>
+            <span className="text-sm font-medium text-gray-700">{t('aiImages.detail.favoriteLabel')}</span>
+            <p className="text-xs text-gray-500">{t('aiImages.detail.favoriteHelp')}</p>
           </div>
           <button
             type="button"

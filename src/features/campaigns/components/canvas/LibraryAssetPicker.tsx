@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Search, Check, X, Image as ImageIcon, Heart } from 'lucide-react';
 import { useMediaAssets } from '@/features/media-library/hooks';
 import { selectCanvasVisualFromLibrary } from '../../api/canvas.api';
@@ -14,15 +15,15 @@ import type { InsertImageSelection } from './insert-image/types';
 // actually pick from in a Canvas visual context. A "More" expand button
 // could open the full 25-item enum if needed; for now the curated 8 cover
 // the typical use cases (hero / lifestyle / product / team / etc.).
-const CATEGORY_CHIPS: Array<{ value: MediaCategory; label: string }> = [
-  { value: 'HERO_IMAGE', label: 'Hero' },
-  { value: 'LIFESTYLE', label: 'Lifestyle' },
-  { value: 'PRODUCT_PHOTO', label: 'Product' },
-  { value: 'TEAM_PHOTO', label: 'Team' },
-  { value: 'EVENT_PHOTO', label: 'Event' },
-  { value: 'PHOTOGRAPHY', label: 'Photography' },
-  { value: 'ILLUSTRATION', label: 'Illustration' },
-  { value: 'INFOGRAPHIC', label: 'Infographic' },
+const CATEGORY_CHIPS: MediaCategory[] = [
+  'HERO_IMAGE',
+  'LIFESTYLE',
+  'PRODUCT_PHOTO',
+  'TEAM_PHOTO',
+  'EVENT_PHOTO',
+  'PHOTOGRAPHY',
+  'ILLUSTRATION',
+  'INFOGRAPHIC',
 ];
 
 interface LibraryAssetPickerProps {
@@ -55,6 +56,7 @@ const MAX_PICKS = 3;
  * (and gets promoted to hero image, mirroring the generate flow).
  */
 export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSelected }: LibraryAssetPickerProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [category, setCategory] = useState<MediaCategory | null>(null);
@@ -75,8 +77,8 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
   // per keystroke. Felt-instant for fast typists, no request storm for
   // the backend.
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
+    return () => clearTimeout(timer);
   }, [searchInput]);
 
   // Always image-type — videos / audio aren't valid image variants.
@@ -169,7 +171,7 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
       }
       onPicked?.();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to select assets';
+      const message = err instanceof Error ? err.message : t('libraryPicker.errSelect');
       setError(message);
     } finally {
       setSubmitting(false);
@@ -185,14 +187,14 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search by name, tag, AI description..."
+          placeholder={t('libraryPicker.searchPlaceholder')}
           className="w-full pl-9 pr-9 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-400"
         />
         {searchInput && (
           <button
             type="button"
             onClick={() => setSearchInput('')}
-            aria-label="Clear search"
+            aria-label={t('compose.clearSearch')}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600"
           >
             <X className="h-3.5 w-3.5" />
@@ -211,22 +213,22 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
               : 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
           }
         >
-          All categories
+          {t('compose.allCategories')}
         </button>
-        {CATEGORY_CHIPS.map((chip) => {
-          const active = category === chip.value;
+        {CATEGORY_CHIPS.map((cat) => {
+          const active = category === cat;
           return (
             <button
-              key={chip.value}
+              key={cat}
               type="button"
-              onClick={() => setCategory(active ? null : chip.value)}
+              onClick={() => setCategory(active ? null : cat)}
               className={
                 active
                   ? 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-teal-50 text-teal-700 border border-teal-300'
                   : 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
               }
             >
-              {chip.label}
+              {t(`compose.category.${cat}`)}
             </button>
           );
         })}
@@ -241,7 +243,7 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
           aria-pressed={favoritesOnly}
         >
           <Heart className={`h-3 w-3 ${favoritesOnly ? 'fill-current' : ''}`} />
-          Favorites
+          {t('compose.favorites')}
         </button>
       </div>
 
@@ -249,10 +251,10 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
       {!isLoading && (
         <p className="text-[11px] text-gray-400">
           {total === 0
-            ? 'No matches'
+            ? t('compose.countNone')
             : total === 1
-              ? '1 image'
-              : `${total} images${assets.length < total ? ` — showing first ${assets.length}` : ''}`}
+              ? t('compose.countOne')
+              : `${t('compose.countMany', { total })}${assets.length < total ? t('compose.showingFirst', { shown: assets.length }) : ''}`}
           {hasFilters && (
             <button
               type="button"
@@ -263,10 +265,10 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
               }}
               className="ml-2 text-teal-700 hover:text-teal-800"
             >
-              Clear filters
+              {t('compose.clearFilters')}
             </button>
           )}
-          {isFetching && <span className="ml-2 text-gray-400">refreshing…</span>}
+          {isFetching && <span className="ml-2 text-gray-400">{t('compose.refreshing')}</span>}
         </p>
       )}
 
@@ -274,7 +276,7 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
       {isLoading ? (
         <div className="flex items-center justify-center py-12 gap-2 text-sm text-gray-500">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading library...
+          {t('compose.loadingLibrary')}
         </div>
       ) : assets.length === 0 ? (
         <EmptyState hasFilters={hasFilters} search={debouncedSearch} />
@@ -310,8 +312,8 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
         <p className="text-xs text-gray-500">
           {picked.length === 0
-            ? `Pick up to ${MAX_PICKS} images`
-            : `${picked.length} of ${MAX_PICKS} selected`}
+            ? t('libraryPicker.pickPrompt', { max: MAX_PICKS })
+            : t('compose.pickedSelected', { count: picked.length, max: MAX_PICKS })}
         </p>
         <div className="flex items-center gap-2">
           {onCancel && (
@@ -321,7 +323,7 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
               disabled={submitting}
               className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50"
             >
-              Cancel
+              {t('actions.cancel')}
             </button>
           )}
           <button
@@ -333,12 +335,12 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
             {submitting ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Applying...
+                {t('libraryPicker.applying')}
               </>
             ) : (
               <>
                 <Check className="h-3.5 w-3.5" />
-                Use {picked.length || ''} selected
+                {t('libraryPicker.useSelected', { count: picked.length || '' })}
               </>
             )}
           </button>
@@ -363,6 +365,7 @@ function AssetTile({
   onBroken: (assetId: string) => void;
   onClick: () => void;
 }) {
+  const { t } = useTranslation('campaigns-canvas');
   const thumbUrl = asset.thumbnailUrl ?? asset.fileUrl;
   return (
     <button
@@ -370,7 +373,7 @@ function AssetTile({
       onClick={onClick}
       disabled={isBroken}
       aria-disabled={isBroken}
-      title={isBroken ? 'File missing — not selectable' : undefined}
+      title={isBroken ? t('libraryPicker.fileMissingTitle') : undefined}
       className={`relative rounded-md overflow-hidden border-2 transition-all aspect-square bg-gray-50 ${isBroken ? 'cursor-not-allowed' : ''}`}
       style={{ borderColor: isPicked ? '#0d9488' : '#e5e7eb' }}
     >
@@ -390,7 +393,7 @@ function AssetTile({
           if (parent && !parent.querySelector('.lp-img-fallback')) {
             const fb = document.createElement('div');
             fb.className = 'lp-img-fallback flex items-center justify-center w-full h-full bg-gray-100 text-gray-400 text-xs px-2 text-center';
-            fb.textContent = 'File missing';
+            fb.textContent = t('libraryPicker.fileMissing');
             parent.appendChild(fb);
           }
         }}
@@ -408,18 +411,19 @@ function AssetTile({
 }
 
 function EmptyState({ hasFilters, search }: { hasFilters: boolean; search: string }) {
+  const { t } = useTranslation('campaigns-canvas');
   return (
     <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
       <div className="rounded-full bg-gray-100 p-3">
         <ImageIcon className="h-5 w-5 text-gray-400" />
       </div>
-      <p className="text-sm text-gray-600 font-medium">No images found</p>
+      <p className="text-sm text-gray-600 font-medium">{t('compose.emptyTitle')}</p>
       <p className="text-xs text-gray-500 max-w-xs">
         {hasFilters
           ? search
-            ? `No assets match "${search}" with the current filters. Try widening the search or clear filters.`
-            : 'No assets match the current filters. Try clearing them.'
-          : 'Your media library is empty. Upload images via the Media Library section, then return here to pick them.'}
+            ? t('compose.emptySearchFilters', { query: search })
+            : t('compose.emptyFilters')
+          : t('libraryPicker.emptyLibrary')}
       </p>
     </div>
   );

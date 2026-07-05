@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Camera, PenTool, BarChart3, Smartphone, Type, Lightbulb } from 'lucide-react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import {
@@ -37,6 +38,7 @@ const MODALITY_ACCENT: Record<RecommendedModality, { bg: string; text: string; b
 };
 
 export function ModalityHint() {
+  const { t } = useTranslation('campaigns-canvas');
   const contentType = useCanvasStore((s) => s.contentType);
 
   if (!contentType) return null;
@@ -55,7 +57,7 @@ export function ModalityHint() {
         <p className={`font-medium ${accent.text}`}>
           <span className="inline-flex items-center gap-1">
             <Icon className="w-3 h-3" />
-            {meta.label} recommended for this content type
+            {t('modalityHint.recommended', { label: meta.label })}
           </span>
         </p>
         <p className="text-gray-600 mt-0.5 leading-snug">{meta.description}</p>

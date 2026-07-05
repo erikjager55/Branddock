@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { resolvePreviewComponent } from '../previews/preview-map';
 import { STUDIO } from '@/lib/constants/design-tokens';
@@ -14,6 +15,7 @@ interface MediumPreviewPanelProps {
 
 /** Preview panel for Step 3: shows the content preview + Confirm button */
 export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPanelProps) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   const contextStack = useCanvasStore((s) => s.contextStack);
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const selections = useCanvasStore((s) => s.selections);
@@ -54,10 +56,10 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
       .filter(([, v]) => v !== undefined && v !== null && v !== '')
       .slice(0, 6)
       .map(([key, val]) => {
-        const display = typeof val === 'boolean' ? (val ? 'Yes' : 'No') : String(val);
+        const display = typeof val === 'boolean' ? (val ? t('badge.yes') : t('badge.no')) : String(val);
         return { key, display };
       });
-  }, [mediumConfigValues]);
+  }, [mediumConfigValues, t]);
 
   const handleConfirm = useCallback(async () => {
     const store = useCanvasStore.getState();
@@ -78,10 +80,10 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
       }
     }
 
-    const label = previewEntry.label ?? 'Medium';
-    store.setStepSummary(store.activeStep, { label: `${label} configured` });
+    const label = previewEntry.label ?? t('preview.mediumFallback');
+    store.setStepSummary(store.activeStep, { label: t('preview.configured', { label }) });
     onAdvance();
-  }, [onAdvance, previewEntry.label, deliverableId]);
+  }, [onAdvance, previewEntry.label, deliverableId, t]);
 
   const PreviewComponent = previewEntry.component;
 
@@ -89,7 +91,7 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
     <div className="space-y-4">
       {/* Platform preview */}
       <div className="rounded-lg border border-gray-200 bg-white p-3 overflow-hidden">
-        <p className="text-xs font-medium text-gray-500 mb-2">{previewEntry.label} Preview</p>
+        <p className="text-xs font-medium text-gray-500 mb-2">{t('preview.labelSuffix', { label: previewEntry.label })}</p>
         <div className="overflow-hidden rounded-md bg-gray-50">
           <PreviewComponent
             previewContent={previewContent}
@@ -126,10 +128,13 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
           <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5 text-amber-600" />
           <div>
             <p className="font-medium">
-              Brand fidelity {fidelityCompositeScore ?? '?'}/100 — below your threshold ({fidelityThreshold ?? 75})
+              {t('fidelity.belowThreshold', {
+                score: fidelityCompositeScore ?? '?',
+                threshold: fidelityThreshold ?? 75,
+              })}
             </p>
             <p className="mt-0.5 text-amber-800">
-              You can still continue, but consider regenerating from Step 2 with feedback to lift the score before publishing.
+              {t('fidelity.belowThresholdHint')}
             </p>
           </div>
         </div>
@@ -147,7 +152,7 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
         }
       >
         {belowThreshold ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-        {belowThreshold ? 'Continue anyway' : 'Confirm & Continue'}
+        {belowThreshold ? t('confirm.continueAnyway') : t('confirm.confirmContinue')}
       </button>
     </div>
   );

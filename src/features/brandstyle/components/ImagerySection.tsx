@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CheckCircle, X, Pencil, Eye, Lightbulb } from "lucide-react";
 import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
@@ -20,18 +21,19 @@ function parseGuidelinePrefix(text: string): { prefix: "observed" | "recommended
 
 /** Visual badge for OBSERVED/RECOMMENDED guidelines */
 function GuidelineBadge({ type }: { type: "observed" | "recommended" }) {
+  const { t } = useTranslation("brandstyle");
   if (type === "observed") {
     return (
       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-blue-50 text-blue-600 flex-shrink-0">
         <Eye className="w-3 h-3" />
-        Observed
+        {t("imagery.observed")}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-600 flex-shrink-0">
       <Lightbulb className="w-3 h-3" />
-      Recommended
+      {t("imagery.recommended")}
     </span>
   );
 }
@@ -44,6 +46,7 @@ interface ImagerySectionProps {
 }
 
 export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
+  const { t } = useTranslation("brandstyle");
   const photoStyle = styleguide.photographyStyle as PhotographyStyle | null;
   const updateImagery = useUpdateSection("imagery");
 
@@ -87,12 +90,12 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
       {/* Photography */}
       <Card>
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Photography Style</h3>
+          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">{t("imagery.photoStyleTitle")}</h3>
           {canEdit && !isEditingStyle && (
             <button
               onClick={startEditStyle}
               className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0"
-              title="Edit"
+              title={t("actions.edit")}
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
@@ -102,38 +105,38 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
         {isEditingStyle ? (
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Mood</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t("imagery.mood")}</label>
               <input
                 value={editMood}
                 onChange={(e) => setEditMood(e.target.value)}
-                placeholder="e.g. Warm, inviting"
+                placeholder={t("imagery.moodPlaceholder")}
                 className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Subjects</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t("imagery.subjects")}</label>
               <input
                 value={editSubjects}
                 onChange={(e) => setEditSubjects(e.target.value)}
-                placeholder="e.g. People, products, environments"
+                placeholder={t("imagery.subjectsPlaceholder")}
                 className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Composition</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t("imagery.composition")}</label>
               <input
                 value={editComposition}
                 onChange={(e) => setEditComposition(e.target.value)}
-                placeholder="e.g. Rule of thirds, natural framing"
+                placeholder={t("imagery.compositionPlaceholder")}
                 className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div className="flex gap-2 pt-1">
               <Button variant="primary" size="sm" onClick={saveStyle} isLoading={updateImagery.isPending}>
-                Save
+                {t("actions.save")}
               </Button>
               <Button variant="secondary" size="sm" onClick={cancelEditStyle}>
-                Cancel
+                {t("actions.cancel")}
               </Button>
             </div>
           </div>
@@ -145,7 +148,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
                   const { prefix, content } = parseGuidelinePrefix(photoStyle.mood);
                   return (
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase mb-1">Mood</p>
+                      <p className="text-xs font-medium text-gray-500 uppercase mb-1">{t("imagery.mood")}</p>
                       {prefix && <div className="mb-1"><GuidelineBadge type={prefix} /></div>}
                       <p className="text-sm text-gray-700">{content}</p>
                     </div>
@@ -155,7 +158,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
                   const { prefix, content } = parseGuidelinePrefix(photoStyle.subjects);
                   return (
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase mb-1">Subjects</p>
+                      <p className="text-xs font-medium text-gray-500 uppercase mb-1">{t("imagery.subjects")}</p>
                       {prefix && <div className="mb-1"><GuidelineBadge type={prefix} /></div>}
                       <p className="text-sm text-gray-700">{content}</p>
                     </div>
@@ -165,7 +168,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
                   const { prefix, content } = parseGuidelinePrefix(photoStyle.composition);
                   return (
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase mb-1">Composition</p>
+                      <p className="text-xs font-medium text-gray-500 uppercase mb-1">{t("imagery.composition")}</p>
                       {prefix && <div className="mb-1"><GuidelineBadge type={prefix} /></div>}
                       <p className="text-sm text-gray-700">{content}</p>
                     </div>
@@ -178,11 +181,11 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
 
         {!isEditingStyle && (
           <EditableStringList
-            title="Photography Guidelines"
+            title={t("imagery.photoGuidelinesTitle")}
             items={styleguide.photographyGuidelines}
             canEdit={canEdit}
             isSaving={updateImagery.isPending}
-            placeholder="Add a photography guideline..."
+            placeholder={t("imagery.photoGuidelinesPlaceholder")}
             onSave={(items) => updateImagery.mutate({ photographyGuidelines: items })}
           >
             {(items) =>
@@ -202,7 +205,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
                   })}
                 </ul>
               ) : (
-                <p className="text-sm text-gray-400">No photography guidelines yet.</p>
+                <p className="text-sm text-gray-400">{t("imagery.photoGuidelinesEmpty")}</p>
               )
             }
           </EditableStringList>
@@ -212,11 +215,11 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
       {/* Illustration */}
       <Card>
         <EditableStringList
-          title="Illustration Guidelines"
+          title={t("imagery.illustrationTitle")}
           items={styleguide.illustrationGuidelines}
           canEdit={canEdit}
           isSaving={updateImagery.isPending}
-          placeholder="Add an illustration guideline..."
+          placeholder={t("imagery.illustrationPlaceholder")}
           onSave={(items) => updateImagery.mutate({ illustrationGuidelines: items })}
         >
           {(items) =>
@@ -236,7 +239,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
                 })}
               </ul>
             ) : (
-              <p className="text-sm text-gray-400">No illustration guidelines yet.</p>
+              <p className="text-sm text-gray-400">{t("imagery.illustrationEmpty")}</p>
             )
           }
         </EditableStringList>
@@ -245,11 +248,11 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
       {/* Don'ts */}
       <Card>
         <EditableStringList
-          title="Don'ts"
+          title={t("imagery.dontsTitle")}
           items={styleguide.imageryDonts}
           canEdit={canEdit}
           isSaving={updateImagery.isPending}
-          placeholder="Add an imagery don't..."
+          placeholder={t("imagery.dontsPlaceholder")}
           onSave={(items) => updateImagery.mutate({ imageryDonts: items })}
         >
           {(items) =>
@@ -266,7 +269,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400">No imagery don&apos;ts defined yet.</p>
+              <p className="text-sm text-gray-400">{t("imagery.dontsEmpty")}</p>
             )
           }
         </EditableStringList>

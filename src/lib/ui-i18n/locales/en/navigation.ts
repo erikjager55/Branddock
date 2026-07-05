@@ -21,6 +21,33 @@ const navigation = {
   sidebar: {
     settings: 'Settings',
     helpSupport: 'Help & Support',
+    sections: {
+      WORKSPACE: 'Workspace',
+      CREATE: 'Create',
+      KNOWLEDGE: 'Knowledge',
+      MEDIA: 'Media',
+      INSIGHTS: 'Insights',
+      VALIDATION: 'Validation',
+    },
+    items: {
+      dashboard: 'Overview',
+      'active-campaigns': 'Campaigns',
+      'content-library': 'Content',
+      brand: 'Brand Foundation',
+      brandstyle: 'Brandstyle',
+      brandvoice: 'Brand Voice',
+      'business-strategy': 'Business Strategy',
+      personas: 'Personas',
+      products: 'Products & Services',
+      competitors: 'Competitors',
+      'media-library': 'Media Library',
+      'ai-trainer': 'AI Trainer',
+      'ai-studio': 'AI Studio',
+      trends: 'Trend Radar',
+      knowledge: 'Knowledge Library',
+      research: 'Research Hub',
+      'brand-alignment': 'Brand Alignment',
+    },
   },
 } as const;
 

@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 1-2 weken
 owner: claude-code
-status: open
+status: done
 created: 2026-06-28
-completed: -
+completed: 2026-07-05
 related-adr: docs/adr/2026-06-28-multilingual-i18n-and-multi-market-content.md
 related-spec: -
 worktree: -
@@ -68,3 +68,17 @@ Voeg een optionele target-locale param toe aan de generatie-entry (canvas-orches
 # Notes
 
 - Dit maakt output **locale-adresseerbaar** op de hete persistentietabellen vanaf dag 1, zodat Fase 4 geen backfill nodig heeft.
+
+# Status 2026-07-05 — GELAND (branch `feat/content-locale-target-picker`) — changelog #355
+
+Uitgevoerd (elk tsc 0 / lint 0 / separation 3/3 / build groen):
+- **P1+P2** `8dc13164` — `resolveTargetProfile(ws, targetLanguage?)` find-or-create niet-default profiel (via LANG_TO_LOCALE, idempotent) + `targetLanguage` in orchestrate/bulk-generate zod → resolve → persist `Deliverable.localeProfileId` → `OrchestrationOptions.targetLocaleProfileId` → `assembleCanvasContext(…, localeProfileId)` → `getBrandContext(ws, explicit ?? deliverable.localeProfileId)`. Default-pad ongewijzigd.
+- **P4** `548bd3ca` — 4 analyze-routes volgen de workspace-content-taal (`getContentOutputLanguage`) i.p.v. `Accept-Language`. `parseOutputLanguage` deprecated behouden.
+- **P5** `69f848b7` — Canvas Step1Context Output-language-picker (default = workspace-standaard) + client-safe `shipped-languages.ts` + `useCanvasOrchestration.generate(targetLanguage)` + `bulkGenerateSSE(targetLanguage)`-plumbing. i18n en+nl.
+- **P6** (deze commit) — smoke `content-locale-target-picker.ts` (8/8) + changelog #355 + deze notitie.
+
+**Bewust UITGESTELD (follow-ups)**:
+- **P3 — F-VAL scoort tegen de target-pack**: de threading is tangled (`evaluateHeuristics`→`getHeuristicsForBrand`→`resolveLocaleForBrand` zit buiten het hoofd-`runFidelityScoring`-pad). De content genereert al correct in de doeltaal; alleen de heuristics-pack van de *scoring* volgt nog de workspace-default (pack-loze talen vallen sowieso op en-GB terug). `resolveLocaleForBrand(ws, requestedLocale?)` + `getBrandContext(ws, localeProfileId?)` accepteren de param al — resterend werk = de param door de fidelity-keten threaden + beta-marker. Kleine, geïsoleerde follow-up.
+- **Campagne-bulk-generatie UI-picker**: de `bulkGenerateSSE`-plumbing accepteert al `targetLanguage`; alleen de UI-control ontbreekt nog.
+
+**Openstaand**: PR + merge (branch heeft de foundation via main; merge `main` in vóór PR indien main verder is); `task-finalize` (user triggert).

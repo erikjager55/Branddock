@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { Button, Card } from "@/components/shared";
 import { GENERATION_PRESETS, TYPE_CONFIG } from "../../constants/model-constants";
@@ -31,6 +32,7 @@ export function GenerateSection({
   onGenerate,
   isGenerating,
 }: GenerateSectionProps) {
+  const { t } = useTranslation(["consistent-models", "consistent-models-registry"]);
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -53,35 +55,35 @@ export function GenerateSection({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">Generate</h2>
+      <h2 className="text-lg font-semibold text-gray-900">{t("generate.heading")}</h2>
 
       <Card className="p-5">
         <div className="space-y-4">
           {/* Prompt */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
-              Prompt
+              {t("generate.promptLabel")}
             </label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder={`e.g. "${triggerWord}" in a professional studio setting`}
+              placeholder={t("generate.promptPlaceholder", { triggerWord })}
               rows={3}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
             />
             <p className="mt-1 text-xs text-gray-400">
-              Include the trigger word{" "}
+              {t("generate.triggerHintPrefix")}{" "}
               <code className="rounded bg-gray-100 px-1 py-0.5">
                 {triggerWord}
               </code>{" "}
-              in your prompt for best results
+              {t("generate.triggerHintSuffix")}
             </p>
           </div>
 
           {/* Size presets */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
-              Size
+              {t("generate.sizeLabel")}
             </label>
             <div className="flex flex-wrap gap-2">
               {(Object.entries(GENERATION_PRESETS) as [GenerationPreset, typeof GENERATION_PRESETS[GenerationPreset]][]).map(
@@ -96,7 +98,7 @@ export function GenerateSection({
                         : "border-gray-200 text-gray-600 hover:border-gray-300"
                     }`}
                   >
-                    {p.label}
+                    {t(`consistent-models-registry:preset.${key}`, { defaultValue: p.label })}
                   </button>
                 ),
               )}
@@ -114,32 +116,32 @@ export function GenerateSection({
             ) : (
               <ChevronDown className="h-4 w-4" />
             )}
-            Advanced options
+            {t("generate.advancedOptions")}
           </button>
 
           {showAdvanced && (
             <div className="space-y-3 rounded-lg bg-gray-50 p-4">
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Negative Prompt
+                  {t("generate.negativePromptLabel")}
                 </label>
                 <textarea
                   value={negativePrompt}
                   onChange={(e) => setNegativePrompt(e.target.value)}
-                  placeholder="Elements to avoid in the generation..."
+                  placeholder={t("generate.negativePromptPlaceholder")}
                   rows={2}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Seed <span className="font-normal text-gray-400">(optional)</span>
+                  {t("generate.seedLabel")} <span className="font-normal text-gray-400">{t("generate.optional")}</span>
                 </label>
                 <input
                   type="number"
                   value={seed}
                   onChange={(e) => setSeed(e.target.value)}
-                  placeholder="Random"
+                  placeholder={t("generate.seedPlaceholder")}
                   className="w-40 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
               </div>
@@ -155,7 +157,7 @@ export function GenerateSection({
               isLoading={isGenerating}
             >
               <Sparkles className="mr-1.5 h-4 w-4" />
-              Generate
+              {t("generate.generateButton")}
             </Button>
           </div>
         </div>

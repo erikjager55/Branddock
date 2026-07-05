@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { SkeletonCard, EmptyState } from '@/components/shared';
 import { TrendCard } from './TrendCard';
 import { useTrends } from '../hooks';
@@ -13,6 +14,7 @@ interface TrendCardGridProps {
 
 /** Responsive card grid with loading/empty states */
 export function TrendCardGrid({ onTrendClick }: TrendCardGridProps) {
+  const { t } = useTranslation('trend-radar');
   const {
     searchQuery,
     categoryFilter,
@@ -52,11 +54,11 @@ export function TrendCardGrid({ onTrendClick }: TrendCardGridProps) {
     return (
       <EmptyState
         icon={Radar}
-        title="No trends found"
+        title={t('empty.title')}
         description={
           searchQuery || categoryFilter || impactFilter || detectionSourceFilter
-            ? 'Try adjusting your filters or search query.'
-            : 'Start by adding trends manually or running an AI research.'
+            ? t('empty.filteredDescription')
+            : t('empty.description')
         }
       />
     );

@@ -9,6 +9,7 @@
 
 import React, { useState } from 'react';
 import { Check, Crown, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Button, Badge } from '@/components/shared';
 import { PLAN_CONFIGS, ALL_TIERS, formatLimit } from '@/lib/constants/plan-limits';
 import { cn } from '@/lib/constants/design-tokens';
@@ -36,6 +37,7 @@ export function UpgradeModal({
   isFreeBeta,
   onSelectPlan,
 }: UpgradeModalProps) {
+  const { t } = useTranslation('lock-billing');
   const [cycle, setCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [loadingTier, setLoadingTier] = useState<PlanTier | null>(null);
 
@@ -54,8 +56,8 @@ export function UpgradeModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Choose Your Plan"
-      subtitle="Select the plan that fits your needs"
+      title={t('upgradeModal.title')}
+      subtitle={t('upgradeModal.subtitle')}
       size="xl"
     >
       <div className="space-y-6">
@@ -70,7 +72,7 @@ export function UpgradeModal({
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
             )}
           >
-            Monthly
+            {t('upgradeModal.monthly')}
           </button>
           <button
             onClick={() => setCycle('yearly')}
@@ -81,7 +83,7 @@ export function UpgradeModal({
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
             )}
           >
-            Yearly
+            {t('upgradeModal.yearly')}
             <span
               className={cn(
                 'text-[10px] px-1.5 py-0.5 rounded-full font-semibold',
@@ -90,7 +92,7 @@ export function UpgradeModal({
                   : 'bg-emerald-100 text-emerald-700',
               )}
             >
-              Save 20%
+              {t('upgradeModal.save')}
             </span>
           </button>
         </div>
@@ -118,15 +120,15 @@ export function UpgradeModal({
                 {isRecommended && (
                   <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
                     <Badge variant="teal" size="sm" icon={Sparkles}>
-                      Popular
+                      {t('upgradeModal.popular')}
                     </Badge>
                   </div>
                 )}
 
                 <div className="flex items-center gap-2 mb-3">
-                  <h4 className="text-base font-bold text-gray-900">{config.name}</h4>
+                  <h4 className="text-base font-bold text-gray-900">{t(`planName.${tier}`, { defaultValue: config.name })}</h4>
                   {isCurrent && (
-                    <Badge variant="success" size="sm">Current</Badge>
+                    <Badge variant="success" size="sm">{t('upgradeModal.current')}</Badge>
                   )}
                 </div>
 
@@ -135,26 +137,26 @@ export function UpgradeModal({
                     &euro;{displayPrice}
                   </span>
                   <span className="text-sm text-gray-500">
-                    /{cycle === 'monthly' ? 'mo' : 'yr'}
+                    /{cycle === 'monthly' ? t('upgradeModal.perMonthShort') : t('upgradeModal.perYearShort')}
                   </span>
                 </div>
 
                 <ul className="space-y-1.5 mb-5">
-                  {config.features.map((feature) => (
+                  {config.features.map((feature, idx) => (
                     <li key={feature} className="flex items-start gap-1.5 text-xs text-gray-600">
                       <Check className="h-3.5 w-3.5 text-primary flex-shrink-0 mt-0.5" />
-                      <span>{feature}</span>
+                      <span>{t(`planFeatures.${tier}.${idx}`, { defaultValue: feature })}</span>
                     </li>
                   ))}
                 </ul>
 
                 {isCurrent ? (
                   <Button variant="secondary" size="sm" fullWidth disabled>
-                    Current Plan
+                    {t('upgradeModal.currentPlan')}
                   </Button>
                 ) : tier === 'FREE' ? (
                   <Button variant="secondary" size="sm" fullWidth disabled>
-                    Free
+                    {t('upgradeModal.free')}
                   </Button>
                 ) : (
                   <Button
@@ -167,11 +169,11 @@ export function UpgradeModal({
                     {isLoading ? (
                       <>
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Redirecting...
+                        {t('upgradeModal.redirecting')}
                       </>
                     ) : (
                       <>
-                        Upgrade
+                        {t('upgradeModal.upgrade')}
                         <ArrowRight className="h-3.5 w-3.5" />
                       </>
                     )}
@@ -185,7 +187,7 @@ export function UpgradeModal({
         {/* Info footer */}
         <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
           <Crown className="h-3.5 w-3.5" />
-          <span>All plans include a 14-day free trial. Cancel anytime.</span>
+          <span>{t('upgradeModal.trialNote')}</span>
         </div>
       </div>
     </Modal>

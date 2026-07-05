@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Minus, Plus, UserCheck } from "lucide-react";
 import { Card } from "@/components/shared";
 import { FACILITATOR_PRICE } from "../../constants/workshop-pricing";
@@ -17,13 +18,14 @@ export function WorkshopOptions({
   onCountChange,
   onFacilitatorChange,
 }: WorkshopOptionsProps) {
+  const { t } = useTranslation("workshop");
   return (
     <Card padding="none">
       <Card.Body>
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-700">
-              Number of Workshops
+              {t("purchase.options.numberOfWorkshops")}
             </label>
             <div className="flex items-center gap-3 mt-2">
               <button
@@ -57,12 +59,11 @@ export function WorkshopOptions({
                 <div className="flex items-center gap-2">
                   <UserCheck className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium text-gray-900">
-                    Add Professional Facilitator
+                    {t("purchase.options.addFacilitator")}
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Expert facilitator to guide your team through the workshop
-                  (+&euro;{FACILITATOR_PRICE} per session)
+                  {t("purchase.options.facilitatorHelp", { price: FACILITATOR_PRICE })}
                 </p>
               </div>
             </label>

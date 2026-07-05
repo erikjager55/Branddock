@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FolderOpen, Check, Plus } from 'lucide-react';
 import { Modal, Button, SearchInput, EmptyState, Skeleton } from '@/components/shared';
 import { useMediaCollections, useAddAssetToCollection } from '../../hooks/index';
@@ -10,6 +11,7 @@ import { useMediaLibraryStore } from '../../stores/useMediaLibraryStore';
 
 /** Modal for adding an asset to one or more existing collections. */
 export function AddToCollectionModal() {
+  const { t } = useTranslation('media-library');
   const isOpen = useMediaLibraryStore((s) => s.isAddToCollectionModalOpen);
   const assetId = useMediaLibraryStore((s) => s.addToCollectionAssetId);
   const closeModal = useMediaLibraryStore((s) => s.closeAddToCollection);
@@ -66,8 +68,8 @@ export function AddToCollectionModal() {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Add to Collection"
-      subtitle="Select one or more collections for this asset."
+      title={t('collections.addModal.title')}
+      subtitle={t('collections.addModal.subtitle')}
       size="sm"
       footer={
         <div className="flex items-center justify-between">
@@ -79,11 +81,11 @@ export function AddToCollectionModal() {
               openCreate(true);
             }}
           >
-            New Collection
+            {t('collections.newCollection')}
           </Button>
           <div className="flex items-center gap-3">
             <Button variant="secondary" size="md" onClick={handleClose}>
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button
               variant="primary"
@@ -93,7 +95,7 @@ export function AddToCollectionModal() {
               disabled={selectedIds.size === 0 || addAsset.isPending}
               isLoading={addAsset.isPending}
             >
-              Add to Selected ({selectedIds.size})
+              {t('collections.addSelected', { count: selectedIds.size })}
             </Button>
           </div>
         </div>
@@ -104,7 +106,7 @@ export function AddToCollectionModal() {
         <SearchInput
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder="Search collections..."
+          placeholder={t('collections.searchPlaceholder')}
         />
 
         {/* Collection list */}
@@ -123,11 +125,11 @@ export function AddToCollectionModal() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={FolderOpen}
-            title="No collections"
+            title={t('collections.empty.title')}
             description={
               searchQuery
-                ? 'No collections match your search.'
-                : 'Create a collection first to organize assets.'
+                ? t('collections.empty.noMatch')
+                : t('collections.empty.description')
             }
           />
         ) : (
@@ -170,7 +172,7 @@ export function AddToCollectionModal() {
                       {collection.name}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {collection._count.assets} asset{collection._count.assets !== 1 ? 's' : ''}
+                      {t('assetCount', { count: collection._count.assets })}
                     </p>
                   </div>
                 </button>

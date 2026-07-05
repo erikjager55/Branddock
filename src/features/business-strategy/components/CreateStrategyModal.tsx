@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Modal } from '@/components/shared';
 import { useCreateStrategy } from '../hooks';
 import { useBusinessStrategyStore } from '../stores/useBusinessStrategyStore';
@@ -18,6 +19,7 @@ interface CreateStrategyModalProps {
 }
 
 export function CreateStrategyModal({ onNavigateToDetail }: CreateStrategyModalProps) {
+  const { t } = useTranslation('business-strategy');
   const { isCreateModalOpen, setCreateModalOpen, createWizardStep, setCreateWizardStep } =
     useBusinessStrategyStore();
   const createStrategy = useCreateStrategy();
@@ -114,9 +116,9 @@ export function CreateStrategyModal({ onNavigateToDetail }: CreateStrategyModalP
   };
 
   const stepTitles: Record<number, { title: string; subtitle: string }> = {
-    1: { title: 'Choose Type & Name', subtitle: 'Select the strategy type and give it a name' },
-    2: { title: 'Set Timeline', subtitle: 'Define the timeline and focus areas' },
-    3: { title: 'Add Objectives', subtitle: 'Optionally add initial objectives' },
+    1: { title: t('wizard.step1.title'), subtitle: t('wizard.step1.subtitle') },
+    2: { title: t('wizard.step2.title'), subtitle: t('wizard.step2.subtitle') },
+    3: { title: t('wizard.step3.title'), subtitle: t('wizard.step3.subtitle') },
   };
 
   const { title, subtitle } = stepTitles[createWizardStep] ?? stepTitles[1];
@@ -133,13 +135,13 @@ export function CreateStrategyModal({ onNavigateToDetail }: CreateStrategyModalP
           <div>
             {createWizardStep > 1 && (
               <Button variant="ghost" onClick={handleBack}>
-                Back
+                {t('actions.back')}
               </Button>
             )}
           </div>
           <div className="flex gap-3">
             <Button variant="ghost" onClick={handleClose}>
-              Cancel
+              {t('actions.cancel')}
             </Button>
             {createWizardStep < 3 ? (
               <Button
@@ -147,7 +149,7 @@ export function CreateStrategyModal({ onNavigateToDetail }: CreateStrategyModalP
                 onClick={handleNext}
                 disabled={createWizardStep === 1 && !isStep1Valid}
               >
-                Next
+                {t('actions.next')}
               </Button>
             ) : (
               <Button
@@ -157,7 +159,7 @@ export function CreateStrategyModal({ onNavigateToDetail }: CreateStrategyModalP
                 disabled={!isStep1Valid || createStrategy.isPending}
                 isLoading={createStrategy.isPending}
               >
-                Create Strategy
+                {t('actions.createStrategy')}
               </Button>
             )}
           </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, ExternalLink } from 'lucide-react';
 import { Modal, Button } from '@/components/shared';
 import {
@@ -15,6 +16,7 @@ import { CurrentContentCompare } from './CurrentContentCompare';
 import { FixOptionsGroup } from './FixOptionsGroup';
 
 export function FixIssueModal() {
+  const { t } = useTranslation('brand-alignment');
   const isOpen = useBrandAlignmentStore((s) => s.isFixModalOpen);
   const selectedIssueId = useBrandAlignmentStore((s) => s.selectedIssueId);
   const selectedFixOption = useBrandAlignmentStore((s) => s.selectedFixOption);
@@ -54,13 +56,13 @@ export function FixIssueModal() {
     <Modal
       isOpen={isOpen}
       onClose={closeFixModal}
-      title="Fix Alignment Issue"
+      title={t('fixModal.title')}
       size="lg"
     >
       {isLoadingOptions ? (
         <div className="flex items-center justify-center py-12 gap-2 text-gray-400">
           <Loader2 className="w-5 h-5 animate-spin" />
-          <span className="text-sm">Loading fix options...</span>
+          <span className="text-sm">{t('fixModal.loadingOptions')}</span>
         </div>
       ) : fixData ? (
         <div data-testid="fix-issue-modal" className="space-y-5 py-2">
@@ -89,7 +91,7 @@ export function FixIssueModal() {
                 disabled={dismissIssue.isPending}
                 className="text-sm text-gray-500 hover:text-gray-700 underline"
               >
-                Dismiss
+                {t('fixModal.dismiss')}
               </button>
               {sourceSection && (
                 <Button
@@ -101,7 +103,7 @@ export function FixIssueModal() {
                     setActiveSection(sourceSection);
                   }}
                 >
-                  Edit Manually
+                  {t('fixModal.editManually')}
                 </Button>
               )}
             </div>
@@ -111,13 +113,13 @@ export function FixIssueModal() {
               disabled={!selectedFixOption || applyFix.isPending}
               isLoading={applyFix.isPending}
             >
-              Apply Fix
+              {t('fixModal.applyFix')}
             </Button>
           </div>
         </div>
       ) : (
         <div className="flex items-center justify-center py-12 text-sm text-gray-400">
-          Failed to load fix options
+          {t('fixModal.loadError')}
         </div>
       )}
     </Modal>

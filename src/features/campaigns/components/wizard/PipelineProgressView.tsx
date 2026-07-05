@@ -1,19 +1,20 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, Loader2, AlertCircle, Palette, BookOpen, Search, FlaskConical, Shield, BarChart3, TrendingUp, Brain, Target } from "lucide-react";
 import { ProgressBar } from "@/components/shared";
 import type { PipelineStep, PipelineStepStatus, EnrichmentSources } from "../../types/campaign-wizard.types";
 
 // ─── Constants ───────────────────────────────────────────
 
-const RUNNING_HINTS = [
-  "This may take a minute...",
-  "AI is analyzing deeply...",
-  "Still working...",
-  "Processing complex data...",
-  "Thinking through strategy...",
-];
+const HINT_KEYS = [
+  "takingMinute",
+  "analyzingDeeply",
+  "stillWorking",
+  "processingData",
+  "thinkingStrategy",
+] as const;
 
 const HINT_CYCLE_MS = 8_000;
 
@@ -51,18 +52,19 @@ function StepStatusIcon({ status }: { status: PipelineStepStatus }) {
 // ─── Running Hint ────────────────────────────────────────
 
 function RunningHint() {
+  const { t } = useTranslation("campaigns-wizard");
   const [hintIndex, setHintIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setHintIndex((prev) => (prev + 1) % RUNNING_HINTS.length);
+      setHintIndex((prev) => (prev + 1) % HINT_KEYS.length);
     }, HINT_CYCLE_MS);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <p className="text-xs text-muted-foreground italic mt-1">
-      {RUNNING_HINTS[hintIndex]}
+      {t(`pipeline.runningHints.${HINT_KEYS[hintIndex]}`)}
     </p>
   );
 }
@@ -113,6 +115,7 @@ function LocalSourcePill({ icon: Icon, label, color }: { icon: React.ElementType
 }
 
 function EnrichmentIndicator({ status, blockCount, sources }: { status: 'idle' | 'running' | 'complete' | 'skipped'; blockCount: number; sources?: EnrichmentSources }) {
+  const { t } = useTranslation("campaigns-wizard");
   if (status === 'idle') return null;
 
   const hasExternalSources = sources && (sources.arena || sources.exa || sources.scholar);
@@ -137,10 +140,10 @@ function EnrichmentIndicator({ status, blockCount, sources }: { status: 'idle' |
         )}
         <span className={`text-sm ${status === 'running' ? 'text-violet-700' : status === 'complete' ? 'text-violet-600' : 'text-gray-500'}`}>
           {status === 'running'
-            ? 'Enriching strategy context...'
+            ? t('pipeline.enriching')
             : status === 'complete'
-              ? `${blockCount} enrichment source${blockCount !== 1 ? 's' : ''} applied`
-              : 'No enrichment sources found'}
+              ? t('pipeline.enrichmentApplied', { count: blockCount })
+              : t('pipeline.noEnrichment')}
         </span>
       </div>
       {status === 'complete' && hasSourceBreakdown && (
@@ -187,6 +190,7 @@ interface PipelineProgressViewProps {
 
 /** Reusable pipeline progress view for any subset of steps */
 export function PipelineProgressView({ title, subtitle, estimatedDuration, steps, pipelineSteps, enrichmentStatus = 'idle', enrichmentBlockCount = 0, enrichmentSources }: PipelineProgressViewProps) {
+  const { t } = useTranslation("campaigns-wizard");
   const completedSteps = pipelineSteps.filter((s) => s.status === "complete").length;
   const totalSteps = steps.length;
   const progressPercent = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
@@ -199,15 +203,15 @@ export function PipelineProgressView({ title, subtitle, estimatedDuration, steps
       <div className="text-center">
         <h3 className="text-lg font-semibold text-gray-900 mb-1">{title}</h3>
         <p className="text-sm text-muted-foreground">
-          {subtitle ?? `${completedSteps} of ${totalSteps} steps completed`}
+          {subtitle ?? t("pipeline.stepsCompleted", { completed: completedSteps, total: totalSteps })}
           {!allComplete && (
             <span className="ml-2 text-xs text-muted-foreground/70">
-              Elapsed: {elapsedDisplay}
+              {t("pipeline.elapsed", { time: elapsedDisplay })}
             </span>
           )}
         </p>
         {estimatedDuration && !allComplete && (
-          <p className="text-xs text-gray-400 mt-0.5">Typically takes {estimatedDuration}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{t("pipeline.typicallyTakes", { duration: estimatedDuration })}</p>
         )}
       </div>
 
@@ -252,10 +256,10 @@ export function PipelineProgressView({ title, subtitle, estimatedDuration, steps
                     {status === "running"
                       ? config.label
                       : status === "complete"
-                        ? "Completed"
+                        ? t("pipeline.completed")
                         : status === "error"
-                          ? (stepData?.error || "Failed")
-                          : "Waiting..."}
+                          ? (stepData?.error || t("pipeline.failed"))
+                          : t("pipeline.waiting")}
                   </span>
                 </div>
                 {(status === "running" || status === "complete" || status === "error") && (

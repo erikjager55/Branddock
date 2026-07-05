@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { RESOURCE_TYPE_ICONS } from '../../constants/library-constants';
 import { ResourceTypeIcon } from '../shared/ResourceTypeIcon';
 import type { ResourceType } from '../../types/knowledge-library.types';
@@ -12,9 +13,10 @@ interface ResourceTypeSelectorProps {
 const ALL_TYPES = Object.keys(RESOURCE_TYPE_ICONS) as ResourceType[];
 
 export function ResourceTypeSelector({ selected, onChange }: ResourceTypeSelectorProps) {
+  const { t } = useTranslation('knowledge-library');
   return (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">Resource Type</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1">{t('manual.resourceTypeLabel')}</label>
       <select
         value={selected}
         onChange={(e) => onChange(e.target.value as ResourceType)}
@@ -22,7 +24,7 @@ export function ResourceTypeSelector({ selected, onChange }: ResourceTypeSelecto
       >
         {ALL_TYPES.map((type) => (
           <option key={type} value={type}>
-            {RESOURCE_TYPE_ICONS[type].label}
+            {t(`types.${type}`)}
           </option>
         ))}
       </select>

@@ -1,6 +1,7 @@
 'use client';
 
 import { Target, Heart, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { LucideIcon } from 'lucide-react';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 
@@ -14,9 +15,6 @@ interface GoalsMotivationsCardsProps {
 
 const CARDS: {
   key: 'goals' | 'motivations' | 'frustrations';
-  title: string;
-  subtitle: string;
-  placeholder: string;
   icon: LucideIcon;
   iconBg: string;
   iconColor: string;
@@ -26,9 +24,6 @@ const CARDS: {
 }[] = [
   {
     key: 'goals',
-    title: 'Goals',
-    subtitle: 'What they want to achieve',
-    placeholder: 'Add a goal...',
     icon: Target,
     iconBg: 'bg-emerald-100',
     iconColor: 'text-emerald-600',
@@ -38,9 +33,6 @@ const CARDS: {
   },
   {
     key: 'motivations',
-    title: 'Motivations',
-    subtitle: 'What drives their decisions',
-    placeholder: 'Add a motivation...',
     icon: Heart,
     iconBg: 'bg-pink-100',
     iconColor: 'text-pink-500',
@@ -50,9 +42,6 @@ const CARDS: {
   },
   {
     key: 'frustrations',
-    title: 'Frustrations',
-    subtitle: 'Pain points and challenges',
-    placeholder: 'Add a frustration...',
     icon: AlertTriangle,
     iconBg: 'bg-amber-100',
     iconColor: 'text-amber-500',
@@ -63,9 +52,10 @@ const CARDS: {
 ];
 
 export function GoalsMotivationsCards({ persona, isEditing, onUpdate }: GoalsMotivationsCardsProps) {
+  const { t } = useTranslation('personas');
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      {CARDS.map(({ key, title, subtitle, placeholder, icon: Icon, iconBg, iconColor, checkColor, subCardBg, subCardBorder }) => (
+      {CARDS.map(({ key, icon: Icon, iconBg, iconColor, checkColor, subCardBg, subCardBorder }) => (
         <div
           key={key}
           className="flex flex-col rounded-xl border border-gray-200 bg-white p-4"
@@ -77,8 +67,8 @@ export function GoalsMotivationsCards({ persona, isEditing, onUpdate }: GoalsMot
             </div>
           </div>
 
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          <p className="text-sm text-gray-500 mt-0.5 mb-3">{subtitle}</p>
+          <h3 className="text-lg font-semibold text-gray-900">{t(`goals.cards.${key}.title`)}</h3>
+          <p className="text-sm text-gray-500 mt-0.5 mb-3">{t(`goals.cards.${key}.subtitle`)}</p>
 
           {/* Items sub-card — grows to fill available height so all cards align */}
           <div className="flex-1 min-h-0">
@@ -86,7 +76,7 @@ export function GoalsMotivationsCards({ persona, isEditing, onUpdate }: GoalsMot
               <RepeatableListInput
                 items={persona[key]}
                 onChange={(items) => onUpdate({ [key]: items })}
-                placeholder={placeholder}
+                placeholder={t(`goals.cards.${key}.placeholder`)}
               />
             ) : persona[key].length > 0 ? (
               <div className={`h-full rounded-xl border ${subCardBorder} ${subCardBg} p-4`}>
@@ -100,7 +90,7 @@ export function GoalsMotivationsCards({ persona, isEditing, onUpdate }: GoalsMot
                 </ul>
               </div>
             ) : (
-              <p className="text-sm text-gray-300 italic">None defined</p>
+              <p className="text-sm text-gray-300 italic">{t('common.noneDefined')}</p>
             )}
           </div>
 
@@ -108,7 +98,7 @@ export function GoalsMotivationsCards({ persona, isEditing, onUpdate }: GoalsMot
           <div className="mt-3 pt-3 border-t border-gray-100">
             <div className="flex items-center gap-1.5 text-xs text-gray-400">
               <CheckCircle className="w-3.5 h-3.5" />
-              <span>{persona[key].length} items</span>
+              <span>{t('common.itemsCount', { count: persona[key].length })}</span>
             </div>
           </div>
         </div>

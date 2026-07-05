@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import {
   Crown,
   AlertTriangle,
@@ -11,6 +12,7 @@ import { useBillingPlan } from '@/hooks/use-billing';
 import { formatLimit } from '@/lib/constants/plan-limits';
 
 export function CurrentPlanCard() {
+  const { t } = useTranslation('settings-billing');
   const billing = useBillingPlan();
 
   if (billing.isFreeBeta) {
@@ -23,11 +25,11 @@ export function CurrentPlanCard() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 data-testid="plan-name" className="text-lg font-semibold text-gray-900">Free Beta</h3>
+                <h3 data-testid="plan-name" className="text-lg font-semibold text-gray-900">{t('currentPlan.freeBetaName')}</h3>
                 <PlanBadge tier="ENTERPRISE" isFreeBeta />
               </div>
               <p className="text-sm text-gray-500 mt-0.5">
-                All features unlocked during beta
+                {t('currentPlan.freeBetaSubtitle')}
               </p>
             </div>
           </div>
@@ -50,7 +52,7 @@ export function CurrentPlanCard() {
           </div>
           <p className="text-2xl font-bold text-gray-900 mt-2">
             &euro;{plan.monthlyPriceEur}
-            <span className="text-sm font-normal text-gray-500">/month</span>
+            <span className="text-sm font-normal text-gray-500">{t('common.perMonth')}</span>
           </p>
         </div>
         <div className="flex gap-2">
@@ -60,7 +62,7 @@ export function CurrentPlanCard() {
               size="sm"
               onClick={() => billing.openCheckout(plan.tier === 'FREE' ? 'PRO' : 'AGENCY')}
             >
-              Upgrade
+              {t('common.upgrade')}
             </Button>
           )}
           <Button
@@ -69,7 +71,7 @@ export function CurrentPlanCard() {
             className="gap-1.5"
             onClick={() => billing.openPortal()}
           >
-            Manage
+            {t('common.manage')}
             <ExternalLink className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -78,7 +80,7 @@ export function CurrentPlanCard() {
       {/* AI Usage meter */}
       <div className="mt-5 pt-4 border-t border-gray-100">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-600">AI Tokens</span>
+          <span className="text-sm font-medium text-gray-600">{t('currentPlan.aiTokens')}</span>
           <span className="text-xs text-gray-500 tabular-nums">
             {formatLimit(usage.aiTokens)} / {formatLimit(usage.aiTokensLimit)}
           </span>
@@ -92,7 +94,7 @@ export function CurrentPlanCard() {
           <div className="flex items-center gap-1.5 mt-2 text-amber-600">
             <AlertTriangle className="h-3.5 w-3.5" />
             <span className="text-xs font-medium">
-              {aiPct >= 100 ? 'Token limit reached' : 'Approaching token limit'}
+              {aiPct >= 100 ? t('currentPlan.tokenLimitReached') : t('currentPlan.approachingTokenLimit')}
             </span>
           </div>
         )}

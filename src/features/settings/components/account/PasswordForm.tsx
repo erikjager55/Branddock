@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useChangePassword } from '@/hooks/use-settings';
 import { Button, Input, Card } from '@/components/shared';
 import { Lock } from 'lucide-react';
 
 export function PasswordForm() {
+  const { t } = useTranslation('settings-account');
   const changePassword = useChangePassword();
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -27,11 +29,11 @@ export function PasswordForm() {
     setSuccess(false);
 
     if (!isNewPasswordValid) {
-      setError('New password must be at least 8 characters.');
+      setError(t('password.minValidation'));
       return;
     }
     if (!doPasswordsMatch) {
-      setError('Passwords do not match.');
+      setError(t('password.matchValidation'));
       return;
     }
 
@@ -45,7 +47,7 @@ export function PasswordForm() {
           setConfirmPassword('');
         },
         onError: (err) => {
-          setError(err instanceof Error ? err.message : 'Failed to change password.');
+          setError(err instanceof Error ? err.message : t('password.changeFailed'));
         },
       },
     );
@@ -53,39 +55,39 @@ export function PasswordForm() {
 
   return (
     <Card>
-      <h3 data-testid="password-form" className="text-base font-semibold text-gray-900 mb-4">Change Password</h3>
+      <h3 data-testid="password-form" className="text-base font-semibold text-gray-900 mb-4">{t('password.title')}</h3>
 
       <div className="space-y-4">
         <Input
-          label="Current Password"
+          label={t('password.currentLabel')}
           type="password"
           value={currentPassword}
           onChange={(e) => setCurrentPassword(e.target.value)}
-          placeholder="Enter current password"
+          placeholder={t('password.currentPlaceholder')}
           icon={Lock}
           required
         />
 
         <Input
-          label="New Password"
+          label={t('password.newLabel')}
           type="password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          placeholder="Minimum 8 characters"
+          placeholder={t('password.newPlaceholder')}
           icon={Lock}
           required
-          error={newPassword.length > 0 && !isNewPasswordValid ? 'Must be at least 8 characters' : undefined}
+          error={newPassword.length > 0 && !isNewPasswordValid ? t('password.minError') : undefined}
         />
 
         <Input
-          label="Confirm New Password"
+          label={t('password.confirmLabel')}
           type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Re-enter new password"
+          placeholder={t('password.confirmPlaceholder')}
           icon={Lock}
           required
-          error={confirmPassword.length > 0 && !doPasswordsMatch ? 'Passwords do not match' : undefined}
+          error={confirmPassword.length > 0 && !doPasswordsMatch ? t('password.matchError') : undefined}
         />
       </div>
 
@@ -94,7 +96,7 @@ export function PasswordForm() {
       )}
 
       {success && (
-        <p className="mt-3 text-sm text-emerald-600">Password updated successfully.</p>
+        <p className="mt-3 text-sm text-emerald-600">{t('password.success')}</p>
       )}
 
       <div className="mt-6 flex justify-end">
@@ -104,7 +106,7 @@ export function PasswordForm() {
           disabled={!canSubmit}
           isLoading={changePassword.isPending}
         >
-          Update Password
+          {t('password.update')}
         </Button>
       </div>
     </Card>

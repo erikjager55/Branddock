@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Card } from "@/components/shared";
 import type { BrandStyleguide } from "../types/brandstyle.types";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
@@ -36,6 +37,7 @@ interface ShadowSystemData {
 }
 
 export function SpacingSection({ styleguide, canEdit }: SpacingSectionProps) {
+  const { t } = useTranslation("brandstyle");
   const reviews = styleguide.reviews ?? [];
 
   const spacingScale =
@@ -57,17 +59,17 @@ export function SpacingSection({ styleguide, canEdit }: SpacingSectionProps) {
       {/* Spacing scale */}
       <Card>
         <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-900">Spacing scale</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t("spacing.scaleTitle")}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
             {spacingScale.gridBase
-              ? `Detected ${spacingScale.gridBase}px grid base. `
+              ? t("spacing.detectedGridBase", { px: spacingScale.gridBase })
               : ""}
-            Vertical rhythm and component padding derived from most-used spacing values.
+            {t("spacing.scaleSubtitle")}
           </p>
         </div>
         {spacingScale.tokens.length === 0 ? (
           <p className="text-sm text-gray-400 py-4">
-            No spacing tokens detected yet. Run an analysis on a CSS-rich site to populate.
+            {t("spacing.scaleEmpty")}
           </p>
         ) : (
           <div className="space-y-2">
@@ -90,21 +92,21 @@ export function SpacingSection({ styleguide, canEdit }: SpacingSectionProps) {
           section="spacing-scale"
           reviews={reviews}
           canEdit={canEdit}
-          label="Review spacing scale"
+          label={t("spacing.reviewScale")}
         />
       </Card>
 
       {/* Corner radii */}
       <Card>
         <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-900">Corner radii</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t("spacing.radiiTitle")}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            How sharp or soft shapes appear — buttons, cards, inputs.
+            {t("spacing.radiiSubtitle")}
           </p>
         </div>
         {cornerRadii.tokens.length === 0 ? (
           <p className="text-sm text-gray-400 py-4">
-            No corner radii detected yet.
+            {t("spacing.radiiEmpty")}
           </p>
         ) : (
           <div className="flex flex-wrap gap-4">
@@ -127,21 +129,21 @@ export function SpacingSection({ styleguide, canEdit }: SpacingSectionProps) {
           section="spacing-radii"
           reviews={reviews}
           canEdit={canEdit}
-          label="Review corner radii"
+          label={t("spacing.reviewRadii")}
         />
       </Card>
 
       {/* Shadow system */}
       <Card>
         <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-900">Shadow system</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t("spacing.shadowTitle")}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Depth and elevation — how cards, modals, and popovers layer above the canvas.
+            {t("spacing.shadowSubtitle")}
           </p>
         </div>
         {shadowSystem.tokens.length === 0 ? (
           <p className="text-sm text-gray-400 py-4">
-            No shadows detected yet.
+            {t("spacing.shadowEmpty")}
           </p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -167,7 +169,7 @@ export function SpacingSection({ styleguide, canEdit }: SpacingSectionProps) {
           section="spacing-shadow"
           reviews={reviews}
           canEdit={canEdit}
-          label="Review shadow system"
+          label={t("spacing.reviewShadow")}
         />
       </Card>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Bug,
@@ -15,6 +16,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { MarkdownContent } from '@/features/claw/components/MarkdownContent';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -55,6 +57,8 @@ const AI_STATUS_INDICATOR: Record<string, { icon: React.ReactNode; label: string
 // ─── Component ──────────────────────────────────────────────
 
 export function BugTriageTab() {
+  const { t } = useTranslation('settings-misc');
+  const { formatDate } = useFormat();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -110,12 +114,12 @@ export function BugTriageTab() {
             <Bug size={18} className="text-amber-700" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Bug Triage</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('bugTriage.heading')}</h2>
             <p className="text-sm text-gray-500">
-              {openCount} open {openCount === 1 ? 'bug' : 'bugs'}
+              {t('bugTriage.openBugs', { count: openCount })}
               {readyCount > 0 && (
                 <span className="ml-1 text-emerald-600">
-                  ({readyCount} with AI suggestion)
+                  {t('bugTriage.withSuggestion', { count: readyCount })}
                 </span>
               )}
             </p>
@@ -137,7 +141,7 @@ export function BugTriageTab() {
               }`}
               style={isActive ? { backgroundColor: '#1f2937' } : undefined}
             >
-              {f === 'wontfix' ? "Won't Fix" : f.charAt(0).toUpperCase() + f.slice(1)}
+              {t(`bugTriage.statusFilter.${f}`)}
               {f !== 'all' && (
                 <span className="ml-1 opacity-60">
                   ({bugs.filter((b) => b.status === f).length})
@@ -152,14 +156,16 @@ export function BugTriageTab() {
       {isLoading && (
         <div className="py-12 text-center text-sm text-gray-400">
           <Loader2 size={20} className="animate-spin mx-auto mb-2" />
-          Loading bug reports...
+          {t('bugTriage.loading')}
         </div>
       )}
 
       {/* Empty */}
       {!isLoading && filtered.length === 0 && (
         <div className="py-12 text-center text-sm text-gray-400">
-          No bug reports {statusFilter !== 'all' ? `with status "${statusFilter}"` : 'yet'}.
+          {statusFilter !== 'all'
+            ? t('bugTriage.emptyFiltered', { status: t(`bugTriage.statusFilter.${statusFilter}`) })
+            : t('bugTriage.emptyAll')}
         </div>
       )}
 
@@ -168,7 +174,8 @@ export function BugTriageTab() {
         <div className="space-y-3">
           {filtered.map((bug) => {
             const isExpanded = expandedId === bug.id;
-            const aiIndicator = AI_STATUS_INDICATOR[bug.aiStatus] ?? AI_STATUS_INDICATOR.pending;
+            const aiStatusKey = bug.aiStatus in AI_STATUS_INDICATOR ? bug.aiStatus : 'pending';
+            const aiIndicator = AI_STATUS_INDICATOR[aiStatusKey];
             const isOpen = bug.status === 'open';
 
             return (
@@ -196,18 +203,18 @@ export function BugTriageTab() {
                   {/* AI status */}
                   <span className={`flex items-center gap-1 text-[10px] font-medium flex-shrink-0 ${aiIndicator.color}`}>
                     {aiIndicator.icon}
-                    {aiIndicator.label}
+                    {t(`bugTriage.aiStatus.${aiStatusKey}`)}
                   </span>
 
                   {/* Bug status */}
                   {bug.status === 'fixed' && (
                     <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 flex-shrink-0">
-                      <CheckCircle size={12} /> Fixed
+                      <CheckCircle size={12} /> {t('bugTriage.statusFilter.fixed')}
                     </span>
                   )}
                   {bug.status === 'wontfix' && (
                     <span className="flex items-center gap-1 text-[10px] font-medium text-gray-500 flex-shrink-0">
-                      <XCircle size={12} /> Won&apos;t Fix
+                      <XCircle size={12} /> {t('bugTriage.statusFilter.wontfix')}
                     </span>
                   )}
                 </button>
@@ -217,19 +224,19 @@ export function BugTriageTab() {
                   <div className="px-4 pb-4 pt-0 space-y-4 border-t border-gray-100">
                     {/* Full description */}
                     <div className="mt-4">
-                      <p className="text-xs font-medium text-gray-500 mb-1">Description</p>
+                      <p className="text-xs font-medium text-gray-500 mb-1">{t('bugTriage.description')}</p>
                       <p className="text-sm text-gray-700 whitespace-pre-wrap">{bug.description}</p>
                     </div>
 
                     {/* Screenshot */}
                     {bug.screenshot && (
                       <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">Screenshot</p>
+                        <p className="text-xs font-medium text-gray-500 mb-1">{t('bugTriage.screenshot')}</p>
                         {/\.(png|jpe?g|webp|gif)(\?|$)/i.test(bug.screenshot) || bug.screenshot.startsWith('/uploads/') ? (
                           <a href={bug.screenshot} target="_blank" rel="noopener noreferrer">
                             <img
                               src={bug.screenshot}
-                              alt="Bug screenshot"
+                              alt={t('bugTriage.screenshotAlt')}
                               className="max-h-60 rounded-lg border border-gray-200 object-contain"
                             />
                           </a>
@@ -246,7 +253,7 @@ export function BugTriageTab() {
                       <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <Sparkles size={14} className="text-emerald-600" />
-                          <p className="text-xs font-semibold text-emerald-700">AI Fix Suggestion</p>
+                          <p className="text-xs font-semibold text-emerald-700">{t('bugTriage.aiFixSuggestion')}</p>
                         </div>
                         <div className="text-sm text-gray-700 prose prose-sm max-w-none">
                           <MarkdownContent content={bug.aiSuggestion} />
@@ -256,14 +263,14 @@ export function BugTriageTab() {
 
                     {bug.aiStatus === 'failed' && (
                       <div className="rounded-lg border border-red-200 bg-red-50/50 p-3 flex items-center justify-between">
-                        <span className="text-xs text-red-600">AI analysis failed</span>
+                        <span className="text-xs text-red-600">{t('bugTriage.aiAnalysisFailed')}</span>
                         <button
                           onClick={() => reanalyzeMutation.mutate(bug.id)}
                           disabled={reanalyzeMutation.isPending}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-white border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-40"
                         >
                           <RefreshCw size={12} className={reanalyzeMutation.isPending ? 'animate-spin' : ''} />
-                          Retry
+                          {t('bugTriage.retry')}
                         </button>
                       </div>
                     )}
@@ -271,17 +278,17 @@ export function BugTriageTab() {
                     {bug.aiStatus === 'analyzing' && (
                       <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 flex items-center gap-2">
                         <Loader2 size={14} className="animate-spin text-blue-500" />
-                        <span className="text-xs text-blue-600">AI is analyzing this bug...</span>
+                        <span className="text-xs text-blue-600">{t('bugTriage.aiAnalyzing')}</span>
                       </div>
                     )}
 
                     {/* Metadata */}
                     <div className="flex items-center gap-4 text-[11px] text-gray-400">
-                      <span>Reported by {bug.user?.name ?? bug.user?.email}</span>
-                      {bug.workspace && <span>Workspace: {bug.workspace.name}</span>}
-                      <span>{new Date(bug.createdAt).toLocaleString()}</span>
+                      <span>{t('bugTriage.reportedBy', { name: bug.user?.name ?? bug.user?.email })}</span>
+                      {bug.workspace && <span>{t('bugTriage.workspace', { name: bug.workspace.name })}</span>}
+                      <span>{formatDate(new Date(bug.createdAt), { dateStyle: 'medium', timeStyle: 'short' })}</span>
                       {bug.resolvedBy && (
-                        <span>Resolved by {bug.resolvedBy.name ?? bug.resolvedBy.email}</span>
+                        <span>{t('bugTriage.resolvedBy', { name: bug.resolvedBy.name ?? bug.resolvedBy.email })}</span>
                       )}
                     </div>
 
@@ -301,7 +308,7 @@ export function BugTriageTab() {
                           }}
                         >
                           <CheckCircle size={14} />
-                          Approve Fix
+                          {t('bugTriage.approveFix')}
                         </button>
                         <button
                           onClick={() => approveMutation.mutate({ id: bug.id, action: 'reject' })}
@@ -309,7 +316,7 @@ export function BugTriageTab() {
                           className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition-colors"
                         >
                           <XCircle size={14} />
-                          Won&apos;t Fix
+                          {t('bugTriage.statusFilter.wontfix')}
                         </button>
                         {(bug.aiStatus === 'failed' || bug.aiStatus === 'pending') && (
                           <button
@@ -318,7 +325,7 @@ export function BugTriageTab() {
                             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-100 disabled:opacity-40 transition-colors"
                           >
                             <RefreshCw size={14} className={reanalyzeMutation.isPending ? 'animate-spin' : ''} />
-                            Re-analyze
+                            {t('bugTriage.reanalyze')}
                           </button>
                         )}
                       </div>

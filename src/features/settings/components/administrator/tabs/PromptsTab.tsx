@@ -1,32 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { PromptEditor } from '../PromptEditor';
-
-// ─── Template Variables per Prompt Type ─────────────────────
-
-const SYSTEM_PROMPT_VARIABLES = [
-  { variable: '{{brandContext}}', description: 'Brand assets, personas, products context' },
-  { variable: '{{customKnowledge}}', description: 'Knowledge sources from this config' },
-  { variable: '{{assetKnowledge}}', description: 'Asset-specific context' },
-  { variable: '{{itemName}}', description: 'Name of the item (asset/persona)' },
-];
-
-const FEEDBACK_PROMPT_VARIABLES = [
-  { variable: '{{dimensionTitle}}', description: 'Title of the current dimension' },
-  { variable: '{{questionAsked}}', description: 'The question that was asked' },
-  { variable: '{{userAnswer}}', description: 'The user\'s answer' },
-  { variable: '{{itemName}}', description: 'Name of the item' },
-];
-
-const REPORT_PROMPT_VARIABLES = [
-  { variable: '{{allAnswers}}', description: 'All answers (for report)' },
-  { variable: '{{itemName}}', description: 'Name of the item' },
-  { variable: '{{itemType}}', description: 'Item type (persona/brand_asset)' },
-  { variable: '{{itemDescription}}', description: 'Description of the item' },
-  { variable: '{{brandContext}}', description: 'Brand assets, personas, products context' },
-  { variable: '{{customKnowledge}}', description: 'Knowledge sources from this config' },
-  { variable: '{{assetKnowledge}}', description: 'Asset-specific context' },
-];
 
 // ─── Props ──────────────────────────────────────────────────
 
@@ -61,26 +36,51 @@ export function PromptsTab({
   onLoadDefaultReport,
   errors = {},
 }: PromptsTabProps) {
+  const { t } = useTranslation('settings-admin');
+
+  const systemPromptVariables = [
+    { variable: '{{brandContext}}', description: t('promptVars.brandContext') },
+    { variable: '{{customKnowledge}}', description: t('promptVars.customKnowledge') },
+    { variable: '{{assetKnowledge}}', description: t('promptVars.assetKnowledge') },
+    { variable: '{{itemName}}', description: t('promptVars.itemNameFull') },
+  ];
+
+  const feedbackPromptVariables = [
+    { variable: '{{dimensionTitle}}', description: t('promptVars.dimensionTitle') },
+    { variable: '{{questionAsked}}', description: t('promptVars.questionAsked') },
+    { variable: '{{userAnswer}}', description: t('promptVars.userAnswer') },
+    { variable: '{{itemName}}', description: t('promptVars.itemName') },
+  ];
+
+  const reportPromptVariables = [
+    { variable: '{{allAnswers}}', description: t('promptVars.allAnswers') },
+    { variable: '{{itemName}}', description: t('promptVars.itemName') },
+    { variable: '{{itemType}}', description: t('promptVars.itemType') },
+    { variable: '{{itemDescription}}', description: t('promptVars.itemDescription') },
+    { variable: '{{brandContext}}', description: t('promptVars.brandContext') },
+    { variable: '{{customKnowledge}}', description: t('promptVars.customKnowledge') },
+    { variable: '{{assetKnowledge}}', description: t('promptVars.assetKnowledge') },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-800">Prompts</h3>
+        <h3 className="text-sm font-semibold text-gray-800">{t('prompts.title')}</h3>
         <p className="text-xs text-gray-500 mt-0.5">
-          Configure the AI instructions for each phase of the exploration conversation.
-          Click a variable chip to insert it at the cursor position.
+          {t('prompts.subtitle')}
         </p>
       </div>
 
       {/* System Prompt */}
       <PromptEditor
-        label="System Prompt"
-        description="Defines the AI persona and instructions for the entire exploration conversation"
+        label={t('prompts.systemLabel')}
+        description={t('prompts.systemDescription')}
         value={systemPrompt}
         onChange={onSystemPromptChange}
-        variables={SYSTEM_PROMPT_VARIABLES}
+        variables={systemPromptVariables}
         rows={8}
-        placeholder="You are a senior brand strategist..."
+        placeholder={t('prompts.systemPlaceholder')}
         required
         hasError={errors.systemPrompt}
         onLoadDefault={onLoadDefaultSystem}
@@ -88,13 +88,13 @@ export function PromptsTab({
 
       {/* Feedback Prompt */}
       <PromptEditor
-        label="Feedback Prompt"
-        description="Template for the AI response after each user answer"
+        label={t('prompts.feedbackLabel')}
+        description={t('prompts.feedbackDescription')}
         value={feedbackPrompt}
         onChange={onFeedbackPromptChange}
-        variables={FEEDBACK_PROMPT_VARIABLES}
+        variables={feedbackPromptVariables}
         rows={6}
-        placeholder="Provide brief, constructive feedback..."
+        placeholder={t('prompts.feedbackPlaceholder')}
         required
         hasError={errors.feedbackPrompt}
         onLoadDefault={onLoadDefaultFeedback}
@@ -102,13 +102,13 @@ export function PromptsTab({
 
       {/* Report Prompt */}
       <PromptEditor
-        label="Report Prompt"
-        description="Template for the final report generated after all dimensions"
+        label={t('prompts.reportLabel')}
+        description={t('prompts.reportDescription')}
         value={reportPrompt}
         onChange={onReportPromptChange}
-        variables={REPORT_PROMPT_VARIABLES}
+        variables={reportPromptVariables}
         rows={10}
-        placeholder="Generate an analysis report..."
+        placeholder={t('prompts.reportPlaceholder')}
         required
         hasError={errors.reportPrompt}
         onLoadDefault={onLoadDefaultReport}

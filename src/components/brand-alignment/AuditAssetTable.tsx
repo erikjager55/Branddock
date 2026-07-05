@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronRight } from 'lucide-react';
 import type { AssetAuditScore } from '@/types/brand-alignment';
 
@@ -22,14 +23,15 @@ function completenessColor(pct: number): string {
 }
 
 export function AuditAssetTable({ assetScores, onNavigateToAsset }: Props) {
+  const { t } = useTranslation('brand-alignment');
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-100">
         <h3 className="text-sm font-semibold text-gray-900">
-          Per-Asset Assessment
+          {t('auditTable.title')}
         </h3>
         <p className="text-xs text-gray-500 mt-0.5">
-          Sorted by weakest first — address top items for maximum impact.
+          {t('auditTable.subtitle')}
         </p>
       </div>
 
@@ -50,7 +52,7 @@ export function AuditAssetTable({ assetScores, onNavigateToAsset }: Props) {
               <div className="flex items-center gap-3 flex-shrink-0">
                 {/* Completeness pill */}
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-gray-500">Complete</span>
+                  <span className="text-xs text-gray-500">{t('auditTable.complete')}</span>
                   <span
                     className="text-xs font-semibold px-1.5 py-0.5 rounded"
                     style={{
@@ -64,7 +66,7 @@ export function AuditAssetTable({ assetScores, onNavigateToAsset }: Props) {
 
                 {/* Quality pill */}
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-gray-500">Quality</span>
+                  <span className="text-xs text-gray-500">{t('auditTable.quality')}</span>
                   <span
                     className="text-xs font-semibold px-1.5 py-0.5 rounded"
                     style={{

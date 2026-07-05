@@ -1,17 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Badge, ProgressBar } from '@/components/shared';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { Interview, InterviewQuestion, QuestionType } from '../../types/interview.types';
-
-const TYPE_LABELS: Record<QuestionType, string> = {
-  OPEN: 'Open',
-  MULTIPLE_CHOICE: 'Multiple Choice',
-  MULTI_SELECT: 'Multi Select',
-  RATING_SCALE: 'Rating Scale',
-  RANKING: 'Ranking',
-};
+import type { Interview, InterviewQuestion } from '../../types/interview.types';
 
 interface ConductStepProps {
   interview: Interview;
@@ -30,6 +23,7 @@ export function ConductStep({
   isUpdating,
   isCompleting,
 }: ConductStepProps) {
+  const { t } = useTranslation('interviews');
   const questions = interview.questions ?? [];
   const [currentIdx, setCurrentIdx] = useState(0);
   const [notes, setNotes] = useState(interview.generalNotes ?? '');
@@ -84,7 +78,7 @@ export function ConductStep({
     return (
       <div className="text-center py-12">
         <p className="text-gray-500 text-sm">
-          No questions to conduct. Go back to the Questions step to add questions first.
+          {t('conduct.empty')}
         </p>
       </div>
     );
@@ -95,9 +89,9 @@ export function ConductStep({
       {/* Progress header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold text-gray-900">Conduct Interview</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('conduct.title')}</h2>
           <span className="text-sm text-gray-500">
-            {answeredCount} of {questions.length} answered ({progress}%)
+            {t('conduct.answeredProgress', { answered: answeredCount, total: questions.length, progress })}
           </span>
         </div>
         <ProgressBar value={progress} color="emerald" size="sm" />
@@ -112,10 +106,10 @@ export function ConductStep({
           onClick={handlePrev}
           disabled={currentIdx === 0}
         >
-          Previous
+          {t('conduct.previous')}
         </Button>
         <span className="text-sm font-medium text-gray-600">
-          Question {currentIdx + 1} of {questions.length}
+          {t('conduct.questionCounter', { current: currentIdx + 1, total: questions.length })}
         </span>
         <Button
           variant="secondary"
@@ -123,7 +117,7 @@ export function ConductStep({
           onClick={handleNext}
           disabled={currentIdx === questions.length - 1}
         >
-          Next
+          {t('conduct.next')}
           <ChevronRight className="w-4 h-4 ml-1" />
         </Button>
       </div>
@@ -133,7 +127,7 @@ export function ConductStep({
         <div className="p-6 bg-white border border-gray-200 rounded-lg mb-6">
           <div className="flex items-center gap-2 mb-3">
             <Badge variant="info" size="sm">
-              {TYPE_LABELS[currentQuestion.questionType]}
+              {t(`typeLabel.${currentQuestion.questionType}`)}
             </Badge>
             {currentQuestion.linkedAsset && (
               <Badge variant="default" size="sm">
@@ -141,7 +135,7 @@ export function ConductStep({
               </Badge>
             )}
             {currentQuestion.isAnswered && (
-              <Badge variant="success" size="sm">Answered</Badge>
+              <Badge variant="success" size="sm">{t('badge.answered')}</Badge>
             )}
           </div>
           <p className="text-gray-900 font-medium mb-4">{currentQuestion.questionText}</p>
@@ -160,7 +154,7 @@ export function ConductStep({
               onClick={() => handleSaveAnswer(currentQuestion)}
               isLoading={isUpdating}
             >
-              Save Answer
+              {t('conduct.saveAnswer')}
             </Button>
           </div>
         </div>
@@ -169,12 +163,12 @@ export function ConductStep({
       {/* General notes */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          General Notes
+          {t('conduct.generalNotesLabel')}
         </label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Add general notes about the interview..."
+          placeholder={t('conduct.generalNotesPlaceholder')}
           rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
         />
@@ -188,7 +182,7 @@ export function ConductStep({
           onClick={() => onSaveNotes({ generalNotes: notes })}
           isLoading={isUpdating}
         >
-          Save Progress
+          {t('conduct.saveProgress')}
         </Button>
         <Button
           variant="cta"
@@ -197,7 +191,7 @@ export function ConductStep({
           isLoading={isCompleting}
           disabled={answeredCount < questions.length}
         >
-          Complete Interview
+          {t('conduct.completeInterview')}
         </Button>
       </div>
     </div>
@@ -215,6 +209,7 @@ function AnswerInput({
   localAnswer: { answerText?: string; answerOptions?: string[]; answerRating?: number };
   onUpdate: (updates: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation('interviews');
   const textValue = localAnswer.answerText ?? question.answerText ?? '';
   const selectedOptions = localAnswer.answerOptions ?? question.answerOptions ?? [];
   const ratingValue = localAnswer.answerRating ?? question.answerRating ?? 0;
@@ -225,7 +220,7 @@ function AnswerInput({
         <textarea
           value={textValue}
           onChange={(e) => onUpdate({ answerText: e.target.value })}
-          placeholder="Enter response..."
+          placeholder={t('conduct.answerPlaceholder')}
           rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
         />
@@ -310,7 +305,7 @@ function AnswerInput({
     case 'RANKING':
       return (
         <div className="space-y-2">
-          <p className="text-xs text-gray-500 mb-2">Click options in order of preference:</p>
+          <p className="text-xs text-gray-500 mb-2">{t('conduct.rankingHint')}</p>
           {question.options.map((opt) => {
             const rank = selectedOptions.indexOf(opt);
             const isRanked = rank !== -1;

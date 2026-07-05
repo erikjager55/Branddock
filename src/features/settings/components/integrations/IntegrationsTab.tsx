@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Plug,
   CheckCircle2,
@@ -136,6 +137,7 @@ function getTokenHealth(channel: PublishChannelSummary): 'valid' | 'expiring' | 
 // ─── Component ─────────────────────────────────────────────
 
 export function IntegrationsTab() {
+  const { t } = useTranslation('settings-misc');
   const { data: channels, isLoading } = usePublishChannels();
   const createChannel = useCreateChannel();
   const deleteChannel = useDeleteChannel();
@@ -228,7 +230,7 @@ export function IntegrationsTab() {
   };
 
   const handleDisconnect = async (channelId: string) => {
-    if (!window.confirm('Disconnect this platform? Published content will remain online.')) return;
+    if (!window.confirm(t('integrations.disconnectConfirm'))) return;
     deleteChannel.mutate(channelId);
   };
 
@@ -247,14 +249,14 @@ export function IntegrationsTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Publishing Integrations</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{t('integrations.heading')}</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Connect your publishing platforms to schedule and publish content directly from Branddock.
+          {t('integrations.description')}
         </p>
         <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-md bg-blue-50 border border-blue-100">
           <Building2 className="h-4 w-4 text-blue-600 flex-shrink-0" />
           <p className="text-xs text-blue-700">
-            These integrations are workspace-specific. Switch workspace to configure a different client.
+            {t('integrations.workspaceNote')}
           </p>
         </div>
       </div>
@@ -280,24 +282,24 @@ export function IntegrationsTab() {
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900">{platform.label}</h3>
                     <p className="text-xs text-gray-500">
-                      {platform.oauthConnect ? 'Direct connection' : platform.provider}
+                      {platform.oauthConnect ? t('integrations.directConnection') : platform.provider}
                     </p>
                   </div>
                 </div>
                 {hasChannels ? (
                   <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    {platformChannels.length} account{platformChannels.length > 1 ? 's' : ''}
+                    {t('integrations.accountCount', { count: platformChannels.length })}
                   </span>
                 ) : (
                   <span className="flex items-center gap-1 text-xs text-gray-400">
                     <XCircle className="h-3.5 w-3.5" />
-                    Not connected
+                    {t('integrations.notConnected')}
                   </span>
                 )}
               </div>
 
-              <p className="text-xs text-gray-500 mb-3">{platform.description}</p>
+              <p className="text-xs text-gray-500 mb-3">{t(`integrations.platforms.${platform.id}.description`)}</p>
 
               {/* Connected accounts list */}
               {platformChannels.length > 0 && (
@@ -311,10 +313,10 @@ export function IntegrationsTab() {
                         <div className="flex items-center gap-2 min-w-0">
                           {/* Token health indicator for OAuth channels */}
                           {isOAuth && health === 'expiring' && (
-                            <span title="Token expiring soon"><AlertCircle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" /></span>
+                            <span title={t('integrations.tokenExpiringSoon')}><AlertCircle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" /></span>
                           )}
                           {isOAuth && health === 'expired' && (
-                            <span title="Token expired"><AlertCircle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" /></span>
+                            <span title={t('integrations.tokenExpired')}><AlertCircle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" /></span>
                           )}
                           <div className="min-w-0">
                             <p className="text-xs font-medium text-gray-800 truncate">
@@ -331,7 +333,7 @@ export function IntegrationsTab() {
                               type="button"
                               onClick={() => handleReconnect(platform)}
                               className="text-xs text-amber-600 hover:text-amber-700 flex items-center gap-1 mr-1"
-                              title="Reconnect"
+                              title={t('integrations.reconnect')}
                             >
                               <RefreshCw className="h-3 w-3" />
                             </button>
@@ -358,7 +360,7 @@ export function IntegrationsTab() {
                   icon={Plus}
                   className="ml-auto"
                 >
-                  {hasChannels ? 'Add account' : 'Connect'}
+                  {hasChannels ? t('integrations.addAccount') : t('integrations.connect')}
                 </Button>
                 {platform.docsUrl && (
                   <a href={platform.docsUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:text-gray-600">
@@ -375,35 +377,37 @@ export function IntegrationsTab() {
       <Modal
         isOpen={!!connectingPlatform}
         onClose={() => setConnectingPlatform(null)}
-        title={`Connect ${connectingPlatform?.label ?? ''}`}
+        title={t('integrations.connectModalTitle', { platform: connectingPlatform?.label ?? '' })}
         size="md"
       >
         {connectingPlatform && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">{connectingPlatform.description}</p>
+            <p className="text-sm text-gray-600">{t(`integrations.platforms.${connectingPlatform.id}.description`)}</p>
 
             <Input
-              label="Account name"
+              label={t('integrations.accountNameLabel')}
               value={formAccountName}
               onChange={(e) => setFormAccountName(e.target.value)}
-              placeholder="e.g. Company Newsletter, Marketing Blog..."
+              placeholder={t('integrations.accountNamePlaceholder')}
             />
 
             <Input
-              label="Label (optional)"
+              label={t('integrations.labelOptionalLabel')}
               value={formLabel}
               onChange={(e) => setFormLabel(e.target.value)}
-              placeholder={`e.g. Primary ${connectingPlatform.label} account`}
+              placeholder={t('integrations.labelPlaceholder', { platform: connectingPlatform.label })}
             />
 
             {connectingPlatform.credentialFields.map((field) => (
               <div key={field.key}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t(`integrations.platforms.${connectingPlatform.id}.fields.${field.key}.label`)}
+                </label>
                 <input
                   type={field.type}
                   value={formValues[field.key] ?? ''}
                   onChange={(e) => setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                  placeholder={field.placeholder}
+                  placeholder={t(`integrations.platforms.${connectingPlatform.id}.fields.${field.key}.placeholder`)}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
@@ -411,18 +415,18 @@ export function IntegrationsTab() {
 
             {createChannel.isError && (
               <p className="text-sm text-red-600">
-                {createChannel.error instanceof Error ? createChannel.error.message : 'Connection failed'}
+                {createChannel.error instanceof Error ? createChannel.error.message : t('integrations.connectionFailed')}
               </p>
             )}
 
             <div className="flex justify-end gap-3 pt-2">
-              <Button variant="ghost" onClick={() => setConnectingPlatform(null)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setConnectingPlatform(null)}>{t('integrations.cancel')}</Button>
               <Button
                 onClick={handleSave}
                 isLoading={createChannel.isPending}
                 disabled={createChannel.isPending}
               >
-                Connect
+                {t('integrations.connect')}
               </Button>
             </div>
           </div>

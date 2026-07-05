@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Button, Input, Select } from '@/components/shared';
 import { useCreateBrandVoice } from '@/features/media-library/hooks';
 import type { CreateBrandVoiceBody } from '@/features/media-library/types/media.types';
@@ -14,24 +15,9 @@ interface CreateBrandVoiceModalProps {
 
 // ─── Constants ──────────────────────────────────────────────
 
-const GENDER_OPTIONS = [
-  { value: 'Male', label: 'Male' },
-  { value: 'Female', label: 'Female' },
-  { value: 'Non-binary', label: 'Non-binary' },
-  { value: 'Other', label: 'Other' },
-];
-
-const AGE_OPTIONS = [
-  { value: 'Young', label: 'Young' },
-  { value: 'Middle-aged', label: 'Middle-aged' },
-  { value: 'Mature', label: 'Mature' },
-];
-
-const PACE_OPTIONS = [
-  { value: 'Slow', label: 'Slow' },
-  { value: 'Medium', label: 'Medium' },
-  { value: 'Fast', label: 'Fast' },
-];
+const GENDER_VALUES = ['Male', 'Female', 'Non-binary', 'Other'] as const;
+const AGE_VALUES = ['Young', 'Middle-aged', 'Mature'] as const;
+const PACE_VALUES = ['Slow', 'Medium', 'Fast'] as const;
 
 // ─── Initial State ──────────────────────────────────────────
 
@@ -50,9 +36,14 @@ const INITIAL_FORM: CreateBrandVoiceBody = {
 
 /** Modal form for creating a new brand voice profile. */
 export function CreateBrandVoiceModal({ isOpen, onClose }: CreateBrandVoiceModalProps) {
+  const { t } = useTranslation('media-library');
   const [form, setForm] = useState<CreateBrandVoiceBody>({ ...INITIAL_FORM });
   const [nameError, setNameError] = useState<string | null>(null);
   const createBrandVoice = useCreateBrandVoice();
+
+  const genderOptions = GENDER_VALUES.map((v) => ({ value: v, label: t(`brandVoice.gender.${v}`) }));
+  const ageOptions = AGE_VALUES.map((v) => ({ value: v, label: t(`brandVoice.age.${v}`) }));
+  const paceOptions = PACE_VALUES.map((v) => ({ value: v, label: t(`brandVoice.pace.${v}`) }));
 
   const resetForm = useCallback(() => {
     setForm({ ...INITIAL_FORM });
@@ -71,7 +62,7 @@ export function CreateBrandVoiceModal({ isOpen, onClose }: CreateBrandVoiceModal
       // Validate name
       const trimmedName = form.name.trim();
       if (!trimmedName) {
-        setNameError('Voice name is required');
+        setNameError(t('brandVoice.createModal.nameRequired'));
         return;
       }
       setNameError(null);
@@ -94,28 +85,28 @@ export function CreateBrandVoiceModal({ isOpen, onClose }: CreateBrandVoiceModal
         },
       });
     },
-    [form, createBrandVoice, handleClose],
+    [form, createBrandVoice, handleClose, t],
   );
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Create Brand Voice"
-      subtitle="Define your brand's audio identity and voice characteristics."
+      title={t('brandVoice.create')}
+      subtitle={t('brandVoice.createModal.subtitle')}
       size="lg"
       data-testid="create-brand-voice-modal"
       footer={
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={handleClose} disabled={createBrandVoice.isPending}>
-            Cancel
+            {t('actions.cancel')}
           </Button>
           <Button
             onClick={handleSubmit}
             isLoading={createBrandVoice.isPending}
             disabled={!form.name.trim()}
           >
-            Create Voice
+            {t('brandVoice.createModal.createVoice')}
           </Button>
         </div>
       }
@@ -123,13 +114,13 @@ export function CreateBrandVoiceModal({ isOpen, onClose }: CreateBrandVoiceModal
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Name — required */}
         <Input
-          label="Name"
+          label={t('fields.name')}
           value={form.name}
           onChange={(e) => {
             setForm((prev) => ({ ...prev, name: e.target.value }));
             if (nameError) setNameError(null);
           }}
-          placeholder="e.g., Brand Narrator"
+          placeholder={t('brandVoice.createModal.namePlaceholder')}
           error={nameError ?? undefined}
           required
         />
@@ -137,52 +128,52 @@ export function CreateBrandVoiceModal({ isOpen, onClose }: CreateBrandVoiceModal
         {/* Voice characteristics row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Select
-            label="Gender"
+            label={t('brandVoice.createModal.gender')}
             value={form.voiceGender ?? null}
             onChange={(value) => setForm((prev) => ({ ...prev, voiceGender: value ?? undefined }))}
-            options={GENDER_OPTIONS}
-            placeholder="Select..."
+            options={genderOptions}
+            placeholder={t('fields.select')}
           />
 
           <Select
-            label="Age"
+            label={t('brandVoice.createModal.age')}
             value={form.voiceAge ?? null}
             onChange={(value) => setForm((prev) => ({ ...prev, voiceAge: value ?? undefined }))}
-            options={AGE_OPTIONS}
-            placeholder="Select..."
+            options={ageOptions}
+            placeholder={t('fields.select')}
           />
 
           <Select
-            label="Speaking Pace"
+            label={t('brandVoice.createModal.speakingPace')}
             value={form.speakingPace ?? null}
             onChange={(value) => setForm((prev) => ({ ...prev, speakingPace: value ?? undefined }))}
-            options={PACE_OPTIONS}
-            placeholder="Select..."
+            options={paceOptions}
+            placeholder={t('fields.select')}
           />
         </div>
 
         {/* Tone */}
         <Input
-          label="Tone"
+          label={t('brandVoice.createModal.tone')}
           value={form.voiceTone ?? ''}
           onChange={(e) => setForm((prev) => ({ ...prev, voiceTone: e.target.value || undefined }))}
-          placeholder='e.g., "Warm and authoritative"'
-          helperText="Describe the overall vocal tone and feeling"
+          placeholder={t('brandVoice.createModal.tonePlaceholder')}
+          helperText={t('brandVoice.createModal.toneHelp')}
         />
 
         {/* Accent */}
         <Input
-          label="Accent"
+          label={t('brandVoice.createModal.accent')}
           value={form.voiceAccent ?? ''}
           onChange={(e) => setForm((prev) => ({ ...prev, voiceAccent: e.target.value || undefined }))}
-          placeholder='e.g., "Neutral American"'
-          helperText="Specify the preferred accent or dialect"
+          placeholder={t('brandVoice.createModal.accentPlaceholder')}
+          helperText={t('brandVoice.createModal.accentHelp')}
         />
 
         {/* Voice Prompt — textarea */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Voice Prompt
+            {t('brandVoice.createModal.voicePrompt')}
           </label>
           <textarea
             value={form.voicePrompt ?? ''}
@@ -190,11 +181,11 @@ export function CreateBrandVoiceModal({ isOpen, onClose }: CreateBrandVoiceModal
               setForm((prev) => ({ ...prev, voicePrompt: e.target.value || undefined }))
             }
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow min-h-[80px] resize-y"
-            placeholder="Describe the voice characteristics in detail for AI generation. Include personality traits, speaking style, emotional register, and any specific instructions..."
+            placeholder={t('brandVoice.createModal.voicePromptPlaceholder')}
             rows={3}
           />
           <p className="mt-1.5 text-xs text-gray-500">
-            Detailed description used to guide AI voice generation
+            {t('brandVoice.createModal.voicePromptHelp')}
           </p>
         </div>
 
@@ -206,13 +197,13 @@ export function CreateBrandVoiceModal({ isOpen, onClose }: CreateBrandVoiceModal
             onChange={(e) => setForm((prev) => ({ ...prev, isDefault: e.target.checked }))}
             className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
           />
-          <span className="text-sm text-gray-700">Set as default brand voice</span>
+          <span className="text-sm text-gray-700">{t('brandVoice.createModal.setDefault')}</span>
         </label>
 
         {/* Mutation error */}
         {createBrandVoice.isError && (
           <p className="text-xs text-red-500" role="alert">
-            Failed to create brand voice. Please try again.
+            {t('brandVoice.createModal.error')}
           </p>
         )}
       </form>

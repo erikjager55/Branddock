@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { AlertTriangle, RefreshCw, Telescope } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import { markdownComponents } from '@/components/shared/markdownComponents';
 import {
@@ -51,6 +52,7 @@ type Step =
  * modal de run-staat netjes weggooit.
  */
 export function DeepResearchTab({ onClose }: DeepResearchTabProps) {
+  const { t } = useTranslation('knowledge-library');
   const research = useDeepResearch();
   const createResource = useCreateResource();
 
@@ -154,7 +156,7 @@ export function DeepResearchTab({ onClose }: DeepResearchTabProps) {
       })
       .catch((err) => {
         if (mountedRef.current) {
-          setSaveError(err instanceof Error ? err.message : 'Failed to save');
+          setSaveError(err instanceof Error ? err.message : t('deepResearch.saveFailed'));
         }
       });
   };
@@ -265,14 +267,15 @@ interface TopicStepProps {
 }
 
 function TopicStep({ topic, onTopicChange, onStart, isLoading, error }: TopicStepProps) {
+  const { t } = useTranslation('knowledge-library');
   return (
     <div className="flex flex-col items-center py-6 px-2">
       <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
         <Telescope className="h-6 w-6 text-green-600" />
       </div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-1">Deep Research</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-1">{t('deepResearch.title')}</h3>
       <p className="text-sm text-gray-500 mb-6 text-center">
-        Describe what you want researched. We&apos;ll ask a few questions to focus the work.
+        {t('deepResearch.subtitle')}
       </p>
 
       <div className="w-full space-y-3">
@@ -282,7 +285,7 @@ function TopicStep({ topic, onTopicChange, onStart, isLoading, error }: TopicSte
           data-testid="deep-research-topic-input"
           rows={4}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-          placeholder="e.g. How are mid-market SaaS brands using AI in their content workflows in 2026?"
+          placeholder={t('deepResearch.topicPlaceholder')}
         />
         {error && (
           <p data-testid="deep-research-error" className="text-xs text-red-500">
@@ -297,7 +300,7 @@ function TopicStep({ topic, onTopicChange, onStart, isLoading, error }: TopicSte
           className="w-full"
           data-testid="start-research-button"
         >
-          Start research
+          {t('deepResearch.startButton')}
         </Button>
       </div>
     </div>
@@ -314,11 +317,12 @@ interface ClarifyStepProps {
 }
 
 function ClarifyStep({ questions, answers, onAnswer, onRun }: ClarifyStepProps) {
+  const { t } = useTranslation('knowledge-library');
   const allAnswered = questions.every((q) => (answers[q.id] ?? '').trim().length > 0);
   return (
     <div className="space-y-4 py-2">
       <p className="text-sm text-gray-500">
-        Answer these to focus the research, then run it.
+        {t('deepResearch.clarifyIntro')}
       </p>
       {questions.map((q) => (
         <div key={q.id}>
@@ -331,7 +335,7 @@ function ClarifyStep({ questions, answers, onAnswer, onRun }: ClarifyStepProps) 
             onChange={(e) => onAnswer(q.id, e.target.value)}
             data-testid={`clarify-input-${q.id}`}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-            placeholder={q.placeholder ?? 'Your answer…'}
+            placeholder={q.placeholder ?? t('deepResearch.answerPlaceholder')}
           />
         </div>
       ))}
@@ -342,7 +346,7 @@ function ClarifyStep({ questions, answers, onAnswer, onRun }: ClarifyStepProps) 
         className="w-full"
         data-testid="run-research-button"
       >
-        Run research
+        {t('deepResearch.runButton')}
       </Button>
     </div>
   );
@@ -357,15 +361,16 @@ interface RunningStepProps {
 }
 
 function RunningStep({ progress, warnings, onCancel }: RunningStepProps) {
+  const { t } = useTranslation('knowledge-library');
   const activeIndex = progress.findIndex((p) => !p.done);
   return (
     <div className="space-y-4 py-2" data-testid="research-progress">
-      <p className="text-sm text-gray-500">Researching — this can take a few minutes.</p>
+      <p className="text-sm text-gray-500">{t('deepResearch.running')}</p>
       <ul className="space-y-2">
         {progress.length === 0 && (
           <li className="flex items-center gap-2 text-sm text-gray-600">
             <RefreshCw className="w-4 h-4 animate-spin text-green-600" />
-            Starting…
+            {t('deepResearch.starting')}
           </li>
         )}
         {progress.map((entry, index) => (
@@ -385,7 +390,7 @@ function RunningStep({ progress, warnings, onCancel }: RunningStepProps) {
       </ul>
       {warnings.length > 0 && <WarningList warnings={warnings} />}
       <Button variant="secondary" onClick={onCancel} className="w-full" data-testid="cancel-research-button">
-        Cancel
+        {t('deepResearch.cancel')}
       </Button>
     </div>
   );
@@ -418,6 +423,7 @@ interface ReportStepProps {
 }
 
 function ReportStep({ report, draft, onDraftChange, onSave, isSaving, saveError }: ReportStepProps) {
+  const { t } = useTranslation('knowledge-library');
   return (
     <div className="space-y-4 py-2">
       <article
@@ -442,7 +448,7 @@ function ReportStep({ report, draft, onDraftChange, onSave, isSaving, saveError 
         className="w-full"
         data-testid="save-report-button"
       >
-        Save to library
+        {t('deepResearch.saveToLibrary')}
       </Button>
     </div>
   );
@@ -455,21 +461,22 @@ function ReportFields({
   draft: ReportDraft;
   onChange: (draft: ReportDraft) => void;
 }) {
+  const { t } = useTranslation('knowledge-library');
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('deepResearch.reportTitleLabel')}</label>
         <input
           type="text"
           value={draft.title}
           onChange={(e) => onChange({ ...draft, title: e.target.value })}
           data-testid="report-title-input"
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-          placeholder="Report title"
+          placeholder={t('deepResearch.reportTitlePlaceholder')}
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('deepResearch.categoryLabel')}</label>
         <select
           value={draft.category}
           onChange={(e) => onChange({ ...draft, category: e.target.value })}
@@ -478,31 +485,31 @@ function ReportFields({
         >
           {RESOURCE_CATEGORIES.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {t(`claw-content-registry:categories.${c}`, { defaultValue: c })}
             </option>
           ))}
         </select>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Tags (comma-separated)
+          {t('deepResearch.tagsLabel')}
         </label>
         <input
           type="text"
           value={draft.tags}
           onChange={(e) => onChange({ ...draft, tags: e.target.value })}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-          placeholder="e.g. AI, SaaS, Content"
+          placeholder={t('deepResearch.tagsPlaceholder')}
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Summary</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('deepResearch.summaryLabel')}</label>
         <textarea
           value={draft.summary}
           onChange={(e) => onChange({ ...draft, summary: e.target.value })}
           rows={3}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-          placeholder="Short summary…"
+          placeholder={t('deepResearch.summaryPlaceholder')}
         />
       </div>
     </div>

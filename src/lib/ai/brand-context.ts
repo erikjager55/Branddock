@@ -34,31 +34,36 @@ interface CacheEntry {
   expiresAt: number;
 }
 
+// Cache-key = `${workspaceId}:${localeProfileId ?? 'default'}` — één entry per
+// (workspace, locale-profiel). Het default-profiel-pad blijft byte-identiek.
 const cache = new Map<string, CacheEntry>();
 
-function getCached(workspaceId: string): BrandContextBlock | null {
-  const entry = cache.get(workspaceId);
+function getCached(cacheKey: string): BrandContextBlock | null {
+  const entry = cache.get(cacheKey);
   if (!entry) return null;
   if (Date.now() > entry.expiresAt) {
-    cache.delete(workspaceId);
+    cache.delete(cacheKey);
     return null;
   }
   return entry.data;
 }
 
-function setCache(workspaceId: string, data: BrandContextBlock): void {
-  cache.set(workspaceId, {
+function setCache(cacheKey: string, data: BrandContextBlock): void {
+  cache.set(cacheKey, {
     data,
     expiresAt: Date.now() + CACHE_TTL_MS,
   });
 }
 
 /**
- * Invalidate cached brand context for a workspace.
- * Call this when brand data is updated.
+ * Invalidate cached brand context for a workspace — ALLE locale-profiel-varianten
+ * (`${workspaceId}:*`). Call this when brand data is updated.
  */
 export function invalidateBrandContext(workspaceId: string): void {
-  cache.delete(workspaceId);
+  const prefix = `${workspaceId}:`;
+  for (const key of cache.keys()) {
+    if (key.startsWith(prefix)) cache.delete(key);
+  }
 }
 
 // ─── Framework Data Formatters ─────────────────────────────
@@ -846,9 +851,14 @@ function formatBrandHouseValues(data: unknown): string | null {
  *
  * Cached for 5 minutes per workspace.
  */
-export async function getBrandContext(workspaceId: string): Promise<BrandContextBlock> {
-  // Check cache first
-  const cached = getCached(workspaceId);
+export async function getBrandContext(
+  workspaceId: string,
+  localeProfileId?: string,
+): Promise<BrandContextBlock> {
+  // Cache-key = workspace + locale-profiel; weggelaten profileId → 'default'
+  // (het isDefault-profiel), zodat het single-locale-pad byte-identiek blijft.
+  const cacheKey = `${workspaceId}:${localeProfileId ?? 'default'}`;
+  const cached = getCached(cacheKey);
   if (cached) return cached;
 
   // Fetch all sources in parallel
@@ -994,15 +1004,22 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
     if (asset.slug) assetBySlug.set(asset.slug, asset);
   }
 
+  // Content-locale foundation: alleen bij een EXPLICIET gekozen profiel (Fase 2
+  // target-picker) wint de profiel-locale. Het default-pad (localeProfileId
+  // weggelaten) blijft ongewijzigd — voiceguide-override → Workspace.contentLanguage
+  // → 'en' — en reproduceert dus byte-identiek.
+  const localeProfile = localeProfileId
+    ? await prisma.brandLocaleProfile.findUnique({ where: { id: localeProfileId }, select: { locale: true } })
+    : null;
+
   // Build context block.
-  // Language-precedence (F4 fix, audit 2026-05-13): BrandVoiceguide.contentLocale
-  // is meer specifiek (BCP-47, bv. nl-NL) en wint over Workspace.contentLanguage
-  // (free-string default 'en'). Wanneer voiceguide locale gezet is, derive de
-  // ISO 639-1 prefix als contentLanguage zodat prompt-builders correct schrijven.
+  // Language-precedence: expliciet profiel wint; anders de bestaande fallback
+  // (BrandVoiceguide.contentLocale ISO-prefix → Workspace.contentLanguage → 'en').
+  const profileLocalePrefix = localeProfile?.locale?.split('-')[0]?.toLowerCase();
   const voiceguideLocalePrefix = voiceguide?.contentLocale?.split('-')[0]?.toLowerCase();
   const ctx: BrandContextBlock = {
     brandName: workspace?.name,
-    contentLanguage: voiceguideLocalePrefix ?? workspace?.contentLanguage ?? 'en',
+    contentLanguage: profileLocalePrefix ?? voiceguideLocalePrefix ?? workspace?.contentLanguage ?? 'en',
   };
 
   // ─── Map brand assets by slug to context fields ──────────
@@ -1511,6 +1528,6 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
   }
 
   // Cache and return
-  setCache(workspaceId, ctx);
+  setCache(cacheKey, ctx);
   return ctx;
 }

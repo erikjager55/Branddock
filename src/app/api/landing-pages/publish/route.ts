@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { publishLandingPage, isValidSlug } from '@/lib/landing-pages/publish-page';
+import { resolveLocaleForBrand } from '@/lib/brand-fidelity/heuristics/locale-resolver';
 import { longFormGeoVariantSchema } from '@/lib/landing-pages/page-type-schemas';
 import { buildGeoOptimizationAnalysis } from '@/lib/landing-pages/geo-analysis';
 import { invalidateCache } from '@/lib/api/cache';
@@ -83,12 +84,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Content-locale foundation: pages zijn locale-adresseerbaar; default = de
+    // huidige single-locale-resolutie voor deze workspace (gedrag ongewijzigd).
+    const locale = await resolveLocaleForBrand(workspaceId);
     const result = await publishLandingPage(
       prisma as unknown as Parameters<typeof publishLandingPage>[0],
       {
         workspaceId,
         deliverableId: deliverable.id,
         slug: body.slug,
+        locale,
         puckData: puckData as never,
       },
     );

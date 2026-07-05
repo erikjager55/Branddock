@@ -1,11 +1,11 @@
 import { Rocket, BookOpen, MessageCircle, Mail } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { QuickActionCard } from './QuickActionCard';
 
 const QUICK_ACTIONS = [
   {
+    id: 'gettingStarted',
     icon: Rocket,
-    title: 'Getting Started',
-    description: 'Learn the basics and set up your workspace',
     colorClasses: {
       bg: 'bg-blue-50',
       border: 'border-blue-200',
@@ -14,9 +14,8 @@ const QUICK_ACTIONS = [
     },
   },
   {
+    id: 'documentation',
     icon: BookOpen,
-    title: 'Documentation',
-    description: 'Browse our comprehensive documentation',
     colorClasses: {
       bg: 'bg-purple-50',
       border: 'border-purple-200',
@@ -25,21 +24,19 @@ const QUICK_ACTIONS = [
     },
   },
   {
+    id: 'liveChat',
     icon: MessageCircle,
-    title: 'Live Chat',
-    description: 'Chat with our support team in real time',
     colorClasses: {
       bg: 'bg-green-50',
       border: 'border-green-200',
       text: 'text-green-600',
       iconBg: 'bg-green-100',
     },
-    badge: 'Available',
+    hasBadge: true,
   },
   {
+    id: 'contactSupport',
     icon: Mail,
-    title: 'Contact Support',
-    description: 'Send us a message and we\'ll get back to you',
     colorClasses: {
       bg: 'bg-orange-50',
       border: 'border-orange-200',
@@ -50,17 +47,22 @@ const QUICK_ACTIONS = [
 ] as const;
 
 export function QuickActionCards() {
+  const { t } = useTranslation('help');
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {QUICK_ACTIONS.map((action) => (
         <QuickActionCard
-          key={action.title}
+          key={action.id}
           icon={action.icon}
-          title={action.title}
-          description={action.description}
+          title={t(`quickActions.${action.id}.title`)}
+          description={t(`quickActions.${action.id}.description`)}
           colorClasses={action.colorClasses}
-          badge={'badge' in action ? action.badge : undefined}
-          onClick={() => console.log(`Clicked: ${action.title}`)}
+          badge={
+            'hasBadge' in action && action.hasBadge
+              ? t('quickActions.liveChat.badge')
+              : undefined
+          }
+          onClick={() => console.log(`Clicked: ${action.id}`)}
         />
       ))}
     </div>

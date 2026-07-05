@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Search, Users, UserPlus, Loader2 } from "lucide-react";
 import { Modal, Button, Input, OptimizedImage } from "@/components/shared";
 import { usePersonas as usePersonasQuery } from "@/features/personas/hooks";
@@ -21,6 +22,7 @@ export function PersonaSelectorModal({
   linkedPersonaIds,
   onNavigateToCreatePersona,
 }: PersonaSelectorModalProps) {
+  const { t } = useTranslation("products");
   const { data, isLoading, isError } = usePersonasQuery();
   const personas = data?.personas ?? [];
   const linkPersona = useLinkPersona(productId);
@@ -62,7 +64,7 @@ export function PersonaSelectorModal({
       setSearchQuery("");
       onClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to link persona";
+      const message = err instanceof Error ? err.message : t("personaSelector.linkFailed");
       setLinkError(message);
     } finally {
       setIsLinking(false);
@@ -89,12 +91,12 @@ export function PersonaSelectorModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Link Persona"
-      subtitle="Select personas to link to this product"
+      title={t("personaSelector.title")}
+      subtitle={t("personaSelector.subtitle")}
       footer={
         <div className="flex items-center justify-end gap-3">
           <Button variant="ghost" onClick={handleClose}>
-            Cancel
+            {t("actions.cancel")}
           </Button>
           <Button
             variant="cta"
@@ -102,7 +104,7 @@ export function PersonaSelectorModal({
             disabled={selectedIds.length === 0}
             isLoading={isLinking}
           >
-            Link Selected ({selectedIds.length})
+            {t("personaSelector.linkSelected", { selected: selectedIds.length })}
           </Button>
         </div>
       }
@@ -110,7 +112,7 @@ export function PersonaSelectorModal({
       {/* Search */}
       <div className="mb-4">
         <Input
-          placeholder="Search personas..."
+          placeholder={t("personaSelector.searchPlaceholder")}
           icon={Search}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -128,13 +130,13 @@ export function PersonaSelectorModal({
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-8">
           <Loader2 className="mx-auto h-6 w-6 text-gray-400 animate-spin mb-2" />
-          <p className="text-sm text-gray-500">Loading personas...</p>
+          <p className="text-sm text-gray-500">{t("personaSelector.loading")}</p>
         </div>
       ) : isError ? (
         <div className="text-center py-8">
           <Users className="mx-auto h-8 w-8 text-red-300 mb-2" />
           <p className="text-sm text-red-600">
-            Could not load personas. Please try again.
+            {t("personaSelector.loadError")}
           </p>
         </div>
       ) : hasNoPersonasInWorkspace ? (
@@ -142,10 +144,10 @@ export function PersonaSelectorModal({
         <div className="text-center py-8">
           <UserPlus className="mx-auto h-8 w-8 text-gray-300 mb-2" />
           <p className="text-sm font-medium text-gray-700 mb-1">
-            No personas in this workspace yet
+            {t("personaSelector.emptyNoPersonas.title")}
           </p>
           <p className="text-xs text-gray-500 mb-4">
-            Create a persona first, then link it to this product.
+            {t("personaSelector.emptyNoPersonas.description")}
           </p>
           {onNavigateToCreatePersona && (
             <Button
@@ -154,7 +156,7 @@ export function PersonaSelectorModal({
               icon={UserPlus}
               onClick={handleCreatePersona}
             >
-              Create Persona
+              {t("personaSelector.createPersona")}
             </Button>
           )}
         </div>
@@ -163,7 +165,7 @@ export function PersonaSelectorModal({
         <div className="text-center py-8">
           <Users className="mx-auto h-8 w-8 text-green-300 mb-2" />
           <p className="text-sm text-gray-500">
-            All personas are already linked to this product
+            {t("personaSelector.allLinked")}
           </p>
         </div>
       ) : availablePersonas.length === 0 ? (
@@ -171,7 +173,7 @@ export function PersonaSelectorModal({
         <div className="text-center py-8">
           <Search className="mx-auto h-8 w-8 text-gray-300 mb-2" />
           <p className="text-sm text-gray-500">
-            No personas match your search
+            {t("personaSelector.noMatch")}
           </p>
         </div>
       ) : (

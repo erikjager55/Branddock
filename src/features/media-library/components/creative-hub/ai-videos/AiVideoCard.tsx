@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Video, Heart, Trash2, Play, FolderPlus } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
@@ -27,6 +28,7 @@ export const AiVideoCard = React.memo(function AiVideoCard({
   onToggleFavorite,
   onSendToLibrary,
 }: AiVideoCardProps) {
+  const { t } = useTranslation('media-library');
   const [thumbFailed, setThumbFailed] = useState(false);
 
   return (
@@ -102,7 +104,7 @@ export const AiVideoCard = React.memo(function AiVideoCard({
                 onSendToLibrary(video.id);
               }}
               className="p-1 rounded-md bg-white/80 text-gray-400 hover:text-teal-600 hover:bg-white transition-all"
-              aria-label={`Save ${video.name} to library`}
+              aria-label={t('aiVideos.card.saveAria', { name: video.name })}
             >
               <FolderPlus className="w-3.5 h-3.5" />
             </button>
@@ -114,7 +116,7 @@ export const AiVideoCard = React.memo(function AiVideoCard({
               onDelete(video.id);
             }}
             className="p-1 rounded-md bg-white/80 text-gray-400 hover:text-red-500 hover:bg-white transition-all"
-            aria-label={`Delete ${video.name}`}
+            aria-label={t('actions.deleteNamed', { name: video.name })}
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -128,7 +130,7 @@ export const AiVideoCard = React.memo(function AiVideoCard({
             onToggleFavorite();
           }}
           className="absolute bottom-2 right-2 p-1 rounded-md bg-white/80 hover:bg-white transition-all"
-          aria-label={video.isFavorite ? `Unfavorite ${video.name}` : `Favorite ${video.name}`}
+          aria-label={video.isFavorite ? t('actions.unfavoriteNamed', { name: video.name }) : t('actions.favoriteNamed', { name: video.name })}
         >
           <Heart
             className={`w-3.5 h-3.5 ${

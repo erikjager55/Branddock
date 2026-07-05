@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SkeletonCard, SkeletonText } from '@/components/shared';
 import {
   useInterviewDetail,
@@ -33,6 +34,7 @@ interface InterviewWizardProps {
 }
 
 export function InterviewWizard({ assetId, interviewId, onBack }: InterviewWizardProps) {
+  const { t } = useTranslation('interviews');
   const { data, isLoading } = useInterviewDetail(assetId, interviewId);
   const updateInterview = useUpdateInterview(assetId, interviewId);
   const addQuestion = useAddQuestion(assetId, interviewId);
@@ -172,10 +174,10 @@ export function InterviewWizard({ assetId, interviewId, onBack }: InterviewWizar
           className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
-          Back to Interviews
+          {t('wizard.backToInterviews')}
         </button>
         <h1 className="text-xl font-bold text-gray-900">
-          {interview.title || `Interview #${interview.orderNumber}`}
+          {interview.title || t('card.defaultTitle', { number: interview.orderNumber })}
         </h1>
       </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import { Button, Select } from '@/components/shared';
 import { RefreshCw, StopCircle } from 'lucide-react';
@@ -25,6 +26,7 @@ interface FeedbackBarProps {
  * to the text-orchestrator regenerate handler.
  */
 export function FeedbackBar({ onRegenerate, onAbort, onRegenerateVisual, isVisualGenerating }: FeedbackBarProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const feedbackDraft = useCanvasStore((s) => s.feedbackDraft);
   const feedbackGroup = useCanvasStore((s) => s.feedbackGroup);
   const setFeedbackDraft = useCanvasStore((s) => s.setFeedbackDraft);
@@ -65,11 +67,11 @@ export function FeedbackBar({ onRegenerate, onAbort, onRegenerateVisual, isVisua
   // without needing custom rendering.
   const dropdownOptions: Array<{ value: string; label: string }> = [];
   if (hasTextVariants) {
-    dropdownOptions.push({ value: '', label: 'All text groups' });
+    dropdownOptions.push({ value: '', label: t('feedbackBar.allTextGroups') });
     dropdownOptions.push(...textGroupOptions);
   }
   if (hasImageVariants) {
-    dropdownOptions.push({ value: VISUAL_GROUP_VALUE, label: '🎨 Visual' });
+    dropdownOptions.push({ value: VISUAL_GROUP_VALUE, label: t('feedbackBar.visualOption') });
   }
 
   // Default selection: when only image variants exist, preselect Visual so
@@ -79,8 +81,8 @@ export function FeedbackBar({ onRegenerate, onAbort, onRegenerateVisual, isVisua
 
   const isVisualMode = effectiveValue === VISUAL_GROUP_VALUE;
   const placeholder = isVisualMode
-    ? 'Refine these visuals — e.g. more dramatic lighting · outdoor setting · use brand teal'
-    : 'Give feedback to improve the variants...';
+    ? t('feedbackBar.placeholderVisual')
+    : t('feedbackBar.placeholderText');
 
   return (
     <div className="flex-shrink-0 border-t border-gray-200 bg-white px-6 py-3">
@@ -114,7 +116,7 @@ export function FeedbackBar({ onRegenerate, onAbort, onRegenerateVisual, isVisua
         {isGenerating ? (
           <Button variant="secondary" size="sm" onClick={onAbort} disabled={isVisualGenerating}>
             <StopCircle className="h-4 w-4 mr-1.5" />
-            {isVisualGenerating ? 'Generating…' : 'Stop'}
+            {isVisualGenerating ? t('feedbackBar.generating') : t('feedbackBar.stop')}
           </Button>
         ) : (
           <Button
@@ -123,7 +125,7 @@ export function FeedbackBar({ onRegenerate, onAbort, onRegenerateVisual, isVisua
             onClick={handleRegenerate}
           >
             <RefreshCw className="h-4 w-4 mr-1.5" />
-            Regenerate
+            {t('actions.regenerate')}
           </Button>
         )}
       </div>

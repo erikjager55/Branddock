@@ -79,7 +79,7 @@ export function EnhancedSidebarSimple({
                 }`}
                 onClick={() => setActiveSection(item.key)}
                 onMouseEnter={() => preloadModule(item.key)}
-                title={item.label}
+                title={t(`sidebar.items.${item.key}`, { defaultValue: item.label })}
               >
                 <Icon className={`h-5 w-5 ${isActive ? 'text-emerald-600' : 'text-gray-400'}`} />
               </Button>
@@ -123,7 +123,7 @@ export function EnhancedSidebarSimple({
             {section.label && (
               <div className="px-2 mb-1.5">
                 <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                  {section.label}
+                  {t(`sidebar.sections.${section.label}`, { defaultValue: section.label })}
                 </h3>
               </div>
             )}
@@ -144,7 +144,7 @@ export function EnhancedSidebarSimple({
                   onMouseEnter={() => preloadModule(item.key)}
                 >
                   <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-emerald-600' : 'text-gray-400'}`} />
-                  <span className="flex-1 text-left">{item.label}</span>
+                  <span className="flex-1 text-left">{t(`sidebar.items.${item.key}`, { defaultValue: item.label })}</span>
                 </button>
               );
             })}

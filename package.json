@@ -129,6 +129,7 @@
     "framer-motion": "^12.34.3",
     "franc-min": "^6.2.0",
     "i18next": "^26.3.4",
+    "i18next-resources-to-backend": "^1.2.1",
     "jspdf": "^4.2.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.564.0",

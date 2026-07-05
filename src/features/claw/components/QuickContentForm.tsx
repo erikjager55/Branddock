@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Sparkles, X, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useClawStore } from '@/stores/useClawStore';
 import { useCampaigns } from '@/features/campaigns/hooks';
 import { useCampaignStore } from '@/features/campaigns/stores/useCampaignStore';
@@ -27,6 +28,7 @@ import type { CampaignListResponse } from '@/types/campaign';
  *     pre-filled (matches the create_deliverable tool flow).
  */
 export function QuickContentForm() {
+  const { t } = useTranslation('claw');
   const { quickContentForm, updateQuickContentForm, closeQuickContentForm, addMessage, requestNavigation } =
     useClawStore();
   const { data: campaignsData, isLoading: isLoadingCampaigns } = useCampaigns();
@@ -45,17 +47,17 @@ export function QuickContentForm() {
       | undefined;
     const list = Array.isArray(raw) ? raw : raw?.campaigns ?? [];
     return (list as Array<{ id: string; title?: string; name?: string }>).map(
-      (c) => ({ id: c.id, name: c.title ?? c.name ?? 'Untitled' }),
+      (c) => ({ id: c.id, name: c.title ?? c.name ?? t('quick.untitled') }),
     );
   })();
 
   const handleSubmit = async () => {
     if (!quickContentForm.contentType) {
-      setError('Pick a content type');
+      setError(t('quick.pickContentType'));
       return;
     }
     if (!quickContentForm.campaignId) {
-      setError('Pick a campaign');
+      setError(t('quick.pickCampaignError'));
       return;
     }
 
@@ -90,7 +92,7 @@ export function QuickContentForm() {
       });
       if (!dRes.ok) {
         const data = await dRes.json().catch(() => ({}));
-        throw new Error(data.error ?? 'Failed to create deliverable');
+        throw new Error(data.error ?? t('quick.createDeliverableFailed'));
       }
       const deliverable = await dRes.json();
 
@@ -105,13 +107,13 @@ export function QuickContentForm() {
       addMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `Created **${title}** — opening the Canvas now.`,
+        content: t('quick.created', { title }),
         createdAt: new Date().toISOString(),
       });
 
       closeQuickContentForm();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create');
+      setError(err instanceof Error ? err.message : t('quick.createFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -125,12 +127,12 @@ export function QuickContentForm() {
           <div className="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center">
             <Sparkles size={14} className="text-teal-700" />
           </div>
-          <h3 className="text-sm font-semibold text-gray-900">Quick Content</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t('quick.title')}</h3>
         </div>
         <button
           onClick={closeQuickContentForm}
           className="p-1 rounded-md hover:bg-teal-100 text-gray-400"
-          aria-label="Close"
+          aria-label={t('quick.close')}
         >
           <X size={16} />
         </button>
@@ -139,14 +141,14 @@ export function QuickContentForm() {
       {/* Content type */}
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">
-          Content type <span className="text-red-500">*</span>
+          {t('quick.contentTypeLabel')} <span className="text-red-500">*</span>
         </label>
         <select
           value={quickContentForm.contentType}
           onChange={(e) => updateQuickContentForm({ contentType: e.target.value })}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
         >
-          <option value="">Pick a type…</option>
+          <option value="">{t('quick.pickType')}</option>
           {DELIVERABLE_CATEGORIES.map((cat) => (
             <optgroup key={cat} label={cat}>
               {DELIVERABLE_TYPES.filter((dt) => dt.category === cat).map((dt) => (
@@ -163,18 +165,17 @@ export function QuickContentForm() {
           on its own and lives in the Campaigns section, not in Quick Content. */}
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1.5">
-          Campaign <span className="text-red-500">*</span>
+          {t('quick.campaignLabel')} <span className="text-red-500">*</span>
         </label>
         {isLoadingCampaigns ? (
           <div className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400">
-            Loading campaigns…
+            {t('quick.loadingCampaigns')}
           </div>
         ) : campaigns.length === 0 ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 space-y-2">
-            <p className="font-semibold">No campaigns in this workspace yet.</p>
+            <p className="font-semibold">{t('quick.noCampaignsTitle')}</p>
             <p className="text-amber-700">
-              Quick Content adds a deliverable to an existing campaign. Create a campaign first to
-              set its strategy, audience and timing.
+              {t('quick.noCampaignsBody')}
             </p>
             <button
               type="button"
@@ -184,7 +185,7 @@ export function QuickContentForm() {
               }}
               className="inline-flex items-center gap-1 font-medium text-amber-900 hover:text-amber-700 underline underline-offset-2"
             >
-              Open Campaigns
+              {t('quick.openCampaigns')}
               <ArrowRight className="h-3 w-3" />
             </button>
           </div>
@@ -196,7 +197,7 @@ export function QuickContentForm() {
             }
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
           >
-            <option value="">Pick a campaign…</option>
+            <option value="">{t('quick.pickCampaign')}</option>
             {campaigns.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -209,7 +210,7 @@ export function QuickContentForm() {
       {/* Title */}
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">
-          Title <span className="text-gray-400 font-normal">(optional)</span>
+          {t('quick.titleLabel')} <span className="text-gray-400 font-normal">{t('quick.optional')}</span>
         </label>
         <input
           type="text"
@@ -217,7 +218,7 @@ export function QuickContentForm() {
           onChange={(e) => updateQuickContentForm({ title: e.target.value })}
           placeholder={
             getDeliverableTypeById(quickContentForm.contentType)?.name ??
-            'Defaults to the content type label'
+            t('quick.titlePlaceholder')
           }
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
         />
@@ -226,31 +227,31 @@ export function QuickContentForm() {
       {/* Briefing — collapsible-ish via grouping */}
       <div className="space-y-2.5">
         <p className="text-xs font-semibold text-gray-700">
-          Briefing <span className="text-gray-400 font-normal">(optional but recommended)</span>
+          {t('quick.briefingLabel')} <span className="text-gray-400 font-normal">{t('quick.briefingOptional')}</span>
         </p>
         <BriefField
-          label="Objective"
+          label={t('quick.objectiveLabel')}
           value={quickContentForm.objective}
           onChange={(v) => updateQuickContentForm({ objective: v })}
-          placeholder="What this content should achieve"
+          placeholder={t('quick.objectivePlaceholder')}
         />
         <BriefField
-          label="Key message"
+          label={t('quick.keyMessageLabel')}
           value={quickContentForm.keyMessage}
           onChange={(v) => updateQuickContentForm({ keyMessage: v })}
-          placeholder="The single thing the audience should take away"
+          placeholder={t('quick.keyMessagePlaceholder')}
         />
         <BriefField
-          label="Tone direction"
+          label={t('quick.toneLabel')}
           value={quickContentForm.toneDirection}
           onChange={(v) => updateQuickContentForm({ toneDirection: v })}
-          placeholder="e.g. authoritative, playful, urgent"
+          placeholder={t('quick.tonePlaceholder')}
         />
         <BriefField
-          label="Call to action"
+          label={t('quick.ctaLabel')}
           value={quickContentForm.callToAction}
           onChange={(v) => updateQuickContentForm({ callToAction: v })}
-          placeholder="What should the audience do next?"
+          placeholder={t('quick.ctaPlaceholder')}
         />
       </div>
 
@@ -275,13 +276,13 @@ export function QuickContentForm() {
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-medium bg-teal-600 hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {isSubmitting && <Loader2 size={14} className="animate-spin" />}
-          {isSubmitting ? 'Creating…' : 'Create & Open Canvas'}
+          {isSubmitting ? t('quick.creating') : t('quick.create')}
         </button>
         <button
           onClick={closeQuickContentForm}
           className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
         >
-          Cancel
+          {t('quick.cancel')}
         </button>
       </div>
     </div>

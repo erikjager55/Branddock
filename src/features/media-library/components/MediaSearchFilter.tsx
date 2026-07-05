@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { LayoutGrid, List } from 'lucide-react';
 import { SearchInput, Select } from '@/components/shared';
 import { useMediaLibraryStore } from '../stores/useMediaLibraryStore';
@@ -7,24 +8,25 @@ import { MEDIA_TYPE_ICONS, MEDIA_CATEGORY_CONFIG, SORT_OPTIONS } from '../consta
 import type { MediaViewMode } from '../constants/media-constants';
 import type { MediaType, MediaCategory } from '../types/media.types';
 
-const TYPE_OPTIONS = Object.entries(MEDIA_TYPE_ICONS).map(([value, config]) => ({
-  value,
-  label: config.label,
-}));
-
-const CATEGORY_OPTIONS = Object.entries(MEDIA_CATEGORY_CONFIG).map(([value, config]) => ({
-  value,
-  label: config.label,
-}));
-
-const SORT_OPTIONS_LIST = SORT_OPTIONS.map((opt) => ({
-  value: opt.value,
-  label: opt.label,
-}));
-
 /** Search and filter bar for the Media Library. */
 export function MediaSearchFilter() {
+  const { t } = useTranslation(['media-library', 'media-registry']);
   const store = useMediaLibraryStore();
+
+  const typeOptions = Object.entries(MEDIA_TYPE_ICONS).map(([value, config]) => ({
+    value,
+    label: t(`media-registry:type.${value}`, { defaultValue: config.label }),
+  }));
+
+  const categoryOptions = Object.entries(MEDIA_CATEGORY_CONFIG).map(([value, config]) => ({
+    value,
+    label: t(`media-registry:category.${value}`, { defaultValue: config.label }),
+  }));
+
+  const sortOptions = SORT_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: t(`media-registry:sort.${opt.value.replace(':', '.')}`, { defaultValue: opt.label }),
+  }));
 
   return (
     <div className="flex items-center gap-3 flex-wrap mb-4" data-testid="media-filters">
@@ -32,7 +34,7 @@ export function MediaSearchFilter() {
         <SearchInput
           value={store.searchQuery}
           onChange={store.setSearchQuery}
-          placeholder="Search media..."
+          placeholder={t('search.placeholder')}
         />
       </div>
 
@@ -40,8 +42,8 @@ export function MediaSearchFilter() {
         <Select
           value={store.mediaTypeFilter ?? ''}
           onChange={(val) => store.setMediaTypeFilter((val || null) as MediaType | null)}
-          options={TYPE_OPTIONS}
-          placeholder="All Types"
+          options={typeOptions}
+          placeholder={t('filters.allTypes')}
           allowClear
         />
       </div>
@@ -50,8 +52,8 @@ export function MediaSearchFilter() {
         <Select
           value={store.categoryFilter ?? ''}
           onChange={(val) => store.setCategoryFilter((val || null) as MediaCategory | null)}
-          options={CATEGORY_OPTIONS}
-          placeholder="All Categories"
+          options={categoryOptions}
+          placeholder={t('filters.allCategories')}
           allowClear
         />
       </div>
@@ -66,8 +68,8 @@ export function MediaSearchFilter() {
               store.setSortOrder(order as 'asc' | 'desc');
             }
           }}
-          options={SORT_OPTIONS_LIST}
-          placeholder="Sort by"
+          options={sortOptions}
+          placeholder={t('filters.sortBy')}
         />
       </div>
 
@@ -84,6 +86,7 @@ function ViewToggle({
   mode: MediaViewMode;
   onChange: (mode: MediaViewMode) => void;
 }) {
+  const { t } = useTranslation('media-library');
   return (
     <div className="flex items-center rounded-lg border border-gray-200" data-testid="media-view-toggle">
       <button
@@ -92,7 +95,7 @@ function ViewToggle({
         className={`p-2 rounded-l-lg transition-colors ${
           mode === 'grid' ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:text-gray-700'
         }`}
-        aria-label="Grid view"
+        aria-label={t('view.grid')}
         aria-pressed={mode === 'grid'}
       >
         <LayoutGrid className="w-4 h-4" />
@@ -103,7 +106,7 @@ function ViewToggle({
         className={`p-2 rounded-r-lg transition-colors ${
           mode === 'list' ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:text-gray-700'
         }`}
-        aria-label="List view"
+        aria-label={t('view.list')}
         aria-pressed={mode === 'list'}
       >
         <List className="w-4 h-4" />

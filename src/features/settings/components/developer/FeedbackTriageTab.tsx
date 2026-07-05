@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   MessageSquarePlus,
@@ -23,6 +24,7 @@ import {
   type FeedbackItem,
   type FeedbackAiStatus,
 } from '@/hooks/use-chat-feedback';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 // ─── Constants ──────────────────────────────────────────────
 
@@ -60,6 +62,8 @@ const AI_STATUS_INDICATOR: Record<FeedbackAiStatus, { icon: React.ReactNode; lab
 // ─── Component ──────────────────────────────────────────────
 
 export function FeedbackTriageTab() {
+  const { t } = useTranslation('settings-misc');
+  const { formatDate } = useFormat();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>('all');
   const [sentimentFilter, setSentimentFilter] = useState<FeedbackItem['sentiment'] | 'all'>('all');
@@ -113,12 +117,12 @@ export function FeedbackTriageTab() {
             <MessageSquarePlus size={18} className="text-violet-700" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Feedback</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('feedbackTriage.heading')}</h2>
             <p className="text-sm text-gray-500">
-              {newCount} new {newCount === 1 ? 'entry' : 'entries'} to review
+              {t('feedbackTriage.newEntries', { count: newCount })}
               {suggestionReadyCount > 0 && (
                 <span className="ml-1 text-emerald-600">
-                  ({suggestionReadyCount} with AI suggestion)
+                  {t('feedbackTriage.withSuggestion', { count: suggestionReadyCount })}
                 </span>
               )}
             </p>
@@ -141,7 +145,7 @@ export function FeedbackTriageTab() {
                 }`}
                 style={isActive ? { backgroundColor: GRAY_800 } : undefined}
               >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
+                {t(`feedbackTriage.statusFilter.${f}`)}
                 {f !== 'all' && (
                   <span className="ml-1 opacity-60">
                     ({entries.filter((e) => e.status === f).length})
@@ -164,7 +168,7 @@ export function FeedbackTriageTab() {
                 }`}
                 style={isActive ? { backgroundColor: VIOLET_700 } : undefined}
               >
-                {s === 'all' ? 'All sentiments' : s.charAt(0).toUpperCase() + s.slice(1)}
+                {t(`feedbackTriage.sentimentFilter.${s}`)}
               </button>
             );
           })}
@@ -178,7 +182,7 @@ export function FeedbackTriageTab() {
             <AlertCircle size={18} className="text-red-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-medium text-red-900">
-                Could not load feedback
+                {t('feedbackTriage.loadError')}
               </p>
               <p className="text-xs text-red-700 mt-0.5">
                 {error instanceof Error ? error.message : String(error)}
@@ -188,7 +192,7 @@ export function FeedbackTriageTab() {
                 onClick={() => refetch()}
                 className="mt-2 text-xs font-medium text-red-700 hover:text-red-900 underline"
               >
-                Retry
+                {t('feedbackTriage.retry')}
               </button>
             </div>
           </div>
@@ -199,14 +203,16 @@ export function FeedbackTriageTab() {
       {isLoading && !error && (
         <div className="py-12 text-center text-sm text-gray-400">
           <Loader2 size={20} className="animate-spin mx-auto mb-2" />
-          Loading feedback...
+          {t('feedbackTriage.loading')}
         </div>
       )}
 
       {/* Empty */}
       {!isLoading && !error && filtered.length === 0 && (
         <div className="py-12 text-center text-sm text-gray-400">
-          No feedback {statusFilter !== 'all' ? `with status "${statusFilter}"` : 'yet'}.
+          {statusFilter !== 'all'
+            ? t('feedbackTriage.emptyFiltered', { status: t(`feedbackTriage.statusFilter.${statusFilter}`) })
+            : t('feedbackTriage.emptyAll')}
         </div>
       )}
 
@@ -239,7 +245,7 @@ export function FeedbackTriageTab() {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${s.cls}`}>
                         <SentimentIcon size={11} />
-                        {s.label}
+                        {t(`feedbackTriage.sentiment.${e.sentiment}`)}
                       </span>
                       {e.page && (
                         <span className="text-[11px] font-mono text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">
@@ -259,10 +265,10 @@ export function FeedbackTriageTab() {
                       )}
                       <span className={`ml-auto flex items-center gap-1 text-[10px] font-medium whitespace-nowrap ${aiIndicator.color}`}>
                         {aiIndicator.icon}
-                        {aiIndicator.label}
+                        {t(`feedbackTriage.aiStatus.${e.aiStatus}`)}
                       </span>
                       <span className="text-xs text-gray-400 whitespace-nowrap">
-                        {new Date(e.createdAt).toLocaleDateString('en-US', {
+                        {formatDate(new Date(e.createdAt), {
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
@@ -278,7 +284,7 @@ export function FeedbackTriageTab() {
                   <div className="border-t border-gray-100 px-4 py-3 space-y-3 bg-gray-50/50">
                     <div>
                       <div className="text-[11px] uppercase tracking-wide text-gray-400 font-medium mb-1">
-                        Comment
+                        {t('feedbackTriage.comment')}
                       </div>
                       <p className="text-sm text-gray-700 whitespace-pre-wrap">{e.comment}</p>
                     </div>
@@ -286,7 +292,7 @@ export function FeedbackTriageTab() {
                     {e.messageContent && (
                       <div>
                         <div className="text-[11px] uppercase tracking-wide text-gray-400 font-medium mb-1">
-                          Assistant response they reacted to
+                          {t('feedbackTriage.assistantResponse')}
                         </div>
                         <div className="text-xs text-gray-600 whitespace-pre-wrap bg-white border border-gray-200 rounded-lg px-3 py-2 max-h-64 overflow-y-auto">
                           {e.messageContent}
@@ -299,17 +305,17 @@ export function FeedbackTriageTab() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide font-medium" style={{ color: '#6d28d9' }}>
                           <Sparkles size={12} />
-                          AI suggestion
+                          {t('feedbackTriage.aiSuggestion')}
                         </div>
                         <button
                           type="button"
                           disabled={reanalyzeMutation.isPending || e.aiStatus === 'analyzing'}
                           onClick={() => reanalyzeMutation.mutate(e.id)}
                           className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-gray-800 disabled:opacity-40 transition-colors"
-                          title="Regenerate AI suggestion"
+                          title={t('feedbackTriage.regenerateTooltip')}
                         >
                           <RefreshCw size={11} className={e.aiStatus === 'analyzing' ? 'animate-spin' : ''} />
-                          {e.aiStatus === 'analyzing' ? 'Analyzing' : 'Regenerate'}
+                          {e.aiStatus === 'analyzing' ? t('feedbackTriage.analyzing') : t('feedbackTriage.regenerate')}
                         </button>
                       </div>
                       {e.aiStatus === 'ready' && e.aiSuggestion ? (
@@ -318,24 +324,24 @@ export function FeedbackTriageTab() {
                         </div>
                       ) : e.aiStatus === 'failed' ? (
                         <p className="text-xs text-red-600">
-                          {e.aiSuggestion ?? 'AI analysis failed. Click Regenerate to retry.'}
+                          {e.aiSuggestion ?? t('feedbackTriage.analysisFailed')}
                         </p>
                       ) : e.aiStatus === 'analyzing' ? (
                         <p className="text-xs text-gray-500 inline-flex items-center gap-1.5">
                           <Loader2 size={12} className="animate-spin" />
-                          Claude is drafting a suggestion…
+                          {t('feedbackTriage.drafting')}
                         </p>
                       ) : (
-                        <p className="text-xs text-gray-500">Queued for AI analysis.</p>
+                        <p className="text-xs text-gray-500">{t('feedbackTriage.queued')}</p>
                       )}
                     </div>
 
                     {e.status !== 'new' && e.reviewedBy && (
                       <div className="text-xs text-gray-500">
-                        Status: <span className="font-medium capitalize">{e.status}</span>
+                        {t('feedbackTriage.statusPrefix')} <span className="font-medium capitalize">{e.status}</span>
                         {' · '}
                         {e.reviewedBy.name || e.reviewedBy.email}
-                        {e.reviewedAt && ` · ${new Date(e.reviewedAt).toLocaleString('en-US')}`}
+                        {e.reviewedAt && ` · ${formatDate(new Date(e.reviewedAt), { dateStyle: 'medium', timeStyle: 'short' })}`}
                       </div>
                     )}
 
@@ -358,7 +364,7 @@ export function FeedbackTriageTab() {
                             }}
                           >
                             {a.value === 'dismissed' ? <XIcon size={12} /> : <Check size={12} />}
-                            {a.label}
+                            {t(`feedbackTriage.action.${a.value}`)}
                           </button>
                         ))}
                       </div>
@@ -372,7 +378,7 @@ export function FeedbackTriageTab() {
                         onClick={() => updateMutation.mutate({ id: e.id, status: 'new' })}
                         className="text-xs text-gray-500 hover:text-gray-700 underline"
                       >
-                        Reopen
+                        {t('feedbackTriage.reopen')}
                       </button>
                     )}
                   </div>

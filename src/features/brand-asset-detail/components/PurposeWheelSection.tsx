@@ -5,6 +5,7 @@ import {
   Target, Cog, FlaskConical, CheckCircle,
   Sparkles, Compass, Heart, TreePine, Smile,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { PurposeWheelFrameworkData } from '../types/framework.types';
 
 // ─── IDEO Impact Types ──────────────────────────────────────
@@ -12,7 +13,7 @@ import type { PurposeWheelFrameworkData } from '../types/framework.types';
 interface ImpactTypeOption {
   value: string;
   label: string;
-  description: string;
+  tKey: string;
   icon: typeof Target;
   bgColor: string;
   borderColor: string;
@@ -24,7 +25,7 @@ const IMPACT_TYPES: ImpactTypeOption[] = [
   {
     value: 'Enable Potential',
     label: 'Enable Potential',
-    description: 'Helping people and communities unlock capabilities they didn\'t know they had',
+    tKey: 'enablePotential',
     icon: Sparkles,
     bgColor: 'bg-amber-50',
     borderColor: 'border-amber-200',
@@ -34,7 +35,7 @@ const IMPACT_TYPES: ImpactTypeOption[] = [
   {
     value: 'Reduce Friction',
     label: 'Reduce Friction',
-    description: 'Removing barriers and making things easier, simpler, more accessible',
+    tKey: 'reduceFriction',
     icon: Compass,
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
@@ -44,7 +45,7 @@ const IMPACT_TYPES: ImpactTypeOption[] = [
   {
     value: 'Foster Prosperity',
     label: 'Foster Prosperity',
-    description: 'Creating economic opportunity and sustainable growth for all stakeholders',
+    tKey: 'fosterProsperity',
     icon: TreePine,
     bgColor: 'bg-emerald-50',
     borderColor: 'border-emerald-200',
@@ -54,7 +55,7 @@ const IMPACT_TYPES: ImpactTypeOption[] = [
   {
     value: 'Encourage Exploration',
     label: 'Encourage Exploration',
-    description: 'Inspiring curiosity, discovery and new ways of thinking about the world',
+    tKey: 'encourageExploration',
     icon: Sparkles,
     bgColor: 'bg-purple-50',
     borderColor: 'border-purple-200',
@@ -64,7 +65,7 @@ const IMPACT_TYPES: ImpactTypeOption[] = [
   {
     value: 'Kindle Happiness',
     label: 'Kindle Happiness',
-    description: 'Creating joy, connection and meaningful moments in people\'s lives',
+    tKey: 'kindleHappiness',
     icon: Smile,
     bgColor: 'bg-rose-50',
     borderColor: 'border-rose-200',
@@ -93,12 +94,12 @@ const MECHANISM_CATEGORIES = [
   'Sparking Connection',
 ];
 
-// ─── Pressure Test Questions ────────────────────────────────
+// ─── Pressure Test Questions (catalog keys) ─────────────────
 
-const PRESSURE_TEST_QUESTIONS = [
-  'What would the world lose if your organization ceased to exist?',
-  'What would this purpose unlock for your employees?',
-  'Which decisions would be different if everyone truly lived this purpose?',
+const PRESSURE_TEST_QUESTION_KEYS = [
+  'purposeWheel.questions.q1',
+  'purposeWheel.questions.q2',
+  'purposeWheel.questions.q3',
 ];
 
 // ─── Empty state helper ─────────────────────────────────────
@@ -118,6 +119,7 @@ interface PurposeWheelSectionProps {
 // ─── Component ──────────────────────────────────────────────
 
 export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelSectionProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const d = data ?? EMPTY_DATA;
 
   const [draft, setDraft] = useState<PurposeWheelFrameworkData>(d);
@@ -148,8 +150,8 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
             <Target className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Purpose Statement</h2>
-            <p className="text-sm text-gray-500">The core reason your organization exists</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('purposeWheel.statement.title')}</h2>
+            <p className="text-sm text-gray-500">{t('purposeWheel.statement.subtitle')}</p>
           </div>
         </div>
 
@@ -159,7 +161,7 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
             onChange={(e) => handleChange('statement', e.target.value)}
             className="w-full rounded-lg border border-gray-200 px-4 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none italic"
             rows={3}
-            placeholder="Define your purpose statement..."
+            placeholder={t('purposeWheel.statement.placeholder')}
           />
         ) : d.statement ? (
           <div className="border-l-4 border-primary-400 pl-4 py-2">
@@ -168,7 +170,7 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
             </p>
           </div>
         ) : (
-          <p className="text-sm italic text-gray-400">Define your purpose statement...</p>
+          <p className="text-sm italic text-gray-400">{t('purposeWheel.statement.placeholder')}</p>
         )}
       </div>
 
@@ -179,8 +181,8 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
             <Heart className="h-5 w-5 text-amber-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Impact Type</h2>
-            <p className="text-sm text-gray-500">How your organization makes a difference in the world (IDEO Inner Wheel)</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('purposeWheel.impact.title')}</h2>
+            <p className="text-sm text-gray-500">{t('purposeWheel.impact.subtitle')}</p>
           </div>
         </div>
 
@@ -222,7 +224,7 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
                   {type.label}
                 </p>
                 <p className={`text-xs mt-1 leading-relaxed ${isSelected ? type.textColor + ' opacity-80' : 'text-gray-500'}`}>
-                  {type.description}
+                  {t(`purposeWheel.impactTypes.${type.tKey}`)}
                 </p>
               </button>
             );
@@ -232,7 +234,7 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
         {/* Impact Description */}
         <div className="bg-amber-50/30 border border-amber-100 rounded-xl p-4">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-            How does this impact look for your organization?
+            {t('purposeWheel.impact.descLabel')}
           </p>
           {isEditing ? (
             <textarea
@@ -240,12 +242,12 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
               onChange={(e) => handleChange('impactDescription', e.target.value)}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={3}
-              placeholder="Describe how this impact looks for your organization in practice..."
+              placeholder={t('purposeWheel.impact.descPlaceholder')}
             />
           ) : d.impactDescription ? (
             <p className="text-sm text-gray-700 leading-relaxed">{d.impactDescription}</p>
           ) : (
-            <p className="text-sm italic text-gray-400">Describe how this impact looks for your organization in practice...</p>
+            <p className="text-sm italic text-gray-400">{t('purposeWheel.impact.descPlaceholder')}</p>
           )}
         </div>
       </div>
@@ -257,15 +259,15 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
             <Cog className="h-5 w-5 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Mechanism</h2>
-            <p className="text-sm text-gray-500">How you deliver on your purpose (IDEO Outer Wheel)</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('purposeWheel.mechanism.title')}</h2>
+            <p className="text-sm text-gray-500">{t('purposeWheel.mechanism.subtitle')}</p>
           </div>
         </div>
 
         {/* Selectable category — 15 outer wheel categories */}
         <div className="mb-4">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-            Select your mechanism category
+            {t('purposeWheel.mechanism.selectLabel')}
           </p>
           <div className="flex flex-wrap gap-1.5">
             {MECHANISM_CATEGORIES.map((cat) => {
@@ -302,7 +304,7 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
         {/* Mechanism description textarea */}
         <div className="bg-blue-50/30 border border-blue-100 rounded-xl p-4">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-            Describe how this mechanism works for your organization
+            {t('purposeWheel.mechanism.descLabel')}
           </p>
           {isEditing ? (
             <textarea
@@ -310,12 +312,12 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
               onChange={(e) => handleChange('mechanism', e.target.value)}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={3}
-              placeholder="Describe through what unique means you achieve your impact..."
+              placeholder={t('purposeWheel.mechanism.descPlaceholder')}
             />
           ) : d.mechanism ? (
             <p className="text-sm text-gray-700 leading-relaxed">{d.mechanism}</p>
           ) : (
-            <p className="text-sm italic text-gray-400">Describe through what unique means you achieve your impact...</p>
+            <p className="text-sm italic text-gray-400">{t('purposeWheel.mechanism.descPlaceholder')}</p>
           )}
         </div>
       </div>
@@ -327,21 +329,21 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
             <FlaskConical className="h-5 w-5 text-purple-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Pressure Test</h2>
-            <p className="text-sm text-gray-500">Validating your purpose against reality</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('purposeWheel.pressureTest.title')}</h2>
+            <p className="text-sm text-gray-500">{t('purposeWheel.pressureTest.subtitle')}</p>
           </div>
         </div>
 
         {/* Helper Questions */}
         <div className="bg-purple-50/40 border border-purple-100 rounded-xl p-4 mb-4">
           <p className="text-xs font-medium text-purple-600 uppercase tracking-wider mb-2">
-            Consider these questions
+            {t('purposeWheel.pressureTest.considerLabel')}
           </p>
           <ul className="space-y-1.5">
-            {PRESSURE_TEST_QUESTIONS.map((q, i) => (
-              <li key={i} className="flex items-start gap-2">
+            {PRESSURE_TEST_QUESTION_KEYS.map((qKey, i) => (
+              <li key={qKey} className="flex items-start gap-2">
                 <span className="text-xs font-bold text-purple-400 mt-0.5">{i + 1}.</span>
-                <span className="text-xs text-purple-700 leading-relaxed">{q}</span>
+                <span className="text-xs text-purple-700 leading-relaxed">{t(qKey)}</span>
               </li>
             ))}
           </ul>
@@ -353,7 +355,7 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
             onChange={(e) => handleChange('pressureTest', e.target.value)}
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
             rows={4}
-            placeholder="Answer the pressure test questions above..."
+            placeholder={t('purposeWheel.pressureTest.placeholder')}
           />
         ) : d.pressureTest ? (
           showAsList ? (
@@ -369,7 +371,7 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
             <p className="text-sm text-gray-700 leading-relaxed">{d.pressureTest}</p>
           )
         ) : (
-          <p className="text-sm italic text-gray-400">Answer the pressure test questions above...</p>
+          <p className="text-sm italic text-gray-400">{t('purposeWheel.pressureTest.placeholder')}</p>
         )}
       </div>
     </div>

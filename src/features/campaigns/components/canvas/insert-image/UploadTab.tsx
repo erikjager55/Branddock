@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useUploadMedia } from '@/features/media-library/hooks';
 import type { InsertImageTabProps } from './types';
@@ -15,6 +16,7 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
  * image for the deliverable.
  */
 export function UploadTab({ onSelected }: InsertImageTabProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,13 +26,16 @@ export function UploadTab({ onSelected }: InsertImageTabProps) {
 
   const validateFile = useCallback((file: File): string | null => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      return `Unsupported file type: ${file.type}. Use JPEG, PNG, GIF, WebP, or SVG.`;
+      return t('uploadTab.errUnsupported', { type: file.type });
     }
     if (file.size > MAX_SIZE_BYTES) {
-      return `File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max ${MAX_SIZE_MB}MB.`;
+      return t('uploadTab.errTooLarge', {
+        size: (file.size / 1024 / 1024).toFixed(1),
+        max: MAX_SIZE_MB,
+      });
     }
     return null;
-  }, []);
+  }, [t]);
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -58,10 +63,10 @@ export function UploadTab({ onSelected }: InsertImageTabProps) {
           alt: name,
         });
       } catch {
-        setError('Upload failed. Please try again.');
+        setError(t('uploadTab.errFailed'));
       }
     },
-    [validateFile, uploadMedia, onSelected]
+    [validateFile, uploadMedia, onSelected, t]
   );
 
   const handleDrop = useCallback(
@@ -106,23 +111,23 @@ export function UploadTab({ onSelected }: InsertImageTabProps) {
         {isUploading ? (
           <>
             <Loader2 className="h-10 w-10 text-teal-600 mx-auto mb-3 animate-spin" />
-            <p className="text-sm font-medium text-gray-700">Uploading...</p>
+            <p className="text-sm font-medium text-gray-700">{t('uploadTab.uploading')}</p>
           </>
         ) : uploadedName ? (
           <>
             <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto mb-3" />
             <p className="text-sm font-medium text-gray-700">
-              &ldquo;{uploadedName}&rdquo; uploaded and saved to Media Library
+              {t('uploadTab.uploaded', { name: uploadedName })}
             </p>
           </>
         ) : (
           <>
             <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
             <p className="text-sm font-medium text-gray-700">
-              Drag and drop an image here, or click to browse
+              {t('uploadTab.dropPrompt')}
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              JPEG, PNG, GIF, WebP, SVG — max {MAX_SIZE_MB}MB
+              {t('uploadTab.formats', { max: MAX_SIZE_MB })}
             </p>
           </>
         )}

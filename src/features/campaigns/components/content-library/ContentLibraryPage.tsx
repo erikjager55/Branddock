@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { Library, Plus, Zap } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { AddContentModal } from "../shared/AddContentModal";
 import { EmptyState, SkeletonCard, Button } from "@/components/shared";
@@ -45,6 +46,7 @@ interface ContentLibraryPageProps {
 // ─── Component ────────────────────────────────────────────
 
 export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
+  const { t } = useTranslation("campaigns-content-library");
   // DB-backed drafts — CONTENT only. STRATEGIC drafts belong to the
   // Campaigns page (see ActiveCampaignsPage for that list).
   const { data: draftsData } = useDraftCampaigns("CONTENT");
@@ -251,18 +253,18 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <EmptyState
             icon={Library}
-            title="No content found"
-            description="Create content with the wizard, or adjust your filters."
+            title={t("page.emptyTitle")}
+            description={t("page.emptyDescription")}
             action={{
-              label: "Create Content",
+              label: t("page.createContent"),
               onClick: () => setShowAddContentModal(true),
             }}
           />
           <BrandAssistantCTA
             prompts={[
-              'Write a LinkedIn post about our latest product launch',
-              'Generate 5 social posts for this campaign',
-              'Turn our whitepaper into 3 blog posts',
+              t("page.prompts.linkedin"),
+              t("page.prompts.socialPosts"),
+              t("page.prompts.blogPosts"),
             ]}
           />
         </div>
@@ -379,17 +381,17 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
       {!activeCampaignId && (
         <PageHeader
           moduleKey="content-library"
-          title="Content"
-          subtitle="Browse and manage all your generated content"
+          title={t("page.title")}
+          subtitle={t("page.subtitle")}
           actions={
             <div className="flex items-center gap-3">
               <Button variant="secondary" onClick={() => onNavigate('active-campaigns')} className="gap-2">
                 <Zap className="h-4 w-4" />
-                View Campaigns
+                {t("page.viewCampaigns")}
               </Button>
               <Button data-testid="create-content-button" onClick={() => setShowAddContentModal(true)} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Create Content
+                {t("page.createContent")}
               </Button>
             </div>
           }

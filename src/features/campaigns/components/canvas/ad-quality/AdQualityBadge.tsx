@@ -16,6 +16,7 @@
 // =============================================================
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sparkles, AlertTriangle } from 'lucide-react';
 import type { AdQualityLabel } from '@/lib/ad-validation/types';
 
@@ -33,15 +34,13 @@ const COLOR_BY_LABEL: Record<AdQualityLabel, { fg: string; bg: string; border: s
   excellent: { fg: '#14532D', bg: '#DCFCE7', border: '#BBF7D0', dot: '#16A34A' },
 };
 
-const LABEL_DISPLAY: Record<AdQualityLabel, string> = {
-  poor: 'Poor',
-  average: 'Average',
-  good: 'Good',
-  excellent: 'Excellent',
-};
-
 export function AdQualityBadge({ score, label, l2Unavailable = false, onClick }: AdQualityBadgeProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const colors = COLOR_BY_LABEL[label];
+  const strengthText = t('adQuality.strengthText', {
+    label: t(`adQuality.label.${label}`),
+    score,
+  });
   return (
     <button
       type="button"
@@ -52,18 +51,16 @@ export function AdQualityBadge({ score, label, l2Unavailable = false, onClick }:
         backgroundColor: colors.bg,
         borderColor: colors.border,
       }}
-      aria-label={`Ad Strength: ${LABEL_DISPLAY[label]} · ${score}/100${l2Unavailable ? ' (AI judge unavailable)' : ''}`}
+      aria-label={`${strengthText}${l2Unavailable ? t('adQuality.judgeUnavailableSuffix') : ''}`}
     >
       <span
         className="inline-block h-2 w-2 rounded-full flex-shrink-0"
         style={{ backgroundColor: colors.dot }}
       />
       <Sparkles className="h-3 w-3" />
-      <span>
-        Ad Strength: {LABEL_DISPLAY[label]} · {score}/100
-      </span>
+      <span>{strengthText}</span>
       {l2Unavailable && (
-        <AlertTriangle className="h-3 w-3 ml-0.5" aria-label="AI judge unavailable" />
+        <AlertTriangle className="h-3 w-3 ml-0.5" aria-label={t('adQuality.judgeUnavailable')} />
       )}
     </button>
   );

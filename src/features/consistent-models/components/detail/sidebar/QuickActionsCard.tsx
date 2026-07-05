@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Sparkles, Archive, Trash2, ArrowLeft } from "lucide-react";
 import { Card, Button } from "@/components/shared";
 import type { ConsistentModelDetail } from "../../../types/consistent-model.types";
@@ -20,13 +21,14 @@ export function QuickActionsCard({
   onDelete,
   onBack,
 }: QuickActionsCardProps) {
+  const { t } = useTranslation("consistent-models");
   const isReady = model.status === "READY";
   const isArchived = model.status === "ARCHIVED";
 
   return (
     <Card className="p-4">
       <h3 className="mb-3 text-sm font-semibold text-gray-900">
-        Quick Actions
+        {t("quickActions.heading")}
       </h3>
       <div className="space-y-2">
         {isReady && onGenerate && (
@@ -37,7 +39,7 @@ export function QuickActionsCard({
             className="w-full justify-start"
           >
             <Sparkles className="mr-2 h-4 w-4" />
-            Generate Image
+            {t("quickActions.generateImage")}
           </Button>
         )}
 
@@ -49,7 +51,7 @@ export function QuickActionsCard({
             className="w-full justify-start"
           >
             <Archive className="mr-2 h-4 w-4" />
-            Archive
+            {t("quickActions.archive")}
           </Button>
         )}
 
@@ -60,7 +62,7 @@ export function QuickActionsCard({
           className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"
         >
           <Trash2 className="mr-2 h-4 w-4" />
-          Delete Model
+          {t("quickActions.deleteModel")}
         </Button>
 
         {onBack && (
@@ -71,7 +73,7 @@ export function QuickActionsCard({
             className="w-full justify-start text-gray-500 hover:text-gray-700"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to AI Trainer
+            {t("quickActions.backToAiTrainer")}
           </Button>
         )}
       </div>

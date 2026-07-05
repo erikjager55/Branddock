@@ -9,6 +9,7 @@
 // =============================================================
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sparkles, Loader2 } from 'lucide-react';
 import type { InsertImageSelection } from './insert-image/types';
 
@@ -32,6 +33,7 @@ interface SimilarAssetsRowProps {
 }
 
 export function SimilarAssetsRow({ briefingText, onPick }: SimilarAssetsRowProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const [matches, setMatches] = useState<SimilarAsset[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -69,14 +71,14 @@ export function SimilarAssetsRow({ briefingText, onPick }: SimilarAssetsRowProps
       <div className="flex items-center gap-2 mb-2">
         <Sparkles className="h-3.5 w-3.5 text-purple-600" />
         <span className="text-xs font-semibold text-purple-900">
-          Vergelijkbare assets uit je library
+          {t('similarAssets.title')}
         </span>
         {loading && <Loader2 className="h-3 w-3 animate-spin text-purple-600" />}
       </div>
       {matches.length > 0 ? (
         <>
           <p className="text-[11px] text-purple-700 mb-2 leading-relaxed">
-            Deze assets matchen je brief. Hergebruik bespaart een generation-call.
+            {t('similarAssets.subtitle')}
           </p>
           <div className="flex flex-wrap gap-2">
             {matches.map((m) => (
@@ -91,23 +93,26 @@ export function SimilarAssetsRow({ briefingText, onPick }: SimilarAssetsRowProps
                   })
                 }
                 className="group relative rounded-md overflow-hidden border-2 border-purple-200 hover:border-purple-500 transition-colors w-20 h-20"
-                title={`${m.matchedKeywords.join(', ')} (${m.matchCount} matches)`}
+                title={t('similarAssets.matchTooltip', {
+                  keywords: m.matchedKeywords.join(', '),
+                  count: m.matchCount,
+                })}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={m.asset.thumbnailUrl ?? m.asset.fileUrl}
-                  alt={m.asset.name ?? 'Suggested asset'}
+                  alt={m.asset.name ?? t('similarAssets.suggestedAlt')}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute bottom-0 inset-x-0 bg-purple-700/80 text-white text-[9px] text-center py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {m.matchCount}× match
+                  {t('similarAssets.matchCount', { count: m.matchCount })}
                 </div>
               </button>
             ))}
           </div>
         </>
       ) : (
-        <p className="text-[11px] text-purple-700">Geen matches in library.</p>
+        <p className="text-[11px] text-purple-700">{t('similarAssets.noMatches')}</p>
       )}
     </div>
   );

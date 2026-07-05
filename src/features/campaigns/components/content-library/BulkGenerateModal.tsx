@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Button } from '@/components/shared';
 import { Sparkles, Info } from 'lucide-react';
 import { DELIVERABLE_TYPES, DELIVERABLE_CATEGORIES } from '../../lib/deliverable-types';
@@ -36,6 +37,7 @@ export function BulkGenerateModal({
   deliverables,
   onCreated,
 }: BulkGenerateModalProps) {
+  const { t } = useTranslation('campaigns-content-library');
   const bulkCreate = useBulkCreateDeliverables(campaignId);
 
   const [contentType, setContentType] = useState<string>('');
@@ -99,7 +101,7 @@ export function BulkGenerateModal({
       onClose();
     } catch (err) {
       const e = interpretAiError(err);
-      setError(e.message || 'Something went wrong');
+      setError(e.message || t('bulk.somethingWrong'));
       if (e.unavailable) notifyAiError(err);
     }
   };
@@ -113,7 +115,7 @@ export function BulkGenerateModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Generate more content"
+      title={t('bulk.title')}
       size="md"
       footer={
         <div className="flex justify-end gap-3">
@@ -123,7 +125,7 @@ export function BulkGenerateModal({
             disabled={bulkCreate.isPending}
             className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 disabled:opacity-50"
           >
-            Cancel
+            {t('bulk.cancel')}
           </button>
           <Button
             onClick={handleSubmit}
@@ -131,7 +133,7 @@ export function BulkGenerateModal({
             isLoading={bulkCreate.isPending}
             icon={Sparkles}
           >
-            Generate {quantity}
+            {t('bulk.generateN', { n: quantity })}
           </Button>
         </div>
       }
@@ -140,14 +142,14 @@ export function BulkGenerateModal({
         {/* Content Type */}
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">
-            Content Type <span className="text-red-500">*</span>
+            {t('bulk.contentType')} <span className="text-red-500">*</span>
           </label>
           <select
             value={contentType}
             onChange={(e) => setContentType(e.target.value)}
             className="w-full text-sm px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-400"
           >
-            <option value="">Pick a content type…</option>
+            <option value="">{t('bulk.pickType')}</option>
             {DELIVERABLE_CATEGORIES.map((cat) => (
               <optgroup key={cat} label={cat}>
                 {DELIVERABLE_TYPES.filter((dt) => dt.category === cat).map((dt) => (
@@ -163,7 +165,7 @@ export function BulkGenerateModal({
         {/* Quantity */}
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">
-            Quantity <span className="text-gray-400 font-normal">(max {MAX_QUANTITY})</span>
+            {t('bulk.quantity')} <span className="text-gray-400 font-normal">{t('bulk.maxHint', { max: MAX_QUANTITY })}</span>
           </label>
           <input
             type="number"
@@ -183,7 +185,7 @@ export function BulkGenerateModal({
         {/* Based on */}
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">
-            Based on <span className="text-gray-400 font-normal">(optional)</span>
+            {t('bulk.basedOn')} <span className="text-gray-400 font-normal">{t('bulk.optional')}</span>
           </label>
           <select
             value={sourceDeliverableId}
@@ -191,7 +193,7 @@ export function BulkGenerateModal({
             disabled={completedDeliverables.length === 0}
             className="w-full text-sm px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-400"
           >
-            <option value="">No source (fresh brief)</option>
+            <option value="">{t('bulk.noSource')}</option>
             {completedDeliverables.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.title} — {d.contentType}
@@ -202,13 +204,13 @@ export function BulkGenerateModal({
             <p className="mt-1 flex items-start gap-1 text-[11px] text-teal-700">
               <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
               {selectedSource.contentType === contentType
-                ? 'Briefing, medium config, and type-specific inputs will be inherited.'
-                : 'Briefing + persona will be inherited. Medium config is skipped (different type).'}
+                ? t('bulk.inheritSameType')
+                : t('bulk.inheritDiffType')}
             </p>
           )}
           {completedDeliverables.length === 0 && (
             <p className="mt-1 text-[11px] text-gray-400">
-              No completed deliverables in this campaign yet — new items will start fresh.
+              {t('bulk.noCompleted')}
             </p>
           )}
         </div>
@@ -216,12 +218,12 @@ export function BulkGenerateModal({
         {/* Optional guidance */}
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">
-            Optional guidance
+            {t('bulk.optionalGuidance')}
           </label>
           <textarea
             value={briefGuidance}
             onChange={(e) => setBriefGuidance(e.target.value)}
-            placeholder="e.g. Focus on our new AI feature launch. Target mid-funnel users who've already seen the teaser campaign."
+            placeholder={t('bulk.guidancePlaceholder')}
             rows={3}
             maxLength={2000}
             className="w-full text-sm px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-400 resize-y"

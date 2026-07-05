@@ -1,6 +1,7 @@
 "use client";
 
 import { Sparkles, EyeOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/shared";
 import { useSaveSectionForAi } from "../hooks";
 import type { SaveForAiSection } from "../types/voiceguide.types";
@@ -16,6 +17,7 @@ interface AiContentBannerProps {
  * banner doubles as a toggle — not just an "enable" CTA.
  */
 export function AiContentBanner({ section, savedForAi }: AiContentBannerProps) {
+  const { t } = useTranslation("brandvoice");
   const save = useSaveSectionForAi();
 
   if (savedForAi) {
@@ -24,7 +26,7 @@ export function AiContentBanner({ section, savedForAi }: AiContentBannerProps) {
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-emerald-600" />
           <span className="text-sm text-emerald-700 font-medium">
-            Saved for AI content generation
+            {t("aiBanner.saved")}
           </span>
         </div>
         <Button
@@ -34,7 +36,7 @@ export function AiContentBanner({ section, savedForAi }: AiContentBannerProps) {
           isLoading={save.isPending}
         >
           <EyeOff className="w-3.5 h-3.5 mr-1.5" />
-          Disable
+          {t("aiBanner.disable")}
         </Button>
       </div>
     );
@@ -45,7 +47,7 @@ export function AiContentBanner({ section, savedForAi }: AiContentBannerProps) {
       <div className="flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-primary" />
         <span className="text-sm text-primary-700">
-          Include this section in AI content generation
+          {t("aiBanner.include")}
         </span>
       </div>
       <Button
@@ -54,7 +56,7 @@ export function AiContentBanner({ section, savedForAi }: AiContentBannerProps) {
         onClick={() => save.mutate({ section, value: true })}
         isLoading={save.isPending}
       >
-        Enable
+        {t("aiBanner.enable")}
       </Button>
     </div>
   );

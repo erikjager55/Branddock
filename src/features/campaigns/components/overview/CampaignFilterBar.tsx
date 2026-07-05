@@ -1,18 +1,20 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Calendar, LayoutGrid, List } from "lucide-react";
 import { SearchInput, Button } from "@/components/shared";
 import { useCampaignStore } from "../../stores/useCampaignStore";
 
 const FILTER_TABS = [
-  { id: "all" as const, label: "All" },
-  { id: "strategic" as const, label: "Strategic" },
-  { id: "quick" as const, label: "Quick" },
-  { id: "completed" as const, label: "Completed" },
+  { id: "all" as const },
+  { id: "strategic" as const },
+  { id: "quick" as const },
+  { id: "completed" as const },
 ];
 
 export function CampaignFilterBar() {
+  const { t } = useTranslation("campaigns-overview");
   const { filterTab, setFilterTab, searchQuery, setSearchQuery, viewMode, setViewMode } = useCampaignStore();
 
   return (
@@ -30,7 +32,7 @@ export function CampaignFilterBar() {
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
-            {tab.label}
+            {t(`filters.${tab.id}`)}
           </button>
         ))}
       </div>
@@ -40,7 +42,7 @@ export function CampaignFilterBar() {
         <SearchInput
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder="Search campaigns..."
+          placeholder={t("filters.searchPlaceholder")}
         />
       </div>
 

@@ -5,6 +5,7 @@ import {
   User, Plus, X, ChevronDown, ChevronUp, Info,
   MessageCircle, Palette, Type, Image, Sliders,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type {
   BrandPersonalityFrameworkData,
   PersonalityTrait,
@@ -128,6 +129,7 @@ function deriveDimensions(scores: AakerDimensionScores): { primary: string; seco
 
 /** Brand Personality canvas based on Aaker's 5 Dimensions, NN/g tone, and visual expression. */
 export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPersonalitySectionProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const [draft, setDraft] = useState<BrandPersonalityFrameworkData>(() => normalize(data));
   const [expandedDimension, setExpandedDimension] = useState<string | null>(null);
 
@@ -214,9 +216,9 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
             <User className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Brand Personality Dimensions</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandPersonality.dimensions.title')}</h2>
             <p className="text-sm text-gray-500">
-              Score each of Aaker&apos;s 5 personality dimensions (1-5) to define your brand&apos;s character
+              {t('brandPersonality.dimensions.subtitle')}
             </p>
           </div>
         </div>
@@ -229,17 +231,18 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
               : d.dimensionScores[dim.key as keyof AakerDimensionScores];
             const colors = DIMENSION_COLORS[dim.key] ?? DIMENSION_COLORS.sincerity;
             const isExpanded = expandedDimension === dim.key;
+            const dimLabel = t(`brand-dna:aaker.${dim.key}.label`, { defaultValue: dim.label });
 
             return (
               <div key={dim.key} className={`rounded-xl border border-gray-100 ${colors.bg} p-4`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-semibold ${colors.text}`}>{dim.label}</span>
+                    <span className={`text-sm font-semibold ${colors.text}`}>{dimLabel}</span>
                     <button
                       type="button"
                       onClick={() => setExpandedDimension(isExpanded ? null : dim.key)}
                       className="text-gray-400 hover:text-gray-600 transition-colors"
-                      aria-label={isExpanded ? `Collapse ${dim.label} info` : `Expand ${dim.label} info`}
+                      aria-label={isExpanded ? t('brandPersonality.dimensions.collapseInfo', { label: dimLabel }) : t('brandPersonality.dimensions.expandInfo', { label: dimLabel })}
                       aria-expanded={isExpanded}
                     >
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <Info className="h-4 w-4" />}
@@ -280,7 +283,7 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
                 {/* Expanded info */}
                 {isExpanded && (
                   <div className="mt-3 pt-3 border-t border-white/50 space-y-2">
-                    <p className="text-xs text-gray-600">{dim.description}</p>
+                    <p className="text-xs text-gray-600">{t(`brand-dna:aaker.${dim.key}.description`, { defaultValue: dim.description })}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {dim.facets.map((f) => (
                         <span key={f.name} className="text-xs bg-white/70 rounded-full px-2.5 py-0.5 text-gray-600">
@@ -306,10 +309,10 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
         {primaryDim && primaryInfo && !isEditing && (
           <div className="mt-4 bg-primary-50/50 border border-primary-100 rounded-xl p-4">
             <p className="text-xs font-medium text-primary uppercase tracking-wider mb-1">
-              Dominant Personality
+              {t('brandPersonality.dimensions.dominant')}
             </p>
-            <p className="text-sm font-semibold text-primary-800">{primaryInfo.label}</p>
-            <p className="text-xs text-primary mt-0.5">{primaryInfo.description}</p>
+            <p className="text-sm font-semibold text-primary-800">{t(`brand-dna:aaker.${primaryInfo.key}.label`, { defaultValue: primaryInfo.label })}</p>
+            <p className="text-xs text-primary mt-0.5">{t(`brand-dna:aaker.${primaryInfo.key}.description`, { defaultValue: primaryInfo.description })}</p>
           </div>
         )}
       </div>
@@ -321,9 +324,9 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
             <User className="h-5 w-5 text-rose-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Core Personality Traits</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandPersonality.traits.title')}</h2>
             <p className="text-sm text-gray-500">
-              3-5 defining traits with &quot;We Are / But Never&quot; guard rails
+              {t('brandPersonality.traits.subtitle')}
             </p>
           </div>
         </div>
@@ -338,7 +341,7 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
                     value={trait.name}
                     onChange={(e) => updateTrait(i, 'name', e.target.value)}
                     className="text-sm font-semibold text-gray-900 bg-transparent border-b border-gray-300 focus:border-primary-400 outline-none pb-0.5 w-48"
-                    placeholder="Trait name..."
+                    placeholder={t('brandPersonality.traits.namePlaceholder')}
                   />
                   <button
                     type="button"
@@ -353,27 +356,27 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
                   onChange={(e) => updateTrait(i, 'description', e.target.value)}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none mb-2"
                   rows={2}
-                  placeholder="Describe this trait..."
+                  placeholder={t('brandPersonality.traits.descriptionPlaceholder')}
                 />
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-medium text-emerald-600 mb-1 block">We Are This</label>
+                    <label className="text-xs font-medium text-emerald-600 mb-1 block">{t('brandPersonality.traits.weAreThis')}</label>
                     <textarea
                       value={trait.weAreThis}
                       onChange={(e) => updateTrait(i, 'weAreThis', e.target.value)}
                       className="w-full rounded-lg border border-emerald-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-emerald-50/30 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 resize-none"
                       rows={2}
-                      placeholder="Concrete examples..."
+                      placeholder={t('brandPersonality.traits.weArePlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-red-500 mb-1 block">But Never That</label>
+                    <label className="text-xs font-medium text-red-500 mb-1 block">{t('brandPersonality.traits.butNever')}</label>
                     <textarea
                       value={trait.butNeverThat}
                       onChange={(e) => updateTrait(i, 'butNeverThat', e.target.value)}
                       className="w-full rounded-lg border border-red-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-red-50/30 focus:border-red-400 focus:ring-1 focus:ring-red-400 resize-none"
                       rows={2}
-                      placeholder="Guard rails..."
+                      placeholder={t('brandPersonality.traits.butNeverPlaceholder')}
                     />
                   </div>
                 </div>
@@ -386,7 +389,7 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
                 className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium"
               >
                 <Plus className="h-4 w-4" />
-                Add trait
+                {t('brandPersonality.traits.add')}
               </button>
             )}
           </div>
@@ -401,13 +404,13 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
                 <div className="grid grid-cols-2 gap-3">
                   {trait.weAreThis && (
                     <div className="bg-emerald-50/50 border border-emerald-100 rounded-lg p-3">
-                      <p className="text-xs font-medium text-emerald-600 mb-1">We Are This</p>
+                      <p className="text-xs font-medium text-emerald-600 mb-1">{t('brandPersonality.traits.weAreThis')}</p>
                       <p className="text-xs text-gray-600">{trait.weAreThis}</p>
                     </div>
                   )}
                   {trait.butNeverThat && (
                     <div className="bg-red-50/50 border border-red-100 rounded-lg p-3">
-                      <p className="text-xs font-medium text-red-500 mb-1">But Never That</p>
+                      <p className="text-xs font-medium text-red-500 mb-1">{t('brandPersonality.traits.butNever')}</p>
                       <p className="text-xs text-gray-600">{trait.butNeverThat}</p>
                     </div>
                   )}
@@ -416,7 +419,7 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
             ))}
           </div>
         ) : (
-          <p className="text-sm italic text-gray-400">Define 3-5 core personality traits...</p>
+          <p className="text-sm italic text-gray-400">{t('brandPersonality.traits.empty')}</p>
         )}
       </div>
 
@@ -427,9 +430,9 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
             <Sliders className="h-5 w-5 text-indigo-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Personality Spectrum</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandPersonality.spectrum.title')}</h2>
             <p className="text-sm text-gray-500">
-              Position your brand on 7 personality dimensions (drag sliders)
+              {t('brandPersonality.spectrum.subtitle')}
             </p>
           </div>
         </div>
@@ -443,8 +446,8 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
             return (
               <div key={slider.key}>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium text-gray-700">{slider.leftLabel}</span>
-                  <span className="text-xs font-medium text-gray-700">{slider.rightLabel}</span>
+                  <span className="text-xs font-medium text-gray-700">{t(`brand-dna:spectrum.${slider.key}.leftLabel`, { defaultValue: slider.leftLabel })}</span>
+                  <span className="text-xs font-medium text-gray-700">{t(`brand-dna:spectrum.${slider.key}.rightLabel`, { defaultValue: slider.rightLabel })}</span>
                 </div>
                 {isEditing ? (
                   <input
@@ -469,8 +472,8 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
                   </div>
                 )}
                 <div className="flex justify-between mt-1">
-                  <span className="text-[10px] text-gray-400">{slider.leftDescription}</span>
-                  <span className="text-[10px] text-gray-400">{slider.rightDescription}</span>
+                  <span className="text-[10px] text-gray-400">{t(`brand-dna:spectrum.${slider.key}.leftDescription`, { defaultValue: slider.leftDescription })}</span>
+                  <span className="text-[10px] text-gray-400">{t(`brand-dna:spectrum.${slider.key}.rightDescription`, { defaultValue: slider.rightDescription })}</span>
                 </div>
               </div>
             );
@@ -488,9 +491,9 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
             <Palette className="h-5 w-5 text-violet-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Visual Personality Expression</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandPersonality.visual.title')}</h2>
             <p className="text-sm text-gray-500">
-              How personality translates to visual design decisions
+              {t('brandPersonality.visual.subtitle')}
             </p>
           </div>
         </div>
@@ -499,20 +502,20 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
         {primaryDim && primaryInfo && (
           <div className="bg-violet-50/30 border border-violet-100 rounded-xl p-4 mb-5">
             <p className="text-xs font-medium text-violet-600 uppercase tracking-wider mb-2">
-              Visual guidance for {primaryInfo.label} brands
+              {t('brandPersonality.visual.guidanceFor', { label: t(`brand-dna:aaker.${primaryInfo.key}.label`, { defaultValue: primaryInfo.label }) })}
             </p>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <p className="text-xs font-medium text-gray-600 mb-0.5">Color</p>
-                <p className="text-xs text-gray-500">{primaryInfo.colorAssociation}</p>
+                <p className="text-xs font-medium text-gray-600 mb-0.5">{t('brandPersonality.visual.color')}</p>
+                <p className="text-xs text-gray-500">{t(`brand-dna:aaker.${primaryInfo.key}.colorAssociation`, { defaultValue: primaryInfo.colorAssociation })}</p>
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-600 mb-0.5">Typography</p>
-                <p className="text-xs text-gray-500">{primaryInfo.typographyAssociation}</p>
+                <p className="text-xs font-medium text-gray-600 mb-0.5">{t('brandPersonality.visual.typography')}</p>
+                <p className="text-xs text-gray-500">{t(`brand-dna:aaker.${primaryInfo.key}.typographyAssociation`, { defaultValue: primaryInfo.typographyAssociation })}</p>
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-600 mb-0.5">Imagery</p>
-                <p className="text-xs text-gray-500">{primaryInfo.imageryAssociation}</p>
+                <p className="text-xs font-medium text-gray-600 mb-0.5">{t('brandPersonality.visual.imagery')}</p>
+                <p className="text-xs text-gray-500">{t(`brand-dna:aaker.${primaryInfo.key}.imageryAssociation`, { defaultValue: primaryInfo.imageryAssociation })}</p>
               </div>
             </div>
           </div>
@@ -523,31 +526,31 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
             icon={Palette}
             iconBg="bg-pink-50"
             iconColor="text-pink-600"
-            label="Color Direction"
+            label={t('brandPersonality.visual.colorLabel')}
             value={isEditing ? draft.colorDirection : d.colorDirection}
             isEditing={isEditing}
             onChange={(v) => handleFieldChange('colorDirection', v)}
-            placeholder="Describe your brand's color personality direction..."
+            placeholder={t('brandPersonality.visual.colorPlaceholder')}
           />
           <VisualField
             icon={Type}
             iconBg="bg-orange-50"
             iconColor="text-orange-600"
-            label="Typography Direction"
+            label={t('brandPersonality.visual.typographyLabel')}
             value={isEditing ? draft.typographyDirection : d.typographyDirection}
             isEditing={isEditing}
             onChange={(v) => handleFieldChange('typographyDirection', v)}
-            placeholder="Describe your brand's typography personality..."
+            placeholder={t('brandPersonality.visual.typographyPlaceholder')}
           />
           <VisualField
             icon={Image}
             iconBg="bg-cyan-50"
             iconColor="text-cyan-600"
-            label="Imagery Direction"
+            label={t('brandPersonality.visual.imageryLabel')}
             value={isEditing ? draft.imageryDirection : d.imageryDirection}
             isEditing={isEditing}
             onChange={(v) => handleFieldChange('imageryDirection', v)}
-            placeholder="Describe your brand's imagery style..."
+            placeholder={t('brandPersonality.visual.imageryPlaceholder')}
           />
         </div>
       </div>

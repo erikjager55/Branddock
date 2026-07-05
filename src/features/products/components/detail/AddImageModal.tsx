@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { ImagePlus, Link, Upload, X } from "lucide-react";
 import { Modal, Button, Input } from "@/components/shared";
 import { Select } from "@/components/shared";
@@ -25,7 +26,17 @@ export function AddImageModal({
   onClose,
   productId,
 }: AddImageModalProps) {
+  const { t } = useTranslation(["products", "products-registry"]);
   const [activeTab, setActiveTab] = useState<TabId>("url");
+
+  const imageCategoryOptions = useMemo(
+    () =>
+      IMAGE_CATEGORY_SELECT_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: t(`products-registry:imageCategory.${opt.value}`, { defaultValue: opt.label }),
+      })),
+    [t],
+  );
 
   // URL tab state
   const [url, setUrl] = useState("");
@@ -69,13 +80,13 @@ export function AddImageModal({
 
   const validateFile = useCallback((file: File): string | null => {
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return "Invalid file type. Allowed: PNG, JPG, WEBP";
+      return t("addImage.errorInvalidType");
     }
     if (file.size > MAX_FILE_SIZE) {
-      return "File too large (max 5MB)";
+      return t("addImage.errorTooLarge");
     }
     return null;
-  }, []);
+  }, [t]);
 
   const handleFileSelect = useCallback((file: File) => {
     const error = validateFile(file);
@@ -168,7 +179,7 @@ export function AddImageModal({
     url.trim().startsWith("https://") || url.trim().startsWith("http://");
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Add Product Image" size="md" className="mt-6">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t("addImage.title")} size="md" className="mt-6">
       {/* Tab header */}
       <div className="flex gap-4 border-b border-gray-200 mb-4">
         <button
@@ -180,7 +191,7 @@ export function AddImageModal({
           }`}
         >
           <Link className="h-4 w-4" />
-          Image URL
+          {t("addImage.tabUrl")}
         </button>
         <button
           onClick={() => setActiveTab("upload")}
@@ -191,7 +202,7 @@ export function AddImageModal({
           }`}
         >
           <Upload className="h-4 w-4" />
-          Upload
+          {t("addImage.tabUpload")}
         </button>
       </div>
 
@@ -199,8 +210,8 @@ export function AddImageModal({
         <div className="space-y-4">
           {/* URL input */}
           <Input
-            label="Image URL"
-            placeholder="https://example.com/product-image.jpg"
+            label={t("addImage.urlLabel")}
+            placeholder={t("addImage.urlPlaceholder")}
             value={url}
             onChange={(e) => {
               setUrl(e.target.value);
@@ -212,15 +223,15 @@ export function AddImageModal({
           {/* Live preview */}
           {isValidUrl && (
             <div className="rounded-lg border border-gray-200 p-2">
-              <p className="text-xs text-gray-500 mb-2">Preview</p>
+              <p className="text-xs text-gray-500 mb-2">{t("addImage.preview")}</p>
               {previewError ? (
                 <div className="flex h-32 items-center justify-center rounded bg-gray-50 text-sm text-gray-400">
-                  Could not load image
+                  {t("addImage.couldNotLoad")}
                 </div>
               ) : (
                 <img
                   src={url}
-                  alt="Preview"
+                  alt={t("addImage.previewAlt")}
                   className="h-32 w-full rounded object-contain bg-gray-50"
                   onError={() => setPreviewError(true)}
                 />
@@ -230,17 +241,17 @@ export function AddImageModal({
 
           {/* Category */}
           <Select
-            label="Category"
+            label={t("fields.category")}
             value={category}
             onChange={setCategory}
-            options={IMAGE_CATEGORY_SELECT_OPTIONS}
-            placeholder="Select category..."
+            options={imageCategoryOptions}
+            placeholder={t("fields.selectCategory")}
           />
 
           {/* Alt text */}
           <Input
-            label="Alt Text"
-            placeholder="Describe the image..."
+            label={t("fields.altText")}
+            placeholder={t("fields.altPlaceholder")}
             value={altText}
             onChange={(e) => setAltText(e.target.value)}
           />
@@ -248,7 +259,7 @@ export function AddImageModal({
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" onClick={handleClose}>
-              Cancel
+              {t("actions.cancel")}
             </Button>
             <Button
               variant="primary"
@@ -257,7 +268,7 @@ export function AddImageModal({
               disabled={!isValidUrl}
               isLoading={addImage.isPending}
             >
-              Add Image
+              {t("actions.addImage")}
             </Button>
           </div>
         </div>
@@ -273,14 +284,14 @@ export function AddImageModal({
                 <button
                   onClick={clearSelectedFile}
                   className="ml-2 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-                  aria-label="Remove file"
+                  aria-label={t("addImage.removeFile")}
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
               <img
                 src={filePreview}
-                alt="Preview"
+                alt={t("addImage.previewAlt")}
                 className="h-40 w-full rounded object-contain bg-gray-50"
               />
             </div>
@@ -298,13 +309,13 @@ export function AddImageModal({
             >
               <Upload className={`h-10 w-10 mb-3 ${dragOver ? "text-primary" : "text-gray-400"}`} />
               <p className="text-sm font-medium text-gray-700">
-                Drag & drop an image here
+                {t("addImage.dropTitle")}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                or click to browse
+                {t("addImage.dropBrowse")}
               </p>
               <p className="text-xs text-gray-400 mt-2">
-                PNG, JPG, WEBP up to 5MB
+                {t("addImage.dropHint")}
               </p>
             </div>
           )}
@@ -333,17 +344,17 @@ export function AddImageModal({
 
           {/* Category */}
           <Select
-            label="Category"
+            label={t("fields.category")}
             value={uploadCategory}
             onChange={setUploadCategory}
-            options={IMAGE_CATEGORY_SELECT_OPTIONS}
-            placeholder="Select category..."
+            options={imageCategoryOptions}
+            placeholder={t("fields.selectCategory")}
           />
 
           {/* Alt text */}
           <Input
-            label="Alt Text"
-            placeholder="Describe the image..."
+            label={t("fields.altText")}
+            placeholder={t("fields.altPlaceholder")}
             value={uploadAltText}
             onChange={(e) => setUploadAltText(e.target.value)}
           />
@@ -351,7 +362,7 @@ export function AddImageModal({
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" onClick={handleClose}>
-              Cancel
+              {t("actions.cancel")}
             </Button>
             <Button
               variant="primary"
@@ -360,7 +371,7 @@ export function AddImageModal({
               disabled={!selectedFile}
               isLoading={uploadImage.isPending}
             >
-              Upload Image
+              {t("addImage.uploadButton")}
             </Button>
           </div>
         </div>

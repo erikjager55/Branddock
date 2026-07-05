@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import type { ResearchBundleSummary } from "../../types/research.types";
 import { BundleCard } from "./BundleCard";
 
@@ -19,14 +20,16 @@ export function FoundationPlansSection({
   onSelect,
   onLearnMore,
 }: FoundationPlansSectionProps) {
+  const { t } = useTranslation("research");
+
   if (bundles.length === 0) return null;
 
   return (
     <div data-testid="foundation-plans">
       <div className="mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">Foundation Plans</h2>
+        <h2 className="text-xl font-semibold text-gray-900">{t("foundationPlans.title")}</h2>
         <p className="text-sm text-gray-500">
-          Essential research packages to build your brand foundation
+          {t("foundationPlans.subtitle")}
         </p>
       </div>
 

@@ -10,10 +10,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ChevronDown, CheckCircle, Plus,
   Sparkles,
 } from 'lucide-react';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { CardLockIndicator } from '@/components/lock';
 import * as LucideIcons from 'lucide-react';
 import { Card } from '@/components/shared/Card';
@@ -71,18 +73,6 @@ function getIcon(iconName: string): React.ComponentType<{ className?: string }> 
   return (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[iconName] || LucideIcons.FileText;
 }
 
-function formatDate(dateStr: string): string {
-  try {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  } catch {
-    return '';
-  }
-}
-
 // ─── Props ──────────────────────────────────────────────────
 
 export interface BrandAssetCardProps {
@@ -101,6 +91,8 @@ export function BrandAssetCard({
   className,
 }: BrandAssetCardProps) {
   const [methodsExpanded, setMethodsExpanded] = useState(false);
+  const { t } = useTranslation('brand-assets');
+  const { formatDate } = useFormat();
 
   const gradient = CATEGORY_GRADIENTS[asset.category] ?? 'from-gray-500 to-gray-600';
   const iconName = CATEGORY_ICONS[asset.category] ?? 'FileText';
@@ -147,7 +139,7 @@ export function BrandAssetCard({
               {asset.name}
             </h3>
             <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
-              {asset.description || 'No description yet'}
+              {asset.description || t('card.noDescription')}
             </p>
           </div>
 
@@ -158,7 +150,7 @@ export function BrandAssetCard({
               completenessPercent >= 50 ? 'border-amber-200 bg-amber-50 text-amber-600' :
               'border-red-200 bg-red-50 text-red-500'
             }`}>
-              {completenessPercent}% complete
+              {t('card.complete', { percent: completenessPercent })}
             </span>
           </div>
         </div>
@@ -176,7 +168,7 @@ export function BrandAssetCard({
         >
           <div className="flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5" />
-            <span>Validation Methods ({completedMethods}/{VALIDATION_METHODS.length})</span>
+            <span>{t('card.validationMethods', { completed: completedMethods, total: VALIDATION_METHODS.length })}</span>
           </div>
           <ChevronDown
             className={cn(
@@ -213,10 +205,10 @@ export function BrandAssetCard({
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs font-semibold text-foreground">
-                          {method.label}
+                          {t(`card.methods.${method.key}.label`, { defaultValue: method.label })}
                         </div>
                         <div className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-                          {method.description}
+                          {t(`card.methods.${method.key}.description`, { defaultValue: method.description })}
                         </div>
                       </div>
                     </div>
@@ -225,21 +217,21 @@ export function BrandAssetCard({
                         <>
                           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
                             <CheckCircle className="h-3 w-3" />
-                            VALIDATED
+                            {t('card.validated')}
                           </span>
                           <span className="text-[10px] font-medium text-emerald-600 hover:underline cursor-pointer">
-                            View Results
+                            {t('card.viewResults')}
                           </span>
                         </>
                       ) : (
                         <>
                           <span className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-2 py-0.5 text-[10px] font-medium text-gray-500">
                             <Plus className="h-3 w-3" />
-                            AVAILABLE
+                            {t('card.available')}
                           </span>
                           {method.priceLabel && (
                             <span className="text-[10px] text-gray-400">
-                              {method.priceLabel}
+                              {t(`card.methods.${method.key}.priceLabel`, { defaultValue: method.priceLabel })}
                             </span>
                           )}
                         </>
@@ -256,7 +248,13 @@ export function BrandAssetCard({
       {/* Footer — last updated */}
       {asset.updatedAt && (
         <div className="px-6 py-3 border-t border-border text-xs text-muted-foreground">
-          Last updated: {formatDate(asset.updatedAt)}
+          {t('card.lastUpdated', {
+            date: formatDate(asset.updatedAt, {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            }),
+          })}
         </div>
       )}
     </Card>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useFaqFeedback } from '@/hooks/use-help';
 
@@ -11,6 +12,7 @@ interface FaqFeedbackProps {
 }
 
 export function FaqFeedback({ id, helpfulYes, helpfulNo }: FaqFeedbackProps) {
+  const { t } = useTranslation('help');
   const [submitted, setSubmitted] = useState(false);
   const feedbackMutation = useFaqFeedback();
 
@@ -27,13 +29,13 @@ export function FaqFeedback({ id, helpfulYes, helpfulNo }: FaqFeedbackProps) {
 
   if (submitted) {
     return (
-      <p className="text-sm text-gray-500">Thanks for your feedback!</p>
+      <p className="text-sm text-gray-500">{t('faq.feedback.thanks')}</p>
     );
   }
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm text-gray-500">Was this helpful?</span>
+      <span className="text-sm text-gray-500">{t('faq.feedback.prompt')}</span>
       <button
         type="button"
         onClick={() => handleFeedback(true)}

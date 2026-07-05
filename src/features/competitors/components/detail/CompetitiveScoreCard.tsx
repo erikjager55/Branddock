@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { BarChart3 } from "lucide-react";
 import { getScoreColor, getScoreBgColor, getScoreLabel } from "../../constants/competitor-constants";
 
@@ -7,8 +8,18 @@ interface CompetitiveScoreCardProps {
   score: number | null;
 }
 
+/** Bridge getScoreLabel()'s English return value to a stable i18n key. */
+const SCORE_LABEL_KEYS: Record<string, string> = {
+  "Not scored": "notScored",
+  "High threat": "highThreat",
+  Moderate: "moderate",
+  "Low threat": "lowThreat",
+};
+
 /** Circular competitive score display card */
 export function CompetitiveScoreCard({ score }: CompetitiveScoreCardProps) {
+  const { t } = useTranslation(["competitors", "trends-personas-registry"]);
+  const scoreLabel = getScoreLabel(score ?? null);
   const hasScore = score !== null && score !== undefined;
   const displayScore = hasScore ? score : 0;
   const circumference = 2 * Math.PI * 40;
@@ -26,7 +37,7 @@ export function CompetitiveScoreCard({ score }: CompetitiveScoreCardProps) {
     <div className="rounded-lg border border-gray-200 bg-white p-5">
       <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
         <BarChart3 className="h-4 w-4 text-gray-500" />
-        Competitive Score
+        {t("competitiveScore.title")}
       </h3>
 
       <div className="flex flex-col items-center">
@@ -68,7 +79,7 @@ export function CompetitiveScoreCard({ score }: CompetitiveScoreCardProps) {
 
         {/* Label */}
         <div className={`rounded-full px-3 py-1 text-xs font-medium ${hasScore ? getScoreBgColor(score) : "bg-gray-100"} ${hasScore ? getScoreColor(score) : "text-gray-400"}`}>
-          {getScoreLabel(score ?? null)}
+          {t(`trends-personas-registry:competitorScore.${SCORE_LABEL_KEYS[scoreLabel] ?? "notScored"}`, { defaultValue: scoreLabel })}
         </div>
       </div>
     </div>

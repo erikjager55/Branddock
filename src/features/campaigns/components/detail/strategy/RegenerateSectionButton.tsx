@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/shared";
 import { useRegenerateBlueprintLayer } from "../../../hooks";
@@ -14,6 +15,7 @@ interface RegenerateSectionButtonProps {
 
 /** Per-layer regeneration button with feedback textarea */
 export function RegenerateSectionButton({ campaignId, layer, label }: RegenerateSectionButtonProps) {
+  const { t } = useTranslation('campaigns-core');
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedback, setFeedback] = useState("");
   const regenerate = useRegenerateBlueprintLayer(campaignId);
@@ -38,7 +40,7 @@ export function RegenerateSectionButton({ campaignId, layer, label }: Regenerate
         icon={RefreshCw}
         onClick={() => setShowFeedback(true)}
       >
-        {label || "Regenerate"}
+        {label || t('actions.regenerate')}
       </Button>
     );
   }
@@ -46,12 +48,12 @@ export function RegenerateSectionButton({ campaignId, layer, label }: Regenerate
   return (
     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
       <p className="text-xs font-medium text-gray-700">
-        Provide feedback to guide regeneration (optional):
+        {t('regenerate.feedbackPrompt')}
       </p>
       <textarea
         value={feedback}
         onChange={(e) => setFeedback(e.target.value)}
-        placeholder="e.g., Focus more on LinkedIn for the B2B persona..."
+        placeholder={t('regenerate.feedbackPlaceholder')}
         rows={2}
         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
       />
@@ -63,7 +65,7 @@ export function RegenerateSectionButton({ campaignId, layer, label }: Regenerate
           onClick={handleRegenerate}
           disabled={regenerate.isPending}
         >
-          {regenerate.isPending ? "Regenerating..." : "Regenerate"}
+          {regenerate.isPending ? t('actions.regenerating') : t('actions.regenerate')}
         </Button>
         <Button
           variant="ghost"
@@ -74,7 +76,7 @@ export function RegenerateSectionButton({ campaignId, layer, label }: Regenerate
           }}
           disabled={regenerate.isPending}
         >
-          Cancel
+          {t('actions.cancel')}
         </Button>
       </div>
     </div>

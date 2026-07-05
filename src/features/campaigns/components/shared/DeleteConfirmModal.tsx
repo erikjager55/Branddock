@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, X } from "lucide-react";
 
 interface DeleteConfirmModalProps {
@@ -10,6 +11,7 @@ interface DeleteConfirmModalProps {
 }
 
 export function DeleteConfirmModal({ title, onConfirm, onCancel }: DeleteConfirmModalProps) {
+  const { t } = useTranslation('campaigns-core');
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancel();
@@ -36,16 +38,16 @@ export function DeleteConfirmModal({ title, onConfirm, onCancel }: DeleteConfirm
             <AlertTriangle className="w-5 h-5" style={{ color: "#ef4444" }} />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 id="delete-confirm-title" className="text-sm font-semibold text-gray-900 mb-1">Delete content</h3>
+            <h3 id="delete-confirm-title" className="text-sm font-semibold text-gray-900 mb-1">{t('delete.title')}</h3>
             <p className="text-sm text-gray-600">
-              Are you sure you want to delete <strong className="text-gray-900">&ldquo;{title}&rdquo;</strong>? This action cannot be undone.
+              {t('delete.confirmPrefix')}<strong className="text-gray-900">&ldquo;{title}&rdquo;</strong>{t('delete.confirmSuffix')}
             </p>
           </div>
           <button
             type="button"
             onClick={onCancel}
             className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0"
-            aria-label="Close"
+            aria-label={t('actions.close')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -56,7 +58,7 @@ export function DeleteConfirmModal({ title, onConfirm, onCancel }: DeleteConfirm
             onClick={onCancel}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            Cancel
+            {t('actions.cancel')}
           </button>
           <button
             type="button"
@@ -64,7 +66,7 @@ export function DeleteConfirmModal({ title, onConfirm, onCancel }: DeleteConfirm
             className="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors"
             style={{ backgroundColor: "#ef4444" }}
           >
-            Delete
+            {t('actions.delete')}
           </button>
         </div>
       </div>

@@ -64,12 +64,14 @@
 > ADR: [`2026-06-28-multilingual-i18n-and-multi-market-content`](docs/adr/2026-06-28-multilingual-i18n-and-multi-market-content.md) (superseert `2026-05-08-locale-routing-brand-voice`). Onderbouwd door 2 multi-agent onderzoeks-workflows + 1 adversariële review.
 > **Twee orthogonale assen, strikt gescheiden**: UI-locale (per gebruiker, i18next, alle niet-Engelse bundles automatisch AI-vertaald — geen handwerk) vs content-locale (per workspace/merk/markt, Approach C: `Brand` 1:1 + `BrandLocaleProfile` JSON-delta-overlays). User-keuze: volledige multi-markt, maar Fase 4-5 go/no-go-gated — **mag `vercel-deployment` niet gijzelen**.
 
+> **STATUS 2026-07-05 — LAUNCH-READY**: Fase 1-3 zijn GEMERGED op `main` (en↔nl live door de hele app; de twee-selector-visie — Display-language per gebruiker + Content-/Output-language per workspace/generatie — is compleet). Volledige gate-suite groen op main (tsc/lint/separation/foundation-smoke 46/46/target-picker-smoke 8/8/build). Blokkeert `vercel-deployment` niet meer. **Post-launch parkeer**: Fase 1b (AI-vertaal-engine voor onderhoud + de/es/fr — nu geshipt: en/nl geseed door de extractie-waves), de deferred Fase-3-follow-ups (F-VAL-target-pack-scoring + campagne-bulk-UI-picker), en Fase 4-5.
+
 | Fase | Task | Wanneer | Effort | Status |
 |---|---|---|---|---|
-| 1 | [`i18n-ui-foundation`](tasks/i18n-ui-foundation.md) — i18next runtime + Display-language selector + CI-guard | pre-launch NOW | 2-3 wk | open |
-| 1b | [`i18n-ai-translation-pipeline`](tasks/i18n-ai-translation-pipeline.md) — automatische AI-vertaling (Opus + validatie-gate + judge) | pre-launch NOW | 1-2 wk + per-namespace | open |
-| 2 | [`content-locale-foundation`](tasks/content-locale-foundation.md) — Content-language selector + Brand/BrandLocaleProfile datamodel | pre-launch NOW | 2-3 wk | open |
-| 3 | [`content-locale-target-picker`](tasks/content-locale-target-picker.md) — per-generatie target-locale + analyze-lek dichten | pre-launch NOW/vroeg | 1-2 wk | open |
+| 1 | [`i18n-ui-foundation`](tasks/i18n-ui-foundation.md) — i18next runtime + Display-language selector + CI-guard + volledige extractie/remediation | pre-launch | 2-3 wk | ✅ **done** (#65/#68/#70/#71) |
+| 1b | [`i18n-ai-translation-pipeline`](tasks/i18n-ai-translation-pipeline.md) — automatische AI-vertaling (Opus + validatie-gate + judge) + de/es/fr | **post-launch** (en/nl geseed; niet-blokkerend) | 1-2 wk + per-namespace | open |
+| 2 | [`content-locale-foundation`](tasks/content-locale-foundation.md) — Content-language selector + Brand/BrandLocaleProfile datamodel | pre-launch | 2-3 wk | ✅ **done** (#73) |
+| 3 | [`content-locale-target-picker`](tasks/content-locale-target-picker.md) — per-generatie target-locale + analyze-lek dichten | pre-launch | 1-2 wk | ✅ **done** (#74; F-VAL-pack + bulk-UI = post-launch follow-up) |
 | 4+5 | [`multi-market-transcreation-enterprise`](tasks/multi-market-transcreation-enterprise.md) — transcreatie-fan-out + per-locale F-VAL + compliance/hreflang/RBAC/org-billing | LATER (enterprise, go/no-go) | multi-maand | blocked |
 
 **Kritieke aandachtspunten** (uit de adversariële review, verwerkt in de task-files): twee parallelle content-locale-paden (`getBrandContext` inline `'en'` + `resolveLocaleForBrand` `'en-GB'`) moeten béide profiel-precedentie krijgen; cache-key in dezelfde commit als locale-aware maken (anders cross-locale bleed); LandingPage unique-key-flip is een compile-break (raakt `p/[slug]` + `publish-page.ts`); `prisma/seed.ts` moet `Brand`+default-profiel seeden; F-VAL-packs dekken 4 van 7 talen (markt-activatie gated op pack); server-e-mails/PDF/notifications vallen buiten de client-i18next-laag.

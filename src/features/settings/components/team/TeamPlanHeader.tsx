@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useTeam } from '@/hooks/use-settings';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useBillingPlan } from '@/hooks/use-billing';
@@ -9,6 +10,7 @@ import { Users, Plus, ArrowUpRight } from 'lucide-react';
 import { formatLimit } from '@/lib/constants/plan-limits';
 
 export function TeamPlanHeader() {
+  const { t } = useTranslation('settings-team');
   const { data, isLoading } = useTeam();
   const billing = useBillingPlan();
   const setIsInviteModalOpen = useSettingsStore((s) => s.setIsInviteModalOpen);
@@ -55,7 +57,10 @@ export function TeamPlanHeader() {
               <PlanBadge tier={billing.plan.tier} isFreeBeta={billing.isFreeBeta} />
             </div>
             <p className="text-xs text-gray-500 mt-0.5">
-              {seatCount} of {isUnlimited ? 'Unlimited' : formatLimit(seatLimit)} seats used
+              {t('plan.seatsUsed', {
+                used: seatCount,
+                limit: isUnlimited ? t('plan.unlimited') : formatLimit(seatLimit),
+              })}
             </p>
           </div>
         </div>
@@ -66,7 +71,7 @@ export function TeamPlanHeader() {
           icon={Plus}
           onClick={() => setIsInviteModalOpen(true)}
         >
-          Invite Member
+          {t('plan.inviteMember')}
         </Button>
       </div>
 
@@ -79,7 +84,7 @@ export function TeamPlanHeader() {
               onClick={() => setActiveTab('billing')}
               className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium ml-4 flex-shrink-0"
             >
-              Upgrade Plan
+              {t('plan.upgradePlan')}
               <ArrowUpRight className="w-3 h-3" />
             </button>
           )}
@@ -88,7 +93,7 @@ export function TeamPlanHeader() {
 
       {isUnlimited && billing.isFreeBeta && (
         <p className="text-xs text-primary/70 mt-2">
-          Unlimited seats during beta
+          {t('plan.unlimitedSeatsBeta')}
         </p>
       )}
     </div>

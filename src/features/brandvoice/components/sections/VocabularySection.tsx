@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { Plus, X, Hash, Ban, CheckCircle, Pencil, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/shared";
 import { AiContentBanner } from "../AiContentBanner";
 import { useUpdateVoiceguide } from "../../hooks";
@@ -28,6 +29,7 @@ const ACCENT_STYLES = {
 } as const;
 
 function ChipList({ label, description, items, placeholder, onChange, accent, icon: Icon }: ChipListProps) {
+  const { t } = useTranslation("brandvoice");
   const [draft, setDraft] = useState("");
   const styles = ACCENT_STYLES[accent];
 
@@ -57,7 +59,7 @@ function ChipList({ label, description, items, placeholder, onChange, accent, ic
 
       <div className="flex flex-wrap gap-1.5 mb-3">
         {items.length === 0 && (
-          <span className="text-xs text-gray-400 italic">No entries yet</span>
+          <span className="text-xs text-gray-400 italic">{t("vocabulary.chip.empty")}</span>
         )}
         {items.map((item, i) => (
           <span
@@ -68,7 +70,7 @@ function ChipList({ label, description, items, placeholder, onChange, accent, ic
             <button
               onClick={() => handleRemove(i)}
               className="hover:opacity-70 transition-opacity"
-              aria-label={`Remove ${item}`}
+              aria-label={t("vocabulary.chip.removeAria", { item })}
             >
               <X className="w-3 h-3" />
             </button>
@@ -92,7 +94,7 @@ function ChipList({ label, description, items, placeholder, onChange, accent, ic
         />
         <Button variant="secondary" size="sm" onClick={handleAdd}>
           <Plus className="w-3.5 h-3.5 mr-1" />
-          Add
+          {t("vocabulary.chip.add")}
         </Button>
       </div>
     </div>
@@ -101,6 +103,7 @@ function ChipList({ label, description, items, placeholder, onChange, accent, ic
 
 /** Do/Don't fraserings-voorbeelden — verhuisd uit BrandStyleguide.examplePhrases (ADR 2026-05-15). */
 function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
+  const { t } = useTranslation("brandvoice");
   const update = useUpdateVoiceguide();
   const examples = voiceguide.examplePhrases ?? [];
   const doExamples = examples.filter((e) => e.type === "do");
@@ -146,10 +149,10 @@ function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
   if (isEditing) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Do / Don&apos;t examples</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">{t("vocabulary.examples.title")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 className="text-sm font-semibold text-emerald-700 mb-3">Do</h4>
+            <h4 className="text-sm font-semibold text-emerald-700 mb-3">{t("vocabulary.examples.do")}</h4>
             <div className="space-y-2">
               {editDo.map((e) => (
                 <div key={e.originalIndex} className="flex items-center gap-2">
@@ -157,14 +160,14 @@ function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
                   <input
                     value={e.text}
                     onChange={(ev) => updateText(e.originalIndex, ev.target.value)}
-                    placeholder="e.g. We're here to help you succeed."
+                    placeholder={t("vocabulary.examples.doPlaceholder")}
                     className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 italic"
                   />
                   <button
                     type="button"
                     onClick={() => remove(e.originalIndex)}
                     className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                    aria-label="Remove"
+                    aria-label={t("vocabulary.examples.removeAria")}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -176,13 +179,13 @@ function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
                 className="flex items-center gap-1.5 text-sm text-teal-700 hover:text-teal-900 transition-colors mt-1"
               >
                 <Plus className="w-4 h-4" />
-                Add &ldquo;do&rdquo;
+                {t("vocabulary.examples.addDo")}
               </button>
             </div>
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-red-700 mb-3">Don&apos;t</h4>
+            <h4 className="text-sm font-semibold text-red-700 mb-3">{t("vocabulary.examples.dont")}</h4>
             <div className="space-y-2">
               {editDont.map((e) => (
                 <div key={e.originalIndex} className="flex items-center gap-2">
@@ -190,14 +193,14 @@ function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
                   <input
                     value={e.text}
                     onChange={(ev) => updateText(e.originalIndex, ev.target.value)}
-                    placeholder="e.g. Dear valued customer..."
+                    placeholder={t("vocabulary.examples.dontPlaceholder")}
                     className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 italic"
                   />
                   <button
                     type="button"
                     onClick={() => remove(e.originalIndex)}
                     className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                    aria-label="Remove"
+                    aria-label={t("vocabulary.examples.removeAria")}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -209,17 +212,17 @@ function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
                 className="flex items-center gap-1.5 text-sm text-teal-700 hover:text-teal-900 transition-colors mt-1"
               >
                 <Plus className="w-4 h-4" />
-                Add &ldquo;don&apos;t&rdquo;
+                {t("vocabulary.examples.addDont")}
               </button>
             </div>
           </div>
         </div>
         <div className="flex gap-2 pt-4">
           <Button variant="primary" size="sm" onClick={save} isLoading={update.isPending}>
-            Save
+            {t("vocabulary.examples.save")}
           </Button>
           <Button variant="secondary" size="sm" onClick={cancel}>
-            Cancel
+            {t("vocabulary.examples.cancel")}
           </Button>
         </div>
       </div>
@@ -229,9 +232,9 @@ function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
   if (examples.length === 0) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-sm font-semibold text-gray-900 mb-2">Do / Don&apos;t examples</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-2">{t("vocabulary.examples.title")}</h3>
         <p className="text-xs text-gray-500 mb-3">
-          Concrete phrasing examples that show how the brand does and does not write.
+          {t("vocabulary.examples.emptyDescription")}
         </p>
         <button
           type="button"
@@ -239,7 +242,7 @@ function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
           className="inline-flex items-center gap-1.5 text-sm text-teal-700 hover:text-teal-900 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Add examples
+          {t("vocabulary.examples.addExamples")}
         </button>
       </div>
     );
@@ -248,11 +251,11 @@ function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 relative">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-900">Do / Don&apos;t examples</h3>
+        <h3 className="text-sm font-semibold text-gray-900">{t("vocabulary.examples.title")}</h3>
         <button
           onClick={startEdit}
           className="p-1 text-gray-400 hover:text-primary transition-colors"
-          aria-label="Edit examples"
+          aria-label={t("vocabulary.examples.editAria")}
         >
           <Pencil className="w-3.5 h-3.5" />
         </button>
@@ -260,7 +263,7 @@ function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {doExamples.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold text-emerald-700 mb-2">Do</h4>
+            <h4 className="text-xs font-semibold text-emerald-700 mb-2">{t("vocabulary.examples.do")}</h4>
             <div className="space-y-2">
               {doExamples.map((e, i) => (
                 <div key={i} className="flex items-start gap-2 text-sm text-gray-600 p-2 bg-emerald-50 rounded-md">
@@ -273,7 +276,7 @@ function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
         )}
         {dontExamples.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold text-red-700 mb-2">Don&apos;t</h4>
+            <h4 className="text-xs font-semibold text-red-700 mb-2">{t("vocabulary.examples.dont")}</h4>
             <div className="space-y-2">
               {dontExamples.map((e, i) => (
                 <div key={i} className="flex items-start gap-2 text-sm text-gray-600 p-2 bg-red-50 rounded-md">
@@ -290,35 +293,36 @@ function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
 }
 
 export function VocabularySection({ voiceguide }: VocabularySectionProps) {
+  const { t } = useTranslation("brandvoice");
   const update = useUpdateVoiceguide();
 
   return (
     <div className="space-y-6">
       <ChipList
-        label="Words we use"
-        description="Vocabulary that fits the brand. Single words, not phrases."
+        label={t("vocabulary.wordsWeUse.label")}
+        description={t("vocabulary.wordsWeUse.description")}
         items={voiceguide.wordsWeUse}
-        placeholder="e.g. craft, deliberate, pragmatic"
+        placeholder={t("vocabulary.wordsWeUse.placeholder")}
         accent="teal"
         icon={Hash}
         onChange={(items) => update.mutate({ wordsWeUse: items })}
       />
 
       <ChipList
-        label="Words we avoid"
-        description="Single words that feel off-brand. Auto-syncs to BrandRule (warning)."
+        label={t("vocabulary.wordsWeAvoid.label")}
+        description={t("vocabulary.wordsWeAvoid.description")}
         items={voiceguide.wordsWeAvoid}
-        placeholder="e.g. revolutionary, leverage, synergy"
+        placeholder={t("vocabulary.wordsWeAvoid.placeholder")}
         accent="rose"
         icon={Ban}
         onChange={(items) => update.mutate({ wordsWeAvoid: items })}
       />
 
       <ChipList
-        label="Anti-patterns"
-        description="Multi-word phrases the brand should never use. Stronger signal — auto-syncs to BrandRule (error severity)."
+        label={t("vocabulary.antiPatterns.label")}
+        description={t("vocabulary.antiPatterns.description")}
         items={voiceguide.antiPatterns}
-        placeholder="e.g. game-changer, in today's fast-paced world"
+        placeholder={t("vocabulary.antiPatterns.placeholder")}
         accent="amber"
         icon={Ban}
         onChange={(items) => update.mutate({ antiPatterns: items })}

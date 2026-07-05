@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Brain, Heart, Tag, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 
 interface PsychographicsSectionProps {
@@ -11,6 +12,7 @@ interface PsychographicsSectionProps {
 }
 
 export function PsychographicsSection({ persona, isEditing, onUpdate }: PsychographicsSectionProps) {
+  const { t } = useTranslation('personas');
   const [valueDraft, setValueDraft] = useState('');
   const [interestDraft, setInterestDraft] = useState('');
 
@@ -43,8 +45,8 @@ export function PsychographicsSection({ persona, isEditing, onUpdate }: Psychogr
             <Brain className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Psychographics</h2>
-            <p className="text-sm text-gray-500">Personality, values, and interests</p>
+            <h2 className="text-base font-semibold text-gray-900">{t('psychographics.title')}</h2>
+            <p className="text-sm text-gray-500">{t('psychographics.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -55,14 +57,14 @@ export function PsychographicsSection({ persona, isEditing, onUpdate }: Psychogr
           <div className="flex items-center gap-1.5 mb-2">
             <Brain className="w-4 h-4 text-emerald-500" />
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Personality Type
+              {t('psychographics.personalityType')}
             </p>
           </div>
           {isEditing ? (
             <input
               defaultValue={persona.personalityType ?? ''}
               onBlur={(e) => onUpdate({ personalityType: e.target.value })}
-              placeholder="e.g. ENTJ - The Commander"
+              placeholder={t('psychographics.personalityPlaceholder')}
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             />
           ) : persona.personalityType ? (
@@ -70,7 +72,7 @@ export function PsychographicsSection({ persona, isEditing, onUpdate }: Psychogr
               {persona.personalityType}
             </span>
           ) : (
-            <p className="text-sm text-gray-300 italic">Not set</p>
+            <p className="text-sm text-gray-300 italic">{t('psychographics.notSet')}</p>
           )}
         </div>
 
@@ -79,7 +81,7 @@ export function PsychographicsSection({ persona, isEditing, onUpdate }: Psychogr
           <div className="flex items-center gap-1.5 mb-2">
             <Heart className="w-4 h-4 text-emerald-500" />
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Core Values
+              {t('psychographics.coreValues')}
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -105,13 +107,13 @@ export function PsychographicsSection({ persona, isEditing, onUpdate }: Psychogr
                 value={valueDraft}
                 onChange={(e) => setValueDraft(e.target.value)}
                 onKeyDown={(e) => handleKeyDown(e, 'coreValues', valueDraft, setValueDraft)}
-                placeholder="Type + Enter"
+                placeholder={t('psychographics.tagPlaceholder')}
                 className="px-2.5 py-1 text-xs border border-dashed border-gray-300 rounded-full bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-28"
               />
             )}
           </div>
           {persona.coreValues.length === 0 && !isEditing && (
-            <p className="text-sm text-gray-300 italic">No core values defined</p>
+            <p className="text-sm text-gray-300 italic">{t('psychographics.noCoreValues')}</p>
           )}
         </div>
 
@@ -120,7 +122,7 @@ export function PsychographicsSection({ persona, isEditing, onUpdate }: Psychogr
           <div className="flex items-center gap-1.5 mb-2">
             <Tag className="w-4 h-4 text-emerald-500" />
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Interests &amp; Hobbies
+              {t('psychographics.interestsHobbies')}
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -146,13 +148,13 @@ export function PsychographicsSection({ persona, isEditing, onUpdate }: Psychogr
                 value={interestDraft}
                 onChange={(e) => setInterestDraft(e.target.value)}
                 onKeyDown={(e) => handleKeyDown(e, 'interests', interestDraft, setInterestDraft)}
-                placeholder="Type + Enter"
+                placeholder={t('psychographics.tagPlaceholder')}
                 className="px-2.5 py-1 text-xs border border-dashed border-gray-300 rounded-full bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-28"
               />
             )}
           </div>
           {persona.interests.length === 0 && !isEditing && (
-            <p className="text-sm text-gray-300 italic">No interests defined</p>
+            <p className="text-sm text-gray-300 italic">{t('psychographics.noInterests')}</p>
           )}
         </div>
       </div>
@@ -162,12 +164,12 @@ export function PsychographicsSection({ persona, isEditing, onUpdate }: Psychogr
         <div className="flex items-center gap-4 text-xs text-gray-500">
           <span className="inline-flex items-center gap-1">
             <Heart className="w-3.5 h-3.5 text-gray-400" />
-            {persona.coreValues.length} values
+            {t('psychographics.valuesCount', { count: persona.coreValues.length })}
           </span>
           <span>&middot;</span>
           <span className="inline-flex items-center gap-1">
             <Tag className="w-3.5 h-3.5 text-gray-400" />
-            {persona.interests.length} interests
+            {t('psychographics.interestsCount', { count: persona.interests.length })}
           </span>
         </div>
       </div>

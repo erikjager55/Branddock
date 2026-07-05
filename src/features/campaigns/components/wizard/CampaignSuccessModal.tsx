@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { CheckCircle2, Eye, PenTool, ArrowLeft } from "lucide-react";
 import { Modal, Button } from "@/components/shared";
 import { useCampaignStore } from "../../stores/useCampaignStore";
@@ -24,11 +25,12 @@ export function CampaignSuccessModal({
   deliverableCount,
   onNavigate,
 }: CampaignSuccessModalProps) {
+  const { t } = useTranslation("campaigns-wizard");
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Campaign Launched!"
+      title={t("successModal.title")}
       size="sm"
       showCloseButton={false}
     >
@@ -41,10 +43,10 @@ export function CampaignSuccessModal({
         {/* Heading */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            Campaign Launched!
+            {t("successModal.title")}
           </h3>
           <p className="text-sm text-gray-500 mt-1">
-            Your campaign has been created successfully.
+            {t("successModal.description")}
           </p>
         </div>
 
@@ -54,9 +56,7 @@ export function CampaignSuccessModal({
             {deliverableCount}
           </span>
           <span className="text-sm text-gray-600 ml-1">
-            {deliverableCount === 1
-              ? "deliverable created"
-              : "deliverables created"}
+            {t("successModal.deliverableLabel", { count: deliverableCount })}
           </span>
         </div>
 
@@ -72,7 +72,7 @@ export function CampaignSuccessModal({
               onNavigate("campaign-detail");
             }}
           >
-            View Campaign
+            {t("successModal.viewCampaign")}
           </Button>
           <Button
             variant="secondary"
@@ -84,7 +84,7 @@ export function CampaignSuccessModal({
               onNavigate("campaign-detail");
             }}
           >
-            Create First Content
+            {t("successModal.createFirstContent")}
           </Button>
           <Button
             variant="ghost"
@@ -95,7 +95,7 @@ export function CampaignSuccessModal({
               onNavigate("active-campaigns");
             }}
           >
-            Back to Campaigns
+            {t("actions.backToCampaigns")}
           </Button>
         </div>
       </div>

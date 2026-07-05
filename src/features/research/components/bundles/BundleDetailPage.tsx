@@ -1,8 +1,10 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, CheckCircle, FileText, FlaskConical } from "lucide-react";
 import { Button, Skeleton } from "@/components/shared";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { PageShell } from "@/components/ui/layout";
 import { useBundleDetail, useSelectBundle } from "../../hooks";
 import { BundleBadge } from "./BundleBadge";
@@ -24,6 +26,8 @@ export function BundleDetailPage({
   onBack,
   onNavigate,
 }: BundleDetailPageProps) {
+  const { t } = useTranslation("research");
+  const { formatCurrency, formatNumber } = useFormat();
   const { data, isLoading } = useBundleDetail(bundleId);
   const selectBundle = useSelectBundle();
 
@@ -36,9 +40,9 @@ export function BundleDetailPage({
             className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Bundles
+            {t("bundleDetail.back")}
           </button>
-          <p className="text-gray-500">No bundle selected.</p>
+          <p className="text-gray-500">{t("bundleDetail.noBundle")}</p>
         </div>
       </PageShell>
     );
@@ -77,7 +81,7 @@ export function BundleDetailPage({
           className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Bundles
+          {t("bundleDetail.back")}
         </button>
 
         {/* Main card */}
@@ -94,16 +98,16 @@ export function BundleDetailPage({
           {/* Price row */}
           <div className="flex items-baseline gap-3 mb-4">
             <span className="text-3xl font-bold text-primary">
-              ${bundle.price.toLocaleString()}
+              {formatCurrency(bundle.price, "USD")}
             </span>
             {bundle.originalPrice && bundle.originalPrice > bundle.price && (
               <span className="text-lg line-through text-gray-400">
-                ${bundle.originalPrice.toLocaleString()}
+                {formatCurrency(bundle.originalPrice, "USD")}
               </span>
             )}
             {savings > 0 && (
               <span className="bg-primary/15 text-primary text-sm font-medium px-2 py-0.5 rounded-full">
-                Save ${savings.toLocaleString()}
+                {t("bundleDetail.save", { amount: formatNumber(savings) })}
               </span>
             )}
           </div>
@@ -126,7 +130,7 @@ export function BundleDetailPage({
         {bundle.assets.length > 0 && (
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">
-              Included Assets
+              {t("bundleDetail.includedAssets")}
             </h2>
             <div className="space-y-2">
               {bundle.assets.map((asset, idx) => (
@@ -155,7 +159,7 @@ export function BundleDetailPage({
         {bundle.methods.length > 0 && (
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">
-              Research Methods
+              {t("bundleDetail.researchMethods")}
             </h2>
             <div className="space-y-2">
               {bundle.methods.map((method, idx) => (
@@ -189,10 +193,10 @@ export function BundleDetailPage({
             onClick={handleSelectBundle}
             isLoading={selectBundle.isPending}
           >
-            Select This Bundle
+            {t("bundleDetail.selectBundle")}
           </Button>
           <Button variant="secondary" onClick={onBack}>
-            Learn More
+            {t("bundleDetail.learnMore")}
           </Button>
         </div>
 

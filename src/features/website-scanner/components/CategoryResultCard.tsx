@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, type LucideIcon } from 'lucide-react';
 
 interface CategoryItem {
@@ -29,10 +30,10 @@ function getConfidenceBg(confidence: number): string {
   return 'bg-gray-50';
 }
 
-function getConfidenceLabel(confidence: number): string {
-  if (confidence >= 75) return 'High';
-  if (confidence >= 50) return 'Medium';
-  return 'Low';
+function getConfidenceLevel(confidence: number): 'high' | 'medium' | 'low' {
+  if (confidence >= 75) return 'high';
+  if (confidence >= 50) return 'medium';
+  return 'low';
 }
 
 const COLOR_MAP: Record<string, { bg: string; text: string; iconBg: string }> = {
@@ -43,6 +44,7 @@ const COLOR_MAP: Record<string, { bg: string; text: string; iconBg: string }> = 
 };
 
 export function CategoryResultCard({ title, icon: Icon, color, items, description }: CategoryResultCardProps) {
+  const { t } = useTranslation('website-scanner');
   const [expanded, setExpanded] = useState(false);
   const colors = COLOR_MAP[color] ?? COLOR_MAP.teal;
   const avgConfidence = items.length > 0
@@ -58,7 +60,7 @@ export function CategoryResultCard({ title, icon: Icon, color, items, descriptio
           </div>
           <div>
             <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-            <p className="text-xs text-gray-400 mt-0.5">No data found</p>
+            <p className="text-xs text-gray-400 mt-0.5">{t('card.noData')}</p>
           </div>
         </div>
       </div>
@@ -82,7 +84,7 @@ export function CategoryResultCard({ title, icon: Icon, color, items, descriptio
         </div>
         <div className="flex items-center gap-3">
           <span className={`text-xs font-medium ${getConfidenceColor(avgConfidence)}`}>
-            {avgConfidence}% confident
+            {t('card.confident', { confidence: avgConfidence })}
           </span>
           <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </div>
@@ -96,10 +98,10 @@ export function CategoryResultCard({ title, icon: Icon, color, items, descriptio
               className={`flex items-center justify-between p-2.5 rounded-lg ${getConfidenceBg(item.confidence)}`}
             >
               <span className="text-sm text-gray-700">
-                {item.name ?? item.slug?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) ?? `Item ${i + 1}`}
+                {item.name ?? item.slug?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) ?? t('card.itemFallback', { number: i + 1 })}
               </span>
               <span className={`text-xs font-medium ${getConfidenceColor(item.confidence)}`}>
-                {getConfidenceLabel(item.confidence)} ({item.confidence}%)
+                {t(`card.confidence.${getConfidenceLevel(item.confidence)}`)} ({item.confidence}%)
               </span>
             </div>
           ))}

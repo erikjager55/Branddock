@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Brain, RotateCcw, Check, Loader2, Images } from 'lucide-react';
 import type { AIModelOption } from '@/lib/ai/exploration/config.types';
@@ -52,6 +53,7 @@ async function updateFeatureModel(body: { featureKey: string; provider: string; 
 // ─── Component ────────────────────────────────────────────────
 
 export function AiModelsTab() {
+  const { t } = useTranslation('settings-misc');
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: aiModelsKeys.all,
@@ -83,7 +85,7 @@ export function AiModelsTab() {
     return (
       <div className="p-8 flex items-center justify-center text-gray-400">
         <Loader2 className="w-5 h-5 animate-spin mr-2" />
-        Loading AI model settings...
+        {t('aiModels.loading')}
       </div>
     );
   }
@@ -91,7 +93,7 @@ export function AiModelsTab() {
   if (error || !data) {
     return (
       <div className="p-8 text-red-500 text-sm">
-        Failed to load AI model settings. Please try again.
+        {t('aiModels.loadError')}
       </div>
     );
   }
@@ -111,10 +113,10 @@ export function AiModelsTab() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <Brain className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-gray-900">AI Models</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('aiModels.heading')}</h2>
         </div>
         <p className="text-sm text-gray-500">
-          Choose which AI model to use for each feature. Changes take effect immediately.
+          {t('aiModels.description')}
         </p>
       </div>
 
@@ -141,7 +143,7 @@ export function AiModelsTab() {
 
         <div>
           <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">
-            Image generation
+            {t('aiModels.imageGeneration')}
           </h3>
           <FeatureImageQualityRow />
         </div>
@@ -164,6 +166,7 @@ const CANDIDATE_OPTIONS: Array<{ value: 1 | 2 | 3; label: string; cost: string }
 ];
 
 function FeatureImageQualityRow() {
+  const { t } = useTranslation('settings-misc');
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: featureImageQualityKeys.all,
@@ -196,19 +199,18 @@ function FeatureImageQualityRow() {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <Images className="w-4 h-4 text-gray-400" />
-          <span className="text-sm font-medium text-gray-900">Landing-page feature images — candidates per slot</span>
+          <span className="text-sm font-medium text-gray-900">{t('aiModels.featureImageLabel')}</span>
           {data?.isCustomized && (
             <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded font-medium">
-              Custom
+              {t('aiModels.custom')}
             </span>
           )}
         </div>
         <p className="text-xs text-gray-500 mt-0.5">
-          1 generates once with a judge-gated retry; 2-3 generate multiple candidates per slot — the
-          coherence judge picks the winner and the runner-up doubles as a free duplicate-swap.
+          {t('aiModels.featureImageDescription')}
         </p>
         {error ? (
-          <p className="text-xs text-red-500 mt-1">Failed to load setting. Refresh to retry.</p>
+          <p className="text-xs text-red-500 mt-1">{t('aiModels.featureImageLoadError')}</p>
         ) : null}
       </div>
 
@@ -225,14 +227,14 @@ function FeatureImageQualityRow() {
                   type="button"
                   onClick={() => mutation.mutate(opt.value)}
                   disabled={mutation.isPending}
-                  title={opt.cost}
+                  title={t(`aiModels.candidate.${opt.value}.cost`)}
                   className={
                     active
                       ? 'px-3 py-1.5 text-sm font-medium bg-primary/10 text-primary disabled:opacity-50'
                       : 'px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50'
                   }
                 >
-                  {opt.label}
+                  {t(`aiModels.candidate.${opt.value}.label`)}
                 </button>
               );
             })}
@@ -258,6 +260,7 @@ interface FeatureRowProps {
 }
 
 function FeatureRow({ feature, availableModels, isSaving, isSaved, onChange }: FeatureRowProps) {
+  const { t } = useTranslation('settings-misc');
   // Filter models to only show supported providers
   const supportedModels = availableModels.filter((m) =>
     feature.supportedProviders.includes(m.provider as AiProvider),
@@ -281,7 +284,7 @@ function FeatureRow({ feature, availableModels, isSaving, isSaved, onChange }: F
           <span className="text-sm font-medium text-gray-900">{feature.label}</span>
           {feature.isCustomized && (
             <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded font-medium">
-              Custom
+              {t('aiModels.custom')}
             </span>
           )}
         </div>
@@ -316,7 +319,7 @@ function FeatureRow({ feature, availableModels, isSaving, isSaved, onChange }: F
           <button
             onClick={handleReset}
             disabled={isSaving}
-            title="Reset to default"
+            title={t('aiModels.resetToDefault')}
             className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
           >
             <RotateCcw className="w-3.5 h-3.5" />

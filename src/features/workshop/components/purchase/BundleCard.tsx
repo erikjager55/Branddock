@@ -1,6 +1,8 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { Badge, Card } from "@/components/shared";
 import type { WorkshopBundle } from "../../types/workshop.types";
 
@@ -17,6 +19,8 @@ interface BundleCardProps {
 }
 
 export function BundleCard({ bundle, isSelected, onSelect }: BundleCardProps) {
+  const { t } = useTranslation("workshop");
+  const { formatCurrency } = useFormat();
   const badgeConfig = bundle.badge ? BADGE_VARIANTS[bundle.badge] : null;
 
   return (
@@ -68,15 +72,15 @@ export function BundleCard({ bundle, isSelected, onSelect }: BundleCardProps) {
           <div className="pt-2 border-t border-gray-100">
             <div className="flex items-baseline gap-2">
               <span className="text-lg font-bold text-gray-900">
-                &euro;{bundle.finalPrice.toLocaleString()}
+                {formatCurrency(bundle.finalPrice, "EUR")}
               </span>
               {bundle.discount > 0 && (
                 <>
                   <span className="text-sm text-gray-400 line-through">
-                    &euro;{bundle.basePrice.toLocaleString()}
+                    {formatCurrency(bundle.basePrice, "EUR")}
                   </span>
                   <Badge variant="success" size="sm">
-                    Save &euro;{bundle.discount}
+                    {t("purchase.bundle.save", { amount: bundle.discount })}
                   </Badge>
                 </>
               )}

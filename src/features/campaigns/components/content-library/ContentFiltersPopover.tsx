@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Check, Minus, Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useContentLibraryStore, countActiveFilters } from "../../stores/useContentLibraryStore";
 import { useCampaigns, useStrategy } from "../../hooks";
 import {
@@ -15,33 +16,34 @@ import type { BlueprintStrategyResponse } from "@/types/campaign";
 /** Fallback phase palette — used when the blueprint doesn't supply colors. */
 const PHASE_FALLBACK_COLORS = ["#3b82f6", "#f59e0b", "#10b981", "#8b5cf6", "#ec4899", "#06b6d4"];
 
-/** Fallback phase options when a campaign has no blueprint yet. */
+/** Fallback phase options when a campaign has no blueprint yet. Labels are
+ *  resolved via i18n at render (see PhaseDropdown). */
 const FALLBACK_PHASE_OPTIONS = [
-  { value: "awareness", label: "Awareness", color: "#3b82f6" },
-  { value: "consideration", label: "Consideration", color: "#f59e0b" },
-  { value: "conversion", label: "Conversion", color: "#10b981" },
-  { value: "retention", label: "Retention", color: "#8b5cf6" },
+  { value: "awareness", color: "#3b82f6" },
+  { value: "consideration", color: "#f59e0b" },
+  { value: "conversion", color: "#10b981" },
+  { value: "retention", color: "#8b5cf6" },
 ];
 
 // Readiness options moved to the top-level status tabs in ContentFilterBar.tsx —
 // the traffic-light filter is no longer shown in this panel.
 
 const READINESS_HINT_OPTIONS = [
-  { value: "no-content", label: "No content generated" },
-  { value: "not-reviewed", label: "Not reviewed" },
-  { value: "pipeline-incomplete", label: "Pipeline incomplete" },
+  { value: "no-content" },
+  { value: "not-reviewed" },
+  { value: "pipeline-incomplete" },
 ];
 
 /** Status options — traffic-light readiness + favorites toggle combined
- *  into a single Status filter (previously shown as top-level pill tabs). */
+ *  into a single Status filter (previously shown as top-level pill tabs).
+ *  Labels are resolved via i18n at render. */
 const STATUS_OPTIONS: Array<{
   value: "red" | "amber" | "green";
-  label: string;
   dot: string;
 }> = [
-  { value: "red", label: "Not started", dot: "#ef4444" },
-  { value: "amber", label: "In progress", dot: "#f59e0b" },
-  { value: "green", label: "Ready", dot: "#10b981" },
+  { value: "red", dot: "#ef4444" },
+  { value: "amber", dot: "#f59e0b" },
+  { value: "green", dot: "#10b981" },
 ];
 
 // ─── Component ──────────────────────────────────────────────
@@ -49,6 +51,7 @@ const STATUS_OPTIONS: Array<{
 /** Content filter panel — always visible inline, no card wrapper.
  *  The panel is part of the page flow; no toggle button, no border. */
 export function ContentFiltersPanel() {
+  const { t } = useTranslation("campaigns-content-library");
   const filters = useContentLibraryStore((s) => s.filters);
   const setFilter = useContentLibraryStore((s) => s.setFilter);
   const clearFilters = useContentLibraryStore((s) => s.clearFilters);
@@ -62,7 +65,7 @@ export function ContentFiltersPanel() {
   const activeCampaignId = filters.campaigns.length === 1 ? filters.campaigns[0] : null;
 
   return (
-    <div role="region" aria-label="Content filters" className="w-full">
+    <div role="region" aria-label={t("filters.regionLabel")} className="w-full">
       {/* Filter grid — three fixed columns, each a stack of two dropdowns:
           [Campaign / Journey Phase] [Status / Readiness Gap] [Content Type]
           Inline grid styles because Tailwind 4 purge sometimes drops
@@ -105,7 +108,7 @@ export function ContentFiltersPanel() {
                 }
                 className="text-xs text-gray-500 hover:text-gray-700 underline decoration-dashed"
               >
-                Clear all filters
+                {t("filters.clearAll")}
               </button>
             )}
           </div>
@@ -120,6 +123,7 @@ export function ContentFiltersPanel() {
 // is visible at a glance.
 
 function ContentTypeList() {
+  const { t } = useTranslation("campaigns-content-library");
   const filters = useContentLibraryStore((s) => s.filters);
   const setFilter = useContentLibraryStore((s) => s.setFilter);
   const toggleTypeFilter = useContentLibraryStore((s) => s.toggleTypeFilter);
@@ -181,12 +185,12 @@ function ContentTypeList() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  const labelText = count === 0 ? "All types" : `${count} selected`;
+  const labelText = count === 0 ? t("filters.contentType.all") : t("selectedCount", { n: count });
 
   return (
     <div ref={ref} className="relative">
       <div className="flex items-center justify-between mb-1.5">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Content Type</h4>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("filters.contentType.heading")}</h4>
         {count > 0 && (
           <span
             className="inline-flex items-center justify-center rounded-full bg-teal-600 text-white font-semibold"
@@ -265,6 +269,7 @@ function CategoryRow({
   onToggleSelect,
   onToggleExpand,
 }: CategoryRowProps) {
+  const { t } = useTranslation("campaigns-content-library");
   const countText = state === "partial" ? `${selectedCount}/${totalCount}` : `${totalCount}`;
   const checkedOrPartial = state !== "empty";
 
@@ -280,8 +285,8 @@ function CategoryRow({
         aria-pressed={checkedOrPartial}
         aria-label={
           state === "all"
-            ? `Deselect all types in ${label}`
-            : `Select all types in ${label}`
+            ? t("filters.category.deselectAll", { label })
+            : t("filters.category.selectAll", { label })
         }
         className="flex items-center justify-center rounded border flex-shrink-0"
         style={{
@@ -321,6 +326,7 @@ function CategoryRow({
 }
 
 function StatusDropdown() {
+  const { t } = useTranslation("campaigns-content-library");
   const filters = useContentLibraryStore((s) => s.filters);
   const toggleReadinessFilter = useContentLibraryStore((s) => s.toggleReadinessFilter);
   const showFavorites = useContentLibraryStore((s) => s.showFavorites);
@@ -342,19 +348,19 @@ function StatusDropdown() {
 
   let labelText: string;
   if (activeCount === 0) {
-    labelText = "All";
+    labelText = t("filters.status.all");
   } else if (activeCount === 1 && readinessCount === 1) {
-    labelText = STATUS_OPTIONS.find((o) => o.value === filters.readiness[0])?.label ?? "1 selected";
+    labelText = t(`filters.status.options.${filters.readiness[0]}`);
   } else if (activeCount === 1 && showFavorites) {
-    labelText = "Favorites";
+    labelText = t("filters.status.favorites");
   } else {
-    labelText = `${activeCount} selected`;
+    labelText = t("selectedCount", { n: activeCount });
   }
 
   return (
     <div ref={ref} className="relative">
       <div className="flex items-center justify-between mb-1.5">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Status</h4>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("filters.status.heading")}</h4>
         {activeCount > 0 && (
           <span
             className="inline-flex items-center justify-center rounded-full bg-teal-600 text-white font-semibold"
@@ -381,7 +387,7 @@ function StatusDropdown() {
           {STATUS_OPTIONS.map((opt) => (
             <CheckboxRow
               key={opt.value}
-              label={opt.label}
+              label={t(`filters.status.options.${opt.value}`)}
               dot={opt.dot}
               checked={filters.readiness.includes(opt.value)}
               onToggle={() => toggleReadinessFilter(opt.value)}
@@ -391,7 +397,7 @@ function StatusDropdown() {
               the same Status dropdown for a single filter entry point. */}
           <div style={{ margin: "4px 6px", borderTop: "1px solid #f3f4f6" }} />
           <CheckboxRow
-            label="Favorites only"
+            label={t("filters.status.favoritesOnly")}
             checked={showFavorites}
             onToggle={() => setShowFavorites(!showFavorites)}
             icon={<Star className="h-3 w-3 text-amber-500 fill-amber-500 flex-shrink-0" />}
@@ -403,6 +409,7 @@ function StatusDropdown() {
 }
 
 function PhaseDropdown({ campaignId }: { campaignId: string | null }) {
+  const { t } = useTranslation("campaigns-content-library");
   const filters = useContentLibraryStore((s) => s.filters);
   const setFilter = useContentLibraryStore((s) => s.setFilter);
   const togglePhaseFilter = useContentLibraryStore((s) => s.togglePhaseFilter);
@@ -421,14 +428,19 @@ function PhaseDropdown({ campaignId }: { campaignId: string | null }) {
       ? (strategy as BlueprintStrategyResponse).blueprint.architecture?.journeyPhases
       : undefined) ?? [];
 
-    if (blueprintPhases.length === 0) return FALLBACK_PHASE_OPTIONS;
+    if (blueprintPhases.length === 0)
+      return FALLBACK_PHASE_OPTIONS.map((o) => ({
+        value: o.value,
+        label: t(`filters.phase.options.${o.value}`),
+        color: o.color,
+      }));
 
     return blueprintPhases.map((p, i) => ({
       value: p.name,
       label: p.name,
       color: PHASE_FALLBACK_COLORS[i % PHASE_FALLBACK_COLORS.length],
     }));
-  }, [strategy]);
+  }, [strategy, t]);
 
   // Auto-clear phase filter when disabled (no single campaign) or when the
   // saved values don't match the currently loaded blueprint.
@@ -461,16 +473,16 @@ function PhaseDropdown({ campaignId }: { campaignId: string | null }) {
 
   const count = filters.phases.length;
   const labelText = disabled
-    ? "Select a campaign"
+    ? t("filters.phase.selectCampaign")
     : count === 0
-      ? "All phases"
-      : `${count} selected`;
+      ? t("filters.phase.all")
+      : t("selectedCount", { n: count });
 
   return (
     <div ref={ref} className="relative">
       <div className="flex items-center justify-between mb-1.5">
         <h4 className={`text-xs font-semibold uppercase tracking-wide ${disabled ? "text-gray-400" : "text-gray-500"}`}>
-          Journey Phase
+          {t("filters.phase.heading")}
         </h4>
         {!disabled && count > 0 && (
           <span
@@ -486,7 +498,7 @@ function PhaseDropdown({ campaignId }: { campaignId: string | null }) {
         onClick={() => !disabled && setOpen((v) => !v)}
         disabled={disabled}
         aria-disabled={disabled}
-        title={disabled ? "Filter a single campaign to pick its journey phases" : undefined}
+        title={disabled ? t("filters.phase.disabledTitle") : undefined}
         style={{ padding: "6px 12px" }}
         className={`w-full flex items-center justify-between gap-2 text-sm font-medium rounded-md border transition-colors ${
           disabled
@@ -518,6 +530,7 @@ function PhaseDropdown({ campaignId }: { campaignId: string | null }) {
 }
 
 function ReadinessGapDropdown() {
+  const { t } = useTranslation("campaigns-content-library");
   const filters = useContentLibraryStore((s) => s.filters);
   const toggleReadinessHintFilter = useContentLibraryStore((s) => s.toggleReadinessHintFilter);
   const [open, setOpen] = useState(false);
@@ -533,12 +546,12 @@ function ReadinessGapDropdown() {
   }, [open]);
 
   const count = filters.readinessHints.length;
-  const labelText = count === 0 ? "Any" : `${count} selected`;
+  const labelText = count === 0 ? t("filters.readinessGap.any") : t("selectedCount", { n: count });
 
   return (
     <div ref={ref} className="relative">
       <div className="flex items-center justify-between mb-1.5">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Readiness Gap</h4>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("filters.readinessGap.heading")}</h4>
         {count > 0 && (
           <span
             className="inline-flex items-center justify-center rounded-full bg-teal-600 text-white font-semibold"
@@ -565,7 +578,7 @@ function ReadinessGapDropdown() {
           {READINESS_HINT_OPTIONS.map((opt) => (
             <CheckboxRow
               key={opt.value}
-              label={opt.label}
+              label={t(`filters.readinessGap.options.${opt.value}`)}
               checked={filters.readinessHints.includes(opt.value)}
               onToggle={() => toggleReadinessHintFilter(opt.value)}
             />
@@ -577,6 +590,7 @@ function ReadinessGapDropdown() {
 }
 
 function CampaignList() {
+  const { t } = useTranslation("campaigns-content-library");
   const filters = useContentLibraryStore((s) => s.filters);
   const toggleCampaignFilter = useContentLibraryStore((s) => s.toggleCampaignFilter);
   const [open, setOpen] = useState(false);
@@ -597,9 +611,9 @@ function CampaignList() {
       ? raw
       : raw?.campaigns ?? raw?.items ?? [];
     return (list as Array<{ id: string; title?: string; name?: string }>).map(
-      (c) => ({ id: c.id, name: c.title ?? c.name ?? "Untitled" }),
+      (c) => ({ id: c.id, name: c.title ?? c.name ?? t("common.untitled") }),
     );
-  }, [campaignsData]);
+  }, [campaignsData, t]);
 
   const campaigns = useMemo(() => {
     if (!search.trim()) return allCampaigns;
@@ -622,12 +636,12 @@ function CampaignList() {
   }, [open]);
 
   const count = filters.campaigns.length;
-  const labelText = count === 0 ? "All campaigns" : `${count} selected`;
+  const labelText = count === 0 ? t("filters.campaign.all") : t("selectedCount", { n: count });
 
   return (
     <div ref={ref} className="relative">
       <div className="flex items-center justify-between mb-1.5">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Campaign</h4>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("filters.campaign.heading")}</h4>
         {count > 0 && (
           <span
             className="inline-flex items-center justify-center rounded-full bg-teal-600 text-white font-semibold"
@@ -655,7 +669,7 @@ function CampaignList() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search campaigns..."
+            placeholder={t("filters.campaign.searchPlaceholder")}
             autoFocus
             className="text-sm border-b border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary rounded-t-md"
             style={{ padding: "6px 12px" }}
@@ -663,7 +677,7 @@ function CampaignList() {
           <div className="overflow-y-auto flex-1" style={{ padding: "4px" }}>
             {campaigns.length === 0 && (
               <p className="text-sm text-gray-400 italic" style={{ padding: "8px" }}>
-                No campaigns found
+                {t("filters.campaign.none")}
               </p>
             )}
             {campaigns.map((c) => (

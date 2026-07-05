@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { SkeletonCard, Button } from "@/components/shared";
 import { PageShell, PageHeader, ContentSidebarLayout } from "@/components/ui/layout";
@@ -31,6 +32,7 @@ export function CustomValidationPage({
   onBack,
   onNavigate,
 }: CustomValidationPageProps) {
+  const { t } = useTranslation("research");
   const store = useResearchStore();
   const { data: assets, isLoading: assetsLoading } = useAvailableAssets();
   const { data: methods, isLoading: methodsLoading } = useValidationMethods();
@@ -117,12 +119,12 @@ export function CustomValidationPage({
       <div data-testid="custom-validation-page">
       <PageHeader
         moduleKey="research"
-        title="Custom Validation"
-        subtitle="Create your own validation criteria"
+        title={t("custom.title")}
+        subtitle={t("custom.subtitle")}
         actions={
           <Button onClick={handlePurchase} className="gap-2">
             <Plus className="h-4 w-4" />
-            New Plan
+            {t("custom.newPlan")}
           </Button>
         }
       />
@@ -148,7 +150,7 @@ export function CustomValidationPage({
           {/* Step 1: Assets */}
           <div data-testid="asset-selector">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Step 1: Select Assets to Validate
+              {t("custom.step1")}
             </h2>
             {assetsLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -168,7 +170,7 @@ export function CustomValidationPage({
           {/* Step 2: Methods */}
           <div data-testid="method-selector">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Step 2: Choose Validation Methods
+              {t("custom.step2")}
             </h2>
             {methodsLoading ? (
               <div className="space-y-4">

@@ -18,6 +18,8 @@ import {
   FlaskConical,
   Plus,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { OptimizedImage } from "@/components/shared";
 import type { PersonaWithMeta, PersonaResearchMethodType } from "../types/persona.types";
 import type { LucideIcon } from "lucide-react";
@@ -67,6 +69,8 @@ const LEFT_FIELDS = ["age", "gender", "occupation", "income"];
 const RIGHT_FIELDS = ["location", "education", "familyStatus"];
 
 export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
+  const { t } = useTranslation('personas');
+  const { formatDate } = useFormat();
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
 
   const initials = persona.name
@@ -153,7 +157,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
               profileCompleteness >= 50 ? 'border-amber-200 text-amber-600 bg-amber-50' :
               'border-red-200 text-red-500 bg-red-50'
             }`}>
-              {profileCompleteness}% complete
+              {t('card.percentComplete', { percent: profileCompleteness })}
             </div>
           </div>
           {persona.tagline && (
@@ -205,7 +209,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
           }}
         >
           <MessageCircle className="h-4 w-4" />
-          Chat with {persona.name.split(" ")[0]}
+          {t('card.chatWith', { name: persona.name.split(" ")[0] })}
         </button>
       </div>
 
@@ -221,7 +225,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
         >
           <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
             <Sparkles className="h-3.5 w-3.5" />
-            <span>Research ({activeCompletedMethods}/{activeResearchMethods.length})</span>
+            <span>{t('card.research', { completed: activeCompletedMethods, total: activeResearchMethods.length })}</span>
           </div>
           <ChevronDown
             className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
@@ -278,17 +282,17 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
                         <>
                           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
                             <CheckCircle className="h-3 w-3" />
-                            VALIDATED
+                            {t('badge.validated')}
                           </span>
                           <span className="text-[10px] font-medium text-emerald-600 hover:underline cursor-pointer">
-                            View Results
+                            {t('badge.viewResults')}
                           </span>
                         </>
                       ) : (
                         <>
                           <span className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-2 py-0.5 text-[10px] font-medium text-gray-500">
                             <Plus className="h-3 w-3" />
-                            AVAILABLE
+                            {t('badge.available')}
                           </span>
                           {config.priceLabel && (
                             <span className="text-[10px] text-gray-400">
@@ -309,10 +313,12 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
       {/* Last updated */}
       {persona.updatedAt && (
         <p className="text-xs text-gray-400">
-          Last updated: {new Date(persona.updatedAt).toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
+          {t('card.lastUpdated', {
+            date: formatDate(persona.updatedAt, {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            }),
           })}
         </p>
       )}

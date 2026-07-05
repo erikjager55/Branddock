@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -106,6 +107,7 @@ export function ResearchDashboard({
   researchPlanConfig
 }: ResearchDashboardProps) {
   const { brandAssets } = useBrandAssets();
+  const { t } = useTranslation('research-pages');
   // Interview purchase state
   // Simplified: Research Plans control access now
   const [interviewsPurchased, setInterviewsPurchased] = useState(true); // Default to true for demo, or driven by global state
@@ -489,18 +491,18 @@ export function ResearchDashboard({
           <div className="max-w-6xl mx-auto px-8 py-4">
             <Button variant="ghost" onClick={onBack} className="-ml-4 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Asset
+              {t('header.backToAsset')}
             </Button>
           </div>
         </div>
 
-        <SessionOutcomeHeader 
-          title={result?.name || "Session Outcome"}
+        <SessionOutcomeHeader
+          title={result?.name || t('canvasView.sessionOutcomeFallback')}
           completedDate={result?.completedDate || new Date().toISOString()}
           participantCount={result?.participantCount || (result?.metrics?.stakeholderAlignment ? 8 : 1)}
           sessionDuration={result?.sessionDuration || result?.workshopDuration}
-          onDownload={() => alert("Downloading PDF report...")}
-          onShare={() => alert("Share link copied to clipboard")}
+          onDownload={() => alert(t('canvasView.downloadingReport'))}
+          onShare={() => alert(t('canvasView.shareCopied'))}
         />
 
         <div className="max-w-4xl mx-auto px-8 py-8">
@@ -543,7 +545,7 @@ export function ResearchDashboard({
              <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Key Session Insights</CardTitle>
+                    <CardTitle className="text-lg">{t('canvasView.keyInsights')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-3">
@@ -559,7 +561,7 @@ export function ResearchDashboard({
                 
                 <Card>
                    <CardHeader>
-                     <CardTitle className="text-lg">Alignment Metrics</CardTitle>
+                     <CardTitle className="text-lg">{t('canvasView.alignmentMetrics')}</CardTitle>
                    </CardHeader>
                    <CardContent>
                       <div className="space-y-5">
@@ -593,7 +595,7 @@ export function ResearchDashboard({
           <div className="max-w-4xl mx-auto px-8 py-5">
             <Button variant="ghost" onClick={onBack} className="-ml-2 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Asset
+              {t('header.backToAsset')}
             </Button>
           </div>
         </div>
@@ -612,20 +614,23 @@ export function ResearchDashboard({
                     </div>
                     <div className="flex-1">
                       <h3 className="text-xl font-semibold text-[#1F2937] dark:text-green-400 mb-2">
-                        AI Brand Analysis Complete
+                        {t('aiAgent.complete.title')}
                       </h3>
                       <p className="text-slate-700 dark:text-green-300 mb-4 leading-relaxed">
-                        Your brand framework has been successfully generated from {aiResults.dataPoints} data points across {aiResults.sources.length} sources.
+                        {t('aiAgent.complete.generatedFrom', {
+                          dataPoints: aiResults.dataPoints,
+                          sources: aiResults.sources.length,
+                        })}
                       </p>
                       <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-green-300">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                          <span>Completed: {aiResults.completedDate}</span>
+                          <span>{t('aiAgent.complete.completedOn', { date: aiResults.completedDate })}</span>
                         </div>
                         <span className="text-slate-400">•</span>
                         <div className="flex items-center gap-2">
                           <RefreshCw className="h-4 w-4" />
-                          <span>Last updated: {aiResults.lastUpdated}</span>
+                          <span>{t('aiAgent.complete.lastUpdated', { date: aiResults.lastUpdated })}</span>
                         </div>
                       </div>
                     </div>
@@ -644,22 +649,22 @@ export function ResearchDashboard({
                       {isReportLocked ? (
                         <>
                           <Lock className="h-4 w-4 mr-2" />
-                          Locked
+                          {t('aiAgent.complete.locked')}
                         </>
                       ) : (
                         <>
                           <Unlock className="h-4 w-4 mr-2" />
-                          Unlocked
+                          {t('aiAgent.complete.unlocked')}
                         </>
                       )}
                     </Button>
                     <Button variant="outline" className="hover:border-[#1FD1B2] hover:text-[#1FD1B2] transition-colors bg-white/80 dark:bg-slate-900/80">
                       <Download className="h-4 w-4 mr-2" />
-                      PDF download
+                      {t('aiAgent.complete.pdfDownload')}
                     </Button>
                     <Button variant="outline" className="hover:border-[#1FD1B2] hover:text-[#1FD1B2] transition-colors bg-white/80 dark:bg-slate-900/80">
                       <Table className="h-4 w-4 mr-2" />
-                      Download raw data
+                      {t('aiAgent.complete.downloadRawData')}
                     </Button>
                   </div>
                 </CardContent>
@@ -679,7 +684,7 @@ export function ResearchDashboard({
               <div className="flex justify-between items-center pt-6 pb-4 border-t border-border">
                 <Button variant="outline" onClick={() => setAiAnalysisViewStatus('in-progress')} size="lg">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Return to Questionnaire
+                  {t('aiAgent.complete.returnToQuestionnaire')}
                 </Button>
                 <Button 
                   size="lg" 
@@ -687,7 +692,7 @@ export function ResearchDashboard({
                   className="bg-[#1FD1B2] hover:bg-[#1FD1B2]/90 text-white shadow-sm"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Done
+                  {t('aiAgent.complete.done')}
                 </Button>
               </div>
             </div>
@@ -704,8 +709,8 @@ export function ResearchDashboard({
                     <Bot className="h-7 w-7 text-white" />
                   </div>
                   <div>
-                    <h1 className="mb-1">AI Brand Analysis</h1>
-                    <p className="text-muted-foreground">Answer the questions to generate your brand framework</p>
+                    <h1 className="mb-1">{t('aiAgent.header.title')}</h1>
+                    <p className="text-muted-foreground">{t('aiAgent.header.subtitle')}</p>
                   </div>
                 </div>
                 
@@ -718,12 +723,12 @@ export function ResearchDashboard({
                           {aiAnalysisViewStatus === 'in-progress' ? (
                             <>
                               <Play className="h-4 w-4 mr-2 text-blue-600" />
-                              <span className="font-medium">In Progress</span>
+                              <span className="font-medium">{t('aiAgent.status.inProgress')}</span>
                             </>
                           ) : (
                             <>
                               <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-                              <span className="font-medium">Result</span>
+                              <span className="font-medium">{t('aiAgent.status.result')}</span>
                             </>
                           )}
                         </div>
@@ -733,12 +738,12 @@ export function ResearchDashboard({
                     <DropdownMenuContent align="end" className="w-[200px]">
                       <DropdownMenuItem onClick={() => setAiAnalysisViewStatus('in-progress')} className="cursor-pointer py-3">
                         <Play className="h-4 w-4 mr-2 text-blue-600" />
-                        <span>In Progress</span>
+                        <span>{t('aiAgent.status.inProgress')}</span>
                         {aiAnalysisViewStatus === 'in-progress' && <Check className="h-4 w-4 ml-auto" />}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setAiAnalysisViewStatus('result')} className="cursor-pointer py-3">
                         <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-                        <span>Result</span>
+                        <span>{t('aiAgent.status.result')}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -758,7 +763,7 @@ export function ResearchDashboard({
                   <div className="flex-1">
                     <div className="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-sm p-4 shadow-sm border border-border/50">
                       <p className="text-sm text-foreground">
-                        Hello! I would love to help you develop your brand framework. Let us start with a few questions about your business.
+                        {t('aiAgent.chat.welcome')}
                       </p>
                     </div>
                   </div>
@@ -786,7 +791,7 @@ export function ResearchDashboard({
                           </div>
                           <div className="flex-1">
                             <div className="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-sm p-4 shadow-sm border border-border/50">
-                              <p className="text-sm text-foreground font-medium">{q.question}</p>
+                              <p className="text-sm text-foreground font-medium">{t(`aiAgent.questions.${q.id}`, { defaultValue: q.question })}</p>
                             </div>
                           </div>
                         </div>
@@ -831,7 +836,7 @@ export function ResearchDashboard({
                           </div>
                           <div className="flex-1">
                             <div className="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-sm p-4 shadow-md border-2 border-[#5252E3]/30">
-                              <p className="text-sm text-foreground font-medium">{q.question}</p>
+                              <p className="text-sm text-foreground font-medium">{t(`aiAgent.questions.${q.id}`, { defaultValue: q.question })}</p>
                             </div>
                           </div>
                         </div>
@@ -865,7 +870,7 @@ export function ResearchDashboard({
                 {/* Progress Bar */}
                 <div className="px-6 pt-4 pb-3 border-b border-border/50">
                   <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                    <span className="font-medium">Progress</span>
+                    <span className="font-medium">{t('aiAgent.progress')}</span>
                     <span className="font-semibold text-[#5252E3]">{Math.round((currentStep / totalSteps) * 100)}%</span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -888,7 +893,7 @@ export function ResearchDashboard({
                             [`q${currentStep}`]: e.target.value
                           });
                         }}
-                        placeholder="Type your answer here..."
+                        placeholder={t('aiAgent.answerPlaceholder')}
                         rows={3}
                         className="w-full px-4 py-3 rounded-lg border border-input bg-background text-sm resize-none focus:ring-2 focus:ring-[#5252E3] focus:border-transparent transition-all"
                         disabled={isTyping}
@@ -901,7 +906,7 @@ export function ResearchDashboard({
                           disabled={currentStep === 1 || isTyping}
                         >
                           <ArrowLeft className="h-4 w-4 mr-1" />
-                          Previous
+                          {t('aiAgent.previous')}
                         </Button>
                         <Button
                           onClick={() => {
@@ -942,11 +947,11 @@ export function ResearchDashboard({
                           {isTyping ? (
                             <>
                               <Loader className="h-4 w-4 mr-2 animate-spin" />
-                              AI analyzing...
+                              {t('aiAgent.analyzing')}
                             </>
                           ) : (
                             <>
-                              {currentStep === totalSteps ? 'Complete' : 'Next'}
+                              {currentStep === totalSteps ? t('aiAgent.completeStep') : t('aiAgent.next')}
                               <ArrowRight className="h-4 w-4 ml-1" />
                             </>
                           )}
@@ -957,13 +962,13 @@ export function ResearchDashboard({
                     <div className="text-center py-4">
                       <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#1FD1B2]/10 text-[#1FD1B2] text-sm font-medium mb-4">
                         <CheckCircle className="h-4 w-4" />
-                        All questions answered!
+                        {t('aiAgent.allAnswered')}
                       </div>
                       <Button
                         onClick={() => {
                           if (hasGeneratedReport) {
                             const confirmed = window.confirm(
-                              'You have previously generated a report. Generating a new one will overwrite the existing report. Do you want to continue?'
+                              t('aiAgent.overwriteConfirm')
                             );
                             if (!confirmed) return;
                           }
@@ -974,7 +979,7 @@ export function ResearchDashboard({
                         className="bg-gradient-to-r from-[#5252E3] to-[#1FD1B2] hover:from-[#5252E3]/90 hover:to-[#1FD1B2]/90 text-white shadow-lg gap-2"
                       >
                         <Sparkles className="h-4 w-4" />
-                        Generate Brand Report
+                        {t('aiAgent.generateReport')}
                       </Button>
                     </div>
                   )}
@@ -1013,7 +1018,7 @@ export function ResearchDashboard({
            <div className="max-w-6xl mx-auto px-8 py-4">
              <Button variant="ghost" onClick={onBack} className="mb-4">
                <ArrowLeft className="h-4 w-4 mr-2" />
-               Back to Asset
+               {t('header.backToAsset')}
              </Button>
            </div>
          </div>
@@ -1066,7 +1071,7 @@ export function ResearchDashboard({
           <div className="max-w-6xl mx-auto px-8 py-4">
             <Button variant="ghost" onClick={onBack} className="mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Asset
+              {t('header.backToAsset')}
             </Button>
           </div>
         </div>
@@ -1108,7 +1113,7 @@ export function ResearchDashboard({
           <div className="max-w-6xl mx-auto px-8 py-4">
             <Button variant="ghost" onClick={onBack} className="mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Asset
+              {t('header.backToAsset')}
             </Button>
           </div>
         </div>
@@ -1257,7 +1262,7 @@ export function ResearchDashboard({
           <div className="max-w-6xl mx-auto px-8 py-4">
             <Button variant="ghost" onClick={onBack} className="mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Asset
+              {t('header.backToAsset')}
             </Button>
           </div>
         </div>
@@ -1278,7 +1283,7 @@ export function ResearchDashboard({
           <div className="max-w-6xl mx-auto px-8 py-4">
             <Button variant="ghost" onClick={onBack} className="mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Asset
+              {t('header.backToAsset')}
             </Button>
           </div>
         </div>
@@ -1286,21 +1291,21 @@ export function ResearchDashboard({
         <div className="max-w-6xl mx-auto px-8 py-8">
           <Card>
             <CardHeader>
-              <CardTitle>Research Interface</CardTitle>
+              <CardTitle>{t('noResult.title')}</CardTitle>
               <CardDescription>
-                Start working on this validation method
+                {t('noResult.description')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-12">
                 <Play className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">Ready to Start</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('noResult.ready')}</h3>
                 <p className="text-muted-foreground mb-6">
-                  This validation method interface is ready for you to begin your work.
+                  {t('noResult.readyDescription')}
                 </p>
                 <Button>
                   <Play className="h-4 w-4 mr-2" />
-                  Begin Research
+                  {t('noResult.beginResearch')}
                 </Button>
               </div>
             </CardContent>
@@ -1316,7 +1321,7 @@ export function ResearchDashboard({
         <div className="max-w-6xl mx-auto px-8 py-4">
           <Button variant="ghost" onClick={onBack} className="mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Asset
+            {t('header.backToAsset')}
           </Button>
           
           <div className="flex items-start justify-between">
@@ -1325,31 +1330,31 @@ export function ResearchDashboard({
                 <h1 className="text-2xl font-semibold">{result.name}</h1>
                 <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
                   <CheckCircle className="h-3 w-3 mr-1" />
-                  Completed
+                  {t('resultView.completedBadge')}
                 </Badge>
               </div>
               <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 mr-1" />
-                  Completed: {new Date(result.completedDate).toLocaleDateString()}
+                  {t('resultView.completedOn', { date: new Date(result.completedDate).toLocaleDateString() })}
                 </div>
                 <div className="flex items-center">
                   <RefreshCw className="h-4 w-4 mr-1" />
-                  Updated: {new Date(result.lastUpdated).toLocaleDateString()}
+                  {t('resultView.updatedOn', { date: new Date(result.lastUpdated).toLocaleDateString() })}
                 </div>
               </div>
             </div>
             
             <div className="text-right ml-6">
               <div className="flex items-center mb-2">
-                <span className="text-sm text-muted-foreground mr-2">Confidence Score</span>
+                <span className="text-sm text-muted-foreground mr-2">{t('resultView.confidenceScore')}</span>
                 <Badge variant="outline" className="text-green-600 border-green-600">
                   {result.confidence}%
                 </Badge>
               </div>
               <Button>
                 <Download className="h-4 w-4 mr-2" />
-                Download Report
+                {t('resultView.downloadReport')}
               </Button>
             </div>
           </div>
@@ -1365,10 +1370,10 @@ export function ResearchDashboard({
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Lightbulb className="h-4 w-4 mr-2" />
-                  Key Insights
+                  {t('resultView.keyInsights.title')}
                 </CardTitle>
                 <CardDescription>
-                  Main findings from the research analysis
+                  {t('resultView.keyInsights.description')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1388,10 +1393,10 @@ export function ResearchDashboard({
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <BarChart3 className="h-4 w-4 mr-2" />
-                  Performance Metrics
+                  {t('resultView.metrics.title')}
                 </CardTitle>
                 <CardDescription>
-                  Quantitative analysis results
+                  {t('resultView.metrics.description')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1416,10 +1421,10 @@ export function ResearchDashboard({
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <TrendingUp className="h-4 w-4 mr-2" />
-                  Recommendations
+                  {t('resultView.recommendations.title')}
                 </CardTitle>
                 <CardDescription>
-                  Actionable next steps based on the findings
+                  {t('resultView.recommendations.description')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1432,7 +1437,7 @@ export function ResearchDashboard({
                       </div>
                       <Button variant="outline" size="sm" className="ml-3">
                         <Eye className="h-3 w-3 mr-1" />
-                        Details
+                        {t('resultView.recommendations.details')}
                       </Button>
                     </div>
                   ))}
@@ -1446,20 +1451,20 @@ export function ResearchDashboard({
             {/* Quick Actions */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Quick Actions</CardTitle>
+                <CardTitle className="text-lg">{t('resultView.quickActions.title')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button className="w-full">
                   <Download className="h-4 w-4 mr-2" />
-                  Download Full Report
+                  {t('resultView.quickActions.downloadFull')}
                 </Button>
                 <Button variant="outline" className="w-full">
                   <MessageCircle className="h-4 w-4 mr-2" />
-                  Schedule Follow-up
+                  {t('resultView.quickActions.scheduleFollowUp')}
                 </Button>
                 <Button variant="outline" className="w-full">
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Update Analysis
+                  {t('resultView.quickActions.updateAnalysis')}
                 </Button>
               </CardContent>
             </Card>

@@ -13,6 +13,7 @@
 // =============================================================
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Camera, Download, Loader2, AlertCircle, Wand2 } from 'lucide-react';
 import { interpretAiError, notifyAiError, errorFromResponse } from '@/lib/ai/ai-error-client';
 
@@ -21,6 +22,7 @@ interface PhotographyBriefPanelProps {
 }
 
 export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const [markdown, setMarkdown] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,13 +36,13 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
         method: 'POST',
       });
       if (!res.ok) {
-        throw await errorFromResponse(res, `Generation failed (${res.status})`);
+        throw await errorFromResponse(res, t('photoBrief.generationFailedStatus', { status: res.status }));
       }
       const data = (await res.json()) as { markdown: string };
       setMarkdown(data.markdown);
     } catch (err) {
       const e = interpretAiError(err);
-      setError(e.message || 'Generation failed');
+      setError(e.message || t('photoBrief.generationFailed'));
       if (e.unavailable) notifyAiError(err, { retry: handleGenerate });
     } finally {
       setBusy(false);
@@ -63,13 +65,9 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
       <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
         <Camera className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-700" />
         <div>
-          <p className="font-medium">Real photography workflow</p>
+          <p className="font-medium">{t('photoBrief.workflowTitle')}</p>
           <p className="mt-0.5">
-            For authenticity-critical content (case studies, testimonials, location-specific)
-            real photography converts better than AI stock.
-            Branddock generates a brief for the photographer based on your
-            Visual Brief + brand context.
-            After the shoot: upload the photo via the Upload tab.
+            {t('photoBrief.workflowBody')}
           </p>
         </div>
       </div>
@@ -82,14 +80,14 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium disabled:opacity-50"
         >
           <Wand2 className="h-4 w-4" />
-          Generate photographer brief
+          {t('photoBrief.generate')}
         </button>
       )}
 
       {busy && (
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Brief is being drafted based on brand context...
+          {t('photoBrief.drafting')}
         </div>
       )}
 
@@ -103,7 +101,7 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
       {markdown && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-gray-700">Photographer brief</p>
+            <p className="text-xs font-medium text-gray-700">{t('photoBrief.briefTitle')}</p>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -111,7 +109,7 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
                 className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md bg-amber-600 text-white hover:bg-amber-700"
               >
                 <Download className="h-3 w-3" />
-                Download .md
+                {t('photoBrief.downloadMd')}
               </button>
               <button
                 type="button"
@@ -119,7 +117,7 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
                 disabled={busy}
                 className="text-xs text-amber-700 hover:text-amber-800 underline"
               >
-                Regenerate
+                {t('actions.regenerate')}
               </button>
             </div>
           </div>
@@ -129,8 +127,7 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
             </pre>
           </div>
           <div className="rounded-md bg-blue-50 border border-blue-200 p-2.5 text-[11px] text-blue-900">
-            Done with the shoot? Switch to the Upload tab to add the photo to this
-            content item.
+            {t('photoBrief.doneHint')}
           </div>
         </div>
       )}

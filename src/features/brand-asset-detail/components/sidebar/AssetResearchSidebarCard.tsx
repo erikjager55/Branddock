@@ -1,6 +1,7 @@
 'use client';
 
 import { FlaskConical, Bot, CheckCircle, Plus, Eye, Play } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { BrandAssetDetail } from '../../types/brand-asset-detail.types';
 
 interface AssetResearchSidebarCardProps {
@@ -11,14 +12,15 @@ interface AssetResearchSidebarCardProps {
 
 /** Only AI Exploration is currently active. Other methods (INTERVIEWS, WORKSHOP, QUESTIONNAIRE) are deactivated. */
 const METHODS = [
-  { method: 'AI_EXPLORATION' as const, label: 'AI Exploration', description: 'AI-assisted analysis and ideation for brand strategy and positioning', icon: Bot, isFree: true, startLabel: 'Start Exploration', continueLabel: 'Continue', completedLabel: 'View Report' },
+  { method: 'AI_EXPLORATION' as const, tKey: 'aiExploration', icon: Bot, isFree: true },
   // Deactivated — re-add when methods return:
-  // { method: 'INTERVIEWS' as const, label: 'Interviews', ... },
-  // { method: 'WORKSHOP' as const, label: 'Canvas Workshop', ... },
-  // { method: 'QUESTIONNAIRE' as const, label: 'Questionnaire', ... },
+  // { method: 'INTERVIEWS' as const, tKey: 'interviews', ... },
+  // { method: 'WORKSHOP' as const, tKey: 'workshop', ... },
+  // { method: 'QUESTIONNAIRE' as const, tKey: 'questionnaire', ... },
 ];
 
 export function AssetResearchSidebarCard({ asset, onStartAnalysis, isLocked = false }: AssetResearchSidebarCardProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const methods = asset.researchMethods ?? [];
 
   const getMethodStatus = (method: string) => {
@@ -37,7 +39,7 @@ export function AssetResearchSidebarCard({ asset, onStartAnalysis, isLocked = fa
         <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
           <FlaskConical className="h-4 w-4 text-blue-600" />
         </div>
-        <h3 className="text-sm font-semibold text-gray-900">Research</h3>
+        <h3 className="text-sm font-semibold text-gray-900">{t('research.title')}</h3>
       </div>
 
       {/* Method cards */}
@@ -74,7 +76,7 @@ export function AssetResearchSidebarCard({ asset, onStartAnalysis, isLocked = fa
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <h4 className="text-sm font-semibold text-gray-900">{config.label}</h4>
+                    <h4 className="text-sm font-semibold text-gray-900">{t(`research.${config.tKey}.label`)}</h4>
                     {isAvailable && (
                       <button
                         onClick={() => handleStart(config.method)}
@@ -82,7 +84,7 @@ export function AssetResearchSidebarCard({ asset, onStartAnalysis, isLocked = fa
                         className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Plus className="h-3 w-3" />
-                        {config.startLabel}
+                        {t(`research.${config.tKey}.start`)}
                       </button>
                     )}
                     {isCompleted && (
@@ -92,7 +94,7 @@ export function AssetResearchSidebarCard({ asset, onStartAnalysis, isLocked = fa
                         className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-emerald-700 border border-emerald-200 rounded-md bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Eye className="h-3 w-3" />
-                        {config.completedLabel}
+                        {t(`research.${config.tKey}.view`)}
                       </button>
                     )}
                     {isInProgress && (
@@ -102,13 +104,13 @@ export function AssetResearchSidebarCard({ asset, onStartAnalysis, isLocked = fa
                         className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-blue-700 border border-blue-200 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Play className="h-3 w-3" />
-                        {config.continueLabel}
+                        {t(`research.${config.tKey}.continue`)}
                       </button>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{config.description}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{t(`research.${config.tKey}.description`)}</p>
                   {!isCompleted && config.isFree && (
-                    <span className="text-[11px] font-medium text-emerald-600 mt-1 block">FREE</span>
+                    <span className="text-[11px] font-medium text-emerald-600 mt-1 block">{t('research.free')}</span>
                   )}
                 </div>
               </div>

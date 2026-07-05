@@ -1,46 +1,47 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { CheckCircle, Clock, Users, Monitor } from "lucide-react";
 import { Card } from "@/components/shared";
 
-const INCLUDED_ITEMS = [
-  "6-step guided brand strategy workshop",
-  "AI-generated executive summary & findings",
-  "Golden Circle canvas output",
-  "Participant response capture per step",
-  "Actionable recommendations report",
-  "Photo & notes documentation",
+const INCLUDED_ITEM_KEYS = [
+  "purchase.package.included.workshop",
+  "purchase.package.included.summary",
+  "purchase.package.included.canvas",
+  "purchase.package.included.capture",
+  "purchase.package.included.recommendations",
+  "purchase.package.included.documentation",
 ];
 
 const SPECS = [
-  { icon: Clock, label: "Duration", value: "~90 minutes" },
-  { icon: Users, label: "Participants", value: "Up to 12" },
-  { icon: Monitor, label: "Format", value: "In-person or virtual" },
+  { icon: Clock, labelKey: "purchase.package.specs.durationLabel", valueKey: "purchase.package.specs.durationValue" },
+  { icon: Users, labelKey: "purchase.package.specs.participantsLabel", valueKey: "purchase.package.specs.participantsValue" },
+  { icon: Monitor, labelKey: "purchase.package.specs.formatLabel", valueKey: "purchase.package.specs.formatValue" },
 ];
 
 export function WorkshopPackageInfo() {
+  const { t } = useTranslation("workshop");
   return (
     <Card padding="none">
       <Card.Header>
         <h2 className="text-xl font-semibold text-gray-900">
-          Canvas Workshop
+          {t("purchase.package.title")}
         </h2>
         <p className="mt-1 text-sm text-gray-500">
-          A facilitated brand strategy workshop combining proven frameworks with
-          AI-powered analysis to uncover your brand&apos;s core identity.
+          {t("purchase.package.subtitle")}
         </p>
       </Card.Header>
       <Card.Body>
         <div className="space-y-4">
           <div>
             <h3 className="text-sm font-medium text-gray-700 mb-2">
-              What&apos;s Included
+              {t("purchase.package.includedTitle")}
             </h3>
             <ul className="space-y-2">
-              {INCLUDED_ITEMS.map((item) => (
-                <li key={item} className="flex items-start gap-2">
+              {INCLUDED_ITEM_KEYS.map((itemKey) => (
+                <li key={itemKey} className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-600">{item}</span>
+                  <span className="text-sm text-gray-600">{t(itemKey)}</span>
                 </li>
               ))}
             </ul>
@@ -48,11 +49,11 @@ export function WorkshopPackageInfo() {
           <div className="border-t border-gray-100 pt-4">
             <div className="grid grid-cols-3 gap-4">
               {SPECS.map((spec) => (
-                <div key={spec.label} className="text-center">
+                <div key={spec.labelKey} className="text-center">
                   <spec.icon className="w-5 h-5 text-primary mx-auto mb-1" />
-                  <p className="text-xs text-gray-500">{spec.label}</p>
+                  <p className="text-xs text-gray-500">{t(spec.labelKey)}</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {spec.value}
+                    {t(spec.valueKey)}
                   </p>
                 </div>
               ))}

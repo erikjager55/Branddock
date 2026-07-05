@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 
 // ─── Types ──────────────────────────────────────────────────
@@ -26,6 +27,7 @@ export const VoicePreviewPlayer = React.memo(function VoicePreviewPlayer({
   audioUrl,
   voiceName,
 }: VoicePreviewPlayerProps) {
+  const { t } = useTranslation('media-library');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -93,7 +95,7 @@ export const VoicePreviewPlayer = React.memo(function VoicePreviewPlayer({
         data-testid="voice-preview-disabled"
       >
         <VolumeX className="w-4 h-4 text-gray-300 flex-shrink-0" />
-        <span className="text-xs text-gray-400">No sample available</span>
+        <span className="text-xs text-gray-400">{t('brandVoice.player.noSample')}</span>
       </div>
     );
   }
@@ -124,7 +126,7 @@ export const VoicePreviewPlayer = React.memo(function VoicePreviewPlayer({
         onClick={handlePlayPause}
         disabled={hasError}
         className="flex-shrink-0 w-7 h-7 rounded-full bg-teal-600 text-white flex items-center justify-center hover:bg-teal-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-        aria-label={isPlaying ? `Pause ${voiceName}` : `Play ${voiceName}`}
+        aria-label={isPlaying ? t('brandVoice.player.pauseAria', { name: voiceName }) : t('brandVoice.player.playAria', { name: voiceName })}
       >
         {isPlaying ? (
           <Pause className="w-3.5 h-3.5" />
@@ -141,7 +143,7 @@ export const VoicePreviewPlayer = React.memo(function VoicePreviewPlayer({
         aria-valuenow={Math.round(progress)}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`Playback progress for ${voiceName}`}
+        aria-label={t('brandVoice.player.progressAria', { name: voiceName })}
       >
         <div
           className="absolute inset-y-0 left-0 bg-teal-500 rounded-full transition-all duration-100"
@@ -159,7 +161,7 @@ export const VoicePreviewPlayer = React.memo(function VoicePreviewPlayer({
 
       {/* Error state */}
       {hasError && (
-        <span className="text-[10px] text-red-500">Error loading audio</span>
+        <span className="text-[10px] text-red-500">{t('brandVoice.player.error')}</span>
       )}
     </div>
   );

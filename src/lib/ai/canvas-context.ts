@@ -413,6 +413,7 @@ async function fetchMediumContext(
 export async function assembleCanvasContext(
   deliverableId: string,
   workspaceId: string,
+  localeProfileId?: string,
 ): Promise<CanvasContextStack> {
   // Fetch deliverable with campaign
   const deliverable = await prisma.deliverable.findUnique({
@@ -434,8 +435,10 @@ export async function assembleCanvasContext(
   const settingsBrief = (settings.brief ?? {}) as Record<string, unknown>;
   const settingsPhase = (deliverable.journeyPhase ?? settings.phase ?? null) as string | null;
 
-  // Layer 1: Brand context (cached, 5-min TTL)
-  const brand = await getBrandContext(workspaceId);
+  // Layer 1: Brand context (cached, 5-min TTL).
+  // Content-locale Fase 2: expliciet gekozen target-profiel wint; anders het op de
+  // deliverable gepersisteerde profiel (her-genereren behoudt de taal); anders default.
+  const brand = await getBrandContext(workspaceId, localeProfileId ?? deliverable.localeProfileId ?? undefined);
 
   // Layer 2: Campaign concept from strategy JSON
   const concept = extractConceptContext(deliverable.campaign.strategy);

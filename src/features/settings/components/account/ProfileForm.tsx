@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useProfile, useUpdateProfile, useUploadAvatar, useDeleteAvatar } from '@/hooks/use-settings';
 import { Button, Input, Card, Skeleton } from '@/components/shared';
 import { Badge } from '@/components/shared';
@@ -9,6 +10,7 @@ import { AvatarUpload } from './AvatarUpload';
 import type { UpdateProfileRequest } from '@/types/settings';
 
 export function ProfileForm() {
+  const { t } = useTranslation('settings-account');
   const { data, isLoading } = useProfile();
   const updateProfile = useUpdateProfile();
   const uploadAvatar = useUploadAvatar();
@@ -66,7 +68,7 @@ export function ProfileForm() {
 
   return (
     <Card>
-      <h3 data-testid="profile-form" className="text-base font-semibold text-gray-900 mb-4">Profile Information</h3>
+      <h3 data-testid="profile-form" className="text-base font-semibold text-gray-900 mb-4">{t('profile.title')}</h3>
 
       <AvatarUpload
         avatarUrl={profile?.avatarUrl ?? null}
@@ -76,24 +78,24 @@ export function ProfileForm() {
 
       <div className="mt-5 grid grid-cols-2 gap-4">
         <Input
-          label="First Name"
+          label={t('profile.firstName')}
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
-          placeholder="Your first name"
+          placeholder={t('profile.firstNamePlaceholder')}
         />
         <Input
-          label="Last Name"
+          label={t('profile.lastName')}
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
-          placeholder="Your last name"
+          placeholder={t('profile.lastNamePlaceholder')}
         />
       </div>
 
       <div className="mt-4">
         <div className="flex items-center gap-2 mb-1.5">
-          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <label className="block text-sm font-medium text-gray-700">{t('profile.emailLabel')}</label>
           {profile?.emailVerified && (
-            <Badge variant="success" size="sm">Verified</Badge>
+            <Badge variant="success" size="sm">{t('profile.verified')}</Badge>
           )}
         </div>
         <input
@@ -101,22 +103,22 @@ export function ProfileForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-shadow"
-          placeholder="your@email.com"
+          placeholder={t('profile.emailPlaceholder')}
         />
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-4">
         <Input
-          label="Job Title"
+          label={t('profile.jobTitle')}
           value={jobTitle}
           onChange={(e) => setJobTitle(e.target.value)}
-          placeholder="e.g. Brand Strategist"
+          placeholder={t('profile.jobTitlePlaceholder')}
         />
         <Input
-          label="Phone"
+          label={t('profile.phone')}
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          placeholder="+31 6 1234 5678"
+          placeholder={t('profile.phonePlaceholder')}
         />
       </div>
 
@@ -127,7 +129,7 @@ export function ProfileForm() {
           isLoading={updateProfile.isPending}
           onClick={handleSave}
         >
-          Save Changes
+          {t('profile.save')}
         </Button>
       </div>
     </Card>

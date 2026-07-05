@@ -6,6 +6,7 @@
 // verwijder bij de volgende opruimronde als niets het meer importeert.
 
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, CheckCircle2, Info, Pencil, Sparkles } from "lucide-react";
 import { Card, Button } from "@/components/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -30,6 +31,7 @@ interface SystemRolesSectionProps {
 }
 
 export function SystemRolesSection({ styleguide, canEdit }: SystemRolesSectionProps) {
+  const { t } = useTranslation("brandstyle-review");
   const tokens = useMemo(
     () => parseSemanticTokens(styleguide.semanticTokens),
     [styleguide.semanticTokens],
@@ -57,10 +59,8 @@ export function SystemRolesSection({ styleguide, canEdit }: SystemRolesSectionPr
         <div className="p-5 flex items-start gap-3">
           <Info className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" />
           <div className="text-sm text-gray-600 space-y-1">
-            <p className="font-medium text-gray-900">System roles not yet resolved</p>
-            <p>
-              Run the analyzer to generate DESIGN.md-compatible semantic roles (primary / on-primary / surface / ...). Existing styleguides created before this feature shipped can be re-analyzed via the header action.
-            </p>
+            <p className="font-medium text-gray-900">{t("systemRoles.empty.title")}</p>
+            <p>{t("systemRoles.empty.body")}</p>
           </div>
         </div>
       </Card>
@@ -79,26 +79,24 @@ export function SystemRolesSection({ styleguide, canEdit }: SystemRolesSectionPr
           <div className="flex items-start gap-3">
             <Sparkles className="w-5 h-5 text-teal-600 shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-base font-semibold text-gray-900">System Roles</h3>
-              <p className="text-sm text-gray-500 mt-0.5">
-                Semantic color tokens derived from your palette — used in DESIGN.md, DTCG, Tailwind and shadcn exports.
-              </p>
+              <h3 className="text-base font-semibold text-gray-900">{t("systemRoles.header.title")}</h3>
+              <p className="text-sm text-gray-500 mt-0.5">{t("systemRoles.header.subtitle")}</p>
             </div>
           </div>
           <div className="flex flex-col items-end gap-1 text-xs text-gray-500 shrink-0">
             {overridesCount > 0 && (
               <span className="inline-flex items-center gap-1 text-teal-700">
-                <Pencil className="w-3 h-3" /> {overridesCount} override{overridesCount === 1 ? "" : "s"}
+                <Pencil className="w-3 h-3" /> {t("systemRoles.override", { count: overridesCount })}
               </span>
             )}
             {warnings.length > 0 && (
               <span className="inline-flex items-center gap-1 text-amber-700">
-                <AlertTriangle className="w-3 h-3" /> {warnings.length} WCAG warning{warnings.length === 1 ? "" : "s"}
+                <AlertTriangle className="w-3 h-3" /> {t("systemRoles.wcagWarning", { count: warnings.length })}
               </span>
             )}
             {warnings.length === 0 && unresolved.length === 0 && overridesCount === 0 && (
               <span className="inline-flex items-center gap-1 text-emerald-700">
-                <CheckCircle2 className="w-3 h-3" /> All roles resolved
+                <CheckCircle2 className="w-3 h-3" /> {t("systemRoles.allResolved")}
               </span>
             )}
           </div>
@@ -129,14 +127,14 @@ export function SystemRolesSection({ styleguide, canEdit }: SystemRolesSectionPr
 
         {unresolved.length > 0 && (
           <div className="p-4 border-t border-amber-200 bg-amber-50 text-xs text-amber-900">
-            <span className="font-medium">Unresolved required roles:</span> {unresolved.join(', ')}. Re-analyze to populate them, or set overrides manually.
+            <span className="font-medium">{t("systemRoles.unresolvedLabel")}</span> {unresolved.join(', ')}. {t("systemRoles.unresolvedBody")}
           </div>
         )}
 
         {canEdit && overridesCount > 0 && (
           <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50">
             <span className="text-xs text-gray-500">
-              Overrides persist until you explicitly clear or re-analyze.
+              {t("systemRoles.overridesPersistNote")}
             </span>
             <Button
               variant="ghost"
@@ -144,7 +142,7 @@ export function SystemRolesSection({ styleguide, canEdit }: SystemRolesSectionPr
               onClick={() => updateMut.mutate(null)}
               disabled={updateMut.isPending}
             >
-              Clear all overrides
+              {t("systemRoles.clearAll")}
             </Button>
           </div>
         )}
@@ -154,7 +152,7 @@ export function SystemRolesSection({ styleguide, canEdit }: SystemRolesSectionPr
             section="system-roles"
             reviews={styleguide.reviews ?? []}
             canEdit={canEdit}
-            label="Review system roles"
+            label={t("systemRoles.reviewLabel")}
           />
         </div>
       </Card>

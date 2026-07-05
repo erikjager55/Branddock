@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ImageOff, Trash2, Pencil } from "lucide-react";
 import type { StyleguideLogoData, LogoVariant } from "../../types/brandstyle.types";
 import { useDeleteLogo, useUpdateLogo } from "../../hooks/useBrandstyleHooks";
@@ -10,18 +11,10 @@ interface LogoCardProps {
   canEdit: boolean;
 }
 
-const VARIANT_LABEL: Record<LogoVariant, string> = {
-  PRIMARY: "Primary",
-  LIGHT: "On light",
-  DARK: "On dark",
-  ICON: "Icon",
-  WORDMARK: "Wordmark",
-  LOCKUP: "Lockup",
-};
-
 const VARIANT_OPTIONS: LogoVariant[] = ["PRIMARY", "LIGHT", "DARK", "ICON", "WORDMARK", "LOCKUP"];
 
 export function LogoCard({ logo, canEdit }: LogoCardProps) {
+  const { t } = useTranslation("brandstyle");
   const [imgError, setImgError] = useState(false);
   const [editingMeta, setEditingMeta] = useState(false);
   const [variant, setVariant] = useState<LogoVariant>(logo.variant);
@@ -35,7 +28,7 @@ export function LogoCard({ logo, canEdit }: LogoCardProps) {
   const previewBgClass = logo.variant === "LIGHT" ? "bg-gray-900" : "bg-gray-50";
 
   const handleDelete = () => {
-    const confirmed = window.confirm(`Delete this logo? This cannot be undone.`);
+    const confirmed = window.confirm(t("logos.confirmDelete"));
     if (confirmed) deleteMut.mutate(logo.id);
   };
 
@@ -60,7 +53,7 @@ export function LogoCard({ logo, canEdit }: LogoCardProps) {
         ) : (
           <img
             src={logo.fileUrl}
-            alt={logo.description ?? VARIANT_LABEL[logo.variant]}
+            alt={logo.description ?? t(`logos.variants.${logo.variant}`)}
             className="max-w-full max-h-full object-contain"
             onError={() => setImgError(true)}
           />
@@ -76,7 +69,7 @@ export function LogoCard({ logo, canEdit }: LogoCardProps) {
           >
             {VARIANT_OPTIONS.map((v) => (
               <option key={v} value={v}>
-                {VARIANT_LABEL[v]}
+                {t(`logos.variants.${v}`)}
               </option>
             ))}
           </select>
@@ -84,7 +77,7 @@ export function LogoCard({ logo, canEdit }: LogoCardProps) {
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional description"
+            placeholder={t("logos.optionalDescription")}
             className="w-full text-sm px-2 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           <div className="flex items-center justify-end gap-2 pt-1">
@@ -94,7 +87,7 @@ export function LogoCard({ logo, canEdit }: LogoCardProps) {
               disabled={updateMut.isPending}
               className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
             >
-              Cancel
+              {t("actions.cancel")}
             </button>
             <button
               type="button"
@@ -103,7 +96,7 @@ export function LogoCard({ logo, canEdit }: LogoCardProps) {
               style={{ backgroundColor: "#0d9488", color: "#ffffff" }}
               className="text-xs font-medium px-2.5 py-1 rounded-md hover:opacity-90 disabled:opacity-60"
             >
-              Save
+              {t("actions.save")}
             </button>
           </div>
         </div>
@@ -111,7 +104,7 @@ export function LogoCard({ logo, canEdit }: LogoCardProps) {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <span className="inline-block text-[10px] font-semibold uppercase tracking-wide text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-              {VARIANT_LABEL[logo.variant]}
+              {t(`logos.variants.${logo.variant}`)}
             </span>
             <p className="text-sm font-medium text-gray-900 mt-1 truncate">
               {logo.description ?? logo.fileName}
@@ -127,8 +120,8 @@ export function LogoCard({ logo, canEdit }: LogoCardProps) {
                 type="button"
                 onClick={() => setEditingMeta(true)}
                 className="p-1 text-gray-400 hover:text-primary transition-colors"
-                aria-label="Edit logo"
-                title="Edit variant / description"
+                aria-label={t("logos.editAria")}
+                title={t("logos.editTitle")}
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
@@ -137,8 +130,8 @@ export function LogoCard({ logo, canEdit }: LogoCardProps) {
                 onClick={handleDelete}
                 disabled={deleteMut.isPending}
                 className="p-1 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
-                aria-label="Delete logo"
-                title="Delete logo"
+                aria-label={t("logos.deleteAria")}
+                title={t("logos.deleteTitle")}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>

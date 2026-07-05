@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Copy, ChevronDown, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Button } from '@/components/shared';
 import { getDeliverableTypeById } from '../../lib/deliverable-types';
 import type { DeliverableResponse } from '@/types/campaign';
@@ -43,6 +45,8 @@ export function RepeatSplitButton({
   isPending,
   onRepeat,
 }: RepeatSplitButtonProps) {
+  const { t } = useTranslation('campaigns-content-library');
+  const { formatDate } = useFormat();
   const [menuOpen, setMenuOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -126,11 +130,11 @@ export function RepeatSplitButton({
         icon={isPending ? undefined : Copy}
         onClick={handlePrimary}
         disabled={disabled || isPending}
-        title={`Duplicate ${latestTypeName} with the same settings`}
+        title={t('repeat.duplicateTitle', { type: latestTypeName })}
         className={showChevron ? 'rounded-r-none' : undefined}
       >
         {isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-        Repeat last
+        {t('repeat.repeatLast')}
       </Button>
       {showChevron && (
         <button
@@ -139,8 +143,8 @@ export function RepeatSplitButton({
           disabled={disabled || isPending}
           aria-haspopup="menu"
           aria-expanded={menuOpen}
-          aria-label="Repeat a specific content type"
-          title="Repeat a specific content type"
+          aria-label={t('repeat.specificType')}
+          title={t('repeat.specificType')}
           className="inline-flex items-center px-1.5 rounded-r-md border border-l-0 border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
         >
           <ChevronDown className="h-3.5 w-3.5" />
@@ -155,7 +159,7 @@ export function RepeatSplitButton({
           style={{ minWidth: 240 }}
         >
           <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
-            Repeat by type
+            {t('repeat.repeatByType')}
           </div>
           <ul className="py-1 max-h-64 overflow-y-auto">
             {latestByType.map(({ contentType, typeName, deliverable }) => (
@@ -169,7 +173,7 @@ export function RepeatSplitButton({
                   <Copy className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                   <span className="flex-1 truncate">{typeName}</span>
                   <span className="text-[10px] text-gray-400 flex-shrink-0">
-                    {new Date(deliverable.updatedAt).toLocaleDateString()}
+                    {formatDate(deliverable.updatedAt)}
                   </span>
                 </button>
               </li>

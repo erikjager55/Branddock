@@ -1,6 +1,7 @@
 'use client';
 
 import { Pencil, Sparkles, Telescope, Upload } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/shared';
 import { useKnowledgeLibraryStore } from '@/stores/useKnowledgeLibraryStore';
 import { ManualEntryTab } from './ManualEntryTab';
@@ -9,13 +10,14 @@ import { FileUploadTab } from './FileUploadTab';
 import { DeepResearchTab } from './DeepResearchTab';
 
 const TABS = [
-  { id: 'manual' as const, label: 'Manual Entry', icon: Pencil },
-  { id: 'import' as const, label: 'Smart Import', icon: Sparkles },
-  { id: 'upload' as const, label: 'File Upload', icon: Upload },
-  { id: 'research' as const, label: 'Deep Research', icon: Telescope },
+  { id: 'manual' as const, icon: Pencil },
+  { id: 'import' as const, icon: Sparkles },
+  { id: 'upload' as const, icon: Upload },
+  { id: 'research' as const, icon: Telescope },
 ];
 
 export function AddResourceModal() {
+  const { t } = useTranslation('knowledge-library');
   const store = useKnowledgeLibraryStore();
 
   const handleClose = () => store.setAddModalOpen(false);
@@ -24,7 +26,7 @@ export function AddResourceModal() {
     <Modal
       isOpen={store.isAddModalOpen}
       onClose={handleClose}
-      title="Add Resource"
+      title={t('addModal.title')}
       size="lg"
     >
       <div data-testid="add-resource-modal">
@@ -45,7 +47,7 @@ export function AddResourceModal() {
               }`}
             >
               <Icon className="h-4 w-4" />
-              {tab.label}
+              {t(`addModal.tabs.${tab.id}`)}
             </button>
           );
         })}

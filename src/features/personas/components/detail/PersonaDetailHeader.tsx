@@ -1,6 +1,7 @@
 'use client';
 
 import { User, MapPin, Briefcase, RefreshCw, Camera, Pencil, MessageCircle, HelpCircle, Check, Save, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { OptimizedImage, Button } from '@/components/shared';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LockShield, LockStatusPill } from '@/components/lock';
@@ -36,6 +37,7 @@ export function PersonaDetailHeader({
   onUpdate,
   onVersionRestore,
 }: PersonaDetailHeaderProps) {
+  const { t } = useTranslation('personas');
   const generateImage = useGeneratePersonaImage(persona.id);
 
   return (
@@ -57,7 +59,7 @@ export function PersonaDetailHeader({
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
                     <div className="w-8 h-8 border-2 border-primary-300/30 border-t-primary-300/90 rounded-full animate-spin" />
                     <span className="text-[8px] font-semibold uppercase tracking-widest text-white/85">
-                      Regenerating
+                      {t('header.regenerating')}
                     </span>
                   </div>
                 </div>
@@ -97,24 +99,24 @@ export function PersonaDetailHeader({
               {generateImage.isPending ? (
                 <>
                   <RefreshCw className="h-3 w-3 animate-spin" />
-                  <span>Working...</span>
+                  <span>{t('header.working')}</span>
                 </>
               ) : persona.avatarUrl ? (
                 <>
                   <RefreshCw className="h-3 w-3" />
-                  <span>Regenerate</span>
+                  <span>{t('header.regenerate')}</span>
                 </>
               ) : (
                 <>
                   <Camera className="h-3 w-3" />
-                  <span>Generate</span>
+                  <span>{t('header.generate')}</span>
                 </>
               )}
             </button>
           )}
           {generateImage.isError && (
             <p className="mt-1 text-[9px] text-red-500 text-center w-24">
-              Generation failed. Try again.
+              {t('header.generationFailed')}
             </p>
           )}
         </div>
@@ -152,7 +154,7 @@ export function PersonaDetailHeader({
                 <input
                   type="text"
                   defaultValue={persona.tagline ?? ''}
-                  placeholder="Add a tagline..."
+                  placeholder={t('header.taglinePlaceholder')}
                   onBlur={(e) => {
                     const newTagline = e.target.value.trim();
                     if (newTagline !== (persona.tagline ?? '')) {
@@ -191,19 +193,19 @@ export function PersonaDetailHeader({
                   <PopoverTrigger asChild>
                     <button className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors border border-gray-200">
                       <HelpCircle className="h-3 w-3" />
-                      What are Personas?
+                      {t('header.whatArePersonas')}
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80 text-sm" align="start">
                     <div className="space-y-2">
-                      <p className="font-semibold">What are Personas?</p>
+                      <p className="font-semibold">{t('header.whatArePersonas')}</p>
                       <p className="text-gray-500 leading-relaxed">
-                        Personas are research-based representations of your target users. They synthesize data into fictional but realistic characters that represent key audience segments.
+                        {t('header.popoverBody')}
                       </p>
                       <div className="pt-2 border-t border-gray-200 space-y-1.5 text-xs text-gray-500">
-                        <p><span className="font-medium text-gray-900">User-Centered:</span> Evidence-based profiles from real research data</p>
-                        <p><span className="font-medium text-gray-900">Strategic Tool:</span> Guides content, messaging, and campaign targeting</p>
-                        <p><span className="font-medium text-gray-900">Validation-Driven:</span> Strengthen with interviews, surveys, and AI analysis</p>
+                        <p><span className="font-medium text-gray-900">{t('header.popoverUserCenteredLabel')}</span> {t('header.popoverUserCenteredDesc')}</p>
+                        <p><span className="font-medium text-gray-900">{t('header.popoverStrategicLabel')}</span> {t('header.popoverStrategicDesc')}</p>
+                        <p><span className="font-medium text-gray-900">{t('header.popoverValidationLabel')}</span> {t('header.popoverValidationDesc')}</p>
                       </div>
                     </div>
                   </PopoverContent>
@@ -223,14 +225,14 @@ export function PersonaDetailHeader({
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-opacity hover:opacity-90"
                   >
                     <Save className="h-4 w-4" />
-                    Save
+                    {t('actions.save')}
                   </button>
                   <button
                     onClick={onCancelEdit}
                     className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
                   >
                     <X className="h-3.5 w-3.5" />
-                    Cancel
+                    {t('actions.cancel')}
                   </button>
                 </>
               ) : (
@@ -242,7 +244,7 @@ export function PersonaDetailHeader({
                   onClick={onEditToggle}
                   disabled={!lockState.canEdit}
                 >
-                  Edit
+                  {t('actions.edit')}
                 </Button>
               )}
 
@@ -262,7 +264,7 @@ export function PersonaDetailHeader({
                 icon={MessageCircle}
                 onClick={onChat}
               >
-                Chat
+                {t('actions.chat')}
               </Button>
             </div>
           </div>

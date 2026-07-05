@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import type { SelectionMode } from "../../types/workshop-purchase.types";
 
 interface AssetSelectionToggleProps {
@@ -11,6 +12,7 @@ export function AssetSelectionToggle({
   mode,
   onModeChange,
 }: AssetSelectionToggleProps) {
+  const { t } = useTranslation("workshop");
   return (
     <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
       <button
@@ -21,7 +23,7 @@ export function AssetSelectionToggle({
             : "text-gray-500 hover:text-gray-700"
         }`}
       >
-        Bundles
+        {t("purchase.toggle.bundles")}
       </button>
       <button
         onClick={() => onModeChange("individual")}
@@ -31,7 +33,7 @@ export function AssetSelectionToggle({
             : "text-gray-500 hover:text-gray-700"
         }`}
       >
-        Individual
+        {t("purchase.toggle.individual")}
       </button>
     </div>
   );

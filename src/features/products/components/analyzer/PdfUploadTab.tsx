@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Upload, FileText, X } from "lucide-react";
 import { Button } from "@/components/shared";
 import { useAnalyzePdf } from "../../hooks";
@@ -8,6 +9,7 @@ import { useProductsStore } from "../../stores/useProductsStore";
 import { WhatWeExtractGrid } from "./WhatWeExtractGrid";
 
 export function PdfUploadTab() {
+  const { t } = useTranslation("products");
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -18,11 +20,11 @@ export function PdfUploadTab() {
   const handleFile = (f: File) => {
     setError(null);
     if (!f.name.toLowerCase().endsWith(".pdf")) {
-      setError("Only PDF files are accepted");
+      setError(t("analyzer.pdf.errorNotPdf"));
       return;
     }
     if (f.size > 10 * 1024 * 1024) {
-      setError("File size must be under 10MB");
+      setError(t("analyzer.pdf.errorTooLarge"));
       return;
     }
     setFile(f);
@@ -68,7 +70,7 @@ export function PdfUploadTab() {
       },
       onError: (err) => {
         setProcessingModalOpen(false);
-        setError(err instanceof Error ? err.message : "Failed to analyze PDF. Please try again.");
+        setError(err instanceof Error ? err.message : t("analyzer.pdf.error"));
       },
     });
   };
@@ -91,10 +93,12 @@ export function PdfUploadTab() {
         >
           <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
           <p className="text-sm text-gray-600 mb-1">
-            Drop PDF here or{" "}
-            <span className="font-medium text-green-600">click to browse</span>
+            {t("analyzer.pdf.dropPrefix")}
+            <span className="font-medium text-green-600">
+              {t("analyzer.pdf.dropBrowse")}
+            </span>
           </p>
-          <p className="text-xs text-gray-400">PDF &bull; Max 10MB</p>
+          <p className="text-xs text-gray-400">{t("analyzer.pdf.dropHint")}</p>
           <input
             ref={fileInputRef}
             type="file"
@@ -135,7 +139,7 @@ export function PdfUploadTab() {
           onClick={handleUpload}
           isLoading={analyzePdf.isPending}
         >
-          Analyze PDF
+          {t("analyzer.pdf.analyzeButton")}
         </Button>
       )}
 

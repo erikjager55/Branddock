@@ -5,10 +5,12 @@ import Image from 'next/image';
 import { useSession, authClient } from '@/lib/auth-client';
 import { AuthPage } from './AuthPage';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = useSession();
   const orgSetRef = useRef(false);
+  const { t } = useTranslation('auth-chrome');
 
   // Auto-set active organization after login
   useEffect(() => {
@@ -35,7 +37,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col items-center gap-4">
           <Image
             src="/Logo_Branddock_RGB.png"
-            alt="Branddock"
+            alt={t('brand.name', { ns: 'common' })}
             width={180}
             height={32}
             priority

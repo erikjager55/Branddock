@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Render, type Config, type Data } from '@puckeditor/core';
 import { X, Check, AlertTriangle } from 'lucide-react';
 import type { SpikePuckProps } from './puck-config';
@@ -41,6 +42,7 @@ export function ComponentDiffPreviewModal({
   onAccept,
   onReject,
 }: Props) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   // ESC to close
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -107,7 +109,7 @@ export function ComponentDiffPreviewModal({
                 color: '#0f172a',
               }}
             >
-              AI-voorstel — vergelijk huidig vs aanbevolen
+              {t('componentDiff.title')}
             </h2>
             <p
               style={{
@@ -116,13 +118,13 @@ export function ComponentDiffPreviewModal({
                 color: '#64748b',
               }}
             >
-              AI wants to change {editDistance}% of the text
+              {t('componentDiff.changePct', { pct: editDistance })}
             </p>
           </div>
           <button
             type="button"
             onClick={onReject}
-            aria-label="Close"
+            aria-label={t('componentDiff.close')}
             style={{
               background: 'transparent',
               border: 'none',
@@ -151,10 +153,7 @@ export function ComponentDiffPreviewModal({
             }}
           >
             <AlertTriangle size={16} />
-            <span>
-              Grote wijziging — review zorgvuldig. AI verandert &gt;70% van de
-              tekst.
-            </span>
+            <span>{t('componentDiff.largeChangeWarning')}</span>
           </div>
         ) : null}
 
@@ -180,7 +179,7 @@ export function ComponentDiffPreviewModal({
                 letterSpacing: '0.5px',
               }}
             >
-              Huidig
+              {t('componentDiff.current')}
             </div>
             <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
               <Render config={config} data={currentData} />
@@ -197,7 +196,7 @@ export function ComponentDiffPreviewModal({
                 letterSpacing: '0.5px',
               }}
             >
-              Voorgesteld door AI
+              {t('componentDiff.proposedByAi')}
             </div>
             <div style={{ border: '1px solid #67e8f9', borderRadius: '8px', overflow: 'hidden' }}>
               <Render config={config} data={proposedData} />
@@ -230,7 +229,7 @@ export function ComponentDiffPreviewModal({
               color: '#334155',
             }}
           >
-            Afwijzen
+            {t('componentDiff.reject')}
           </button>
           <button
             type="button"
@@ -250,7 +249,7 @@ export function ComponentDiffPreviewModal({
             }}
           >
             <Check size={16} />
-            Accepteren
+            {t('componentDiff.accept')}
           </button>
         </div>
       </div>

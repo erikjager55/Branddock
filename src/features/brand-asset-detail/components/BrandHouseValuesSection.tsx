@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Anchor, Compass, Flame, Info, Scale } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { BrandHouseValuesFrameworkData, BrandHouseValue } from '../types/framework.types';
 
 // ─── Constants ──────────────────────────────────────────────
@@ -101,6 +102,7 @@ function ValueField({ label, value, isEditing, onChange, namePlaceholder, descri
 
 /** Core Values canvas with 3 cards based on the BrandHouse/Brandstar value model (Roots, Wings, Fire). */
 export function BrandHouseValuesSection({ data, isEditing, onUpdate }: BrandHouseValuesSectionProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const [draft, setDraft] = useState<BrandHouseValuesFrameworkData>(() => normalize(data));
 
   useEffect(() => {
@@ -119,12 +121,9 @@ export function BrandHouseValuesSection({ data, isEditing, onUpdate }: BrandHous
     <div className="space-y-4">
       {/* Methodology intro */}
       <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">BrandHouse Value Model</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('brandHouse.intro.title')}</h3>
         <p className="text-xs text-gray-500 leading-relaxed">
-          Every brand needs at least five core values, organized in three categories.
-          Start by inventorying values with your team (4-6 people), then cluster and select
-          through consensus. For each value, ask: is it a prerequisite (table stakes) or truly
-          distinguishing? Only distinguishing values belong here.
+          {t('brandHouse.intro.body')}
         </p>
       </div>
 
@@ -136,37 +135,36 @@ export function BrandHouseValuesSection({ data, isEditing, onUpdate }: BrandHous
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">
-              Roots
-              <span className="text-sm font-normal text-gray-400 ml-2">Anchor Values</span>
+              {t('brandHouse.roots.title')}
+              <span className="text-sm font-normal text-gray-400 ml-2">{t('brandHouse.roots.badge')}</span>
             </h2>
-            <p className="text-sm text-gray-500">The foundation your organization is built on &mdash; values already proven through daily actions</p>
+            <p className="text-sm text-gray-500">{t('brandHouse.roots.subtitle')}</p>
           </div>
         </div>
 
         <div className="bg-primary-50/30 border border-primary-100 rounded-xl p-3 mb-4 flex items-start gap-2">
           <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
           <p className="text-xs text-primary">
-            Roots are the foundational principles of your organization. They are already embedded in how you operate today.
-            Think of what your team would say when asked: &ldquo;What do we stand for, no matter what?&rdquo;
+            {t('brandHouse.roots.info')}
           </p>
         </div>
 
         <div className="space-y-3">
           <ValueField
-            label="Root Value 1"
+            label={t('brandHouse.roots.value1Label')}
             value={isEditing ? draft.anchorValue1 : d.anchorValue1}
             isEditing={isEditing}
             onChange={(v) => handleChange('anchorValue1', v)}
-            namePlaceholder="e.g. Integrity, Reliability, Quality..."
-            descriptionPlaceholder="How is this value visible in everyday actions? Give concrete examples..."
+            namePlaceholder={t('brandHouse.roots.value1NamePlaceholder')}
+            descriptionPlaceholder={t('brandHouse.roots.descriptionPlaceholder')}
           />
           <ValueField
-            label="Root Value 2"
+            label={t('brandHouse.roots.value2Label')}
             value={isEditing ? draft.anchorValue2 : d.anchorValue2}
             isEditing={isEditing}
             onChange={(v) => handleChange('anchorValue2', v)}
-            namePlaceholder="e.g. Transparency, Craftsmanship, Care..."
-            descriptionPlaceholder="How is this value visible in everyday actions? Give concrete examples..."
+            namePlaceholder={t('brandHouse.roots.value2NamePlaceholder')}
+            descriptionPlaceholder={t('brandHouse.roots.descriptionPlaceholder')}
           />
         </div>
       </div>
@@ -179,37 +177,36 @@ export function BrandHouseValuesSection({ data, isEditing, onUpdate }: BrandHous
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">
-              Wings
-              <span className="text-sm font-normal text-gray-400 ml-2">Aspiration Values</span>
+              {t('brandHouse.wings.title')}
+              <span className="text-sm font-normal text-gray-400 ml-2">{t('brandHouse.wings.badge')}</span>
             </h2>
-            <p className="text-sm text-gray-500">Values that give direction to the movement your brand wants to make</p>
+            <p className="text-sm text-gray-500">{t('brandHouse.wings.subtitle')}</p>
           </div>
         </div>
 
         <div className="bg-violet-50/30 border border-violet-100 rounded-xl p-3 mb-4 flex items-start gap-2">
           <Info className="h-4 w-4 text-violet-600 mt-0.5 flex-shrink-0" />
           <p className="text-xs text-violet-600">
-            Wings represent your direction and ambition. They require active effort and conscious investment.
-            These are the values that pull you forward &mdash; where you want to grow, not just where you are today.
+            {t('brandHouse.wings.info')}
           </p>
         </div>
 
         <div className="space-y-3">
           <ValueField
-            label="Wing Value 1"
+            label={t('brandHouse.wings.value1Label')}
             value={isEditing ? draft.aspirationValue1 : d.aspirationValue1}
             isEditing={isEditing}
             onChange={(v) => handleChange('aspirationValue1', v)}
-            namePlaceholder="e.g. Innovation, Boldness, Sustainability..."
-            descriptionPlaceholder="What concrete steps are you taking to grow into this value?..."
+            namePlaceholder={t('brandHouse.wings.value1NamePlaceholder')}
+            descriptionPlaceholder={t('brandHouse.wings.descriptionPlaceholder')}
           />
           <ValueField
-            label="Wing Value 2"
+            label={t('brandHouse.wings.value2Label')}
             value={isEditing ? draft.aspirationValue2 : d.aspirationValue2}
             isEditing={isEditing}
             onChange={(v) => handleChange('aspirationValue2', v)}
-            namePlaceholder="e.g. Inclusivity, Thought Leadership..."
-            descriptionPlaceholder="What concrete steps are you taking to grow into this value?..."
+            namePlaceholder={t('brandHouse.wings.value2NamePlaceholder')}
+            descriptionPlaceholder={t('brandHouse.wings.descriptionPlaceholder')}
           />
         </div>
       </div>
@@ -222,18 +219,17 @@ export function BrandHouseValuesSection({ data, isEditing, onUpdate }: BrandHous
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">
-              Fire
-              <span className="text-sm font-normal text-gray-400 ml-2">Own Value</span>
+              {t('brandHouse.fire.title')}
+              <span className="text-sm font-normal text-gray-400 ml-2">{t('brandHouse.fire.badge')}</span>
             </h2>
-            <p className="text-sm text-gray-500">The one value that most distinctively describes how your organization does things</p>
+            <p className="text-sm text-gray-500">{t('brandHouse.fire.subtitle')}</p>
           </div>
         </div>
 
         <div className="bg-amber-50/30 border border-amber-100 rounded-xl p-3 mb-4 flex items-start gap-2">
           <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
           <p className="text-xs text-amber-600">
-            Fire is your most distinguishing characteristic &mdash; the value that makes your brand unmistakably yours.
-            If a competitor adopted all your other values, this is the one they could never replicate authentically.
+            {t('brandHouse.fire.info')}
           </p>
         </div>
 
@@ -241,25 +237,25 @@ export function BrandHouseValuesSection({ data, isEditing, onUpdate }: BrandHous
         <div className="mb-5">
           {isEditing ? (
             <div className="bg-amber-50/50 border border-amber-200 rounded-xl p-4 space-y-2">
-              <label className="text-xs font-medium text-amber-700 uppercase tracking-wider">Own Value</label>
+              <label className="text-xs font-medium text-amber-700 uppercase tracking-wider">{t('brandHouse.fire.ownLabel')}</label>
               <input
                 type="text"
                 value={draft.ownValue.name}
                 onChange={(e) => handleChange('ownValue', { ...draft.ownValue, name: e.target.value })}
                 className="w-full rounded-lg border border-amber-200 px-4 py-2.5 text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
-                placeholder="e.g. Playfulness, Precision, Empowerment..."
+                placeholder={t('brandHouse.fire.ownNamePlaceholder')}
               />
               <textarea
                 value={draft.ownValue.description}
                 onChange={(e) => handleChange('ownValue', { ...draft.ownValue, description: e.target.value })}
                 className="w-full rounded-lg border border-amber-200 px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 resize-none"
                 rows={2}
-                placeholder="Why is this the one value no competitor could authentically copy?..."
+                placeholder={t('brandHouse.fire.ownDescriptionPlaceholder')}
               />
             </div>
           ) : (
             <div className="bg-amber-50/50 border border-amber-200 rounded-xl p-4">
-              <p className="text-xs font-medium text-amber-700 uppercase tracking-wider mb-1">Own Value</p>
+              <p className="text-xs font-medium text-amber-700 uppercase tracking-wider mb-1">{t('brandHouse.fire.ownLabel')}</p>
               {d.ownValue.name ? (
                 <>
                   <p className="text-sm font-semibold text-gray-900">{d.ownValue.name}</p>
@@ -268,7 +264,7 @@ export function BrandHouseValuesSection({ data, isEditing, onUpdate }: BrandHous
                   )}
                 </>
               ) : (
-                <p className="text-sm italic text-gray-400">Define your own value...</p>
+                <p className="text-sm italic text-gray-400">{t('brandHouse.fire.ownEmpty')}</p>
               )}
             </div>
           )}
@@ -278,12 +274,11 @@ export function BrandHouseValuesSection({ data, isEditing, onUpdate }: BrandHous
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Scale className="h-4 w-4 text-gray-500" />
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Value Tension</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">{t('brandHouse.tension.label')}</p>
           </div>
           <div className="bg-gray-50/50 border border-gray-100 rounded-xl p-3 mb-3">
             <p className="text-xs text-gray-500">
-              Great value sets have productive tension. How do your roots, wings, and fire balance each other?
-              Where do they create a healthy pull in different directions?
+              {t('brandHouse.tension.hint')}
             </p>
           </div>
           {isEditing ? (
@@ -292,12 +287,12 @@ export function BrandHouseValuesSection({ data, isEditing, onUpdate }: BrandHous
               onChange={(e) => handleChange('valueTension', e.target.value)}
               className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={3}
-              placeholder="e.g. Our root of Reliability keeps our wing of Innovation grounded — we move fast but never ship anything we're not proud of..."
+              placeholder={t('brandHouse.tension.placeholder')}
             />
           ) : d.valueTension ? (
             <p className="text-sm text-gray-700 leading-relaxed">{d.valueTension}</p>
           ) : (
-            <p className="text-sm italic text-gray-400">Describe the tension between your values...</p>
+            <p className="text-sm italic text-gray-400">{t('brandHouse.tension.empty')}</p>
           )}
         </div>
       </div>

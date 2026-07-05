@@ -1,6 +1,7 @@
 'use client';
 
 import { FlaskConical, Bot, MessageCircle, ClipboardList, Smartphone, CheckCircle, Plus, Eye, Play } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { LucideIcon } from 'lucide-react';
 import type { PersonaWithMeta } from '../../../types/persona.types';
 import { PERSONA_RESEARCH_METHODS } from '../../../constants/persona-research-methods';
@@ -19,6 +20,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
 };
 
 export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }: ResearchSidebarCardProps) {
+  const { t } = useTranslation('personas');
   const methods = persona.researchMethods ?? [];
 
   return (
@@ -28,7 +30,7 @@ export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }
         <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
           <FlaskConical className="h-4 w-4 text-blue-600" />
         </div>
-        <h3 className="text-sm font-semibold text-gray-900">Research</h3>
+        <h3 className="text-sm font-semibold text-gray-900">{t('research.title')}</h3>
       </div>
 
       {/* Method cards */}
@@ -70,7 +72,7 @@ export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <h4 className="text-sm font-semibold text-gray-900">{config.label}</h4>
+                    <h4 className="text-sm font-semibold text-gray-900">{t(`method.${config.method}.label`)}</h4>
                     {isAvailable && (
                       <button
                         onClick={() => onStartMethod(config.method)}
@@ -78,7 +80,7 @@ export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }
                         className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Plus className="h-3 w-3" />
-                        {config.startLabel}
+                        {t(`method.${config.method}.startLabel`)}
                       </button>
                     )}
                     {isCompleted && (
@@ -88,7 +90,7 @@ export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }
                         className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-emerald-700 border border-emerald-200 rounded-md bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Eye className="h-3 w-3" />
-                        {config.completedLabel}
+                        {t(`method.${config.method}.completedLabel`)}
                       </button>
                     )}
                     {isInProgress && (
@@ -98,16 +100,16 @@ export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }
                         className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-blue-700 border border-blue-200 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Play className="h-3 w-3" />
-                        {config.continueLabel}
+                        {t(`method.${config.method}.continueLabel`)}
                       </button>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{config.description}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{t(`method.${config.method}.description`)}</p>
                   {!isCompleted && config.isFree && (
-                    <span className="text-[11px] font-medium text-emerald-600 mt-1 block">FREE</span>
+                    <span className="text-[11px] font-medium text-emerald-600 mt-1 block">{t('badge.free')}</span>
                   )}
                   {!isCompleted && config.priceLabel && (
-                    <span className="text-[11px] font-medium text-gray-500 mt-1 block">{config.priceLabel}</span>
+                    <span className="text-[11px] font-medium text-gray-500 mt-1 block">{t(`method.${config.method}.priceLabel`)}</span>
                   )}
                 </div>
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type DragEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { Calendar as CalendarIcon, ExternalLink, Heart, Trash2, Copy } from "lucide-react";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
 import { formatContentType } from "../../lib/format-content-type";
@@ -50,12 +51,25 @@ export { TRAFFIC_LIGHT };
  * RED: nothing done yet (not started, no content)
  * AMBER: everything in between (in progress, needs review, pipeline incomplete, overdue)
  */
+export type ContentTrafficLightKey =
+  | "published"
+  | "scheduled"
+  | "ready"
+  | "notStarted"
+  | "needsReview"
+  | "inProgress";
+
 export function deriveTrafficLight(
   isPublishReady?: boolean,
   workflowStatus?: string,
   state?: string,
   hasContent?: boolean,
-): { light: TrafficLight; label: string } {
+): {
+  light: TrafficLight;
+  label: string;
+  key: ContentTrafficLightKey;
+  overdue: boolean;
+} {
   // Match user mental model: an item is "in progress" as soon as *any*
   // forward movement happened — scheduled on the calendar, content
   // generated, or status moved past NOT_STARTED. Workflow status alone
@@ -65,13 +79,15 @@ export function deriveTrafficLight(
   // Overdue is a label modifier (date passed + not published) — it never
   // changes the bucket, otherwise "In progress" filter would hide
   // overdue-in-progress items.
-  if (state === "published") return { light: "green", label: "Published" };
+  if (state === "published")
+    return { light: "green", label: "Published", key: "published", overdue: false };
   // Approved-and-scheduled: green pill with "Scheduled" label so the user can
   // distinguish queued items from "ready but not yet timed" ones at a glance.
   if (isPublishReady === true && state === "scheduled") {
-    return { light: "green", label: "Scheduled" };
+    return { light: "green", label: "Scheduled", key: "scheduled", overdue: false };
   }
-  if (isPublishReady === true) return { light: "green", label: "Ready" };
+  if (isPublishReady === true)
+    return { light: "green", label: "Ready", key: "ready", overdue: false };
 
   const isOverdue = state === "overdue";
   const isScheduled = state === "scheduled" || state === "overdue";
@@ -84,14 +100,19 @@ export function deriveTrafficLight(
   if (!hasAnyProgress) {
     return {
       light: "red",
-      label: isOverdue ? "Not started · overdue" : "Not started",
+      label: "Not started",
+      key: "notStarted",
+      overdue: isOverdue,
     };
   }
 
-  let label =
-    workflowStatus === "COMPLETED" ? "Needs review" : "In progress";
-  if (isOverdue) label += " · overdue";
-  return { light: "amber", label };
+  const needsReview = workflowStatus === "COMPLETED";
+  return {
+    light: "amber",
+    label: needsReview ? "Needs review" : "In progress",
+    key: needsReview ? "needsReview" : "inProgress",
+    overdue: isOverdue,
+  };
 }
 
 // ─── Phase pill ─────────────────────────────────────────────────
@@ -203,6 +224,7 @@ export function InlineRenameField({
   className?: string;
   onRename: (newTitle: string) => void;
 }) {
+  const { t } = useTranslation('campaigns-core');
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
 
@@ -248,7 +270,7 @@ export function InlineRenameField({
         type="button"
         onClick={(e) => { e.stopPropagation(); handleStartEdit(); }}
         className={`${BASE_VIEW_CLASSES} ${typography}`}
-        title="Click to rename"
+        title={t('card.rename.tooltip')}
       >
         {currentValue}
       </button>
@@ -261,7 +283,7 @@ export function InlineRenameField({
       type="button"
       onClick={(e) => { e.stopPropagation(); handleStartEdit(); }}
       className={`${BASE_VIEW_CLASSES} italic text-gray-400 hover:text-gray-600 ${typography.replace(/text-gray-\d+/g, "")}`}
-      title="Click to add a title"
+      title={t('card.rename.addTitleTooltip')}
     >
       {placeholder}
     </button>
@@ -297,13 +319,18 @@ export function CalendarCard({
   isSelected,
   onToggleSelected,
 }: CalendarCardProps) {
+  const { t } = useTranslation('campaigns-core');
   const phaseConfig = getPhaseConfig(phase);
-  const { light, label: lightLabel } = deriveTrafficLight(
+  const { light, label: lightLabel, key: lightKey, overdue: lightOverdue } = deriveTrafficLight(
     isPublishReady,
     workflowStatus,
     state,
     hasContent,
   );
+  const statusBase = t(`campaigns-cards:contentStatus.${lightKey}`, { defaultValue: lightLabel });
+  const statusLabel = lightOverdue
+    ? `${statusBase} · ${t('campaigns-cards:overdue', { defaultValue: 'overdue' })}`
+    : statusBase;
   const tl = TRAFFIC_LIGHT[light];
 
   const [isDragging, setIsDragging] = useState(false);
@@ -348,7 +375,7 @@ export function CalendarCard({
         color: "#374151",
         opacity: isDragging ? 0.4 : 1,
       }}
-      title={`${title} — ${lightLabel}${readinessHint ? ` (${readinessHint})` : ""}`}
+      title={`${title} — ${statusLabel}${readinessHint ? ` (${readinessHint})` : ""}`}
     >
       {/* Traffic light left stripe */}
       <div
@@ -371,7 +398,7 @@ export function CalendarCard({
             />
           )}
           <span className="truncate flex-1 text-[9px] text-gray-500">
-            {campaignName ?? formatContentType(typeLabel)}
+            {campaignName ?? t(`campaigns-content-types:types.${typeLabel}`, { defaultValue: formatContentType(typeLabel) })}
           </span>
           {isFavorite !== undefined && onToggleFavorite && (
             <button
@@ -381,7 +408,7 @@ export function CalendarCard({
                 onToggleFavorite();
               }}
               className="p-0.5 rounded hover:bg-white/60 flex-shrink-0"
-              aria-label={isFavorite ? "Remove favorite" : "Mark favorite"}
+              aria-label={isFavorite ? t('card.favorite.remove') : t('card.favorite.add')}
             >
               <Heart
                 className={`w-3 h-3 ${isFavorite ? "fill-red-500 text-red-500" : "text-gray-400"}`}
@@ -393,7 +420,7 @@ export function CalendarCard({
         {/* Row 2: Title — inline editable when untitled */}
         {title.toLowerCase() === typeLabel.toLowerCase() && onRename ? (
           <InlineRenameField
-            placeholder={`Untitled ${formatContentType(typeLabel)}`}
+            placeholder={t('card.untitled', { type: t(`campaigns-content-types:types.${typeLabel}`, { defaultValue: formatContentType(typeLabel) }) })}
             onRename={onRename}
           />
         ) : (
@@ -427,7 +454,7 @@ export function CalendarCard({
               className="w-1.5 h-1.5 rounded-full"
               style={{ backgroundColor: tl.dot }}
             />
-            {lightLabel}
+            {statusLabel}
           </span>
 
           {qualityScore !== null && qualityScore !== undefined && (
@@ -477,10 +504,10 @@ export function CalendarCard({
                     dateInputRef.current?.showPicker?.();
                   }}
                   className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/80 hover:bg-white border border-gray-200"
-                  title="Pick a date"
+                  title={t('card.actions.pickDate')}
                 >
                   <CalendarIcon className="w-2.5 h-2.5" />
-                  Date
+                  {t('card.actions.date')}
                 </button>
                 <input
                   ref={dateInputRef}
@@ -500,7 +527,7 @@ export function CalendarCard({
                 onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
                 disabled={isDuplicating}
                 className="p-0.5 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
-                title="Duplicate"
+                title={t('card.actions.duplicate')}
               >
                 <Copy className="w-2.5 h-2.5 text-gray-400 hover:text-gray-700" />
               </button>
@@ -510,7 +537,7 @@ export function CalendarCard({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setShowDeleteModal(true); }}
                 className="p-0.5 rounded hover:bg-red-50 transition-colors"
-                title="Delete"
+                title={t('card.actions.delete')}
               >
                 <Trash2 className="w-2.5 h-2.5 text-gray-400 hover:text-red-500" />
               </button>
@@ -523,10 +550,10 @@ export function CalendarCard({
                   onClick();
                 }}
                 className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/80 hover:bg-white border border-gray-200 ml-auto"
-                title="Open"
+                title={t('card.actions.open')}
               >
                 <ExternalLink className="w-2.5 h-2.5" />
-                Open
+                {t('card.actions.open')}
               </button>
             )}
           </div>

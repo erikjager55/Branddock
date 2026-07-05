@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -48,6 +49,7 @@ export function GenericToolManager({
   includedItems,
   onBack
 }: GenericToolManagerProps) {
+  const { t } = useTranslation('canvases');
   const [viewStatus, setViewStatus] = useState<'to-buy' | 'in-progress' | 'approved'>('to-buy');
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -88,11 +90,11 @@ export function GenericToolManager({
   const getStatusLabel = () => {
     switch (viewStatus) {
       case 'to-buy':
-        return 'To Buy';
+        return t('status.toBuy');
       case 'in-progress':
-        return 'In Progress';
+        return t('status.inProgress');
       case 'approved':
-        return 'Approved';
+        return t('status.approved');
     }
   };
 
@@ -129,7 +131,7 @@ export function GenericToolManager({
           <CardContent className="space-y-4">
             <div className="space-y-4">
               <div className="p-4 bg-muted rounded-lg">
-                <h4 className="font-medium mb-2">What's Included:</h4>
+                <h4 className="font-medium mb-2">{t('common.whatsIncluded')}</h4>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   {includedItems.map((item, index) => (
                     <li key={index} className="flex items-start space-x-2">
@@ -143,12 +145,12 @@ export function GenericToolManager({
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 border rounded-lg">
                   <Clock className="h-5 w-5 text-primary mb-2" />
-                  <p className="text-sm font-medium">Duration</p>
+                  <p className="text-sm font-medium">{t('common.duration')}</p>
                   <p className="text-xs text-muted-foreground">{duration}</p>
                 </div>
                 <div className="p-4 border rounded-lg">
                   <FileText className="h-5 w-5 text-primary mb-2" />
-                  <p className="text-sm font-medium">Deliverables</p>
+                  <p className="text-sm font-medium">{t('genericTool.deliverables')}</p>
                   <p className="text-xs text-muted-foreground">{deliverables}</p>
                 </div>
               </div>
@@ -162,24 +164,24 @@ export function GenericToolManager({
           <CardHeader>
             <CardTitle className="text-lg flex items-center">
               <ShoppingCart className="h-4 w-4 mr-2" />
-              Package Details
+              {t('genericTool.packageDetails')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Package price:</span>
+                <span className="text-sm text-muted-foreground">{t('genericTool.packagePrice')}</span>
                 <span className="font-medium">€{price}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Duration:</span>
+                <span className="text-sm text-muted-foreground">{t('genericTool.durationLabel')}</span>
                 <span className="font-medium">{duration}</span>
               </div>
               
               <Separator />
               
               <div className="flex items-center justify-between">
-                <span className="font-medium">Total Price:</span>
+                <span className="font-medium">{t('genericTool.totalPrice')}</span>
                 <div className="text-2xl font-bold text-primary flex items-center">
                   <Euro className="h-5 w-5" />
                   {price}
@@ -191,15 +193,15 @@ export function GenericToolManager({
 
             <Button className="w-full" size="lg">
               <ShoppingCart className="h-4 w-4 mr-2" />
-              Purchase Package
+              {t('genericTool.purchasePackage')}
             </Button>
             <Button variant="outline" className="w-full" onClick={onBack}>
-              Cancel
+              {t('actions.cancel')}
             </Button>
 
             <div className="p-3 bg-muted rounded-lg">
               <p className="text-xs text-muted-foreground">
-                <strong>Delivery:</strong> {deliverables}
+                <strong>{t('genericTool.delivery')}</strong> {deliverables}
               </p>
             </div>
           </CardContent>
@@ -214,10 +216,10 @@ export function GenericToolManager({
         <CardHeader>
           <CardTitle className="text-lg flex items-center">
             <Play className="h-4 w-4 mr-2 text-blue-600" />
-            Active Sessions
+            {t('genericTool.activeSessions')}
           </CardTitle>
           <CardDescription>
-            Track and manage ongoing {toolName.toLowerCase()} sessions
+            {t('genericTool.trackManage', { tool: toolName.toLowerCase() })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -235,7 +237,7 @@ export function GenericToolManager({
                           <h4 className="font-medium">{session.name}</h4>
                           <div className="flex items-center space-x-1 text-xs text-muted-foreground mt-1">
                             <Calendar className="h-3 w-3" />
-                            <span>Started: {session.startedDate}</span>
+                            <span>{t('common.startedDate', { date: session.startedDate })}</span>
                           </div>
                         </div>
                       </div>
@@ -246,16 +248,16 @@ export function GenericToolManager({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>Continue Session</DropdownMenuItem>
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Export Progress</DropdownMenuItem>
+                          <DropdownMenuItem>{t('genericTool.continueSession')}</DropdownMenuItem>
+                          <DropdownMenuItem>{t('genericTool.viewDetails')}</DropdownMenuItem>
+                          <DropdownMenuItem>{t('genericTool.exportProgress')}</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Progress</span>
+                        <span className="text-muted-foreground">{t('common.progress')}</span>
                         <span className="font-medium">{session.progress}%</span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-2">
@@ -274,7 +276,7 @@ export function GenericToolManager({
 
                     <Button className="w-full" variant="outline">
                       <Play className="h-4 w-4 mr-2" />
-                      Continue Session
+                      {t('genericTool.continueSession')}
                     </Button>
                   </div>
                 </CardContent>
@@ -292,10 +294,10 @@ export function GenericToolManager({
         <CardHeader>
           <CardTitle className="text-lg flex items-center">
             <Check className="h-4 w-4 mr-2 text-green-600" />
-            Completed Sessions
+            {t('genericTool.completedSessions')}
           </CardTitle>
           <CardDescription>
-            Review completed {toolName.toLowerCase()} results and insights
+            {t('genericTool.reviewCompleted', { tool: toolName.toLowerCase() })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -313,7 +315,7 @@ export function GenericToolManager({
                           <h4 className="font-medium">{session.name}</h4>
                           <div className="flex items-center space-x-1 text-xs text-muted-foreground mt-1">
                             <Calendar className="h-3 w-3" />
-                            <span>Completed: {session.completedDate}</span>
+                            <span>{t('common.completedDate', { date: session.completedDate })}</span>
                           </div>
                         </div>
                       </div>
@@ -324,15 +326,15 @@ export function GenericToolManager({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>View Full Report</DropdownMenuItem>
-                          <DropdownMenuItem>Export Data</DropdownMenuItem>
-                          <DropdownMenuItem>Share Results</DropdownMenuItem>
+                          <DropdownMenuItem>{t('genericTool.viewFullReport')}</DropdownMenuItem>
+                          <DropdownMenuItem>{t('genericTool.exportData')}</DropdownMenuItem>
+                          <DropdownMenuItem>{t('genericTool.shareResults')}</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
 
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground">Key Outcomes</p>
+                      <p className="text-xs font-medium text-muted-foreground">{t('genericTool.keyOutcomes')}</p>
                       <ul className="space-y-1">
                         {session.keyOutcomes.map((outcome, index) => (
                           <li key={index} className="text-sm flex items-start space-x-2">
@@ -346,11 +348,11 @@ export function GenericToolManager({
                     <div className="flex space-x-2">
                       <Button className="flex-1" variant="outline">
                         <FileText className="h-4 w-4 mr-2" />
-                        View Report
+                        {t('genericTool.viewReport')}
                       </Button>
                       <Button className="flex-1" variant="outline">
                         <Download className="h-4 w-4 mr-2" />
-                        Export
+                        {t('actions.export')}
                       </Button>
                     </div>
                   </div>
@@ -376,8 +378,8 @@ export function GenericToolManager({
               <h2 className="font-bold text-xl">{toolName}</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 {viewStatus === 'to-buy' && toolDescription}
-                {viewStatus === 'in-progress' && `Track and manage ongoing ${toolName.toLowerCase()} sessions`}
-                {viewStatus === 'approved' && `Review completed ${toolName.toLowerCase()} results and insights`}
+                {viewStatus === 'in-progress' && t('genericTool.trackManage', { tool: toolName.toLowerCase() })}
+                {viewStatus === 'approved' && t('genericTool.reviewCompleted', { tool: toolName.toLowerCase() })}
               </p>
             </div>
           </div>
@@ -397,17 +399,17 @@ export function GenericToolManager({
               <DropdownMenuContent align="end" className="w-[220px]">
                 <DropdownMenuItem onClick={() => setViewStatus('to-buy')} className="cursor-pointer py-3">
                   <ShoppingCart className="h-4 w-4 mr-2 text-orange-600" />
-                  <span>To Buy</span>
+                  <span>{t('status.toBuy')}</span>
                   {viewStatus === 'to-buy' && <Check className="h-4 w-4 ml-auto" />}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setViewStatus('in-progress')} className="cursor-pointer py-3">
                   <Play className="h-4 w-4 mr-2 text-blue-600" />
-                  <span>In Progress</span>
+                  <span>{t('status.inProgress')}</span>
                   {viewStatus === 'in-progress' && <Check className="h-4 w-4 ml-auto" />}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setViewStatus('approved')} className="cursor-pointer py-3">
                   <Check className="h-4 w-4 mr-2 text-green-600" />
-                  <span>Approved</span>
+                  <span>{t('status.approved')}</span>
                   {viewStatus === 'approved' && <Check className="h-4 w-4 ml-auto" />}
                 </DropdownMenuItem>
               </DropdownMenuContent>

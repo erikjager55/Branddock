@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, CheckCircle, Circle } from "lucide-react";
 import { Button } from "@/components/shared";
 import { ANALYZE_STEPS } from "../../constants/product-constants";
@@ -17,6 +18,7 @@ export function AnalyzingProductModal({
   onCancel,
   isApiComplete = false,
 }: AnalyzingProductModalProps) {
+  const { t } = useTranslation("products");
   const [currentStep, setCurrentStep] = useState(0);
   const completedRef = useRef(false);
   // Use a ref for onComplete to avoid stale closures in timeouts
@@ -56,17 +58,19 @@ export function AnalyzingProductModal({
 
         {/* Title */}
         <h2 className="text-lg font-semibold text-gray-900 mb-1">
-          {isWaitingForApi ? "Finalizing analysis..." : "Analyzing your product..."}
+          {isWaitingForApi
+            ? t("analyzer.modal.finalizingTitle")
+            : t("analyzer.modal.analyzingTitle")}
         </h2>
         <p className="text-sm text-gray-500 mb-6">
           {isWaitingForApi
-            ? "Almost done, processing AI response"
-            : "This usually takes about 15 seconds"}
+            ? t("analyzer.modal.finalizingSubtitle")
+            : t("analyzer.modal.analyzingSubtitle")}
         </p>
 
         {/* Steps list */}
         <div className="space-y-3 text-left mb-6">
-          {ANALYZE_STEPS.map((stepLabel, idx) => {
+          {ANALYZE_STEPS.map((_step, idx) => {
             let StepIcon;
             let iconClass;
 
@@ -89,7 +93,7 @@ export function AnalyzingProductModal({
                     idx <= currentStep ? "text-gray-700" : "text-gray-400"
                   }`}
                 >
-                  {stepLabel}
+                  {t(`analyzer.modal.steps.step${idx + 1}`)}
                 </span>
               </div>
             );
@@ -98,7 +102,7 @@ export function AnalyzingProductModal({
 
         {/* Cancel button */}
         <Button variant="ghost" onClick={onCancel} fullWidth>
-          Cancel
+          {t("actions.cancel")}
         </Button>
       </div>
     </div>

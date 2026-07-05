@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Pencil,
   X,
@@ -45,6 +46,7 @@ interface VisualSystemSectionProps {
 }
 
 export function VisualSystemSection({ styleguide, canEdit }: VisualSystemSectionProps) {
+  const { t } = useTranslation("brandstyle");
   const profile = styleguide.visualLanguage as VisualLanguageProfile | null;
   const updateDL = useUpdateSection("design-language");
 
@@ -59,7 +61,7 @@ export function VisualSystemSection({ styleguide, canEdit }: VisualSystemSection
           <div className="flex items-start gap-3">
             <Sparkles className="h-5 w-5 text-teal-600 mt-0.5 flex-shrink-0" />
             <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">Visual System Summary</h3>
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">{t("visualSystem.summaryTitle")}</h3>
               <p className="text-sm text-gray-700 leading-relaxed">{profile.summary}</p>
             </div>
           </div>
@@ -67,42 +69,42 @@ export function VisualSystemSection({ styleguide, canEdit }: VisualSystemSection
       )}
 
       {/* ── Section 1: Foundations ── */}
-      <SectionHeader title="Foundations" description="Core visual DNA detected from website CSS" />
+      <SectionHeader title={t("visualSystem.sections.foundationsTitle")} description={t("visualSystem.sections.foundationsDesc")} />
       {profile ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FoundationCard icon={CornerDownRight} title="Corners & Edges">
+          <FoundationCard icon={CornerDownRight} title={t("visualSystem.cards.cornersEdges")}>
             <CornerRadiusPreview radiusPx={profile.cornerRadius.radiusPx} />
-            <Param label="Style" value={profile.cornerRadius.dominant} />
-            <Param label="Radius" value={`${profile.cornerRadius.radiusPx}px`} />
-            <Param label="Consistency" value={profile.cornerRadius.consistency} />
+            <Param label={t("visualSystem.params.style")} value={profile.cornerRadius.dominant} />
+            <Param label={t("visualSystem.params.radius")} value={`${profile.cornerRadius.radiusPx}px`} />
+            <Param label={t("visualSystem.params.consistency")} value={profile.cornerRadius.consistency} />
           </FoundationCard>
 
-          <FoundationCard icon={Layers} title="Shadows & Depth">
+          <FoundationCard icon={Layers} title={t("visualSystem.cards.shadowsDepth")}>
             <ShadowPreview style={profile.shadow.style} />
-            <Param label="Shadow" value={profile.shadow.style} />
-            <Param label="Elevation" value={profile.shadow.elevation} />
-            <Param label="Depth" value={profile.depth.dimensionality} />
-            {profile.depth.glassmorphism && <Param label="Glassmorphism" value="Detected" />}
+            <Param label={t("visualSystem.params.shadow")} value={profile.shadow.style} />
+            <Param label={t("visualSystem.params.elevation")} value={profile.shadow.elevation} />
+            <Param label={t("visualSystem.params.depth")} value={profile.depth.dimensionality} />
+            {profile.depth.glassmorphism && <Param label={t("visualSystem.params.glassmorphism")} value={t("visualSystem.detected")} />}
           </FoundationCard>
 
-          <FoundationCard icon={Square} title="Lines & Borders">
+          <FoundationCard icon={Square} title={t("visualSystem.cards.linesBorders")}>
             <LinePreview borders={profile.line.borders} />
-            <Param label="Borders" value={profile.line.borders} />
-            <Param label="Dividers" value={profile.line.dividers} />
-            <Param label="Decorative" value={profile.line.decorativeLines ? "Yes" : "No"} />
+            <Param label={t("visualSystem.params.borders")} value={profile.line.borders} />
+            <Param label={t("visualSystem.params.dividers")} value={profile.line.dividers} />
+            <Param label={t("visualSystem.params.decorative")} value={profile.line.decorativeLines ? t("visualSystem.yes") : t("visualSystem.no")} />
           </FoundationCard>
 
-          <FoundationCard icon={Shapes} title="Shape Language">
+          <FoundationCard icon={Shapes} title={t("visualSystem.cards.shapeLanguage")}>
             <ShapePreview primary={profile.shape.primary} angularity={profile.shape.angularity} />
-            <Param label="Primary" value={profile.shape.primary} />
-            <Param label="Angularity" value={`${profile.shape.angularity}/10`} />
-            <Param label="Symmetry" value={profile.shape.symmetry} />
+            <Param label={t("visualSystem.params.primary")} value={profile.shape.primary} />
+            <Param label={t("visualSystem.params.angularity")} value={`${profile.shape.angularity}/10`} />
+            <Param label={t("visualSystem.params.symmetry")} value={profile.shape.symmetry} />
           </FoundationCard>
 
-          <FoundationCard icon={Maximize} title="Visual Weight">
-            <Param label="Overall" value={profile.weight.overall} />
-            <Param label="Text Density" value={profile.weight.textDensity} />
-            <Param label="Ornaments" value={profile.weight.ornamentLevel} />
+          <FoundationCard icon={Maximize} title={t("visualSystem.cards.visualWeight")}>
+            <Param label={t("visualSystem.params.overall")} value={profile.weight.overall} />
+            <Param label={t("visualSystem.params.textDensity")} value={profile.weight.textDensity} />
+            <Param label={t("visualSystem.params.ornaments")} value={profile.weight.ornamentLevel} />
           </FoundationCard>
         </div>
       ) : (
@@ -110,7 +112,7 @@ export function VisualSystemSection({ styleguide, canEdit }: VisualSystemSection
       )}
 
       {/* ── Section 2: Spacing & Layout ── */}
-      <SectionHeader title="Spacing & Layout" description="Grid system, spacing scale, and whitespace philosophy" />
+      <SectionHeader title={t("visualSystem.sections.spacingLayoutTitle")} description={t("visualSystem.sections.spacingLayoutDesc")} />
       <SpacingLayoutCard
         profile={profile}
         layoutData={(styleguide.layoutPrinciples ?? {}) as LayoutPrinciplesData}
@@ -119,7 +121,7 @@ export function VisualSystemSection({ styleguide, canEdit }: VisualSystemSection
       />
 
       {/* ── Section 3: Elements & Patterns ── */}
-      <SectionHeader title="Elements & Patterns" description="Graphic elements, patterns, textures, and iconography" />
+      <SectionHeader title={t("visualSystem.sections.elementsTitle")} description={t("visualSystem.sections.elementsDesc")} />
       <GraphicElementsCard
         data={(styleguide.graphicElements ?? {}) as GraphicElementsData}
         donts={styleguide.graphicElementsDonts ?? []}
@@ -139,7 +141,7 @@ export function VisualSystemSection({ styleguide, canEdit }: VisualSystemSection
       />
 
       {/* ── Section 4: Effects & Application ── */}
-      <SectionHeader title="Effects & Application" description="Gradients, color application, and component patterns" />
+      <SectionHeader title={t("visualSystem.sections.effectsTitle")} description={t("visualSystem.sections.effectsDesc")} />
       <GradientsCard
         gradients={(styleguide.gradientsEffects ?? []) as GradientDefinition[]}
         canEdit={canEdit}
@@ -147,17 +149,17 @@ export function VisualSystemSection({ styleguide, canEdit }: VisualSystemSection
       />
       {profile && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FoundationCard icon={Palette} title="Color Application">
-            <Param label="Buttons" value={profile.colorApplication.buttonStyle} />
-            <Param label="Backgrounds" value={profile.colorApplication.backgroundApproach} />
-            <Param label="Accents" value={profile.colorApplication.accentUsage} />
-            <Param label="Gradients" value={profile.colorApplication.gradientPresence} />
+          <FoundationCard icon={Palette} title={t("visualSystem.cards.colorApplication")}>
+            <Param label={t("visualSystem.params.buttons")} value={profile.colorApplication.buttonStyle} />
+            <Param label={t("visualSystem.params.backgrounds")} value={profile.colorApplication.backgroundApproach} />
+            <Param label={t("visualSystem.params.accents")} value={profile.colorApplication.accentUsage} />
+            <Param label={t("visualSystem.params.gradients")} value={profile.colorApplication.gradientPresence} />
           </FoundationCard>
-          <FoundationCard icon={LayoutGrid} title="Component Patterns">
-            <Param label="Cards" value={profile.components.cardStyle} />
-            <Param label="Buttons" value={profile.components.buttonShape} />
-            <Param label="Inputs" value={profile.components.inputStyle} />
-            <Param label="Spacing System" value={profile.components.spacingSystem} />
+          <FoundationCard icon={LayoutGrid} title={t("visualSystem.cards.componentPatterns")}>
+            <Param label={t("visualSystem.params.cards")} value={profile.components.cardStyle} />
+            <Param label={t("visualSystem.params.buttons")} value={profile.components.buttonShape} />
+            <Param label={t("visualSystem.params.inputs")} value={profile.components.inputStyle} />
+            <Param label={t("visualSystem.params.spacingSystem")} value={profile.components.spacingSystem} />
           </FoundationCard>
         </div>
       )}
@@ -290,18 +292,20 @@ function Param({ label, value }: { label: string; value: string }) {
 }
 
 function EmptyFoundations() {
+  const { t } = useTranslation("brandstyle");
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
       <Layers className="mx-auto h-10 w-10 text-gray-300 mb-3" />
-      <h3 className="text-sm font-semibold text-gray-900 mb-1">No Visual Foundations Detected</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-1">{t("visualSystem.emptyFoundationsTitle")}</h3>
       <p className="text-sm text-gray-500 max-w-md mx-auto">
-        Re-analyze your website to detect corners, shadows, spacing, depth, and shape language from the CSS.
+        {t("visualSystem.emptyFoundationsBody")}
       </p>
     </div>
   );
 }
 
 function PromptPreview({ value }: { value: string }) {
+  const { t } = useTranslation("brandstyle");
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
     navigator.clipboard.writeText(value);
@@ -311,15 +315,15 @@ function PromptPreview({ value }: { value: string }) {
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
       <div className="flex items-center justify-between mb-2">
-        <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">AI Generation Instructions</h4>
+        <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">{t("visualSystem.promptTitle")}</h4>
         <button type="button" onClick={handleCopy} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600">
           {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? t("actions.copied") : t("actions.copy")}
         </button>
       </div>
       <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-md p-3 break-words">{value}</p>
       <p className="mt-2 text-[10px] text-gray-400">
-        This text is automatically injected into all AI generation prompts when &quot;Save for AI&quot; is enabled.
+        {t("visualSystem.promptHint")}
       </p>
     </div>
   );
@@ -373,6 +377,7 @@ function SpacingLayoutCard({ profile, layoutData, canEdit, updateSection }: {
   canEdit: boolean;
   updateSection: ReturnType<typeof useUpdateSection>;
 }) {
+  const { t } = useTranslation("brandstyle");
   const [isEditing, setIsEditing] = useState(false);
   const [edit, setEdit] = useState<LayoutPrinciplesData>({});
 
@@ -394,8 +399,8 @@ function SpacingLayoutCard({ profile, layoutData, canEdit, updateSection }: {
   return (
     <Card>
       <div className="flex items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2"><LayoutGrid className="w-4 h-4 text-teal-600" /><h4 className="text-sm font-semibold text-gray-900">Spacing & Layout</h4></div>
-        {canEdit && !isEditing && <button type="button" onClick={startEdit} className="p-1 text-gray-400 hover:text-primary transition-colors" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>}
+        <div className="flex items-center gap-2"><LayoutGrid className="w-4 h-4 text-teal-600" /><h4 className="text-sm font-semibold text-gray-900">{t("visualSystem.spacingLayout.title")}</h4></div>
+        {canEdit && !isEditing && <button type="button" onClick={startEdit} className="p-1 text-gray-400 hover:text-primary transition-colors" title={t("actions.edit")}><Pencil className="w-3.5 h-3.5" /></button>}
       </div>
 
       {/* Visual Language metrics */}
@@ -415,18 +420,18 @@ function SpacingLayoutCard({ profile, layoutData, canEdit, updateSection }: {
 
       {isEditing ? (
         <div className="space-y-3">
-          <div><label className="text-xs font-medium text-gray-500 mb-1 block">Grid System</label><input value={edit.gridSystem ?? ""} onChange={(e) => setEdit((p) => ({ ...p, gridSystem: e.target.value }))} placeholder="e.g. 12-column grid, 24px gutters" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
-          <div><label className="text-xs font-medium text-gray-500 mb-1 block">Spacing Scale</label><input value={edit.spacingScale ?? ""} onChange={(e) => setEdit((p) => ({ ...p, spacingScale: e.target.value }))} placeholder="e.g. 4px base (4/8/12/16/24/32)" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
-          <div><label className="text-xs font-medium text-gray-500 mb-1 block">Whitespace Philosophy</label><textarea value={edit.whitespacePhilosophy ?? ""} onChange={(e) => setEdit((p) => ({ ...p, whitespacePhilosophy: e.target.value }))} rows={2} placeholder="e.g. Generous whitespace for premium feel" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
-          <TagEditor label="Composition Rules" items={edit.compositionRules ?? []} onChange={(v) => setEdit((p) => ({ ...p, compositionRules: v }))} placeholder="e.g. Asymmetric layouts preferred" />
-          <div className="flex gap-2 pt-1"><Button variant="primary" size="sm" onClick={save} isLoading={updateSection.isPending}>Save</Button><Button variant="secondary" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button></div>
+          <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("visualSystem.spacingLayout.gridSystem")}</label><input value={edit.gridSystem ?? ""} onChange={(e) => setEdit((p) => ({ ...p, gridSystem: e.target.value }))} placeholder={t("visualSystem.spacingLayout.gridPlaceholder")} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
+          <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("visualSystem.spacingLayout.spacingScale")}</label><input value={edit.spacingScale ?? ""} onChange={(e) => setEdit((p) => ({ ...p, spacingScale: e.target.value }))} placeholder={t("visualSystem.spacingLayout.scalePlaceholder")} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
+          <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("visualSystem.spacingLayout.whitespacePhilosophy")}</label><textarea value={edit.whitespacePhilosophy ?? ""} onChange={(e) => setEdit((p) => ({ ...p, whitespacePhilosophy: e.target.value }))} rows={2} placeholder={t("visualSystem.spacingLayout.whitespacePlaceholder")} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
+          <TagEditor label={t("visualSystem.spacingLayout.compositionRules")} items={edit.compositionRules ?? []} onChange={(v) => setEdit((p) => ({ ...p, compositionRules: v }))} placeholder={t("visualSystem.spacingLayout.compositionPlaceholder")} />
+          <div className="flex gap-2 pt-1"><Button variant="primary" size="sm" onClick={save} isLoading={updateSection.isPending}>{t("actions.save")}</Button><Button variant="secondary" size="sm" onClick={() => setIsEditing(false)}>{t("actions.cancel")}</Button></div>
         </div>
       ) : (
         <div className="space-y-3">
-          {layoutData.gridSystem && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">Grid System</p><p className="text-sm text-gray-700">{layoutData.gridSystem}</p></div>}
-          {layoutData.spacingScale && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">Spacing Scale</p><p className="text-sm text-gray-700">{layoutData.spacingScale}</p></div>}
-          {layoutData.whitespacePhilosophy && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">Whitespace Philosophy</p><p className="text-sm text-gray-700">{layoutData.whitespacePhilosophy}</p></div>}
-          {(layoutData.compositionRules?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">Composition Rules</p><TagDisplay items={layoutData.compositionRules ?? []} /></div>}
+          {layoutData.gridSystem && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">{t("visualSystem.spacingLayout.gridSystem")}</p><p className="text-sm text-gray-700">{layoutData.gridSystem}</p></div>}
+          {layoutData.spacingScale && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">{t("visualSystem.spacingLayout.spacingScale")}</p><p className="text-sm text-gray-700">{layoutData.spacingScale}</p></div>}
+          {layoutData.whitespacePhilosophy && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">{t("visualSystem.spacingLayout.whitespacePhilosophy")}</p><p className="text-sm text-gray-700">{layoutData.whitespacePhilosophy}</p></div>}
+          {(layoutData.compositionRules?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">{t("visualSystem.spacingLayout.compositionRules")}</p><TagDisplay items={layoutData.compositionRules ?? []} /></div>}
         </div>
       )}
     </Card>
@@ -436,6 +441,7 @@ function SpacingLayoutCard({ profile, layoutData, canEdit, updateSection }: {
 // ── Graphic Elements Card ──
 
 function GraphicElementsCard({ data, donts, canEdit, updateSection }: { data: GraphicElementsData; donts: string[]; canEdit: boolean; updateSection: ReturnType<typeof useUpdateSection> }) {
+  const { t } = useTranslation("brandstyle");
   const [isEditing, setIsEditing] = useState(false);
   const [edit, setEdit] = useState<GraphicElementsData>({});
   const startEdit = useCallback(() => { setEdit({ brandShapes: [...(data.brandShapes ?? [])], decorativeElements: [...(data.decorativeElements ?? [])], visualDevices: [...(data.visualDevices ?? [])], usageNotes: data.usageNotes ?? "" }); setIsEditing(true); }, [data]);
@@ -445,32 +451,32 @@ function GraphicElementsCard({ data, donts, canEdit, updateSection }: { data: Gr
   return (
     <Card>
       <div className="flex items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2"><Shapes className="w-4 h-4 text-teal-600" /><h4 className="text-sm font-semibold text-gray-900">Graphic Elements</h4></div>
-        {canEdit && !isEditing && <button type="button" onClick={startEdit} className="p-1 text-gray-400 hover:text-primary transition-colors" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>}
+        <div className="flex items-center gap-2"><Shapes className="w-4 h-4 text-teal-600" /><h4 className="text-sm font-semibold text-gray-900">{t("visualSystem.graphic.title")}</h4></div>
+        {canEdit && !isEditing && <button type="button" onClick={startEdit} className="p-1 text-gray-400 hover:text-primary transition-colors" title={t("actions.edit")}><Pencil className="w-3.5 h-3.5" /></button>}
       </div>
       {isEditing ? (
         <div className="space-y-4">
-          <TagEditor label="Brand Shapes" items={edit.brandShapes ?? []} onChange={(v) => setEdit((p) => ({ ...p, brandShapes: v }))} placeholder="e.g. Rounded rectangle" />
-          <TagEditor label="Decorative Elements" items={edit.decorativeElements ?? []} onChange={(v) => setEdit((p) => ({ ...p, decorativeElements: v }))} placeholder="e.g. Dotted lines" />
-          <TagEditor label="Visual Devices" items={edit.visualDevices ?? []} onChange={(v) => setEdit((p) => ({ ...p, visualDevices: v }))} placeholder="e.g. Pull quotes" />
-          <div><label className="text-xs font-medium text-gray-500 mb-1 block">Usage Notes</label><textarea value={edit.usageNotes ?? ""} onChange={(e) => setEdit((p) => ({ ...p, usageNotes: e.target.value }))} rows={2} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
-          <div className="flex gap-2 pt-1"><Button variant="primary" size="sm" onClick={save} isLoading={updateSection.isPending}>Save</Button><Button variant="secondary" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button></div>
+          <TagEditor label={t("visualSystem.graphic.brandShapes")} items={edit.brandShapes ?? []} onChange={(v) => setEdit((p) => ({ ...p, brandShapes: v }))} placeholder={t("visualSystem.graphic.brandShapesPlaceholder")} />
+          <TagEditor label={t("visualSystem.graphic.decorativeElements")} items={edit.decorativeElements ?? []} onChange={(v) => setEdit((p) => ({ ...p, decorativeElements: v }))} placeholder={t("visualSystem.graphic.decorativePlaceholder")} />
+          <TagEditor label={t("visualSystem.graphic.visualDevices")} items={edit.visualDevices ?? []} onChange={(v) => setEdit((p) => ({ ...p, visualDevices: v }))} placeholder={t("visualSystem.graphic.visualDevicesPlaceholder")} />
+          <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("common.usageNotes")}</label><textarea value={edit.usageNotes ?? ""} onChange={(e) => setEdit((p) => ({ ...p, usageNotes: e.target.value }))} rows={2} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
+          <div className="flex gap-2 pt-1"><Button variant="primary" size="sm" onClick={save} isLoading={updateSection.isPending}>{t("actions.save")}</Button><Button variant="secondary" size="sm" onClick={() => setIsEditing(false)}>{t("actions.cancel")}</Button></div>
         </div>
       ) : (
         <div className="space-y-3">
-          {(data.brandShapes?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">Brand Shapes</p><TagDisplay items={data.brandShapes ?? []} /></div>}
-          {(data.decorativeElements?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">Decorative Elements</p><TagDisplay items={data.decorativeElements ?? []} /></div>}
-          {(data.visualDevices?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">Visual Devices</p><TagDisplay items={data.visualDevices ?? []} /></div>}
+          {(data.brandShapes?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">{t("visualSystem.graphic.brandShapes")}</p><TagDisplay items={data.brandShapes ?? []} /></div>}
+          {(data.decorativeElements?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">{t("visualSystem.graphic.decorativeElements")}</p><TagDisplay items={data.decorativeElements ?? []} /></div>}
+          {(data.visualDevices?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">{t("visualSystem.graphic.visualDevices")}</p><TagDisplay items={data.visualDevices ?? []} /></div>}
           {data.usageNotes && <p className="text-sm text-gray-600">{data.usageNotes}</p>}
-          {!hasContent && <p className="text-sm text-gray-400">No graphic elements defined yet.</p>}
+          {!hasContent && <p className="text-sm text-gray-400">{t("visualSystem.graphic.empty")}</p>}
         </div>
       )}
       {!isEditing && (
         <div className="mt-4">
-          <EditableStringList title="Don'ts" items={donts} canEdit={canEdit} isSaving={updateSection.isPending} placeholder="Add a graphic element don't..." onSave={(items) => updateSection.mutate({ graphicElementsDonts: items })}>
+          <EditableStringList title={t("visualSystem.dontsTitle")} items={donts} canEdit={canEdit} isSaving={updateSection.isPending} placeholder={t("visualSystem.graphic.dontsPlaceholder")} onSave={(items) => updateSection.mutate({ graphicElementsDonts: items })}>
             {(items) => items.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{items.map((d, i) => <div key={i} className="flex items-start gap-2 text-sm text-gray-600 p-3 bg-red-50 rounded-lg"><X className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />{d}</div>)}</div>
-            ) : <p className="text-sm text-gray-400">No don&apos;ts defined yet.</p>}
+            ) : <p className="text-sm text-gray-400">{t("common.noDontsYet")}</p>}
           </EditableStringList>
         </div>
       )}
@@ -481,6 +487,7 @@ function GraphicElementsCard({ data, donts, canEdit, updateSection }: { data: Gr
 // ── Patterns & Textures Card ──
 
 function PatternsCard({ data, canEdit, updateSection }: { data: PatternsTexturesData; canEdit: boolean; updateSection: ReturnType<typeof useUpdateSection> }) {
+  const { t } = useTranslation("brandstyle");
   const [isEditing, setIsEditing] = useState(false);
   const [edit, setEdit] = useState<PatternsTexturesData>({});
   const startEdit = useCallback(() => { setEdit({ patterns: [...(data.patterns ?? [])], textures: [...(data.textures ?? [])], backgrounds: [...(data.backgrounds ?? [])], usageNotes: data.usageNotes ?? "" }); setIsEditing(true); }, [data]);
@@ -490,24 +497,24 @@ function PatternsCard({ data, canEdit, updateSection }: { data: PatternsTextures
   return (
     <Card>
       <div className="flex items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2"><Layers className="w-4 h-4 text-teal-600" /><h4 className="text-sm font-semibold text-gray-900">Patterns & Textures</h4></div>
-        {canEdit && !isEditing && <button type="button" onClick={startEdit} className="p-1 text-gray-400 hover:text-primary transition-colors" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>}
+        <div className="flex items-center gap-2"><Layers className="w-4 h-4 text-teal-600" /><h4 className="text-sm font-semibold text-gray-900">{t("visualSystem.patterns.title")}</h4></div>
+        {canEdit && !isEditing && <button type="button" onClick={startEdit} className="p-1 text-gray-400 hover:text-primary transition-colors" title={t("actions.edit")}><Pencil className="w-3.5 h-3.5" /></button>}
       </div>
       {isEditing ? (
         <div className="space-y-4">
-          <TagEditor label="Patterns" items={edit.patterns ?? []} onChange={(v) => setEdit((p) => ({ ...p, patterns: v }))} placeholder="e.g. Herringbone" />
-          <TagEditor label="Textures" items={edit.textures ?? []} onChange={(v) => setEdit((p) => ({ ...p, textures: v }))} placeholder="e.g. Paper grain" />
-          <TagEditor label="Backgrounds" items={edit.backgrounds ?? []} onChange={(v) => setEdit((p) => ({ ...p, backgrounds: v }))} placeholder="e.g. Soft gradient" />
-          <div><label className="text-xs font-medium text-gray-500 mb-1 block">Usage Notes</label><textarea value={edit.usageNotes ?? ""} onChange={(e) => setEdit((p) => ({ ...p, usageNotes: e.target.value }))} rows={2} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
-          <div className="flex gap-2 pt-1"><Button variant="primary" size="sm" onClick={save} isLoading={updateSection.isPending}>Save</Button><Button variant="secondary" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button></div>
+          <TagEditor label={t("visualSystem.patterns.patterns")} items={edit.patterns ?? []} onChange={(v) => setEdit((p) => ({ ...p, patterns: v }))} placeholder={t("visualSystem.patterns.patternsPlaceholder")} />
+          <TagEditor label={t("visualSystem.patterns.textures")} items={edit.textures ?? []} onChange={(v) => setEdit((p) => ({ ...p, textures: v }))} placeholder={t("visualSystem.patterns.texturesPlaceholder")} />
+          <TagEditor label={t("visualSystem.patterns.backgrounds")} items={edit.backgrounds ?? []} onChange={(v) => setEdit((p) => ({ ...p, backgrounds: v }))} placeholder={t("visualSystem.patterns.backgroundsPlaceholder")} />
+          <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("common.usageNotes")}</label><textarea value={edit.usageNotes ?? ""} onChange={(e) => setEdit((p) => ({ ...p, usageNotes: e.target.value }))} rows={2} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
+          <div className="flex gap-2 pt-1"><Button variant="primary" size="sm" onClick={save} isLoading={updateSection.isPending}>{t("actions.save")}</Button><Button variant="secondary" size="sm" onClick={() => setIsEditing(false)}>{t("actions.cancel")}</Button></div>
         </div>
       ) : (
         <div className="space-y-3">
-          {(data.patterns?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">Patterns</p><TagDisplay items={data.patterns ?? []} /></div>}
-          {(data.textures?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">Textures</p><TagDisplay items={data.textures ?? []} /></div>}
-          {(data.backgrounds?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">Backgrounds</p><TagDisplay items={data.backgrounds ?? []} /></div>}
+          {(data.patterns?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">{t("visualSystem.patterns.patterns")}</p><TagDisplay items={data.patterns ?? []} /></div>}
+          {(data.textures?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">{t("visualSystem.patterns.textures")}</p><TagDisplay items={data.textures ?? []} /></div>}
+          {(data.backgrounds?.length ?? 0) > 0 && <div><p className="text-xs font-medium text-gray-500 uppercase mb-1.5">{t("visualSystem.patterns.backgrounds")}</p><TagDisplay items={data.backgrounds ?? []} /></div>}
           {data.usageNotes && <p className="text-sm text-gray-600">{data.usageNotes}</p>}
-          {!hasContent && <p className="text-sm text-gray-400">No patterns or textures defined yet.</p>}
+          {!hasContent && <p className="text-sm text-gray-400">{t("visualSystem.patterns.empty")}</p>}
         </div>
       )}
     </Card>
@@ -516,7 +523,8 @@ function PatternsCard({ data, canEdit, updateSection }: { data: PatternsTextures
 
 // ── Iconography Card ──
 
-const ICON_STYLES = [{ value: "line", label: "Line" }, { value: "fill", label: "Fill" }, { value: "duo-tone", label: "Duo-tone" }, { value: "custom", label: "Custom" }];
+const ICON_STYLE_VALUES = ["line", "fill", "duo-tone", "custom"] as const;
+const ICON_STYLE_KEY: Record<string, string> = { line: "line", fill: "fill", "duo-tone": "duoTone", custom: "custom" };
 
 function IconSpecPreview({ style, strokeWeight, cornerRadius, sizing }: { style?: string; strokeWeight?: string; cornerRadius?: string; sizing?: string }) {
   if (!style && !strokeWeight) return null;
@@ -541,6 +549,7 @@ function IconSpecPreview({ style, strokeWeight, cornerRadius, sizing }: { style?
 }
 
 function IconographyCard({ data, donts, canEdit, updateSection }: { data: IconographyStyleData; donts: string[]; canEdit: boolean; updateSection: ReturnType<typeof useUpdateSection> }) {
+  const { t } = useTranslation("brandstyle");
   const [isEditing, setIsEditing] = useState(false);
   const [edit, setEdit] = useState<IconographyStyleData>({});
   const startEdit = useCallback(() => { setEdit({ style: data.style ?? "", strokeWeight: data.strokeWeight ?? "", cornerRadius: data.cornerRadius ?? "", sizing: data.sizing ?? "", colorUsage: data.colorUsage ?? "", usageNotes: data.usageNotes ?? "" }); setIsEditing(true); }, [data]);
@@ -550,41 +559,41 @@ function IconographyCard({ data, donts, canEdit, updateSection }: { data: Iconog
   return (
     <Card>
       <div className="flex items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2"><PenTool className="w-4 h-4 text-teal-600" /><h4 className="text-sm font-semibold text-gray-900">Iconography</h4></div>
-        {canEdit && !isEditing && <button type="button" onClick={startEdit} className="p-1 text-gray-400 hover:text-primary transition-colors" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>}
+        <div className="flex items-center gap-2"><PenTool className="w-4 h-4 text-teal-600" /><h4 className="text-sm font-semibold text-gray-900">{t("visualSystem.iconography.title")}</h4></div>
+        {canEdit && !isEditing && <button type="button" onClick={startEdit} className="p-1 text-gray-400 hover:text-primary transition-colors" title={t("actions.edit")}><Pencil className="w-3.5 h-3.5" /></button>}
       </div>
       {isEditing ? (
         <div className="space-y-3">
-          <div><label className="text-xs font-medium text-gray-500 mb-1 block">Icon Style</label><select value={edit.style ?? ""} onChange={(e) => setEdit((p) => ({ ...p, style: e.target.value }))} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"><option value="">Select a style...</option>{ICON_STYLES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select></div>
+          <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("visualSystem.iconography.iconStyle")}</label><select value={edit.style ?? ""} onChange={(e) => setEdit((p) => ({ ...p, style: e.target.value }))} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"><option value="">{t("visualSystem.iconography.selectStyle")}</option>{ICON_STYLE_VALUES.map((v) => <option key={v} value={v}>{t(`visualSystem.iconography.styles.${ICON_STYLE_KEY[v]}`)}</option>)}</select></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs font-medium text-gray-500 mb-1 block">Stroke Weight</label><input value={edit.strokeWeight ?? ""} onChange={(e) => setEdit((p) => ({ ...p, strokeWeight: e.target.value }))} placeholder="e.g. 1.5px" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
-            <div><label className="text-xs font-medium text-gray-500 mb-1 block">Corner Radius</label><input value={edit.cornerRadius ?? ""} onChange={(e) => setEdit((p) => ({ ...p, cornerRadius: e.target.value }))} placeholder="e.g. 2px" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
+            <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("visualSystem.iconography.strokeWeight")}</label><input value={edit.strokeWeight ?? ""} onChange={(e) => setEdit((p) => ({ ...p, strokeWeight: e.target.value }))} placeholder={t("visualSystem.iconography.strokeWeightPlaceholder")} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
+            <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("visualSystem.iconography.cornerRadius")}</label><input value={edit.cornerRadius ?? ""} onChange={(e) => setEdit((p) => ({ ...p, cornerRadius: e.target.value }))} placeholder={t("visualSystem.iconography.cornerRadiusPlaceholder")} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs font-medium text-gray-500 mb-1 block">Sizing</label><input value={edit.sizing ?? ""} onChange={(e) => setEdit((p) => ({ ...p, sizing: e.target.value }))} placeholder="e.g. 16/20/24/32px" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
-            <div><label className="text-xs font-medium text-gray-500 mb-1 block">Color Usage</label><input value={edit.colorUsage ?? ""} onChange={(e) => setEdit((p) => ({ ...p, colorUsage: e.target.value }))} placeholder="e.g. Single color" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
+            <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("visualSystem.iconography.sizing")}</label><input value={edit.sizing ?? ""} onChange={(e) => setEdit((p) => ({ ...p, sizing: e.target.value }))} placeholder={t("visualSystem.iconography.sizingPlaceholder")} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
+            <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("visualSystem.iconography.colorUsage")}</label><input value={edit.colorUsage ?? ""} onChange={(e) => setEdit((p) => ({ ...p, colorUsage: e.target.value }))} placeholder={t("visualSystem.iconography.colorUsagePlaceholder")} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
           </div>
-          <div className="flex gap-2 pt-1"><Button variant="primary" size="sm" onClick={save} isLoading={updateSection.isPending}>Save</Button><Button variant="secondary" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button></div>
+          <div className="flex gap-2 pt-1"><Button variant="primary" size="sm" onClick={save} isLoading={updateSection.isPending}>{t("actions.save")}</Button><Button variant="secondary" size="sm" onClick={() => setIsEditing(false)}>{t("actions.cancel")}</Button></div>
         </div>
       ) : (
         <div className="space-y-3">
           <IconSpecPreview style={data.style} strokeWeight={data.strokeWeight} cornerRadius={data.cornerRadius} sizing={data.sizing} />
-          {data.style && <Badge variant="info">{ICON_STYLES.find((s) => s.value === data.style)?.label ?? data.style}</Badge>}
+          {data.style && <Badge variant="info">{ICON_STYLE_KEY[data.style] ? t(`visualSystem.iconography.styles.${ICON_STYLE_KEY[data.style]}`) : data.style}</Badge>}
           <div className="grid grid-cols-2 gap-4">
-            {data.strokeWeight && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">Stroke Weight</p><p className="text-sm text-gray-700">{data.strokeWeight}</p></div>}
-            {data.cornerRadius && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">Corner Radius</p><p className="text-sm text-gray-700">{data.cornerRadius}</p></div>}
-            {data.sizing && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">Sizing</p><p className="text-sm text-gray-700">{data.sizing}</p></div>}
-            {data.colorUsage && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">Color Usage</p><p className="text-sm text-gray-700">{data.colorUsage}</p></div>}
+            {data.strokeWeight && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">{t("visualSystem.iconography.strokeWeight")}</p><p className="text-sm text-gray-700">{data.strokeWeight}</p></div>}
+            {data.cornerRadius && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">{t("visualSystem.iconography.cornerRadius")}</p><p className="text-sm text-gray-700">{data.cornerRadius}</p></div>}
+            {data.sizing && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">{t("visualSystem.iconography.sizing")}</p><p className="text-sm text-gray-700">{data.sizing}</p></div>}
+            {data.colorUsage && <div><p className="text-xs font-medium text-gray-500 uppercase mb-0.5">{t("visualSystem.iconography.colorUsage")}</p><p className="text-sm text-gray-700">{data.colorUsage}</p></div>}
           </div>
-          {!hasContent && <p className="text-sm text-gray-400">No iconography style defined yet.</p>}
+          {!hasContent && <p className="text-sm text-gray-400">{t("visualSystem.iconography.empty")}</p>}
         </div>
       )}
       {!isEditing && (
         <div className="mt-4">
-          <EditableStringList title="Don'ts" items={donts} canEdit={canEdit} isSaving={updateSection.isPending} placeholder="Add an iconography don't..." onSave={(items) => updateSection.mutate({ iconographyDonts: items })}>
+          <EditableStringList title={t("visualSystem.dontsTitle")} items={donts} canEdit={canEdit} isSaving={updateSection.isPending} placeholder={t("visualSystem.iconography.dontsPlaceholder")} onSave={(items) => updateSection.mutate({ iconographyDonts: items })}>
             {(items) => items.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{items.map((d, i) => <div key={i} className="flex items-start gap-2 text-sm text-gray-600 p-3 bg-red-50 rounded-lg"><X className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />{d}</div>)}</div>
-            ) : <p className="text-sm text-gray-400">No don&apos;ts defined yet.</p>}
+            ) : <p className="text-sm text-gray-400">{t("common.noDontsYet")}</p>}
           </EditableStringList>
         </div>
       )}
@@ -594,7 +603,7 @@ function IconographyCard({ data, donts, canEdit, updateSection }: { data: Iconog
 
 // ── Gradients Card ──
 
-const GRADIENT_TYPES = [{ value: "linear", label: "Linear" }, { value: "radial", label: "Radial" }, { value: "conic", label: "Conic" }];
+const GRADIENT_TYPE_VALUES = ["linear", "radial", "conic"] as const;
 
 function gradientCss(g: GradientDefinition): string {
   const colorStr = g.colors.join(", ");
@@ -616,6 +625,7 @@ function stripRecommendedPrefix(usage: string): string {
 }
 
 function GradientsCard({ gradients, canEdit, updateSection }: { gradients: GradientDefinition[]; canEdit: boolean; updateSection: ReturnType<typeof useUpdateSection> }) {
+  const { t } = useTranslation("brandstyle");
   const [isEditing, setIsEditing] = useState(false);
   const [editGradients, setEditGradients] = useState<GradientDefinition[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -629,8 +639,8 @@ function GradientsCard({ gradients, canEdit, updateSection }: { gradients: Gradi
   return (
     <Card>
       <div className="flex items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2"><Blend className="w-4 h-4 text-teal-600" /><h4 className="text-sm font-semibold text-gray-900">Gradients & Effects</h4>{gradients.length > 0 && <Badge variant="default">{gradients.length}</Badge>}</div>
-        {canEdit && !isEditing && gradients.length > 0 && <button type="button" onClick={startEdit} className="p-1 text-gray-400 hover:text-primary transition-colors" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>}
+        <div className="flex items-center gap-2"><Blend className="w-4 h-4 text-teal-600" /><h4 className="text-sm font-semibold text-gray-900">{t("visualSystem.gradients.title")}</h4>{gradients.length > 0 && <Badge variant="default">{gradients.length}</Badge>}</div>
+        {canEdit && !isEditing && gradients.length > 0 && <button type="button" onClick={startEdit} className="p-1 text-gray-400 hover:text-primary transition-colors" title={t("actions.edit")}><Pencil className="w-3.5 h-3.5" /></button>}
       </div>
       {display.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -642,7 +652,7 @@ function GradientsCard({ gradients, canEdit, updateSection }: { gradients: Gradi
                   <p className="text-sm font-medium text-gray-900 truncate min-w-0">{g.name}</p>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {isRecommendedGradient(g) && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700" title="Recommended from the palette — not observed as a gradient on the site">Recommended</span>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700" title={t("visualSystem.gradients.recommendedTitle")}>{t("visualSystem.gradients.recommended")}</span>
                     )}
                     <Badge variant="default">{g.type}</Badge>
                   </div>
@@ -650,33 +660,33 @@ function GradientsCard({ gradients, canEdit, updateSection }: { gradients: Gradi
                 <p className="text-xs text-gray-500 mt-0.5">{g.colors.join(" → ")}</p>
                 {g.usage && <p className="text-xs text-gray-500 mt-1">{isRecommendedGradient(g) ? stripRecommendedPrefix(g.usage) : g.usage}</p>}
               </div>
-              {isEditing && <button type="button" onClick={() => setEditGradients((p) => p.filter((_, idx) => idx !== i))} className="absolute top-1.5 right-1.5 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600" title="Remove"><Trash2 className="w-3.5 h-3.5" /></button>}
+              {isEditing && <button type="button" onClick={() => setEditGradients((p) => p.filter((_, idx) => idx !== i))} className="absolute top-1.5 right-1.5 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600" title={t("visualSystem.gradients.remove")}><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
         </div>
-      ) : <p className="text-sm text-gray-400">No gradients defined yet.</p>}
+      ) : <p className="text-sm text-gray-400">{t("visualSystem.gradients.empty")}</p>}
 
       {isEditing && (
         <div className="mt-4 space-y-3">
           {showForm ? (
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-xs font-medium text-gray-500 mb-1 block">Name</label><input value={newG.name} onChange={(e) => setNewG((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. Primary CTA" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
-                <div><label className="text-xs font-medium text-gray-500 mb-1 block">Type</label><select value={newG.type} onChange={(e) => setNewG((p) => ({ ...p, type: e.target.value }))} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500">{GRADIENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
+                <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("visualSystem.gradients.name")}</label><input value={newG.name} onChange={(e) => setNewG((p) => ({ ...p, name: e.target.value }))} placeholder={t("visualSystem.gradients.namePlaceholder")} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
+                <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("visualSystem.gradients.type")}</label><select value={newG.type} onChange={(e) => setNewG((p) => ({ ...p, type: e.target.value }))} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500">{GRADIENT_TYPE_VALUES.map((v) => <option key={v} value={v}>{t(`visualSystem.gradients.types.${v}`)}</option>)}</select></div>
               </div>
               <div className="grid grid-cols-3 gap-3">
-                <div><label className="text-xs font-medium text-gray-500 mb-1 block">Color 1</label><div className="flex items-center gap-2"><input type="color" value={newG.colors[0]} onChange={(e) => setNewG((p) => ({ ...p, colors: [e.target.value, ...p.colors.slice(1)] }))} className="h-8 w-8 rounded cursor-pointer" /><span className="text-xs text-gray-500">{newG.colors[0]}</span></div></div>
-                <div><label className="text-xs font-medium text-gray-500 mb-1 block">Color 2</label><div className="flex items-center gap-2"><input type="color" value={newG.colors[1] ?? "#ffffff"} onChange={(e) => setNewG((p) => ({ ...p, colors: [p.colors[0], e.target.value, ...p.colors.slice(2)] }))} className="h-8 w-8 rounded cursor-pointer" /><span className="text-xs text-gray-500">{newG.colors[1]}</span></div></div>
-                {newG.type === "linear" && <div><label className="text-xs font-medium text-gray-500 mb-1 block">Angle</label><input value={newG.angle ?? ""} onChange={(e) => setNewG((p) => ({ ...p, angle: e.target.value }))} placeholder="90deg" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>}
+                <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("visualSystem.gradients.color1")}</label><div className="flex items-center gap-2"><input type="color" value={newG.colors[0]} onChange={(e) => setNewG((p) => ({ ...p, colors: [e.target.value, ...p.colors.slice(1)] }))} className="h-8 w-8 rounded cursor-pointer" /><span className="text-xs text-gray-500">{newG.colors[0]}</span></div></div>
+                <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("visualSystem.gradients.color2")}</label><div className="flex items-center gap-2"><input type="color" value={newG.colors[1] ?? "#ffffff"} onChange={(e) => setNewG((p) => ({ ...p, colors: [p.colors[0], e.target.value, ...p.colors.slice(2)] }))} className="h-8 w-8 rounded cursor-pointer" /><span className="text-xs text-gray-500">{newG.colors[1]}</span></div></div>
+                {newG.type === "linear" && <div><label className="text-xs font-medium text-gray-500 mb-1 block">{t("visualSystem.gradients.angle")}</label><input value={newG.angle ?? ""} onChange={(e) => setNewG((p) => ({ ...p, angle: e.target.value }))} placeholder={t("visualSystem.gradients.anglePlaceholder")} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>}
               </div>
               {newG.name && <div className="h-10 w-full rounded-md" style={{ background: gradientCss(newG) }} />}
-              <div className="flex gap-2"><Button variant="primary" size="sm" onClick={addGradient}>Add</Button><Button variant="secondary" size="sm" onClick={() => setShowForm(false)}>Cancel</Button></div>
+              <div className="flex gap-2"><Button variant="primary" size="sm" onClick={addGradient}>{t("actions.add")}</Button><Button variant="secondary" size="sm" onClick={() => setShowForm(false)}>{t("actions.cancel")}</Button></div>
             </div>
-          ) : <button type="button" onClick={() => setShowForm(true)} className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"><Plus className="w-4 h-4" />Add gradient</button>}
-          <div className="flex gap-2 pt-1"><Button variant="primary" size="sm" onClick={save} isLoading={updateSection.isPending}>Save</Button><Button variant="secondary" size="sm" onClick={() => { setIsEditing(false); setShowForm(false); }}>Cancel</Button></div>
+          ) : <button type="button" onClick={() => setShowForm(true)} className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"><Plus className="w-4 h-4" />{t("visualSystem.gradients.addGradient")}</button>}
+          <div className="flex gap-2 pt-1"><Button variant="primary" size="sm" onClick={save} isLoading={updateSection.isPending}>{t("actions.save")}</Button><Button variant="secondary" size="sm" onClick={() => { setIsEditing(false); setShowForm(false); }}>{t("actions.cancel")}</Button></div>
         </div>
       )}
-      {canEdit && !isEditing && gradients.length === 0 && <div className="mt-3"><button type="button" onClick={startEdit} className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"><Plus className="w-4 h-4" />Add gradients</button></div>}
+      {canEdit && !isEditing && gradients.length === 0 && <div className="mt-3"><button type="button" onClick={startEdit} className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"><Plus className="w-4 h-4" />{t("visualSystem.gradients.addGradients")}</button></div>}
     </Card>
   );
 }
@@ -684,6 +694,7 @@ function GradientsCard({ gradients, canEdit, updateSection }: { gradients: Gradi
 // ── Grid Preview ──
 
 function GridPreview({ gridSystem }: { gridSystem?: string }) {
+  const { t } = useTranslation("brandstyle");
   if (!gridSystem) return null;
   const colMatch = gridSystem.match(/(\d+)\s*-?\s*col/i);
   const columns = colMatch ? parseInt(colMatch[1], 10) : 12;
@@ -693,7 +704,7 @@ function GridPreview({ gridSystem }: { gridSystem?: string }) {
       <div className="flex gap-1 h-12">
         {Array.from({ length: safeColumns }, (_, i) => <div key={i} className="flex-1 rounded-sm" style={{ backgroundColor: "#0d948820" }} />)}
       </div>
-      <p className="text-[10px] text-gray-400 text-right mt-1.5">{safeColumns} columns</p>
+      <p className="text-[10px] text-gray-400 text-right mt-1.5">{t("visualSystem.gridColumns", { count: safeColumns })}</p>
     </div>
   );
 }

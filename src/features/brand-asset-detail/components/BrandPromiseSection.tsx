@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Shield, Heart, Package, Sparkles, Users, Target, ShieldCheck, CheckCircle, Plus, X,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { BrandPromiseFrameworkData } from '../types/framework.types';
 import { CompanionValuesPanel } from './shared/CompanionValuesPanel';
 import { ProofPointsGuidanceBanner } from './shared/ProofPointsGuidanceBanner';
@@ -57,6 +58,7 @@ function normalize(raw: BrandPromiseFrameworkData | null): BrandPromiseFramework
 
 /** Brand Promise canvas with 5 sections based on Keller/Aaker value model. */
 export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }: BrandPromiseSectionProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const [draft, setDraft] = useState<BrandPromiseFrameworkData>(() => normalize(data));
 
   useEffect(() => {
@@ -96,8 +98,8 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
             <Shield className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Brand Promise</h2>
-            <p className="text-sm text-gray-500">The commitment your brand makes to every customer, every time</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandPromise.statement.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandPromise.statement.subtitle')}</p>
           </div>
         </div>
 
@@ -105,26 +107,26 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
           <div className="space-y-3">
             <div>
               <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Promise Statement
+                {t('brandPromise.statement.label')}
               </label>
               <textarea
                 value={draft.promiseStatement}
                 onChange={(e) => handleChange('promiseStatement', e.target.value)}
                 className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
                 rows={2}
-                placeholder="The core promise your brand makes..."
+                placeholder={t('brandPromise.statement.placeholder')}
               />
             </div>
             <div>
               <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                One-Liner
+                {t('brandPromise.statement.oneLinerLabel')}
               </label>
               <input
                 type="text"
                 value={draft.promiseOneLiner}
                 onChange={(e) => handleChange('promiseOneLiner', e.target.value)}
                 className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-lg font-semibold text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
-                placeholder="Distill to a single tagline..."
+                placeholder={t('brandPromise.statement.oneLinerPlaceholder')}
               />
             </div>
           </div>
@@ -140,12 +142,12 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
             )}
           </div>
         ) : (
-          <p className="text-sm italic text-gray-400">Define your brand promise...</p>
+          <p className="text-sm italic text-gray-400">{t('brandPromise.statement.empty')}</p>
         )}
 
         {/* Examples */}
         <div className="mt-4 bg-gray-50 border border-gray-100 rounded-xl p-4">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Examples</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{t('brandPromise.examples')}</p>
           <div className="flex flex-wrap gap-2">
             {PROMISE_EXAMPLES.map((ex) => (
               <span key={ex.brand} className="inline-flex items-center gap-1.5 text-xs bg-white border border-gray-200 rounded-full px-3 py-1">
@@ -164,13 +166,13 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
             <Heart className="h-5 w-5 text-rose-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Value Architecture</h2>
-            <p className="text-sm text-gray-500">Three layers of value your promise delivers (Aaker model)</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandPromise.value.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandPromise.value.subtitle')}</p>
           </div>
         </div>
 
         <CompanionValuesPanel
-          companionName="Brand Essence"
+          companionName={t('brandPromise.companion')}
           values={companionData ?? {}}
           perspective="commitment"
         />
@@ -180,36 +182,36 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
             icon={Package}
             iconBg="bg-emerald-50"
             iconColor="text-emerald-600"
-            label="Functional Value"
-            description="What tangible value do you guarantee to deliver?"
+            label={t('brandPromise.value.functional.label')}
+            description={t('brandPromise.value.functional.description')}
             value={isEditing ? draft.functionalValue : d.functionalValue}
             isEditing={isEditing}
             onChange={(v) => handleChange('functionalValue', v)}
-            placeholder="Describe the tangible, measurable benefit..."
+            placeholder={t('brandPromise.value.functional.placeholder')}
           />
 
           <BenefitField
             icon={Heart}
             iconBg="bg-rose-50"
             iconColor="text-rose-600"
-            label="Emotional Value"
-            description="What feeling do you commit to creating for customers?"
+            label={t('brandPromise.value.emotional.label')}
+            description={t('brandPromise.value.emotional.description')}
             value={isEditing ? draft.emotionalValue : d.emotionalValue}
             isEditing={isEditing}
             onChange={(v) => handleChange('emotionalValue', v)}
-            placeholder="Describe the feeling your promise creates..."
+            placeholder={t('brandPromise.value.emotional.placeholder')}
           />
 
           <BenefitField
             icon={Sparkles}
             iconBg="bg-amber-50"
             iconColor="text-amber-600"
-            label="Self-Expressive Value"
-            description="How do you help customers express their desired identity?"
+            label={t('brandPromise.value.selfExpressive.label')}
+            description={t('brandPromise.value.selfExpressive.description')}
             value={isEditing ? draft.selfExpressiveValue : d.selfExpressiveValue}
             isEditing={isEditing}
             onChange={(v) => handleChange('selfExpressiveValue', v)}
-            placeholder="Describe how customers express their identity..."
+            placeholder={t('brandPromise.value.selfExpressive.placeholder')}
           />
         </div>
       </div>
@@ -221,8 +223,8 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
             <Users className="h-5 w-5 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Audience & Need</h2>
-            <p className="text-sm text-gray-500">Who you serve and the deep need your promise addresses</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandPromise.audience.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandPromise.audience.subtitle')}</p>
           </div>
         </div>
 
@@ -231,16 +233,16 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
             icon={Users}
             iconBg="bg-blue-50"
             iconColor="text-blue-600"
-            label="Target Audience"
-            description="Who is this promise for?"
+            label={t('brandPromise.audience.targetLabel')}
+            description={t('brandPromise.audience.targetDescription')}
             value={isEditing ? draft.targetAudience : d.targetAudience}
             isEditing={isEditing}
             onChange={(v) => handleChange('targetAudience', v)}
-            placeholder="Describe your primary target audience..."
+            placeholder={t('brandPromise.audience.targetPlaceholder')}
           />
 
           <div className="bg-blue-50/30 border border-blue-100 rounded-xl p-3 mb-1">
-            <p className="text-xs text-blue-600">Go beyond demographics — what is the deeper, unmet need your promise fulfills?</p>
+            <p className="text-xs text-blue-600">{t('brandPromise.audience.hint')}</p>
           </div>
 
           {isEditing ? (
@@ -249,14 +251,14 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
               onChange={(e) => handleChange('coreCustomerNeed', e.target.value)}
               className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={3}
-              placeholder="The deep underlying need your promise addresses..."
+              placeholder={t('brandPromise.audience.needPlaceholder')}
             />
           ) : d.coreCustomerNeed ? (
             <div className="border-l-4 border-blue-300 pl-4 py-1">
               <p className="text-sm text-gray-700 leading-relaxed italic">{d.coreCustomerNeed}</p>
             </div>
           ) : (
-            <p className="text-sm italic text-gray-400">Define the core customer need...</p>
+            <p className="text-sm italic text-gray-400">{t('brandPromise.audience.needEmpty')}</p>
           )}
         </div>
       </div>
@@ -268,8 +270,8 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
             <Target className="h-5 w-5 text-violet-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Differentiator</h2>
-            <p className="text-sm text-gray-500">What makes your promise unique — Neumeier&apos;s Onlyness Test</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandPromise.differentiator.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandPromise.differentiator.subtitle')}</p>
           </div>
         </div>
 
@@ -278,16 +280,16 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
             icon={Target}
             iconBg="bg-violet-50"
             iconColor="text-violet-600"
-            label="Differentiator"
-            description="What sets your promise apart from competitors?"
+            label={t('brandPromise.differentiator.label')}
+            description={t('brandPromise.differentiator.description')}
             value={isEditing ? draft.differentiator : d.differentiator}
             isEditing={isEditing}
             onChange={(v) => handleChange('differentiator', v)}
-            placeholder="Describe what makes your promise unique..."
+            placeholder={t('brandPromise.differentiator.placeholder')}
           />
 
           <div className="bg-violet-50/30 border border-violet-100 rounded-xl p-3">
-            <p className="text-xs text-violet-600 italic">&ldquo;Only [your brand] can _____ because _____.&rdquo;</p>
+            <p className="text-xs text-violet-600 italic">{t('brandPromise.differentiator.formula')}</p>
           </div>
 
           {isEditing ? (
@@ -296,12 +298,12 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
               onChange={(e) => handleChange('onlynessStatement', e.target.value)}
               className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={2}
-              placeholder="Only [brand] can... because..."
+              placeholder={t('brandPromise.differentiator.onlynessPlaceholder')}
             />
           ) : d.onlynessStatement ? (
             <p className="text-sm text-gray-700 leading-relaxed">{d.onlynessStatement}</p>
           ) : (
-            <p className="text-sm italic text-gray-400">Complete the Onlyness Statement...</p>
+            <p className="text-sm italic text-gray-400">{t('brandPromise.differentiator.onlynessEmpty')}</p>
           )}
         </div>
       </div>
@@ -313,14 +315,14 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
             <ShieldCheck className="h-5 w-5 text-gray-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Evidence</h2>
-            <p className="text-sm text-gray-500">Concrete proof that your promise is real and measurable</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandPromise.evidence.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandPromise.evidence.subtitle')}</p>
           </div>
         </div>
 
         {/* Proof Points */}
         <div className="mb-5">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Proof Points</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{t('brandPromise.evidence.proofPoints')}</p>
           <ProofPointsGuidanceBanner assetType="promise" />
           <StringListEditor
             items={isEditing ? draft.proofPoints : d.proofPoints}
@@ -328,16 +330,16 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
             onAdd={() => addListItem('proofPoints')}
             onUpdate={(i, v) => updateListItem('proofPoints', i, v)}
             onRemove={(i) => removeListItem('proofPoints', i)}
-            placeholder="Add a proof point..."
-            emptyText="No proof points defined yet"
+            placeholder={t('brandPromise.evidence.proofPlaceholder')}
+            emptyText={t('brandPromise.evidence.proofEmpty')}
           />
         </div>
 
         {/* Measurable Outcomes */}
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Measurable Outcomes</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{t('brandPromise.evidence.outcomes')}</p>
           <div className="bg-gray-50/50 border border-gray-100 rounded-xl p-3 mb-3">
-            <p className="text-xs text-gray-500">Specific, quantifiable results that demonstrate promise delivery</p>
+            <p className="text-xs text-gray-500">{t('brandPromise.evidence.outcomesHint')}</p>
           </div>
           <StringListEditor
             items={isEditing ? draft.measurableOutcomes : d.measurableOutcomes}
@@ -345,8 +347,8 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
             onAdd={() => addListItem('measurableOutcomes')}
             onUpdate={(i, v) => updateListItem('measurableOutcomes', i, v)}
             onRemove={(i) => removeListItem('measurableOutcomes', i)}
-            placeholder="Add a measurable outcome..."
-            emptyText="No measurable outcomes defined yet"
+            placeholder={t('brandPromise.evidence.outcomesPlaceholder')}
+            emptyText={t('brandPromise.evidence.outcomesEmpty')}
           />
         </div>
       </div>
@@ -408,6 +410,7 @@ interface StringListEditorProps {
 }
 
 function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeholder, emptyText }: StringListEditorProps) {
+  const { t } = useTranslation('brand-asset-detail');
   if (!isEditing) {
     if (items.length === 0) {
       return <p className="text-sm italic text-gray-400">{emptyText}</p>;
@@ -450,7 +453,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
         className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium"
       >
         <Plus className="h-4 w-4" />
-        Add item
+        {t('shared.addItem')}
       </button>
     </div>
   );

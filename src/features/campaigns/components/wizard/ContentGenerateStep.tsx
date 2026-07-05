@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, AlertCircle, RefreshCw, CheckCircle2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
@@ -18,6 +19,7 @@ import { interpretAiError } from "@/lib/ai/ai-error-client";
  * can review context and briefing sources before committing to an AI call.
  */
 export function ContentGenerateStep() {
+  const { t } = useTranslation("campaigns-wizard");
   const contentGenPhase = useCampaignWizardStore((s) => s.contentGenPhase);
   const setContentGenPhase = useCampaignWizardStore((s) => s.setContentGenPhase);
   const selectedContentType = useCampaignWizardStore((s) => s.selectedContentType);
@@ -139,7 +141,7 @@ export function ContentGenerateStep() {
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
           <Loader2 className="h-7 w-7 text-primary animate-spin" />
         </div>
-        <p className="text-sm text-gray-500">Creating your content workspace...</p>
+        <p className="text-sm text-gray-500">{t("contentGenerate.creatingWorkspace")}</p>
       </div>
     );
   }
@@ -160,19 +162,19 @@ export function ContentGenerateStep() {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-4">
         <AlertCircle className="h-8 w-8 text-red-500" />
-        <p className="text-sm font-medium text-gray-900">Failed to create content workspace</p>
+        <p className="text-sm font-medium text-gray-900">{t("contentGenerate.failedToCreate")}</p>
         {globalErrorMessage && (
           <p className="text-sm text-red-600 max-w-md text-center">{globalErrorMessage}</p>
         )}
         <Button variant="secondary" icon={RefreshCw} onClick={handleRetry}>
-          Try Again
+          {t("actions.tryAgain")}
         </Button>
       </div>
     );
   }
 
   // ─── Render: Success — ready to open canvas ────────────────
-  const contentLabel = selectedContentType?.replace(/-/g, ' ') ?? 'content';
+  const contentLabel = selectedContentType?.replace(/-/g, ' ') ?? t("contentGenerate.genericContent");
 
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-5">
@@ -181,16 +183,16 @@ export function ContentGenerateStep() {
       </div>
       <div className="text-center max-w-md">
         <h3 className="text-lg font-semibold text-gray-900 mb-1">
-          Your {contentLabel} workspace is ready
+          {t("contentGenerate.workspaceReady", { type: contentLabel })}
         </h3>
         <p className="text-sm text-gray-500">
-          Click <strong>Open in Canvas</strong> to review the context, generate
-          text variants, select images, and refine your {contentLabel} before publishing.
+          {t("contentGenerate.reviewPrefix")} <strong>{t("contentGenerate.openInCanvas")}</strong>{" "}
+          {t("contentGenerate.reviewSuffix", { type: contentLabel })}
         </p>
       </div>
       <p className="text-xs text-gray-400 flex items-center gap-1">
         <ExternalLink className="h-3 w-3" />
-        Content generation happens in the Canvas after you review the context
+        {t("contentGenerate.generationHint")}
       </p>
     </div>
   );

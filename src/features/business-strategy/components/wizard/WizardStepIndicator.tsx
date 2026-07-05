@@ -1,18 +1,19 @@
 'use client';
 
 import { Check } from 'lucide-react';
-
-const STEPS = [
-  { number: 1, label: 'Type & Name' },
-  { number: 2, label: 'Timeline' },
-  { number: 3, label: 'Objectives' },
-];
+import { useTranslation } from 'react-i18next';
 
 interface WizardStepIndicatorProps {
   currentStep: number;
 }
 
 export function WizardStepIndicator({ currentStep }: WizardStepIndicatorProps) {
+  const { t } = useTranslation('business-strategy');
+  const STEPS = [
+    { number: 1, label: t('wizard.indicator.typeName') },
+    { number: 2, label: t('wizard.indicator.timeline') },
+    { number: 3, label: t('wizard.indicator.objectives') },
+  ];
   return (
     <div className="flex items-center justify-center gap-2 mb-6">
       {STEPS.map((step, idx) => {

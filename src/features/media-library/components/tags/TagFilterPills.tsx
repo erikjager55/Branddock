@@ -1,12 +1,14 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Settings } from 'lucide-react';
 import { useMediaTags } from '../../hooks/index';
 import { useMediaLibraryStore } from '../../stores/useMediaLibraryStore';
 
 /** Horizontal scrollable row of tag pills for filtering media assets by tag. */
 export function TagFilterPills() {
+  const { t } = useTranslation('media-library');
   const { data: tags, isLoading } = useMediaTags();
   const tagFilter = useMediaLibraryStore((s) => s.tagFilter);
   const setTagFilter = useMediaLibraryStore((s) => s.setTagFilter);
@@ -28,13 +30,13 @@ export function TagFilterPills() {
   if (!tags || tags.length === 0) {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-400">No tags yet</span>
+        <span className="text-sm text-gray-400">{t('tags.noneYet')}</span>
         <button
           onClick={() => setTagManagerModalOpen(true)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
         >
           <Settings className="w-3.5 h-3.5" />
-          Manage Tags
+          {t('tags.manage')}
         </button>
       </div>
     );
@@ -81,7 +83,7 @@ export function TagFilterPills() {
         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-colors flex-shrink-0"
       >
         <Settings className="w-3.5 h-3.5" />
-        Manage Tags
+        {t('tags.manage')}
       </button>
     </div>
   );

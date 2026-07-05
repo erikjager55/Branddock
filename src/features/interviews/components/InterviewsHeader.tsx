@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/shared';
 import { ChevronLeft, Users, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface InterviewsHeaderProps {
   interviewCount: number;
@@ -14,6 +15,7 @@ export function InterviewsHeader({
   onBack,
   onAdd,
 }: InterviewsHeaderProps) {
+  const { t } = useTranslation('interviews');
   return (
     <div className="mb-6">
       <button
@@ -21,23 +23,23 @@ export function InterviewsHeader({
         className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2 transition-colors"
       >
         <ChevronLeft className="w-4 h-4" />
-        Back to Asset
+        {t('header.backToAsset')}
       </button>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Users className="w-6 h-6 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Interviews</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('header.title')}</h1>
             <p className="text-sm text-gray-500">
-              Conduct structured interviews with stakeholders
+              {t('header.subtitle')}
             </p>
           </div>
           <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
-            {interviewCount} Interviews
+            {t('header.countLabel', { count: interviewCount })}
           </span>
         </div>
         <Button variant="cta" size="md" icon={Plus} onClick={onAdd}>
-          Add Interview
+          {t('header.addInterview')}
         </Button>
       </div>
     </div>

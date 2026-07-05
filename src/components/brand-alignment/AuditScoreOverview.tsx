@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AuditDimension } from '@/types/brand-alignment';
 import { AuditDimensionCard } from './AuditDimensionCard';
 import type { AuditGrade } from '@/types/brand-alignment';
@@ -25,6 +26,7 @@ const SCORE_COLORS: Record<string, string> = {
 };
 
 export function AuditScoreOverview({ overallScore, dimensions }: Props) {
+  const { t } = useTranslation('brand-alignment');
   const grade = scoreToGrade(overallScore);
   const color = SCORE_COLORS[grade] ?? '#6b7280';
 
@@ -47,14 +49,14 @@ export function AuditScoreOverview({ overallScore, dimensions }: Props) {
 
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            Brand Strength Score
+            {t('auditScore.title')}
           </h3>
           <p className="text-sm text-gray-500 mt-1">
             {overallScore >= 80
-              ? 'Your brand foundation is strong. Focus on differentiation and activation.'
+              ? t('auditScore.strong')
               : overallScore >= 60
-                ? 'Good progress. Address the weaker dimensions to strengthen your brand.'
-                : 'Your brand needs attention. Start by completing your brand assets.'}
+                ? t('auditScore.good')
+                : t('auditScore.weak')}
           </p>
         </div>
       </div>

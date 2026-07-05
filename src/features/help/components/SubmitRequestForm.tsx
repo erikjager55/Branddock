@@ -1,26 +1,34 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle } from 'lucide-react';
 import { useSubmitTicket } from '@/hooks/use-help';
 import { Button, Input, Select } from '@/components/shared';
 import type { SubmitTicketRequest } from '@/types/help';
 
-const categoryOptions = [
-  { value: 'GENERAL', label: 'General' },
-  { value: 'TECHNICAL', label: 'Technical' },
-  { value: 'BILLING', label: 'Billing' },
-  { value: 'FEATURE_REQUEST', label: 'Feature Request' },
-  { value: 'BUG_REPORT', label: 'Bug Report' },
-];
+const CATEGORY_VALUES = [
+  'GENERAL',
+  'TECHNICAL',
+  'BILLING',
+  'FEATURE_REQUEST',
+  'BUG_REPORT',
+] as const;
 
-const priorityOptions: { value: SubmitTicketRequest['priority']; label: string }[] = [
-  { value: 'LOW', label: 'Low' },
-  { value: 'MEDIUM', label: 'Medium' },
-  { value: 'HIGH', label: 'High' },
-];
+const PRIORITY_VALUES = ['LOW', 'MEDIUM', 'HIGH'] as const;
 
 export function SubmitRequestForm() {
+  const { t } = useTranslation('help');
+  const categoryOptions = CATEGORY_VALUES.map((value) => ({
+    value,
+    label: t(`form.category.options.${value}`),
+  }));
+  const priorityOptions: { value: SubmitTicketRequest['priority']; label: string }[] =
+    PRIORITY_VALUES.map((value) => ({
+      value,
+      label: t(`form.priority.options.${value}`),
+    }));
+
   const [subject, setSubject] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [description, setDescription] = useState('');
@@ -57,13 +65,13 @@ export function SubmitRequestForm() {
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <CheckCircle className="w-10 h-10 text-emerald-500 mb-3" />
         <h3 className="text-sm font-semibold text-gray-900 mb-1">
-          Request Submitted
+          {t('form.submitted.title')}
         </h3>
         <p className="text-sm text-gray-500 mb-4">
-          We&apos;ll get back to you as soon as possible.
+          {t('form.submitted.description')}
         </p>
         <Button variant="secondary" size="sm" onClick={() => setSubmitted(false)}>
-          Submit Another Request
+          {t('form.submitted.another')}
         </Button>
       </div>
     );
@@ -72,31 +80,31 @@ export function SubmitRequestForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
-        label="Subject"
+        label={t('form.subject.label')}
         value={subject}
         onChange={(e) => setSubject(e.target.value)}
-        placeholder="Brief description of your issue"
+        placeholder={t('form.subject.placeholder')}
         required
       />
 
       <Select
-        label="Category"
+        label={t('form.category.label')}
         value={category}
         onChange={setCategory}
         options={categoryOptions}
-        placeholder="Select a category..."
+        placeholder={t('form.category.placeholder')}
         required
       />
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
           <span className="text-red-500 mr-0.5">*</span>
-          Description
+          {t('form.description.label')}
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Describe your issue in detail..."
+          placeholder={t('form.description.placeholder')}
           rows={4}
           required
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-shadow resize-none"
@@ -105,7 +113,7 @@ export function SubmitRequestForm() {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Priority
+          {t('form.priority.label')}
         </label>
         <div className="flex items-center gap-4">
           {priorityOptions.map((opt) => (
@@ -130,7 +138,7 @@ export function SubmitRequestForm() {
         isLoading={submitTicket.isPending}
         disabled={!subject.trim() || !category || !description.trim()}
       >
-        Submit Request
+        {t('form.submit')}
       </Button>
     </form>
   );

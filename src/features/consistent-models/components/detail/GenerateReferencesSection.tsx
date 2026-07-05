@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Sparkles,
   Check,
@@ -37,6 +38,7 @@ export function GenerateReferencesSection({
   model,
   modelId,
 }: GenerateReferencesSectionProps) {
+  const { t } = useTranslation(["consistent-models", "consistent-models-registry"]);
   const generateRefs = useGenerateReferenceImages(modelId);
   const curateRefs = useCurateReferences(modelId);
   const { nextWizardStep } = useConsistentModelStore();
@@ -231,14 +233,20 @@ export function GenerateReferencesSection({
       {typeFields.length > 0 && (
         <div className="rounded-lg border border-gray-200 bg-white p-5">
           <h3 className="text-sm font-semibold text-gray-900">
-            Model Details — {model.type.replace(/_/g, " ")}
+            {t("generateRefs.modelDetails", { type: model.type.replace(/_/g, " ") })}
           </h3>
           <p className="mt-1 text-sm text-gray-500">
-            Provide details to get better reference images for this model type.
+            {t("generateRefs.modelDetailsHint")}
           </p>
 
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {typeFields.map((field) => (
+            {typeFields.map((field) => {
+              const fieldKey = `consistent-models-registry:field.${model.type}.${field.key}`;
+              const fieldLabel = t(`${fieldKey}.label`, { defaultValue: field.label });
+              const fieldPlaceholder = t(`${fieldKey}.placeholder`, {
+                defaultValue: field.placeholder,
+              });
+              return (
               <div
                 key={field.key}
                 className={
@@ -246,7 +254,7 @@ export function GenerateReferencesSection({
                 }
               >
                 <label className="mb-1.5 block text-xs font-medium text-gray-700">
-                  {field.label}
+                  {fieldLabel}
                 </label>
                 {field.type === "select" && field.options ? (
                   <select
@@ -256,10 +264,10 @@ export function GenerateReferencesSection({
                     }
                     className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
                   >
-                    <option value="">{field.placeholder}</option>
+                    <option value="">{fieldPlaceholder}</option>
                     {field.options.map((opt) => (
                       <option key={opt.value} value={opt.value}>
-                        {opt.label}
+                        {t(`${fieldKey}.options.${opt.value}`, { defaultValue: opt.label })}
                       </option>
                     ))}
                   </select>
@@ -269,7 +277,7 @@ export function GenerateReferencesSection({
                     onChange={(e) =>
                       handleTypeFieldChange(field.key, e.target.value)
                     }
-                    placeholder={field.placeholder}
+                    placeholder={fieldPlaceholder}
                     rows={2}
                     className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 resize-none"
                   />
@@ -280,12 +288,13 @@ export function GenerateReferencesSection({
                     onChange={(e) =>
                       handleTypeFieldChange(field.key, e.target.value)
                     }
-                    placeholder={field.placeholder}
+                    placeholder={fieldPlaceholder}
                     className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
                   />
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -301,10 +310,10 @@ export function GenerateReferencesSection({
       {/* ─── fal.ai Provider Selector + Generate ───────────── */}
       <div className="rounded-lg border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900">
-          AI Image Provider
+          {t("generateRefs.providerTitle")}
         </h3>
         <p className="mt-1 text-sm text-gray-500">
-          Choose an AI model to generate reference images.
+          {t("generateRefs.providerHint")}
         </p>
 
         <div className="mt-4">
@@ -324,10 +333,13 @@ export function GenerateReferencesSection({
               </div>
               <div className="min-w-0 flex-1">
                 <h4 className="text-sm font-semibold text-gray-900">
-                  Generating reference images...
+                  {t("generateRefs.generatingTitle")}
                 </h4>
                 <p className="mt-0.5 text-xs text-gray-500">
-                  Creating {targetCount} images with AI — this takes about {Math.ceil(targetCount * estimatedSecondsPerImage / 60)} minutes
+                  {t("generateRefs.generatingSubtitle", {
+                    count: targetCount,
+                    minutes: Math.ceil((targetCount * estimatedSecondsPerImage) / 60),
+                  })}
                 </p>
               </div>
               <div className="text-right flex-shrink-0">
@@ -335,7 +347,7 @@ export function GenerateReferencesSection({
                   {generatingCount}/{targetCount}
                 </span>
                 <p className="text-[10px] text-gray-400">
-                  {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")} elapsed
+                  {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")} {t("generateRefs.elapsedSuffix")}
                 </p>
               </div>
             </div>
@@ -362,7 +374,7 @@ export function GenerateReferencesSection({
                     }`}
                   >
                     {thumb ? (
-                      <img src={thumb} alt={`Generated ${i + 1}`} className="h-full w-full object-cover" />
+                      <img src={thumb} alt={t("generateRefs.generatedAlt", { index: i + 1 })} className="h-full w-full object-cover" />
                     ) : i < generatingCount ? (
                       <Check className="h-4 w-4 text-teal-500" />
                     ) : i === generatingCount ? (
@@ -382,15 +394,14 @@ export function GenerateReferencesSection({
               onClick={handleGenerate}
             >
               <Sparkles className="mr-1.5 h-4 w-4" />
-              Generate {targetCount} References
+              {t("generateRefs.generateButton", { count: targetCount })}
             </Button>
           </div>
         )}
 
         {generateRefs.isError && (
           <p className="mt-3 text-sm text-red-600">
-            {generateRefs.error?.message ??
-              "Failed to generate reference images."}
+            {generateRefs.error?.message ?? t("generateRefs.generateError")}
           </p>
         )}
       </div>
@@ -405,10 +416,10 @@ export function GenerateReferencesSection({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-gray-900">
-                Generated Images
+                {t("generateRefs.generatedImages")}
               </h3>
               <Badge variant="info" size="sm">
-                {selectedIds.size} / {CURATE_TARGET} selected
+                {t("generateRefs.selectedCount", { selected: selectedIds.size, total: CURATE_TARGET })}
               </Badge>
             </div>
             <div className="flex items-center gap-2">
@@ -417,7 +428,7 @@ export function GenerateReferencesSection({
                 onClick={handleSelectAll}
                 className="text-xs text-teal-600 hover:text-teal-700 font-medium"
               >
-                Select All
+                {t("generateRefs.selectAll")}
               </button>
               <span className="text-gray-300">|</span>
               <button
@@ -425,7 +436,7 @@ export function GenerateReferencesSection({
                 onClick={handleDeselectAll}
                 className="text-xs text-gray-500 hover:text-gray-700 font-medium"
               >
-                Deselect All
+                {t("generateRefs.deselectAll")}
               </button>
             </div>
           </div>
@@ -446,7 +457,7 @@ export function GenerateReferencesSection({
 
           <div className="mt-8 flex items-center justify-between">
             <p className="text-xs text-gray-500">
-              Select {CURATE_TARGET} images for training (minimum {minImages})
+              {t("generateRefs.selectHint", { target: CURATE_TARGET, min: minImages })}
             </p>
             <Button
               variant="primary"
@@ -456,11 +467,11 @@ export function GenerateReferencesSection({
               {curateRefs.isPending ? (
                 <>
                   <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                  Saving...
+                  {t("generateRefs.saving")}
                 </>
               ) : (
                 <>
-                  Use Selected & Continue ({selectedIds.size})
+                  {t("generateRefs.useSelected", { count: selectedIds.size })}
                   <ChevronRight className="ml-1 h-4 w-4" />
                 </>
               )}
@@ -481,13 +492,13 @@ export function GenerateReferencesSection({
             type="button"
             onClick={() => setLightboxUrl(null)}
             className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
-            aria-label="Close"
+            aria-label={t("generateRefs.close")}
           >
             <X className="h-5 w-5" />
           </button>
           <img
             src={lightboxUrl}
-            alt="Enlarged preview"
+            alt={t("generateRefs.enlargedAlt")}
             className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
             onClick={(e) => e.stopPropagation()}
           />
@@ -510,6 +521,7 @@ interface ImageSelectCardProps {
 }
 
 function ImageSelectCard({ image, isSelected, onToggle, caption, onCaptionChange, onEnlarge }: ImageSelectCardProps) {
+  const { t } = useTranslation("consistent-models");
   const [imageFailed, setImageFailed] = useState(false);
   const providerLabel = useMemo(() => {
     if (!image.aiProvider) return null;
@@ -578,7 +590,7 @@ function ImageSelectCard({ image, isSelected, onToggle, caption, onCaptionChange
           type="button"
           onClick={(e) => { e.stopPropagation(); onEnlarge(image.storageUrl); }}
           className="absolute left-2 top-2 z-10 rounded-md bg-black/60 p-1.5 text-white hover:bg-black/80 transition-colors"
-          aria-label="Enlarge image"
+          aria-label={t("generateRefs.enlargeImage")}
         >
           <Maximize2 className="h-4 w-4" />
         </button>
@@ -591,7 +603,7 @@ function ImageSelectCard({ image, isSelected, onToggle, caption, onCaptionChange
             value={caption ?? ""}
             onChange={(e) => onCaptionChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
-            placeholder="Why this image? (optional)"
+            placeholder={t("generateRefs.captionPlaceholder")}
             rows={2}
             className="w-full rounded border border-teal-200 bg-white px-2 py-1 text-xs text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 resize-none"
           />
@@ -606,6 +618,7 @@ function ImageSelectCard({ image, isSelected, onToggle, caption, onCaptionChange
 // Curatie van 160 → 30 picks onthulde patronen die elke LoRA-training
 // drukken op. Tips hier zichtbaar op de curate-step.
 function CurationTipsCard() {
+  const { t } = useTranslation("consistent-models");
   const [open, setOpen] = useState(true);
   if (!open) {
     return (
@@ -614,7 +627,7 @@ function CurationTipsCard() {
         onClick={() => setOpen(true)}
         className="text-xs text-teal-700 hover:text-teal-800 font-medium underline"
       >
-        Show curation tips
+        {t("generateRefs.curation.show")}
       </button>
     );
   }
@@ -624,43 +637,38 @@ function CurationTipsCard() {
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-amber-700" />
           <h4 className="text-sm font-semibold text-amber-900">
-            Curation tips for strong LoRA training
+            {t("generateRefs.curation.title")}
           </h4>
         </div>
         <button
           type="button"
           onClick={() => setOpen(false)}
           className="text-amber-700 hover:text-amber-900"
-          aria-label="Hide tips"
+          aria-label={t("generateRefs.curation.hide")}
         >
           <X className="h-4 w-4" />
         </button>
       </div>
       <ul className="space-y-1.5 text-xs text-amber-900 leading-relaxed">
         <li>
-          <span className="font-medium">Identify the dominant aesthetic cluster first.</span>{' '}
-          Image models often mix 2 stylistic variants within a single prompt
-          (e.g. feathered vignette vs clean oval). Pick one cluster — mixing confuses the model.
+          <span className="font-medium">{t("generateRefs.curation.clusterTitle")}</span>{' '}
+          {t("generateRefs.curation.clusterBody")}
         </li>
         <li>
-          <span className="font-medium">Avoid sky-only / abstract prompts in scene context.</span>{' '}
-          Prompts like "no land, just sky" trigger wildlife hallucination (animal silhouettes
-          on the horizon). Drop these prompts or frame them as a pure abstract wash.
+          <span className="font-medium">{t("generateRefs.curation.skyTitle")}</span>{' '}
+          {t("generateRefs.curation.skyBody")}
         </li>
         <li>
-          <span className="font-medium">Object training: anchor color explicitly.</span> Sunset/dawn
-          lighting causes the model to bleach object colors. Use neutral lighting prompts OR
-          hex-code the object color per prompt variant.
+          <span className="font-medium">{t("generateRefs.curation.objectTitle")}</span>{' '}
+          {t("generateRefs.curation.objectBody")}
         </li>
         <li>
-          <span className="font-medium">Plan for a generous margin.</span> 160 outputs down to 30 picks (~19%
-          retention) was a good fit for Gewoon Guus. With tight sets (40 → 30), cluster outliers
-          + hallucinations can leave you short.
+          <span className="font-medium">{t("generateRefs.curation.marginTitle")}</span>{' '}
+          {t("generateRefs.curation.marginBody")}
         </li>
         <li>
-          <span className="font-medium">Training data must match the inference model.</span>{' '}
-          Gemini output as training data + FLUX inference = domain shift. Branddock generates
-          training images with FLUX 2 — don't mix.
+          <span className="font-medium">{t("generateRefs.curation.matchTitle")}</span>{' '}
+          {t("generateRefs.curation.matchBody")}
         </li>
       </ul>
     </div>

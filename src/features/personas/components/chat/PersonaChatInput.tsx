@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ArrowUp, Square } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface PersonaChatInputProps {
   onSend: (content: string) => void;
@@ -18,6 +19,7 @@ export function PersonaChatInput({
   isStreaming,
   personaName,
 }: PersonaChatInputProps) {
+  const { t } = useTranslation('personas');
   const [value, setValue] = useState('');
 
   const handleSend = () => {
@@ -40,7 +42,7 @@ export function PersonaChatInput({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={`Ask ${personaName.split(' ')[0]} a question...`}
+        placeholder={t('chat.inputPlaceholder', { name: personaName.split(' ')[0] })}
         disabled={isDisabled || isStreaming}
         className="flex-1 text-sm outline-none bg-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder:text-gray-400"
         style={{ color: '#111827' }}
@@ -49,7 +51,7 @@ export function PersonaChatInput({
         <button
           onClick={onStop}
           className="bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors flex-shrink-0 cursor-pointer"
-          aria-label="Stop generating"
+          aria-label={t('chat.stopGenerating')}
         >
           <Square className="w-3 h-3 fill-current" />
         </button>

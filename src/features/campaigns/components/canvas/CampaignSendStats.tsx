@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Mail, Send, CheckCircle2, Eye, MousePointerClick, AlertTriangle, AlertOctagon } from 'lucide-react';
 import { useCampaignSendStatus } from '../../hooks/campaign-send.hooks';
 import type { LucideIcon } from 'lucide-react';
@@ -42,16 +44,6 @@ function StatTile({ label, value, total, icon: Icon, tone }: StatTileProps) {
   );
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  DRAFT: 'Draft',
-  QUEUED: 'Queued',
-  SENDING: 'Sending…',
-  COMPLETED: 'Completed',
-  PARTIAL: 'Partially completed',
-  FAILED: 'Failed',
-  CANCELLED: 'Cancelled',
-};
-
 const STATUS_TONE: Record<string, string> = {
   DRAFT: 'bg-gray-100 text-gray-700',
   QUEUED: 'bg-blue-100 text-blue-700',
@@ -63,12 +55,14 @@ const STATUS_TONE: Record<string, string> = {
 };
 
 export function CampaignSendStats({ campaignId, deliverableId }: CampaignSendStatsProps) {
+  const { t } = useTranslation('campaigns-canvas');
+  const { formatDate } = useFormat();
   const { data: send, isLoading } = useCampaignSendStatus(campaignId, deliverableId);
 
   if (isLoading) {
     return (
       <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
-        Loading send status…
+        {t('sendStats.loading')}
       </div>
     );
   }
@@ -83,18 +77,18 @@ export function CampaignSendStats({ campaignId, deliverableId }: CampaignSendSta
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Send className="h-4 w-4 text-gray-600" />
-          <span className="text-sm font-medium text-gray-900">Email campaign send</span>
+          <span className="text-sm font-medium text-gray-900">{t('sendStats.title')}</span>
           <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_TONE[send.status] ?? 'bg-gray-100 text-gray-700'}`}>
-            {STATUS_LABELS[send.status] ?? send.status}
+            {t(`sendStats.status.${send.status}`, { defaultValue: send.status })}
           </span>
         </div>
         <div className="text-xs text-gray-500">
           {startedAt && (
             <>
-              Sent {startedAt.toLocaleString()}
+              {t('sendStats.sentAt', { time: formatDate(startedAt, { dateStyle: 'short', timeStyle: 'short' }) })}
               {completedAt && completedAt.getTime() !== startedAt.getTime() && (
                 <>
-                  {' · '}Took {Math.max(1, Math.round((completedAt.getTime() - startedAt.getTime()) / 1000))}s
+                  {t('sendStats.took', { seconds: Math.max(1, Math.round((completedAt.getTime() - startedAt.getTime()) / 1000)) })}
                 </>
               )}
             </>
@@ -103,12 +97,12 @@ export function CampaignSendStats({ campaignId, deliverableId }: CampaignSendSta
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
-        <StatTile label="Recipients" value={send.recipientCount} icon={Mail} tone="gray" />
-        <StatTile label="Delivered" value={send.deliveredCount} total={send.recipientCount} icon={CheckCircle2} tone="emerald" />
-        <StatTile label="Opened" value={send.openedCount} total={send.recipientCount} icon={Eye} tone="blue" />
-        <StatTile label="Clicked" value={send.clickedCount} total={send.recipientCount} icon={MousePointerClick} tone="violet" />
-        <StatTile label="Bounced" value={send.bouncedCount} total={send.recipientCount} icon={AlertTriangle} tone="amber" />
-        <StatTile label="Failed" value={send.failedCount} total={send.recipientCount} icon={AlertOctagon} tone="red" />
+        <StatTile label={t('sendStats.recipients')} value={send.recipientCount} icon={Mail} tone="gray" />
+        <StatTile label={t('sendStats.delivered')} value={send.deliveredCount} total={send.recipientCount} icon={CheckCircle2} tone="emerald" />
+        <StatTile label={t('sendStats.opened')} value={send.openedCount} total={send.recipientCount} icon={Eye} tone="blue" />
+        <StatTile label={t('sendStats.clicked')} value={send.clickedCount} total={send.recipientCount} icon={MousePointerClick} tone="violet" />
+        <StatTile label={t('sendStats.bounced')} value={send.bouncedCount} total={send.recipientCount} icon={AlertTriangle} tone="amber" />
+        <StatTile label={t('sendStats.failed')} value={send.failedCount} total={send.recipientCount} icon={AlertOctagon} tone="red" />
       </div>
 
       {send.errorMessage && (

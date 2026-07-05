@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
 import { LockBanner, LockConfirmDialog, LockOverlay } from "@/components/lock";
@@ -32,6 +33,7 @@ interface BrandStyleguidePageProps {
 }
 
 export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePageProps) {
+  const { t } = useTranslation("brandstyle");
   const { data, isLoading, isError } = useStyleguide();
   const { activeTab, setActiveTab, selectedColorId, isColorModalOpen, closeColorModal } = useBrandstyleStore();
   const isEditing = useBrandstyleStore((s) => s.isEditing);
@@ -94,7 +96,7 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
     return (
       <PageShell maxWidth="7xl">
         <div data-testid="error-message" className="flex flex-col items-center justify-center h-64 text-gray-500 gap-2">
-          <p className="text-sm">Failed to load styleguide. Please try again.</p>
+          <p className="text-sm">{t("errors.loadStyleguide")}</p>
         </div>
       </PageShell>
     );

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { MoreHorizontal, Pencil, Copy, Archive, Trash2 } from "lucide-react";
 
 interface CampaignOverflowMenuProps {
@@ -18,6 +19,7 @@ export function CampaignOverflowMenu({
   onDelete,
   isArchived,
 }: CampaignOverflowMenuProps) {
+  const { t } = useTranslation("campaigns-overview");
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -50,7 +52,7 @@ export function CampaignOverflowMenu({
               onClick={(e) => { e.stopPropagation(); onEdit(); setIsOpen(false); }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
-              <Pencil className="h-3.5 w-3.5" /> Edit
+              <Pencil className="h-3.5 w-3.5" /> {t("menu.edit")}
             </button>
           )}
           {onDuplicate && (
@@ -58,7 +60,7 @@ export function CampaignOverflowMenu({
               onClick={(e) => { e.stopPropagation(); onDuplicate(); setIsOpen(false); }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
-              <Copy className="h-3.5 w-3.5" /> Duplicate
+              <Copy className="h-3.5 w-3.5" /> {t("menu.duplicate")}
             </button>
           )}
           {onArchive && (
@@ -66,7 +68,7 @@ export function CampaignOverflowMenu({
               onClick={(e) => { e.stopPropagation(); onArchive(); setIsOpen(false); }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
-              <Archive className="h-3.5 w-3.5" /> {isArchived ? "Unarchive" : "Archive"}
+              <Archive className="h-3.5 w-3.5" /> {isArchived ? t("menu.unarchive") : t("menu.archive")}
             </button>
           )}
           {onDelete && (
@@ -76,7 +78,7 @@ export function CampaignOverflowMenu({
                 onClick={(e) => { e.stopPropagation(); onDelete(); setIsOpen(false); }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
               >
-                <Trash2 className="h-3.5 w-3.5" /> Delete
+                <Trash2 className="h-3.5 w-3.5" /> {t("menu.delete")}
               </button>
             </>
           )}

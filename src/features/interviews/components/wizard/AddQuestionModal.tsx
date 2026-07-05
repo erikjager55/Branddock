@@ -1,16 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Button, Input } from '@/components/shared';
 import { MessageSquare, List, CheckSquare, Star, ArrowUpDown, Plus, X } from 'lucide-react';
 import type { QuestionType } from '../../types/interview.types';
 
-const QUESTION_TYPES: { type: QuestionType; label: string; description: string; icon: typeof MessageSquare }[] = [
-  { type: 'OPEN', label: 'Open', description: 'Free-text response', icon: MessageSquare },
-  { type: 'MULTIPLE_CHOICE', label: 'Multiple Choice', description: 'Select one option', icon: List },
-  { type: 'MULTI_SELECT', label: 'Multi Select', description: 'Select multiple options', icon: CheckSquare },
-  { type: 'RATING_SCALE', label: 'Rating Scale', description: 'Rate from 1 to 5', icon: Star },
-  { type: 'RANKING', label: 'Ranking', description: 'Order by preference', icon: ArrowUpDown },
+const QUESTION_TYPES: { type: QuestionType; icon: typeof MessageSquare }[] = [
+  { type: 'OPEN', icon: MessageSquare },
+  { type: 'MULTIPLE_CHOICE', icon: List },
+  { type: 'MULTI_SELECT', icon: CheckSquare },
+  { type: 'RATING_SCALE', icon: Star },
+  { type: 'RANKING', icon: ArrowUpDown },
 ];
 
 interface AddQuestionModalProps {
@@ -25,6 +26,7 @@ interface AddQuestionModalProps {
 }
 
 export function AddQuestionModal({ isOpen, onClose, onSubmit, isSubmitting }: AddQuestionModalProps) {
+  const { t } = useTranslation('interviews');
   const [questionType, setQuestionType] = useState<QuestionType>('OPEN');
   const [questionText, setQuestionText] = useState('');
   const [answerOptions, setAnswerOptions] = useState<string[]>([]);
@@ -57,15 +59,15 @@ export function AddQuestionModal({ isOpen, onClose, onSubmit, isSubmitting }: Ad
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Question" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('addQuestion.title')} size="lg">
       <div className="space-y-6">
         {/* Question type selector */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Question Type
+            {t('addQuestion.questionTypeLabel')}
           </label>
           <div className="grid grid-cols-5 gap-2">
-            {QUESTION_TYPES.map(({ type, label, icon: Icon }) => (
+            {QUESTION_TYPES.map(({ type, icon: Icon }) => (
               <button
                 key={type}
                 onClick={() => {
@@ -79,7 +81,7 @@ export function AddQuestionModal({ isOpen, onClose, onSubmit, isSubmitting }: Ad
                 }`}
               >
                 <Icon className="w-5 h-5" />
-                <span className="text-xs font-medium">{label}</span>
+                <span className="text-xs font-medium">{t(`typeLabel.${type}`)}</span>
               </button>
             ))}
           </div>
@@ -88,12 +90,12 @@ export function AddQuestionModal({ isOpen, onClose, onSubmit, isSubmitting }: Ad
         {/* Question text */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Question
+            {t('addQuestion.questionLabel')}
           </label>
           <textarea
             value={questionText}
             onChange={(e) => setQuestionText(e.target.value)}
-            placeholder="Type your question here..."
+            placeholder={t('addQuestion.questionPlaceholder')}
             rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
           />
@@ -103,7 +105,7 @@ export function AddQuestionModal({ isOpen, onClose, onSubmit, isSubmitting }: Ad
         {needsOptions && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Answer Options
+              {t('addQuestion.answerOptionsLabel')}
             </label>
             <div className="space-y-2 mb-3">
               {answerOptions.map((opt, idx) => (
@@ -123,7 +125,7 @@ export function AddQuestionModal({ isOpen, onClose, onSubmit, isSubmitting }: Ad
               <Input
                 value={newOption}
                 onChange={(e) => setNewOption(e.target.value)}
-                placeholder="Add an option..."
+                placeholder={t('addQuestion.optionPlaceholder')}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -132,7 +134,7 @@ export function AddQuestionModal({ isOpen, onClose, onSubmit, isSubmitting }: Ad
                 }}
               />
               <Button variant="secondary" size="sm" icon={Plus} onClick={handleAddOption}>
-                Add
+                {t('addQuestion.add')}
               </Button>
             </div>
           </div>
@@ -142,7 +144,7 @@ export function AddQuestionModal({ isOpen, onClose, onSubmit, isSubmitting }: Ad
         {questionType === 'RATING_SCALE' && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Scale Preview
+              {t('addQuestion.scalePreviewLabel')}
             </label>
             <div className="flex items-center gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
@@ -160,7 +162,7 @@ export function AddQuestionModal({ isOpen, onClose, onSubmit, isSubmitting }: Ad
 
       <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
         <Button variant="secondary" size="md" onClick={onClose}>
-          Cancel
+          {t('addQuestion.cancel')}
         </Button>
         <Button
           variant="cta"
@@ -169,7 +171,7 @@ export function AddQuestionModal({ isOpen, onClose, onSubmit, isSubmitting }: Ad
           isLoading={isSubmitting}
           disabled={!questionText.trim() || (needsOptions && answerOptions.length < 2)}
         >
-          Add Question
+          {t('addQuestion.submit')}
         </Button>
       </div>
     </Modal>

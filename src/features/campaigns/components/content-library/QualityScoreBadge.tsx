@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   getQualityColor,
   getQualityBgColor,
@@ -20,6 +21,7 @@ export function QualityScoreBadge({
   score,
   size = "sm",
 }: QualityScoreBadgeProps) {
+  const { t } = useTranslation();
   if (score === null) {
     return (
       <span className="inline-flex items-center text-xs text-gray-400">
@@ -30,7 +32,8 @@ export function QualityScoreBadge({
 
   const textColor = getQualityColor(score);
   const bgColor = getQualityBgColor(score);
-  const label = getQualityLabel(score);
+  const tier = score >= 85 ? "excellent" : score >= 65 ? "good" : "needsWork";
+  const label = t(`campaigns-cards:quality.${tier}`, { defaultValue: getQualityLabel(score) });
 
   if (size === "sm") {
     return (

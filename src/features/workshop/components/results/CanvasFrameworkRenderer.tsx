@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/components/ui/utils';
 
 interface GoldenCircleData {
@@ -15,28 +16,28 @@ interface CanvasFrameworkRendererProps {
 
 const SECTIONS: {
   key: 'why' | 'how' | 'what';
-  label: string;
+  labelKey: string;
   borderColor: string;
   bgColor: string;
   textColor: string;
 }[] = [
   {
     key: 'why',
-    label: 'WHY',
+    labelKey: 'results.canvas.sections.why',
     borderColor: 'border-blue-200',
     bgColor: 'bg-blue-50',
     textColor: 'text-blue-800',
   },
   {
     key: 'how',
-    label: 'HOW',
+    labelKey: 'results.canvas.sections.how',
     borderColor: 'border-emerald-200',
     bgColor: 'bg-emerald-50',
     textColor: 'text-emerald-800',
   },
   {
     key: 'what',
-    label: 'WHAT',
+    labelKey: 'results.canvas.sections.what',
     borderColor: 'border-amber-200',
     bgColor: 'bg-amber-50',
     textColor: 'text-amber-800',
@@ -46,10 +47,11 @@ const SECTIONS: {
 export function CanvasFrameworkRenderer({
   canvasData,
 }: CanvasFrameworkRendererProps) {
+  const { t } = useTranslation('workshop');
   if (!canvasData) {
     return (
       <div className="text-center py-8 text-gray-500 text-sm">
-        No canvas data available yet.
+        {t('results.canvas.noData')}
       </div>
     );
   }
@@ -58,7 +60,7 @@ export function CanvasFrameworkRenderer({
 
   return (
     <div className="space-y-4">
-      {SECTIONS.map(({ key, label, borderColor, bgColor, textColor }) => {
+      {SECTIONS.map(({ key, labelKey, borderColor, bgColor, textColor }) => {
         const section = data[key];
         if (!section) return null;
 
@@ -72,7 +74,7 @@ export function CanvasFrameworkRenderer({
             )}
           >
             <h4 className={cn('text-sm font-bold mb-2', textColor)}>
-              {label}
+              {t(labelKey)}
             </h4>
             <p className="text-sm text-gray-800 font-medium">
               &ldquo;{section.statement}&rdquo;

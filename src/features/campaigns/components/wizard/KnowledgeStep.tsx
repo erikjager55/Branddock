@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Check,
   Minus,
@@ -28,6 +29,7 @@ const itemKey = (i: { sourceType: string; sourceId: string }) => `${i.sourceType
 // ─── Component ────────────────────────────────────────────
 
 export function KnowledgeStep() {
+  const { t } = useTranslation("campaigns-wizard");
   const { data: knowledgeData, isLoading } = useWizardKnowledge();
   const selectedKnowledgeIds = useCampaignWizardStore(
     (s) => s.selectedKnowledgeIds,
@@ -74,16 +76,16 @@ export function KnowledgeStep() {
   // Build filter chips from groups
   const filterChips = useMemo(() => {
     if (!knowledgeData?.groups)
-      return [{ key: "all", label: "All", icon: SEARCH_ICON }];
+      return [{ key: "all", label: t("knowledge.all"), icon: SEARCH_ICON }];
     return [
-      { key: "all", label: "All", icon: SEARCH_ICON },
+      { key: "all", label: t("knowledge.all"), icon: SEARCH_ICON },
       ...knowledgeData.groups.map((g) => ({
         key: g.key,
         label: g.label,
         icon: CONTEXT_ICON_MAP[g.icon] || DEFAULT_SOURCE_ICON,
       })),
     ];
-  }, [knowledgeData]);
+  }, [knowledgeData, t]);
 
   // Filter groups based on search and active filter
   const visibleGroups = useMemo(() => {
@@ -176,10 +178,10 @@ export function KnowledgeStep() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-900">
-            Select Knowledge Context
+            {t("knowledge.title")}
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Choose the brand knowledge to inform your campaign strategy
+            {t("knowledge.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -188,7 +190,7 @@ export function KnowledgeStep() {
             onClick={() => selectAllKnowledge(allItemIds)}
             className="text-xs text-primary hover:opacity-80 font-medium"
           >
-            Select All
+            {t("knowledge.selectAll")}
           </button>
           <span className="text-gray-300">|</span>
           <button
@@ -196,7 +198,7 @@ export function KnowledgeStep() {
             onClick={deselectAllKnowledge}
             className="text-xs text-gray-500 hover:text-gray-700 font-medium"
           >
-            Deselect All
+            {t("knowledge.deselectAll")}
           </button>
         </div>
       </div>
@@ -206,8 +208,7 @@ export function KnowledgeStep() {
         <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
           <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
           <p className="text-xs text-amber-700">
-            Select at least one knowledge asset to generate an effective
-            strategy.
+            {t("knowledge.warningSelectOne")}
           </p>
         </div>
       )}
@@ -217,7 +218,7 @@ export function KnowledgeStep() {
         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
           type="text"
-          placeholder="Search knowledge items..."
+          placeholder={t("knowledge.searchPlaceholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
@@ -253,8 +254,8 @@ export function KnowledgeStep() {
           <div className="flex flex-col items-center justify-center py-12 text-sm text-gray-400">
             <Database className="w-6 h-6 mb-2 text-gray-300" />
             {searchQuery
-              ? "No items match your search"
-              : "No context items available"}
+              ? t("knowledge.noMatch")
+              : t("knowledge.noItems")}
           </div>
         ) : (
           visibleGroups.map((group, groupIdx) => {
@@ -405,7 +406,7 @@ export function KnowledgeStep() {
           <span className="font-semibold text-gray-900">
             {selectedKnowledgeIds.length}
           </span>{" "}
-          {selectedKnowledgeIds.length === 1 ? "item" : "items"} selected
+          {t("knowledge.selectedLabel", { count: selectedKnowledgeIds.length })}
         </span>
       </div>
     </div>

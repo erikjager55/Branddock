@@ -11,6 +11,7 @@
 
 import React from 'react';
 import { Brain } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ProgressBar } from '@/components/shared';
 import { formatLimit } from '@/lib/constants/plan-limits';
 import { cn } from '@/lib/constants/design-tokens';
@@ -35,6 +36,7 @@ function getTextColor(percentage: number): string {
 }
 
 export function UsageMeter({ used, limit, className, compact = false }: UsageMeterProps) {
+  const { t } = useTranslation('lock-billing');
   const percentage = limit > 0 && isFinite(limit)
     ? Math.min(100, Math.round((used / limit) * 100))
     : 0;
@@ -46,7 +48,7 @@ export function UsageMeter({ used, limit, className, compact = false }: UsageMet
       <div className={cn('space-y-1', className)}>
         <ProgressBar value={percentage} color={color} size="sm" />
         <p className={cn('text-[10px] tabular-nums', textColor)}>
-          {formatLimit(used)} / {formatLimit(limit)} AI tokens
+          {t('usageMeter.compact', { used: formatLimit(used), limit: formatLimit(limit) })}
         </p>
       </div>
     );
@@ -57,7 +59,7 @@ export function UsageMeter({ used, limit, className, compact = false }: UsageMet
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <Brain className="h-3.5 w-3.5 text-gray-400" />
-          <span className="text-xs font-medium text-gray-600">AI Tokens</span>
+          <span className="text-xs font-medium text-gray-600">{t('usageMeter.title')}</span>
         </div>
         <span className={cn('text-xs font-medium tabular-nums', textColor)}>
           {percentage}%
@@ -65,7 +67,7 @@ export function UsageMeter({ used, limit, className, compact = false }: UsageMet
       </div>
       <ProgressBar value={percentage} color={color} size="md" />
       <p className="text-xs text-gray-500 tabular-nums">
-        {formatLimit(used)} / {formatLimit(limit)} used
+        {t('usageMeter.used', { used: formatLimit(used), limit: formatLimit(limit) })}
       </p>
     </div>
   );

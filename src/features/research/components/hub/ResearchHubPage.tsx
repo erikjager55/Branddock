@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { SkeletonCard } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
 import {
@@ -30,6 +31,7 @@ interface ResearchHubPageProps {
 // ─── Component ───────────────────────────────────────────────
 
 export function ResearchHubPage({ onNavigate }: ResearchHubPageProps) {
+  const { t } = useTranslation("research");
   const store = useResearchStore();
 
   const { data: stats, isLoading: statsLoading } = useResearchStats();
@@ -44,8 +46,8 @@ export function ResearchHubPage({ onNavigate }: ResearchHubPageProps) {
       <div data-testid="research-hub-page">
       <PageHeader
         moduleKey="research"
-        title="Research Hub"
-        subtitle="Design and run brand research studies"
+        title={t("hub.title")}
+        subtitle={t("hub.subtitle")}
         actions={<SplitButton onNavigate={onNavigate} />}
       />
 

@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 2-3 weken (foundation ~1 wk + chrome-extractie + selector)
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-06-28
-completed: -
+completed: 2026-07-05
 related-adr: docs/adr/2026-06-28-multilingual-i18n-and-multi-market-content.md
 related-spec: -
 worktree: -
@@ -85,3 +85,25 @@ Zet een client-side i18next-runtime op (provider in `src/app/page.tsx` wrappend 
 **✅ Gedaan**: i18next-runtime (`src/lib/ui-i18n/`), provider in `layout.tsx` (server-seed via cookie → `initialLocale`, `useState`-lazy-instance, geen hydration-flash), `LocaleReconciler` (DB-pref na login), **Display-language**-selector (`AppearanceTab`, vervangt placeholder), zod `z.enum(SHIPPED_LOCALES)` + read-time-normalisatie, getypeerde keys, en↔nl chrome live vertaald (SettingsSubNav 9 tabs + TopNav + sidebar Settings/Help), scoped ESLint-guard (bewezen), separation-smoke 3/3, dode `AppearanceSettingsPage.tsx` verwijderd. tsc 0 / lint 0 / build groen. Ge-finalized via 2-ronde 2-subagent review-loop (0 CRITICAL; 4 WARNING totaal gefixt). Changelog #351.
 
 **⏳ Resterend (status blijft `in-progress`)**: data-driven `SIDEBAR_NAV`-labels (gedeelde constant), `AuthPage`, per-pagina `PageHeader`-titels, `format.ts` + ~171 `toLocale*`-sites, feature-namespace-extractie, de AI-vertaalpipeline (`[[i18n-ai-translation-pipeline]]`). MINOR-polish uit de review: `tKey`-union-typing, expliciete query-error-state, `doneRef` cross-user-switch-edge.
+
+# Status 2026-07-02 — Fase 1 follow-ups grotendeels geland (branch `feat/i18n-fase1-followups`, 8 commits, changelog #352)
+
+**✅ Gedaan**: `SIDEBAR_NAV` render-edge + `AuthPage` (`common:auth`) + `format.ts` (`useFormat`) [`96938871`] · lazy feature-namespace runtime (`i18next-resources-to-backend`) [`23e5ad38`] · **feature-extractie waves 1-4** (~35 namespaces, en+nl door de extractie-agents zelf gegenereerd, AI-gedreven) [`9b6ced14`/`81420d63`/`2c944ca3`/`a4491867`] · **toLocale-sweep** (~130 sites → `useFormat`) [`34cf8111`]. Elke wave per-commit gate-groen (tsc 0 / lint 0 / separation-smoke 3/3 / build groen). De app switcht nu naar nl over vrijwel alle schermen.
+
+**Bewust uitgesloten / gedocumenteerd** (blijven Engels, geen bug): `puck-config.tsx` (server-safe — hook breekt de `/p/[slug]`-SSR), `canvas/previews/*` (social-mock-chrome, ambigu), losse top-level `src/components/*.tsx`, `ai-studio`/`ai-trainer`-shells, `.ts` lib/services-formattering, `.toFixed`-bedragen.
+
+**⏳ Resterend**: ESLint-guard-allowlist bewust NIET verbreed (migrated files houden opzettelijk-gelaten enum/data-strings → guard zou false-positives geven; blijft scoped op appearance+TopNav — nieuwe files toevoegen zodra volledig clean) · de aparte AI-vertaalpipeline (`[[i18n-ai-translation-pipeline]]`, voor onderhoud/regeneratie op schaal) · `task-finalize` (review-loop + status→done) door user te triggeren · handmatige browser-smoke (nl↔en over de hoofdschermen).
+
+# Status 2026-07-03 — REMEDIATION (waves 1-5) — changelog #353
+
+Na een user-melding ("veel nog Engels") vond een multi-agent audit twee structurele oorzaken die de JSXText-extractie niet kón raken: **data-gedreven constant-registries** (render via `{item.name}`) en **gemiste `src/components/*`-clusters** (waves liepen op `src/features/*`). Opgelost met het **render-edge-patroon** (constant blijft en-bron + stabiele key; `t('ns:key', {defaultValue})`) in 5 waves:
+
+- **Wave 1** — campagne-registries (stepper/goal-types/pipeline-config/content-type-inputs-726/deliverables). `4fd49c44`+`9889d73b`
+- **Wave 2** — Brand Foundation (component-migratie `src/components/brand-foundation`+`brand-assets`+`asset-content` + `canonical-brand-assets` op slug). `239ab790`
+- **Wave 3** — gedeelde AI-exploration-chat + 17 merk-DNA-registry-groepen (234 keys). `f082554e`
+- **Wave 4** — resterende live-pagina's + shared/lock/billing/versioning/impact + brandstyle review-sections + auth-chrome. `1259d798`
+- **Wave 5** — long-tail met **liveness-verificatie**: products/media/consistent-models/trends-personas/claw-content (~328 keys); research-bundles/strategy-tools/business-strategy geskipt (DB-backed/dood/enum). `0cd3d4c4`
+
+Waves 1-4 gemerged via **PR #70** (op `main`). Wave 5 op branch `feat/i18n-wave5-longtail` (PR openstaand). **Browser-smoke geslaagd** (login nl↔en + `<html lang>`, geautomatiseerd via Playwright). Elke wave per-commit gate-groen (tsc 0 / lint 0 / smoke 3/3 / build groen).
+
+**Verify-then-skip (gedocumenteerd, níet vertaald)**: dode 0-import files (PurchaseModal, BundleDetailsPage, settings/*-duplicaten, StyleGuideViewer, e.a.), demo-routes (ValidationMethodDemo, TransformativeGoalsDashboard), `MODULE_META` dead export, en de PDF-export-utils (aparte track). Plus AI-gegenereerde/user-editable merk-content + AI-prompt-strings (bewust merk-content, geen chrome).

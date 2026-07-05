@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { AlertTriangle, Info, ClipboardList, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { PersonaWithMeta } from '../../types/persona.types';
 import type { UsePersonaChatReturn } from '../../hooks/usePersonaChat';
 import { PersonaChatBubble } from './PersonaChatBubble';
@@ -20,6 +21,7 @@ export function PersonaChatInterface({
   chat,
   onOpenContextSelector,
 }: PersonaChatInterfaceProps) {
+  const { t } = useTranslation('personas');
   const listRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -64,7 +66,7 @@ export function PersonaChatInterface({
         <div className="flex items-center gap-2 px-6 py-1.5 bg-amber-50 border-b border-amber-200 flex-shrink-0">
           <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
           <span className="text-xs text-amber-700">
-            {maxMessages - messageCount} messages remaining in this session
+            {t('chat.messagesRemaining', { count: maxMessages - messageCount })}
           </span>
         </div>
       )}
@@ -72,7 +74,7 @@ export function PersonaChatInterface({
         <div className="flex items-center gap-2 px-6 py-1.5 bg-red-50 border-b border-red-200 flex-shrink-0">
           <AlertTriangle className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
           <span className="text-xs text-red-700">
-            Message limit reached ({maxMessages}). Please start a new session.
+            {t('chat.limitReached', { max: maxMessages })}
           </span>
         </div>
       )}
@@ -105,7 +107,10 @@ export function PersonaChatInterface({
             message={{
               id: 'welcome',
               role: 'ASSISTANT',
-              content: `Hi! I'm ${persona.name.split(' ')[0]}. ${persona.tagline || "I'm here to help you understand your target audience better."}  Feel free to ask me anything about my work and challenges!`,
+              content: t('chat.welcome', {
+                name: persona.name.split(' ')[0],
+                intro: persona.tagline || t('chat.welcomeDefaultIntro'),
+              }),
               createdAt: new Date().toISOString(),
             }}
             persona={persona}
@@ -149,7 +154,7 @@ export function PersonaChatInterface({
               />
             </div>
             <span className="text-xs text-gray-400">
-              {persona.name.split(' ')[0]} is typing...
+              {t('chat.typing', { name: persona.name.split(' ')[0] })}
             </span>
           </div>
         )}
@@ -169,7 +174,7 @@ export function PersonaChatInterface({
                 <button
                   onClick={() => removeContext(item.id)}
                   className="text-primary-500 hover:text-primary-700 transition-colors"
-                  aria-label={`Remove ${item.sourceName}`}
+                  aria-label={t('chat.removeContext', { name: item.sourceName })}
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -183,7 +188,7 @@ export function PersonaChatInterface({
           <div className="flex items-center gap-2">
             <Info className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
             <p className="text-xs text-muted-foreground">
-              AI-simulated conversation in Free Chat mode
+              {t('chat.disclaimer')}
             </p>
           </div>
           {onOpenContextSelector && (
@@ -193,7 +198,7 @@ export function PersonaChatInterface({
               className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ClipboardList className="w-3.5 h-3.5" />
-              Add Context
+              {t('chat.addContext')}
             </button>
           )}
         </div>

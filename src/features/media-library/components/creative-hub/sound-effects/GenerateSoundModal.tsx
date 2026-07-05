@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Button, Input, Select } from '@/components/shared';
 import { Wand2 } from 'lucide-react';
 import { useGenerateSoundEffect } from '@/features/media-library/hooks';
@@ -15,18 +16,14 @@ interface GenerateSoundModalProps {
 
 // ─── Constants ──────────────────────────────────────────────
 
-const SOUND_TYPE_OPTIONS = [
-  { value: 'SFX', label: 'SFX' },
-  { value: 'JINGLE', label: 'Jingle' },
-  { value: 'SOUND_LOGO', label: 'Sound Logo' },
-  { value: 'AMBIENT', label: 'Ambient' },
-  { value: 'MUSIC', label: 'Music' },
-];
+const SOUND_TYPE_VALUES = ['SFX', 'JINGLE', 'SOUND_LOGO', 'AMBIENT', 'MUSIC'] as const;
 
 // ─── Component ──────────────────────────────────────────────
 
 /** Modal for generating a sound effect via ElevenLabs AI. */
 export function GenerateSoundModal({ isOpen, onClose }: GenerateSoundModalProps) {
+  const { t } = useTranslation('media-library');
+  const soundTypeOptions = SOUND_TYPE_VALUES.map((v) => ({ value: v, label: t(`soundTypes.${v}`) }));
   const [name, setName] = useState('');
   const [prompt, setPrompt] = useState('');
   const [soundType, setSoundType] = useState<SoundType>('SFX');
@@ -65,13 +62,13 @@ export function GenerateSoundModal({ isOpen, onClose }: GenerateSoundModalProps)
 
       let hasError = false;
       if (!trimmedName) {
-        setNameError('Name is required');
+        setNameError(t('soundEffects.nameRequired'));
         hasError = true;
       } else {
         setNameError(null);
       }
       if (!trimmedPrompt) {
-        setPromptError('Prompt is required');
+        setPromptError(t('soundEffects.promptRequired'));
         hasError = true;
       } else {
         setPromptError(null);
@@ -82,7 +79,7 @@ export function GenerateSoundModal({ isOpen, onClose }: GenerateSoundModalProps)
       if (durationSeconds.trim()) {
         const rawDuration = parseFloat(durationSeconds);
         if (!isFinite(rawDuration) || rawDuration < 0.5 || rawDuration > 22) {
-          setDurationError('Duration must be between 0.5 and 22 seconds');
+          setDurationError(t('soundEffects.generateModal.durationError'));
           return;
         }
         setDurationError(null);
@@ -100,21 +97,21 @@ export function GenerateSoundModal({ isOpen, onClose }: GenerateSoundModalProps)
         { onSuccess: () => handleClose() },
       );
     },
-    [name, prompt, soundType, durationSeconds, promptInfluence, generateSoundEffect, handleClose],
+    [name, prompt, soundType, durationSeconds, promptInfluence, generateSoundEffect, handleClose, t],
   );
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Generate Sound Effect"
-      subtitle="Describe the sound you want and AI will generate it."
+      title={t('soundEffects.generateModal.title')}
+      subtitle={t('soundEffects.generateModal.subtitle')}
       size="md"
       data-testid="generate-sound-modal"
       footer={
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={handleClose} disabled={generateSoundEffect.isPending}>
-            Cancel
+            {t('actions.cancel')}
           </Button>
           <Button
             onClick={handleSubmit}
@@ -122,7 +119,7 @@ export function GenerateSoundModal({ isOpen, onClose }: GenerateSoundModalProps)
             disabled={!name.trim() || !prompt.trim() || generateSoundEffect.isPending}
           >
             <Wand2 className="w-3.5 h-3.5 mr-1.5" />
-            Generate
+            {t('soundEffects.generateModal.generate')}
           </Button>
         </div>
       }
@@ -130,13 +127,13 @@ export function GenerateSoundModal({ isOpen, onClose }: GenerateSoundModalProps)
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Name */}
         <Input
-          label="Name"
+          label={t('fields.name')}
           value={name}
           onChange={(e) => {
             setName(e.target.value);
             if (nameError) setNameError(null);
           }}
-          placeholder="e.g., Tech Startup Jingle"
+          placeholder={t('soundEffects.generateModal.namePlaceholder')}
           maxLength={200}
           error={nameError ?? undefined}
           required
@@ -145,7 +142,7 @@ export function GenerateSoundModal({ isOpen, onClose }: GenerateSoundModalProps)
         {/* Prompt */}
         <div>
           <label htmlFor="generate-sound-prompt" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Prompt
+            {t('meta.prompt')}
           </label>
           <textarea
             id="generate-sound-prompt"
@@ -155,7 +152,7 @@ export function GenerateSoundModal({ isOpen, onClose }: GenerateSoundModalProps)
               if (promptError) setPromptError(null);
             }}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow min-h-[80px] resize-y"
-            placeholder="Describe the sound — e.g., 'Upbeat tech startup jingle with bright synths, 5 seconds'"
+            placeholder={t('soundEffects.generateModal.promptPlaceholder')}
             maxLength={200}
             rows={3}
             required
@@ -170,17 +167,17 @@ export function GenerateSoundModal({ isOpen, onClose }: GenerateSoundModalProps)
 
         {/* Sound Type */}
         <Select
-          label="Sound Type"
+          label={t('soundEffects.soundType')}
           value={soundType}
           onChange={(value) => setSoundType((value ?? 'SFX') as SoundType)}
-          options={SOUND_TYPE_OPTIONS}
+          options={soundTypeOptions}
         />
 
         {/* Duration + Prompt Influence row */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="generate-sound-duration" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Duration (seconds)
+              {t('soundEffects.generateModal.durationLabel')}
             </label>
             <input
               id="generate-sound-duration"
@@ -193,10 +190,10 @@ export function GenerateSoundModal({ isOpen, onClose }: GenerateSoundModalProps)
                 setDurationSeconds(e.target.value);
                 if (durationError) setDurationError(null);
               }}
-              placeholder="Auto"
+              placeholder={t('soundEffects.generateModal.durationPlaceholder')}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow"
             />
-            <p className="mt-1 text-xs text-gray-400">0.5–22s, leave empty for auto</p>
+            <p className="mt-1 text-xs text-gray-400">{t('soundEffects.generateModal.durationHint')}</p>
             {durationError && (
               <p className="mt-0.5 text-xs text-red-500" role="alert">{durationError}</p>
             )}
@@ -204,7 +201,7 @@ export function GenerateSoundModal({ isOpen, onClose }: GenerateSoundModalProps)
 
           <div>
             <label htmlFor="generate-sound-influence" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Prompt Influence
+              {t('soundEffects.generateModal.promptInfluence')}
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -221,14 +218,14 @@ export function GenerateSoundModal({ isOpen, onClose }: GenerateSoundModalProps)
                 {Math.round(promptInfluence * 100)}%
               </span>
             </div>
-            <p className="mt-1 text-xs text-gray-400">How closely to follow the prompt</p>
+            <p className="mt-1 text-xs text-gray-400">{t('soundEffects.generateModal.promptInfluenceHint')}</p>
           </div>
         </div>
 
         {/* Mutation error */}
         {generateSoundEffect.isError && (
           <p className="text-xs text-red-500" role="alert">
-            Failed to generate sound effect. Please try again.
+            {t('soundEffects.generateModal.error')}
           </p>
         )}
       </form>

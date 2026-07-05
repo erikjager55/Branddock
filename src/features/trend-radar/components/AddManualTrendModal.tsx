@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Button, Input, Select } from '@/components/shared';
 import { useTrendRadarStore } from '../stores/useTrendRadarStore';
 import { useCreateManualTrend } from '../hooks';
@@ -8,6 +9,7 @@ import { CATEGORY_COLORS, IMPACT_COLORS, SCOPE_LABELS, TIMEFRAME_LABELS } from '
 import type { InsightCategory, InsightScope, ImpactLevel, InsightTimeframe } from '../types/trend-radar.types';
 
 export function AddManualTrendModal() {
+  const { t } = useTranslation(['trend-radar', 'trends-personas-registry']);
   const { isAddManualTrendModalOpen, closeAddManualTrendModal } = useTrendRadarStore();
   const createMutation = useCreateManualTrend();
 
@@ -62,45 +64,45 @@ export function AddManualTrendModal() {
 
   const categoryOptions = Object.entries(CATEGORY_COLORS).map(([value, config]) => ({
     value,
-    label: config.label,
+    label: t(`trends-personas-registry:category.${value}`, { defaultValue: config.label }),
   }));
 
   const scopeOptions = Object.entries(SCOPE_LABELS).map(([value, label]) => ({
     value,
-    label,
+    label: t(`trends-personas-registry:scope.${value}`, { defaultValue: label }),
   }));
 
   const impactOptions = Object.entries(IMPACT_COLORS).map(([value, config]) => ({
     value,
-    label: config.label,
+    label: t(`trends-personas-registry:impact.${value}`, { defaultValue: config.label }),
   }));
 
   const timeframeOptions = Object.entries(TIMEFRAME_LABELS).map(([value, config]) => ({
     value,
-    label: config.label,
+    label: t(`trends-personas-registry:timeframe.${value}`, { defaultValue: config.label }),
   }));
 
   return (
     <Modal
       isOpen={isAddManualTrendModalOpen}
       onClose={handleClose}
-      title="Add Trend Manually"
+      title={t('form.addTitle')}
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4 py-2">
         <Input
-          label="Title"
+          label={t('form.title')}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. AI-powered personalization in retail"
+          placeholder={t('form.titlePlaceholder')}
         />
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.description')}</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe this trend and its relevance..."
+            placeholder={t('form.descriptionPlaceholder')}
             rows={3}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
           />
@@ -108,13 +110,13 @@ export function AddManualTrendModal() {
 
         <div className="grid grid-cols-2 gap-4">
           <Select
-            label="Category"
+            label={t('form.category')}
             value={category}
             onChange={(v) => { if (v) setCategory(v as InsightCategory); }}
             options={categoryOptions}
           />
           <Select
-            label="Impact Level"
+            label={t('form.impactLevel')}
             value={impactLevel}
             onChange={(v) => { if (v) setImpactLevel(v as ImpactLevel); }}
             options={impactOptions}
@@ -123,13 +125,13 @@ export function AddManualTrendModal() {
 
         <div className="grid grid-cols-2 gap-4">
           <Select
-            label="Scope"
+            label={t('form.scope')}
             value={scope}
             onChange={(v) => { if (v) setScope(v as InsightScope); }}
             options={scopeOptions}
           />
           <Select
-            label="Timeframe"
+            label={t('form.timeframe')}
             value={timeframe}
             onChange={(v) => { if (v) setTimeframe(v as InsightTimeframe); }}
             options={timeframeOptions}
@@ -138,7 +140,7 @@ export function AddManualTrendModal() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Relevance Score: {relevanceScore}
+            {t('form.relevanceScore', { score: relevanceScore })}
           </label>
           <input
             type="range"
@@ -155,7 +157,7 @@ export function AddManualTrendModal() {
         </div>
 
         <Input
-          label="Source URL (optional)"
+          label={t('form.sourceUrl')}
           value={sourceUrl}
           onChange={(e) => setSourceUrl(e.target.value)}
           placeholder="https://example.com/article"
@@ -163,7 +165,7 @@ export function AddManualTrendModal() {
 
         <div>
           <Input
-            label="Image URL (optional)"
+            label={t('form.imageUrl')}
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
             placeholder="https://example.com/image.jpg"
@@ -171,7 +173,7 @@ export function AddManualTrendModal() {
           {imageUrl.trim() && (
             <img
               src={imageUrl.trim()}
-              alt="Preview"
+              alt={t('form.imagePreviewAlt')}
               className="mt-2 w-full max-h-32 object-cover rounded-lg border border-gray-200"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               onLoad={(e) => { (e.target as HTMLImageElement).style.display = 'block'; }}
@@ -181,7 +183,7 @@ export function AddManualTrendModal() {
 
         <div className="flex items-center justify-end gap-2 pt-2">
           <Button variant="secondary" size="sm" onClick={handleClose} type="button">
-            Cancel
+            {t('actions.cancel')}
           </Button>
           <Button
             variant="primary"
@@ -189,7 +191,7 @@ export function AddManualTrendModal() {
             type="submit"
             isLoading={createMutation.isPending}
           >
-            Add Trend
+            {t('actions.addTrend')}
           </Button>
         </div>
       </form>
