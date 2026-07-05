@@ -37,6 +37,16 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 356. Meertaligheid Fase 1-3 — launch-ready afgerond (docs + status)
+
+Afronding van het meertaligheid-programma tot een **launch-ready** staat, zodat `vercel-deployment` niet langer op i18n wacht. Fase 1-3 (`i18n-ui-foundation` + `content-locale-foundation` + `content-locale-target-picker`) zijn alle **done + gemerged op `main`** (#65/#68/#70/#71/#73/#74): en↔nl is live door de hele app en de twee-selector-visie (Display-language per gebruiker + Content-/Output-language per workspace/generatie) is compleet. Volledige gate-suite groen op main (tsc 0 / lint 0 / separation 3/3 / content-locale-foundation-smoke 46/46 / target-picker-smoke 8/8 / build). Deze commit: `i18n-ui-foundation` → done, roadmap §🌍 + START_HERE bijgewerkt naar launch-ready, alle open items expliciet **post-launch** geparkeerd.
+
+**Post-launch (niet-blokkerend)**: `i18n-ai-translation-pipeline` (automatische AI-vertaal-engine voor onderhoud + de/es/fr — nu is en/nl geseed door de extractie-waves), de deferred Fase-3-follow-ups (F-VAL scoort nog tegen de workspace-default-pack i.p.v. de target-pack + de campagne-bulk-generatie-UI-picker), en Fase 4-5 (`multi-market-transcreation-enterprise`). Bewust Engels gelaten: puck-config (SSR-safe), canvas-previews, PDF-export, dode/demo-code.
+
+- Task: [tasks/i18n-ui-foundation.md](../tasks/i18n-ui-foundation.md) (+ content-locale-foundation/target-picker → done)
+- ADR: [adr/2026-06-28-multilingual-i18n-and-multi-market-content.md](adr/2026-06-28-multilingual-i18n-and-multi-market-content.md)
+- Commit: (deze docs-commit)
+
 ### 355. Content-locale Fase 2 — per-generatie target-locale picker (direct bruikbaar)
 
 Vervolg op #354: een operator kan nu **één deliverable in een gekozen taal laten genereren**. De Canvas-generatie-UI (Step1Context) heeft een **Output-language-picker** (default = workspace-standaard) die de geshipte talen biedt; kies je een taal zonder profiel → server-side **find-or-create** een niet-default `BrandLocaleProfile` (`resolveTargetProfile`, idempotent op `@@unique([workspaceId, locale])`). `targetLanguage` threadt door de bestaande pipeline (`orchestrate`/`bulk-generate` zod → `orchestrateContentGeneration` options → `assembleCanvasContext(…, localeProfileId)` → `getBrandContext(ws, profileId)`) en wordt gepersisteerd op `Deliverable.localeProfileId` (her-genereren behoudt de taal). **Default-pad ongewijzigd** (geen keuze → default-profiel-loos pad, byte-identiek). Daarnaast volgen de **4 analyze-routes** (products url/pdf, competitors url/refresh) nu de workspace-content-taal (`getContentOutputLanguage`) i.p.v. de browser-`Accept-Language` van de operator — **bewuste gedragswijziging** (UI-taal-lek gedicht). Client-safe `shipped-languages.ts` (geen prisma) als gedeelde talenlijst. Smoke `content-locale-target-picker.ts` 8/8. Gates per fase: tsc 0 / lint 0 / separation 3/3 / build.
