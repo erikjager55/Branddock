@@ -104,6 +104,8 @@ export interface OrchestrationOptions {
   seoInput?: import('./seo-pipeline.types').SeoInput;
   /** Client-side content type inputs (override DB values — user may not have saved yet) */
   contentTypeInputs?: Record<string, string | string[] | number | boolean>;
+  /** Content-locale Fase 2: expliciet gekozen target-BrandLocaleProfile (per-generatie taal). */
+  targetLocaleProfileId?: string;
 }
 
 interface TextComponentGroup {
@@ -200,7 +202,7 @@ export async function* orchestrateContentGeneration(
   const startTime = Date.now();
 
   // ── Step 1: Assemble context ──────────────────────────
-  const stack = await assembleCanvasContext(deliverableId, workspaceId);
+  const stack = await assembleCanvasContext(deliverableId, workspaceId, options?.targetLocaleProfileId);
 
   // Override DB contentTypeInputs with client-side values (user may not have saved yet)
   if (options?.contentTypeInputs && Object.keys(options.contentTypeInputs).length > 0) {

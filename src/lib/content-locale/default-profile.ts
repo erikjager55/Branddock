@@ -51,3 +51,46 @@ export async function syncDefaultLocaleProfile(workspaceId: string, locale: stri
     await prisma.brandLocaleProfile.update({ where: { id: existing.id }, data: { locale } });
   }
 }
+
+/** Geshipte content-taal-codes (ISO-639-1) — de per-generatie picker-opties. */
+export const SHIPPED_CONTENT_LANGUAGES = ['en', 'nl', 'de', 'fr', 'es', 'pt', 'it'] as const;
+export type ShippedContentLanguage = (typeof SHIPPED_CONTENT_LANGUAGES)[number];
+
+export function isShippedContentLanguage(v: string): v is ShippedContentLanguage {
+  return (SHIPPED_CONTENT_LANGUAGES as readonly string[]).includes(v);
+}
+
+/**
+ * Resolveert een gekozen target-taal (Fase 2 picker) naar een BrandLocaleProfile-id.
+ * FIND-OR-CREATE een niet-default profiel (locale via LANG_TO_LOCALE), zodat generatie
+ * direct locale-adresseerbaar is zonder de multi-markt-UI (Fase 4). Idempotent via
+ * @@unique([workspaceId, locale]); zet NOOIT een 2e isDefault. Weggelaten/ongeldige
+ * targetLanguage → het default-profiel (= het bestaande default-pad).
+ */
+export async function resolveTargetProfile(
+  workspaceId: string,
+  targetLanguage?: string,
+): Promise<{ id: string; locale: string } | null> {
+  if (!targetLanguage || !isShippedContentLanguage(targetLanguage)) {
+    return prisma.brandLocaleProfile.findFirst({
+      where: { workspaceId, isDefault: true },
+      select: { id: true, locale: true },
+    });
+  }
+  const locale = localeForLanguage(targetLanguage);
+  const existing = await prisma.brandLocaleProfile.findUnique({
+    where: { workspaceId_locale: { workspaceId, locale } },
+    select: { id: true, locale: true },
+  });
+  if (existing) return existing;
+  const brand = await prisma.brand.upsert({
+    where: { workspaceId },
+    create: { workspaceId },
+    update: {},
+    select: { id: true },
+  });
+  return prisma.brandLocaleProfile.create({
+    data: { brandId: brand.id, workspaceId, locale, isDefault: false },
+    select: { id: true, locale: true },
+  });
+}
