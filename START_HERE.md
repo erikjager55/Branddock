@@ -7,7 +7,7 @@
 
 ## Huidige fase
 
-**Pre-launch — peildatum 2026-06-25.** Alles draait localhost; Vercel + Stripe nog niet live. De hard launch-blocker is onverminderd `vercel-deployment` (Track C, nog niet gestart). In juni landden twee grote feature-clusters op `main`: de **web-page-builder (Puck) + GEO/SEO long-form** (Fase 1-3 + alle followups) en de **Knowledge Library / Deep Research** + knowledge-context-laag. De GEO/SEO-arc, de bijbehorende LP-render-bugfixes én het brandstyle-kalibratie-paneel zijn nu **volledig afgerond en gemerged**.
+**Pre-launch — peildatum 2026-07-05.** **De app draait nu LIVE op Vercel** (`branddock-7y9n.vercel.app` · Pro + Fluid Compute · fra1) — `vercel-deployment`, de hard launch-blocker, is **opgelost**: auth + Neon-DB (pgvector + HNSW) + AI + R2-uploads geverifieerd, en de serverless-hardening + i18n Fase 1-3 zijn geconsolideerd op `main` (PR #76, `5e642ded`). Resteren richting launch: custom domein (nu `.vercel.app`), Stripe billing, marketing-site, pilot-onboarding. In juni landden twee grote feature-clusters op `main`: de **web-page-builder (Puck) + GEO/SEO long-form** (Fase 1-3 + alle followups) en de **Knowledge Library / Deep Research** + knowledge-context-laag. De GEO/SEO-arc, de bijbehorende LP-render-bugfixes én het brandstyle-kalibratie-paneel zijn nu **volledig afgerond en gemerged**.
 
 ### Stand per 2026-06-30 (actueel)
 
@@ -62,7 +62,7 @@ Pilot-start projectie: **+9-11 weken** (content-test verbeterplan Optie B Full g
 
 > Kritieke pad voor pilot ligt bij Track C (vercel = hard launch-blocker, ontgrendelt zowel pilot-onboarding als Phase C Vercel Cron). **Stand 2026-06-25**: het juni-werk (web-page-builder + GEO/SEO Fase 1-3 + alle GEO-followups + `lp-*`-bugfixes + brandstyle-calibratie) is **afgerond en gemerged** — er is geen finalisatie-werk meer dat met Track C concurreert. Track C is nu de onbetwiste volgende stap.
 
-1. **Track C activeren — `vercel-deployment`** (3d) — worktree `branddock-launch` staat **current op main** (ge-synct 2026-06-26), dus direct startklaar. Hard launch-blocker. Ontgrendelt `pilot-onboarding-better-brands` (2d) én `Phase C Vercel Cron` van Track B.
+1. **✅ `vercel-deployment` — DONE + LIVE (2026-07-05).** App live op Vercel (Pro+Fluid, fra1); serverless-hardening (A2 uploads / A4 browser / A5 cache / A1 11-routes-op-queue / A3 SSE) + Neon (pool + HNSW) + R2 + CI/branch-protection, geconsolideerd met i18n op `main` (PR #76). **Ontgrendelt nu**: `pilot-onboarding-better-brands`, Track B Phase C Vercel Cron, `stripe-billing-live`. Niet-blokkerende follow-ups op main: A1 Tier 3 + A3-deel-2 (SEO-decompose) + custom domein/Stripe/marketing. → **Nieuwe kritieke stap: pilot-onboarding of stripe-billing-live.**
 
 2. **content-items-test-coverage — Ronde 1 COMPLEET** (2026-07-01; `in-progress` want Ronde 2 gated) — alle **24 zichtbare types** getest: **23 passed, 1 bug (ebook, apart verbeterplan)**, 0 nieuwe bugs. Representanten 4/8 passed + 4/8 hidden-skip (Email/Video/Sales/PR-categorieën **bewust** uit picker); varianten 16/16 passed (reachability vooraf hard-geverifieerd). 31/55 code-types zijn hidden. Enige rest = **Ronde 2 generator-eval, gated op asset-generator-integratie**. Kandidaat voor task-finalize (Ronde 2 deferred). Werk op worktree `branddock-content-ronde1`. → Effectief van het kritieke pad af; Track C/`vercel-deployment` blijft de hard blocker.
 

@@ -3,11 +3,11 @@ id: vercel-deployment
 title: Vercel deployment + Neon DB + custom domain + monitoring
 fase: pre-launch
 priority: now
-effort: 3 dagen
+effort: ~2 weken (serverless-hardening, niet 3 dagen)
 owner: claude-code
-status: open
+status: done
 created: 2026-05-07
-completed: -
+completed: 2026-07-05
 related-adr: -
 related-spec: -
 worktree: branddock-launch
