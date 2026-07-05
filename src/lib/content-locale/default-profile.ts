@@ -1,4 +1,7 @@
 import { prisma } from '@/lib/prisma';
+import { isShippedContentLanguage } from './shipped-languages';
+export { SHIPPED_CONTENT_LANGUAGES } from './shipped-languages';
+export type { ShippedContentLanguage } from './shipped-languages';
 
 /**
  * Content-locale foundation (ADR 2026-06-28) — helpers voor het default
@@ -50,14 +53,6 @@ export async function syncDefaultLocaleProfile(workspaceId: string, locale: stri
   if (existing.locale !== locale) {
     await prisma.brandLocaleProfile.update({ where: { id: existing.id }, data: { locale } });
   }
-}
-
-/** Geshipte content-taal-codes (ISO-639-1) — de per-generatie picker-opties. */
-export const SHIPPED_CONTENT_LANGUAGES = ['en', 'nl', 'de', 'fr', 'es', 'pt', 'it'] as const;
-export type ShippedContentLanguage = (typeof SHIPPED_CONTENT_LANGUAGES)[number];
-
-export function isShippedContentLanguage(v: string): v is ShippedContentLanguage {
-  return (SHIPPED_CONTENT_LANGUAGES as readonly string[]).includes(v);
 }
 
 /**

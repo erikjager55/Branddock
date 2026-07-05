@@ -52,6 +52,8 @@ const ns = {
       continueToVariants: 'Continue to Variants',
       regenerating: 'Regenerating...',
       regenerateFromScratch: 'Regenerate from scratch',
+      targetLanguageLabel: 'Output language',
+      targetLanguageDefault: 'Workspace default',
       fillRequiredFirst: 'Fill in required fields first',
     },
     summary: {

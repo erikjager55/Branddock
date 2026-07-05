@@ -57,7 +57,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
   const abortRef = useRef<AbortController | null>(null);
   const isGeneratingRef = useRef(false);
 
-  const generate = useCallback(async (options?: { instruction?: string }) => {
+  const generate = useCallback(async (options?: { instruction?: string; targetLanguage?: string }) => {
     if (!deliverableId || isGeneratingRef.current) return;
 
     const store = useCanvasStore.getState();
@@ -128,6 +128,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           instruction: options?.instruction,
+          targetLanguage: options?.targetLanguage,
           additionalContextItems: contextItems.length > 0 ? contextItems : undefined,
           mediumConfig: hasMediumConfig ? mediumConfigValues : undefined,
           seoInput,
