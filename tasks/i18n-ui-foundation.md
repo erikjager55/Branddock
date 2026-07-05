@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 2-3 weken (foundation ~1 wk + chrome-extractie + selector)
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-06-28
-completed: -
+completed: 2026-07-05
 related-adr: docs/adr/2026-06-28-multilingual-i18n-and-multi-market-content.md
 related-spec: -
 worktree: -
