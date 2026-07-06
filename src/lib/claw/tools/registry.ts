@@ -43,7 +43,7 @@ export function getToolsForClaude(): Array<{
  * Supports Zod v4 (_def.type) and v3 (_def.typeName) internals.
  * Handles: object, string, number, boolean, array, record, optional, nullable, enum.
  */
-function zodToJsonSchema(schema: unknown): Record<string, unknown> {
+export function zodToJsonSchema(schema: unknown): Record<string, unknown> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const s = schema as any;
   // Zod v4 uses _def.type, Zod v3 uses _def.typeName

@@ -26,6 +26,7 @@ import {
 } from "@/lib/ai/feature-models.server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { clearRunCollector } from "./run-collector";
 import { getAgentDefinition } from "./index";
 import type { AgentDefinition } from "./types";
 
@@ -186,11 +187,13 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
           runId,
           triggerType,
           triggerSource: userId,
+          userId,
         },
         model: resolved.model,
         timeoutMs:
           def.timeoutMs !== undefined ? Math.min(def.timeoutMs, MAX_RUN_TIMEOUT_MS) : undefined,
         maxToolCalls: def.maxToolCalls,
+        maxTokens: def.maxTokens,
       },
       def.outputContract,
     );
@@ -226,6 +229,9 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
     return response;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Agent run failed unexpectedly";
+    // Collector-entries van deze run opruimen (proposals/artefacten die de
+    // finalize nooit gedraind heeft) — voorkomt lekkende map-entries.
+    clearRunCollector(runId);
     // Wanneer de loop wél draaide maar parse/persist faalde, draagt
     // OutputContractError de outcome + kosten — die horen op de FAILED-rij
     // (cost-instrumentatie is dag-1-eis; persist-failures mogen geen

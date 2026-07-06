@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { deepSet } from '@/lib/utils/deep-set';
+import { dispatchJob } from '@/lib/agents/jobs/dispatch';
 import {
   collectEditableTextFields,
   readPath,
@@ -499,6 +500,18 @@ export const writeTools: ClawToolDefinition[] = [
           status: 'RUNNING',
         },
       });
+      // Zonder job-dispatch blijft de scan eeuwig RUNNING — spiegel van
+      // /api/alignment/scan (de engine zet zelf COMPLETED/FAILED).
+      await dispatchJob({
+        type: 'ALIGNMENT_SCAN',
+        payload: { scanId: scan.id, workspaceId: ctx.workspaceId },
+        workspaceId: ctx.workspaceId,
+        maxAttempts: 1,
+        idempotencyKey: `alignment-scan:${scan.id}`,
+        triggeredBy: 'user',
+      });
+      invalidateCache(cacheKeys.prefixes.alignment(ctx.workspaceId));
+      invalidateCache(cacheKeys.prefixes.dashboard(ctx.workspaceId));
       return { success: true, scanId: scan.id, message: 'Alignment scan started' };
     },
   },
@@ -522,7 +535,18 @@ export const writeTools: ClawToolDefinition[] = [
           workspaceId: ctx.workspaceId,
           status: 'PENDING',
           query: 'Claw-initiated trend scan',
+          useBrandContext: true,
         },
+      });
+      // Zonder job-dispatch blijft de research-job eeuwig PENDING — spiegel
+      // van /api/trend-radar/research (de engine zet COMPLETED/FAILED).
+      await dispatchJob({
+        type: 'TREND_RESEARCH',
+        payload: { jobId: job.id, workspaceId: ctx.workspaceId, query: job.query, useBrandContext: true },
+        workspaceId: ctx.workspaceId,
+        maxAttempts: 1,
+        idempotencyKey: `trend-research:${job.id}`,
+        triggeredBy: 'user',
       });
       return { success: true, jobId: job.id, message: 'Trend scan queued' };
     },
@@ -722,15 +746,17 @@ export const writeTools: ClawToolDefinition[] = [
     }),
     requiresConfirmation: true,
     category: 'write',
-    buildProposal: async (params) => {
+    buildProposal: async (params, ctx) => {
       const p = params as {
         campaignId: string;
         contentType: string;
         title?: string;
         brief?: Record<string, string | undefined>;
       };
-      const campaign = await prisma.campaign.findUnique({
-        where: { id: p.campaignId },
+      // Workspace-gescoped: buildProposal is via de agents-tool-bridge ook
+      // met model-gecontroleerde ids bereikbaar — geen cross-tenant titels.
+      const campaign = await prisma.campaign.findFirst({
+        where: { id: p.campaignId, workspaceId: ctx.workspaceId },
         select: { title: true },
       });
       const title = p.title ?? p.contentType;

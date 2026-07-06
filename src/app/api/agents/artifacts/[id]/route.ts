@@ -63,6 +63,16 @@ export async function PATCH(
     if (!artifact) {
       return NextResponse.json({ error: "Artifact not found" }, { status: 404 });
     }
+    if (artifact.type === "PROPOSAL") {
+      // Proposals hebben execute-semantiek: accept/dismiss loopt via de
+      // confirm-route (POST /api/agents/runs/[runId]/confirm), die de
+      // voorgestelde mutatie daadwerkelijk uitvoert of afwijst. Een kale
+      // PATCH-accept zou "goedgekeurd maar nooit uitgevoerd" opleveren.
+      return NextResponse.json(
+        { error: "Proposals are resolved via POST /api/agents/runs/[runId]/confirm" },
+        { status: 400 },
+      );
+    }
 
     let materialized: { knowledgeResourceId: string } | null = null;
     let knowledgeTouched = false;

@@ -35,11 +35,31 @@ export function resetAgentRegistryForTests(): void {
 }
 
 // ─── Bootstrap ───────────────────────────────────────────────
-// Curated agents registreren hier (agents-motor-wiring voegt de 6
-// productie-agents toe). De echo-test-agent is dev-only: hidden +
-// env-gated — nooit registreerbaar in productie zonder expliciete flag.
+// Curated agents + hun tool-sets registreren bij module-load (idempotent;
+// zelfde side-effect-conventie als de brandclaw-tools). De echo-test-agent
+// is dev-only: hidden + env-gated — nooit registreerbaar in productie
+// zonder expliciete flag.
 
 import { echoTestAgent } from "./agents/echo-test";
+import {
+  registerResearchAnalystTools,
+  researchAnalystAgent,
+} from "./definitions/research-analyst";
+import { brandGuardianAgent, registerBrandGuardianTools } from "./definitions/brand-guardian";
+import { registerStrategistTools, strategistAgent } from "./definitions/strategist";
+import { contentCreatorAgent, registerContentCreatorTools } from "./definitions/content-creator";
+import { marketAnalystAgent, registerMarketAnalystTools } from "./definitions/market-analyst";
+
+registerAgent(researchAnalystAgent);
+registerResearchAnalystTools();
+registerAgent(brandGuardianAgent);
+registerBrandGuardianTools();
+registerAgent(strategistAgent);
+registerStrategistTools();
+registerAgent(contentCreatorAgent);
+registerContentCreatorTools();
+registerAgent(marketAnalystAgent);
+registerMarketAnalystTools();
 
 if (process.env.NODE_ENV !== "production" || process.env.AGENTS_ENABLE_TEST_AGENT === "1") {
   registerAgent(echoTestAgent);
