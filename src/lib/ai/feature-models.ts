@@ -68,7 +68,13 @@ export type AiFeatureKey =
   | 'deep-research-synthesis'
   | 'product-analysis'
   | 'competitor-analysis'
-  | 'workshop-report';
+  | 'workshop-report'
+  | 'agent-research-analyst'
+  | 'agent-brand-guardian'
+  | 'agent-strategist'
+  | 'agent-content-creator'
+  | 'agent-market-analyst'
+  | 'agent-data-analyst';
 
 export type AiProvider = 'anthropic' | 'openai' | 'google';
 
@@ -76,7 +82,7 @@ export interface AiFeatureDefinition {
   key: AiFeatureKey;
   label: string;
   description: string;
-  category: 'chat-analysis' | 'campaign-content' | 'research-monitoring';
+  category: 'chat-analysis' | 'campaign-content' | 'research-monitoring' | 'agents';
   defaultProvider: AiProvider;
   defaultModel: string;
   supportedProviders: AiProvider[];
@@ -295,6 +301,64 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     defaultModel: 'gpt-4o',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
+
+  // Agents — persona-agents on the shared agent-loop (ADR 2026-07-05).
+  // Anthropic-only: the loop is built on the Anthropic tool-use API;
+  // assertProvider('anthropic') guards this at run time.
+  {
+    key: 'agent-research-analyst',
+    label: 'Agent — Research Analyst',
+    description: 'Deep research agent producing cited reports',
+    category: 'agents',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
+    supportedProviders: ['anthropic'],
+  },
+  {
+    key: 'agent-brand-guardian',
+    label: 'Agent — Brand Guardian',
+    description: 'Brand fidelity review agent (F-VAL scoring + findings)',
+    category: 'agents',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
+    supportedProviders: ['anthropic'],
+  },
+  {
+    key: 'agent-strategist',
+    label: 'Agent — Strategist',
+    description: 'Campaign strategy agent building blueprints',
+    category: 'agents',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
+    supportedProviders: ['anthropic'],
+  },
+  {
+    key: 'agent-content-creator',
+    label: 'Agent — Content Creator',
+    description: 'Content creation agent driving the canvas pipeline',
+    category: 'agents',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
+    supportedProviders: ['anthropic'],
+  },
+  {
+    key: 'agent-market-analyst',
+    label: 'Agent — Market Analyst',
+    description: 'Competitor and trend analysis agent',
+    category: 'agents',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
+    supportedProviders: ['anthropic'],
+  },
+  {
+    key: 'agent-data-analyst',
+    label: 'Agent — Data Analyst',
+    description: 'Workspace data analysis agent producing tables',
+    category: 'agents',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
+    supportedProviders: ['anthropic'],
+  },
 ];
 
 // Lookup map for O(1) access
@@ -306,6 +370,7 @@ export const FEATURE_CATEGORIES: Record<AiFeatureDefinition['category'], string>
   'chat-analysis': 'Chat & Analysis',
   'campaign-content': 'Campaign & Content',
   'research-monitoring': 'Research & Monitoring',
+  agents: 'Agents',
 };
 
 // ─── Resolver types ──────────────────────────────────────────

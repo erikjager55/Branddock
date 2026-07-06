@@ -5,10 +5,10 @@ fase: pre-launch
 priority: now
 effort: 15-20 dagen
 owner: claude-code
-status: in-progress
-phase-status: Phase A+B gemerged (#260-262); Phase C open (Vercel Cron + concurrency-cap + cost-budget alerts + BB pilot smoke) — sequential dep op vercel-deployment
+status: done
+phase-status: Phase A+B gemerged (#260-262) ✅; Phase C HERBESTEMD 2026-07-06 naar het Agents-initiatief (zie reconciliatie-blok onderaan) — niet meer als losse fase bouwen
 created: 2026-05-08
-completed: -
+completed: 2026-07-06 (A+B geleverd; C herbestemd — geen restwerk in deze taak)
 related-adr: 2026-05-08-brandclaw-agent-architectuur, 2026-05-08-fval-output-schema-bevindingen, 2026-05-08-locale-routing-brand-voice
 related-spec: tasks/_drafts/idea-brand-control-program.md
 worktree: branddock-brandclaw
@@ -23,7 +23,7 @@ Originele taak 20-27d. Sub-gefaseerd 2026-05-12 in 3 commit-bare chunks. Track B
 |---|---|---|---|
 | **A — Foundation** ✅ | Node skeleton + system-prompt scaffold + 1 dimension (voice_drift) + manual trigger via UI Tab 5 + observations CRUD-actions | 5-7d | **DONE** 2026-05-17/18. Commits `b25a3763` (Phase A backend) + `8f09d2e3` (Phase A UI vervolg) |
 | **B — Dimensions + Persistence** ✅ | 4 extra dimensions (fidelity_decline / review_pattern / alignment_gap / publish_quality_trend) + agentVersion bump 0.2.0 + UI sort/group toggle | 7-10d | **DONE** 2026-05-17/18. Commit `58094f8e` (+ hotfix `d488298c` voor Anthropic model-ID). Real-API smoke 17/17 pass tegen Demo workspace |
-| **C — Cron + Polish** | Vercel Cron weekly trigger + per-workspace concurrency-cap + cost-budget alerts + monitoring + BB pilot smoke met productie-data | 5-7d | **OPEN** — start volgende sessie op clean `main` (Phase A + B gemerged via `a0e59a5b` 2026-05-18) |
+| **C — Cron + Polish** | Vercel Cron weekly trigger + per-workspace concurrency-cap + cost-budget alerts + monitoring + BB pilot smoke met productie-data | 5-7d | **HERBESTEMD 2026-07-06** → Agents-initiatief (zie reconciliatie-blok onderaan; niet meer bouwen als losse fase) |
 
 **Volgorde-discipline**: elke phase een eigen branch op `branddock-brandclaw` worktree (`track/brandclaw-phase-a` etc.), gemerged naar `track/brandclaw` na review-loop clean. Na alle 3 fases klaar: PR `track/brandclaw` → `main`.
 
@@ -204,3 +204,19 @@ Foundation voor:
 - Campaign Builder (maand 5-6) — consumeert Analyst observations als one of input-bronnen
 - Measurement-node (maand 7-9) — observations + correlation-data → leerlooп
 - Optimization (maand 10-12) — autonomy-gate met owner-approval; Optimization weet welke observations al "Acted" zijn
+
+---
+
+# Reconciliatie 2026-07-06 — Phase C herbestemd naar het Agents-initiatief
+
+> **User-directive 2026-07-06** (sessie agents-foundation, plan `parsed-foraging-balloon`): open Brandclaw-werk integreren in het Agents-initiatief (ADR `2026-07-05-agents-architectuur`). Een bespoke weekly Vercel Cron voor één node zou direct legacy zijn zodra de generieke agent-scheduling (Fase 2) er is. Phase C wordt daarom NIET meer als losse fase gebouwd; deze taak is afgesloten op Phase A+B.
+
+| Phase-C-item | Nieuwe plek | Rationale |
+|---|---|---|
+| Vercel Cron weekly `0 9 * * 1` Analyst-runs | Ná Fase-3-item-1 (Strategy Analyst → catalogus, [`agents-brandclaw-convergentie`](agents-brandclaw-convergentie.md)): dan is het een gewone `AgentSchedule`-rij via de [`agents-scheduling`](agents-scheduling.md)-infra | Geen bespoke cron bouwen die meteen legacy is; weekly runs zijn pas waardevol mét pilot-productie-data |
+| Per-workspace concurrency-cap (1 run/ws) | [`agents-scheduling`](agents-scheduling.md) — generiek in de job-runner voor álle scheduled agent-runs | Cap hoort bij de scheduling-laag, niet bij één node |
+| Cost-budget alerts >$10/ws/maand → PostHog | [`agents-brandclaw-convergentie`](agents-brandclaw-convergentie.md) item 4 | Al ADR-belegd als Fase 3; cost-instrumentatie per agent-run loopt sinds foundation-dag-1 |
+| BB pilot smoke met 30+d productie-data | Gekoppeld aan [`pilot-onboarding-better-brands`](pilot-onboarding-better-brands.md) + eerste scheduled runs | Vereist pilot live |
+| UI-smoke Tab 5 + unit-test-overweging | Meenemen bij convergentie-item 1 (Strategy Analyst → catalogus) | Klein restje, geen eigen werkstroom |
+
+**Context**: de motor van deze node (`runAgentLoop`) is per 2026-07-06 gegeneraliseerd met een pluggable output-contract (`agents-foundation`, A1-spike) — de Strategy Analyst draait regressievrij op het observations-adapter-pad (baseline `7cb56c12` vs post-refactor `0e94e26d`, beide 17/17). De worktree `branddock-brandclaw` heeft geen openstaand werk meer en kan opgeruimd worden.

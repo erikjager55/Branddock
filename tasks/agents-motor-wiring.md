@@ -85,3 +85,19 @@ Bouw één dunne **Claw→orchestrator tool-bridge** (`clawToolToAgentTool`): ma
 - **Phase -1 gates**: Simplicity — 0 nieuwe directories (alles onder bestaand `src/lib/agents/registry/` uit foundation); 5 agents zijn config-files, geen frameworks. Anti-Abstraction — de tool-bridge is een mapping-functie, geen tweede registry (de Claw-registry blijft source of truth voor tool-implementaties); propose-only is de dunste confirm-integratie (geen loop-state-serialisatie/resume — bewust verworpen als overkill). Integration-First — bridge-interface en confirm-route-contract eerst, agent-definities pinnen erop.
 - Dependencies: **`agents-foundation` moet done zijn** (output-contract, `AgentRun`/`AgentArtifact`, registry-skelet, run-API). Kan parallel aan `agents-ui-inbox` zolang beide de foundation-contracten niet wijzigen; file-ownership is disjunct.
 - Lite-fallback (idea-doc): bij tijdsdruk eerst Research Analyst + Brand Guardian + Strategist opleveren; Content Creator + Market Analyst kunnen een dag later — de registry maakt dat een kwestie van registreren.
+
+## Integratie-matrix (user-directive 2026-07-06 — leidend voor de agent-definities)
+
+> **Principe: domain-first write-through.** Agents draaien de bestáánde motoren/endpoints; resultaten landen in de bestáánde domein-modellen en zijn daarmee automatisch zichtbaar in de bestaande module-UI's. De agent-inbox toont referenties (`LINK`-artefacten), geen kopieën. REPORT/TABLE zonder domein-thuis materialiseren bij accept naar de Knowledge Library (helper `materializeArtifactOnAccept` — al gebouwd in foundation, incl. `ResourceSource.AGENT`). Volledige module-inventaris: sessie 2026-07-06 (plan `parsed-foraging-balloon`).
+
+| Agent | Neemt proces over (bestaande route/motor) | Resultaat zichtbaar in |
+|---|---|---|
+| Research Analyst | `runDeepResearch` (`src/lib/knowledge-research/orchestrator.ts` — nu alleen via Knowledge Library-ingang; persisteert zelf niets server-side!) | REPORT-artefact → accept → Knowledge Library (`KnowledgeResource`, source `AGENT`) |
+| Brand Guardian | `runFidelityForExternalContent` + `alignment/scan` + `alignment/audit` (nu 3 losse tabs) | Brand Alignment-tabs — de motoren persisteren zelf (`ContentReviewLog`/`BrandReviewFinding`/`AlignmentScan`); FINDINGS-artefact + LINK |
+| Strategist | `campaigns/wizard/strategy/*`-stappen (9 routes, hoge navigatie-drempel) + `createDeliverablesFromBlueprint` | Campaigns-module (`Campaign`/`CampaignStrategy`) + Canvas-deliverables (confirm-gated); LINK-artefact |
+| Content Creator | `create_deliverable` (Claw-tool, PROPOSAL/confirm) + `orchestrateContentGeneration` als pipeline-as-tool (nu 4-5 kliks diep via studio) | Content Library/Canvas (`Deliverable`) — normale content-overzichten; LINK-artefact + F-VAL-score |
+| Market Analyst | `competitors/[id]/refresh` (sync), trend-radar-triggers, Strategy-Analyst-dimensies | Competitor-timeline (`CompetitorSnapshot`/`Activity`), Trend Radar (`DetectedTrend`), Brand Alignment Tab 5 (`StrategyObservation`); REPORT → accept → Knowledge Library |
+
+- **Job-based analyzers** (brandstyle/brandvoice/products-analyze — job+polling): patroon "agent start job → LINK-artefact naar module-status" is Fase 2 (`agents-scheduling`), niet hier.
+- **Coördinatie-note canvas**: `content-test-auto-iterate-6B`-rest, `content-flow-improvements-7a`, `content-test-regression-7B` en `lp-feature-image-diversity` (in-progress) raken de canvas-orchestrator/pipeline. De pipeline-as-tool-wrapper van de Content Creator wrapt `orchestrateContentGeneration` — bij start file-ownership afstemmen; de wrapper mag de orchestrator-signatuur niet wijzigen.
+- **Contract-eis confirm-route (review-finding 2026-07-06)**: de run-detail-route cachet terminale statussen incl. `AWAITING_CONFIRMATION`; de confirm-afhandeling die een run naar COMPLETED transitioneert MOET `invalidateCache(cacheKeys.prefixes.agents(workspaceId))` aanroepen, anders plakt de oude status tot DETAIL-TTL.

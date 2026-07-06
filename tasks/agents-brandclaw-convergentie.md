@@ -72,3 +72,11 @@ Per sub-task bij afsplitsing. Epic-niveau minimum: na item 1 draait de bestaande
 - Patroon: `multi-market-transcreation-enterprise` (epic, `blocked`, splitst per sub-item na go/no-go).
 - Dependencies: `agents-foundation` + `agents-motor-wiring` + `agents-ui-inbox` done; `agents-scheduling` done (autonomie-trap 2 moet bewezen draaien vóór trap 3); pilot-metrics + kosten-data beschikbaar; ADR-herziening no-autonomy (deel van 2026-05-08) voor item 3.
 - ADR-verwachting: items 2 en 3 vereisen elk een nieuwe ADR (motor-nieuwbouw resp. autonomie-model); item 1 kan binnen de bestaande agents-architectuur-ADR mits de observations-migratie-keuze daar als aanvulling wordt genoteerd.
+
+## Reconciliatie 2026-07-06 — Phase C-items + LATER-roadmap hier belegd
+
+> User-directive 2026-07-06. Volledige mapping: `tasks/done/strategy-analyst-stub.md` (reconciliatie-blok).
+
+- **Item 1 (Strategy Analyst → catalogus) erft uit Phase C**: de weekly-schedule (`AgentSchedule`-rij i.p.v. bespoke cron), de UI-smoke van Brand Alignment Tab 5, en de unit-test-overweging voor de dimension-fragmenten.
+- **Item 4 (cost-budget-bewaking) erft de Phase-C-spec**: >$10/workspace/maand → PostHog-alert; consumeert de per-run cost-instrumentatie die sinds `agents-foundation` (2026-07-06) live is (`AgentRun.totalCostUsd` + `agent_run_completed`-events).
+- **LATER-roadmap-tabel "Brandclaw transformatie (Optie B)"** (`brandclaw-campaign-builder`/`-measurement-eval`/`-optimization`, maand 5-12 post-launch) is volledig door dit epic geabsorbeerd (sub-items 2-3 + autonomie-schuif); supersede-note staat in roadmap §LATER.

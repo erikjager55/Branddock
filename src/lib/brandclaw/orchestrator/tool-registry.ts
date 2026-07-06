@@ -11,18 +11,18 @@
 // tools/index.ts` — patroon gelijk aan data-source registry.
 // =============================================================
 
-import type { BrandclawTool, NodeType } from "./types";
+import type { BrandclawTool, ToolNamespace } from "./types";
 
 class ToolRegistryImpl {
   /** node-type → tool-name → BrandclawTool. */
-  private byNode = new Map<NodeType, Map<string, BrandclawTool>>();
+  private byNode = new Map<ToolNamespace, Map<string, BrandclawTool>>();
 
   /**
    * Register een tool voor een specifieke node-type. Tool-name moet uniek
    * binnen het node-type — overschrijft stille bij dubbele registratie
    * (laatste wint, voor test-mocking patronen).
    */
-  register(nodeType: NodeType, tool: BrandclawTool): void {
+  register(nodeType: ToolNamespace, tool: BrandclawTool): void {
     let nodeMap = this.byNode.get(nodeType);
     if (!nodeMap) {
       nodeMap = new Map();
@@ -36,7 +36,7 @@ class ToolRegistryImpl {
    * tools geregistreerd heeft — agent-loop respecteert dit (geen tool-
    * use, alleen text-response).
    */
-  getToolsForNode(nodeType: NodeType): BrandclawTool[] {
+  getToolsForNode(nodeType: ToolNamespace): BrandclawTool[] {
     const nodeMap = this.byNode.get(nodeType);
     if (!nodeMap) return [];
     return Array.from(nodeMap.values());
@@ -46,12 +46,12 @@ class ToolRegistryImpl {
    * Lookup een specifieke tool. Returns undefined wanneer niet gevonden;
    * agent-loop catched dit naar isError-result message.
    */
-  getTool(nodeType: NodeType, toolName: string): BrandclawTool | undefined {
+  getTool(nodeType: ToolNamespace, toolName: string): BrandclawTool | undefined {
     return this.byNode.get(nodeType)?.get(toolName);
   }
 
   /** Lijst geregistreerde tool-names per node — diagnostics. */
-  listToolNames(nodeType: NodeType): string[] {
+  listToolNames(nodeType: ToolNamespace): string[] {
     const nodeMap = this.byNode.get(nodeType);
     return nodeMap ? Array.from(nodeMap.keys()) : [];
   }

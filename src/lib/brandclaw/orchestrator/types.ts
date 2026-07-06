@@ -14,6 +14,7 @@
 // =============================================================
 
 import type Anthropic from "@anthropic-ai/sdk";
+import type { CostBreakdown } from "./cost-calculator";
 
 /** Brandclaw-node identifiers. Per-process namespace voor tool-registratie. */
 export type NodeType =
@@ -21,6 +22,20 @@ export type NodeType =
   | "campaign_builder"
   | "measurement_eval"
   | "optimization";
+
+/**
+ * Tool-namespace voor user-facing agents (ADR 2026-07-05 D1/D4). Template-
+ * literal type zodat de orchestrator géén import op `src/lib/agents` nodig
+ * heeft (dependency-richting: agents → orchestrator, nooit andersom).
+ * Conventie: `agent:${AgentId}`, bv. "agent:research-analyst".
+ */
+export type AgentToolNamespace = `agent:${string}`;
+
+/**
+ * Registry-namespace: Brandclaw-nodes én agent-namespaces delen dezelfde
+ * tool-registry met per-namespace isolatie.
+ */
+export type ToolNamespace = NodeType | AgentToolNamespace;
 
 /** Trigger-context per run — bepaalt persistence-metadata + cost-attribution. */
 export type TriggerType = "manual" | "scheduled" | "event_driven";
@@ -33,8 +48,8 @@ export type TriggerType = "manual" | "scheduled" | "event_driven";
 export interface BrandclawRunContext {
   /** Workspace-scope — verplicht voor ALLE tool-execute calls (cross-workspace queries zijn nooit toegestaan). */
   workspaceId: string;
-  /** Welke node deze run uitvoert — bepaalt tool-set en persistence-target. */
-  nodeType: NodeType;
+  /** Welke node/agent-namespace deze run uitvoert — bepaalt tool-set en persistence-target. */
+  nodeType: ToolNamespace;
   /** Semver van node-implementatie (e.g. 'strategy-analyst@0.1.0'). Drift-detection signaal. */
   agentVersion: string;
   /** Hash of versie-tag van system-prompt. A/B-testing handvat. */
@@ -103,7 +118,7 @@ export interface BrandclawTool {
 export interface AgentLoopResult {
   runId: string;
   workspaceId: string;
-  nodeType: NodeType;
+  nodeType: ToolNamespace;
   agentVersion: string;
   promptVersion: string;
 
@@ -160,3 +175,79 @@ export interface ObservationDraft {
 
 /** Anthropic SDK client-instance — singleton in de orchestrator (geen re-init per loop). */
 export type AnthropicClient = InstanceType<typeof Anthropic>;
+
+// =============================================================
+// Output-contract types (ADR 2026-07-05-agents-architectuur, D2).
+//
+// De multi-turn loop is generiek; wat er met de final-message gebeurt
+// (parsen + persisteren) is per afnemer verschillend. Een output-
+// contract koppelt parser + persistence-adapter aan een run. Het
+// bestaande observations-pad is de eerste adapter (observations-
+// adapter.ts); user-facing agents leveren een artifact-contract
+// (src/lib/agents/registry/). De orchestrator kent géén van beide
+// persistence-targets — hij roept alleen het contract aan.
+// =============================================================
+
+/** Raw outcome van de multi-turn loop, vóór parsing/persistence. */
+export interface LoopOutcome {
+  finalMessage: string | null;
+  toolCallTrace: ToolCallTraceEntry[];
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  toolCallCount: number;
+  truncated: boolean;
+  latencyMs: number;
+  /**
+   * Laatste Anthropic stop_reason ("end_turn" | "max_tokens" | "tool_use" |
+   * null bij API-error vóór eerste response). Contracts gebruiken dit om
+   * afgekapte output ("max_tokens") te onderscheiden van een parse-miss.
+   */
+  lastStopReason: string | null;
+  /**
+   * Waaróm de loop vroegtijdig stopte (null = normale end_turn). Contracts
+   * gebruiken dit voor een eerlijke user-facing error: een API-outage is
+   * geen "guard-truncatie".
+   */
+  abortReason: LoopAbortReason | null;
+}
+
+/** Reden van vroegtijdige loop-afbraak. */
+export type LoopAbortReason = "timeout" | "max_tool_calls" | "api_error";
+
+/** Context die aan een contract-persist wordt meegegeven. */
+export interface OutputContractContext {
+  ctx: BrandclawRunContext;
+  outcome: LoopOutcome;
+  cost: CostBreakdown;
+  model: string;
+}
+
+/**
+ * Per-run output-contract: parser + persistence-adapter.
+ * `parse` mag throwen (run wordt dan FAILED door de caller); `persist`
+ * MOET atomair zijn (run-row-update + output-inserts in één transactie).
+ */
+export interface AgentOutputContract<TParsed, TPersisted> {
+  /** Stabiel id voor logging/tracing, bv. "observations@1", "agent-artifacts@1". */
+  id: string;
+  parse(finalMessage: string | null, outcome: LoopOutcome): TParsed;
+  persist(parsed: TParsed, context: OutputContractContext): Promise<TPersisted>;
+}
+
+/** Resultaat van een contract-run — de niet-observations-broer van AgentLoopResult. */
+export interface ContractRunResult<TParsed, TPersisted> {
+  runId: string;
+  workspaceId: string;
+  parsed: TParsed;
+  persisted: TPersisted;
+  finalMessage: string | null;
+  toolCallTrace: ToolCallTraceEntry[];
+  toolCallCount: number;
+  latencyMs: number;
+  totalCostUsd: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  truncated: boolean;
+  /** Volledige cost-breakdown (model + fallback-flag) voor telemetry-consumers. */
+  costBreakdown: CostBreakdown;
+}

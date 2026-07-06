@@ -103,7 +103,7 @@ export async function persistRun(result: AgentLoopResult, cost: CostBreakdown): 
  * echte data zit al immutable in DataSnapshot rows die de tools
  * materializen.
  */
-function serializeToolCallTrace(
+export function serializeToolCallTrace(
   trace: ToolCallTraceEntry[],
 ): Prisma.InputJsonValue {
   const MAX_OUTPUT_BYTES = 4096;

@@ -100,6 +100,10 @@ export const cacheKeys = {
     list: (deliverableId: string) => `content-versions:${deliverableId}:list`,
     detail: (deliverableId: string, versionId: string) => `content-versions:${deliverableId}:detail:${versionId}`,
   },
+  agents: {
+    runs: (wsId: string) => `agents:${wsId}:runs`,
+    runDetail: (wsId: string, runId: string) => `agents:${wsId}:run:${runId}`,
+  },
 
   // Invalidation prefixes
   prefixes: {
@@ -121,6 +125,7 @@ export const cacheKeys = {
     contentVersions: (deliverableId: string) => `content-versions:${deliverableId}`,
     adAccounts: (wsId: string) => `ad-accounts:${wsId}`,
     adCampaigns: (wsId: string) => `ad-campaigns:${wsId}`,
+    agents: (wsId: string) => `agents:${wsId}`,
     allDashboards: 'dashboard:',
     allStatic: 'static:',
   },

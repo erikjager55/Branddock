@@ -37,6 +37,17 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 359. Agents foundation — pluggable output-contract + AgentRun/AgentArtifact + registry + run-API
+
+Eerste bouwtaak van het 🤖 Agents-initiatief (ADR `2026-07-05-agents-architectuur`). De Brandclaw agent-loop (`runAgentLoop`) is gegeneraliseerd naar een **pluggable output-contract**: de turn-loop is verbatim geëxtraheerd naar `runLoopCore`, het bestaande observations-pad werd de eerste adapter (`observations-adapter.ts`) en nieuwe agents draaien via `runAgentWithContract` — **aanname A1 bewezen zonder Strategy-Analyst-regressie** (baseline `7cb56c12` vs post-refactor `0e94e26d`, beide 17/17, structureel identieke DB-rijen). Nieuw: `AgentRun`/`AgentArtifact`-schema (additief, incl. `ResourceSource.AGENT`), code-based agent-registry (`src/lib/agents/registry/` — `AgentDefinition`, artifact-contract met atomaire finalize, run-entry met `resolveFeatureModel` + `assertProvider`), 6 `AiFeatureKey`s + Settings-categorie "Agents", 4 API-routes (`POST /api/agents/run` met Zod + 32KB-byte-cap + maxDuration 800, runs-list/-detail met caching, artifact accept/dismiss) en **accept-materialisatie naar de Knowledge Library** (domain-first write-through: first-accept-gated, advisory-locked tegen races, dead-id-zelfherstel, dismiss archiveert / re-accept de-archiveert). Cost-instrumentatie + PostHog-events (`agent_run_started/completed`, `agent_output_accepted`) vanaf dag 1 — ook op FAILED-runs via `OutputContractError`. Tevens **Brandclaw-reconciliatie**: `strategy-analyst-stub` → done (Phase C herbestemd met mapping-tabel), LATER-Brandclaw-tabel geabsorbeerd door het Fase-3-epic.
+
+Review-loop: 5 rondes / 10 reviewers, 0 CRITICAL, 22 WARNINGs alle gefixt + geverifieerd (details in task-Notes). ⚠️ Rollout: handmatige Neon `prisma db push` vóór deploy-verkeer.
+
+- Task: [tasks/done/agents-foundation.md](../tasks/done/agents-foundation.md)
+- ADR: [adr/2026-07-05-agents-architectuur.md](adr/2026-07-05-agents-architectuur.md) (+ aanvullingen 2026-07-06)
+- Spec: [reports/agents-diepte-analyse-en-plan-2026-07-05.md](reports/agents-diepte-analyse-en-plan-2026-07-05.md)
+- Commit: (deze commit — branch `feat/agents-foundation`)
+
 ### 358. Stripe billing — live-correctness hardening
 
 Een audit toonde dat de Stripe-subscription-lifecycle al code-compleet + gewired was (checkout → webhook met HMAC + idempotency → DB-sync → `planTier` → enforcement, customer-portal, invoice-sync, live `BillingTab`) — de stale task-file (2026-05-07) beschreef een from-scratch-bouw die er niet meer was. Deze werkstroom dichtte de resterende **code-bugs + revenue-gaten** zodat de bestaande billing live-correct is:

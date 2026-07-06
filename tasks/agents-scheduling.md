@@ -77,3 +77,11 @@ Vier slices, in volgorde: (1) **AGENT_TASK-brug** — handler-payload `{agentId,
 - **Phase -1 gates**: Simplicity — geen nieuwe queue, geen nieuwe cron-infra: alles op `src/lib/agents/jobs/` + bestaande Vercel Cron (ADR 2026-05-12); 1 nieuw model. Anti-Abstraction — geen generiek "workflow-systeem": schedule = rij die een job enqueue't. Integration-First — de `AGENT_TASK`-payload-shape is het contract tussen schedule, queue en registry; eerst vastleggen, dan UI.
 - Dependencies: Fase 1 done (zie gate). Herbevestig vóór start dat het autonomie-niveau (scheduled = trap 2) nog past bij de pilot-observaties uit Fase 1 (aanname A6/A7-data).
 - Eigen discovery-check (idea-doc): Fase 2 kreeg technical planning maar het idea-doc reserveerde een eigen go-moment — bij start eerst 30 min toetsen of pilot-gebruik scheduling überhaupt vraagt, anders eerst notificaties-only shippen.
+
+## Reconciliatie 2026-07-06 — strategy-analyst-stub Phase C geabsorbeerd
+
+> User-directive 2026-07-06: open Brandclaw-werk integreren i.p.v. dubbel bouwen. Volledige mapping: `tasks/done/strategy-analyst-stub.md` (reconciliatie-blok).
+
+- **Scope-toevoeging: per-workspace concurrency-cap** (uit Phase C, was daar cap=1 voor alleen de Analyst): de job-runner handhaaft een cap van 1 gelijktijdige agent-run per workspace voor ALLE scheduled runs — generiek in de `AGENT_TASK`-brug, niet per agent.
+- **Weekly Analyst-runs** (Phase C's Vercel Cron `0 9 * * 1`) worden hier NIET gebouwd: zodra Fase-3-item-1 de Strategy Analyst naar de catalogus verhuist, is dat een gewone `AgentSchedule`-rij op deze infra. Geen bespoke cron-route toevoegen.
+- **BB pilot smoke met productie-data** (uit Phase C): koppelen aan `pilot-onboarding-better-brands` + de eerste echte scheduled run op de live-omgeving (bestaat al als smoke-stap 6 in deze taak — die run vervult meteen de Phase-C-smoke).

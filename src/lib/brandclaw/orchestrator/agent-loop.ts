@@ -1,13 +1,23 @@
 // =============================================================
-// Brandclaw orchestrator — Anthropic tool-use agent-loop (ADR 2026-05-08).
+// Brandclaw orchestrator — Anthropic tool-use agent-loop (ADR 2026-05-08;
+// output-contract-generalisatie: ADR 2026-07-05-agents-architectuur D2).
 //
-// Multi-turn loop:
-//   1. Send system + user-prompt naar Anthropic met node-specific tools
+// Multi-turn loop (runLoopCore — verbatim de oorspronkelijke mechaniek):
+//   1. Send system + user-prompt naar Anthropic met namespace-specific tools
 //   2. Wanneer response.stop_reason === 'tool_use': execute alle tool_use
 //      blocks via registry, build user-message met tool_result blocks
 //      voor de volgende turn, loop
-//   3. Wanneer response.stop_reason === 'end_turn': finalize → parse
-//      observations uit final-message + persist
+//   3. Wanneer response.stop_reason === 'end_turn': finalize → parse +
+//      persist via het output-contract
+//
+// Output-lagen:
+//   - runAgentLoop(input)            → observations-pad (Brandclaw-nodes),
+//     gedrag byte-identiek aan pre-refactor: createRunRow → loop →
+//     persistRun (via observations-adapter) → PostHog-emit.
+//   - runAgentLoop(input, contract)  → gelijk aan runAgentWithContract.
+//   - runAgentWithContract(input, c) → generieke motor voor user-facing
+//     agents: GEEN placeholder-write (de caller bezit de run-row-
+//     lifecycle, bv. AgentRun in src/lib/agents/registry/run-agent.ts).
 //
 // Guards:
 //   - Hard-timeout: 5 minuten (default, configurable). Wallclock-cap,
@@ -28,14 +38,43 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getToolRegistry } from "./tool-registry";
 import { computeRunCost } from "./cost-calculator";
-import { createRunRow, persistRun } from "./persistence";
+import type { CostBreakdown } from "./cost-calculator";
+import { createRunRow } from "./persistence";
+import { observationsOutputContract } from "./observations-adapter";
 import type {
   AgentLoopResult,
+  AgentOutputContract,
   AnthropicClient,
   BrandclawRunContext,
-  ObservationDraft,
+  ContractRunResult,
+  LoopAbortReason,
+  LoopOutcome,
   ToolCallTraceEntry,
 } from "./types";
+
+/**
+ * Thrown wanneer contract.parse of contract.persist faalt NÁ een voltooide
+ * loop. Draagt de LoopOutcome + kosten zodat de caller de werkelijk gemaakte
+ * Anthropic-kosten en trace alsnog op de FAILED-run kan persisteren
+ * (cost-instrumentatie is een dag-1-eis; juist persist-failures mogen geen
+ * kosten-gat slaan).
+ */
+export class OutputContractError extends Error {
+  readonly outcome: LoopOutcome;
+  readonly costBreakdown: CostBreakdown;
+  readonly model: string;
+
+  constructor(
+    message: string,
+    args: { outcome: LoopOutcome; costBreakdown: CostBreakdown; model: string; cause?: unknown },
+  ) {
+    super(message, { cause: args.cause });
+    this.name = "OutputContractError";
+    this.outcome = args.outcome;
+    this.costBreakdown = args.costBreakdown;
+    this.model = args.model;
+  }
+}
 
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 const DEFAULT_MAX_TOKENS = 4096;
@@ -65,12 +104,85 @@ export interface RunAgentLoopInput {
   maxToolCalls?: number;
 }
 
+/** Volledig geresolvde loop-input — alle defaults toegepast. */
+interface LoopCoreInput {
+  systemPrompt: string;
+  userMessage: string;
+  ctx: BrandclawRunContext;
+  model: string;
+  maxTokens: number;
+  timeoutMs: number;
+  maxToolCalls: number;
+}
+
 /**
- * Hoofd-entry. Run de agent-loop, persist run + observations, return result.
+ * Observations-entry (Brandclaw-nodes). Zonder contract: persist run +
+ * observations via het oorspronkelijke pad en return AgentLoopResult —
+ * gedrag identiek aan pre-refactor. Mét contract: zie runAgentWithContract.
  * Caller geeft een runId mee via ctx; createRunRow zorgt voor placeholder
  * vooraan zodat tool-calls de FK kunnen referenceren tijdens de loop.
  */
-export async function runAgentLoop(input: RunAgentLoopInput): Promise<AgentLoopResult> {
+export async function runAgentLoop(input: RunAgentLoopInput): Promise<AgentLoopResult>;
+export async function runAgentLoop<TParsed, TPersisted>(
+  input: RunAgentLoopInput,
+  outputContract: AgentOutputContract<TParsed, TPersisted>,
+): Promise<ContractRunResult<TParsed, TPersisted>>;
+export async function runAgentLoop<TParsed, TPersisted>(
+  input: RunAgentLoopInput,
+  outputContract?: AgentOutputContract<TParsed, TPersisted>,
+): Promise<AgentLoopResult | ContractRunResult<TParsed, TPersisted>> {
+  if (outputContract) {
+    return runAgentWithContract(input, outputContract);
+  }
+
+  // Default observations-pad. Volgorde bewust gelijk aan pre-refactor:
+  // client-check → placeholder-row → loop → persist (in contract) →
+  // telemetry → return. getClient() vóór createRunRow (cached, gratis)
+  // zodat een ontbrekende ANTHROPIC_API_KEY geen orphan-placeholder
+  // achterlaat — pre-refactor throwde de client-init ook vóór de row-write.
+  getClient();
+  await createRunRow({ runId: input.ctx.runId, ctx: input.ctx });
+  const contractResult = await runAgentWithContract(input, observationsOutputContract);
+
+  const result: AgentLoopResult = {
+    runId: contractResult.runId,
+    workspaceId: contractResult.workspaceId,
+    nodeType: input.ctx.nodeType,
+    agentVersion: input.ctx.agentVersion,
+    promptVersion: input.ctx.promptVersion,
+    toolCallTrace: contractResult.toolCallTrace,
+    observations: contractResult.parsed,
+    latencyMs: contractResult.latencyMs,
+    totalCostUsd: contractResult.totalCostUsd,
+    totalInputTokens: contractResult.totalInputTokens,
+    totalOutputTokens: contractResult.totalOutputTokens,
+    truncated: contractResult.truncated,
+    finalMessage: contractResult.finalMessage,
+  };
+
+  // PostHog telemetry — fire-and-forget zoals gate-metrics patroon.
+  // Failures spoilen het run-result niet; PostHog kan offline zijn.
+  void emitBrandclawRunCompleted(
+    result,
+    contractResult.costBreakdown,
+    contractResult.toolCallCount,
+  ).catch(() => {
+    /* logged binnen trackEvent */
+  });
+
+  return result;
+}
+
+/**
+ * Generieke contract-entry (ADR 2026-07-05 D2). Draait de loop en laat
+ * parsing + persistence volledig aan het meegegeven contract. Doet GEEN
+ * placeholder-write — de caller bezit de run-row-lifecycle (create vóór
+ * de aanroep, failure-status in zijn eigen catch).
+ */
+export async function runAgentWithContract<TParsed, TPersisted>(
+  input: RunAgentLoopInput,
+  contract: AgentOutputContract<TParsed, TPersisted>,
+): Promise<ContractRunResult<TParsed, TPersisted>> {
   const {
     systemPrompt,
     userMessage,
@@ -81,12 +193,72 @@ export async function runAgentLoop(input: RunAgentLoopInput): Promise<AgentLoopR
     maxToolCalls = DEFAULT_MAX_TOOL_CALLS,
   } = input;
 
+  const outcome = await runLoopCore({
+    systemPrompt,
+    userMessage,
+    ctx,
+    model,
+    maxTokens,
+    timeoutMs,
+    maxToolCalls,
+  });
+
+  const cost = computeRunCost({
+    model,
+    inputTokens: outcome.totalInputTokens,
+    outputTokens: outcome.totalOutputTokens,
+  });
+
+  let parsed: TParsed;
+  let persisted: TPersisted;
+  try {
+    parsed = contract.parse(outcome.finalMessage, outcome);
+    // Await — caller wil hard-confirmation dat output persisted is vóór
+    // return (audit-trail eis, zelfde afweging als pre-refactor persistRun).
+    persisted = await contract.persist(parsed, { ctx, outcome, cost, model });
+  } catch (err) {
+    // Loop is al gedraaid (kosten gemaakt) — geef outcome + cost mee zodat
+    // de caller ze op de FAILED-run kan schrijven. Message blijft de
+    // originele zodat bestaande error-surfaces identiek rapporteren; de
+    // originele error (bv. Prisma-class) zit in `.cause` — callers die op
+    // error-type willen switchen moeten dáár kijken, niet op instanceof.
+    throw new OutputContractError(err instanceof Error ? err.message : String(err), {
+      outcome,
+      costBreakdown: cost,
+      model,
+      cause: err,
+    });
+  }
+
+  return {
+    runId: ctx.runId,
+    workspaceId: ctx.workspaceId,
+    parsed,
+    persisted,
+    finalMessage: outcome.finalMessage,
+    toolCallTrace: outcome.toolCallTrace,
+    toolCallCount: outcome.toolCallCount,
+    latencyMs: outcome.latencyMs,
+    totalCostUsd: cost.totalUsd,
+    totalInputTokens: outcome.totalInputTokens,
+    totalOutputTokens: outcome.totalOutputTokens,
+    truncated: outcome.truncated,
+    costBreakdown: cost,
+  };
+}
+
+/**
+ * De multi-turn loop-mechaniek — verbatim de pre-refactor kern, zonder
+ * persistence of parsing. Returnt de raw outcome; wat ermee gebeurt is
+ * aan het output-contract van de caller.
+ */
+async function runLoopCore(input: LoopCoreInput): Promise<LoopOutcome> {
+  const { systemPrompt, userMessage, ctx, model, maxTokens, timeoutMs, maxToolCalls } = input;
+
   const client = getClient();
   const registry = getToolRegistry();
   const tools = registry.getToolsForNode(ctx.nodeType);
   const toolDefs = tools.map((t) => t.definition);
-
-  await createRunRow({ runId: ctx.runId, ctx });
 
   const startedAt = Date.now();
   const deadline = startedAt + timeoutMs;
@@ -95,6 +267,8 @@ export async function runAgentLoop(input: RunAgentLoopInput): Promise<AgentLoopR
   let totalOutputTokens = 0;
   let truncated = false;
   let finalMessage: string | null = null;
+  let lastStopReason: string | null = null;
+  let abortReason: LoopAbortReason | null = null;
 
   // Anthropic Messages-API messages array — accumuleert alle turns.
   // Initial user-turn = inbound userMessage. Daarna voegen we tool_result
@@ -118,6 +292,7 @@ export async function runAgentLoop(input: RunAgentLoopInput): Promise<AgentLoopR
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     if (Date.now() > deadline) {
       truncated = true;
+      abortReason ??= "timeout";
       break;
     }
 
@@ -138,11 +313,13 @@ export async function runAgentLoop(input: RunAgentLoopInput): Promise<AgentLoopR
       // Anthropic API error → abort loop, persist truncated met partial trace
       console.error("[brandclaw agent-loop] Anthropic error:", err instanceof Error ? err.message : err);
       truncated = true;
+      abortReason = "api_error";
       break;
     }
 
     totalInputTokens += response.usage.input_tokens;
     totalOutputTokens += response.usage.output_tokens;
+    lastStopReason = response.stop_reason ?? null;
 
     // Verzamel alle tool_use blocks die agent vraagt + final-text als die
     // mee in de response zit.
@@ -195,6 +372,7 @@ export async function runAgentLoop(input: RunAgentLoopInput): Promise<AgentLoopR
           is_error: true,
         });
         truncated = true;
+        abortReason ??= "max_tool_calls";
         continue;
       }
       toolCallCount++;
@@ -274,40 +452,18 @@ export async function runAgentLoop(input: RunAgentLoopInput): Promise<AgentLoopR
   }
 
   const latencyMs = Date.now() - startedAt;
-  const observations = extractObservations(finalMessage);
-  const cost = computeRunCost({
-    model,
-    inputTokens: totalInputTokens,
-    outputTokens: totalOutputTokens,
-  });
 
-  const result: AgentLoopResult = {
-    runId: ctx.runId,
-    workspaceId: ctx.workspaceId,
-    nodeType: ctx.nodeType,
-    agentVersion: ctx.agentVersion,
-    promptVersion: ctx.promptVersion,
+  return {
+    finalMessage,
     toolCallTrace,
-    observations,
-    latencyMs,
-    totalCostUsd: cost.totalUsd,
     totalInputTokens,
     totalOutputTokens,
+    toolCallCount,
     truncated,
-    finalMessage,
+    latencyMs,
+    lastStopReason,
+    abortReason,
   };
-
-  // Fire-and-forget vs await? Await — caller wil hard-confirmation dat
-  // observations persisted zijn vóór return (audit-trail eis).
-  await persistRun(result, cost);
-
-  // PostHog telemetry — fire-and-forget zoals gate-metrics patroon.
-  // Failures spoilen het run-result niet; PostHog kan offline zijn.
-  void emitBrandclawRunCompleted(result, cost, toolCallCount).catch(() => {
-    /* logged binnen trackEvent */
-  });
-
-  return result;
 }
 
 async function emitBrandclawRunCompleted(
@@ -335,62 +491,4 @@ async function emitBrandclawRunCompleted(
       pricing_fallback: cost.fallback,
     },
   });
-}
-
-/**
- * Parse observation-drafts uit de final agent-message. Verwacht JSON-blok
- * in de message body (markdown-fenced of plain). Lenient: returns lege
- * array wanneer geen parseable JSON gevonden — caller kan dan op
- * finalMessage zelf surfacing zonder structured observations.
- *
- * Verwachte shape:
- *   { "observations": [{ dimension, severity, confidence, summary, evidence }] }
- */
-function extractObservations(finalMessage: string | null): ObservationDraft[] {
-  if (!finalMessage) return [];
-  // Probeer eerst markdown-fenced JSON-blok.
-  const fencedMatch = finalMessage.match(/```(?:json)?\n([\s\S]*?)\n```/);
-  const candidate = fencedMatch ? fencedMatch[1] : finalMessage;
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(candidate);
-  } catch {
-    return [];
-  }
-  if (
-    !parsed ||
-    typeof parsed !== "object" ||
-    !Array.isArray((parsed as { observations?: unknown }).observations)
-  ) {
-    return [];
-  }
-  const rawList = (parsed as { observations: unknown[] }).observations;
-  const observations: ObservationDraft[] = [];
-  for (const item of rawList) {
-    if (!item || typeof item !== "object") continue;
-    const obs = item as Record<string, unknown>;
-    if (
-      typeof obs.dimension !== "string" ||
-      typeof obs.summary !== "string" ||
-      typeof obs.severity !== "string" ||
-      typeof obs.confidence !== "string"
-    ) {
-      continue;
-    }
-    const severity = obs.severity.toUpperCase();
-    const confidence = obs.confidence.toUpperCase();
-    if (!["HIGH", "MEDIUM", "LOW"].includes(severity)) continue;
-    if (!["HIGH", "MEDIUM", "LOW"].includes(confidence)) continue;
-    observations.push({
-      dimension: obs.dimension,
-      severity: severity as "HIGH" | "MEDIUM" | "LOW",
-      confidence: confidence as "HIGH" | "MEDIUM" | "LOW",
-      summary: obs.summary,
-      evidence:
-        obs.evidence && typeof obs.evidence === "object"
-          ? (obs.evidence as ObservationDraft["evidence"])
-          : {},
-    });
-  }
-  return observations;
 }
