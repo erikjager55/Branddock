@@ -65,6 +65,7 @@ import { brandGuardianAgent, registerBrandGuardianTools } from "./definitions/br
 import { registerStrategistTools, strategistAgent } from "./definitions/strategist";
 import { contentCreatorAgent, registerContentCreatorTools } from "./definitions/content-creator";
 import { marketAnalystAgent, registerMarketAnalystTools } from "./definitions/market-analyst";
+import { dataAnalystAgent, registerDataAnalystTools } from "./definitions/data-analyst";
 
 registerAgent(researchAnalystAgent);
 registerResearchAnalystTools();
@@ -76,6 +77,8 @@ registerAgent(contentCreatorAgent);
 registerContentCreatorTools();
 registerAgent(marketAnalystAgent);
 registerMarketAnalystTools();
+registerAgent(dataAnalystAgent);
+registerDataAnalystTools();
 
 if (process.env.NODE_ENV !== "production" || process.env.AGENTS_ENABLE_TEST_AGENT === "1") {
   registerAgent(echoTestAgent);

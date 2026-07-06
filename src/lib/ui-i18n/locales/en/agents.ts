@@ -96,8 +96,11 @@ const ns = {
     actionError: 'Could not update the result',
     fidelityScore: 'Brand fidelity',
     table: {
-      placeholder:
-        'The table view arrives with the Data Analyst agent. The underlying data is preserved and is saved to the Knowledge Library when you accept.',
+      invalid: 'This table could not be displayed — the underlying data is malformed.',
+      empty: 'The query returned no rows.',
+      rowCount_one: '{{count}} row',
+      rowCount_other: '{{count}} rows',
+      sortHint: 'Sort by {{column}}',
     },
     findings: {
       flagged: 'Below the brand threshold — review before use.',
