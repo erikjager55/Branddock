@@ -37,6 +37,24 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 365. Agents content sources — bronnen kiezen per agent-run (Brand-Assistant-pariteit)
+
+Elke agent-use-case heeft nu een inklapbare "Content sources"-kiezer (zelfde modulelijst en labels als de Brand Assistant). Zonder selectie draait de run ongewijzigd op de volledige merkcontext; met selectie bevat de system-prompt alleen de gekozen bronnen (zelfde module-fetches als de Claw-overlay, incl. expliciete notitie wanneer het merkfundament is uitgesloten). Server-side gevalideerd en gefilterd; deselect-all wordt in de UI geblokkeerd. Deterministisch bewezen (prompt 20,9k → 7,7k bij personas-only).
+
+- Task: [tasks/done/agents-context-sources.md](../tasks/done/agents-context-sources.md)
+- ADR: [docs/adr/2026-07-05-agents-architectuur.md](adr/2026-07-05-agents-architectuur.md)
+- Spec: -
+- Commit: 22d84b9f (branch feat/agents-research-parity)
+
+### 364. Agents research-parity — Nova op volle Library-diepte + motor-degradatie
+
+Nova's deep research draait zonder config-override op exact de Library-defaults (6 queries/12 bronnen/verificatie/480s) — identieke prompts én identiek budget. De gedeelde research-motor degradeert nu netjes binnen zijn budget (leesfase stopt met partial, verify skipt bij krap restbudget, een gestárte synthese wordt nooit meer door de deadline weggegooid) en het agent-pad kreeg een server-afgedwongen once-per-run-guard (het model retryde een 8-min-onderzoek na een deadline-fout: 2×480s → guard-fail). Zware topics kunnen het gedeelde budget nog raken — de agent levert dan een eerlijk partial antwoord met advies.
+
+- Task: [tasks/done/agents-research-parity.md](../tasks/done/agents-research-parity.md)
+- ADR: [docs/adr/2026-07-05-agents-architectuur.md](adr/2026-07-05-agents-architectuur.md)
+- Spec: -
+- Commit: 22d84b9f (branch feat/agents-research-parity)
+
 ### 363. Agents domein-integraties — nav onder CREATE, antwoord-fallback, Marco→Competitors, Stella→Campaigns
 
 Dogfood-feedback verwerkt: Agents staat als navigatie-item onder CREATE; een run die alleen tekst oplevert toont dat antwoord voortaan als REPORT-artefact (de "no parseable artifacts"-melding is structureel weg, incl. robuuste JSON-husk-strip); geaccepteerde concurrentie-analyses van Marco verschijnen als "Agent analyses"-sectie op de Competitors-pagina (canonieke category "Competitor Analysis" + nieuwe GET /api/knowledge/[id]); Stella's goedgekeurde campagne-strategie landt op campaign.strategicApproach en rendert als "Agent-strategie"-blok op de campagne-detail strategie-tab (wizard-blueprint blijft leidend); Milo kan zelf een campagne voorstellen. Review: 3 rondes, 0 CRITICAL, 8 WARNINGs gefixt.
