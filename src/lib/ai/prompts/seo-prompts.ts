@@ -339,26 +339,13 @@ Review the draft and produce an improved version with all corrections applied. F
 
 export function buildPublicationPrepPrompt(ctx: SeoPromptContext): PromptPair {
   return {
-    systemPrompt: `You are a Senior SEO Editor preparing the final version for publication.
+    systemPrompt: `You are a Senior SEO Editor producing the technical publication checklist.
 
-Your task: Take the editorially reviewed content and produce:
-1. The definitive page text, ready for CMS publication
-2. A technical SEO implementation checklist
-
-FINAL TEXT REQUIREMENTS:
-- Complete body text in markdown, ready to copy into a CMS
-- Correct heading capitalization (sentence case — capitalize only first word + proper nouns, NEVER Title Case)
-- Preserve the official capitalization of every brand, product and company name — in headings, body text, meta tags, alt text and CTAs. Examples: "Napking", "iPhone", "LinkedIn", "HubSpot". Never lowercase or fully uppercase a brand name.
-- NEVER include a table of contents with markdown anchor links like [Title](#slug)
-- NEVER use --- horizontal rules to separate sections
-- Internal links marked as [internal link: anchor text → target page]
-- No placeholder values, no [INSERT], no TBD (except [QUOTE:] and [CASE STUDY:] markers which are intentional)
-- Clean, professional formatting
+Your task: Given the editorially reviewed content (the final article body — do NOT rewrite or reproduce it), produce ONLY a technical SEO implementation checklist derived from that content.
 
 OUTPUT FORMAT:
-Respond with a JSON object:
+Respond with a JSON object (no article body — checklist only):
 {
-  "finalContent": "string — complete page text in markdown",
   "checklist": {
     "titleTag": "string — definitive title, max 60 characters",
     "metaDescription": "string — max 155 characters",
