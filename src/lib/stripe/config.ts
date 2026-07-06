@@ -55,7 +55,9 @@ export const STRIPE_CURRENCY = 'eur';
 
 export function getCheckoutUrls(baseUrl: string) {
   return {
-    success: `${baseUrl}/settings/billing?checkout=success`,
-    cancel: `${baseUrl}/settings/billing?checkout=cancel`,
+    // De app is een hybride SPA zonder URL-adresseerbare pagina's — redirect naar
+    // root; App.tsx leest ?checkout= en opent de billing-tab + toont feedback.
+    success: `${baseUrl}/?checkout=success`,
+    cancel: `${baseUrl}/?checkout=cancel`,
   };
 }
