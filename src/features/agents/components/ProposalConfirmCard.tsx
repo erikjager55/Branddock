@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Check, X, Wrench, AlertTriangle } from 'lucide-react';
+import { Check, X, Wrench, AlertTriangle, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/shared';
-import { useConfirmProposal } from '../hooks';
+import { agentKeys, useConfirmProposal } from '../hooks';
+import { AgentsApiError } from '../api/agents.api';
 import type { AgentArtifactFull } from '../types/agents.types';
 
 interface ProposalChange {
@@ -25,8 +27,20 @@ interface ProposalChange {
 export function ProposalConfirmCard({ artifact }: { artifact: AgentArtifactFull }) {
   const { t } = useTranslation('agents');
   const confirmMutation = useConfirmProposal();
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
-  const [resolved, setResolved] = useState<'approved' | 'rejected' | null>(null);
+  const [alreadyResolvedNotice, setAlreadyResolvedNotice] = useState(false);
+  // Optimistic layer bovenop server-truth: de confirm-route zet
+  // acceptedAt/dismissedAt op het artefact, dus na collapse/expand of
+  // reload blijft de resolved-weergave staan (review-fix 2026-07-06).
+  const [optimisticResolved, setOptimisticResolved] = useState<'approved' | 'rejected' | null>(null);
+
+  const serverResolved: 'approved' | 'rejected' | null = artifact.acceptedAt
+    ? 'approved'
+    : artifact.dismissedAt
+      ? 'rejected'
+      : null;
+  const resolved = optimisticResolved ?? serverResolved;
 
   const content = artifact.content;
   const description = typeof content.description === 'string' ? content.description : artifact.title;
@@ -41,10 +55,18 @@ export function ProposalConfirmCard({ artifact }: { artifact: AgentArtifactFull 
       { runId: artifact.runId, artifactId: artifact.id, approved },
       {
         onSuccess: () => {
-          setResolved(approved ? 'approved' : 'rejected');
+          setOptimisticResolved(approved ? 'approved' : 'rejected');
           toast.success(approved ? t('artifact.proposal.approved') : t('artifact.proposal.rejected'));
         },
         onError: (err) => {
+          // 409 = atomic-claim in de confirm-route: een dubbele/concurrent
+          // POST was eerder. Geen fout tonen — refetch levert de
+          // definitieve status via acceptedAt/dismissedAt.
+          if (err instanceof AgentsApiError && err.status === 409) {
+            setAlreadyResolvedNotice(true);
+            void queryClient.invalidateQueries({ queryKey: agentKeys.all });
+            return;
+          }
           setError(err instanceof Error ? err.message : t('artifact.proposal.confirmError'));
         },
       },
@@ -86,8 +108,8 @@ export function ProposalConfirmCard({ artifact }: { artifact: AgentArtifactFull 
 
       {changes.length > 0 && (
         <div className="space-y-2">
-          {changes.map((change) => (
-            <div key={change.field} className="bg-white border border-gray-200 rounded-lg p-3">
+          {changes.map((change, index) => (
+            <div key={`${change.field}-${index}`} className="bg-white border border-gray-200 rounded-lg p-3">
               <p className="text-xs font-medium text-gray-500 mb-1.5">{change.label}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                 <div className="rounded-md bg-gray-50 border border-gray-100 p-2">
@@ -107,6 +129,16 @@ export function ProposalConfirmCard({ artifact }: { artifact: AgentArtifactFull 
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {alreadyResolvedNotice && (
+        <div
+          data-testid="proposal-already-resolved"
+          className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2"
+        >
+          <Info className="h-4 w-4 flex-shrink-0" />
+          {t('artifact.proposal.alreadyResolved')}
         </div>
       )}
 

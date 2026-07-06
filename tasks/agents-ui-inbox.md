@@ -104,3 +104,11 @@ Nieuwe top-level sectie via het ingesleten patroon: `SIDEBAR_NAV`-entry (Lucide 
 - E2e/smoke met de échte 5 motor-agenten (Research Analyst e.a.) — wacht op merge van `agents-motor-wiring`; catalogus-fetch pint al op hun `GET /api/agents`-contract (404 → nette empty-state tot die merge).
 - PROPOSAL-approve tegen de échte confirm-route (`/api/agents/runs/[runId]/confirm` — motor-wiring-ownership) en FINDINGS met échte F-VAL-payload: UI-kant staat, e2e-gemockt groen.
 - `MODULE_META`-phase-label ("Phase 13") is placeholder; documentatie-vinkje volgt bij task-finalize.
+
+### Review-round 2026-07-06 (2 onafhankelijke reviews → 0 CRITICAL, 5 WARNINGs gefixt)
+
+Gefixt in follow-up-commit: (1) ProposalConfirmCard resolved-state uit server-truth (`acceptedAt`/`dismissedAt`) met optimistic layer + 409-"al afgehandeld"-afhandeling incl. refetch; (2) link-scheme-allowlist (http/https/mailto/relatief) in `MarkdownContent.parseInline`; (3) stream-abort-registry (`useClawStore.activeStreamAbort`, gezet door InputBar, aangeroepen bij scope-clear-paden — geen oud antwoord in verse conversatie, `isStreaming` hangt niet); (4) `setActiveConversation` cleart `agentScope` (+ expliciete comment dat `startNewConversation` de scope bewust behoudt); (5) `aria-expanded`/`aria-controls`+`id` op de run-card-toggle. MINORs meegefixt: change-key `field+index`, default-tak in RunResultCard-switch, `agentId: z.string().max(64)`.
+
+**Deferred (bewust, coordinator-besluit):**
+- Hidden-agent-guard in `claw/chat/route.ts` → post-merge via `getVisibleAgentDefinition` (helper leeft op motor-wiring-branch); TODO(merge)-comment staat op de lookup-plek.
+- Deferred MINORs: 404→lege-catalogus-mapping expliciet TODO'en/opruimen na motor-wiring-merge; `['knowledge-resources']`-querykey-literal delen met knowledge-library-hooks; `openInLibrary`-i18n-key ongebruikt (savedToLibrary dubbelt als button-label); LINK-deep-link zonder entity-focus voor knowledge/content-library (navigeert naar de module, nog niet naar het item); `openClawForAgent` sluit de assistant-forms (bug/feature/feedback) niet expliciet.

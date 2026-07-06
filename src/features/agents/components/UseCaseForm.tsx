@@ -131,6 +131,9 @@ function RunResultCard({
           style: 'bg-amber-50 border-amber-200 text-amber-800',
         };
       case 'FAILED':
+      default:
+        // Default-tak als runtime-vangnet: een onbekende status uit een
+        // nieuwere server-versie rendert als failed-stijl i.p.v. crash.
         return {
           icon: <XCircle className="h-4 w-4 text-red-600 flex-shrink-0" />,
           title: t('detail.result.failedTitle'),

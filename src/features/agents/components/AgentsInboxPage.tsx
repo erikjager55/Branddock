@@ -129,6 +129,8 @@ function RunCard({
         type="button"
         data-testid="run-card-toggle"
         onClick={onToggle}
+        aria-expanded={expanded}
+        aria-controls={`run-artifacts-${run.id}`}
         className="w-full flex items-center gap-3 px-4 py-3 text-left"
       >
         <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[#1FD1B2] to-emerald-500 flex items-center justify-center flex-shrink-0">
@@ -191,7 +193,7 @@ function RunCard({
       )}
 
       {expanded && (
-        <div className="border-t border-gray-100 px-4 py-4">
+        <div id={`run-artifacts-${run.id}`} className="border-t border-gray-100 px-4 py-4">
           <RunArtifacts runId={run.id} onNavigate={onNavigate} />
         </div>
       )}

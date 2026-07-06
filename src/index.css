@@ -10412,6 +10412,10 @@ html {
  * in this file.
  * ------------------------------------------------------------ */
 @layer utilities {
+  /* z-20 ontbrak in de gecompileerde output: de Claw history-popover
+   * (z-20) rendert dan onder zijn eigen scrim (z-10) -> rows onklikbaar.
+   * Gevonden via de agents-scoped-chat regressie-smoke 2026-07-06. */
+  .z-20 { z-index: 20; }
   .border-emerald-100 { border-color: var(--color-emerald-100); }
   .ring-amber-100 { --tw-ring-color: var(--color-amber-100); }
   .resize-y { resize: vertical; }

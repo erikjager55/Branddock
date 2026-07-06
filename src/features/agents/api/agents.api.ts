@@ -15,6 +15,17 @@ import type {
   ConfirmProposalResponse,
 } from '../types/agents.types';
 
+/** Fetch-error met HTTP-status, zodat de UI kan differentiëren (bv. 409 = al afgehandeld). */
+export class AgentsApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = 'AgentsApiError';
+  }
+}
+
 async function json<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   if (!res.ok) {
@@ -25,7 +36,7 @@ async function json<T>(url: string, init?: RequestInit): Promise<T> {
     } catch {
       /* non-JSON error body — keep the status message */
     }
-    throw new Error(message);
+    throw new AgentsApiError(message, res.status);
   }
   return res.json() as Promise<T>;
 }

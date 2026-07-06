@@ -151,7 +151,12 @@ export function InputBar() {
 
     // Abort previous request if any
     abortRef.current?.abort();
-    abortRef.current = new AbortController();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    // Registreer de abort-hook in de store zodat scope-wissels/-clears de
+    // in-flight stream kunnen kappen (review-fix 2026-07-06).
+    const abortStream = () => controller.abort();
+    useClawStore.getState().setActiveStreamAbort(abortStream);
 
     try {
       const res = await fetch('/api/claw/chat', {
@@ -369,6 +374,13 @@ export function InputBar() {
         console.error('Chat error:', err);
       }
       setIsStreaming(false);
+    } finally {
+      // Alleen de eigen registratie opruimen — een nieuwere stream kan
+      // inmiddels zijn eigen abort-hook gezet hebben.
+      const store = useClawStore.getState();
+      if (store.activeStreamAbort === abortStream) {
+        store.setActiveStreamAbort(null);
+      }
     }
   }, [
     inputText, isStreaming, attachments, activeConversationId, contextSelection,

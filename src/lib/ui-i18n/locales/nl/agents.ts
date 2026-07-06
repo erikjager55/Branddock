@@ -117,6 +117,7 @@ const ns = {
       current: 'Huidig',
       proposed: 'Voorgesteld',
       emptyValue: 'Leeg',
+      alreadyResolved: 'Dit voorstel is al afgehandeld — resultaat wordt ververst.',
       confirmError: 'Kon de bevestiging niet verwerken',
       approved: 'Wijziging doorgevoerd',
       rejected: 'Voorstel afgewezen — er is niets gewijzigd',

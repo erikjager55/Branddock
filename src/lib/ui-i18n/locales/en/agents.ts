@@ -117,6 +117,7 @@ const ns = {
       current: 'Current',
       proposed: 'Proposed',
       emptyValue: 'Empty',
+      alreadyResolved: 'This proposal was already resolved — refreshing the result.',
       confirmError: 'Could not process the confirmation',
       approved: 'Change applied',
       rejected: 'Proposal rejected — nothing was changed',

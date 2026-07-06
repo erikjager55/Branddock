@@ -56,7 +56,7 @@ const requestSchema = z.object({
   message: z.string().min(1).max(10000),
   // Agent-gescoped chat (agents-ui-inbox, ADR D6): optioneel — afwezig
   // betekent de reguliere Brand Assistant, gedrag byte-identiek.
-  agentId: z.string().optional(),
+  agentId: z.string().max(64).optional(),
   contextSelection: z.object({
     modules: z.array(z.string()),
     entityIds: z.record(z.string(), z.array(z.string())).optional().nullable(),
@@ -169,8 +169,10 @@ export async function POST(req: NextRequest) {
     };
     existingMessages.push(userMessage);
 
-    // Agent-scope: persona-sectie in het system-prompt. Onbekende/hidden
+    // Agent-scope: persona-sectie in het system-prompt. Onbekende
     // agent-id → undefined → regulier gedrag (nullish default).
+    // TODO(merge): hidden-agent-guard via getVisibleAgentDefinition —
+    // helper leeft op de motor-wiring-branch; post-merge-integratie.
     const agentDef = parsed.data.agentId
       ? getAgentDefinition(parsed.data.agentId)
       : undefined;
