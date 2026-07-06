@@ -143,6 +143,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | [`pilot-onboarding-better-brands`](tasks/pilot-onboarding-better-brands.md) | Better Brands eerste pilot live | 2d | #6 (na vercel) | open task-file |
 | `onboarding-flow-test` | Onboarding flow met 3 externe gebruikers | 1w | #7 | task-file volgt |
 | `marketing-site-pricing` | Marketing site + pricing pagina | 1w | #6-7 | task-file volgt |
+| [`ci-golden-set-e2e-fixes`](tasks/ci-golden-set-e2e-fixes.md) | CI-gates groen vóór livegang: `evaluate` (golden-set) faalt 0/10 (ontbrekende AI-keys in PR-context) + `e2e` flaky (rauwe `onboarding.skipTour`-i18n-key) | 0.5d | #7 | open — niet-blokkerend, wél groen maken vóór go-live |
 
 ### Sprint-volgorde
 
