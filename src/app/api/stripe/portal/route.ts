@@ -26,7 +26,9 @@ export async function POST(request: NextRequest) {
   const { workspaceId } = ctx;
 
   try {
-    const returnUrl = `${request.nextUrl.origin}/settings/billing`;
+    // SPA-root i.p.v. het niet-bestaande /settings/billing-pad (404); App.tsx
+    // leest ?checkout=return en opent de billing-tab.
+    const returnUrl = `${request.nextUrl.origin}/?checkout=return`;
     const result = await createPortalSession({
       workspaceId,
       returnUrl,
