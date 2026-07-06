@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
+import { getUsageThisMonth } from "@/lib/stripe/usage-tracker";
 
 // =============================================================
 // GET /api/settings/billing/usage
-// Returns usage data: seats, AI generations, research studies, storage
-// Seats and research studies are real counts; AI generations and storage are demo stubs
+// Returns usage data: seats, AI generations, research studies, storage.
+// Seats/research/AI-generations zijn echte counts (AI = AiUsageRecord deze maand);
+// storage-tracking is nog niet geïmplementeerd (toont 0).
 // =============================================================
 export async function GET() {
   try {
@@ -29,7 +31,7 @@ export async function GET() {
       return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
     }
 
-    const [subscription, memberCount, studyCount] = await Promise.all([
+    const [subscription, memberCount, studyCount, aiUsage] = await Promise.all([
       prisma.subscription.findUnique({
         where: { workspaceId },
         include: { plan: true },
@@ -40,6 +42,7 @@ export async function GET() {
       prisma.researchStudy.count({
         where: { workspaceId },
       }),
+      getUsageThisMonth(workspaceId),
     ]);
 
     const plan = subscription?.plan;
@@ -50,7 +53,7 @@ export async function GET() {
         limit: plan?.maxSeats ?? 1,
       },
       aiGenerations: {
-        used: 142,
+        used: aiUsage.callCount,
         limit: plan?.maxAiGenerations ?? 100,
       },
       researchStudies: {
@@ -58,7 +61,8 @@ export async function GET() {
         limit: plan?.maxResearchStudies ?? 5,
       },
       storage: {
-        usedGb: 2.4,
+        // Storage-tracking is nog niet geïmplementeerd — 0 i.p.v. een fake waarde.
+        usedGb: 0,
         limitGb: plan?.maxStorageGb ?? 5,
       },
     };
