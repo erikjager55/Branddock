@@ -169,3 +169,13 @@ registerHandler('BRANDVOICE_ANALYZE_URL', async (job) => {
   await startVoiceAnalysisPipeline({ jobId, workspaceId, brandName, url, pastedSamples });
   return { jobId };
 });
+
+// A3-deel-2 — SEO 8-staps-pipeline draait als queued job (was inline in de SSE-route
+// die op Vercel na de time-limit gekild wordt). De job draait de generator ongewijzigd.
+registerHandler('SEO_GENERATE', async (job) => {
+  const { jobId } = (job.payload ?? {}) as { jobId?: string };
+  if (!jobId) throw new Error('SEO_GENERATE: jobId vereist');
+  const { runSeoGenerationJob } = await import('@/lib/ai/seo-generation-job');
+  await runSeoGenerationJob(jobId);
+  return { jobId };
+});

@@ -12,6 +12,7 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import { assembleCanvasContext, type CanvasContextStack, type MediumContext, type PersonaContext, type BriefContext, type ProductContext, type VisualBrief, type VisualStyleDirection } from './canvas-context';
 import { VISUAL_STYLE_IMAGE_INSTRUCTIONS } from './visual-brief-prompts';
 import { createStructuredCompletion } from './exploration/ai-caller';
@@ -372,16 +373,32 @@ export async function* orchestrateContentGeneration(
     // de SEO-pipeline bij seo-geo op long-form een GEO-polish toepast. Bij seo-only
     // is de lijst zonder 'geo' → gedrag byte-identiek aan vóór Fase 3.
     const optimizationGoals = resolveOptimizationGoals(effectiveInputs, deliverableTypeId);
-    const { runSeoPipeline } = await import('./seo-pipeline');
-    yield* runSeoPipeline(
-      deliverableId,
+    // Serverless-safe: de 8-staps-SEO-pipeline kan de request/worker-time-limit
+    // overschrijden → op de queue i.p.v. inline. De client polt seo-progress; de
+    // job draait de generator ONGEWIJZIGD in de cron-worker.
+    const seoJob = await prisma.seoGenerationJob.create({
+      data: {
+        deliverableId,
+        workspaceId,
+        contentType: deliverableTypeId,
+        seoInput: seoInput as unknown as Prisma.InputJsonValue,
+        optimizationGoals,
+        contextStack: JSON.parse(JSON.stringify(stack)) as Prisma.InputJsonValue,
+        voiceDirective,
+        status: 'PENDING',
+        stepLabel: 'Queued',
+      },
+    });
+    const { dispatchJob } = await import('@/lib/agents/jobs/dispatch');
+    await dispatchJob({
+      type: 'SEO_GENERATE',
+      payload: { jobId: seoJob.id },
       workspaceId,
-      seoInput,
-      stack,
-      voiceDirective,
-      deliverableTypeId,
-      optimizationGoals,
-    );
+      maxAttempts: 2,
+      idempotencyKey: `seo-generate:${seoJob.id}`,
+      triggeredBy: 'user',
+    });
+    yield { event: 'seo_queued', data: { jobId: seoJob.id, deliverableId } };
     return;
   }
 
