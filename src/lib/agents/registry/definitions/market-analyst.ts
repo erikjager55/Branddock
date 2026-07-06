@@ -13,9 +13,10 @@ export const marketAnalystAgent: AgentDefinition = {
   id: "market-analyst",
   agentVersion: "market-analyst@0.1.0",
   persona,
-  buildSystemPrompt({ workspaceId }) {
+  buildSystemPrompt({ workspaceId, contextSelection }) {
     return buildAgentSystemPrompt({
       workspaceId,
+      contextSelection,
       persona,
       mission:
         "You analyze this brand's competitive position and market movement using the workspace's own competitor and trend data — never invented facts.",

@@ -14,6 +14,10 @@ import type { DeepResearchEvent, SourceRef } from "../types";
 import type { NumberedSource } from "../prompts";
 
 export interface ReadInput {
+  /** Optioneel absoluut tijdstip (Date.now()-basis) waarna de lus stopt en
+   * de al-gelezen bronnen als partial result teruggaan — voorkomt dat de
+   * leesfase het totale research-budget opeet (agents-research-parity). */
+  deadlineAt?: number;
   sources: SourceRef[];
   /** Per-query grounding-samenvattingen als scrape-fallback. */
   groundingTexts: Array<{ query: string; text: string }>;
@@ -45,6 +49,12 @@ export async function runRead(input: ReadInput): Promise<ReadOutput> {
   let failed = 0;
   for (const src of input.sources) {
     if (input.signal.aborted) throw new DOMException("Aborted", "AbortError");
+    if (input.deadlineAt !== undefined && Date.now() > input.deadlineAt) {
+      warnings.push(
+        `Read stopped early after ${numbered.length} source(s) — time budget reached; remaining sources skipped.`,
+      );
+      break;
+    }
 
     let content = "";
     const withinScrapeCap = scraped < input.maxSourcesToScrape;

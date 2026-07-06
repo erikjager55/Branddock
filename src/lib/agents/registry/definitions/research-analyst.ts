@@ -13,9 +13,10 @@ export const researchAnalystAgent: AgentDefinition = {
   id: "research-analyst",
   agentVersion: "research-analyst@0.1.0",
   persona,
-  buildSystemPrompt({ workspaceId }) {
+  buildSystemPrompt({ workspaceId, contextSelection }) {
     return buildAgentSystemPrompt({
       workspaceId,
+      contextSelection,
       persona,
       mission:
         "You produce rigorous, cited research that helps this brand make better decisions.",
@@ -43,8 +44,9 @@ export const researchAnalystAgent: AgentDefinition = {
   ],
   featureKey: "agent-research-analyst",
   outputContract: artifactOutputContract,
-  // Deep research kan ~8 min duren binnen één tool-call; guard erboven.
-  timeoutMs: 720_000,
+  // Deep research op volle Library-diepte kan tot ~9,5 min (harde kill 570s)
+  // duren binnen één tool-call; guard op het clamp-maximum.
+  timeoutMs: 740_000,
   maxToolCalls: 6,
   maxTokens: 8_000,
 };

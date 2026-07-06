@@ -41,7 +41,7 @@
       "maxDuration": 600
     },
     "src/app/api/cron/run-jobs/route.ts": {
-      "maxDuration": 300
+      "maxDuration": 800
     }
   }
 }

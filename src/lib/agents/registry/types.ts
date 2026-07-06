@@ -13,6 +13,8 @@ import type {
   AgentToolNamespace,
 } from "@/lib/brandclaw/orchestrator/types";
 import type { AiFeatureKey } from "@/lib/ai/feature-models";
+// Type-only import uit claw — geen runtime-dependency (dependency-richting blijft schoon).
+import type { ContextSelection as AgentContextSelection } from "@/lib/claw/claw.types";
 
 /**
  * Curated agent ids (ADR D4). 'echo-test' is test-only: hidden +
@@ -86,7 +88,12 @@ export interface AgentDefinition {
    * System-prompt builder (sync or async) so motor-wiring can embed
    * brand context lazily per run.
    */
-  buildSystemPrompt(args: { workspaceId: string }): string | Promise<string>;
+  buildSystemPrompt(args: {
+    workspaceId: string;
+    /** Optionele content-sources-selectie (pariteit met de Brand Assistant);
+     * afwezig = volledige merkcontext (default-gedrag). */
+    contextSelection?: AgentContextSelection;
+  }): string | Promise<string>;
   /** Stable version tag of the system prompt → AgentRun.promptVersion. */
   promptVersion: string;
   /** Tool-namespace in the shared registry, by convention `agent:${id}`. */
@@ -107,3 +114,5 @@ export interface AgentDefinition {
   /** Excluded from listAgents(); run-entry rejects hidden agents in production. */
   hidden?: boolean;
 }
+
+export type { AgentContextSelection };

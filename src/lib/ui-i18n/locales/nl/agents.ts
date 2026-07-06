@@ -21,6 +21,15 @@ const ns = {
     },
   },
   detail: {
+    sources: {
+      title: 'Content sources',
+      defaultSummary: 'Volledige merkcontext (standaard)',
+      customSummary: '{{count}} bronnen geselecteerd',
+      customSummary_one: '{{count}} bron geselecteerd',
+      reset: 'Terug naar standaard',
+      emptyError: 'Kies minstens één content source, of zet terug naar standaard.',
+      hint: 'Kies welke workspace-bronnen deze run als context mag gebruiken. Verwijder je de brand-modules, dan verdwijnt ook het merkfundament uit de prompt.',
+    },
     back: 'Terug naar Agents',
     chatButton: 'Chat met {{name}}',
     inboxButton: 'Resultaten-inbox',

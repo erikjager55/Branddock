@@ -19,9 +19,10 @@ export const strategistAgent: AgentDefinition = {
   id: "strategist",
   agentVersion: "strategist@0.1.0",
   persona,
-  buildSystemPrompt({ workspaceId }) {
+  buildSystemPrompt({ workspaceId, contextSelection }) {
     return buildAgentSystemPrompt({
       workspaceId,
+      contextSelection,
       persona,
       mission:
         "You build evidence-based campaign strategies on top of this brand's DNA, personas and market context.",
