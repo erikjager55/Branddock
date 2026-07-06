@@ -280,20 +280,23 @@ export async function startScanPipeline(
       if (existingVoice) {
         progress.brandvoiceStatus = 'Brand voice already configured — skipped';
       } else {
-        const { initVoiceAnalysisJob, startVoiceAnalysisPipeline } = await import(
-          '@/lib/brandvoice/voice-analyzer-engine'
-        );
         const jobId = `voice_${crypto.randomUUID()}`;
         progress.brandvoiceJobId = jobId;
-        initVoiceAnalysisJob(jobId);
-        // Fire-and-forget — engine writes to its own progress map. Result is
-        // surfaced via the brandvoice analyzer review screen, gated by user accept.
-        void startVoiceAnalysisPipeline({
-          jobId,
-          workspaceId,
-          url,
+        await prisma.voiceAnalysisJob.create({
+          data: { id: jobId, workspaceId, status: 'PENDING', progress: 0, currentStep: 'Queued', errors: [] },
         });
-        progress.brandvoiceStatus = 'Brand voice analysis running in background';
+        // Serverless-safe: eigen queued job i.p.v. geneste fire-and-forget. Resultaat
+        // komt op het brandvoice-analyzer-review-scherm (gated by user accept).
+        const { dispatchJob } = await import('@/lib/agents/jobs/dispatch');
+        await dispatchJob({
+          type: 'BRANDVOICE_ANALYZE_URL',
+          payload: { jobId, workspaceId, url },
+          workspaceId,
+          maxAttempts: 1,
+          idempotencyKey: `brandvoice-analyze:${jobId}`,
+          triggeredBy: 'system',
+        });
+        progress.brandvoiceStatus = 'Brand voice analysis queued';
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Unknown error';
@@ -344,11 +347,6 @@ async function finalizeScan(
   }
 }
 
-// Clean up old progress entries after 30 minutes
-setInterval(() => {
-  for (const [id, p] of scanProgress.entries()) {
-    if (p.status === 'COMPLETED' || p.status === 'FAILED' || p.status === 'CANCELLED') {
-      scanProgress.delete(id);
-    }
-  }
-}, 5 * 60 * 1000);
+// Geen module-level setInterval meer: serverless-instances zijn ephemeral (de
+// timer lekt), en de progress-Map is nu enkel een same-instance-cache naast de
+// DB-fallback in [jobId]/route.ts. De Map wordt impliciet opgeruimd bij recycle.

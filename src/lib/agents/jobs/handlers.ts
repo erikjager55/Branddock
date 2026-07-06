@@ -139,3 +139,33 @@ registerHandler('TREND_RESEARCH', async (job) => {
   await runTrendResearch(jobId, workspaceId, query, useBrandContext ?? false);
   return { jobId };
 });
+
+// Tier 3 — waren fire-and-forget + in-memory progress-Map (kapot op serverless).
+registerHandler('WEBSITE_SCAN', async (job) => {
+  const { scanId, url, workspaceId, userId } = (job.payload ?? {}) as {
+    scanId?: string;
+    url?: string;
+    workspaceId?: string;
+    userId?: string;
+  };
+  if (!scanId || !url || !workspaceId || !userId) {
+    throw new Error('WEBSITE_SCAN: scanId + url + workspaceId + userId vereist');
+  }
+  const { startScanPipeline } = await import('@/lib/website-scanner/scanner-pipeline');
+  await startScanPipeline(scanId, url, workspaceId, userId);
+  return { scanId };
+});
+
+registerHandler('BRANDVOICE_ANALYZE_URL', async (job) => {
+  const { jobId, workspaceId, brandName, url, pastedSamples } = (job.payload ?? {}) as {
+    jobId?: string;
+    workspaceId?: string;
+    brandName?: string | null;
+    url?: string;
+    pastedSamples?: string[];
+  };
+  if (!jobId || !workspaceId) throw new Error('BRANDVOICE_ANALYZE_URL: jobId + workspaceId vereist');
+  const { startVoiceAnalysisPipeline } = await import('@/lib/brandvoice/voice-analyzer-engine');
+  await startVoiceAnalysisPipeline({ jobId, workspaceId, brandName, url, pastedSamples });
+  return { jobId };
+});

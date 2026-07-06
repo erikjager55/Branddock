@@ -211,6 +211,7 @@ model Workspace {
   // Trend Radar
   detectedTrends    DetectedTrend[]
   trendResearchJobs TrendResearchJob[]
+  voiceAnalysisJobs VoiceAnalysisJob[]
 
   // Competitors
   competitors            Competitor[]
@@ -3967,6 +3968,25 @@ model TrendResearchJob {
   @@index([primaryCallTraceId])
 }
 
+// Serverless-safe voortgang voor brandvoice-analyse (was in-memory Map in
+// voice-analyzer-engine; op Vercel overleeft die geen instance-hop).
+model VoiceAnalysisJob {
+  id          String    @id // "voice_<uuid>" — door de route gezet
+  status      String    @default("PENDING") // VoiceAnalysisStatus
+  progress    Int       @default(0)
+  currentStep String    @default("Queued")
+  errors      String[]
+  result      Json?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([status])
+}
+
 // =============================================================
 // Competitors Analysis
 // =============================================================
@@ -5081,6 +5101,8 @@ enum AgentJobType {
   CHAT_FEEDBACK_ANALYZE
   ALIGNMENT_SCAN
   TREND_RESEARCH
+  WEBSITE_SCAN
+  BRANDVOICE_ANALYZE_URL
 }
 
 model AgentJob {

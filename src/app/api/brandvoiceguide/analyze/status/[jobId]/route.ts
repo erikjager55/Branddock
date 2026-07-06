@@ -20,16 +20,12 @@ export async function GET(
     }
 
     const { jobId } = await params;
-    const progress = getVoiceAnalysisProgress(jobId);
+    const progress = await getVoiceAnalysisProgress(jobId);
     if (!progress) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    // Strip any internal _completedAt key before sending to client.
-    const { ...clean } = progress as typeof progress & { _completedAt?: number };
-    delete (clean as { _completedAt?: number })._completedAt;
-
-    return NextResponse.json(clean);
+    return NextResponse.json(progress);
   } catch (error) {
     console.error("[GET /api/brandvoiceguide/analyze/status]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

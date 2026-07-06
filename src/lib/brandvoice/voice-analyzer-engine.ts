@@ -31,36 +31,42 @@ import type {
   VoiceAnalysisResult,
   VoiceAnalysisProgress,
 } from "@/features/brandvoice/types/voiceguide.types";
+import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
-// ─── In-memory progress store ───────────────────────────────
+// ─── DB-backed progress store (serverless-safe) ─────────────
+// Was een in-memory Map; op Vercel overleeft die geen instance-hop, dus de
+// voortgang leeft nu op het VoiceAnalysisJob-record (route maakt 't aan).
 
-const progressMap = new Map<string, VoiceAnalysisProgress>();
-
-export function getVoiceAnalysisProgress(jobId: string): VoiceAnalysisProgress | null {
-  return progressMap.get(jobId) ?? null;
+export async function getVoiceAnalysisProgress(
+  jobId: string,
+): Promise<VoiceAnalysisProgress | null> {
+  const row = await prisma.voiceAnalysisJob.findUnique({ where: { id: jobId } });
+  if (!row) return null;
+  return {
+    jobId: row.id,
+    status: row.status as VoiceAnalysisStatus,
+    progress: row.progress,
+    currentStep: row.currentStep,
+    errors: row.errors,
+    result: (row.result as unknown as VoiceAnalysisResult | null) ?? null,
+  };
 }
 
-function setStatus(
+async function setStatus(
   jobId: string,
   status: VoiceAnalysisStatus,
-  patch: Partial<VoiceAnalysisProgress> = {},
-) {
-  const current = progressMap.get(jobId);
-  if (!current) return;
-  progressMap.set(jobId, { ...current, status, ...patch });
+  patch: Partial<Pick<VoiceAnalysisProgress, "progress" | "currentStep">> = {},
+): Promise<void> {
+  await prisma.voiceAnalysisJob.update({
+    where: { id: jobId },
+    data: {
+      status,
+      ...(patch.progress != null ? { progress: patch.progress } : {}),
+      ...(patch.currentStep != null ? { currentStep: patch.currentStep } : {}),
+    },
+  });
 }
-
-// ─── Cleanup: remove finished jobs after 30 minutes ─────────
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [id, p] of progressMap.entries()) {
-    if (p.status === "COMPLETED" || p.status === "FAILED") {
-      const completedAt = (p as { _completedAt?: number })._completedAt ?? now;
-      if (now - completedAt > 30 * 60 * 1000) progressMap.delete(id);
-    }
-  }
-}, 5 * 60 * 1000);
 
 // ─── Public start function ──────────────────────────────────
 
@@ -74,31 +80,17 @@ export interface StartVoiceAnalysisInput {
 }
 
 /**
- * Initialize the progress entry. Call this BEFORE startVoiceAnalysisPipeline
- * so the polling endpoint always has a record to return.
- */
-export function initVoiceAnalysisJob(jobId: string): void {
-  progressMap.set(jobId, {
-    jobId,
-    status: "PENDING",
-    progress: 0,
-    currentStep: "Queued",
-    errors: [],
-    result: null,
-  });
-}
-
-/**
- * Fire-and-forget — kicks off scraping + Claude analysis. Resolves once the
- * job is queued; the heavy work runs in the background and updates progressMap.
+ * Draait de volledige scrape + Claude-analyse. Wordt geAwait door de
+ * BRANDVOICE_ANALYZE_URL job-handler (serverless-safe), zodat de job pas
+ * klaar is als het werk klaar is. Schrijft voortgang naar het
+ * VoiceAnalysisJob-record (door de route aangemaakt vóór de dispatch).
  */
 export async function startVoiceAnalysisPipeline(input: StartVoiceAnalysisInput): Promise<void> {
   const { jobId } = input;
 
-  // Async IIFE so we can return immediately
-  void (async () => {
+  await (async () => {
     try {
-      setStatus(jobId, "SCRAPING", { progress: 10, currentStep: "Collecting source text" });
+      await setStatus(jobId, "SCRAPING", { progress: 10, currentStep: "Collecting source text" });
 
       let corpus = "";
       const sourceLabels: string[] = [];
@@ -143,7 +135,7 @@ export async function startVoiceAnalysisPipeline(input: StartVoiceAnalysisInput)
         );
       }
 
-      setStatus(jobId, "EXTRACTING", { progress: 35, currentStep: "Preparing corpus for Claude" });
+      await setStatus(jobId, "EXTRACTING", { progress: 35, currentStep: "Preparing corpus for Claude" });
 
       // Descriptive output fields must follow the workspace content language
       // (what the Voice DNA tab shows). Resolution failure is non-critical:
@@ -162,7 +154,7 @@ export async function startVoiceAnalysisPipeline(input: StartVoiceAnalysisInput)
         sourceLabels,
       });
 
-      setStatus(jobId, "ANALYZING", { progress: 60, currentStep: "Claude analyzing voice" });
+      await setStatus(jobId, "ANALYZING", { progress: 60, currentStep: "Claude analyzing voice" });
 
       const result = await createClaudeStructuredCompletion<VoiceAnalysisResult>(
         buildVoiceAnalysisSystemPrompt(contentLanguage),
@@ -202,34 +194,29 @@ export async function startVoiceAnalysisPipeline(input: StartVoiceAnalysisInput)
         rationale: result.rationale ?? {},
       };
 
-      const completedAt = Date.now();
-      progressMap.set(jobId, {
-        jobId,
-        status: "COMPLETED",
-        progress: 100,
-        currentStep: "Done",
-        errors: [],
-        result: sanitized,
-        // mark internally for cleanup timer
-        ...({ _completedAt: completedAt } as object),
+      await prisma.voiceAnalysisJob.update({
+        where: { id: jobId },
+        data: {
+          status: "COMPLETED",
+          progress: 100,
+          currentStep: "Done",
+          result: sanitized as unknown as Prisma.InputJsonValue,
+          completedAt: new Date(),
+        },
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      const current = progressMap.get(jobId);
-      progressMap.set(jobId, {
-        ...(current ?? {
-          jobId,
-          status: "FAILED",
-          progress: 0,
-          currentStep: null,
-          errors: [],
-          result: null,
-        }),
-        status: "FAILED",
-        currentStep: "Failed",
-        errors: [...(current?.errors ?? []), message],
-        ...({ _completedAt: Date.now() } as object),
-      });
+      await prisma.voiceAnalysisJob
+        .update({
+          where: { id: jobId },
+          data: {
+            status: "FAILED",
+            currentStep: "Failed",
+            errors: { push: message },
+            completedAt: new Date(),
+          },
+        })
+        .catch(() => {});
     }
   })();
 }

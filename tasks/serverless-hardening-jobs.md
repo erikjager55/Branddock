@@ -44,16 +44,16 @@ Latency-noot: minute-cron → tot ~60s start-latency. Acceptabel (spinner dekt h
 - 3 job-types + handlers (dynamic import van de bestaande functies); 9 routes await'en nu `dispatchJob`.
 - studio `generate-visual*` / `refine-visual` fidelity-rescore fire-and-forgets.
 
-## ⬜ Tier 3 — in-memory progress Map → eerst naar domein-tabel
-- `website-scanner/route.ts` + `scanner-pipeline.ts:348` (`scanProgress` Map + `setInterval`) → progress naar een DB-kolom/tabel, dan enqueue + client polt DB.
-- `brandvoice/voice-analyzer-engine.ts:55` (`progressMap` + `setInterval`).
+## ✅ Tier 3 — in-memory progress Map → DB — DONE 2026-07-06
+- `website-scanner` → `WEBSITE_SCAN`: enqueue; polling loopt via de al-bestaande DB-fallback (`[jobId]/route.ts` + `WebsiteScan`-progress-velden). `setInterval` verwijderd; Map blijft same-instance-cache.
+- `brandvoice` → `BRANDVOICE_ANALYZE_URL`: **nieuw `VoiceAnalysisJob`-model** (DB-backed progress); engine schrijft nu naar het record i.p.v. de `progressMap`; route maakt record + enqueue; status-endpoint leest DB; `setInterval` weg.
+- **A1 is hiermee compleet** (representant + Tier 1 + Tier 1-rest + Tier 2 + Tier 3).
 
 # Acceptatie
 - [x] Patroon vastgesteld + representant (brandstyle url+pdf) op de queue.
 - [x] Tier 2 gemigreerd (DAM/bug/feedback, 2026-07-03).
 - [x] Tier 1-restant gemigreerd (alignment/scan, trend-radar, 2026-07-05).
-- [ ] Tier 3 (website-scanner + brandvoice: in-memory Map → DB-progress).
-- [ ] Tier 3: in-memory Maps vervangen door DB-progress + gemigreerd.
+- [x] Tier 3 gemigreerd (website-scanner + brandvoice: in-memory Map → DB-progress, 2026-07-06). A1 compleet.
 - [ ] Smoke (Fase 5): start elke pipeline op de deploy → job enqueued → cron verwerkt → progress + resultaat verschijnen cross-instance.
 
 # Verificatie-noot
