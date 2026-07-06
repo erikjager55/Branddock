@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/shared';
 import { MarkdownContent } from '@/features/claw/components/MarkdownContent';
 import { ProposalConfirmCard } from './ProposalConfirmCard';
+import { TableArtifactView } from './TableArtifactView';
 import { useArtifactAction } from '../hooks';
 import { navigateToEntity } from '../lib/entity-navigation';
 import type { AgentArtifactFull, LinkArtifactContent } from '../types/agents.types';
@@ -48,8 +49,6 @@ export function ArtifactViewer({
   artifact: AgentArtifactFull;
   onNavigate: (section: string) => void;
 }) {
-  const { t } = useTranslation('agents');
-
   const icon = (() => {
     switch (artifact.type) {
       case 'REPORT':
@@ -89,9 +88,7 @@ export function ArtifactViewer({
 
       <div className="px-4 py-4">
         {artifact.type === 'REPORT' && <ReportBody artifact={artifact} />}
-        {artifact.type === 'TABLE' && (
-          <p className="text-sm text-muted-foreground">{t('artifact.table.placeholder')}</p>
-        )}
+        {artifact.type === 'TABLE' && <TableArtifactView artifact={artifact} />}
         {artifact.type === 'FINDINGS' && <FindingsBody artifact={artifact} />}
         {artifact.type === 'LINK' && <LinkBody artifact={artifact} onNavigate={onNavigate} />}
       </div>

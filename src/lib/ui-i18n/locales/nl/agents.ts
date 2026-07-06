@@ -96,8 +96,11 @@ const ns = {
     actionError: 'Kon het resultaat niet bijwerken',
     fidelityScore: 'Brand fidelity',
     table: {
-      placeholder:
-        'De tabelweergave komt met de Data Analyst-agent. De onderliggende data blijft bewaard en wordt bij accepteren opgeslagen in de Knowledge Library.',
+      invalid: 'Deze tabel kan niet worden weergegeven — de onderliggende data is misvormd.',
+      empty: 'De query leverde geen rijen op.',
+      rowCount_one: '{{count}} rij',
+      rowCount_other: '{{count}} rijen',
+      sortHint: 'Sorteer op {{column}}',
     },
     findings: {
       flagged: 'Onder de merkdrempel — beoordeel vóór gebruik.',
