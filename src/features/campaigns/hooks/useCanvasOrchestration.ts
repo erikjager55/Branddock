@@ -6,6 +6,8 @@
 // =============================================================
 
 import { useRef, useCallback } from 'react';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { canvasKeys } from './canvas.hooks';
 import { useCanvasStore } from '../stores/useCanvasStore';
 import type { CanvasVariant, CanvasImageVariant } from '../types/canvas.types';
 import { interpretAiError, errorFromResponse } from '@/lib/ai/ai-error-client';
@@ -56,6 +58,7 @@ function parseNamedSSE(buffer: string): { events: ParsedSSEEvent[]; remainder: s
 export function useCanvasOrchestration(deliverableId: string | null) {
   const abortRef = useRef<AbortController | null>(null);
   const isGeneratingRef = useRef(false);
+  const qc = useQueryClient();
 
   const generate = useCallback(async (options?: { instruction?: string; targetLanguage?: string }) => {
     if (!deliverableId || isGeneratingRef.current) return;
@@ -146,6 +149,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
 
       const decoder = new TextDecoder();
       let buffer = '';
+      let seoQueued = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -156,6 +160,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
         buffer = remainder;
 
         for (const evt of events) {
+          if (evt.event === 'seo_queued') seoQueued = true;
           routeEvent(evt.event, evt.data);
         }
       }
@@ -164,8 +169,16 @@ export function useCanvasOrchestration(deliverableId: string | null) {
       if (buffer.trim()) {
         const { events } = parseNamedSSE(buffer + '\n\n');
         for (const evt of events) {
+          if (evt.event === 'seo_queued') seoQueued = true;
           routeEvent(evt.event, evt.data);
         }
+      }
+
+      // Serverless-safe SEO-pad: de orchestrate-stream levert alleen 'seo_queued'
+      // (de 8-staps-pipeline draait als queued job). Switch naar polling van de
+      // job-progress; op COMPLETED herladen we de gepersisteerde varianten.
+      if (seoQueued && deliverableId) {
+        await pollSeoProgress(deliverableId, qc, controller.signal);
       }
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
@@ -185,7 +198,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
         finalStore.setGlobalStatus('complete');
       }
     }
-  }, [deliverableId]);
+  }, [deliverableId, qc]);
 
   const regenerate = useCallback(async (groups: string[], feedback: string) => {
     if (!deliverableId || isGeneratingRef.current || groups.length === 0) return;
@@ -573,6 +586,12 @@ function routeEvent(eventName: string, rawData: string) {
       break;
     }
 
+    case 'seo_queued':
+      // Serverless-safe SEO: de pipeline draait als queued job; toon de 8-stap-
+      // tracker meteen. De hook polt seo-progress voor de voortgang.
+      store.initSeoSteps();
+      break;
+
     case 'complete': {
       const nudges = Array.isArray(data.iterationNudges)
         ? (data.iterationNudges as Array<{
@@ -625,5 +644,60 @@ function routeEvent(eventName: string, rawData: string) {
     default:
       // Unknown event — ignore gracefully
       break;
+  }
+}
+
+// ─── SEO job polling (serverless decompose) ─────────────────
+// De 8-staps-SEO-pipeline draait als queued job (survive-de-time-limit). Na een
+// 'seo_queued'-event polt de client hier de job-voortgang, mapt 'm op dezelfde
+// seoSteps-UI, en herlaadt op COMPLETED de gepersisteerde varianten via de
+// bestaande components-query.
+async function pollSeoProgress(
+  deliverableId: string,
+  qc: QueryClient,
+  signal: AbortSignal,
+): Promise<void> {
+  const initial = useCanvasStore.getState();
+  if (initial.seoSteps.length === 0) initial.initSeoSteps();
+
+  while (!signal.aborted) {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    if (signal.aborted) return;
+
+    let job:
+      | { status: string; currentStep: number; stepLabel: string; errors?: string[] }
+      | null = null;
+    try {
+      const res = await fetch(`/api/studio/${deliverableId}/seo-progress`, { signal });
+      if (res.ok) job = await res.json();
+    } catch {
+      if (signal.aborted) return;
+      continue; // transient — opnieuw proberen
+    }
+    if (!job) continue;
+
+    const store = useCanvasStore.getState();
+    for (let step = 1; step <= 8; step++) {
+      if (step < job.currentStep) {
+        store.updateSeoStep(step, { status: 'complete', preview: null });
+      } else if (step === job.currentStep && job.status !== 'COMPLETED') {
+        store.updateSeoStep(step, { status: 'running', preview: null });
+      }
+    }
+
+    if (job.status === 'COMPLETED') {
+      for (let step = 1; step <= 8; step++) {
+        store.updateSeoStep(step, { status: 'complete', preview: null });
+      }
+      await qc.invalidateQueries({ queryKey: canvasKeys.components(deliverableId) });
+      store.setGlobalStatus('complete');
+      return;
+    }
+    if (job.status === 'FAILED') {
+      store.setGlobalStatus('error', {
+        message: job.errors?.[0] ?? 'SEO generation failed',
+      });
+      return;
+    }
   }
 }

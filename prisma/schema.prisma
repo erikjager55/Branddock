@@ -212,6 +212,7 @@ model Workspace {
   detectedTrends    DetectedTrend[]
   trendResearchJobs TrendResearchJob[]
   voiceAnalysisJobs VoiceAnalysisJob[]
+  seoGenerationJobs SeoGenerationJob[]
 
   // Competitors
   competitors            Competitor[]
@@ -1102,6 +1103,7 @@ model Deliverable {
   status      DeliverableStatus @default(NOT_STARTED)
   progress    Float             @default(0)
   assignedTo  String?
+  seoGenerationJobs SeoGenerationJob[]
 
   // Content Studio velden
   contentTab String? // "text", "images", "video", "carousel"
@@ -5103,6 +5105,35 @@ enum AgentJobType {
   TREND_RESEARCH
   WEBSITE_SCAN
   BRANDVOICE_ANALYZE_URL
+  SEO_GENERATE
+}
+
+// Serverless-safe SEO-generatie: de 8-staps-pipeline draait als resumable job
+// (checkpoint per stap i.p.v. inline in de SSE-route die op Vercel gekild wordt).
+model SeoGenerationJob {
+  id                String    @id @default(cuid())
+  deliverableId     String
+  workspaceId       String
+  status            String    @default("PENDING") // PENDING|RUNNING|COMPLETED|FAILED
+  currentStep       Int       @default(0) // 0 = niet gestart; 1..8
+  totalSteps        Int       @default(8)
+  stepLabel         String    @default("Queued")
+  seoInput          Json // SeoInput
+  optimizationGoals String[] // OptimizationGoal[]
+  contentType       String
+  contextStack      Json // geserialiseerde CanvasContextStack — zodat de job de generator kan draaien
+  voiceDirective    String   @db.Text
+  state             Json? // SeoPipelineState-checkpoint (reserve voor toekomstige per-stap-resume)
+  errors            String[]
+  startedAt         DateTime  @default(now())
+  completedAt       DateTime?
+
+  deliverable Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([deliverableId])
+  @@index([workspaceId])
+  @@index([status])
 }
 
 model AgentJob {
