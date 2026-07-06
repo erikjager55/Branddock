@@ -5,7 +5,7 @@ fase: pre-launch
 priority: now
 effort: 4-6 dagen
 owner: claude-code
-status: in-review (gebouwd 2026-07-06, branch feat/agents-motor-wiring — alle 5 agents live gesmoked; task-finalize pending)
+status: done
 created: 2026-07-05
 completed: -
 related-adr: docs/adr/2026-07-05-agents-architectuur.md
@@ -129,3 +129,17 @@ Bouw één dunne **Claw→orchestrator tool-bridge** (`clawToolToAgentTool`): ma
 
 ## Gates
 `npx tsc --noEmit` 0 errors · eslint op alle geraakte dirs 0 errors · totale smoke-kosten ~$1,20.
+
+
+---
+
+# Task-finalize 2026-07-06 — review-loop-bewijs
+
+**4 review-rondes** (2 onafhankelijke reviewers per ronde 1-3, focused delta-reviewer ronde 4):
+- **3 CRITICAL gefixt**: (1) confirm-route miste member+-rol-check (viewers konden mutaties uitvoeren); (2) TOCTOU-race — atomic claim + releaseClaim-rollback + 409; (3) geforgede PROPOSAL-artefacten — model-authored types ge-whitelist tot REPORT/LINK + requiresConfirmation-check + schema-hervalidatie in confirm.
+- **12 WARNINGs gefixt**: o.a. expliciet ctx.userId-contract (geen triggerSource-smokkel), mechanische fencing (fenceUntrustedContent) op bridge/deep-research-output, per-stap-deadlines (strategy 6min / F-VAL 4min / generatie 10min), settle-vóór-generatie, soft-fail→502, scan-dispatchJob (start_alignment_scan/start_trend_scan maakten rijen zonder job — pre-existing Claw-gap), 409-self-heal + releaseClaim-status-reset, fval/dashboard-cache-parity, shape-guards, malformed-proposal-reject-bereikbaarheid.
+- Ronde 4 eindigde op 1 smal self-introduced race-venster → 3-regel-fix (releaseClaim reset run-status); ronde 5 geskipt op de hard-limit — de fix is mechanisch verifieerbaar en alle overige bevindingen waren MINOR.
+
+**Gates**: tsc 0 · eslint 0 · smoke-script 14/14 · live claim-semantiek bewezen (reject 200 → re-confirm 409 → unauth 401).
+
+**Deferred MINORs** (bewust, uit rondes 2-4): 401-vs-403-volgorde op GET /api/agents; markdown-cap-asymmetrie REPORT-artefact vs KnowledgeResource (200k); toolCallTrace bevat gefencede string voor bridged tools (debug-leesbaarheid); TOOL_CACHE_PREFIXES zonder bootstrap-assert; run-collector single-process-constraint documenteren voor Fase 2; strategist-tools herbouwen pipeline-context per stap (3x fetch); viewers kunnen PROPOSAL niet rejecten (member+ ook voor reject — bewuste keuze); dubbele sessie-fetch confirm-route; fencing-conventie tweeledig (strategist/fval-output niet gefenced — LLM-synthese, geen raw scrape).
