@@ -111,10 +111,10 @@ export async function* runSeoPipeline(
 
   // ── Uitvoering in waves (parallel waar de deps het toelaten) ───────────
   // Stap 2 & 3 hangen beide enkel aan stap 1 → parallel; 4-8 sequentieel.
-  // Kwaliteit-kritische prose-stappen (6/7/8) op het premium model; de
-  // research/planning-stappen (1/2/3/4/5) op het snelle research-model.
+  // Kwaliteit-kritische prose-stappen (6 draft, 7 editorial) op het premium model;
+  // de research/planning-stappen + de checklist-only stap 8 op het snelle model.
   const WAVES: readonly (readonly number[])[] = [[1], [2, 3], [4], [5], [6], [7], [8]];
-  const QUALITY_STEPS = new Set<number>([6, 7, 8]);
+  const QUALITY_STEPS = new Set<number>([6, 7]);
   const timings: { step: number; ms: number }[] = state.timings ? [...state.timings] : [];
   const stepTracking = { workspaceId, deliverableId };
 
@@ -206,46 +206,41 @@ export async function* runSeoPipeline(
     return;
   }
 
+  const stripFences = (s: string): string =>
+    s.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
+  // finalContent = de editorial-reviewed content uit stap 7 (geen 3e volledige
+  // rewrite meer in stap 8 — dat was ~100s redundant). Stap 8 levert enkel de
+  // technische SEO-checklist. Kwaliteit-neutraal: stap 7 is de laatste prose-pass.
   let finalContent: string;
   let seoChecklist: SeoChecklist | null = null;
 
+  const step7Output = state.outputs.find((o) => o.step === 7);
   try {
-    // Strip markdown code fences if present (AI sometimes wraps JSON in ```json ... ```)
-    const cleanedText = step8Output.rawText
-      .replace(/^```(?:json)?\s*\n?/i, '')
-      .replace(/\n?```\s*$/i, '')
-      .trim();
-    const parsed = JSON.parse(cleanedText) as PublicationPrep;
-    finalContent = parsed.finalContent;
-    seoChecklist = parsed.checklist;
+    finalContent = (JSON.parse(stripFences(step7Output!.rawText)) as EditorialReview).revisedContent;
   } catch {
-    console.warn('[seo-pipeline] Step 8 JSON parse failed, using raw text. SEO checklist will be unavailable.');
-    finalContent = step8Output.rawText;
+    finalContent = step7Output?.rawText ?? step8Output.rawText;
+  }
+  try {
+    seoChecklist = (JSON.parse(stripFences(step8Output.rawText)) as PublicationPrep).checklist;
+  } catch {
+    console.warn('[seo-pipeline] Step 8 checklist parse failed — checklist unavailable.');
   }
 
-  // Generate variant B — alternative angle using same SEO research
+  // Generate variant B — alternative angle. Op het snelle research-model (Sonnet):
+  // variant B is de alternatieve optie (niet de default-geselecteerde) → speed > premium.
   let variantBContent: string;
   try {
     variantBContent = await generateAlternativeVariant(
       finalContent,
       state.accumulatedContext,
       voiceDirective,
-      textModel,
+      researchModel,
       { workspaceId, deliverableId },
     );
   } catch {
-    // Fallback: use the editorial review version (step 7) as variant B
-    const step7Output = state.outputs.find((o) => o.step === 7);
-    if (step7Output) {
-      try {
-        const parsed = JSON.parse(step7Output.rawText) as EditorialReview;
-        variantBContent = parsed.revisedContent;
-      } catch {
-        variantBContent = step7Output.rawText;
-      }
-    } else {
-      variantBContent = finalContent;
-    }
+    // Fallback: hergebruik de editorial-review-content (stap 7) als variant B.
+    variantBContent = finalContent;
   }
 
   // ── GEO-polish (composable stage, Fase 3) ──────────────
@@ -438,10 +433,10 @@ interface StepBudget {
 }
 
 const STEP_BUDGETS: Record<number, StepBudget> = {
-  5: { maxTokens: 24000, timeoutMs: 240_000 },  // Outline & Internal Links
+  5: { maxTokens: 12000, timeoutMs: 180_000 },  // Outline & Internal Links (cap — 24K was veel te ruim)
   6: { maxTokens: 24000, timeoutMs: 240_000 },  // First Draft (full page in JSON envelope)
   7: { maxTokens: 24000, timeoutMs: 240_000 },  // Editorial Review
-  8: { maxTokens: 32000, timeoutMs: 300_000 },  // Publication Prep (aggregator)
+  8: { maxTokens: 4000, timeoutMs: 120_000 },   // Publication Prep — enkel de checklist (geen rewrite meer)
 };
 
 /**
