@@ -98,6 +98,7 @@ import {
 // TIJDELIJK: Research Hub uitgeschakeld — fallback-surface + toggle.
 import { ComingSoonPage } from './components/shared/ComingSoonPage';
 import { RESEARCH_HUB_ENABLED } from './lib/constants/design-tokens';
+import { toast } from 'sonner';
 
 function AppContent() {
   const { isNotificationPanelOpen, closeNotifications } = useShellStore();
@@ -143,6 +144,22 @@ function AppContent() {
   useEffect(() => {
     useClawStore.getState().setCurrentPage(activeSection);
   }, [activeSection]);
+
+  // Post-Stripe-checkout redirect landt op /?checkout=success|cancel (de SPA is
+  // niet URL-adresseerbaar): open de billing-tab, toon feedback, schoon de query
+  // zodat een refresh de melding niet herhaalt.
+  useEffect(() => {
+    const checkout = new URLSearchParams(window.location.search).get('checkout');
+    if (checkout !== 'success' && checkout !== 'cancel') return;
+    setActiveSectionRaw('settings-billing');
+    if (checkout === 'success') {
+      toast.success('Betaling geslaagd — je abonnement is bijgewerkt.');
+    } else {
+      toast.info('Checkout geannuleerd — er is niets in rekening gebracht.');
+    }
+    window.history.replaceState({}, '', window.location.pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Consume pending navigation requests from the Brand Assistant (e.g. the
   // "View →" action on a create-persona toast). Sets the relevant detail store
