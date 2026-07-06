@@ -85,6 +85,9 @@ export async function* runSeoPipeline(
   // krijgt de SEO-output een GEO-polish vóór persist. Default [] = puur SEO
   // (byte-identiek aan vóór Fase 3; kill-switch via deze lijst).
   optimizationGoals: OptimizationGoal[] = [],
+  // Resumable decompose: al-voltooide stappen zitten hierin → de loop slaat ze
+  // over (skip AI-call) zodat een continuation-job vanaf de checkpoint verdergaat.
+  initialState?: SeoPipelineState,
 ): AsyncGenerator<OrchestrationEvent> {
   const startTime = Date.now();
 
@@ -97,11 +100,10 @@ export async function* runSeoPipeline(
   // Resolve AI model for text generation
   const textModel = await resolveFeatureModel(workspaceId, 'canvas-text-generate');
 
-  // Pipeline state accumulator
-  const state: SeoPipelineState = {
-    outputs: [],
-    accumulatedContext: '',
-  };
+  // Pipeline state accumulator — hydrateer vanaf een checkpoint (resume) of leeg.
+  const state: SeoPipelineState = initialState
+    ? { outputs: [...initialState.outputs], accumulatedContext: initialState.accumulatedContext }
+    : { outputs: [], accumulatedContext: '' };
 
   // ── Run 8 sequential steps ─────────────────────────────
 
@@ -114,6 +116,12 @@ export async function* runSeoPipeline(
       preview: null,
       totalSteps: 8,
     };
+
+    // Resume: stap al voltooid in de checkpoint → skip de AI-call.
+    if (state.outputs.some((o) => o.step === stepDef.step)) {
+      yield { event: 'seo_step', data: { ...stepEvent, status: 'complete' as const } };
+      continue;
+    }
 
     // Signal step start
     yield { event: 'seo_step', data: stepEvent };
@@ -177,12 +185,13 @@ export async function* runSeoPipeline(
       });
       state.accumulatedContext += `\n\n## Step ${stepDef.step}: ${stepDef.label}\n${rawOutput}\n---`;
 
-      // Signal step complete
+      // Signal step complete + checkpoint de state (voor resume in een continuation).
       const preview = generatePreview(stepDef.step, rawOutput);
       yield {
         event: 'seo_step',
         data: { ...stepEvent, status: 'complete' as const, preview },
       };
+      yield { event: 'seo_checkpoint', data: { state } };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       console.error(`[seo-pipeline] Step ${stepDef.step} (${stepDef.name}) failed:`, message);
