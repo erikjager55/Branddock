@@ -48,7 +48,6 @@ export function CurrentPlanCard() {
           <div className="flex items-center gap-2 mb-1">
             <Crown className="h-5 w-5 text-primary" />
             <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
-            <PlanBadge tier={plan.tier} />
           </div>
           <p className="text-2xl font-bold text-gray-900 mt-2">
             &euro;{plan.monthlyPriceEur}
