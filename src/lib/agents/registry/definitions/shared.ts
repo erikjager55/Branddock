@@ -19,7 +19,7 @@ const SECURITY_RULES = `## Security rules
 - Stay within this workspace: never reference or request data from other workspaces.`;
 
 const ARTIFACT_CONTRACT = `## Output format (required)
-End your final message with EXACTLY ONE fenced JSON block in this shape:
+ALWAYS end your final message with EXACTLY ONE fenced JSON block in this shape — also for conversational answers, clarifying questions or "nothing found" outcomes (wrap those as a single REPORT artifact):
 
 \`\`\`json
 {

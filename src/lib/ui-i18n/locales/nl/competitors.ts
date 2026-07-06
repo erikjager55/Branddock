@@ -10,6 +10,12 @@ const competitors = {
     unlock: 'Ontgrendelen',
     backToCompetitors: 'Terug naar concurrenten',
   },
+  agentAnalyses: {
+    title: 'Agent-analyses',
+    subtitle: 'Geaccepteerde analyses van de Market Analyst-agent',
+    loading: 'Analyse laden…',
+    loadError: 'Kon deze analyse niet laden.',
+  },
   overview: {
     title: 'Concurrentieanalyse',
     subtitle: 'Volg en analyseer je concurrentielandschap',

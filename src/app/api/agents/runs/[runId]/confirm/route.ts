@@ -269,6 +269,62 @@ export async function POST(
       invalidateCache(cacheKeys.prefixes.studio(workspaceId));
     }
 
+    // create_campaign: LINK-artefact naar de campagne + (Strategist)
+    // strategie-write-through — het strategie-REPORT van de run landt als
+    // strategicApproach op de campagne, zodat het resultaat óók in de
+    // Campaigns-module leeft (domain-first, dogfood-feedback 2026-07-06).
+    const campaignId =
+      toolName === "create_campaign" &&
+      result &&
+      typeof result === "object" &&
+      typeof (result as Record<string, unknown>).campaignId === "string"
+        ? ((result as Record<string, unknown>).campaignId as string)
+        : null;
+
+    if (campaignId) {
+      const campaignTitle =
+        typeof (result as Record<string, unknown>).campaignTitle === "string"
+          ? ((result as Record<string, unknown>).campaignTitle as string)
+          : "Campaign";
+      let strategyAttached = false;
+      if (run.agentId === "strategist") {
+        // Langste REPORT van de run = het strategie-rapport (korte
+        // narratief-fallbacks kwalificeren niet als campagne-strategie).
+        const reports = await prisma.agentArtifact.findMany({
+          where: { runId: run.id, workspaceId, type: "REPORT" },
+        });
+        const markdown = reports
+          .map((r) => {
+            const c = (r.content ?? {}) as Record<string, unknown>;
+            return typeof c.markdown === "string" ? c.markdown.trim() : "";
+          })
+          .sort((a, b) => b.length - a.length)[0] ?? "";
+        if (markdown.length >= 500) {
+          await prisma.campaign.updateMany({
+            where: { id: campaignId, workspaceId },
+            data: { strategicApproach: markdown.slice(0, 100_000) },
+          });
+          strategyAttached = true;
+        }
+      }
+      await prisma.agentArtifact.create({
+        data: {
+          workspaceId,
+          runId: run.id,
+          type: "LINK",
+          title: `Created: ${campaignTitle}`,
+          content: {
+            entityType: "campaign",
+            entityId: campaignId,
+            label: campaignTitle,
+            ...(strategyAttached ? { strategyAttached: true } : {}),
+          },
+        },
+      });
+      invalidateCache(cacheKeys.prefixes.agents(workspaceId));
+      invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+    }
+
     return NextResponse.json({
       executed: true,
       result,

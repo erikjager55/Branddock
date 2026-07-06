@@ -254,6 +254,8 @@ const ns = {
   },
 
   campaignMode: {
+    agentStrategyTitle: 'Agent strategy',
+    agentStrategySubtitle: 'Strategy direction from the Strategist agent — run the campaign wizard for a full blueprint',
     allContent: 'All content',
     notFound: 'Campaign not found.',
     strategic: 'Strategic',

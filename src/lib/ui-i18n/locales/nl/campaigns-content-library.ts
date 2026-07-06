@@ -254,6 +254,8 @@ const ns = {
   },
 
   campaignMode: {
+    agentStrategyTitle: 'Agent-strategie',
+    agentStrategySubtitle: 'Strategierichting van de Strategist-agent — draai de campagne-wizard voor een volledige blueprint',
     allContent: 'Alle content',
     notFound: 'Campagne niet gevonden.',
     strategic: 'Strategisch',

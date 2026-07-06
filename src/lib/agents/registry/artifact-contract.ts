@@ -52,8 +52,30 @@ export const artifactOutputContract: AgentOutputContract<
         changes: p.changes ?? [],
       } as Record<string, unknown>,
     }));
-    const allDrafts = [...parsed, ...serverDrafts, ...proposalDrafts];
+    let allDrafts = [...parsed, ...serverDrafts, ...proposalDrafts];
     const hasProposals = proposalDrafts.length > 0;
+
+    // Antwoord-fallback (dogfood-feedback 2026-07-06): een niet-getrunceerde
+    // run die alleen tekst opleverde (format-miss of conversationeel
+    // antwoord) toont dat antwoord als REPORT-artefact in de inbox i.p.v.
+    // een verwarrende "no parseable artifacts"-error zonder output.
+    const answerText =
+      parsed.length === 0 && !outcome.truncated && typeof outcome.finalMessage === "string"
+        ? outcome.finalMessage.trim()
+        : "";
+    const answerFallback = answerText.length > 0;
+    if (answerFallback) {
+      // Ook bij server-owned drafts/proposals: het narratief van de agent
+      // hoort zichtbaar te zijn in de inbox, niet alleen in finalMessage.
+      allDrafts = [
+        {
+          type: "REPORT",
+          title: "Agent response",
+          content: { markdown: answerText },
+        },
+        ...allDrafts,
+      ];
+    }
 
     let status: AgentFinalizeResult["status"];
     let error: string | null = null;
@@ -75,16 +97,14 @@ export const artifactOutputContract: AgentOutputContract<
     } else if (outcome.truncated) {
       status = "COMPLETED";
       error = `${abortNote} Output may be partial.`;
-    } else if (allDrafts.length === 0 && outcome.finalMessage) {
-      // Geen stille lege "succes"-run: het model produceerde wél tekst maar
-      // geen parseable artifacts-blok — meestal een max_tokens-afkap of een
-      // format-miss. Run blijft COMPLETED (0 artefacten is toegestaan) maar
-      // de error legt uit waarom de inbox leeg is; finalMessage is bewaard.
+    } else if (answerFallback) {
+      // Het antwoord is als fallback-REPORT zichtbaar; alleen bij een
+      // max_tokens-afkap blijft een uitleg staan (het antwoord is dan partieel).
       status = "COMPLETED";
       error =
         outcome.lastStopReason === "max_tokens"
-          ? "Run hit the max-tokens output limit before completing its artifacts JSON — output was cut off. Raw output is preserved in finalMessage."
-          : "Run completed but produced no parseable artifacts JSON block. Raw output is preserved in finalMessage.";
+          ? "Output hit the max-tokens limit — the report may be cut off."
+          : null;
     } else {
       status = "COMPLETED";
     }

@@ -3,6 +3,42 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 
 // PATCH /api/knowledge/:id — update resource fields
+/**
+ * GET /api/knowledge/[id] — één resource inclusief content (de list-route
+ * levert bewust geen content mee; detail-consumers zoals de Competitors
+ * "Agent analyses"-sectie halen de markdown hier op).
+ */
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
+    }
+    const { id } = await params;
+    const resource = await prisma.knowledgeResource.findFirst({ where: { id, workspaceId } });
+    if (!resource) {
+      return NextResponse.json({ error: "Resource not found" }, { status: 404 });
+    }
+    return NextResponse.json({
+      resource: {
+        id: resource.id,
+        title: resource.title,
+        description: resource.description,
+        category: resource.category,
+        content: resource.content,
+        aiSummary: resource.aiSummary,
+        createdAt: resource.createdAt.toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error("[GET /api/knowledge/[id]]", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

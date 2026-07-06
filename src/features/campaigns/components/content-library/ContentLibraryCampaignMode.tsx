@@ -17,6 +17,8 @@ import type { DeliverableResponse } from "@/types/campaign";
 import type { ContentLibraryItem } from "../../types/content-library.types";
 import { exportApprovedDeliverablesZip } from "../../lib/export-zip";
 import { StrategySection } from "../detail/strategy/StrategySection";
+import { MarkdownContent } from "@/features/claw/components/MarkdownContent";
+import { Bot } from "lucide-react";
 import { RegenerateSectionButton } from "../detail/strategy/RegenerateSectionButton";
 import { exportCampaignStrategyPdf } from "../../utils/exportCampaignStrategyPdf";
 import { exportCampaignStrategyJson } from "../../utils/exportCampaignStrategyJson";
@@ -539,6 +541,19 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
               </div>
             </div>
             <StrategySection strategy={blueprint.strategy} />
+          </div>
+        ) : campaign.strategicApproach ? (
+          // Agent-strategie (Strategist-agent, confirm-write-through) — de
+          // wizard-blueprint blijft leidend zodra die er is.
+          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Bot className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                {t("campaignMode.agentStrategyTitle")}
+              </h3>
+              <span className="text-xs text-gray-500">{t("campaignMode.agentStrategySubtitle")}</span>
+            </div>
+            <MarkdownContent content={campaign.strategicApproach} />
           </div>
         ) : (
           <EmptyState
