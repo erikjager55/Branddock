@@ -229,9 +229,12 @@ function parseInline(text: string): InlinePart[] {
 
 /** Alleen http/https/mailto en relatieve paden zijn klikbaar. */
 function isSafeLinkHref(href: string): boolean {
-  const trimmed = href.trim();
+  // Browsers strippen control-chars/whitespace bij URL-parsing — `java\tscript:`
+  // wordt effectief `javascript:`. Strip vooraf hetzelfde, anders is de
+  // allowlist met een tab-in-scheme te omzeilen (review-finding ronde 2).
+  const cleaned = href.replace(/[\u0000-\u0020]/g, '');
   // Relatieve links (geen scheme) zijn veilig; expliciete schemes via allowlist.
-  const schemeMatch = /^([a-zA-Z][a-zA-Z0-9+.-]*):/.exec(trimmed);
+  const schemeMatch = /^([a-zA-Z][a-zA-Z0-9+.-]*):/.exec(cleaned);
   if (!schemeMatch) return true;
   return ['http', 'https', 'mailto'].includes(schemeMatch[1].toLowerCase());
 }
