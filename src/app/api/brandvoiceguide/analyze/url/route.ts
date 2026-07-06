@@ -16,10 +16,7 @@ import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
-import {
-  initVoiceAnalysisJob,
-  startVoiceAnalysisPipeline,
-} from "@/lib/brandvoice/voice-analyzer-engine";
+import { dispatchJob } from "@/lib/agents/jobs/dispatch";
 
 const bodySchema = z
   .object({
@@ -50,15 +47,31 @@ export async function POST(request: NextRequest) {
     });
 
     const jobId = `voice_${randomUUID()}`;
-    initVoiceAnalysisJob(jobId);
+    await prisma.voiceAnalysisJob.create({
+      data: {
+        id: jobId,
+        workspaceId,
+        status: "PENDING",
+        progress: 0,
+        currentStep: "Queued",
+        errors: [],
+      },
+    });
 
-    // Fire-and-forget — engine updates the in-memory progress map.
-    void startVoiceAnalysisPipeline({
-      jobId,
+    // Serverless-safe: op de queue i.p.v. fire-and-forget (Vercel kilt post-response).
+    await dispatchJob({
+      type: "BRANDVOICE_ANALYZE_URL",
+      payload: {
+        jobId,
+        workspaceId,
+        brandName: workspace?.name ?? null,
+        url: parsed.data.url,
+        pastedSamples: parsed.data.pastedSamples,
+      },
       workspaceId,
-      brandName: workspace?.name ?? null,
-      url: parsed.data.url,
-      pastedSamples: parsed.data.pastedSamples,
+      maxAttempts: 1,
+      idempotencyKey: `brandvoice-analyze:${jobId}`,
+      triggeredBy: "user",
     });
 
     return NextResponse.json({ jobId });

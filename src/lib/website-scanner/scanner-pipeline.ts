@@ -344,11 +344,6 @@ async function finalizeScan(
   }
 }
 
-// Clean up old progress entries after 30 minutes
-setInterval(() => {
-  for (const [id, p] of scanProgress.entries()) {
-    if (p.status === 'COMPLETED' || p.status === 'FAILED' || p.status === 'CANCELLED') {
-      scanProgress.delete(id);
-    }
-  }
-}, 5 * 60 * 1000);
+// Geen module-level setInterval meer: serverless-instances zijn ephemeral (de
+// timer lekt), en de progress-Map is nu enkel een same-instance-cache naast de
+// DB-fallback in [jobId]/route.ts. De Map wordt impliciet opgeruimd bij recycle.

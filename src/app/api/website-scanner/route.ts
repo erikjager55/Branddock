@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
-import { startScanPipeline } from '@/lib/website-scanner/scanner-pipeline';
+import { dispatchJob } from '@/lib/agents/jobs/dispatch';
 import { checkGenericRateLimit } from '@/lib/ai/rate-limiter';
 
 // Each scan triggers a full outbound fetch pipeline — cap per workspace so an
@@ -58,9 +58,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Fire-and-forget: start pipeline in background
-    startScanPipeline(scan.id, url, workspaceId, userId).catch((err) => {
-      console.error(`[website-scanner] Pipeline failed for scan ${scan.id}:`, err);
+    // Serverless-safe: op de queue i.p.v. fire-and-forget (Vercel kilt post-response).
+    // Cross-instance polling loopt via de DB-fallback in [jobId]/route.ts.
+    await dispatchJob({
+      type: 'WEBSITE_SCAN',
+      payload: { scanId: scan.id, url, workspaceId, userId },
+      workspaceId,
+      maxAttempts: 1,
+      idempotencyKey: `website-scan:${scan.id}`,
+      triggeredBy: 'user',
     });
 
     return NextResponse.json(
