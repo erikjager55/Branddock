@@ -141,6 +141,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | [`vercel-deployment`](tasks/vercel-deployment.md) | Vercel + Neon DB + serverless-hardening + monitoring | ~2wk | #5 | ✅ **DONE + LIVE 2026-07-05** (PR #76) |
 | [`stripe-billing-live`](tasks/stripe-billing-live.md) | Stripe live billing — checkout + webhooks + plan enforcement | 1w | #6 | ✅ **LIVE 2026-07-06** (PR #79 hardening + #85/#86 redirect-fixes + #88 styling + go-live) — checkout/webhook(9 events)/portal live op het betterbrands.nl-account; `NEXT_PUBLIC_BILLING_ENABLED=true` in Vercel; end-to-end getest (checkout→PRO, cancel→FREE) |
 | [`pilot-onboarding-better-brands`](tasks/pilot-onboarding-better-brands.md) | Better Brands eerste pilot live | 2d | #6 (na vercel) | open task-file |
+| [`review-live-pricing`](tasks/review-live-pricing.md) | Prijzen op de live site nalopen (bedragen + yearly-toggle + dubbele producten) | <1u | #6 | open — na stripe go-live (2026-07-07) |
 | `onboarding-flow-test` | Onboarding flow met 3 externe gebruikers | 1w | #7 | task-file volgt |
 | `marketing-site-pricing` | Marketing site + pricing pagina | 1w | #6-7 | task-file volgt |
 | [`ci-golden-set-e2e-fixes`](tasks/ci-golden-set-e2e-fixes.md) | CI-gates groen vóór livegang: `evaluate` (golden-set) faalt 0/10 (ontbrekende AI-keys in PR-context) + `e2e` flaky (rauwe `onboarding.skipTour`-i18n-key) | 0.5d | #7 | open — niet-blokkerend, wél groen maken vóór go-live |
