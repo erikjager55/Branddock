@@ -37,6 +37,14 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 366. Stripe billing — LIVE op productie (go-live)
+
+`stripe-billing-live` is volledig live gegaan op productie (`branddock-7y9n.vercel.app`). Bovenop de hardening (#79 — dode change-plan-exploit weg, one-time-purchase-completion, invoice/yearly-bug, env fail-fast) landden twee checkout-redirect-404-fixes (#85 checkout-success/cancel, #86 portal-return — de hybride SPA heeft geen URL-adresseerbare pagina's, dus redirect naar `/?checkout=…` + `App.tsx` opent de billing-tab) en een billing-styling-pass (#88 — PAID-badge groen [case-bug `PAID`≠`paid`], "Pro Pro"-redundantie weg, payment-copy naar "beheer via Stripe"). Go-live op het betterbrands.nl Stripe-account: 3 live-producten (PRO €29 / AGENCY €99 / ENTERPRISE €249), live-webhook (`we_…`, 9 events, enabled) op de Vercel-URL, Customer Portal (cancel at_period_end), en de live-vars + `NEXT_PUBLIC_BILLING_ENABLED=true` via een geïmporteerd `.env` in Vercel. End-to-end geverifieerd in test-mode (checkout→PRO, cancel→FREE) + live bevestigd. **Beide harde launch-blockers (Vercel + Stripe) zijn nu weg**; kritieke pad naar de eerste pilot = `pilot-onboarding-better-brands`.
+
+- Task: [tasks/stripe-billing-live.md](../tasks/stripe-billing-live.md) — done (LIVE)
+- PR's: #79 (hardening) · #85/#86 (redirect-fixes) · #88 (styling) · go-live via Stripe-API + Vercel-env
+- Playbook: [docs/playbooks/stripe-go-live.md](playbooks/stripe-go-live.md)
+
 ### 365. Agents content sources — bronnen kiezen per agent-run (Brand-Assistant-pariteit)
 
 Elke agent-use-case heeft nu een inklapbare "Content sources"-kiezer (zelfde modulelijst en labels als de Brand Assistant). Zonder selectie draait de run ongewijzigd op de volledige merkcontext; met selectie bevat de system-prompt alleen de gekozen bronnen (zelfde module-fetches als de Claw-overlay, incl. expliciete notitie wanneer het merkfundament is uitgesloten). Server-side gevalideerd en gefilterd; deselect-all wordt in de UI geblokkeerd. Deterministisch bewezen (prompt 20,9k → 7,7k bij personas-only).
