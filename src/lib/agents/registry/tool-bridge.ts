@@ -105,8 +105,9 @@ export function clawToolToAgentTool(clawTool: ClawToolDefinition): BrandclawTool
             errorCode: "INVALID_INPUT",
           };
         }
-        const proposal = await clawTool.buildProposal(input, toolCtx);
-        recordProposal(ctx.runId, { ...proposal, params: input });
+        const checkedInput = inputCheck.data as Record<string, unknown>;
+        const proposal = await clawTool.buildProposal(checkedInput, toolCtx);
+        recordProposal(ctx.runId, { ...proposal, params: checkedInput });
         return {
           content: {
             status: "proposed_awaiting_user_approval",

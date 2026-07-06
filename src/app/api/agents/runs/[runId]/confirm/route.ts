@@ -160,10 +160,21 @@ export async function POST(
 
     const releaseClaim = async () => {
       try {
-        await prisma.agentArtifact.updateMany({
+        const released = await prisma.agentArtifact.updateMany({
           where: { id: artifact.id, dismissedAt: null },
           data: { acceptedAt: null },
         });
+        if (released.count === 1) {
+          // Race-venster (review-ronde 4): een concurrent 409-self-heal kan
+          // de run al COMPLETED hebben gezet terwijl deze claim-release het
+          // proposal heropent — status moet mee terug, anders is de run
+          // COMPLETED mét een open proposal.
+          await prisma.agentRun.update({
+            where: { id: run.id },
+            data: { status: "AWAITING_CONFIRMATION" },
+          });
+          invalidateCache(cacheKeys.prefixes.agents(workspaceId));
+        }
       } catch {
         console.warn("[agents confirm] failed to release claim after execute failure", {
           artifactId: artifact.id,

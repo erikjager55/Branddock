@@ -535,6 +535,7 @@ export const writeTools: ClawToolDefinition[] = [
           workspaceId: ctx.workspaceId,
           status: 'PENDING',
           query: 'Claw-initiated trend scan',
+          useBrandContext: true,
         },
       });
       // Zonder job-dispatch blijft de research-job eeuwig PENDING — spiegel
