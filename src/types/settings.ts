@@ -220,20 +220,6 @@ export interface PlansResponse {
   plans: PlanItem[];
 }
 
-export interface ChangePlanRequest {
-  planId: string;
-  billingCycle?: "MONTHLY" | "YEARLY";
-}
-
-export interface ChangePlanResponse {
-  subscription: SubscriptionData;
-}
-
-export interface CancelSubscriptionResponse {
-  success: boolean;
-  cancelAtPeriodEnd: boolean;
-  currentPeriodEnd: string;
-}
 
 // ─── Usage ──────────────────────────────────────────────────
 

@@ -23,9 +23,6 @@ import type {
   TeamPermissionsResponse,
   BillingResponse,
   PlansResponse,
-  ChangePlanRequest,
-  ChangePlanResponse,
-  CancelSubscriptionResponse,
   UsageResponse,
   PaymentMethodsResponse,
   AddPaymentMethodRequest,
@@ -243,26 +240,6 @@ export async function fetchBilling(): Promise<BillingResponse> {
 export async function fetchPlans(): Promise<PlansResponse> {
   const res = await fetch(`${BASE}/billing/plans`);
   if (!res.ok) throw new Error("Failed to fetch plans");
-  return res.json();
-}
-
-export async function changePlan(
-  data: ChangePlanRequest
-): Promise<ChangePlanResponse> {
-  const res = await fetch(`${BASE}/billing/change-plan`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Failed to change plan");
-  return res.json();
-}
-
-export async function cancelSubscription(): Promise<CancelSubscriptionResponse> {
-  const res = await fetch(`${BASE}/billing/cancel`, {
-    method: "POST",
-  });
-  if (!res.ok) throw new Error("Failed to cancel subscription");
   return res.json();
 }
 

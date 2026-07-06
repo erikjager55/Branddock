@@ -29,8 +29,6 @@ import {
   // Billing
   fetchBilling,
   fetchPlans,
-  changePlan,
-  cancelSubscription,
   fetchUsage,
   fetchPaymentMethods,
   addPaymentMethod,
@@ -53,7 +51,6 @@ import type {
   UpdateEmailPreferencesRequest,
   InviteMemberRequest,
   UpdateMemberRoleRequest,
-  ChangePlanRequest,
   AddPaymentMethodRequest,
   UpdateNotificationPrefsRequest,
   UpdateAppearanceRequest,
@@ -312,31 +309,9 @@ export function useInvoices() {
   });
 }
 
-// ─── Billing Mutations ──────────────────────────────────────
-
-export function useChangePlan() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: ChangePlanRequest) => changePlan(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: settingsKeys.billing() });
-      qc.invalidateQueries({ queryKey: settingsKeys.plans() });
-      qc.invalidateQueries({ queryKey: settingsKeys.paymentMethods() });
-    },
-  });
-}
-
-export function useCancelSubscription() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: cancelSubscription,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: settingsKeys.billing() });
-      qc.invalidateQueries({ queryKey: settingsKeys.plans() });
-      qc.invalidateQueries({ queryKey: settingsKeys.paymentMethods() });
-    },
-  });
-}
+// Billing plan-changes lopen via Stripe Checkout/Portal (useBillingPlan in
+// src/hooks/use-billing.ts) — de oude DB-only change-plan/cancel-mutaties zijn
+// verwijderd (grant ACTIVE zonder betaling).
 
 export function useAddPaymentMethod() {
   const qc = useQueryClient();
