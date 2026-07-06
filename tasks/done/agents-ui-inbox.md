@@ -5,7 +5,8 @@ fase: pre-launch
 priority: now
 effort: 5-7 dagen
 owner: claude-code
-status: in-progress
+status: done
+completed: 2026-07-06
 created: 2026-07-05
 completed: -
 related-adr: docs/adr/2026-07-05-agents-architectuur.md
@@ -112,3 +113,18 @@ Gefixt in follow-up-commit: (1) ProposalConfirmCard resolved-state uit server-tr
 **Deferred (bewust, coordinator-besluit):**
 - Hidden-agent-guard in `claw/chat/route.ts` → post-merge via `getVisibleAgentDefinition` (helper leeft op motor-wiring-branch); TODO(merge)-comment staat op de lookup-plek.
 - Deferred MINORs: 404→lege-catalogus-mapping expliciet TODO'en/opruimen na motor-wiring-merge; `['knowledge-resources']`-querykey-literal delen met knowledge-library-hooks; `openInLibrary`-i18n-key ongebruikt (savedToLibrary dubbelt als button-label); LINK-deep-link zonder entity-focus voor knowledge/content-library (navigeert naar de module, nog niet naar het item); `openClawForAgent` sluit de assistant-forms (bug/feature/feedback) niet expliciet.
+
+
+---
+
+# Task-finalize 2026-07-06 — review-loop-bewijs
+
+**3 review-rondes** (2 onafhankelijke reviewers rondes 1-2, focused delta-reviewer ronde 3):
+- **0 CRITICAL**; **6 WARNINGs gefixt**: ProposalConfirmCard server-truth (acceptedAt/dismissedAt + optimistic layer + 409→"al afgehandeld"-notice), link-scheme-allowlist in MarkdownContent incl. control-char-strip tegen tab-in-scheme-bypass (runtime-geverifieerd, WHATWG-superset), stream-abort bij scope-wissel (activeStreamAbort met identity-guarded cleanup), setActiveConversation cleart agentScope, aria-expanded/controls op run-card-toggle.
+- Ronde 3 (delta): **clean** — 0 CRITICAL / 0 WARNING; strip bewezen fail-closed, gerenderde hrefs onaangetast.
+
+**Gates**: tsc 0 · lint 0 · e2e "Agents UI" 5/5 · browser-regressie scope-leak 2/2 · 13/13 live browser-smoke (ronde 1).
+
+**Bijvangst**: pre-existing `.z-20`-purge-bug (Claw history-popover onder eigen scrim, rows onklikbaar) gevonden + gefixt via index.css-fallback.
+
+**Deferred MINORs** (bewust): hidden-agent-guard chat-route → post-merge-integratie (TODO(merge) staat op de lookup); 404→lege-catalogus-mapping opruimen post-merge; knowledge-resources-key-literal → resourceKeys.all; openInLibrary-key ongebruikt; LINK zonder item-focus voor knowledge/content-library; openClawForAgent sluit assistant-forms niet; domein-invalidatie na confirm o.b.v. toolName; campaign-filter zonder reset-pad; AgentIcon import * lucide; SEVERITY_STYLES uppercase-only; protocol-relatieve links doc-nit; aria-controls conditioneel id.
