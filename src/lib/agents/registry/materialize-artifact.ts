@@ -30,10 +30,10 @@ export interface MaterializeResult {
 /** Library-categorie per agent — leidend voor domein-secties die agent-
  * analyses tonen (Competitors leest 'competitor-analysis'). */
 const AGENT_RESOURCE_CATEGORY: Record<string, string> = {
-  "market-analyst": "competitor-analysis",
-  "research-analyst": "research",
-  "data-analyst": "data-analysis",
-  strategist: "strategy",
+  "market-analyst": "Competitor Analysis",
+  "research-analyst": "Research",
+  "data-analyst": "Data Analysis",
+  strategist: "Brand Strategy",
 };
 
 export async function materializeArtifactOnAccept(
@@ -100,7 +100,13 @@ export async function materializeArtifactOnAccept(
         where: { id: artifact.runId },
         select: { agentId: true },
       });
-      const category = AGENT_RESOURCE_CATEGORY[run?.agentId ?? ""] ?? "";
+      // Generieke antwoord-fallbacks ("Agent response") zijn geen domein-
+      // analyses — die krijgen bewust géén agent-categorie zodat ze niet op
+      // module-pagina's (Competitors e.d.) opduiken.
+      const isAnswerFallback = freshContent.answerFallback === true;
+      const category = isAnswerFallback
+        ? ""
+        : (AGENT_RESOURCE_CATEGORY[run?.agentId ?? ""] ?? "");
       const created = await tx.knowledgeResource.create({
         data: {
           workspaceId: artifact.workspaceId,

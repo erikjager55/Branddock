@@ -26,7 +26,7 @@ interface AnalysisResource {
 
 async function fetchAnalyses(): Promise<AnalysisResource[]> {
   const res = await fetch(
-    '/api/knowledge?category=competitor-analysis&sortBy=createdAt&sortOrder=desc',
+    `/api/knowledge?category=${encodeURIComponent('Competitor Analysis')}&sortBy=createdAt&sortOrder=desc`,
   );
   if (!res.ok) throw new Error('Failed to load agent analyses');
   const data = (await res.json()) as { resources?: AnalysisResource[] };
@@ -45,7 +45,7 @@ export function AgentAnalysesSection() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const analyses = useQuery({
-    queryKey: ['knowledge-resources', 'competitor-analysis'],
+    queryKey: ['knowledge-resources', 'competitor-analysis-section'],
     queryFn: fetchAnalyses,
     staleTime: 30_000,
   });
@@ -56,8 +56,15 @@ export function AgentAnalysesSection() {
     enabled: expandedId !== null,
   });
 
-  // Geen analyses = geen sectie — de pagina blijft schoon tot Marco iets
-  // oplevert dat de user accepteert.
+  // Fetch-fout mag niet stil een lege pagina opleveren (CLAUDE.md: error
+  // states verplicht); geen analyses = wél stil (pagina blijft schoon).
+  if (analyses.isError) {
+    return (
+      <p className="text-sm text-red-600" data-testid="agent-analyses-error">
+        {t('agentAnalyses.listError')}
+      </p>
+    );
+  }
   if (!analyses.data || analyses.data.length === 0) return null;
 
   return (
@@ -115,7 +122,12 @@ export function AgentAnalysesSection() {
                   {detail.isError && (
                     <p className="text-sm text-red-600">{t('agentAnalyses.loadError')}</p>
                   )}
-                  {detail.data && <MarkdownContent content={detail.data} />}
+                  {detail.data !== undefined &&
+                    (detail.data.trim().length > 0 ? (
+                      <MarkdownContent content={detail.data} />
+                    ) : (
+                      <p className="text-sm text-gray-500">{t('agentAnalyses.emptyContent')}</p>
+                    ))}
                 </div>
               )}
             </div>

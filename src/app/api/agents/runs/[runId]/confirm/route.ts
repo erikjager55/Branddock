@@ -291,7 +291,7 @@ export async function POST(
         // Langste REPORT van de run = het strategie-rapport (korte
         // narratief-fallbacks kwalificeren niet als campagne-strategie).
         const reports = await prisma.agentArtifact.findMany({
-          where: { runId: run.id, workspaceId, type: "REPORT" },
+          where: { runId: run.id, workspaceId, type: "REPORT", dismissedAt: null },
         });
         const markdown = reports
           .map((r) => {
@@ -300,11 +300,11 @@ export async function POST(
           })
           .sort((a, b) => b.length - a.length)[0] ?? "";
         if (markdown.length >= 500) {
-          await prisma.campaign.updateMany({
+          const updated = await prisma.campaign.updateMany({
             where: { id: campaignId, workspaceId },
             data: { strategicApproach: markdown.slice(0, 100_000) },
           });
-          strategyAttached = true;
+          strategyAttached = updated.count === 1;
         }
       }
       await prisma.agentArtifact.create({

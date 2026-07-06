@@ -14,6 +14,8 @@ const competitors = {
     title: 'Agent analyses',
     subtitle: 'Accepted analyses from the Market Analyst agent',
     loading: 'Loading analysis…',
+    listError: 'Could not load agent analyses.',
+    emptyContent: 'This analysis has no content.',
     loadError: 'Failed to load this analysis.',
   },
   overview: {

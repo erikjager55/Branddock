@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useRef } from "react";
-import { ArrowLeft, Megaphone, Zap, Plus, Download, Sparkles, Loader2, CheckCircle2, AlertCircle, Target, Share2, FileText, FileJson, Pencil, Check, X, Users, Wand2 } from "lucide-react";
+import { ArrowLeft, Megaphone, Zap, Plus, Download, Sparkles, Loader2, CheckCircle2, AlertCircle, Target, Share2, FileText, FileJson, Pencil, Check, X, Users, Wand2, Bot } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge, Button, EmptyState } from "@/components/shared";
 import { LockShield, LockStatusPill, LockBanner, LockConfirmDialog } from "@/components/lock";
@@ -18,7 +18,6 @@ import type { ContentLibraryItem } from "../../types/content-library.types";
 import { exportApprovedDeliverablesZip } from "../../lib/export-zip";
 import { StrategySection } from "../detail/strategy/StrategySection";
 import { MarkdownContent } from "@/features/claw/components/MarkdownContent";
-import { Bot } from "lucide-react";
 import { RegenerateSectionButton } from "../detail/strategy/RegenerateSectionButton";
 import { exportCampaignStrategyPdf } from "../../utils/exportCampaignStrategyPdf";
 import { exportCampaignStrategyJson } from "../../utils/exportCampaignStrategyJson";

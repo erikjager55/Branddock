@@ -33,6 +33,7 @@ import type {
   HumanInsight,
 } from "@/lib/campaigns/strategy-blueprint.types";
 import { fenceUntrustedContent } from "@/lib/ai/untrusted-fence";
+import { coerceCategory } from "@/lib/knowledge-resources/categories";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import type {
@@ -182,7 +183,7 @@ export const runDeepResearchTool: BrandclawTool = {
           description:
             report.summary.slice(0, 240) || "Agent-generated deep-research report.",
           type: "article",
-          category: report.suggestedCategory ?? "",
+          category: coerceCategory(report.suggestedCategory),
           tags: (report.suggestedTags ?? []) as unknown as Prisma.InputJsonValue,
           content: report.markdown.slice(0, 200_000),
           aiSummary: report.summary,

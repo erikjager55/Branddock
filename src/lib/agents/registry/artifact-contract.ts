@@ -59,19 +59,27 @@ export const artifactOutputContract: AgentOutputContract<
     // run die alleen tekst opleverde (format-miss of conversationeel
     // antwoord) toont dat antwoord als REPORT-artefact in de inbox i.p.v.
     // een verwarrende "no parseable artifacts"-error zonder output.
-    const answerText =
+    // JSON-restanten (mislukt/leeg/gefilterd artifacts-blok) horen niet in
+    // het zichtbare antwoord — strip fenced blokken die op het artifacts-
+    // contract lijken vóór de fallback-beslissing.
+    const rawAnswer =
       parsed.length === 0 && !outcome.truncated && typeof outcome.finalMessage === "string"
-        ? outcome.finalMessage.trim()
+        ? outcome.finalMessage
         : "";
+    const answerText = rawAnswer
+      .replace(/```(?:json)?\n[\s\S]*?"artifacts"[\s\S]*?\n```/g, "")
+      .trim();
     const answerFallback = answerText.length > 0;
     if (answerFallback) {
       // Ook bij server-owned drafts/proposals: het narratief van de agent
       // hoort zichtbaar te zijn in de inbox, niet alleen in finalMessage.
+      // `answerFallback: true` markeert het als generiek antwoord — de
+      // materialisatie geeft het dan géén domein-categorie (Q-review W4).
       allDrafts = [
         {
           type: "REPORT",
           title: "Agent response",
-          content: { markdown: answerText },
+          content: { markdown: answerText, answerFallback: true },
         },
         ...allDrafts,
       ];
@@ -105,6 +113,14 @@ export const artifactOutputContract: AgentOutputContract<
         outcome.lastStopReason === "max_tokens"
           ? "Output hit the max-tokens limit — the report may be cut off."
           : null;
+    } else if (allDrafts.length === 0 && outcome.finalMessage) {
+      // finalMessage was een kale JSON-husk (leeg/ongeldig artifacts-blok)
+      // zonder leesbaar antwoord — geen stille lege "succes"-run.
+      status = "COMPLETED";
+      error =
+        outcome.lastStopReason === "max_tokens"
+          ? "Run hit the max-tokens output limit before completing its artifacts JSON — output was cut off. Raw output is preserved in finalMessage."
+          : "Run completed but produced no readable answer or artifacts. Raw output is preserved in finalMessage.";
     } else {
       status = "COMPLETED";
     }

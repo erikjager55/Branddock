@@ -7,6 +7,8 @@
  */
 export const RESOURCE_CATEGORIES = [
   "Brand Strategy",
+  "Competitor Analysis",
+  "Data Analysis",
   "Research",
   "Content",
   "Marketing",
