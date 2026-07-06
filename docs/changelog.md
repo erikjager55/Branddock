@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 363. Agents domein-integraties — nav onder CREATE, antwoord-fallback, Marco→Competitors, Stella→Campaigns
+
+Dogfood-feedback verwerkt: Agents staat als navigatie-item onder CREATE; een run die alleen tekst oplevert toont dat antwoord voortaan als REPORT-artefact (de "no parseable artifacts"-melding is structureel weg, incl. robuuste JSON-husk-strip); geaccepteerde concurrentie-analyses van Marco verschijnen als "Agent analyses"-sectie op de Competitors-pagina (canonieke category "Competitor Analysis" + nieuwe GET /api/knowledge/[id]); Stella's goedgekeurde campagne-strategie landt op campaign.strategicApproach en rendert als "Agent-strategie"-blok op de campagne-detail strategie-tab (wizard-blueprint blijft leidend); Milo kan zelf een campagne voorstellen. Review: 3 rondes, 0 CRITICAL, 8 WARNINGs gefixt.
+
+- Task: [tasks/done/agents-domain-integraties.md](../tasks/done/agents-domain-integraties.md)
+- ADR: [docs/adr/2026-07-05-agents-architectuur.md](adr/2026-07-05-agents-architectuur.md)
+- Spec: -
+- Commit: b1986bac (branch feat/agents-domain-integraties)
+
 ### 362. Agents Data Analyst — curated query-tools + server-owned TABLE-artefacten
 
 Zesde persona-agent "Dana" (BarChart3) met 7 curated read-only query-tools (content-productie/maand, inventaris type×status, F-VAL-trend, persona/product-dekking, campagne-overzicht, competitor-activiteit, agent-run-kosten): vaste workspace-gescoped Prisma-queries met geclampte parametervlakken — het model kan geen cijfers verzinnen of vrije queries bouwen. Tabellen worden server-owned via de run-collector als TABLE-artefact geregistreerd (strikte parser + REPORT-fallback), gerenderd door een sorteerbare TableArtifactView en bij accept gematerialiseerd als markdown-tabel in de Knowledge Library. Review: 2 rondes, 0 CRITICAL, 4 WARNINGs gefixt; live smoke met psql-geverifieerde cijfers; eigen 22-assert smoke-script. Hiermee is Agents Fase 1 compleet (6 agents).
