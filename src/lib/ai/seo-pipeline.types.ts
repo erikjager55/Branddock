@@ -60,6 +60,8 @@ export interface SeoPipelineState {
   outputs: SeoStepOutput[];
   /** Accumulated text of all previous step outputs for context injection */
   accumulatedContext: string;
+  /** Per-stap-latency (ms) voor profiling — Fase 0 van de speed-optimalisatie. */
+  timings?: { step: number; ms: number }[];
 }
 
 // ─── Step 1: Project Briefing ────────────────────────────────
