@@ -5,7 +5,8 @@ fase: pre-launch
 priority: now
 effort: 3-5 dagen
 owner: claude-code
-status: in-review
+status: done
+completed: 2026-07-06
 created: 2026-07-05
 completed: -
 related-adr: docs/adr/2026-07-05-agents-architectuur.md
@@ -121,3 +122,16 @@ Het voorstel liet het model de tabel-JSON aanleveren; de motor-wiring-security-f
 | Gates | `npx tsc --noEmit` 0 · eslint 0 op alle geraakte files · foundation-smoke 14/14 · data-analyst-smoke 22/22 · e2e "Agents UI" 5/5 (poort-3005-workaround per memory, config teruggedraaid) |
 
 Totale live-smoke-kosten: ~$0.15 (3 runs).
+
+
+---
+
+# Task-finalize 2026-07-06 — review-loop-bewijs
+
+**2 review-rondes** (2 onafhankelijke reviewers ronde 1, focused delta-reviewer ronde 2):
+- **0 CRITICAL**; **4 WARNINGs gefixt**: null-cellen sorteerden bovenaan bij desc (factor-inversie), UTC-datum-off-by-one west van UTC, preview-cap-escape bij één oversized rij (harde slice-vangnet), stille 200-entity-cap in query_content_coverage (onafhankelijke count + expliciete partial-ranking-note).
+- Ronde 2 (delta): **clean** — 0 CRITICAL / 0 WARNING; alle 5 architectuur-invarianten expliciet herbevestigd (TABLE server-owned, workspace-scope 7/7, parametervlak dicht via clampInt/pickEnum + tagged-template SQL, output gefenced/gecapt, shape pint op renderTableMarkdown).
+
+**Gates**: tsc 0 · eslint 0 · foundation-smoke 14/14 · data-analyst-smoke 22/22 · e2e "Agents UI" 5/5 · live smoke (catalogus 6 agents; run COMPLETED $0.052 met 2 TABLE-artefacten, psql-steekproef exact match; accept → KnowledgeResource-markdown-tabel; 11/11 browser-asserts TableArtifactView).
+
+**Deferred MINORs** (bewust): UTC-dag-semantiek impliciet in renderer (contract-comment kandidaat); surrogate-pair-splitsing op de 8k-slice-grens (dubbel-zeldzaam); backtick-escaping REPORT-fallback; dode ARCHIVED-allowlist-waarde; archived-campagne-inconsistentie tussen production/inventory en coverage/overview; latencyMs=0-runs in het kosten-gemiddelde; hardcoded smoke-workspace-namen; "empty artifacts array"-instructie raakt de pre-existing no-artifacts-error-note.
