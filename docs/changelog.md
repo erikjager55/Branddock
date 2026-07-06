@@ -37,6 +37,20 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 358. Stripe billing — live-correctness hardening
+
+Een audit toonde dat de Stripe-subscription-lifecycle al code-compleet + gewired was (checkout → webhook met HMAC + idempotency → DB-sync → `planTier` → enforcement, customer-portal, invoice-sync, live `BillingTab`) — de stale task-file (2026-05-07) beschreef een from-scratch-bouw die er niet meer was. Deze werkstroom dichtte de resterende **code-bugs + revenue-gaten** zodat de bestaande billing live-correct is:
+
+- **S1 (revenue/security)**: verwijderd de dode DB-only `change-plan`/`cancel`-routes + orphaned `BillingSettingsPage` (0 imports) die een subscription op `ACTIVE` zetten **zónder betaling** (gratis-upgrade-exploit) — plan-wijzigingen lopen uitsluitend via Stripe Checkout/Portal. En de one-time-aankopen gewired: nieuwe `payment_intent.succeeded`-webhook-case → `handlePurchaseSuccess` (had geen caller) → `BundlePurchase` PAID + unlock (anders: kaart charget, unlock nooit).
+- **S2 (customer-facing bugs)**: factuur-`/100`-dubbeldeling weg (€29 toonde als €0.29); yearly-checkout charget niet langer de maandprijs — `getPriceIdForTier(tier, cycle)` + `STRIPE_PRICE_*_YEARLY`, met fail-safe (400 als de yearly-price ontbreekt i.p.v. stil de maandprijs).
+- **S3 (launch-safety)**: AI-usage-meter toont echte data (`getUsageThisMonth`) i.p.v. hardcoded `142`; env-validatie fail-fast wanneer `NEXT_PUBLIC_BILLING_ENABLED=true` maar keys/prices ontbreken.
+- **S4**: [`docs/playbooks/stripe-go-live.md`](playbooks/stripe-go-live.md) — de human Stripe-dashboard-stappen (account/products/prices/keys/webhook-events/portal/`BILLING_ENABLED`).
+
+Launch-pricing = vaste maandprijs → metered-overage/usage-metering/trial + PaymentMethod-sync blijven per-token-fase (uit scope). Gates per stap: tsc 0 / lint 0. Gewerkt in worktree `branddock-launch` (branch `feat/stripe-billing-hardening`).
+
+- Task: [tasks/stripe-billing-live.md](../tasks/stripe-billing-live.md) (code-portie done; dashboard-config = human, zie playbook)
+- Commit: branch `feat/stripe-billing-hardening` (S1-S4)
+
 ### 357. vercel-deployment — LIVE op Vercel + serverless-hardening geconsolideerd (Track C)
 
 De **hard launch-blocker is opgelost**: de app draait live op Vercel (`branddock-7y9n.vercel.app` · Pro + Fluid Compute · fra1), production-branch `main`. Geverifieerd: signup/auth (Better Auth) + Neon Postgres (pgvector + 3 HNSW-indexen) + AI (3 providers) + Cloudflare R2 uploads. De verkenning weerlegde "pure infra, 3 dagen": onder de infra zat een serverless-compatibiliteitslaag die kern-flows brak op Vercel. Geleverd (PR #76, merge `5e642ded`, bovenop i18n Fase 1-3):
