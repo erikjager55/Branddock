@@ -117,6 +117,9 @@ export async function runDeepResearch(
   };
   const d = resolveDeps(input.deps);
   const deadlineAt = Date.now() + config.deadlineMs;
+  // Budget-reserves (agents-research-parity): lees-fase laat ruimte voor
+  // verify+synthese; verify wordt geskipt als alleen synthese nog past.
+  const VERIFY_SYNTH_RESERVE_MS = 240_000;
   const warnings: string[] = [];
   const { sendEvent, workspaceId, topic, answers } = input;
 
@@ -197,6 +200,9 @@ export async function runDeepResearch(
         maxSourcesToScrape: config.maxSourcesToScrape,
         sendEvent,
         signal,
+        // Reserveer budget voor verify+synthese: de leesfase stopt netjes
+        // met een partial i.p.v. het hele deadline-budget op te eten.
+        deadlineAt: deadlineAt - VERIFY_SYNTH_RESERVE_MS,
       });
       warnings.push(...read.warnings);
     } catch (error) {
@@ -214,7 +220,16 @@ export async function runDeepResearch(
     // ── VERIFY ────────────────────────────────────────────────
     checkAborted(signal, deadlineAt);
     let verify: VerifyOutput = { notes: "", claimsChecked: 0, flagged: 0, warnings: [] };
-    if (config.enableVerify) {
+    // Verificatie is de zwaarste optionele fase: sla hem over wanneer het
+    // resterende budget de synthese in gevaar brengt (graceful degrade —
+    // de synthese meldt onzekerheid via de warning).
+    const verifyBudgetLeft = deadlineAt - Date.now();
+    if (config.enableVerify && verifyBudgetLeft < VERIFY_SYNTH_RESERVE_MS) {
+      warnings.push(
+        "Verification skipped — remaining time budget was reserved for synthesis; treat specific claims with extra care.",
+      );
+    }
+    if (config.enableVerify && verifyBudgetLeft >= VERIFY_SYNTH_RESERVE_MS) {
       sendEvent({ type: "phase", phase: "verify", label: PHASE_LABELS.verify, status: "start" });
       try {
         verify = await d.verifyFn({ workspaceId, topic, sources: numbered, sendEvent, signal });
@@ -249,7 +264,11 @@ export async function runDeepResearch(
     sendEvent({ type: "phase", phase: "synthesize", label: PHASE_LABELS.synthesize, status: "done" });
 
     // ── FINALIZE ──────────────────────────────────────────────
-    checkAborted(signal, deadlineAt);
+    // Bewust signal-only (geen deadline-check meer): een synthese die de
+    // deadline nét overschreed is een AFGEROND rapport — dat weggooien om
+    // een paar seconden is het slechtst denkbare resultaat. Finalize zelf
+    // is goedkoop. (agents-research-parity)
+    if (signal.aborted) throw abortError();
     sendEvent({ type: "phase", phase: "finalize", label: PHASE_LABELS.finalize, status: "start" });
     const refsForFinalize: SourceRef[] = numbered.map((n) => toSourceRef(n, search.sources));
     let finalized: FinalizeOutput;

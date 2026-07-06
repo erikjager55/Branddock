@@ -51,7 +51,26 @@ export function drainArtifacts(runId: string): AgentArtifactDraft[] {
 }
 
 /** Opruimen bij run-failure (catch-pad run-agent) — voorkomt lekkende entries. */
+const toolAttempts = new Map<string, Map<string, number>>();
+
+/**
+ * Telt per run hoe vaak een (dure) tool al draaide — server-afgedwongen
+ * once-per-run-limieten kunnen niet op prompt-naleving leunen (bewezen:
+ * het model retryde run_deep_research na een deadline-fout, 2x480s).
+ */
+export function countToolAttempt(runId: string, toolName: string): number {
+  let perRun = toolAttempts.get(runId);
+  if (!perRun) {
+    perRun = new Map();
+    toolAttempts.set(runId, perRun);
+  }
+  const next = (perRun.get(toolName) ?? 0) + 1;
+  perRun.set(toolName, next);
+  return next;
+}
+
 export function clearRunCollector(runId: string): void {
+  toolAttempts.delete(runId);
   proposalsByRun.delete(runId);
   artifactsByRun.delete(runId);
 }

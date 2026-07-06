@@ -21,6 +21,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { runDeepResearch } from "@/lib/knowledge-research/orchestrator";
+import { DEFAULT_DEEP_RESEARCH_CONFIG } from "@/lib/knowledge-research/types";
 import {
   buildCreativePipelineContext,
   buildStrategyFoundation,
@@ -40,13 +41,16 @@ import type {
   BrandclawTool,
   ToolExecuteResult,
 } from "@/lib/brandclaw/orchestrator/types";
-import { recordArtifact } from "./run-collector";
+import { countToolAttempt, recordArtifact } from "./run-collector";
 
-// Compacte config: de interne deep-research-deadline wordt in de praktijk
-// niet door élke fase gerespecteerd (smoke 2026-07-06: 8-min-config liep
-// 15+ min door hangende scrapes/LLM-fases) — daarom bovenop de config een
-// eigen harde kill (abort + race) zodat de agent-run-guard nooit eerst afgaat.
-const DEEP_RESEARCH_DEADLINE_MS = 5 * 60 * 1000;
+// Pariteit met de Knowledge-Library-ingang (user-verzoek 2026-07-06): Nova
+// draait op exact dezelfde default-config (queries/bronnen/verify/deadline)
+// als een Library-research-run — identieke prompts én identiek budget.
+// De interne deadline wordt in de praktijk niet door élke fase gerespecteerd
+// (hangende scrapes/LLM-fases) — daarom bovenop de config een eigen harde
+// kill (abort + race) zodat de agent-run-guard nooit eerst afgaat. De kill
+// (deadline+90s = 570s) blijft bínnen de 600s-route-cap van de Library zelf.
+const DEEP_RESEARCH_DEADLINE_MS = DEFAULT_DEEP_RESEARCH_CONFIG.deadlineMs;
 const DEEP_RESEARCH_HARD_KILL_MS = DEEP_RESEARCH_DEADLINE_MS + 90 * 1000;
 
 /**
@@ -114,7 +118,7 @@ export const runDeepResearchTool: BrandclawTool = {
   definition: {
     name: "run_deep_research",
     description:
-      "Run a full multi-source deep-research pipeline (search, read, verify, synthesize) on a topic, grounded in the workspace brand context. The full cited report is saved to the Knowledge Library and attached to this run automatically — you receive a summary back. Expensive and slow (minutes): call at most once per run.",
+      "Run a full multi-source deep-research pipeline (search, read, verify, synthesize) on a topic, grounded in the workspace brand context. The full cited report is saved to the Knowledge Library and attached to this run automatically — you receive a summary back. Identical depth to a Knowledge Library research run. Expensive and slow (5-10 minutes): call at most once per run.",
     input_schema: {
       type: "object",
       properties: {
@@ -131,6 +135,18 @@ export const runDeepResearchTool: BrandclawTool = {
     if (!topic) {
       return { content: { error: "topic is required" }, isError: true, errorCode: "INVALID_INPUT" };
     }
+    // Server-afgedwongen once-per-run: een tweede poging (model-retry na een
+    // deadline-fout) stapelt 8-min-onderzoeken voorbij de run-guard.
+    if (countToolAttempt(ctx.runId, "run_deep_research") > 1) {
+      return {
+        content: {
+          error:
+            "run_deep_research already ran once in this run and cannot be retried. Summarize what you know, and advise the user to narrow the topic or run it from the Knowledge Library.",
+        },
+        isError: true,
+        errorCode: "ALREADY_ATTEMPTED",
+      };
+    }
     const controller = new AbortController();
     const abortTimer = setTimeout(() => controller.abort(), DEEP_RESEARCH_DEADLINE_MS + 30_000);
     try {
@@ -143,15 +159,8 @@ export const runDeepResearchTool: BrandclawTool = {
           /* non-SSE caller — voortgang is niet zichtbaar nodig in de loop */
         },
         signal: controller.signal,
-        // Gereduceerde config (task-risico pipeline-in-loop-wallclock):
-        // compacter dan de Knowledge-Library-run; verify uit voor tempo —
-        // de agent benoemt onzekerheid zelf in zijn samenvatting.
-        config: {
-          maxSearchQueries: 3,
-          maxSourcesToScrape: 6,
-          enableVerify: false,
-          deadlineMs: DEEP_RESEARCH_DEADLINE_MS,
-        },
+        // GEEN config-override: identiek aan de Knowledge-Library-ingang
+        // (DEFAULT_DEEP_RESEARCH_CONFIG — 6 queries / 12 bronnen / verify aan).
       });
       // Harde bovengrens: ook als een fase de abort negeert, komt de tool
       // binnen de agent-run-guard terug met een eerlijke fout.
@@ -230,6 +239,20 @@ export const runDeepResearchTool: BrandclawTool = {
         },
       };
     } catch (err) {
+      // "Aborted" = het interne 8-min-budget van de research-motor (zelfde
+      // budget als de Knowledge-Library-ingang) — vertaal naar een bruikbare
+      // instructie i.p.v. het model tot een retry te verleiden.
+      const message = err instanceof Error ? err.message : String(err);
+      if (message === "Aborted" || message.includes("abandoned")) {
+        return {
+          content: {
+            error:
+              "Deep research hit its time budget before completing. Do NOT retry it in this run — summarize any partial insight you have and advise the user to narrow the topic or run it from the Knowledge Library.",
+          },
+          isError: true,
+          errorCode: "DEEP_RESEARCH_TIMEOUT",
+        };
+      }
       return errorResult(err, "DEEP_RESEARCH_FAILED");
     } finally {
       clearTimeout(abortTimer);
