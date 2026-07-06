@@ -36,6 +36,7 @@ export const TEST_WORKSPACE = {
 /** Section IDs used for sidebar navigation */
 export const SECTIONS = {
   dashboard: 'dashboard',
+  agents: 'agents',
   brand: 'brand',
   brandstyle: 'brandstyle',
   personas: 'personas',

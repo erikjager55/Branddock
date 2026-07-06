@@ -488,6 +488,7 @@ export const SIDEBAR_NAV: {
       label: 'WORKSPACE',
       items: [
         { key: 'dashboard', label: 'Overview', icon: 'LayoutDashboard', href: '/' },
+        { key: 'agents', label: 'Agents', icon: 'Bot', href: '/agents' },
       ],
     },
     {
@@ -563,6 +564,7 @@ export const PAGE_ICONS: Record<string, { icon: string; bgColor: string; iconCol
   'help':              { icon: 'HelpCircle',      bgColor: 'bg-emerald-50', iconColor: 'text-emerald-500' },
   'ai-trainer':        { icon: 'GraduationCap',   bgColor: 'bg-cyan-50',    iconColor: 'text-cyan-500' },
   'ai-studio':         { icon: 'Wand2',           bgColor: 'bg-violet-50',  iconColor: 'text-violet-500' },
+  'agents':            { icon: 'Bot',             bgColor: 'bg-emerald-50', iconColor: 'text-emerald-500' },
 };
 
 // ─── MODULE METADATA ───────────────────────────────────────
@@ -692,6 +694,12 @@ export const MODULE_META: Record<string, {
     title: 'AI Studio',
     subtitle: 'Generate images and videos with AI',
     phase: 'Phase 12',
+    comingSoonDescription: '',
+  },
+  'agents': {
+    title: 'Agents',
+    subtitle: 'Specialist agents that take on tasks and deliver results for your approval',
+    phase: 'Phase 13',
     comingSoonDescription: '',
   },
 };
@@ -893,6 +901,8 @@ export const MODULE_GRADIENTS = {
   'media-library':     { from: 'from-violet-500',  to: 'to-purple-600',   icon: 'Image' },
   'ai-trainer':        { from: 'from-cyan-500',    to: 'to-teal-600',     icon: 'GraduationCap' },
   'ai-studio':         { from: 'from-violet-500',  to: 'to-indigo-600',   icon: 'Wand2' },
+  // Purge-safe gradient: zelfde klassen als 'dashboard' (aanwezig in index.css).
+  'agents':            { from: 'from-[#1FD1B2]', to: 'to-emerald-500',  icon: 'Bot' },
 } as const;
 
 export type ModuleKey = keyof typeof MODULE_GRADIENTS;

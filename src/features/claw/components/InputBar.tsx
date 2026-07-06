@@ -41,6 +41,7 @@ export function InputBar() {
     activeEntity,
     wizardSnapshot,
     setActivityStatus,
+    agentScope,
   } = useClawStore();
 
   // Editable form fields the active page has registered, surfaced to the AI
@@ -150,7 +151,12 @@ export function InputBar() {
 
     // Abort previous request if any
     abortRef.current?.abort();
-    abortRef.current = new AbortController();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    // Registreer de abort-hook in de store zodat scope-wissels/-clears de
+    // in-flight stream kunnen kappen (review-fix 2026-07-06).
+    const abortStream = () => controller.abort();
+    useClawStore.getState().setActiveStreamAbort(abortStream);
 
     try {
       const res = await fetch('/api/claw/chat', {
@@ -160,6 +166,9 @@ export function InputBar() {
           conversationId: activeConversationId,
           message,
           contextSelection,
+          // Agent-gescoped chat (agents-ui-inbox): additief-optioneel —
+          // zonder scope is de request byte-identiek aan voorheen.
+          ...(agentScope && { agentId: agentScope.agentId }),
           attachments: attachments.length > 0 ? attachments : undefined,
           pageContext: {
             page: currentPage,
@@ -365,10 +374,17 @@ export function InputBar() {
         console.error('Chat error:', err);
       }
       setIsStreaming(false);
+    } finally {
+      // Alleen de eigen registratie opruimen — een nieuwere stream kan
+      // inmiddels zijn eigen abort-hook gezet hebben.
+      const store = useClawStore.getState();
+      if (store.activeStreamAbort === abortStream) {
+        store.setActiveStreamAbort(null);
+      }
     }
   }, [
     inputText, isStreaming, attachments, activeConversationId, contextSelection,
-    currentPage, activeEntity, wizardSnapshot, messages,
+    currentPage, activeEntity, wizardSnapshot, messages, agentScope,
     addMessage, setInputText, setIsStreaming, appendStreamingText, finalizeStreaming,
     setPendingMutation, resetStreamingText, openBugReportForm,
     openFeatureRequestForm, openFeedbackForm, setActivityStatus, t,

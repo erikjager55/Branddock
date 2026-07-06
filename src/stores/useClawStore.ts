@@ -28,6 +28,18 @@ export type ActiveEntity = {
   contentTypeInputs?: Record<string, unknown> | null;
 };
 
+/**
+ * Optional per-agent chat-scope (agents-ui-inbox, ADR 2026-07-05 D6).
+ * When set, the panel chats "with" a catalog agent: the chat request
+ * carries the agentId and the header shows the persona. Strictly
+ * additive — null (default) keeps every existing Claw flow unchanged.
+ */
+export type ClawAgentScope = {
+  agentId: string;
+  personaName: string;
+  personaRole: string;
+};
+
 /** Navigation intent emitted by the Brand Assistant (e.g. after a create). App.tsx watches this and routes accordingly. */
 export type PendingNavigation = {
   /** Sidebar section ID, e.g. 'persona-detail', 'trend-detail', 'brand-asset-detail'. */
@@ -107,6 +119,22 @@ interface ClawStore {
   closeClaw: () => void;
   toggleClaw: () => void;
   toggleViewMode: () => void;
+
+  // ── Agent Scope (agents-ui-inbox) ─────────────────────────
+  /** Non-null while the panel is scoped to a catalog agent. */
+  agentScope: ClawAgentScope | null;
+  /** Open the panel scoped to an agent; a scope-switch starts a fresh conversation. */
+  openClawForAgent: (scope: ClawAgentScope) => void;
+
+  // ── Active Stream Abort ───────────────────────────────────
+  /**
+   * Abort-hook voor de in-flight chat-stream, gezet door InputBar bij
+   * stream-start. Scope-wissels/-clears roepen hem aan zodat een oud
+   * antwoord nooit in een verse (on)gescopede conversatie finaliseert
+   * en `isStreaming` niet blijft hangen.
+   */
+  activeStreamAbort: (() => void) | null;
+  setActiveStreamAbort: (abort: (() => void) | null) => void;
 
   // ── Current Page (synced from App.tsx) ───────────────────
   currentPage: string;
@@ -222,14 +250,59 @@ interface ClawStore {
   startNewConversation: () => void;
 }
 
+/**
+ * Reset-slice bij het verlaten van een agent-gescoped gesprek: scope weg
+ * én conversatie-state vers, zodat de globale overlay altijd ongescoped
+ * en schoon opent. Abort bewust als side-effect hier (review-fix
+ * 2026-07-06): een in-flight stream mag nooit in de verse conversatie
+ * finaliseren of `isStreaming` laten hangen.
+ */
+function clearAgentScopeState(s: Pick<ClawStore, 'activeStreamAbort'>) {
+  s.activeStreamAbort?.();
+  return {
+    agentScope: null,
+    activeConversationId: null,
+    messages: [],
+    streamingText: '',
+    pendingMutation: null,
+    inputText: '',
+    attachments: [],
+    activityStatus: null,
+    isStreaming: false,
+    activeStreamAbort: null,
+  };
+}
+
 export const useClawStore = create<ClawStore>((set, get) => ({
   // Panel
   isOpen: false,
   viewMode: 'panel',
-  openClaw: () => set({ isOpen: true, viewMode: 'panel' }),
-  closeClaw: () => set({ isOpen: false, viewMode: 'panel', bugReportForm: null, featureRequestForm: null, feedbackForm: null, quickContentForm: null }),
-  toggleClaw: () => set((s) => ({ isOpen: !s.isOpen, viewMode: s.isOpen ? 'panel' : s.viewMode })),
+  // Agent-scope opruimen bij open/close van de reguliere assistent zodat
+  // een agent-conversatie nooit in de globale overlay lekt. Met
+  // agentScope null (default) zijn deze setters byte-identiek aan het
+  // gedrag vóór agents-ui-inbox.
+  // openClaw behoudt inputText: openClawWithPrompt zet de prompt vóór de open-call.
+  openClaw: () => set((s) => ({ isOpen: true, viewMode: 'panel' as const, ...(s.agentScope ? { ...clearAgentScopeState(s), inputText: s.inputText } : {}) })),
+  closeClaw: () => set((s) => ({ isOpen: false, viewMode: 'panel' as const, bugReportForm: null, featureRequestForm: null, feedbackForm: null, quickContentForm: null, ...(s.agentScope ? clearAgentScopeState(s) : {}) })),
+  toggleClaw: () => set((s) => ({ isOpen: !s.isOpen, viewMode: s.isOpen ? 'panel' : s.viewMode, ...(s.isOpen && s.agentScope ? clearAgentScopeState(s) : {}) })),
   toggleViewMode: () => set((s) => ({ viewMode: s.viewMode === 'panel' ? 'overlay' : 'panel' })),
+
+  // Agent scope
+  agentScope: null,
+  openClawForAgent: (scope) =>
+    set((s) => ({
+      isOpen: true,
+      viewMode: 'panel',
+      // Scope-wissel (incl. vanuit een ongescoped gesprek): vers gesprek +
+      // abort van de in-flight stream, zodat persona-context en historie
+      // elkaar niet vervuilen.
+      ...(s.agentScope?.agentId !== scope.agentId ? clearAgentScopeState(s) : {}),
+      agentScope: scope,
+    })),
+
+  // Active stream abort
+  activeStreamAbort: null,
+  setActiveStreamAbort: (abort) => set({ activeStreamAbort: abort }),
 
   // Current page
   currentPage: 'dashboard',
@@ -255,11 +328,18 @@ export const useClawStore = create<ClawStore>((set, get) => ({
   streamingText: '',
 
   setActiveConversation: (id, messages) =>
-    set({
-      activeConversationId: id,
-      messages: messages ?? [],
-      streamingText: '',
-      pendingMutation: null,
+    set((s) => {
+      // Review-fix 2026-07-06: een (oud, regulier) gesprek openen vanuit
+      // een gescoped panel neemt de agent-persona niet mee — scope weg en
+      // de in-flight stream geabort. Zonder scope is dit pad byte-identiek.
+      if (s.agentScope) s.activeStreamAbort?.();
+      return {
+        activeConversationId: id,
+        messages: messages ?? [],
+        streamingText: '',
+        pendingMutation: null,
+        ...(s.agentScope ? { agentScope: null, isStreaming: false, activeStreamAbort: null } : {}),
+      };
     }),
   addMessage: (message) =>
     set((s) => ({ messages: [...s.messages, message] })),
@@ -434,6 +514,10 @@ export const useClawStore = create<ClawStore>((set, get) => ({
   closeQuickContentForm: () => set({ quickContentForm: null }),
 
   // Reset
+  // Bewust: startNewConversation behoudt een actieve agentScope — "nieuw
+  // gesprek" binnen het gescopede panel betekent een vers gesprek met
+  // dezélfde agent. Scope verlaten loopt via close/openClaw/
+  // setActiveConversation (review-besluit 2026-07-06).
   startNewConversation: () =>
     set({
       activeConversationId: null,

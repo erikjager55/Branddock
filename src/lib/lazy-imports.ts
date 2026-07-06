@@ -112,6 +112,17 @@ export const KnowledgeLibraryPage = lazy(() =>
   import('@/features/knowledge-library/components/KnowledgeLibraryPage').then(m => ({ default: m.KnowledgeLibraryPage }))
 );
 
+// ─── Agents ─────────────────────────────────────────────────
+export const AgentsCatalogPage = lazy(() =>
+  import('@/features/agents/components/AgentsCatalogPage').then(m => ({ default: m.AgentsCatalogPage }))
+);
+export const AgentDetailPage = lazy(() =>
+  import('@/features/agents/components/AgentDetailPage').then(m => ({ default: m.AgentDetailPage }))
+);
+export const AgentsInboxPage = lazy(() =>
+  import('@/features/agents/components/AgentsInboxPage').then(m => ({ default: m.AgentsInboxPage }))
+);
+
 // ─── Media Library ────────────────────────────────────────
 export const MediaLibraryPage = lazy(() =>
   import('@/features/media-library/components/MediaLibraryPage').then(m => ({ default: m.MediaLibraryPage }))

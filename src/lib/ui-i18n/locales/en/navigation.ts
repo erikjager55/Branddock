@@ -31,6 +31,7 @@ const navigation = {
     },
     items: {
       dashboard: 'Overview',
+      agents: 'Agents',
       'active-campaigns': 'Campaigns',
       'content-library': 'Content',
       brand: 'Brand Foundation',

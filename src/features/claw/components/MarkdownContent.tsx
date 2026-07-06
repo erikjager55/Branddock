@@ -207,7 +207,13 @@ function parseInline(text: string): InlinePart[] {
     } else if (match[5]) {
       parts.push({ type: 'code', content: match[6] });
     } else if (match[7]) {
-      parts.push({ type: 'link', content: match[8], href: match[9] });
+      // Scheme-allowlist: markdown komt o.a. uit agent-REPORTs (untrusted
+      // model-output) — javascript:/data:-links renderen als plain text.
+      if (isSafeLinkHref(match[9])) {
+        parts.push({ type: 'link', content: match[8], href: match[9] });
+      } else {
+        parts.push({ type: 'text', content: match[8] });
+      }
     }
 
     lastIndex = match.index + match[0].length;
@@ -219,4 +225,16 @@ function parseInline(text: string): InlinePart[] {
   }
 
   return parts.length > 0 ? parts : [{ type: 'text', content: text }];
+}
+
+/** Alleen http/https/mailto en relatieve paden zijn klikbaar. */
+function isSafeLinkHref(href: string): boolean {
+  // Browsers strippen control-chars/whitespace bij URL-parsing — `java\tscript:`
+  // wordt effectief `javascript:`. Strip vooraf hetzelfde, anders is de
+  // allowlist met een tab-in-scheme te omzeilen (review-finding ronde 2).
+  const cleaned = href.replace(/[\u0000-\u0020]/g, '');
+  // Relatieve links (geen scheme) zijn veilig; expliciete schemes via allowlist.
+  const schemeMatch = /^([a-zA-Z][a-zA-Z0-9+.-]*):/.exec(cleaned);
+  if (!schemeMatch) return true;
+  return ['http', 'https', 'mailto'].includes(schemeMatch[1].toLowerCase());
 }

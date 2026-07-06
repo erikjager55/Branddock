@@ -10404,3 +10404,31 @@ html {
   .focus\:ring-teal-400:focus   { --tw-ring-color: var(--color-teal-400); }
   .focus\:ring-teal-500:focus   { --tw-ring-color: var(--color-teal-500); }
 }
+
+/* ---------------------------------------------------------------
+ * Agents-feature utility fallback (agents-ui-inbox, 2026-07-06) —
+ * patches gaps in the compiled Tailwind 4 output (see CLAUDE.md
+ * "Tailwind purge workaround"). Color variables are defined earlier
+ * in this file.
+ * ------------------------------------------------------------ */
+@layer utilities {
+  /* z-20 ontbrak in de gecompileerde output: de Claw history-popover
+   * (z-20) rendert dan onder zijn eigen scrim (z-10) -> rows onklikbaar.
+   * Gevonden via de agents-scoped-chat regressie-smoke 2026-07-06. */
+  .z-20 { z-index: 20; }
+  .border-emerald-100 { border-color: var(--color-emerald-100); }
+  .ring-amber-100 { --tw-ring-color: var(--color-amber-100); }
+  .resize-y { resize: vertical; }
+  .break-words { overflow-wrap: break-word; }
+
+  .disabled\:bg-gray-50:disabled { background-color: var(--color-gray-50); }
+  .disabled\:text-gray-400:disabled { color: var(--color-gray-400); }
+
+  .focus\:ring-emerald-200:focus { --tw-ring-color: var(--color-emerald-200); }
+  .focus\:border-emerald-300:focus { border-color: var(--color-emerald-300); }
+
+  @media (hover: hover) {
+    .hover\:border-emerald-300:hover { border-color: var(--color-emerald-300); }
+    .group:hover .group-hover\:text-emerald-500 { color: var(--color-emerald-500); }
+  }
+}

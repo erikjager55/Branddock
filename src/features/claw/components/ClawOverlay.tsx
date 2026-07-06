@@ -24,6 +24,7 @@ export function ClawOverlay() {
     isHistoryPopoverOpen,
     toggleHistoryPopover,
     closeHistoryPopover,
+    agentScope,
   } = useClawStore();
 
   // Short "watching" label shown under the title when Claw has real page context.
@@ -134,10 +135,22 @@ export function ClawOverlay() {
             )}
 
             <div className="ml-2 flex flex-col min-w-0">
-              <h1 className="text-sm font-semibold text-gray-900 leading-tight">
-                {t('assistantName')}
+              <h1 className="text-sm font-semibold text-gray-900 leading-tight" data-testid="claw-header-title">
+                {agentScope ? agentScope.personaName : t('assistantName')}
               </h1>
-              {watchingLabel && (
+              {agentScope ? (
+                // Agent-gescoped chat (agents-ui-inbox): persona-rol i.p.v.
+                // page-watching label — de taak-context is de agent zelf.
+                <span
+                  className="text-[11px] text-gray-500 leading-tight truncate"
+                  data-testid="claw-agent-scope"
+                  title={agentScope.personaRole}
+                >
+                  <span className="text-teal-700 font-medium">{agentScope.personaRole}</span>
+                  {' · '}
+                  {t('overlay.agentBadge')}
+                </span>
+              ) : watchingLabel && (
                 <span className="text-[11px] text-gray-500 leading-tight truncate" title={watchingLabel}>
                   {t('overlay.watching')}{' '}
                   <span className="text-teal-700 font-medium">{watchingLabel}</span>
