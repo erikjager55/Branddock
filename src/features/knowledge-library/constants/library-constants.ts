@@ -15,17 +15,9 @@ export const RESOURCE_TYPE_ICONS: Record<ResourceType, { icon: string; label: st
   VIDEO: { icon: "Play", label: "Video" },
 };
 
-export const RESOURCE_CATEGORIES = [
-  "Brand Strategy",
-  "Research",
-  "Content",
-  "Marketing",
-  "Design",
-  "Technology",
-  "Psychology",
-  "User Experience",
-  "Trends",
-] as const;
+// Single source of truth: canonieke lijst in lib (incl. agent-categorieën
+// als "Competitor Analysis" — duplicatie liet de filter-UI eerder divergeren).
+export { RESOURCE_CATEGORIES } from "@/lib/knowledge-resources/categories";
 
 export const DIFFICULTY_LEVELS: Record<DifficultyLevel, { dot: string; label: string }> = {
   BEGINNER: { dot: "bg-green-500", label: "Beginner" },

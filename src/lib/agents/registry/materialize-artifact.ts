@@ -26,6 +26,16 @@ export interface MaterializeResult {
   knowledgeResourceId: string;
 }
 
+
+/** Library-categorie per agent — leidend voor domein-secties die agent-
+ * analyses tonen (Competitors leest 'Competitor Analysis'). */
+const AGENT_RESOURCE_CATEGORY: Record<string, string> = {
+  "market-analyst": "Competitor Analysis",
+  "research-analyst": "Research",
+  "data-analyst": "Data Analysis",
+  strategist: "Brand Strategy",
+};
+
 export async function materializeArtifactOnAccept(
   artifact: AgentArtifact,
 ): Promise<MaterializeResult | null> {
@@ -84,12 +94,26 @@ export async function materializeArtifactOnAccept(
         racedExistingId = freshContent.knowledgeResourceId; // concurrente accept won
         return null;
       }
+      // Domein-categorie o.b.v. de producerende agent — zo kunnen module-
+      // pagina's (bv. Competitors) hun agent-analyses terugvinden.
+      const run = await tx.agentRun.findUnique({
+        where: { id: artifact.runId },
+        select: { agentId: true },
+      });
+      // Generieke antwoord-fallbacks ("Agent response") zijn geen domein-
+      // analyses — die krijgen bewust géén agent-categorie zodat ze niet op
+      // module-pagina's (Competitors e.d.) opduiken.
+      const isAnswerFallback = freshContent.answerFallback === true;
+      const category = isAnswerFallback
+        ? ""
+        : (AGENT_RESOURCE_CATEGORY[run?.agentId ?? ""] ?? "");
       const created = await tx.knowledgeResource.create({
         data: {
           workspaceId: artifact.workspaceId,
           title: artifact.title,
           description: deriveDescription(markdown),
           type: "article",
+          category,
           source: "AGENT",
           content: markdown,
           tags: ["agent"] as unknown as Prisma.InputJsonValue,

@@ -52,8 +52,36 @@ export const artifactOutputContract: AgentOutputContract<
         changes: p.changes ?? [],
       } as Record<string, unknown>,
     }));
-    const allDrafts = [...parsed, ...serverDrafts, ...proposalDrafts];
+    let allDrafts = [...parsed, ...serverDrafts, ...proposalDrafts];
     const hasProposals = proposalDrafts.length > 0;
+
+    // Antwoord-fallback (dogfood-feedback 2026-07-06): een niet-getrunceerde
+    // run die alleen tekst opleverde (format-miss of conversationeel
+    // antwoord) toont dat antwoord als REPORT-artefact in de inbox i.p.v.
+    // een verwarrende "no parseable artifacts"-error zonder output.
+    // JSON-restanten (mislukt/leeg/gefilterd artifacts-blok) horen niet in
+    // het zichtbare antwoord — strip fenced blokken die op het artifacts-
+    // contract lijken vóór de fallback-beslissing.
+    const rawAnswer =
+      parsed.length === 0 && !outcome.truncated && typeof outcome.finalMessage === "string"
+        ? outcome.finalMessage
+        : "";
+    const answerText = stripArtifactHusks(rawAnswer);
+    const answerFallback = answerText.length > 0;
+    if (answerFallback) {
+      // Ook bij server-owned drafts/proposals: het narratief van de agent
+      // hoort zichtbaar te zijn in de inbox, niet alleen in finalMessage.
+      // `answerFallback: true` markeert het als generiek antwoord — de
+      // materialisatie geeft het dan géén domein-categorie (Q-review W4).
+      allDrafts = [
+        {
+          type: "REPORT",
+          title: "Agent response",
+          content: { markdown: answerText, answerFallback: true },
+        },
+        ...allDrafts,
+      ];
+    }
 
     let status: AgentFinalizeResult["status"];
     let error: string | null = null;
@@ -75,16 +103,22 @@ export const artifactOutputContract: AgentOutputContract<
     } else if (outcome.truncated) {
       status = "COMPLETED";
       error = `${abortNote} Output may be partial.`;
+    } else if (answerFallback) {
+      // Het antwoord is als fallback-REPORT zichtbaar; alleen bij een
+      // max_tokens-afkap blijft een uitleg staan (het antwoord is dan partieel).
+      status = "COMPLETED";
+      error =
+        outcome.lastStopReason === "max_tokens"
+          ? "Output hit the max-tokens limit — the report may be cut off."
+          : null;
     } else if (allDrafts.length === 0 && outcome.finalMessage) {
-      // Geen stille lege "succes"-run: het model produceerde wél tekst maar
-      // geen parseable artifacts-blok — meestal een max_tokens-afkap of een
-      // format-miss. Run blijft COMPLETED (0 artefacten is toegestaan) maar
-      // de error legt uit waarom de inbox leeg is; finalMessage is bewaard.
+      // finalMessage was een kale JSON-husk (leeg/ongeldig artifacts-blok)
+      // zonder leesbaar antwoord — geen stille lege "succes"-run.
       status = "COMPLETED";
       error =
         outcome.lastStopReason === "max_tokens"
           ? "Run hit the max-tokens output limit before completing its artifacts JSON — output was cut off. Raw output is preserved in finalMessage."
-          : "Run completed but produced no parseable artifacts JSON block. Raw output is preserved in finalMessage.";
+          : "Run completed but produced no readable answer or artifacts. Raw output is preserved in finalMessage.";
     } else {
       status = "COMPLETED";
     }
@@ -131,6 +165,26 @@ export const artifactOutputContract: AgentOutputContract<
     };
   },
 };
+
+
+/**
+ * Verwijdert artifacts-JSON-husks (mislukt/leeg/gefilterd contract-blok)
+ * uit een fallback-antwoord, zonder legitieme JSON-codeblokken te raken:
+ *   1. complete fenced blokken — alleen gestript als het blok zélf
+ *      "artifacts" bevat (per-blok match, geen cross-blok-overstrip);
+ *   2. een afgekapte husk zonder sluitfence (max_tokens) — fence-start met
+ *      "artifacts" t/m einde;
+ *   3. een ongefenced kaal-JSON-antwoord dat als husk kwalificeert.
+ */
+export function stripArtifactHusks(raw: string): string {
+  let text = raw.replace(/```(?:json)?\n([\s\S]*?)\n```/g, (block, body: string) =>
+    body.includes('"artifacts"') ? "" : block,
+  );
+  text = text.replace(/```(?:json)?\n(?![\s\S]*?```)[\s\S]*?"artifacts"[\s\S]*$/, "");
+  const trimmed = text.trim();
+  if (trimmed.startsWith("{") && trimmed.includes('"artifacts"')) return "";
+  return trimmed;
+}
 
 /**
  * Parse artifact-drafts uit de final agent-message. Verwacht een JSON-blok
@@ -180,11 +234,15 @@ export function extractArtifactDrafts(finalMessage: string | null): AgentArtifac
     // accept-materialisatie) — strip hem uit model-output, anders kan een
     // hallucinerend/geïnjecteerd model via accept/dismiss een willekeurige
     // bestaande resource in de workspace (de)archiveren.
-    const { knowledgeResourceId: _reserved, ...safeContent } = raw.content as Record<
-      string,
-      unknown
-    >;
+    // answerFallback is eveneens server-owned (fallback-markering die
+    // domein-categorisering uitsluit) — een model mag hem niet forgen.
+    const {
+      knowledgeResourceId: _reserved,
+      answerFallback: _forged,
+      ...safeContent
+    } = raw.content as Record<string, unknown>;
     void _reserved;
+    void _forged;
 
     drafts.push({
       type: type as AgentArtifactType,

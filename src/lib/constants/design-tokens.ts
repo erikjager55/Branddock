@@ -488,7 +488,6 @@ export const SIDEBAR_NAV: {
       label: 'WORKSPACE',
       items: [
         { key: 'dashboard', label: 'Overview', icon: 'LayoutDashboard', href: '/' },
-        { key: 'agents', label: 'Agents', icon: 'Bot', href: '/agents' },
       ],
     },
     {
@@ -496,6 +495,7 @@ export const SIDEBAR_NAV: {
       items: [
         { key: 'active-campaigns', label: 'Campaigns', icon: 'Megaphone', href: '/strategy/campaigns' },
         { key: 'content-library', label: 'Content', icon: 'FileText', href: '/strategy/content-library' },
+        { key: 'agents', label: 'Agents', icon: 'Bot', href: '/agents' },
       ],
     },
     {

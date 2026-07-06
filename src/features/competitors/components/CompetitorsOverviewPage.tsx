@@ -8,6 +8,7 @@ import { PageShell, PageHeader } from "@/components/ui/layout";
 import { useCompetitors, useDiscoverCompetitors, useCreateCompetitor } from "../hooks";
 import { CompetitorCard } from "./CompetitorCard";
 import { CompetitorActivityDigest } from "./CompetitorActivityDigest";
+import { AgentAnalysesSection } from "./AgentAnalysesSection";
 import type { DiscoveredCompetitor } from "../api/competitors.api";
 
 interface CompetitorsOverviewPageProps {
@@ -145,6 +146,9 @@ export function CompetitorsOverviewPage({
 
         {/* Activity digest */}
         <CompetitorActivityDigest onNavigateToDetail={onNavigateToDetail} />
+
+        {/* Agent-analyses (Market Analyst) — verschijnt zodra er geaccepteerde analyses zijn */}
+        <AgentAnalysesSection />
 
         {/* Stats */}
         {stats && (
