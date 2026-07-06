@@ -5261,7 +5261,7 @@ model AgentArtifact {
   title String
 
   /// Typed payload per artifact type:
-  ///   REPORT   { markdown: string, knowledgeResourceId?: string (set on accept-materialization) }
+  ///   REPORT   { markdown: string, knowledgeResourceId?: string (set on accept-materialization), answerFallback?: true (server-set: generiek antwoord, geen domein-categorie) }
   ///   TABLE    { columns: [{key,label,type?}], rows: Record<string,unknown>[], knowledgeResourceId?: string }
   ///   FINDINGS F-VAL findings payload (domain rows already persisted by the engine)
   ///   LINK     { entityType, entityId, label? } — reference to a domain entity

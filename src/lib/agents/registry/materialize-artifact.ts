@@ -28,7 +28,7 @@ export interface MaterializeResult {
 
 
 /** Library-categorie per agent — leidend voor domein-secties die agent-
- * analyses tonen (Competitors leest 'competitor-analysis'). */
+ * analyses tonen (Competitors leest 'Competitor Analysis'). */
 const AGENT_RESOURCE_CATEGORY: Record<string, string> = {
   "market-analyst": "Competitor Analysis",
   "research-analyst": "Research",

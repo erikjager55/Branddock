@@ -66,9 +66,7 @@ export const artifactOutputContract: AgentOutputContract<
       parsed.length === 0 && !outcome.truncated && typeof outcome.finalMessage === "string"
         ? outcome.finalMessage
         : "";
-    const answerText = rawAnswer
-      .replace(/```(?:json)?\n[\s\S]*?"artifacts"[\s\S]*?\n```/g, "")
-      .trim();
+    const answerText = stripArtifactHusks(rawAnswer);
     const answerFallback = answerText.length > 0;
     if (answerFallback) {
       // Ook bij server-owned drafts/proposals: het narratief van de agent
@@ -168,6 +166,26 @@ export const artifactOutputContract: AgentOutputContract<
   },
 };
 
+
+/**
+ * Verwijdert artifacts-JSON-husks (mislukt/leeg/gefilterd contract-blok)
+ * uit een fallback-antwoord, zonder legitieme JSON-codeblokken te raken:
+ *   1. complete fenced blokken — alleen gestript als het blok zélf
+ *      "artifacts" bevat (per-blok match, geen cross-blok-overstrip);
+ *   2. een afgekapte husk zonder sluitfence (max_tokens) — fence-start met
+ *      "artifacts" t/m einde;
+ *   3. een ongefenced kaal-JSON-antwoord dat als husk kwalificeert.
+ */
+export function stripArtifactHusks(raw: string): string {
+  let text = raw.replace(/```(?:json)?\n([\s\S]*?)\n```/g, (block, body: string) =>
+    body.includes('"artifacts"') ? "" : block,
+  );
+  text = text.replace(/```(?:json)?\n(?![\s\S]*?```)[\s\S]*?"artifacts"[\s\S]*$/, "");
+  const trimmed = text.trim();
+  if (trimmed.startsWith("{") && trimmed.includes('"artifacts"')) return "";
+  return trimmed;
+}
+
 /**
  * Parse artifact-drafts uit de final agent-message. Verwacht een JSON-blok
  * (markdown-fenced of plain) met shape `{ "artifacts": [{ type, title,
@@ -216,11 +234,15 @@ export function extractArtifactDrafts(finalMessage: string | null): AgentArtifac
     // accept-materialisatie) — strip hem uit model-output, anders kan een
     // hallucinerend/geïnjecteerd model via accept/dismiss een willekeurige
     // bestaande resource in de workspace (de)archiveren.
-    const { knowledgeResourceId: _reserved, ...safeContent } = raw.content as Record<
-      string,
-      unknown
-    >;
+    // answerFallback is eveneens server-owned (fallback-markering die
+    // domein-categorisering uitsluit) — een model mag hem niet forgen.
+    const {
+      knowledgeResourceId: _reserved,
+      answerFallback: _forged,
+      ...safeContent
+    } = raw.content as Record<string, unknown>;
     void _reserved;
+    void _forged;
 
     drafts.push({
       type: type as AgentArtifactType,

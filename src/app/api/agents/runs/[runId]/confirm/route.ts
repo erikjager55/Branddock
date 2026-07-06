@@ -296,6 +296,8 @@ export async function POST(
         const markdown = reports
           .map((r) => {
             const c = (r.content ?? {}) as Record<string, unknown>;
+            // Generieke antwoord-fallbacks zijn geen strategie-rapporten.
+            if (c.answerFallback === true) return "";
             return typeof c.markdown === "string" ? c.markdown.trim() : "";
           })
           .sort((a, b) => b.length - a.length)[0] ?? "";

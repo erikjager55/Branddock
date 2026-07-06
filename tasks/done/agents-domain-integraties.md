@@ -1,7 +1,8 @@
 ---
 id: agents-domain-integraties
 title: Agents domein-integraties — nav onder CREATE, no-artifacts-fallback, Marco→Competitors, Stella→Campaigns
-status: in-review
+status: done
+completed: 2026-07-06
 created: 2026-07-06
 related-adr: docs/adr/2026-07-05-agents-architectuur.md
 branch: feat/agents-domain-integraties
@@ -65,3 +66,12 @@ Schema-wijzigingen; blueprint-JSON-writes; nieuwe agents/tools; scheduling; Neon
 ## Restpunten
 - Browser-verificatie van nav-positie + beide UI-blokken door user (server-side bewezen; component-code volgt bestaande patronen).
 - Smoke-campagne "Voorjaarscampagne 2027 — Belgische Architecten" staat in de dev-workspace (mag blijven als demo of handmatig weg).
+
+
+## Task-finalize 2026-07-06 — review-loop-bewijs
+
+**3 rondes** (2 reviewers → fixes → delta-reviewer → fixes + eigen empirische verificatie):
+- **0 CRITICAL**; **8 WARNINGs gefixt**: JSON-husk-strip (per-blok, ongefenced én afgekapt — 8 node-testcases groen incl. de empirisch bewezen over-strip-case), canonieke categorie-taxonomie (Competitor Analysis/Data Analysis in RESOURCE_CATEGORIES; duplicaat-lijst in library-constants gededupliceerd naar re-export), fallback-REPORTs gemarkeerd (answerFallback, server-owned/anti-forge) en uitgesloten van domein-categorisering én van de strategicApproach-selectie, error/empty-states in AgentAnalysesSection, dismissedAt-filter + updateMany-count in de confirm-write-through.
+- Gates eindstand: tsc 0 · eslint 0 errors · foundation-smoke 14/14 · data-analyst-smoke 22/22 · e2e "Agents UI" 5/5 (pre-merge).
+
+**Deferred MINORs**: aria-controls op conditioneel paneel; MarkdownContent-promotie naar components/shared (3 features delen hem nu); multi-campaign-per-run-gedrag documenteren; i18n-labels voor de nieuwe categorieën in claw-content-registry (valt veilig terug op defaultValue); backfill-script voor pre-fix kebab-case-categorieën (alleen lokaal relevant, uitgevoerd).

@@ -4,7 +4,7 @@
 // Agent-analyses op de Competitors-pagina (agents-domain-integraties).
 //
 // Marco's (Market Analyst) geaccepteerde concurrentie-analyses landen als
-// KnowledgeResource met category 'competitor-analysis' (accept-
+// KnowledgeResource met category 'Competitor Analysis' (accept-
 // materialisatie); deze sectie maakt ze zichtbaar in de module waar ze
 // thuishoren — domain-first write-through, dogfood-feedback 2026-07-06.
 // De volledige markdown wordt lazy per analyse opgehaald bij uitklappen.
