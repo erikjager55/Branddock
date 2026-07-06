@@ -214,5 +214,10 @@ function buildPreview(table: TableContent): string {
     rows = rows.slice(0, Math.max(1, Math.floor(rows.length / 2)));
     json = JSON.stringify({ columns: table.columns.map((c) => c.key), rows, previewTruncated: true });
   }
+  if (json.length > MAX_PREVIEW_CHARS) {
+    // Zelfs één rij kan met extreem lange user-strings de cap overschrijden —
+    // harde slice als laatste vangnet (de volledige tabel zit in het artefact).
+    json = `${json.slice(0, MAX_PREVIEW_CHARS)}…(preview truncated)`;
+  }
   return fenceUntrustedContent(json, "workspace database query result");
 }

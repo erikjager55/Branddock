@@ -41,7 +41,16 @@ export function TableArtifactView({ artifact }: { artifact: AgentArtifactFull })
     const column = table.columns.find((c) => c.key === sort.key);
     if (!column) return table.rows;
     const factor = sort.dir === 'asc' ? 1 : -1;
-    return [...table.rows].sort((a, b) => factor * compareCells(a[sort.key], b[sort.key], column.type));
+    return [...table.rows].sort((a, b) => {
+      const av = a[sort.key];
+      const bv = b[sort.key];
+      // Null-handling buiten de factor: lege cellen altijd achteraan,
+      // ongeacht sorteerrichting (review-finding: desc inverteerde dit).
+      if (av === null && bv === null) return 0;
+      if (av === null) return 1;
+      if (bv === null) return -1;
+      return factor * compareCells(av, bv, column.type);
+    });
   }, [table, sort]);
 
   if (!table) {
@@ -184,7 +193,8 @@ function parseTable(content: Record<string, unknown>): ParsedTable | null {
 // ─── Sorteren + type-bewuste weergave ────────────────────────
 
 function compareCells(a: CellValue, b: CellValue, type: ColumnType): number {
-  // Lege cellen altijd achteraan, ongeacht richting van de vergelijking zelf.
+  // Null-cellen zijn al door de caller afgehandeld (vóór de factor) —
+  // defensieve fallback voor direct hergebruik.
   if (a === null && b === null) return 0;
   if (a === null) return 1;
   if (b === null) return -1;
@@ -220,6 +230,9 @@ function formatCell(value: CellValue, type: ColumnType, locale: string): string 
         day: 'numeric',
         month: 'short',
         year: 'numeric',
+        // ISO-datums zonder tijd parsen als UTC-middernacht; zonder expliciete
+        // timezone schuift de weergave west van UTC een dag terug.
+        timeZone: 'UTC',
       });
     }
   }

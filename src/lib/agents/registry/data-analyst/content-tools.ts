@@ -278,20 +278,26 @@ export const queryContentCoverageTool: BrandclawTool = {
       };
     }
     try {
-      const entities =
+      const [entities, entityTotal] =
         dimension === "personas"
-          ? await prisma.persona.findMany({
-              where: { workspaceId: ctx.workspaceId },
-              select: { id: true, name: true },
-              orderBy: { createdAt: "asc" },
-              take: MAX_TABLE_ROWS,
-            })
-          : await prisma.product.findMany({
-              where: { workspaceId: ctx.workspaceId },
-              select: { id: true, name: true },
-              orderBy: { createdAt: "asc" },
-              take: MAX_TABLE_ROWS,
-            });
+          ? await Promise.all([
+              prisma.persona.findMany({
+                where: { workspaceId: ctx.workspaceId },
+                select: { id: true, name: true },
+                orderBy: { createdAt: "asc" },
+                take: MAX_TABLE_ROWS,
+              }),
+              prisma.persona.count({ where: { workspaceId: ctx.workspaceId } }),
+            ])
+          : await Promise.all([
+              prisma.product.findMany({
+                where: { workspaceId: ctx.workspaceId },
+                select: { id: true, name: true },
+                orderBy: { createdAt: "asc" },
+                take: MAX_TABLE_ROWS,
+              }),
+              prisma.product.count({ where: { workspaceId: ctx.workspaceId } }),
+            ]);
 
       // Links workspace-gescoped via de campaign-relatie; sourceType is een
       // vaste literal uit de CONTEXT_REGISTRY, geen user-input.
@@ -352,6 +358,9 @@ export const queryContentCoverageTool: BrandclawTool = {
             rows,
             summary:
               `${rows.length} ${label}; ${uncovered} without any campaign link (least covered listed first).` +
+              (entityTotal > entities.length
+                ? ` Note: workspace has ${entityTotal} ${label} — this table covers the oldest ${entities.length}, so the ranking is partial.`
+                : "") +
               (linksTruncated ? " Note: link data was capped at 5000 rows — counts may be incomplete." : ""),
           },
         }),
