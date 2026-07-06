@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 362. Agents Data Analyst — curated query-tools + server-owned TABLE-artefacten
+
+Zesde persona-agent "Dana" (BarChart3) met 7 curated read-only query-tools (content-productie/maand, inventaris type×status, F-VAL-trend, persona/product-dekking, campagne-overzicht, competitor-activiteit, agent-run-kosten): vaste workspace-gescoped Prisma-queries met geclampte parametervlakken — het model kan geen cijfers verzinnen of vrije queries bouwen. Tabellen worden server-owned via de run-collector als TABLE-artefact geregistreerd (strikte parser + REPORT-fallback), gerenderd door een sorteerbare TableArtifactView en bij accept gematerialiseerd als markdown-tabel in de Knowledge Library. Review: 2 rondes, 0 CRITICAL, 4 WARNINGs gefixt; live smoke met psql-geverifieerde cijfers; eigen 22-assert smoke-script. Hiermee is Agents Fase 1 compleet (6 agents).
+
+- Task: [tasks/done/agents-data-analyst.md](../tasks/done/agents-data-analyst.md)
+- ADR: [docs/adr/2026-07-05-agents-architectuur.md](adr/2026-07-05-agents-architectuur.md)
+- Spec: -
+- Commit: 15b27152 (branch feat/agents-data-analyst)
+
 ### 361. Agents UI — catalogus + agent-detail + results-inbox + Claw agent-scoping
 
 Agents-sectie in de SPA: catalogus met 5 persona-kaarten, agent-detailpagina met use-case-runner en run-historie, results-inbox met ArtifactViewer (REPORT/FINDINGS/LINK/PROPOSAL) en ProposalConfirmCard (approve/reject via de confirm-route, server-truth + 409-afhandeling). Claw-overlay kreeg optionele agent-scoping (persona in system-prompt; default-pad byte-identiek). i18n en/nl, stale-RUNNING-heuristiek, deep-links naar domein-pagina's. Review: 3 rondes, 0 CRITICAL, 6 WARNINGs gefixt (o.a. tab-in-scheme-XSS-bypass, stream-abort bij scope-wissel); e2e 5/5 + 13/13 browser-smoke.

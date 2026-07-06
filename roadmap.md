@@ -88,7 +88,7 @@
 | 1 | [`agents-foundation`](tasks/done/agents-foundation.md) — pluggable output-contract op `runAgentLoop` + `AgentRun`/`AgentArtifact` + code-registry + run-API | pre-launch NOW | 4-6d | ✅ **done 2026-07-06** (#359, branch `feat/agents-foundation` — A1 bewezen, 5 review-rondes 0 CRITICAL, smoke groen; ⚠️ Neon `db push` bij deploy) |
 | 1 | [`agents-motor-wiring`](tasks/done/agents-motor-wiring.md) — 5 persona-agents op bestaande motoren + Claw-tool-bridge + propose-only confirm + F-VAL-poort | pre-launch NOW | 4-6d | ✅ done 2026-07-06 (#360) |
 | 1 | [`agents-ui-inbox`](tasks/done/agents-ui-inbox.md) — sidebar-sectie + catalogus + agent-detail (use-cases + Claw-panel-chat) + results-inbox | pre-launch NOW | 5-7d | ✅ done 2026-07-06 (#361) |
-| 1 | [`agents-data-analyst`](tasks/agents-data-analyst.md) — curated read-only query-tools + TABLE-artefact + tabel-render | pre-launch NOW | 3-5d | in-progress 2026-07-06 (deps gemerged) — **eerste drop-kandidaat** |
+| 1 | [`agents-data-analyst`](tasks/done/agents-data-analyst.md) — curated read-only query-tools + TABLE-artefact + tabel-render | pre-launch NOW | 3-5d | ✅ done 2026-07-06 (#362) — **Fase 1 compleet** |
 | 2 | [`agents-scheduling`](tasks/agents-scheduling.md) — `AGENT_TASK`-brug (queue → registry → `runAgentLoop`) + `AgentSchedule` + notificaties + per-agent `AgentMemory` | launch NEXT | 2-3wk | open — gate: Fase 1 done (vercel-dep ✅ vervuld 2026-07-05) |
 | 3 | [`agents-brandclaw-convergentie`](tasks/agents-brandclaw-convergentie.md) — epic: Strategy Analyst → catalogus, 3 NodeTypes als agents, autonomie-schuif, cost-budget-alerts | post-launch LATER | multi-maand | blocked (go/no-go op pilot-data) |
 
