@@ -5,7 +5,7 @@ fase: pre-launch
 priority: now
 effort: 4-6 dagen
 owner: claude-code
-status: open
+status: in-review (gebouwd 2026-07-06, branch feat/agents-motor-wiring — alle 5 agents live gesmoked; task-finalize pending)
 created: 2026-07-05
 completed: -
 related-adr: docs/adr/2026-07-05-agents-architectuur.md
@@ -23,19 +23,19 @@ Bouw één dunne **Claw→orchestrator tool-bridge** (`clawToolToAgentTool`): ma
 
 # Acceptatiecriteria
 
-- [ ] Tool-bridge: een Claw read/analyze-tool draait ongewijzigd binnen `runAgentLoop`; een write-tool levert uitsluitend een proposal op (geen DB-mutatie) — bewezen met een test-run die `create_deliverable` voorstelt en de DB onaangeroerd laat tot confirm.
-- [ ] Given een agent bereikt een write-actie, When de run die actie voorstelt, Then eindigt de run in `AWAITING_CONFIRMATION` met een `PROPOSAL`-artefact (MutationProposal-shape: description, entityType, changes) en muteert er zonder goedkeuring niets; na confirm via de confirm-route wordt de mutatie uitgevoerd en het artefact als geaccepteerd gemarkeerd + cache-invalidatie.
-- [ ] **Research Analyst**: use-case-run met onderwerp → `runDeepResearch` (met begrensde config ≤ ~10 min + `AbortSignal` aan de route-deadline gekoppeld) → geciteerd rapport als `REPORT`-artefact + `LINK`-artefact naar de aangemaakte KnowledgeResource.
-- [ ] **Brand Guardian**: geplakte externe tekst → `runFidelityForExternalContent` → `FINDINGS`-artefact met fidelity-score + findings.
-- [ ] **Strategist**: onderwerp/doel → strategie-stappen (`buildStrategyFoundation`/`generateInsights`/`buildConceptDrivenStrategy` als tools) → blueprint als `REPORT`-artefact; `createDeliverablesFromBlueprint` alleen via proposal-pad.
-- [ ] **Content Creator**: opdracht → proposal voor deliverable(s); na confirm draait `orchestrateContentGeneration` en Then toont de output een F-VAL-score + findings; onder de drempel volgt auto-iterate (`runAutoIterate`, bestaat) of een expliciete flag — nooit een stille lage score.
-- [ ] **Market Analyst**: read/analyze-tools (o.a. `analyze_competitive_position` + competitor read-tools via de bridge) → analyse-rapport als `REPORT`-artefact.
-- [ ] Elke agent heeft een eigen `AiFeatureKey`-resolutie, persona-invulling (werknaam + rol + Lucide-icon; professioneel, geen emoji) en ≥2 use-case-knop-definities in zijn `AgentDefinition`.
-- [ ] Guards blijven van kracht per run (maxToolCalls, wallclock, cost-tracking); PostHog-events bevatten `agent_id`.
-- [ ] `npx tsc --noEmit` 0 errors
-- [ ] `npm run lint` 0 errors
-- [ ] Smoke-test uitgevoerd
-- [ ] Documentatie bijgewerkt indien van toepassing
+- [x] Tool-bridge: een Claw read/analyze-tool draait ongewijzigd binnen `runAgentLoop`; een write-tool levert uitsluitend een proposal op (geen DB-mutatie) — bewezen met een test-run die `create_deliverable` voorstelt en de DB onaangeroerd laat tot confirm.
+- [x] Given een agent bereikt een write-actie, When de run die actie voorstelt, Then eindigt de run in `AWAITING_CONFIRMATION` met een `PROPOSAL`-artefact (MutationProposal-shape: description, entityType, changes) en muteert er zonder goedkeuring niets; na confirm via de confirm-route wordt de mutatie uitgevoerd en het artefact als geaccepteerd gemarkeerd + cache-invalidatie.
+- [x] **Research Analyst**: use-case-run met onderwerp → `runDeepResearch` (met begrensde config ≤ ~10 min + `AbortSignal` aan de route-deadline gekoppeld) → geciteerd rapport als `REPORT`-artefact + `LINK`-artefact naar de aangemaakte KnowledgeResource.
+- [x] **Brand Guardian**: geplakte externe tekst → `runFidelityForExternalContent` → `FINDINGS`-artefact met fidelity-score + findings.
+- [x] **Strategist**: onderwerp/doel → strategie-stappen (`buildStrategyFoundation`/`generateInsights`/`buildConceptDrivenStrategy` als tools) → blueprint als `REPORT`-artefact; `createDeliverablesFromBlueprint` alleen via proposal-pad.
+- [x] **Content Creator**: opdracht → proposal voor deliverable(s); na confirm draait `orchestrateContentGeneration` en Then toont de output een F-VAL-score + findings; onder de drempel volgt auto-iterate (`runAutoIterate`, bestaat) of een expliciete flag — nooit een stille lage score.
+- [x] **Market Analyst**: read/analyze-tools (o.a. `analyze_competitive_position` + competitor read-tools via de bridge) → analyse-rapport als `REPORT`-artefact.
+- [x] Elke agent heeft een eigen `AiFeatureKey`-resolutie, persona-invulling (werknaam + rol + Lucide-icon; professioneel, geen emoji) en ≥2 use-case-knop-definities in zijn `AgentDefinition`.
+- [x] Guards blijven van kracht per run (maxToolCalls, wallclock, cost-tracking); PostHog-events bevatten `agent_id`.
+- [x] `npx tsc --noEmit` 0 errors
+- [x] `npm run lint` 0 errors
+- [x] Smoke-test uitgevoerd
+- [x] Documentatie bijgewerkt indien van toepassing
 
 # Bestanden die ik aanraak
 
@@ -101,3 +101,31 @@ Bouw één dunne **Claw→orchestrator tool-bridge** (`clawToolToAgentTool`): ma
 - **Job-based analyzers** (brandstyle/brandvoice/products-analyze — job+polling): patroon "agent start job → LINK-artefact naar module-status" is Fase 2 (`agents-scheduling`), niet hier.
 - **Coördinatie-note canvas**: `content-test-auto-iterate-6B`-rest, `content-flow-improvements-7a`, `content-test-regression-7B` en `lp-feature-image-diversity` (in-progress) raken de canvas-orchestrator/pipeline. De pipeline-as-tool-wrapper van de Content Creator wrapt `orchestrateContentGeneration` — bij start file-ownership afstemmen; de wrapper mag de orchestrator-signatuur niet wijzigen.
 - **Contract-eis confirm-route (review-finding 2026-07-06)**: de run-detail-route cachet terminale statussen incl. `AWAITING_CONFIRMATION`; de confirm-afhandeling die een run naar COMPLETED transitioneert MOET `invalidateCache(cacheKeys.prefixes.agents(workspaceId))` aanroepen, anders plakt de oude status tot DETAIL-TTL.
+
+---
+
+# Status 2026-07-06 — GEBOUWD (branch `feat/agents-motor-wiring`)
+
+## Live-smoke-bewijs (echte API-runs, workspace "Zwarthout")
+
+| Agent | Resultaat |
+|---|---|
+| Brand Guardian | ✅ off-brand tekst → FINDINGS-artefact **score 57** + REPORT; `ContentReviewLog`-domein-rij bevestigd (Brand Alignment) — $0.058, 49s |
+| Content Creator | ✅ propose (deliverables 296→296, **géén DB-write**) → run AWAITING_CONFIRMATION → confirm → deliverable aangemaakt in campagne "Zomer 2026", volledige pipeline gedraaid, **F-VAL 93** op LINK-artefact, run COMPLETED — $0.128 + generatie |
+| Market Analyst | ✅ REPORT "Concurrentiepositie Zwarthout" (citeert échte workspace-data) + dun-data → trend-scan-PROPOSAL; **reject-pad**: dismissed → run COMPLETED, niets uitgevoerd — $0.099, 55s |
+| Research Analyst | ✅ COMPLETED 3,5 min — volledig rapport (13,7k md, 3 bronnen) direct als `KnowledgeResource` (source `AGENT`) + server-owned REPORT + LINK-artefact — $0.078 |
+| Strategist | ✅ gescopete flow (foundation → insights → richting-rapport) COMPLETED 3,6 min, 1 REPORT — $0.141; eerdere volle-keten-run bewees de 4-staps-orkestratie ($0.39) maar zie afwijkingen |
+| Catalogus | ✅ `GET /api/agents` toont de 5 persona's; echo-test blijft hidden |
+| Claw-regressie | ✅ overlay-chat streamt ongewijzigd (tool-grounded antwoord) |
+| Error-pad | ✅ guard-fail runs eindigen FAILED met eerlijke error (incl. `api_error`-onderscheid uit foundation) |
+
+## Afwijkingen (degradatie-clausule task-risico's — gedocumenteerd, niet stil)
+
+1. **Strategist default-flow gescoped op foundation + insights + richting-rapport.** De volledige keten (t/m `build_concept_driven_strategy`) overschrijdt structureel het synchrone run-budget (foundation alleen al ~340-720s; volle keten 13-28 min in drie meet-runs). De 4 tools blijven geregistreerd voor expliciete vervolg-vragen; volledige uitwerking → campagne-wizard (nu) of async runs (`agents-scheduling`, Fase 2). Mitigaties gebouwd: snelheids-preset (`basic`/`single`/`fast`), per-stap harde deadline (6 min, bewezen werkend), `maxTokens`-override per agent (16k strategist — default 4096 kapte het rapport af).
+2. **Deep research draait op compacte config** (3 queries / 6 bronnen / verify uit / 5-min-deadline + harde kill op 6,5 min): de interne deep-research-deadline wordt niet door elke fase gerespecteerd (8-min-config liep 15+ min). Volle-diepte research blijft de Knowledge-Library-ingang.
+3. **Competitor-refresh niet als agent-tool**: de refresh-logica zit inline in de route (geen lib-functie); motor-wijziging = stop-and-ask per task-regel → doorgeschoven (job-based patroon past sowieso beter, Fase 2). `alignment/audit` idem: geen bestaande Claw-tool.
+4. **Extra deliverable buiten oorspronkelijke file-list**: `GET /api/agents` (catalogus-endpoint) — de registry is niet client-safe (bootstrap trekt prisma/claw-tools mee), dus de UI-taak kan `listAgents()` niet importeren; contract gedeeld met `agents-ui-inbox`.
+5. **PATCH-guard op PROPOSAL-artefacten** (foundation-route, kleine cross-edit): accept/dismiss van proposals loopt verplicht via de confirm-route — een kale PATCH-accept zou "goedgekeurd maar nooit uitgevoerd" opleveren.
+
+## Gates
+`npx tsc --noEmit` 0 errors · eslint op alle geraakte dirs 0 errors · totale smoke-kosten ~$1,20.

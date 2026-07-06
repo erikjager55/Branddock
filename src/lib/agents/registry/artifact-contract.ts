@@ -17,6 +17,7 @@ import { AgentArtifactType, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { serializeToolCallTrace } from "@/lib/brandclaw/orchestrator/persistence";
 import type { AgentOutputContract } from "@/lib/brandclaw/orchestrator/types";
+import { drainArtifacts, drainProposals } from "./run-collector";
 import type { AgentArtifactDraft, AgentFinalizeResult } from "./types";
 
 const GUARD_NOTE =
@@ -34,6 +35,26 @@ export const artifactOutputContract: AgentOutputContract<
     return extractArtifactDrafts(finalMessage);
   },
   async persist(parsed, { ctx, outcome, cost }) {
+    // Server-owned output uit de run-collector (agents-motor-wiring):
+    // deterministische artefacten van pipeline-tools (bv. het volledige
+    // deep-research-rapport — loopt bewust niet door de model-context) en
+    // mutation-proposals van write-tools (propose-only, ADR D6-verfijning).
+    const serverDrafts = drainArtifacts(ctx.runId);
+    const proposalDrafts: AgentArtifactDraft[] = drainProposals(ctx.runId).map((p) => ({
+      type: "PROPOSAL",
+      title: p.description.length > 120 ? `${p.description.slice(0, 117)}...` : p.description,
+      content: {
+        toolName: p.toolName,
+        params: p.params,
+        description: p.description,
+        entityType: p.entityType,
+        entityName: p.entityName ?? null,
+        changes: p.changes ?? [],
+      } as Record<string, unknown>,
+    }));
+    const allDrafts = [...parsed, ...serverDrafts, ...proposalDrafts];
+    const hasProposals = proposalDrafts.length > 0;
+
     let status: AgentFinalizeResult["status"];
     let error: string | null = null;
 
@@ -43,13 +64,18 @@ export const artifactOutputContract: AgentOutputContract<
         ? "Run was aborted by an AI-provider error before completing normally."
         : GUARD_NOTE;
 
-    if (outcome.truncated && parsed.length === 0) {
+    if (hasProposals) {
+      // Voorgestelde mutaties wachten op user-goedkeuring via de confirm-
+      // route; de run is pas afgerond ná die beslissing.
+      status = "AWAITING_CONFIRMATION";
+      error = outcome.truncated ? `${abortNote} Output may be partial.` : null;
+    } else if (outcome.truncated && allDrafts.length === 0) {
       status = "FAILED";
       error = `${abortNote} No parseable output was produced.`;
     } else if (outcome.truncated) {
       status = "COMPLETED";
       error = `${abortNote} Output may be partial.`;
-    } else if (parsed.length === 0 && outcome.finalMessage) {
+    } else if (allDrafts.length === 0 && outcome.finalMessage) {
       // Geen stille lege "succes"-run: het model produceerde wél tekst maar
       // geen parseable artifacts-blok — meestal een max_tokens-afkap of een
       // format-miss. Run blijft COMPLETED (0 artefacten is toegestaan) maar
@@ -66,7 +92,7 @@ export const artifactOutputContract: AgentOutputContract<
     // Individuele create-calls i.p.v. createMany: het response-contract
     // vereist artifactIds[] en createMany geeft geen ids terug. Blijft
     // één atomaire transactie samen met de run-finalize.
-    const artifactCreates = parsed.map((draft) =>
+    const artifactCreates = allDrafts.map((draft) =>
       prisma.agentArtifact.create({
         data: {
           workspaceId: ctx.workspaceId,

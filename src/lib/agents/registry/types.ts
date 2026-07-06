@@ -98,6 +98,12 @@ export interface AgentDefinition {
   /** Override loop guards (defaults: 5min / 20 tool-calls). */
   timeoutMs?: number;
   maxToolCalls?: number;
+  /**
+   * Max output-tokens per model-turn (default 4096). Agents die een groot
+   * eind-rapport in hun artifacts-JSON schrijven (strategist) hebben meer
+   * nodig — anders kapt max_tokens de JSON af (smoke 2026-07-06).
+   */
+  maxTokens?: number;
   /** Excluded from listAgents(); run-entry rejects hidden agents in production. */
   hidden?: boolean;
 }
