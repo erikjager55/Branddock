@@ -410,7 +410,10 @@ async function runLoopCore(input: LoopCoreInput): Promise<LoopOutcome> {
         toolResults.push({
           type: "tool_result",
           tool_use_id: use.id,
-          content: JSON.stringify(result.content),
+          // String-content (bv. gefencede bridge-output) niet dubbel encoden —
+          // scheelt escape-ruis/tokens; object-content blijft JSON.
+          content:
+            typeof result.content === "string" ? result.content : JSON.stringify(result.content),
           is_error: result.isError ?? false,
         });
         toolCallTrace.push({

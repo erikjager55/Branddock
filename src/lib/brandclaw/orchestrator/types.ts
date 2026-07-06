@@ -60,6 +60,12 @@ export interface BrandclawRunContext {
   triggerType: TriggerType;
   /** User-id voor manual, cron-name voor scheduled, event-id voor event_driven. */
   triggerSource: string | null;
+  /**
+   * Expliciete user-attributie voor tools die een userId vereisen (Claw-
+   * tool-bridge, F-VAL). NIET triggerSource hergebruiken: dat veld draagt
+   * bij scheduled/event-runs een cron-/event-naam — geen user.
+   */
+  userId?: string | null;
 }
 
 /**

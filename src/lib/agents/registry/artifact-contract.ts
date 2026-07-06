@@ -156,7 +156,12 @@ export function extractArtifactDrafts(finalMessage: string | null): AgentArtifac
     return [];
   }
 
-  const validTypes = new Set<string>(Object.values(AgentArtifactType));
+  // Model-authored artefacten zijn beperkt tot REPORT/LINK (conform de
+  // system-prompt). PROPOSAL/FINDINGS/TABLE zijn server-owned (run-collector
+  // resp. pipeline-tools): een geforged PROPOSAL uit model-output zou anders
+  // via de confirm-route een willekeurige Claw-write-tool met model-
+  // gecontroleerde params kunnen laten uitvoeren — propose-only-bypass.
+  const validTypes = new Set<string>([AgentArtifactType.REPORT, AgentArtifactType.LINK]);
   const drafts: AgentArtifactDraft[] = [];
   for (const item of (parsed as { artifacts: unknown[] }).artifacts) {
     if (!item || typeof item !== "object") continue;

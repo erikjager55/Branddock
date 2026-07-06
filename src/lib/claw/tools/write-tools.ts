@@ -722,15 +722,17 @@ export const writeTools: ClawToolDefinition[] = [
     }),
     requiresConfirmation: true,
     category: 'write',
-    buildProposal: async (params) => {
+    buildProposal: async (params, ctx) => {
       const p = params as {
         campaignId: string;
         contentType: string;
         title?: string;
         brief?: Record<string, string | undefined>;
       };
-      const campaign = await prisma.campaign.findUnique({
-        where: { id: p.campaignId },
+      // Workspace-gescoped: buildProposal is via de agents-tool-bridge ook
+      // met model-gecontroleerde ids bereikbaar — geen cross-tenant titels.
+      const campaign = await prisma.campaign.findFirst({
+        where: { id: p.campaignId, workspaceId: ctx.workspaceId },
         select: { title: true },
       });
       const title = p.title ?? p.contentType;

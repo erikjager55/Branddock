@@ -187,6 +187,7 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
           runId,
           triggerType,
           triggerSource: userId,
+          userId,
         },
         model: resolved.model,
         timeoutMs:

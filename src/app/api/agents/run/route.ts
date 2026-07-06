@@ -14,7 +14,8 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { getServerSession } from "@/lib/auth-server";
+import { requireWorkspaceRole } from "@/lib/auth/require-role";
 import { withAiRateLimit } from "@/lib/ai/middleware";
 import {
   runAgent,
@@ -45,10 +46,12 @@ const bodySchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
-    }
+    // Member+ (zelfde policy als de confirm-route en /api/claw/confirm):
+    // een run geeft AI-budget uit én kan via pipeline-tools domein-rijen
+    // schrijven (KnowledgeResource, ContentReviewLog) — viewers zijn read-only.
+    const role = await requireWorkspaceRole(["owner", "admin", "member"]);
+    if (role instanceof NextResponse) return role;
+    const workspaceId = role.workspaceId;
     const session = await getServerSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

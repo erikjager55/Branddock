@@ -17,6 +17,7 @@
 // =============================================================
 
 import { getToolByName, zodToJsonSchema } from "@/lib/claw/tools/registry";
+import { fenceUntrustedContent } from "@/lib/ai/untrusted-fence";
 import type { ClawToolDefinition } from "@/lib/claw/claw.types";
 import { getToolRegistry } from "@/lib/brandclaw/orchestrator/tool-registry";
 import type {
@@ -64,12 +65,21 @@ export function clawToolToAgentTool(clawTool: ClawToolDefinition): BrandclawTool
   return {
     definition,
     async execute(input: Record<string, unknown>, ctx: BrandclawRunContext) {
-      // ToolExecutionContext verwacht een userId; voor manual runs draagt
-      // triggerSource het user-id (run-agent zet triggerSource: userId).
-      const toolCtx = {
-        workspaceId: ctx.workspaceId,
-        userId: ctx.triggerSource ?? "agent",
-      };
+      // Expliciete user-attributie (ctx.userId) — triggerSource is bij
+      // scheduled/event-runs een cron-/event-naam, geen user. Zonder user
+      // draaien Claw-tools niet (Fase-2-scheduling moet dit oplossen vóór
+      // hij deze bridge gebruikt).
+      const userId = ctx.userId ?? (ctx.triggerType === "manual" ? ctx.triggerSource : null);
+      if (!userId) {
+        return {
+          content: {
+            error: `Tool '${clawTool.name}' requires an authenticated user context; non-manual runs cannot use it yet.`,
+          },
+          isError: true,
+          errorCode: "NO_USER_CONTEXT",
+        };
+      }
+      const toolCtx = { workspaceId: ctx.workspaceId, userId };
 
       if (clawTool.requiresConfirmation) {
         if (!clawTool.buildProposal) {
@@ -94,7 +104,11 @@ export function clawToolToAgentTool(clawTool: ClawToolDefinition): BrandclawTool
       }
 
       const result = await clawTool.execute(input, toolCtx);
-      return { content: truncateForModel(result) };
+      // Mechanische fencing (zelfde conventie als Claw's context-assembler):
+      // tool-output kan gescrapete/externe content bevatten — het model mag
+      // dit uitsluitend als data lezen, nooit als instructies.
+      const serialized = JSON.stringify(truncateForModel(result));
+      return { content: fenceUntrustedContent(serialized, `tool result: ${clawTool.name}`) };
     },
   };
 }

@@ -32,6 +32,7 @@ import type {
   CreativeConcept,
   HumanInsight,
 } from "@/lib/campaigns/strategy-blueprint.types";
+import { fenceUntrustedContent } from "@/lib/ai/untrusted-fence";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import type {
@@ -72,10 +73,16 @@ async function withStepDeadline<T>(promise: Promise<T>, label: string): Promise<
     return await Promise.race([
       promise,
       new Promise<never>((_, reject) => {
-        timer = setTimeout(
-          () => reject(new Error(`${label} exceeded ${Math.round(STRATEGY_STEP_DEADLINE_MS / 1000)}s and was aborted`)),
-          STRATEGY_STEP_DEADLINE_MS,
-        );
+        timer = setTimeout(() => {
+          // Abandoned: de onderliggende stap heeft geen AbortSignal en draait
+          // (en kost) door op de achtergrond — bewust gelogd als cost-leak.
+          console.warn("[agents pipeline-tools] strategy step abandoned past deadline", { label });
+          reject(
+            new Error(
+              `${label} exceeded ${Math.round(STRATEGY_STEP_DEADLINE_MS / 1000)}s and was abandoned (it may still be running in the background) — do not retry it in this run`,
+            ),
+          );
+        }, STRATEGY_STEP_DEADLINE_MS);
       }),
     ]);
   } finally {
@@ -89,6 +96,15 @@ function errorResult(err: unknown, code: string): ToolExecuteResult {
     isError: true,
     errorCode: code,
   };
+}
+
+
+function looksLikeInsight(v: unknown): v is HumanInsight {
+  return !!v && typeof v === "object" && typeof (v as Record<string, unknown>).insightStatement === "string";
+}
+
+function looksLikeConcept(v: unknown): v is CreativeConcept {
+  return !!v && typeof v === "object" && typeof (v as Record<string, unknown>).campaignLine === "string";
 }
 
 // ─── Research Analyst ────────────────────────────────────────
@@ -138,20 +154,25 @@ export const runDeepResearchTool: BrandclawTool = {
       });
       // Harde bovengrens: ook als een fase de abort negeert, komt de tool
       // binnen de agent-run-guard terug met een eerlijke fout.
+      let hardKillTimer: ReturnType<typeof setTimeout> | undefined;
       const report = await Promise.race([
         researchPromise,
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () =>
-              reject(
-                new Error(
-                  `Deep research exceeded ${Math.round(DEEP_RESEARCH_HARD_KILL_MS / 1000)}s and was aborted — try a narrower topic.`,
-                ),
+        new Promise<never>((_, reject) => {
+          hardKillTimer = setTimeout(() => {
+            // Abandoned, niet gegarandeerd geaborteerd: fases die het
+            // abort-signaal negeren draaien (en kosten) door op de achtergrond.
+            console.warn("[agents pipeline-tools] deep research abandoned past hard deadline", {
+              workspaceId: ctx.workspaceId,
+              runId: ctx.runId,
+            });
+            reject(
+              new Error(
+                `Deep research exceeded ${Math.round(DEEP_RESEARCH_HARD_KILL_MS / 1000)}s and was abandoned (it may still be finishing in the background) — try a narrower topic.`,
               ),
-            DEEP_RESEARCH_HARD_KILL_MS,
-          ),
-        ),
-      ]);
+            );
+          }, DEEP_RESEARCH_HARD_KILL_MS);
+        }),
+      ]).finally(() => clearTimeout(hardKillTimer));
 
       // Domain-first write-through: rapport direct in de Knowledge Library.
       const resource = await prisma.knowledgeResource.create({
@@ -192,11 +213,18 @@ export const runDeepResearchTool: BrandclawTool = {
         content: {
           status: "report_created",
           knowledgeResourceId: resource.id,
-          title: report.suggestedTitle,
-          summary: report.summary,
-          keyTakeaways: report.keyTakeaways,
           sourceCount: report.sources.length,
-          warnings: report.warnings,
+          // Gesynthetiseerd uit gescrapete webpagina's → mechanisch gefenced;
+          // het model leest dit uitsluitend als data (zie SECURITY_RULES).
+          research: fenceUntrustedContent(
+            JSON.stringify({
+              title: report.suggestedTitle,
+              summary: report.summary,
+              keyTakeaways: report.keyTakeaways,
+              warnings: report.warnings,
+            }),
+            "deep-research synthesis of scraped web sources",
+          ),
           note: "The full report is saved to the Knowledge Library and attached to this run as a REPORT artifact. Summarize the key findings in your final answer — do NOT reproduce the full report.",
         },
       };
@@ -322,9 +350,9 @@ export const generateCreativeConceptsTool: BrandclawTool = {
   async execute(input, ctx) {
     const parsed = parseCampaignInput(input);
     const insight = input.insight;
-    if (!parsed || !insight || typeof insight !== "object") {
+    if (!parsed || !looksLikeInsight(insight)) {
       return {
-        content: { error: "campaign_name and insight (object from mine_insights) are required" },
+        content: { error: "campaign_name and a valid insight object (exactly as returned by mine_insights, incl. insightStatement) are required" },
         isError: true,
         errorCode: "INVALID_INPUT",
       };
@@ -335,7 +363,7 @@ export const generateCreativeConceptsTool: BrandclawTool = {
         pipelineConfig: AGENT_PIPELINE_CONFIG,
       });
       const result = await withStepDeadline(
-        generateCreativeConcepts(pipelineCtx, insight as HumanInsight),
+        generateCreativeConcepts(pipelineCtx, insight),
         "generate_creative_concepts",
       );
       return { content: { concepts: result.concepts } };
@@ -369,9 +397,9 @@ export const buildConceptStrategyTool: BrandclawTool = {
   async execute(input, ctx) {
     const parsed = parseCampaignInput(input);
     const { concept, insight } = input;
-    if (!parsed || !concept || typeof concept !== "object" || !insight || typeof insight !== "object") {
+    if (!parsed || !looksLikeConcept(concept) || !looksLikeInsight(insight)) {
       return {
-        content: { error: "campaign_name, concept and insight objects are required" },
+        content: { error: "campaign_name plus valid concept (incl. campaignLine) and insight (incl. insightStatement) objects are required" },
         isError: true,
         errorCode: "INVALID_INPUT",
       };
@@ -382,7 +410,7 @@ export const buildConceptStrategyTool: BrandclawTool = {
         pipelineConfig: AGENT_PIPELINE_CONFIG,
       });
       const result = await withStepDeadline(
-        buildConceptDrivenStrategy(pipelineCtx, concept as CreativeConcept, insight as HumanInsight),
+        buildConceptDrivenStrategy(pipelineCtx, concept, insight),
         "build_concept_driven_strategy",
       );
       return { content: { strategy: result.strategy, architecture: result.architecture } };

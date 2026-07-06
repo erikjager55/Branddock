@@ -12,6 +12,32 @@ import { runFidelityForExternalContent } from "@/lib/brand-fidelity/external-con
 import type { BrandclawTool } from "@/lib/brandclaw/orchestrator/types";
 import { recordArtifact } from "./run-collector";
 
+
+/** Per-stap-deadline: een hangende F-VAL-run mag de run-guard niet blokkeren
+ * (tool-executes zijn onbegrensd binnen de loop). */
+const FVAL_DEADLINE_MS = 4 * 60 * 1000;
+
+async function withFvalDeadline<T>(promise: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          console.warn("[agents fval-gate] fidelity review abandoned past deadline");
+          reject(
+            new Error(
+              `Brand fidelity review exceeded ${Math.round(FVAL_DEADLINE_MS / 1000)}s and was abandoned — try shorter content`,
+            ),
+          );
+        }, FVAL_DEADLINE_MS);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export interface BrandFitReviewResult {
   compositeScore: number;
   findingsCount: number;
@@ -33,13 +59,13 @@ export async function runBrandFitReview(args: {
   title?: string;
   registerArtifact?: boolean;
 }): Promise<BrandFitReviewResult> {
-  const review = await runFidelityForExternalContent({
+  const review = await withFvalDeadline(runFidelityForExternalContent({
     workspaceId: args.workspaceId,
     contentText: args.contentText,
     sourceType: args.sourceType,
     sourceUrl: args.sourceUrl,
     userId: args.userId,
-  });
+  }));
 
   const compositeScore = review.result.compositeScore;
 
@@ -103,7 +129,7 @@ export const reviewBrandFitTool: BrandclawTool = {
         contentText: content,
         sourceType: sourceUrl ? "url" : "paste",
         sourceUrl,
-        userId: ctx.triggerSource ?? undefined,
+        userId: ctx.userId ?? undefined,
         title: typeof input.title === "string" ? input.title : undefined,
       });
       return {

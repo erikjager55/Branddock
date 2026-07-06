@@ -17,7 +17,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { getServerSession } from "@/lib/auth-server";
+import { requireWorkspaceRole } from "@/lib/auth/require-role";
 import { getToolByName } from "@/lib/claw/tools/registry";
 import { orchestrateContentGeneration } from "@/lib/ai/canvas-orchestrator";
 import { invalidateCache } from "@/lib/api/cache";
@@ -46,10 +47,11 @@ export async function POST(
 ) {
   try {
     const { runId } = await params;
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
-    }
+    // Zelfde policy als /api/claw/confirm: mutaties uitvoeren is member+ —
+    // viewers zijn read-only. requireWorkspaceRole dekt sessie + membership.
+    const role = await requireWorkspaceRole(["owner", "admin", "member"]);
+    if (role instanceof NextResponse) return role;
+    const workspaceId = role.workspaceId;
     const session = await getServerSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -79,9 +81,6 @@ export async function POST(
     if (!artifact) {
       return NextResponse.json({ error: "Proposal artifact not found" }, { status: 404 });
     }
-    if (artifact.acceptedAt || artifact.dismissedAt) {
-      return NextResponse.json({ error: "Proposal is already resolved" }, { status: 400 });
-    }
 
     const content = (artifact.content ?? {}) as Record<string, unknown>;
     const toolName = typeof content.toolName === "string" ? content.toolName : null;
@@ -89,22 +88,28 @@ export async function POST(
       content.params && typeof content.params === "object" && !Array.isArray(content.params)
         ? (content.params as Record<string, unknown>)
         : {};
-    if (!toolName) {
-      return NextResponse.json({ error: "Malformed proposal — missing toolName" }, { status: 400 });
-    }
 
     // ─── Afwijzen ────────────────────────────────────────────
+    // Bewust vóór de toolName-guard: een malformed proposal moet altijd
+    // afwijsbaar blijven, anders telt settleRunStatus hem eeuwig als pending.
     if (!parsed.data.approved) {
-      await prisma.agentArtifact.update({
-        where: { id: artifact.id },
+      // Atomische claim: een concurrent approve/reject verliest hier (409).
+      const claim = await prisma.agentArtifact.updateMany({
+        where: { id: artifact.id, acceptedAt: null, dismissedAt: null },
         data: { dismissedAt: new Date() },
       });
+      if (claim.count !== 1) {
+        return NextResponse.json({ error: "Proposal is already resolved" }, { status: 409 });
+      }
       const runStatus = await settleRunStatus(run.id, workspaceId);
       invalidateCache(cacheKeys.prefixes.agents(workspaceId));
       return NextResponse.json({ executed: false, runStatus });
     }
 
     // ─── Goedkeuren: uitvoeren via de Claw-registry ──────────
+    if (!toolName) {
+      return NextResponse.json({ error: "Malformed proposal — missing toolName" }, { status: 400 });
+    }
     const toolDef = getToolByName(toolName);
     if (!toolDef) {
       return NextResponse.json(
@@ -112,20 +117,71 @@ export async function POST(
         { status: 400 },
       );
     }
+    // Defense-in-depth op de propose-only-garantie: alleen confirmatie-
+    // plichtige tools zijn via proposals uitvoerbaar, en de persisted params
+    // moeten het tool-schema halen (params zijn origineel model-output).
+    if (!toolDef.requiresConfirmation) {
+      return NextResponse.json(
+        { error: `Tool '${toolName}' is not a confirmable write-tool` },
+        { status: 400 },
+      );
+    }
+    const paramsCheck = toolDef.inputSchema.safeParse(toolParams);
+    if (!paramsCheck.success) {
+      return NextResponse.json(
+        { error: `Proposal params failed validation for '${toolName}'` },
+        { status: 400 },
+      );
+    }
+
+    // Atomische claim VÓÓR executie (TOCTOU-guard): een dubbelklik/concurrent
+    // confirm kan de mutatie anders twee keer uitvoeren. Verliezer krijgt 409.
+    const claim = await prisma.agentArtifact.updateMany({
+      where: { id: artifact.id, acceptedAt: null, dismissedAt: null },
+      data: { acceptedAt: new Date() },
+    });
+    if (claim.count !== 1) {
+      return NextResponse.json({ error: "Proposal is already resolved" }, { status: 409 });
+    }
+
+    const releaseClaim = async () => {
+      try {
+        await prisma.agentArtifact.updateMany({
+          where: { id: artifact.id, dismissedAt: null },
+          data: { acceptedAt: null },
+        });
+      } catch {
+        console.warn("[agents confirm] failed to release claim after execute failure", {
+          artifactId: artifact.id,
+        });
+      }
+    };
 
     let result: unknown;
     try {
-      result = await toolDef.execute(toolParams, { workspaceId, userId: session.user.id });
+      result = await toolDef.execute(paramsCheck.data as Record<string, unknown>, { workspaceId, userId: session.user.id });
     } catch (err) {
-      // Executie-fout: proposal blijft pending zodat de user kan retryen.
+      // Executie-fout: claim terugrollen zodat de user kan retryen; non-2xx
+      // zodat clients dit niet als succes lezen.
+      await releaseClaim();
       const message = err instanceof Error ? err.message : "Tool execution failed";
-      return NextResponse.json({ executed: false, error: message, runStatus: run.status });
+      return NextResponse.json(
+        { executed: false, error: message, runStatus: run.status },
+        { status: 502 },
+      );
     }
-
-    await prisma.agentArtifact.update({
-      where: { id: artifact.id },
-      data: { acceptedAt: new Date() },
-    });
+    // Claw-parity: tools kunnen soft-failen met { success: false } i.p.v. throwen.
+    if (result && typeof result === "object" && (result as Record<string, unknown>).success === false) {
+      await releaseClaim();
+      const softMessage =
+        typeof (result as Record<string, unknown>).message === "string"
+          ? ((result as Record<string, unknown>).message as string)
+          : "Tool reported failure";
+      return NextResponse.json(
+        { executed: false, error: softMessage, runStatus: run.status },
+        { status: 502 },
+      );
+    }
 
     void emitAgentOutputAccepted({
       workspaceId,
@@ -137,8 +193,19 @@ export async function POST(
       /* logged binnen trackEvent */
     });
 
+    // Settle + invalidatie VÓÓR de (minutenlange) generatie-stap: een crash
+    // of platform-timeout tijdens de generatie mag de run niet permanent op
+    // AWAITING_CONFIRMATION laten staan terwijl alle proposals resolved zijn.
+    const runStatus = await settleRunStatus(run.id, workspaceId);
+    invalidateCache(cacheKeys.prefixes.agents(workspaceId));
+    for (const prefix of TOOL_CACHE_PREFIXES[toolName] ?? []) {
+      invalidateCache(prefix(workspaceId));
+    }
+
     // Content-Creator: goedgekeurd deliverable → volledige pipeline draaien
     // (incl. F-VAL + auto-iterate ín de pipeline) + LINK-artefact met score.
+    // Fulfillment-status leeft op het deliverable zelf (Canvas); de run is
+    // met het resolved proposal afgerond.
     let generation: { fidelityScore: number | null; error: string | null } | null = null;
     const deliverableId =
       toolName === "create_deliverable" &&
@@ -149,7 +216,7 @@ export async function POST(
         : null;
 
     if (deliverableId) {
-      generation = await runDeliverableGeneration(deliverableId, workspaceId);
+      generation = await withGenerationDeadline(runDeliverableGeneration(deliverableId, workspaceId), deliverableId);
       const title =
         typeof (result as Record<string, unknown>).deliverableTitle === "string"
           ? ((result as Record<string, unknown>).deliverableTitle as string)
@@ -172,13 +239,9 @@ export async function POST(
           fidelityScore: generation.fidelityScore,
         },
       });
-    }
-
-    const runStatus = await settleRunStatus(run.id, workspaceId);
-
-    invalidateCache(cacheKeys.prefixes.agents(workspaceId));
-    for (const prefix of TOOL_CACHE_PREFIXES[toolName] ?? []) {
-      invalidateCache(prefix(workspaceId));
+      // Nieuw artefact + gegenereerde content → verse invalidatie.
+      invalidateCache(cacheKeys.prefixes.agents(workspaceId));
+      invalidateCache(cacheKeys.prefixes.studio(workspaceId));
     }
 
     return NextResponse.json({
@@ -193,6 +256,40 @@ export async function POST(
     console.error("[POST /api/agents/runs/[runId]/confirm]", err);
     const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+
+/**
+ * Deadline om de generatie-consumptie: een hangende generator mag de route
+ * niet tot de platform-kill (800s) laten doorlopen. Bij overschrijding is de
+ * uitkomst "abandoned" — het deliverable bestaat en is via de Canvas alsnog
+ * te genereren.
+ */
+const GENERATION_DEADLINE_MS = 10 * 60 * 1000;
+
+async function withGenerationDeadline(
+  promise: Promise<{ fidelityScore: number | null; error: string | null }>,
+  deliverableId: string,
+): Promise<{ fidelityScore: number | null; error: string | null }> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<{ fidelityScore: number | null; error: string | null }>((resolve) => {
+        timer = setTimeout(() => {
+          console.warn("[agents confirm] deliverable generation abandoned past deadline", {
+            deliverableId,
+          });
+          resolve({
+            fidelityScore: null,
+            error: `Content generation exceeded ${Math.round(GENERATION_DEADLINE_MS / 1000)}s and was abandoned — open the deliverable in the Canvas to (re)generate.`,
+          });
+        }, GENERATION_DEADLINE_MS);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
   }
 }
 
