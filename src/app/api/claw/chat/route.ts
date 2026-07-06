@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleSystemPrompt } from '@/lib/claw/context-assembler';
-import { getAgentDefinition } from '@/lib/agents/registry';
+import { getVisibleAgentDefinition } from '@/lib/agents/registry';
 import { fenceUntrustedContent } from '@/lib/ai/untrusted-fence';
 import { getToolsForClaude, getToolByName } from '@/lib/claw/tools/registry';
 import type {
@@ -169,12 +169,10 @@ export async function POST(req: NextRequest) {
     };
     existingMessages.push(userMessage);
 
-    // Agent-scope: persona-sectie in het system-prompt. Onbekende
-    // agent-id → undefined → regulier gedrag (nullish default).
-    // TODO(merge): hidden-agent-guard via getVisibleAgentDefinition —
-    // helper leeft op de motor-wiring-branch; post-merge-integratie.
+    // Agent-scope: persona-sectie in het system-prompt. Onbekende of
+    // (in productie) hidden agent-id → undefined → regulier gedrag.
     const agentDef = parsed.data.agentId
-      ? getAgentDefinition(parsed.data.agentId)
+      ? getVisibleAgentDefinition(parsed.data.agentId)
       : undefined;
     const agentPersona = agentDef
       ? {

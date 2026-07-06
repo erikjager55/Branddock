@@ -27,7 +27,7 @@ import {
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { clearRunCollector } from "./run-collector";
-import { getAgentDefinition } from "./index";
+import { getAgentDefinition, isTestAgentAllowed } from "./index";
 import type { AgentDefinition } from "./types";
 
 /** Route vertaalt deze naar 400 — onderscheidt user-fout van server-fout. */
@@ -81,10 +81,6 @@ async function withDeadline<T>(promise: Promise<T>, ms: number, message: string)
   } finally {
     clearTimeout(timer);
   }
-}
-
-function isTestAgentAllowed(): boolean {
-  return process.env.NODE_ENV !== "production" || process.env.AGENTS_ENABLE_TEST_AGENT === "1";
 }
 
 function resolveUserMessage(

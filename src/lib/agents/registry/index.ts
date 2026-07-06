@@ -24,6 +24,22 @@ export function getAgentDefinition(id: string): AgentDefinition | undefined {
   return agents.get(id);
 }
 
+/** Dev/env-gate voor hidden (test-only) agents — gedeeld met run-agent. */
+export function isTestAgentAllowed(): boolean {
+  return process.env.NODE_ENV !== "production" || process.env.AGENTS_ENABLE_TEST_AGENT === "1";
+}
+
+/**
+ * Lookup die hidden agents alleen in dev/test-modus teruggeeft — gebruik
+ * dit op user-facing ingangen (chat-scoping, catalogus-achtige lookups)
+ * zodat een hidden agent in productie nooit persona-injecteerbaar is.
+ */
+export function getVisibleAgentDefinition(id: string): AgentDefinition | undefined {
+  const def = agents.get(id);
+  if (def?.hidden && !isTestAgentAllowed()) return undefined;
+  return def;
+}
+
 /** Catalog listing — hidden (test-only) agents are never included. */
 export function listAgents(): AgentDefinition[] {
   return Array.from(agents.values()).filter((def) => !def.hidden);

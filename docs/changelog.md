@@ -37,6 +37,24 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 361. Agents UI — catalogus + agent-detail + results-inbox + Claw agent-scoping
+
+Agents-sectie in de SPA: catalogus met 5 persona-kaarten, agent-detailpagina met use-case-runner en run-historie, results-inbox met ArtifactViewer (REPORT/FINDINGS/LINK/PROPOSAL) en ProposalConfirmCard (approve/reject via de confirm-route, server-truth + 409-afhandeling). Claw-overlay kreeg optionele agent-scoping (persona in system-prompt; default-pad byte-identiek). i18n en/nl, stale-RUNNING-heuristiek, deep-links naar domein-pagina's. Review: 3 rondes, 0 CRITICAL, 6 WARNINGs gefixt (o.a. tab-in-scheme-XSS-bypass, stream-abort bij scope-wissel); e2e 5/5 + 13/13 browser-smoke.
+
+- Task: [tasks/done/agents-ui-inbox.md](../tasks/done/agents-ui-inbox.md)
+- ADR: [docs/adr/2026-07-05-agents-architectuur.md](adr/2026-07-05-agents-architectuur.md)
+- Spec: -
+- Commit: 2dcece5d (branch feat/agents-ui-inbox)
+
+### 360. Agents motor-wiring — 5 persona-agents op bestaande motoren + propose-only confirm
+
+Nova (Research Analyst), Vera (Brand Guardian), Stella (Strategist), Milo (Content Creator) en Marco (Market Analyst) draaien live op de bestaande motoren via een Claw→orchestrator tool-bridge: reads direct (mechanisch gefenced), writes propose-only (run-collector → PROPOSAL → AWAITING_CONFIRMATION → confirm-route met member+-gate, atomic claim, schema-hervalidatie en self-heal). Deep research schrijft direct door naar de Knowledge Library (source AGENT); Content-Creator-confirm draait de volledige generatie-pipeline incl. F-VAL (93 live gemeten). Review: 4 rondes, 3 CRITICAL (o.a. geforgede PROPOSal-artefacten → REPORT/LINK-whitelist) + 12 WARNINGs gefixt; alle 5 agents live gesmoked (~$1,20).
+
+- Task: [tasks/done/agents-motor-wiring.md](../tasks/done/agents-motor-wiring.md)
+- ADR: [docs/adr/2026-07-05-agents-architectuur.md](adr/2026-07-05-agents-architectuur.md)
+- Spec: -
+- Commit: 96b49fbc (branch feat/agents-motor-wiring)
+
 ### 359. Agents foundation — pluggable output-contract + AgentRun/AgentArtifact + registry + run-API
 
 Eerste bouwtaak van het 🤖 Agents-initiatief (ADR `2026-07-05-agents-architectuur`). De Brandclaw agent-loop (`runAgentLoop`) is gegeneraliseerd naar een **pluggable output-contract**: de turn-loop is verbatim geëxtraheerd naar `runLoopCore`, het bestaande observations-pad werd de eerste adapter (`observations-adapter.ts`) en nieuwe agents draaien via `runAgentWithContract` — **aanname A1 bewezen zonder Strategy-Analyst-regressie** (baseline `7cb56c12` vs post-refactor `0e94e26d`, beide 17/17, structureel identieke DB-rijen). Nieuw: `AgentRun`/`AgentArtifact`-schema (additief, incl. `ResourceSource.AGENT`), code-based agent-registry (`src/lib/agents/registry/` — `AgentDefinition`, artifact-contract met atomaire finalize, run-entry met `resolveFeatureModel` + `assertProvider`), 6 `AiFeatureKey`s + Settings-categorie "Agents", 4 API-routes (`POST /api/agents/run` met Zod + 32KB-byte-cap + maxDuration 800, runs-list/-detail met caching, artifact accept/dismiss) en **accept-materialisatie naar de Knowledge Library** (domain-first write-through: first-accept-gated, advisory-locked tegen races, dead-id-zelfherstel, dismiss archiveert / re-accept de-archiveert). Cost-instrumentatie + PostHog-events (`agent_run_started/completed`, `agent_output_accepted`) vanaf dag 1 — ook op FAILED-runs via `OutputContractError`. Tevens **Brandclaw-reconciliatie**: `strategy-analyst-stub` → done (Phase C herbestemd met mapping-tabel), LATER-Brandclaw-tabel geabsorbeerd door het Fase-3-epic.
