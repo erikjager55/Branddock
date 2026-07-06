@@ -41,6 +41,7 @@ export function InputBar() {
     activeEntity,
     wizardSnapshot,
     setActivityStatus,
+    agentScope,
   } = useClawStore();
 
   // Editable form fields the active page has registered, surfaced to the AI
@@ -160,6 +161,9 @@ export function InputBar() {
           conversationId: activeConversationId,
           message,
           contextSelection,
+          // Agent-gescoped chat (agents-ui-inbox): additief-optioneel —
+          // zonder scope is de request byte-identiek aan voorheen.
+          ...(agentScope && { agentId: agentScope.agentId }),
           attachments: attachments.length > 0 ? attachments : undefined,
           pageContext: {
             page: currentPage,
@@ -368,7 +372,7 @@ export function InputBar() {
     }
   }, [
     inputText, isStreaming, attachments, activeConversationId, contextSelection,
-    currentPage, activeEntity, wizardSnapshot, messages,
+    currentPage, activeEntity, wizardSnapshot, messages, agentScope,
     addMessage, setInputText, setIsStreaming, appendStreamingText, finalizeStreaming,
     setPendingMutation, resetStreamingText, openBugReportForm,
     openFeatureRequestForm, openFeedbackForm, setActivityStatus, t,

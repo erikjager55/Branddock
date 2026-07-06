@@ -49,6 +49,7 @@ const claw = {
     collapseToPanel: 'Collapse to panel',
     close: 'Close',
     watching: 'Watching:',
+    agentBadge: 'Agent',
     history: 'History',
     closeHistory: 'Close history',
     exportYou: 'You',

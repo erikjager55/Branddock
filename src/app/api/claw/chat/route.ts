@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleSystemPrompt } from '@/lib/claw/context-assembler';
+import { getAgentDefinition } from '@/lib/agents/registry';
 import { fenceUntrustedContent } from '@/lib/ai/untrusted-fence';
 import { getToolsForClaude, getToolByName } from '@/lib/claw/tools/registry';
 import type {
@@ -53,6 +54,9 @@ function getClient(): Anthropic {
 const requestSchema = z.object({
   conversationId: z.string().nullish(),
   message: z.string().min(1).max(10000),
+  // Agent-gescoped chat (agents-ui-inbox, ADR D6): optioneel — afwezig
+  // betekent de reguliere Brand Assistant, gedrag byte-identiek.
+  agentId: z.string().optional(),
   contextSelection: z.object({
     modules: z.array(z.string()),
     entityIds: z.record(z.string(), z.array(z.string())).optional().nullable(),
@@ -165,12 +169,26 @@ export async function POST(req: NextRequest) {
     };
     existingMessages.push(userMessage);
 
+    // Agent-scope: persona-sectie in het system-prompt. Onbekende/hidden
+    // agent-id → undefined → regulier gedrag (nullish default).
+    const agentDef = parsed.data.agentId
+      ? getAgentDefinition(parsed.data.agentId)
+      : undefined;
+    const agentPersona = agentDef
+      ? {
+          name: agentDef.persona.name,
+          role: agentDef.persona.role,
+          specialties: agentDef.useCases.map((useCase) => useCase.label),
+        }
+      : undefined;
+
     // Build system prompt
     const assembled = await assembleSystemPrompt(
       workspaceId,
       contextSelection as ContextSelection,
       attachments as ClawAttachment[] | undefined,
       pageContext,
+      agentPersona,
     );
     systemPrompt = assembled.systemPrompt;
 

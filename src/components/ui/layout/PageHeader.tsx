@@ -14,7 +14,7 @@ import {
 import {
   LayoutDashboard, Building2, Target, Palette, Users, Package,
   Swords, Radar, BookOpen, Shield, Megaphone, FileText, FlaskConical,
-  Settings, HelpCircle, Image, GraduationCap, Wand2, Mic2,
+  Settings, HelpCircle, Image, GraduationCap, Wand2, Mic2, Bot,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -38,6 +38,7 @@ const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
   'media-library': Image,
   'ai-trainer': GraduationCap,
   'ai-studio': Wand2,
+  'agents': Bot,
 };
 
 interface PageHeaderProps {

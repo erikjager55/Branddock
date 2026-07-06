@@ -10,19 +10,39 @@ const AVG_CHARS_PER_TOKEN = 4;
 const MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS_ESTIMATE * AVG_CHARS_PER_TOKEN;
 
 /**
+ * Persona-framing voor een agent-gescoped chat (agents-ui-inbox, ADR
+ * D6). Bewust een plat object i.p.v. een registry-import: de claw-laag
+ * blijft onafhankelijk van `src/lib/agents/` (de chat-route doet de
+ * lookup en geeft alleen presentatie-data door).
+ */
+export interface AgentPersonaScope {
+  name: string;
+  role: string;
+  specialties?: string[];
+}
+
+/**
  * Build the system prompt for the Claw assistant.
  * Assembles brand context from selected modules + attachments.
+ * `agentPersona` is optional and additive: absent (default) keeps the
+ * assembled prompt byte-identical to pre-agents behavior.
  */
 export async function assembleSystemPrompt(
   workspaceId: string,
   selection: ContextSelection,
   attachments?: ClawAttachment[],
   pageContext?: ClawPageContext,
+  agentPersona?: AgentPersonaScope,
 ): Promise<{ systemPrompt: string; estimatedTokens: number }> {
   const sections: string[] = [];
 
   // ── Identity ─────────────────────────────────────────────
   sections.push(SYSTEM_IDENTITY);
+
+  // ── Agent persona (optional scope) ───────────────────────
+  if (agentPersona) {
+    sections.push(formatAgentPersona(agentPersona));
+  }
 
   // ── Current Page (so the AI knows where the user is) ─────
   if (pageContext) {
@@ -65,6 +85,18 @@ export async function assembleSystemPrompt(
   const estimatedTokens = Math.ceil(systemPrompt.length / AVG_CHARS_PER_TOKEN);
 
   return { systemPrompt, estimatedTokens };
+}
+
+/** Persona-sectie voor een agent-gescoped chat — direct na de identity. */
+function formatAgentPersona(persona: AgentPersonaScope): string {
+  const lines = [
+    '## Active Agent Persona',
+    `For this conversation you are acting as ${persona.name}, the workspace's ${persona.role} agent. Answer in that role: stay within the ${persona.role} domain, lead with your specialist perspective, and refer the user to the regular Brand Assistant for unrelated questions.`,
+  ];
+  if (persona.specialties?.length) {
+    lines.push(`Your specialties: ${persona.specialties.join('; ')}.`);
+  }
+  return lines.join('\n\n');
 }
 
 /**

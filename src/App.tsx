@@ -27,6 +27,7 @@ import { useCampaignStore } from './features/campaigns/stores/useCampaignStore';
 import { useCampaignWizardStore } from './features/campaigns/stores/useCampaignWizardStore';
 import { useContentLibraryStore } from './features/campaigns/stores/useContentLibraryStore';
 import { useConsistentModelStore } from './features/consistent-models/stores/useConsistentModelStore';
+import { useAgentsStore } from './features/agents/stores/useAgentsStore';
 import { useShellStore } from './stores/useShellStore';
 import { getResearchOptionId, ResearchMethodType } from './utils/research-method-helpers';
 import { logger } from './utils/logger';
@@ -64,6 +65,9 @@ import {
   TrendDetailPage,
   WebsiteScannerPage,
   KnowledgeLibraryPage,
+  AgentsCatalogPage,
+  AgentDetailPage,
+  AgentsInboxPage,
   MediaLibraryPage,
   AiTrainerPage,
   AiStudioPage,
@@ -400,6 +404,8 @@ function AppContent() {
       if (!cc.selectedCampaignId || !cc.selectedDeliverableId) {
         redirectTo = 'active-campaigns';
       }
+    } else if (activeSection === 'agent-detail' && !useAgentsStore.getState().selectedAgentId) {
+      redirectTo = 'agents';
     }
 
     if (redirectTo) {
@@ -776,6 +782,23 @@ function AppContent() {
       }
       case 'knowledge':
         return <KnowledgeLibraryPage />;
+      case 'agents':
+        return <AgentsCatalogPage onNavigate={handleSetActiveSection} />;
+      case 'agent-detail': {
+        const adAgentId = useAgentsStore.getState().selectedAgentId;
+        if (!adAgentId) {
+          return null; // useEffect redirect handles navigation
+        }
+        return (
+          <AgentDetailPage
+            agentId={adAgentId}
+            onBack={() => handleSetActiveSection('agents')}
+            onNavigate={handleSetActiveSection}
+          />
+        );
+      }
+      case 'agents-inbox':
+        return <AgentsInboxPage onNavigate={handleSetActiveSection} />;
       case 'media-library':
         return <MediaLibraryPage />;
       case 'ai-trainer':

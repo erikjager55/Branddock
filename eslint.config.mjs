@@ -92,6 +92,8 @@ const eslintConfig = defineConfig([
     files: [
       "src/features/settings/components/appearance/**/*.tsx",
       "src/components/TopNavigationBar.tsx",
+      // Agents-feature is i18n-native vanaf dag 1 (agents-ui-inbox).
+      "src/features/agents/**/*.tsx",
     ],
     rules: {
       "no-restricted-syntax": [

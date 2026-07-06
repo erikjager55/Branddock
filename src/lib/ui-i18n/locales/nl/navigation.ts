@@ -31,6 +31,7 @@ const navigation = {
     },
     items: {
       dashboard: 'Overzicht',
+      agents: 'Agents',
       'active-campaigns': 'Campagnes',
       'content-library': 'Content',
       brand: 'Merkfundament',

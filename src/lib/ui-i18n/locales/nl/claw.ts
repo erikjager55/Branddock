@@ -50,6 +50,7 @@ const claw = {
     collapseToPanel: 'Inklappen naar paneel',
     close: 'Sluiten',
     watching: 'Bekijkt:',
+    agentBadge: 'Agent',
     history: 'Geschiedenis',
     closeHistory: 'Geschiedenis sluiten',
     exportYou: 'Jij',

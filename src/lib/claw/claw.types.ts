@@ -230,6 +230,8 @@ export interface ClawWizardSnapshot {
 export interface ClawChatRequest {
   conversationId?: string;
   message: string;
+  /** Agent-gescoped chat (agents-ui-inbox): optioneel catalog-agent-id. */
+  agentId?: string;
   contextSelection: ContextSelection;
   attachments?: ClawAttachment[];
   pageContext?: ClawPageContext;
