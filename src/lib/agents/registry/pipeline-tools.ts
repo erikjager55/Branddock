@@ -148,7 +148,10 @@ export const runDeepResearchTool: BrandclawTool = {
       };
     }
     const controller = new AbortController();
-    const abortTimer = setTimeout(() => controller.abort(), DEEP_RESEARCH_DEADLINE_MS + 30_000);
+    // Abort vlak vóór de harde kill (niet op deadline+30s): de orchestrator
+    // geeft een laat gestarte synthese bewust gratie — een vroege outer-abort
+    // zou dat rapport alsnog mid-call weggooien (T-review W2).
+    const abortTimer = setTimeout(() => controller.abort(), DEEP_RESEARCH_HARD_KILL_MS - 15_000);
     try {
       const researchPromise = runDeepResearch({
         workspaceId: ctx.workspaceId,

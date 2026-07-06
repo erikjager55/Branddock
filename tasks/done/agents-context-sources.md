@@ -1,7 +1,8 @@
 ---
 id: agents-context-sources
 title: Content sources kiezen per agent-run (pariteit met Brand Assistant)
-status: in-review
+status: done
+completed: 2026-07-06
 created: 2026-07-06
 related-adr: docs/adr/2026-07-05-agents-architectuur.md
 branch: feat/agents-research-parity (gestapeld, eigen commits)
@@ -33,3 +34,7 @@ User-verzoek 2026-07-06: "Bij de brand assistant kan ik content sources toevoege
 - UI: ContentSourcesPicker (chips, claw-i18n-labels, "niet aangeraakt = standaard"-semantiek + reset), StartAgentRunBody uitgebreid.
 - Gates: tsc 0 · lint 0 errors · smokes 14/14 + 22/22.
 - Deferred: entity-level drilldown per module (Claw-modal heeft dit; module-niveau dekt het verzoek), persistentie van de selectie op de run-rij.
+
+## Task-finalize 2026-07-06 — review
+
+Delta-review (T): 0 CRITICAL, 3 WARNINGs gefixt — deselect-all geblokkeerd in de UI (validatie i.p.v. stilzwijgend default), 2 gepurgede hover-classes in de index.css-fallback, outer abort-timer verplaatst naar vlak vóór de harde kill zodat de synthese-gratie ook in het agent-pad geldt. Minors meegefixt: plural-key, entityIds-key-cap, import/comment-plaatsing. Deferred: cross-ns lazy-load kan één render rauwe keys tonen (chips renderen pas na expand); entityIds voor niet-geselecteerde modules zijn dode data; bungelnde taal-instructie bij brand-uitsluiting.

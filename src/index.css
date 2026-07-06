@@ -10430,5 +10430,7 @@ html {
   @media (hover: hover) {
     .hover\:border-emerald-300:hover { border-color: var(--color-emerald-300); }
     .group:hover .group-hover\:text-emerald-500 { color: var(--color-emerald-500); }
+    .hover\:bg-emerald-100:hover { background-color: var(--color-emerald-100); }
+    .hover\:text-gray-700:hover { color: var(--color-gray-700); }
   }
 }

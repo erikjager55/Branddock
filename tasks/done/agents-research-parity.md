@@ -34,3 +34,7 @@ Zware topics kunnen het gedeelde 8-min-motorbudget overschrijden — dat geldt e
 # Notes
 
 Supersede-note toegevoegd aan de oorspronkelijke afwijking in `tasks/done/agents-motor-wiring.md`. Motor-wijzigingen (orchestrator/read-fase) zijn bewust en additief-optioneel (`deadlineAt?`), gedreven door dit user-verzoek.
+
+## Review-aanvulling 2026-07-06 (S + T)
+
+S-review: 3 WARNINGs gefixt — deadline-timer wordt gecleard zodra de synthese start (het niet-weggooi-gedrag is daarmee ECHT geïmplementeerd; daarvoor abortte de timer hetzelfde signaal), toolAttempts-cleanup op het succes-pad (drainArtifacts), aparte READ_RESERVE (300s)/VERIFY_GATE (200s) zodat verify na een budget-gelimiteerde read een reële kans houdt. T-review bevestigde de S-fixes en voegde toe: outer abort-timer in het agent-pad naar hard-kill−15s (synthese-gratie geldt nu ook daar). Restklasse (bewust): op het Library-pad zijn synthese+finalize na de clear alleen begrensd door user-abort en Vercel maxDuration (600s) — zelfde plafond als voorheen.

@@ -4,7 +4,6 @@
 // Code-based curated registry: een agent is een code-object, geen
 // DB-rij. Nieuwe agents = code-change (bewust — geen custom-builder
 // in het MVP-model). Dependency-richting: dit pakket importeert de
-import type { ContextSelection as AgentContextSelection } from "@/lib/claw/claw.types";
 // orchestrator-types; de orchestrator kent dit pakket NIET.
 // =============================================================
 
@@ -14,6 +13,8 @@ import type {
   AgentToolNamespace,
 } from "@/lib/brandclaw/orchestrator/types";
 import type { AiFeatureKey } from "@/lib/ai/feature-models";
+// Type-only import uit claw — geen runtime-dependency (dependency-richting blijft schoon).
+import type { ContextSelection as AgentContextSelection } from "@/lib/claw/claw.types";
 
 /**
  * Curated agent ids (ADR D4). 'echo-test' is test-only: hidden +

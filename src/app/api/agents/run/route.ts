@@ -43,7 +43,8 @@ const contextSelectionSchema = z
     entityIds: z
       .record(z.string().max(32), z.array(z.string().max(64)).max(50))
       .optional()
-      .nullable(),
+      .nullable()
+      .refine((v) => !v || Object.keys(v).length <= 24, { message: "too many entityIds keys" }),
   })
   .optional();
 

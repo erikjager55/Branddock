@@ -38,6 +38,12 @@ export function UseCaseForm({
       setValidationError(t('detail.form.inputRequired'));
       return;
     }
+    // Lege selectie zou server-side als default (volledige context) tellen —
+    // dat spreekt de UI tegen; dwing minstens één bron of reset af.
+    if (sources !== null && sources.length === 0) {
+      setValidationError(t('detail.sources.emptyError'));
+      return;
+    }
     setValidationError(null);
     setLastResult(null);
     startRun.mutate(
