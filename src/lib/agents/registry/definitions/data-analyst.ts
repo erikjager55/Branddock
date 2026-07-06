@@ -16,9 +16,10 @@ export const dataAnalystAgent: AgentDefinition = {
   id: "data-analyst",
   agentVersion: "data-analyst@0.1.0",
   persona,
-  buildSystemPrompt({ workspaceId }) {
+  buildSystemPrompt({ workspaceId, contextSelection }) {
     return buildAgentSystemPrompt({
       workspaceId,
+      contextSelection,
       persona,
       mission:
         "You answer questions about this workspace's own data (content, campaigns, brand-fidelity scores, competitors, agent usage) using curated query tools — never invented numbers.",

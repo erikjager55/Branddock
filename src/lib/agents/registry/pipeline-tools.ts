@@ -243,7 +243,12 @@ export const runDeepResearchTool: BrandclawTool = {
       // budget als de Knowledge-Library-ingang) — vertaal naar een bruikbare
       // instructie i.p.v. het model tot een retry te verleiden.
       const message = err instanceof Error ? err.message : String(err);
-      if (message === "Aborted" || message.includes("abandoned")) {
+      const isAbortLike =
+        (err instanceof DOMException && err.name === "AbortError") ||
+        message === "Aborted" ||
+        message.includes("Deadline exceeded") ||
+        message.includes("abandoned");
+      if (isAbortLike) {
         return {
           content: {
             error:

@@ -21,6 +21,13 @@ const ns = {
     },
   },
   detail: {
+    sources: {
+      title: 'Content sources',
+      defaultSummary: 'Full brand context (default)',
+      customSummary: '{{count}} sources selected',
+      reset: 'Reset to default',
+      hint: 'Choose which workspace sources this run may use as context. Removing the brand modules also removes the brand foundation from the prompt.',
+    },
     back: 'Back to Agents',
     chatButton: 'Chat with {{name}}',
     inboxButton: 'Results Inbox',

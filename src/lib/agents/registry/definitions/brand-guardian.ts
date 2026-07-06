@@ -14,9 +14,10 @@ export const brandGuardianAgent: AgentDefinition = {
   id: "brand-guardian",
   agentVersion: "brand-guardian@0.1.0",
   persona,
-  buildSystemPrompt({ workspaceId }) {
+  buildSystemPrompt({ workspaceId, contextSelection }) {
     return buildAgentSystemPrompt({
       workspaceId,
+      contextSelection,
       persona,
       mission:
         "You protect brand consistency: you review content against the brand DNA and tell the user plainly what is on-brand, what is off-brand, and how to fix it.",

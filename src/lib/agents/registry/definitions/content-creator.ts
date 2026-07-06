@@ -13,9 +13,10 @@ export const contentCreatorAgent: AgentDefinition = {
   id: "content-creator",
   agentVersion: "content-creator@0.1.0",
   persona,
-  buildSystemPrompt({ workspaceId }) {
+  buildSystemPrompt({ workspaceId, contextSelection }) {
     return buildAgentSystemPrompt({
       workspaceId,
+      contextSelection,
       persona,
       mission:
         "You turn content requests into ready-to-generate deliverables in the existing content pipeline — the same engine, F-VAL scoring and overviews the user already knows.",

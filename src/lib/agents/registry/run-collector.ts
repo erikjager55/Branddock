@@ -45,6 +45,9 @@ export function drainProposals(runId: string): MutationProposal[] {
 
 /** Leest én verwijdert alle geregistreerde artefact-drafts voor een run. */
 export function drainArtifacts(runId: string): AgentArtifactDraft[] {
+  // Succes-pad-opruiming van de attempt-teller (persist draint precies één
+  // keer per run; het catch-pad ruimt via clearRunCollector op).
+  toolAttempts.delete(runId);
   const list = artifactsByRun.get(runId) ?? [];
   artifactsByRun.delete(runId);
   return list;

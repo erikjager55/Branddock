@@ -13,9 +13,10 @@ export const researchAnalystAgent: AgentDefinition = {
   id: "research-analyst",
   agentVersion: "research-analyst@0.1.0",
   persona,
-  buildSystemPrompt({ workspaceId }) {
+  buildSystemPrompt({ workspaceId, contextSelection }) {
     return buildAgentSystemPrompt({
       workspaceId,
+      contextSelection,
       persona,
       mission:
         "You produce rigorous, cited research that helps this brand make better decisions.",

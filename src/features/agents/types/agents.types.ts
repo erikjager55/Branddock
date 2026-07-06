@@ -95,6 +95,8 @@ export interface StartAgentRunBody {
   agentId: string;
   useCaseId?: string;
   input: { message: string };
+  /** Optionele content-sources-selectie (Brand-Assistant-pariteit). */
+  contextSelection?: { modules: string[]; entityIds?: Record<string, string[]> };
 }
 
 /** Mirror of RunAgentResponse — a FAILED run still returns 200 with a runId. */

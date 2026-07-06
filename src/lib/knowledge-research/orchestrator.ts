@@ -117,9 +117,13 @@ export async function runDeepResearch(
   };
   const d = resolveDeps(input.deps);
   const deadlineAt = Date.now() + config.deadlineMs;
-  // Budget-reserves (agents-research-parity): lees-fase laat ruimte voor
-  // verify+synthese; verify wordt geskipt als alleen synthese nog past.
-  const VERIFY_SYNTH_RESERVE_MS = 240_000;
+  // Budget-reserves (agents-research-parity): de lees-fase stopt ruim vóór
+  // de deadline (READ_RESERVE) zodat verify+synthese passen; verify draait
+  // alleen als er ná het lezen nog een reëel eigen budget over is
+  // (VERIFY_GATE < READ_RESERVE — anders zou een budget-gelimiteerde read
+  // verify per definitie skippen).
+  const READ_RESERVE_MS = 300_000;
+  const VERIFY_GATE_MS = 200_000;
   const warnings: string[] = [];
   const { sendEvent, workspaceId, topic, answers } = input;
 
@@ -202,7 +206,7 @@ export async function runDeepResearch(
         signal,
         // Reserveer budget voor verify+synthese: de leesfase stopt netjes
         // met een partial i.p.v. het hele deadline-budget op te eten.
-        deadlineAt: deadlineAt - VERIFY_SYNTH_RESERVE_MS,
+        deadlineAt: deadlineAt - READ_RESERVE_MS,
       });
       warnings.push(...read.warnings);
     } catch (error) {
@@ -224,12 +228,12 @@ export async function runDeepResearch(
     // resterende budget de synthese in gevaar brengt (graceful degrade —
     // de synthese meldt onzekerheid via de warning).
     const verifyBudgetLeft = deadlineAt - Date.now();
-    if (config.enableVerify && verifyBudgetLeft < VERIFY_SYNTH_RESERVE_MS) {
+    if (config.enableVerify && verifyBudgetLeft < VERIFY_GATE_MS) {
       warnings.push(
         "Verification skipped — remaining time budget was reserved for synthesis; treat specific claims with extra care.",
       );
     }
-    if (config.enableVerify && verifyBudgetLeft >= VERIFY_SYNTH_RESERVE_MS) {
+    if (config.enableVerify && verifyBudgetLeft >= VERIFY_GATE_MS) {
       sendEvent({ type: "phase", phase: "verify", label: PHASE_LABELS.verify, status: "start" });
       try {
         verify = await d.verifyFn({ workspaceId, topic, sources: numbered, sendEvent, signal });
@@ -243,6 +247,11 @@ export async function runDeepResearch(
 
     // ── SYNTHESIZE ────────────────────────────────────────────
     checkAborted(signal, deadlineAt);
+    // Vanaf hier geen deadline-abort meer: de synthese is één begrensde
+    // AI-call en het rapport is bijna klaar — een deadline-abort mid-call
+    // gooit al het werk weg voor een paar seconden winst. User-abort
+    // (parent-signal → runController) blijft volledig werken.
+    clearTimeout(deadlineTimer);
     sendEvent({ type: "phase", phase: "synthesize", label: PHASE_LABELS.synthesize, status: "start" });
     let synth: SynthesizeOutput;
     try {
@@ -264,10 +273,9 @@ export async function runDeepResearch(
     sendEvent({ type: "phase", phase: "synthesize", label: PHASE_LABELS.synthesize, status: "done" });
 
     // ── FINALIZE ──────────────────────────────────────────────
-    // Bewust signal-only (geen deadline-check meer): een synthese die de
-    // deadline nét overschreed is een AFGEROND rapport — dat weggooien om
-    // een paar seconden is het slechtst denkbare resultaat. Finalize zelf
-    // is goedkoop. (agents-research-parity)
+    // Signal-only (user-abort): de deadline-timer is vóór de synthese al
+    // gecleard — een afgerond rapport wordt niet meer weggegooid omdat de
+    // deadline tijdens de synthese verstreek. (agents-research-parity)
     if (signal.aborted) throw abortError();
     sendEvent({ type: "phase", phase: "finalize", label: PHASE_LABELS.finalize, status: "start" });
     const refsForFinalize: SourceRef[] = numbered.map((n) => toSourceRef(n, search.sources));

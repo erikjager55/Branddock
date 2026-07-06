@@ -5,6 +5,8 @@ import { Play, Loader2, CheckCircle2, XCircle, BellRing, Inbox } from 'lucide-re
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import { useStartAgentRun } from '../hooks';
+import { ContentSourcesPicker } from './ContentSourcesPicker';
+import type { ContextModule } from '@/lib/claw/claw.types';
 import type { CatalogAgentUseCase, StartAgentRunResponse } from '../types/agents.types';
 
 /**
@@ -27,6 +29,8 @@ export function UseCaseForm({
   const [message, setMessage] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<StartAgentRunResponse | null>(null);
+  // null = niet aangeraakt -> geen selectie meesturen (volledige merkcontext).
+  const [sources, setSources] = useState<ContextModule[] | null>(null);
 
   const handleRun = () => {
     const trimmed = message.trim();
@@ -37,7 +41,12 @@ export function UseCaseForm({
     setValidationError(null);
     setLastResult(null);
     startRun.mutate(
-      { agentId, useCaseId: useCase.id, input: { message: trimmed } },
+      {
+        agentId,
+        useCaseId: useCase.id,
+        input: { message: trimmed },
+        ...(sources !== null ? { contextSelection: { modules: sources } } : {}),
+      },
       {
         onSuccess: (result) => {
           setLastResult(result);
@@ -67,6 +76,8 @@ export function UseCaseForm({
           className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 disabled:bg-gray-50 disabled:text-gray-400 resize-y"
         />
       </div>
+
+      <ContentSourcesPicker selection={sources} onChange={setSources} disabled={startRun.isPending} />
 
       {validationError && (
         <p data-testid="use-case-validation-error" className="text-sm text-red-600">

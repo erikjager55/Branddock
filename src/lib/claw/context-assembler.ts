@@ -239,7 +239,7 @@ Content creation contract (CRITICAL):
 
 // ─── Module Context Fetchers ──────────────────────────────
 
-async function fetchModuleContext(
+export async function fetchModuleContext(
   workspaceId: string,
   module: ContextModule,
   entityIds?: string[]

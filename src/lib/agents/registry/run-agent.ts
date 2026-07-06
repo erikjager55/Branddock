@@ -28,6 +28,7 @@ import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { clearRunCollector } from "./run-collector";
 import { getAgentDefinition, isTestAgentAllowed } from "./index";
+import type { AgentContextSelection } from "./types";
 import type { AgentDefinition } from "./types";
 
 /** Route vertaalt deze naar 400 — onderscheidt user-fout van server-fout. */
@@ -42,6 +43,9 @@ export interface RunAgentInput {
   useCaseId?: string;
   /** Free-form run input; `message` (string) feeds the prompt. Stored verbatim on AgentRun.input. */
   input?: Record<string, unknown>;
+  /** Optionele content-sources-selectie (pariteit met de Brand Assistant);
+   * beïnvloedt alleen de system-prompt — bewust niet op de run-rij persisted. */
+  contextSelection?: AgentContextSelection;
   triggerType?: TriggerType;
 }
 
@@ -166,7 +170,7 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
 
   try {
     const systemPrompt = await withDeadline(
-      Promise.resolve(def.buildSystemPrompt({ workspaceId })),
+      Promise.resolve(def.buildSystemPrompt({ workspaceId, contextSelection: inputArgs.contextSelection })),
       SYSTEM_PROMPT_TIMEOUT_MS,
       `buildSystemPrompt for agent '${def.id}' timed out after ${SYSTEM_PROMPT_TIMEOUT_MS}ms`,
     );

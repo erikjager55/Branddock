@@ -4,6 +4,7 @@
 // Code-based curated registry: een agent is een code-object, geen
 // DB-rij. Nieuwe agents = code-change (bewust — geen custom-builder
 // in het MVP-model). Dependency-richting: dit pakket importeert de
+import type { ContextSelection as AgentContextSelection } from "@/lib/claw/claw.types";
 // orchestrator-types; de orchestrator kent dit pakket NIET.
 // =============================================================
 
@@ -86,7 +87,12 @@ export interface AgentDefinition {
    * System-prompt builder (sync or async) so motor-wiring can embed
    * brand context lazily per run.
    */
-  buildSystemPrompt(args: { workspaceId: string }): string | Promise<string>;
+  buildSystemPrompt(args: {
+    workspaceId: string;
+    /** Optionele content-sources-selectie (pariteit met de Brand Assistant);
+     * afwezig = volledige merkcontext (default-gedrag). */
+    contextSelection?: AgentContextSelection;
+  }): string | Promise<string>;
   /** Stable version tag of the system prompt → AgentRun.promptVersion. */
   promptVersion: string;
   /** Tool-namespace in the shared registry, by convention `agent:${id}`. */
@@ -107,3 +113,5 @@ export interface AgentDefinition {
   /** Excluded from listAgents(); run-entry rejects hidden agents in production. */
   hidden?: boolean;
 }
+
+export type { AgentContextSelection };
