@@ -56,6 +56,7 @@ export type AiFeatureKey =
   | 'campaign-strategy-foundation'
   | 'campaign-creative-synthesis'
   | 'canvas-text-generate'
+  | 'canvas-seo-research'
   | 'canvas-image-generate'
   | 'canvas-video-generate'
   | 'canvas-audio-generate'
@@ -176,6 +177,19 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     // cost-gevoelige tier.
     defaultProvider: 'anthropic',
     defaultModel: 'claude-opus-4-7',
+    supportedProviders: ['anthropic', 'openai', 'google'],
+  },
+  {
+    key: 'canvas-seo-research',
+    label: 'Canvas SEO Research',
+    description:
+      'Snelle research/planning-stappen van de SEO-pipeline (briefing, keyword, competitor, SERP-gaps, outline). De prose-stappen (draft/editorial/prep) blijven op canvas-text-generate.',
+    category: 'campaign-content',
+    // Speed-tier: Sonnet 4.6 i.p.v. Opus 4.7 — structured JSON/planning is
+    // nauwelijks kwaliteitsgevoelig maar veel sneller. Per-workspace override
+    // mogelijk via WorkspaceAiConfig.
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {

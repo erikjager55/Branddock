@@ -26,6 +26,7 @@ import {
   type SeoPipelineState,
   type SeoChecklist,
   type SeoStepEvent,
+  type SeoStepName,
   type PublicationPrep,
   type EditorialReview,
   type KeywordResearch,
@@ -97,116 +98,100 @@ export async function* runSeoPipeline(
   const productContext = formatProducts(stack.products);
   const briefContext = formatBrief(stack.brief);
 
-  // Resolve AI model for text generation
+  // Resolve AI models: premium (canvas-text-generate) voor de prose-stappen
+  // (draft/editorial/prep), snel research-model (canvas-seo-research, Sonnet 4.6)
+  // voor de mechanische planning-stappen. Tiering-winst zonder kwaliteitsverlies.
   const textModel = await resolveFeatureModel(workspaceId, 'canvas-text-generate');
+  const researchModel = await resolveFeatureModel(workspaceId, 'canvas-seo-research');
 
   // Pipeline state accumulator — hydrateer vanaf een checkpoint (resume) of leeg.
   const state: SeoPipelineState = initialState
     ? { outputs: [...initialState.outputs], accumulatedContext: initialState.accumulatedContext }
     : { outputs: [], accumulatedContext: '' };
 
-  // ── Run 8 sequential steps ─────────────────────────────
+  // ── Uitvoering in waves (parallel waar de deps het toelaten) ───────────
+  // Stap 2 & 3 hangen beide enkel aan stap 1 → parallel; 4-8 sequentieel.
+  // Kwaliteit-kritische prose-stappen (6/7/8) op het premium model; de
+  // research/planning-stappen (1/2/3/4/5) op het snelle research-model.
+  const WAVES: readonly (readonly number[])[] = [[1], [2, 3], [4], [5], [6], [7], [8]];
+  const QUALITY_STEPS = new Set<number>([6, 7, 8]);
+  const timings: { step: number; ms: number }[] = state.timings ? [...state.timings] : [];
+  const stepTracking = { workspaceId, deliverableId };
 
-  for (const stepDef of SEO_STEP_DEFINITIONS) {
-    const stepEvent: SeoStepEvent = {
-      step: stepDef.step,
-      name: stepDef.name,
-      label: stepDef.label,
-      status: 'running',
-      preview: null,
-      totalSteps: 8,
-    };
+  const labelOf = (step: number): string =>
+    SEO_STEP_DEFINITIONS.find((d) => d.step === step)?.label ?? `Step ${step}`;
+  const stepEventFor = (step: number): SeoStepEvent => {
+    const def = SEO_STEP_DEFINITIONS.find((d) => d.step === step)!;
+    return { step, name: def.name, label: def.label, status: 'running', preview: null, totalSteps: 8 };
+  };
 
-    // Resume: stap al voltooid in de checkpoint → skip de AI-call.
-    if (state.outputs.some((o) => o.step === stepDef.step)) {
-      yield { event: 'seo_step', data: { ...stepEvent, status: 'complete' as const } };
-      continue;
+  // Voert één stap uit met het juiste model + meet de latency (geen yield).
+  const executeStep = async (
+    step: number,
+  ): Promise<{ step: number; name: SeoStepName; rawText: string; ms: number }> => {
+    const def = SEO_STEP_DEFINITIONS.find((d) => d.step === step)!;
+    const model = QUALITY_STEPS.has(step) ? textModel : researchModel;
+    const t0 = Date.now();
+    let rawText: string;
+    if (step === 3) {
+      rawText = await runCompetitorAnalysisStep(seoInput, state, brandContext, personaContext, productContext, briefContext, voiceDirective, contentType, model, stepTracking);
+    } else if (step === 6) {
+      rawText = await runDraftStep(step, seoInput, state, brandContext, personaContext, productContext, briefContext, voiceDirective, contentType, model, stepTracking);
+    } else {
+      rawText = await runStructuredStep(step, seoInput, state, brandContext, personaContext, productContext, briefContext, voiceDirective, contentType, model, stepTracking);
+    }
+    return { step, name: def.name, rawText, ms: Date.now() - t0 };
+  };
+
+  for (const wave of WAVES) {
+    const pending = wave.filter((s) => !state.outputs.some((o) => o.step === s));
+    // Resume: al-voltooide stappen in deze wave → direct 'complete' melden.
+    for (const s of wave) {
+      if (!pending.includes(s)) {
+        yield { event: 'seo_step', data: { ...stepEventFor(s), status: 'complete' as const } };
+      }
+    }
+    if (pending.length === 0) continue;
+
+    // Signal start voor alle pending stappen in deze wave.
+    for (const s of pending) {
+      yield { event: 'seo_step', data: stepEventFor(s) };
     }
 
-    // Signal step start
-    yield { event: 'seo_step', data: stepEvent };
-
     try {
-      let rawOutput: string;
-
-      const stepTracking = { workspaceId, deliverableId };
-
-      if (stepDef.step === 3) {
-        // Step 3: Competitor analysis via Gemini search grounding
-        rawOutput = await runCompetitorAnalysisStep(
-          seoInput,
-          state,
-          brandContext,
-          personaContext,
-          productContext,
-          briefContext,
-          voiceDirective,
-          contentType,
-          textModel,
-          stepTracking,
+      // Parallel binnen de wave; deterministische accumulatie-volgorde op step.
+      const results = (await Promise.all(pending.map((s) => executeStep(s)))).sort(
+        (a, b) => a.step - b.step,
+      );
+      for (const r of results) {
+        state.outputs.push({ step: r.step, name: r.name, rawText: r.rawText });
+        state.accumulatedContext += `\n\n## Step ${r.step}: ${labelOf(r.step)}\n${r.rawText}\n---`;
+        timings.push({ step: r.step, ms: r.ms });
+        console.log(
+          `[seo-pipeline] step ${r.step} (${r.name}) ${r.ms}ms via ${QUALITY_STEPS.has(r.step) ? 'premium' : 'research'} model`,
         );
-      } else if (stepDef.step === 6) {
-        // Step 6: First draft — returns markdown, not JSON
-        rawOutput = await runDraftStep(
-          stepDef.step,
-          seoInput,
-          state,
-          brandContext,
-          personaContext,
-          productContext,
-          briefContext,
-          voiceDirective,
-          contentType,
-          textModel,
-          stepTracking,
-        );
-      } else {
-        // Steps 1, 2, 4, 5, 7, 8: structured JSON completion
-        rawOutput = await runStructuredStep(
-          stepDef.step,
-          seoInput,
-          state,
-          brandContext,
-          personaContext,
-          productContext,
-          briefContext,
-          voiceDirective,
-          contentType,
-          textModel,
-          stepTracking,
-        );
+        yield {
+          event: 'seo_step',
+          data: {
+            ...stepEventFor(r.step),
+            status: 'complete' as const,
+            preview: generatePreview(r.step, r.rawText),
+          },
+        };
       }
-
-      // Accumulate output
-      state.outputs.push({
-        step: stepDef.step,
-        name: stepDef.name,
-        rawText: rawOutput,
-      });
-      state.accumulatedContext += `\n\n## Step ${stepDef.step}: ${stepDef.label}\n${rawOutput}\n---`;
-
-      // Signal step complete + checkpoint de state (voor resume in een continuation).
-      const preview = generatePreview(stepDef.step, rawOutput);
-      yield {
-        event: 'seo_step',
-        data: { ...stepEvent, status: 'complete' as const, preview },
-      };
+      state.timings = timings;
       yield { event: 'seo_checkpoint', data: { state } };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      console.error(`[seo-pipeline] Step ${stepDef.step} (${stepDef.name}) failed:`, message);
-
-      yield {
-        event: 'seo_step',
-        data: { ...stepEvent, status: 'error' as const, preview: message },
-      };
-
+      console.error(`[seo-pipeline] wave [${pending.join(',')}] failed:`, message);
+      for (const s of pending) {
+        yield { event: 'seo_step', data: { ...stepEventFor(s), status: 'error' as const, preview: message } };
+      }
       yield {
         event: 'error',
         data: {
-          // Classify (unavailable/errorType) but keep the step-context message.
           ...buildAiErrorEvent(err, { recoverable: false }),
-          message: `SEO pipeline failed at step ${stepDef.step} (${stepDef.label}): ${message}`,
+          message: `SEO pipeline failed in wave [${pending.map((s) => labelOf(s)).join(', ')}]: ${message}`,
         },
       };
       return;
