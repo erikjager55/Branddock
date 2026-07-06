@@ -38,6 +38,10 @@ function truncateForModel(content: unknown): unknown {
   } catch {
     return { error: "Tool returned unserializable output" };
   }
+  if (typeof json !== "string") {
+    // JSON.stringify(undefined) retournt undefined zonder throw.
+    return { error: "Tool returned no serializable output" };
+  }
   if (json.length <= MAX_TOOL_RESULT_CHARS) return content;
   return {
     truncated: true,
@@ -89,6 +93,16 @@ export function clawToolToAgentTool(clawTool: ClawToolDefinition): BrandclawTool
             },
             isError: true,
             errorCode: "NO_PROPOSAL_BUILDER",
+          };
+        }
+        // Fail-fast: invalide params zouden anders pas bij confirm een 400
+        // geven — een dead-end proposal die de user alleen kan rejecten.
+        const inputCheck = clawTool.inputSchema.safeParse(input);
+        if (!inputCheck.success) {
+          return {
+            content: { error: `Invalid input for '${clawTool.name}' — check the tool schema and retry.` },
+            isError: true,
+            errorCode: "INVALID_INPUT",
           };
         }
         const proposal = await clawTool.buildProposal(input, toolCtx);

@@ -37,7 +37,7 @@ const TOOL_CACHE_PREFIXES: Record<string, Array<(wsId: string) => string>> = {
   create_campaign: [cacheKeys.prefixes.campaigns, cacheKeys.prefixes.dashboard],
   create_deliverable: [cacheKeys.prefixes.campaigns, cacheKeys.prefixes.studio],
   update_deliverable_brief: [cacheKeys.prefixes.campaigns, cacheKeys.prefixes.studio],
-  start_alignment_scan: [cacheKeys.prefixes.alignment],
+  start_alignment_scan: [cacheKeys.prefixes.alignment, cacheKeys.prefixes.dashboard],
   start_trend_scan: [cacheKeys.prefixes.trendRadar],
 };
 
@@ -99,7 +99,14 @@ export async function POST(
         data: { dismissedAt: new Date() },
       });
       if (claim.count !== 1) {
-        return NextResponse.json({ error: "Proposal is already resolved" }, { status: 409 });
+        // Self-heal: mocht een eerdere confirm ná zijn claim gecrasht zijn
+        // vóór settle, dan repareert deze retry de run-status alsnog.
+        const healedStatus = await settleRunStatus(run.id, workspaceId);
+        invalidateCache(cacheKeys.prefixes.agents(workspaceId));
+        return NextResponse.json(
+          { error: "Proposal is already resolved", runStatus: healedStatus },
+          { status: 409 },
+        );
       }
       const runStatus = await settleRunStatus(run.id, workspaceId);
       invalidateCache(cacheKeys.prefixes.agents(workspaceId));
@@ -141,7 +148,14 @@ export async function POST(
       data: { acceptedAt: new Date() },
     });
     if (claim.count !== 1) {
-      return NextResponse.json({ error: "Proposal is already resolved" }, { status: 409 });
+      // Self-heal (zie reject-pad): settle + invalidatie zodat een run nooit
+      // permanent AWAITING_CONFIRMATION blijft met nul open proposals.
+      const healedStatus = await settleRunStatus(run.id, workspaceId);
+      invalidateCache(cacheKeys.prefixes.agents(workspaceId));
+      return NextResponse.json(
+        { error: "Proposal is already resolved", runStatus: healedStatus },
+        { status: 409 },
+      );
     }
 
     const releaseClaim = async () => {

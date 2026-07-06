@@ -9,6 +9,8 @@
 // =============================================================
 
 import { runFidelityForExternalContent } from "@/lib/brand-fidelity/external-content-runner";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 import type { BrandclawTool } from "@/lib/brandclaw/orchestrator/types";
 import { recordArtifact } from "./run-collector";
 
@@ -66,6 +68,11 @@ export async function runBrandFitReview(args: {
     sourceUrl: args.sourceUrl,
     userId: args.userId,
   }));
+
+  // Parity met /api/alignment/review-external: de motor schreef zojuist
+  // ContentReviewLog/BrandReviewFinding-domein-rijen (CLAUDE.md-regel #10).
+  invalidateCache(cacheKeys.prefixes.alignment(args.workspaceId));
+  invalidateCache(cacheKeys.prefixes.dashboard(args.workspaceId));
 
   const compositeScore = review.result.compositeScore;
 
