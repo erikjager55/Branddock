@@ -5,13 +5,15 @@ fase: pre-launch
 priority: now
 effort: 1 week
 owner: claude-code
-status: open
+status: done
 created: 2026-05-07
-completed: -
+completed: 2026-07-06
 related-adr: -
 related-spec: -
 worktree: branddock-launch
 ---
+
+> **Status 2026-07-06 — CODE-PORTIE DONE (changelog #357).** Deze task-file (2026-05-07) beschreef een from-scratch-bouw, maar een audit toonde dat de subscription-lifecycle al code-compleet + gewired was (checkout → webhook HMAC+idempotency → DB-sync → planTier → enforcement, portal, invoice-sync, live BillingTab). De hardening-werkstroom dichtte de resterende bugs/gaten: **S1** gratis-upgrade-exploit verwijderd + one-time-purchase-completion gewired (`payment_intent.succeeded`); **S2** factuur-/100 + yearly-mis-charge; **S3** echte usage-meter + env fail-fast; **S4** [go-live-playbook](../docs/playbooks/stripe-go-live.md). Commits 255b39de/c90ed171/ca0517d4 (+ deze docs-commit), branch `feat/stripe-billing-hardening`. **Resteert = human Stripe-dashboard-config** (account/products/prices/keys/webhook/portal/`NEXT_PUBLIC_BILLING_ENABLED=true`, zie playbook). **Uit scope (per-token-fase)**: metered-overage/usage-metering/trial/PaymentMethod-sync. De acceptatiecriteria hieronder zijn grotendeels via de bestaande code al vervuld; de `WorkspacePlan`-enum heet in de praktijk `PlanTier` (FREE/PRO/AGENCY/ENTERPRISE).
 
 # Probleem
 

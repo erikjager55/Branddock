@@ -59,7 +59,7 @@ export function InvoiceHistoryCard() {
                   {formatDate(new Date(inv.issuedAt))}
                 </td>
                 <td className="px-5 py-3 text-gray-900 font-medium tabular-nums">
-                  &euro;{(inv.amount / 100).toFixed(2)}
+                  &euro;{inv.amount.toFixed(2)}
                 </td>
                 <td className="px-5 py-3">
                   <Badge

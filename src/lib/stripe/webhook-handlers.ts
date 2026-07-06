@@ -13,6 +13,29 @@ import {
   handleSubscriptionCanceled,
 } from "./subscription-sync";
 import { resolveWorkspaceFromCustomer } from "./customer";
+import { handlePurchaseSuccess, type PurchaseType } from "./one-time";
+
+// ─── payment_intent.succeeded (one-time purchases) ──────────
+
+/**
+ * Triggered when a one-time PaymentIntent (research bundle / workshop) succeeds.
+ * Completes the purchase (BundlePurchase → PAID + unlock). Ignores any other
+ * PaymentIntent — guards on the metadata.type set by createPaymentIntent.
+ */
+async function handlePaymentIntentSucceeded(pi: Stripe.PaymentIntent): Promise<void> {
+  const workspaceId = pi.metadata?.workspaceId;
+  const type = pi.metadata?.type;
+  const itemId = pi.metadata?.itemId;
+  if (!workspaceId || !itemId || (type !== "research_bundle" && type !== "workshop")) {
+    return;
+  }
+  await handlePurchaseSuccess({
+    paymentIntentId: pi.id,
+    workspaceId,
+    type: type as PurchaseType,
+    itemId,
+  });
+}
 
 // ─── checkout.session.completed ─────────────────────────────
 
@@ -268,6 +291,12 @@ export async function dispatchWebhookEvent(
 
     case "invoice.finalized":
       await handleInvoiceFinalized(event.data.object as Stripe.Invoice);
+      return true;
+
+    case "payment_intent.succeeded":
+      await handlePaymentIntentSucceeded(
+        event.data.object as Stripe.PaymentIntent
+      );
       return true;
 
     default:

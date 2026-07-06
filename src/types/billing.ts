@@ -93,5 +93,8 @@ export interface StripePriceIds {
   proMonthly: string | undefined;
   agencyMonthly: string | undefined;
   enterpriseMonthly: string | undefined;
+  proYearly: string | undefined;
+  agencyYearly: string | undefined;
+  enterpriseYearly: string | undefined;
   aiOverage: string | undefined;
 }

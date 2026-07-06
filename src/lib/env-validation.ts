@@ -18,11 +18,20 @@ const envSchema = z.object({
   CRON_SECRET: z.string().optional(),
   WEBHOOK_TRIGGER_SECRET: z.string().optional(),
 
-  // Stripe billing (vereist post stripe-billing-live task)
+  // Stripe billing (vereist zodra NEXT_PUBLIC_BILLING_ENABLED=true — zie fail-fast onder)
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
+  NEXT_PUBLIC_BILLING_ENABLED: z.string().optional(),
+  STRIPE_PRICE_PRO_MONTHLY: z.string().optional(),
+  STRIPE_PRICE_AGENCY_MONTHLY: z.string().optional(),
+  STRIPE_PRICE_ENTERPRISE_MONTHLY: z.string().optional(),
+  STRIPE_PRICE_PRO_YEARLY: z.string().optional(),
+  STRIPE_PRICE_AGENCY_YEARLY: z.string().optional(),
+  STRIPE_PRICE_ENTERPRISE_YEARLY: z.string().optional(),
+  STRIPE_PRICE_AI_OVERAGE: z.string().optional(),
+  STRIPE_METER_EVENT_NAME: z.string().optional(),
 
   // Sentry error tracking (production-only)
   NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
@@ -108,6 +117,24 @@ export function validateEnv(): void {
     if (prodWarnings.length > 0) {
       console.warn(
         `\u26a0\ufe0f PRODUCTION WARNING: Missing critical vars:\n${prodWarnings.map((w) => `  - ${w}`).join("\n")}`
+      );
+    }
+  }
+
+  // Stripe billing fail-fast: billing AAN + incomplete config = stil-brekende
+  // checkout/webhook (of verkeerde charge) \u2192 hard falen bij misconfig.
+  if (process.env.NEXT_PUBLIC_BILLING_ENABLED === "true") {
+    const billingMissing: string[] = [];
+    if (!process.env.STRIPE_SECRET_KEY) billingMissing.push("STRIPE_SECRET_KEY");
+    if (!process.env.STRIPE_WEBHOOK_SECRET) billingMissing.push("STRIPE_WEBHOOK_SECRET");
+    if (!process.env.STRIPE_PRICE_PRO_MONTHLY) billingMissing.push("STRIPE_PRICE_PRO_MONTHLY");
+    if (!process.env.STRIPE_PRICE_AGENCY_MONTHLY) billingMissing.push("STRIPE_PRICE_AGENCY_MONTHLY");
+    if (!process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY) billingMissing.push("STRIPE_PRICE_ENTERPRISE_MONTHLY");
+    if (billingMissing.length > 0) {
+      throw new Error(
+        `NEXT_PUBLIC_BILLING_ENABLED=true maar de Stripe-config is incompleet:\n` +
+        billingMissing.map((v) => `  - ${v}`).join("\n") +
+        `\n\nZie docs/playbooks/stripe-go-live.md.`
       );
     }
   }

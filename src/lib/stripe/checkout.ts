@@ -36,9 +36,12 @@ export async function createCheckoutSession(
     throw new Error('Billing is disabled');
   }
 
-  const priceId = getPriceIdForTier(options.planTier);
+  const priceId = getPriceIdForTier(options.planTier, options.billingCycle);
   if (!priceId) {
-    throw new Error(`No Stripe price configured for tier: ${options.planTier}`);
+    // Fail-safe: nooit stil de maandprijs charge­n als de yearly-price ontbreekt.
+    throw new Error(
+      `No Stripe price configured for tier ${options.planTier} (${options.billingCycle})`,
+    );
   }
 
   const stripe = getStripeClient();
