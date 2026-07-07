@@ -25,6 +25,7 @@ import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 import { ingestUploadsToLibrary } from '@/lib/media/ingest-uploads-to-library';
 import { patchHeroVisualUrl } from '@/lib/deliverable/patch-hero-visual';
 import { LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
@@ -304,6 +305,9 @@ export async function POST(request: Request, { params }: RouteParams) {
         { status: 502 },
       );
     }
+
+    // Credit-afboeking (Fase 2): count = werkelijk gegenereerde beelden (successful).
+    await chargeAfter({ workspaceId, action: 'image', feature: 'studio-visual-trained' }, { count: successful.length }).catch(() => {});
 
     const storage = getStorageProvider();
     const uploads = await Promise.all(

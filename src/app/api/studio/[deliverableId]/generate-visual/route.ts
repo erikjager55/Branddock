@@ -33,6 +33,7 @@ import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 import { parseLogoIntent, stripLogoMentions, type LogoPosition } from '@/lib/visual/logo-intent';
 import { compositeLogoOverlay, sampleCornerLuminance, DARK_CORNER_LUMINANCE_THRESHOLD } from '@/lib/visual/logo-overlay';
 import { getBrandLogo, getBrandLogos, pickLogoForBackground, type BrandLogo } from '@/lib/brand/get-brand-logo';
@@ -454,6 +455,9 @@ export async function POST(request: Request, { params }: RouteParams) {
         { status: 502 },
       );
     }
+
+    // Credit-afboeking (Fase 2): count = werkelijk gegenereerde beelden (successful).
+    await chargeAfter({ workspaceId, action: 'image', feature: 'studio-visual' }, { count: successful.length }).catch(() => {});
 
     // Download from fal.ai's hosted URL (signed, expires) and upload to
     // our storage so the URL remains stable for downstream usage.

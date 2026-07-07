@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { Persona } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { chargeAfter } from "@/lib/billing/credits/meter-generation";
 import { requireUnlocked } from "@/lib/lock-guard";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
@@ -173,6 +174,10 @@ export async function POST(
     }
 
     invalidateCache(cacheKeys.prefixes.personas(workspaceId));
+
+    // Credit-afboeking (Fase 2): 1 beeld — alleen dit gemini-generatie-pad;
+    // de fallback-avatar-paden (provider 'fallback') boeken niet (geen AI-gen).
+    await chargeAfter({ workspaceId, action: "image", feature: "persona-image" }, { count: 1 }).catch(() => {});
 
     return NextResponse.json({ avatarUrl, provider: "gemini" });
   } catch (error) {
