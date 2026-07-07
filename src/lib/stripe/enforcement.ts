@@ -16,6 +16,7 @@ import { PLAN_LIMITS } from '@/lib/constants/plan-limits';
 import { isBillingEnabled, getEffectivePlan } from './feature-flags';
 import { getBalance } from '@/lib/billing/credits/ledger';
 import { InsufficientCreditsError, insufficientCreditsResponse } from '@/lib/billing/credits/errors';
+import { isOrgUnlimited } from '@/lib/billing/credits/exempt';
 
 // ─── PlanLimitError ─────────────────────────────────────────
 
@@ -273,6 +274,7 @@ export async function enforceCreditBalance(
 ): Promise<NextResponse | null> {
   if (!isBillingEnabled()) return null;
   if (estimatedCredits <= 0) return null;
+  if (await isOrgUnlimited(organizationId)) return null; // unlimited-free-org → nooit blokkeren
 
   const balance = await getBalance(organizationId);
   if (balance.available >= estimatedCredits) return null;

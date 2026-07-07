@@ -18,6 +18,7 @@ import { deductCredits } from './ledger';
 import { CREDIT_COSTS, isZeroCostAction, tokensToCredits } from './credit-costs';
 import { isBillingEnabled } from '@/lib/stripe/feature-flags';
 import { resolveOrgForWorkspace } from '@/lib/stripe/usage-tracker';
+import { isOrgUnlimited } from './exempt';
 import type { CreditAction } from '@/types/billing';
 
 export interface MeterContext {
@@ -69,6 +70,7 @@ export async function withCreditMetering<T>(
   if (!isBillingEnabled() || isFree(ctx)) return fn();
   const organizationId = await resolveOrg(ctx);
   if (!organizationId) return fn();
+  if (await isOrgUnlimited(organizationId)) return fn(); // unlimited-free-org → nooit meteren
 
   const reservation = await reserveCredits(organizationId, estimateFor(ctx.action), {
     workspaceId: ctx.workspaceId,
@@ -103,6 +105,7 @@ export async function chargeAfter(ctx: MeterContext, outcome: MeterOutcome): Pro
   if (!isBillingEnabled() || isFree(ctx)) return;
   const organizationId = await resolveOrg(ctx);
   if (!organizationId) return;
+  if (await isOrgUnlimited(organizationId)) return; // unlimited-free-org → nooit afboeken
 
   const r = toReconcile(ctx.action, outcome);
   const credits =

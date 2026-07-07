@@ -38,6 +38,10 @@ model Organization {
   creditTransactions CreditTransaction[]
   creditReservations CreditReservation[]
 
+  // Unlimited-free-uitzondering: comped/pre-launch orgs gebruiken de app onbeperkt
+  // gratis — alle credit-metering/enforcement short-circuit voor deze org (los van tier).
+  unlimitedCredits Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
