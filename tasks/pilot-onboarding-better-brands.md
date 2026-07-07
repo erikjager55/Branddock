@@ -32,7 +32,7 @@ Flow: BB-owner registreert op prod (auto-provisioning maakt org+workspace+owner 
 - [x] Prod-smoke-checklist + welkomst-1-pager-outline opgeleverd (README + Notes hieronder)
 
 **Prod-run + onboarding (USER, met prod-creds):**
-- [ ] BB-owner registreert op prod → merk-DNA geïmporteerd (runbook stap 0-6)
+- [x] **merk-DNA geïmporteerd op prod (2026-07-07)** — in `erik@betterbrands.nl`'s workspace "Erik Jager's Workspace" (`cmr4znouo000204ic257g3gcn`) via `--force` (account was niet vers: **5 campagnes + 7 media bleven intact**, cascade-geverifieerd; alleen 11 canonieke assets + fidelityConfig vervangen). Styleguide-beelden op R2, pgvector-indexen aangemaakt. Detail: memory `pilot-brand-dna-migrated-prod`.
 - [ ] Welcome email (via Emailit) verstuurd met login-link + 1-pager onboarding
 - [ ] 30-min onboarding sessie ingepland met Better Brands stakeholder
 - [ ] F-VAL demo getoond live: Branddock content vs vanille GPT-4o gap
