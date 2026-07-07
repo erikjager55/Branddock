@@ -11,7 +11,7 @@ import React, { useState } from 'react';
 import { Check, Crown, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Button, Badge } from '@/components/shared';
-import { PLAN_CONFIGS, ALL_TIERS, formatLimit } from '@/lib/constants/plan-limits';
+import { PLAN_CONFIGS, ALL_TIERS } from '@/lib/constants/plan-limits';
 import { cn } from '@/lib/constants/design-tokens';
 import type { PlanTier } from '@/types/billing';
 
