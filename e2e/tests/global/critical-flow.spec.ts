@@ -46,6 +46,8 @@ test.describe('Critical Flow: Login → Dashboard → Brand Asset → AI Explora
     const assetGrid = page.locator('[data-testid="asset-grid"]');
     await expect(assetGrid).toBeVisible({ timeout: 10_000 });
     const assetCards = assetGrid.locator('[data-testid="brand-asset-card"]');
+    // Wacht tot de async-geladen cards er zijn — .count() wacht zelf niet (race).
+    await expect(assetCards.first()).toBeVisible({ timeout: 10_000 });
     const assetCount = await assetCards.count();
     expect(assetCount).toBeGreaterThan(0);
 
@@ -73,6 +75,8 @@ test.describe('Critical Flow: Login → Dashboard → Brand Asset → AI Explora
 
     // Verify campaign cards are loaded from seed data
     const campaignCards = page.locator('[data-testid^="campaign-card-"]');
+    // Wacht tot de async-geladen cards er zijn — .count() wacht zelf niet (race).
+    await expect(campaignCards.first()).toBeVisible({ timeout: 10_000 });
     const campaignCount = await campaignCards.count();
     expect(campaignCount).toBeGreaterThan(0);
   });
