@@ -5,7 +5,7 @@ fase: launch
 priority: now
 effort: 3-5 dagen
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-07-07
 related-adr: docs/adr/2026-07-07-pricing-credits-launch.md
 related-spec: tasks/pricing-credits-billing.md
@@ -96,3 +96,26 @@ Dit is de breedste fase (veel sites). Om onder ~1 week te blijven, in sub-batche
 - **Simplicity**: bij dreigende >1 week → splits langs 2a/2b/2c/2d in eigen task-files (zie sub-batch-noot). Aanbevolen volgorde: 2a → 2d (de background-jobs zijn het grootste lek-risico) → 2b → 2c.
 - Hergebruik: `run-agent` trackt al output-tokens; de background-jobs staan al op de queue (`serverless-hardening-jobs`) — dit is aanhaken, geen from-scratch.
 - **Verificatie-noot**: deze omgeving kan de app/AI-calls niet volledig draaien; verificatie = lint per file + CI-tsc/build + deploy-smoke (Stripe niet nodig voor deze fase, wél echte AI-calls voor de eind-smoke).
+
+## Voortgang 2026-07-07 (branch `feat/pricing-credits-fase0`) — audit-checklist
+
+Aanpak: centrale `withCreditMetering`/`chargeAfter`-wrapper (`meter-generation.ts`), dan de hoogwaardige + schoon-insertbare sites bedraad. tsc 0 (tracked) + eslint 0 per batch.
+
+**✅ Gemeterd (credit-kostend):**
+- **Long-form / SEO-content** → `seo-generation-job.ts` op COMPLETED (vaste 80 cr, idempotent per job; token-accuraat = latere refinement). Dekt óók de `SEO_GENERATE`-background-job.
+- **Agents** → `run-agent.ts` post-hoc op `totalOutputTokens` (`agent-deliverable`).
+- **AI-beeld** → `media/ai-images/generate` (2 cr, count). **AI-video** → `media/ai-videos/generate` (20 cr, count). = referentie-implementatie.
+- Reservering-**reaper** (`RESERVATION_REAP` + `reapStaleReservations`).
+
+**✅ Floor-gedekt = 0 cr (bewust, gedocumenteerd in `handlers.ts`):**
+- Achtergrond-analyse: `ALIGNMENT_SCAN`, `TREND_RESEARCH`, `DAM_AUTO_TAG`, `BUG_REPORT_ANALYZE`, `CHAT_FEEDBACK_ANALYZE`.
+- Merk-DNA-setup: `WEBSITE_SCAN`, `BRANDVOICE_ANALYZE_URL`, `BRANDSTYLE_ANALYZE_URL/PDF`.
+- `persona-chat` = `chat` (ZERO_COST). F-VAL + merkcontext-input = 0 (geen haak). Geen AI: MEMORY_DECAY/HEARTBEAT/AGENT_TASK/*_CLEANUP.
+
+**⏳ RESTEREND — credit-kostend maar nog niet bedraad (mechanische follow-up, zelfde patroon):**
+1. **canvas-orchestrator non-SEO content** (short/medium, ~5 cr): diepe SSE-generator; het output-token-punt is niet-triviaal + niet lokaal testbaar. Vereist een getest insertiepunt bij de generatie-completion (of een post-hoc `chargeAfter` per content-type op een run-scoped idempotency-key). **Grootste resterende gat qua aggregaat-volume.**
+2. **Secundaire beeld/video-routes** (2-20 cr, zelfde count-patroon als de 2 bedrade referentie-routes): `studio/[id]/{generate-visual,generate-visual-compose,generate-visual-trained,generate-feature-visuals,generate-video,compose-video,hero-image,generate-voiceover,edit-image}`, `personas/[id]/generate-image`, `products/[id]/images`, `consistent-models/[id]/generate`, `landing-pages/generate-page`. Elk = import `chargeAfter` + 1 regel na de persist.
+3. **Pre-flight route-guards** (`enforceCreditBalance`) op de generatie-routes — nu alleen post-hoc afboeking; de blokkade-bij-leeg-saldo hoort op de route-boundary (Fase 1 leverde `enforceCreditBalance`, nog niet overal aangeroepen).
+4. **RESERVATION_REAP cron-scheduling** (Vercel Cron) + **deploy-smoke** (echte AI-calls nodig): de hele fase is lokaal niet end-to-end testbaar.
+
+Status `in-progress`: de duurste paden (long-form, agents) + primaire beeld/video zijn afgedekt; het resterende is mechanisch (het patroon + de referentie-routes staan) maar vereist deploy-smoke. Kandidaat om af te splitsen als `pricing-credits-fase2-rest` als je 'm los wilt finaliseren.
