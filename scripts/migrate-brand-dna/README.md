@@ -79,8 +79,12 @@ de `centroidEmbedding`-vector via raw SQL.
 
 > Ambigu wie de workspace is? De owner heeft >1 workspace? Het script stopt en vraagt om
 > `--slug <workspace-slug>` i.p.v. `--email`.
-> Bewust een niet-verse workspace overschrijven? Voeg `--force` toe (de guard checkt
-> campaigns/media/personas/producten/concurrenten/strategie/voice/style én >12 assets).
+> Bewust een niet-verse workspace overschrijven? Voeg `--force` toe. De guard weigert
+> anders bij meer dan de canonieke brand assets of enig `NONFRESH_MODELS`-signaal
+> (campaigns/media/personas/producten/concurrenten/strategie/voice/style/rules/fidelity/
+> trends/workshops/interviews). **Let op:** `--force` wist het merk-DNA én cascadeert naar
+> niet-gemigreerde afhankelijke data (persona-chats, campagne-links) — alleen op een
+> workspace die je bewust wilt overschrijven.
 
 ### Stap 6 — Vector-indexen (eenmalig per prod-DB)
 Als dit de eerste keer is dat pgvector-data op prod landt:

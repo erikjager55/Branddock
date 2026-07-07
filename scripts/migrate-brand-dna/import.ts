@@ -15,6 +15,7 @@
 import './load-env';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../src/lib/prisma';
+import { CANONICAL_BRAND_ASSETS } from '../../src/lib/constants/canonical-brand-assets';
 import { BRAND_DNA_MODELS, BrandDnaModel, USER_REF_FIELDS, delegateFor } from './models';
 import { BrandDnaBundle, loadBundle } from './bundle';
 
@@ -92,8 +93,8 @@ async function resolveTarget(flags: Flags): Promise<Target> {
 
 /**
  * Weiger een workspace die al gebruikt is (clobber-bescherming). Een vers-
- * geprovisionde workspace heeft exact 11 canonieke brand assets (auth.
- * provisionNewUser) en verder niets; élk ander signaal (of >11 assets) betekent
+ * geprovisionde workspace heeft exact de canonieke brand assets (auth.
+ * provisionNewUser) en verder niets; élk ander signaal (of meer assets) betekent
  * dat de owner al werk heeft dat de wipe stil zou vernietigen (incl. cascades
  * naar niet-gemigreerde data). --force overschrijft dit bewust.
  */
@@ -111,7 +112,7 @@ async function assertFresh(workspaceId: string, force: boolean): Promise<void> {
   const nonFresh = counts.reduce((sum, n) => sum + n, 0);
   const summary = NONFRESH_MODELS.map((m, i) => `${m}=${counts[i]}`).join(' ');
   console.log(`[import] doel-staat: brandAssets=${assets} ${summary}`);
-  if ((assets > 11 || nonFresh > 0) && !force) {
+  if ((assets > CANONICAL_BRAND_ASSETS.length || nonFresh > 0) && !force) {
     throw new Error(
       'Doel-workspace lijkt al in gebruik (merk-DNA of content aanwezig). Gebruik --force om bewust te overschrijven.',
     );
