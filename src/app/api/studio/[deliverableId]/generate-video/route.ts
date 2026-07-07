@@ -9,6 +9,7 @@ import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-acc
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 import { getStorageProvider } from '@/lib/storage';
 import { getFalVideoProviderById, FAL_VIDEO_PROVIDERS } from '@/lib/integrations/fal/fal-video-providers';
 import { buildVideoPromptFromScript } from '@/lib/studio/video-prompt-builder';
@@ -251,6 +252,10 @@ export async function POST(
           });
 
           invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+
+          // Credit-afboeking (Fase 2): 1 videoclip — alleen dit echte-generatie-pad;
+          // het existingVideoUrl-hergebruik-pad boekt niet (geen nieuwe generatie).
+          await chargeAfter({ workspaceId, action: 'video-clip', feature: 'studio-video' }, { count: 1 }).catch(() => {});
 
           sendEvent('video_complete', {
             videoUrl: uploadResult.url,

@@ -40,6 +40,7 @@ import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 
 export const FEATURE_IMAGE_BUDGET = 4;
 /** Een library-match moet óók de coherence-judge passeren — anders AI-pad. */
@@ -593,6 +594,12 @@ export async function POST(request: Request, { params }: RouteParams) {
     // coherence de G4-score per slot (null = judge geskipt).
     const urls = generated.map((g) => g?.url ?? null);
     const sources = generated.map((g) => g?.source ?? null);
+
+    // Credit-afboeking (Fase 2): alleen nieuw AI-gegenereerde feature-beelden
+    // (source 'generated'); library-prefill telt niet (geen nieuwe generatie).
+    const billableVisuals = generated.filter((g) => g?.source === 'generated').length;
+    await chargeAfter({ workspaceId, action: 'image', feature: 'feature-visuals' }, { count: billableVisuals }).catch(() => {});
+
     return NextResponse.json({ urls, sources, coherence: coherenceScores, regenerated, swapped });
   } catch (err) {
     console.error('[generate-feature-visuals] error:', err);

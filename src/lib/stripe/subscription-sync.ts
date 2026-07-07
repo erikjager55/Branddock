@@ -49,13 +49,24 @@ export function mapStripeStatus(
 export function mapPriceToTier(priceId: string | null): PlanTier {
   if (!priceId) return "FREE";
 
-  const proPriceId = process.env.STRIPE_PRICE_PRO_MONTHLY;
-  const agencyPriceId = process.env.STRIPE_PRICE_AGENCY_MONTHLY;
-  const enterprisePriceId = process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY;
-
-  if (priceId === proPriceId) return "PRO";
-  if (priceId === agencyPriceId) return "AGENCY";
-  if (priceId === enterprisePriceId) return "ENTERPRISE";
+  // Map elke geconfigureerde price-id (maandelijks én jaarlijks) naar zijn tier.
+  // Credit-model (ADR 2026-07-07): STARTER/GROWTH erbij — anders zou een betalende
+  // STARTER/GROWTH-klant via de webhook naar FREE vallen zodra die prijzen bestaan.
+  const byTier: [string | undefined, PlanTier][] = [
+    [process.env.STRIPE_PRICE_PRO_MONTHLY, "PRO"],
+    [process.env.STRIPE_PRICE_PRO_YEARLY, "PRO"],
+    [process.env.STRIPE_PRICE_STARTER_MONTHLY, "STARTER"],
+    [process.env.STRIPE_PRICE_STARTER_YEARLY, "STARTER"],
+    [process.env.STRIPE_PRICE_GROWTH_MONTHLY, "GROWTH"],
+    [process.env.STRIPE_PRICE_GROWTH_YEARLY, "GROWTH"],
+    [process.env.STRIPE_PRICE_AGENCY_MONTHLY, "AGENCY"],
+    [process.env.STRIPE_PRICE_AGENCY_YEARLY, "AGENCY"],
+    [process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY, "ENTERPRISE"],
+    [process.env.STRIPE_PRICE_ENTERPRISE_YEARLY, "ENTERPRISE"],
+  ];
+  for (const [envPrice, tier] of byTier) {
+    if (envPrice && priceId === envPrice) return tier;
+  }
 
   // Check subscription metadata as fallback
   return "FREE";
@@ -237,7 +248,7 @@ async function findOrCreatePlan(tier: PlanTier) {
       maxStorageGb: config.limits.STORAGE_MB / 1024,
       features: config.features,
       isRecommended: tier === "PRO",
-      sortOrder: ["FREE", "PRO", "AGENCY", "ENTERPRISE"].indexOf(tier),
+      sortOrder: ["FREE", "STARTER", "PRO", "GROWTH", "AGENCY", "ENTERPRISE"].indexOf(tier),
     },
   });
 }

@@ -5,7 +5,7 @@ fase: launch
 priority: now
 effort: 3-5 dagen
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-07-07
 related-adr: docs/adr/2026-07-07-pricing-credits-launch.md
 related-spec: tasks/pricing-credits-billing.md
@@ -96,3 +96,45 @@ Dit is de breedste fase (veel sites). Om onder ~1 week te blijven, in sub-batche
 - **Simplicity**: bij dreigende >1 week → splits langs 2a/2b/2c/2d in eigen task-files (zie sub-batch-noot). Aanbevolen volgorde: 2a → 2d (de background-jobs zijn het grootste lek-risico) → 2b → 2c.
 - Hergebruik: `run-agent` trackt al output-tokens; de background-jobs staan al op de queue (`serverless-hardening-jobs`) — dit is aanhaken, geen from-scratch.
 - **Verificatie-noot**: deze omgeving kan de app/AI-calls niet volledig draaien; verificatie = lint per file + CI-tsc/build + deploy-smoke (Stripe niet nodig voor deze fase, wél echte AI-calls voor de eind-smoke).
+
+## Voortgang 2026-07-07 (branch `feat/pricing-credits-fase0`) — audit-checklist
+
+Aanpak: centrale `withCreditMetering`/`chargeAfter`-wrapper (`meter-generation.ts`), dan de hoogwaardige + schoon-insertbare sites bedraad. tsc 0 (tracked) + eslint 0 per batch.
+
+**✅ Gemeterd (credit-kostend):**
+- **Long-form / SEO-content** → `seo-generation-job.ts` op COMPLETED (vaste 80 cr, idempotent per job; token-accuraat = latere refinement). Dekt óók de `SEO_GENERATE`-background-job.
+- **Agents** → `run-agent.ts` post-hoc op `totalOutputTokens` (`agent-deliverable`).
+- **AI-beeld** → `media/ai-images/generate` (2 cr, count). **AI-video** → `media/ai-videos/generate` (20 cr, count). = referentie-implementatie.
+- Reservering-**reaper** (`RESERVATION_REAP` + `reapStaleReservations`).
+
+**✅ Floor-gedekt = 0 cr (bewust, gedocumenteerd in `handlers.ts`):**
+- Achtergrond-analyse: `ALIGNMENT_SCAN`, `TREND_RESEARCH`, `DAM_AUTO_TAG`, `BUG_REPORT_ANALYZE`, `CHAT_FEEDBACK_ANALYZE`.
+- Merk-DNA-setup: `WEBSITE_SCAN`, `BRANDVOICE_ANALYZE_URL`, `BRANDSTYLE_ANALYZE_URL/PDF`.
+- `persona-chat` = `chat` (ZERO_COST). F-VAL + merkcontext-input = 0 (geen haak). Geen AI: MEMORY_DECAY/HEARTBEAT/AGENT_TASK/*_CLEANUP.
+
+**⏳ RESTEREND — credit-kostend maar nog niet bedraad (mechanische follow-up, zelfde patroon):**
+1. **canvas-orchestrator non-SEO content** (short/medium, ~5 cr): diepe SSE-generator; het output-token-punt is niet-triviaal + niet lokaal testbaar. Vereist een getest insertiepunt bij de generatie-completion (of een post-hoc `chargeAfter` per content-type op een run-scoped idempotency-key). **Grootste resterende gat qua aggregaat-volume.**
+2. **Secundaire beeld/video-routes — GECLASSIFICEERD** (belangrijke bevinding 2026-07-07: níet alle "visual"-routes genereren; sommige composen/uploaden → afboeken zou **dubbel-chargen**). Wél bedraad deze batch: **`edit-image`** (Nano Banana = nieuw beeld) + **`consistent-models/[id]/generate`** (count = werkelijk gegenereerde beelden). Status per route:
+   - **BILLABLE — ✅ NU BEDRAAD** (2026-07-07, met per-route pad-guards zodat alleen echte generatie boekt): `generate-visual` + `generate-visual-trained` (count = `successful.length`), `generate-feature-visuals` (count = slots met `source==='generated'`; library-prefill telt niet), `generate-video` (alleen het echte-gen-pad; het `existingVideoUrl`-hergebruik-pad skipt), `personas/[id]/generate-image` (alleen het gemini-pad; fallback-avatars skippen), `landing-pages/generate-page` (actie `short`, alleen als `source==='ai'`; heuristic-fallback skipt).
+   - **SKIP — NIET chargen** (compositie/upload; inputs zijn al belast óf geen AI-gen): `compose-video` (stitcht al-gegenereerde scene-video's), `hero-image` (zet/vervangt een bestaand beeld als component), `products/[id]/images` (upload), `generate-visual-compose` (compositie — verifieer of 'ie intern gen't; zo niet: skip), `generate-voiceover` (audio — nog geen credit-actie in de taxonomie; aparte `audio`-actie = follow-up).
+   - **Les**: classificeer elke route **generate-vs-compose-vs-upload** vóór bedrading (grep op de gen-client is een heuristiek, geen bewijs — `personas/generate-image` matchte niet maar genereert wél). Nooit blind een `chargeAfter` op een "visual"-route plakken.
+3. **Pre-flight route-guards** (`enforceCreditBalance`) op de generatie-routes — nu alleen post-hoc afboeking; de blokkade-bij-leeg-saldo hoort op de route-boundary (Fase 1 leverde `enforceCreditBalance`, nog niet overal aangeroepen).
+4. **RESERVATION_REAP cron-scheduling** (Vercel Cron) + **deploy-smoke** (echte AI-calls nodig): de hele fase is lokaal niet end-to-end testbaar.
+
+Status `in-progress`: de duurste paden (long-form, agents) + primaire beeld/video zijn afgedekt; het resterende is mechanisch (het patroon + de referentie-routes staan) maar vereist deploy-smoke. Kandidaat om af te splitsen als `pricing-credits-fase2-rest` als je 'm los wilt finaliseren.
+
+## T-review 2026-07-07 (2 code-reviewers, 2 rondes) — Fase-3-gates vóór billing-ON
+
+De hele credit-branch is adversarieel gereviewd. **Ronde 1** vond 2 CRITICAL (gefixt: agent-charge boekte gratis-agents af → `def.billable`-gate; reconcile/release TOCTOU → atomaire `WHERE status='RESERVED' RETURNING`-claim) + WARNINGs (gefixt: subscription-sync STARTER/GROWTH-mapping, reconcile-failure-swallow, chargeAfter-logging, SEO-charge-vóór-COMPLETED). **Ronde 2**: beide reviewers 0 CRITICAL; 1 WARNING gefixt (agent-charge alleen op `COMPLETED`, niet op FAILED/AWAITING_CONFIRMATION-proposal). Smoke 8/8, tsc/lint groen.
+
+**Harde gates die dicht MOETEN vóór `NEXT_PUBLIC_BILLING_ENABLED=true`** (nu veilig omdat billing OFF is; de reviewers bevestigen "safe to merge als scaffolding zolang billing uit blijft"):
+1. **Pre-flight-guard bedraden** — `enforceCreditBalance` wordt nergens aangeroepen; alle sites gebruiken post-hoc `chargeAfter({force:true})`. Zonder guard kan het saldo onbegrensd negatief. Bedraad op de generatie-routes.
+2. **Credit-grants bedraden** — `grantCredits` heeft geen live caller: geen trial-grant (300cr) en geen maand-plan-grant. Bij billing-ON heeft élke org 0 credits. (Fase 4 trial + Fase 3 plan/topup.)
+3. **Billable-agent-content chargen bij confirm** — content-creator eindigt op AWAITING_CONFIRMATION; de echte levering + charge horen ná goedkeuring in de confirm-route, niet op de proposal (nu gated op COMPLETED, dus dormant).
+4. **grant/deduct idempotent op P2002** — bij dubbele Stripe-webhook gooit `grantCredits` nu een unique-error i.p.v. idempotent te returnen (saldo is wél veilig via rollback).
+5. **RESERVATION_REAP-cron** inplannen zodra het reserve-pad bedraad is (anders lekt `reserved` bij crash).
+6. **Ongewirede reserve-edges**: `reserveCredits`-idempotency-stale + `resolveActual` bij `estimate=0` — fixen bij het bedraden van `withCreditMetering`.
+7. **Neon `db push`** (alle credit-modellen + enum-waarden) vóór billing-ON.
+8. **Resterende billable generatie-routes** bedraden (zie hierboven, met de generate-vs-compose/cache-hit-nuances).
+
+Deferred MINORs (dormant): AGENCY-limietverlaging (15ws/10seats) verifiëren bij cutover; token-accurate SEO-charge i.p.v. vaste 80; `PrismaTx`-cast.

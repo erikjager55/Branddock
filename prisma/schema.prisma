@@ -33,6 +33,11 @@ model Organization {
   workspaces  Workspace[]
   invitations Invitation[]
 
+  // Credit-billing (pooled op org-niveau — ADR 2026-07-07-pricing-credits-launch)
+  creditBalance      CreditBalance?
+  creditTransactions CreditTransaction[]
+  creditReservations CreditReservation[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -3609,7 +3614,12 @@ enum SidebarPosition {
 
 enum PlanTier {
   FREE
+  // PRO = legacy vaste-prijs-tier (€29). Behouden voor compat met de reeds-live
+  // Stripe-producten + webhook-mapping tot de credit-model-cutover (Fase 3/5),
+  // daar wordt PRO → STARTER gemigreerd en verwijderd. Niet in ALL_TIERS.
   PRO
+  STARTER
+  GROWTH
   AGENCY
   ENTERPRISE
 }
@@ -3642,6 +3652,86 @@ model AiUsageRecord {
   @@index([workspaceId, createdAt])
   @@index([userId, createdAt])
   @@map("ai_usage_record")
+}
+
+// ─── Credit-billing (ADR 2026-07-07-pricing-credits-launch) ──
+// Pooled prepaid credit-ledger op Organization-niveau. Fase 0 = datamodel only;
+// het ledger-gedrag (deduct/grant/reserve/reconcile) komt in Fase 1.
+
+model CreditBalance {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  balance         Int @default(0) // beschikbaar saldo in credits
+  reserved        Int @default(0) // gereserveerd (pre-flight), nog niet gesettled
+  lifetimeGranted Int @default(0)
+  lifetimeSpent   Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("credit_balance")
+}
+
+model CreditTransaction {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workspaceId    String? // welk merk verbruikte (attributie); null bij grant/topup
+
+  amount         Int                   // positief = grant/topup, negatief = deduct
+  type           CreditTransactionType
+  reason         String
+  feature        String?
+  action         String? // bv 'long-form', 'image'
+  outputTokens   Int? // werkelijke output-tokens bij een deduct
+  balanceAfter   Int
+  idempotencyKey String? @unique // voorkomt dubbel-boeken bij re-dispatch
+  metadata       Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([workspaceId, createdAt])
+  @@map("credit_transaction")
+}
+
+model CreditReservation {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workspaceId    String?
+
+  estimatedCredits Int
+  status           CreditReservationStatus @default(RESERVED)
+  action           String?
+  feature          String?
+  idempotencyKey   String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([status, createdAt]) // reaper: stale RESERVED opruimen
+  @@map("credit_reservation")
+}
+
+enum CreditReservationStatus {
+  RESERVED // gereserveerd, run loopt
+  SETTLED // gereconcilieerd naar werkelijk verbruik
+  RELEASED // vrijgegeven (run gefaald/geannuleerd)
+}
+
+enum CreditTransactionType {
+  TRIAL_GRANT // 28-daagse trial-bundel
+  PLAN_GRANT // maandelijkse tier-bundel
+  TOPUP // prepaid pack of auto-topup
+  DEDUCT // afboeking bij generatie
+  RESERVE // pre-flight reservering
+  RECONCILE // reservering → werkelijk verbruik
+  REFUND // terugboeking
+  EXPIRY // verlopen credits
 }
 
 // ─── S9: Settings Models ─────────────────────────────────────
@@ -5111,6 +5201,7 @@ enum AgentJobType {
   WEBSITE_SCAN
   BRANDVOICE_ANALYZE_URL
   SEO_GENERATE
+  RESERVATION_REAP // credit-reservering-reaper: stale RESERVED vrijgeven (Fase 2)
 }
 
 // Serverless-safe SEO-generatie: de 8-staps-pipeline draait als resumable job

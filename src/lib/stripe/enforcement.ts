@@ -14,6 +14,8 @@ import { prisma } from '@/lib/prisma';
 import type { PlanTier, FeatureKey, EffectivePlan } from '@/types/billing';
 import { PLAN_LIMITS } from '@/lib/constants/plan-limits';
 import { isBillingEnabled, getEffectivePlan } from './feature-flags';
+import { getBalance } from '@/lib/billing/credits/ledger';
+import { InsufficientCreditsError, insufficientCreditsResponse } from '@/lib/billing/credits/errors';
 
 // ─── PlanLimitError ─────────────────────────────────────────
 
@@ -248,5 +250,36 @@ export async function enforcePlanLimit(
       upgradeRequired: true,
     },
     { status: 402 },
+  );
+}
+
+// ─── Credit-balance guard (ADR 2026-07-07-pricing-credits-launch) ──
+
+/**
+ * Route-boundary credit-guard: geeft een 402 {@link NextResponse} als het
+ * beschikbare pooled saldo (balance − reserved) de geschatte kost niet dekt en
+ * auto-topup uit/onbeschikbaar is; anders `null`. Mirror van {@link enforcePlanLimit}.
+ * No-op als `BILLING_ENABLED=false`.
+ *
+ * Gebruik:
+ *   `const limited = await enforceCreditBalance(orgId, est); if (limited) return limited;`
+ *
+ * De auto-topup-hook is een injectiepunt — Fase 3 vult de daadwerkelijke top-up
+ * in vóór de 402-tak.
+ */
+export async function enforceCreditBalance(
+  organizationId: string,
+  estimatedCredits: number,
+): Promise<NextResponse | null> {
+  if (!isBillingEnabled()) return null;
+  if (estimatedCredits <= 0) return null;
+
+  const balance = await getBalance(organizationId);
+  if (balance.available >= estimatedCredits) return null;
+
+  // TODO(Fase 3): auto-topup-hook — probeer credits bij te kopen vóór de 402.
+
+  return insufficientCreditsResponse(
+    new InsufficientCreditsError(organizationId, estimatedCredits, balance.available),
   );
 }

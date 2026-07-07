@@ -11,7 +11,7 @@ import React, { useState } from 'react';
 import { Check, Crown, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Button, Badge } from '@/components/shared';
-import { PLAN_CONFIGS, ALL_TIERS, formatLimit } from '@/lib/constants/plan-limits';
+import { PLAN_CONFIGS, ALL_TIERS } from '@/lib/constants/plan-limits';
 import { cn } from '@/lib/constants/design-tokens';
 import type { PlanTier } from '@/types/billing';
 
@@ -25,7 +25,9 @@ interface UpgradeModalProps {
 
 const TIER_HIGHLIGHTS: Record<PlanTier, string> = {
   FREE: 'border-gray-200',
-  PRO: 'border-primary ring-2 ring-primary/10',
+  PRO: 'border-primary ring-2 ring-primary/10', // legacy
+  STARTER: 'border-gray-200',
+  GROWTH: 'border-primary ring-2 ring-primary/10', // anchor/aanbevolen tier
   AGENCY: 'border-blue-400 ring-2 ring-blue-100',
   ENTERPRISE: 'border-amber-400 ring-2 ring-amber-100',
 };

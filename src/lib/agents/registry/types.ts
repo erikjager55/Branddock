@@ -102,6 +102,12 @@ export interface AgentDefinition {
   /** Per-agent model slot (WorkspaceAiConfig via resolveFeatureModel). */
   featureKey: AiFeatureKey;
   outputContract: AgentOutputContract<AgentArtifactDraft[], AgentFinalizeResult>;
+  /**
+   * Credit-billing (ADR 2026-07-07): true = deze agent produceert user-facing
+   * content en boekt output-credits af. Default (undefined/false) = gratis —
+   * analyse/F-VAL/research/exploratie-agents zijn floor-gedekt (ADR §2/§3).
+   */
+  billable?: boolean;
   /** Override loop guards (defaults: 5min / 20 tool-calls). */
   timeoutMs?: number;
   maxToolCalls?: number;

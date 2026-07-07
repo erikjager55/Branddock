@@ -26,7 +26,9 @@ const TIER_CONFIG: Record<PlanTier, {
   icon: React.ElementType;
 }> = {
   FREE: { label: 'Free', variant: 'default', icon: Rocket },
-  PRO: { label: 'Pro', variant: 'teal', icon: Sparkles },
+  PRO: { label: 'Pro', variant: 'teal', icon: Sparkles }, // legacy
+  STARTER: { label: 'Starter', variant: 'teal', icon: Sparkles },
+  GROWTH: { label: 'Growth', variant: 'info', icon: Building2 },
   AGENCY: { label: 'Agency', variant: 'info', icon: Building2 },
   ENTERPRISE: { label: 'Enterprise', variant: 'success', icon: Crown },
 };

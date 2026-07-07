@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
+import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 
 /**
  * POST /api/landing-pages/generate-page
@@ -120,6 +121,12 @@ export async function POST(request: NextRequest) {
 
   const build = resolveTemplateBuilder(deliverable.contentType);
   const puckData = build(filled, ctx);
+
+  // Credit-afboeking (Fase 2): alleen als de AI de pagina vulde (source 'ai'),
+  // niet de heuristic-fallback. Eén moderate content-call → 'short'.
+  if (source === 'ai') {
+    await chargeAfter({ workspaceId, action: 'short', feature: 'landing-page-generate' }, { count: 1 }).catch(() => {});
+  }
 
   return NextResponse.json({ puckData, source });
 }

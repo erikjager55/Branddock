@@ -5,6 +5,7 @@ import { foldNegativeIntoPrompt, isFalConfigured, runFalGeneration } from '@/lib
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 import { TRIGGER_WORDS } from '@/features/consistent-models/constants/model-constants';
 import { validateGeneratedImage } from '@/lib/consistent-models/style-validator';
 import type { IllustrationStyleProfile } from '@/lib/consistent-models/style-profile.types';
@@ -212,6 +213,12 @@ export async function POST(
     }
 
     invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
+
+    // Credit-afboeking (Fase 2): count = werkelijk gegenereerde beelden.
+    await chargeAfter(
+      { workspaceId, action: 'image', feature: 'consistent-model' },
+      { count: generations.length },
+    ).catch(() => {});
 
     return NextResponse.json({ generations });
   } catch (error) {

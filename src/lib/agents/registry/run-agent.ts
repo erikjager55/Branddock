@@ -26,6 +26,7 @@ import {
 } from "@/lib/ai/feature-models.server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { chargeAfter } from "@/lib/billing/credits/meter-generation";
 import { clearRunCollector } from "./run-collector";
 import { getAgentDefinition, isTestAgentAllowed } from "./index";
 import type { AgentContextSelection } from "./types";
@@ -207,6 +208,28 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
       truncated: result.truncated,
       error: result.persisted.error,
     };
+
+    // Credit-afboeking (Fase 2): alleen content-producerende agents (def.billable)
+    // boeken output-credits af; analyse/F-VAL/research/exploratie = gratis (ADR §2/§3).
+    // Alleen op COMPLETED: een FAILED-run levert niets; een AWAITING_CONFIRMATION-run
+    // is een *proposal* (de echte levering + charge horen bij de confirm-route — Fase 3),
+    // dus geen charge op proposal-tokens. Post-hoc, idempotent per run.
+    if (def.billable && response.status === "COMPLETED") {
+      await chargeAfter(
+        {
+          workspaceId,
+          action: "agent-deliverable",
+          feature: `agent:${def.id}`,
+          idempotencyKey: `agent-charge:${runId}`,
+        },
+        { outputTokens: result.totalOutputTokens, model: result.costBreakdown.model },
+      ).catch((e) => {
+        console.warn("[run-agent] credit-charge failed (swallowed)", {
+          runId,
+          error: e instanceof Error ? e.message : String(e),
+        });
+      });
+    }
 
     void emitAgentRunCompleted({
       runId,

@@ -27,6 +27,7 @@ import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with
 import { getStorageProvider } from '@/lib/storage';
 import { importGeneratedImageToLibrary } from '@/lib/media/import-generated-image';
 import { mediaCategoryForDeliverableType } from '@/lib/media/ingest-uploads-to-library';
+import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 
 const editImageSchema = z
   .object({
@@ -105,6 +106,9 @@ export async function POST(request: Request, { params }: RouteParams) {
       category: mediaCategory,
       contentType,
     });
+
+    // Credit-afboeking (Fase 2): een AI-edit (Nano Banana) = een nieuw beeld.
+    await chargeAfter({ workspaceId, action: 'image', feature: 'edit-image' }, { count: 1 }).catch(() => {});
 
     return NextResponse.json({ editedImageUrl: upload.url });
   } catch (err) {

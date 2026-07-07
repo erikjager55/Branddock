@@ -5,8 +5,9 @@ fase: launch
 priority: now
 effort: 1-2 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-07-07
+completed: 2026-07-07
 related-adr: docs/adr/2026-07-07-pricing-credits-launch.md
 related-spec: tasks/pricing-credits-billing.md
 worktree: branddock-feat-pricing-credits
@@ -87,3 +88,10 @@ Billing is vandaag **workspace-scoped** (`Workspace.planTier`, `Subscription @un
 - Hergebruik: `plan-limits.ts` heeft al `aiOveragePer1kTokens` per tier — dat concept wordt de basis voor de token→credit-conversie, niet weggegooid. `PLAN_CONFIGS`-structuur blijft; alleen waarden + credit-velden erbij.
 - COGS-scheiding: `cost-calculator.ts` (`totalCostUsd`) blijft interne marge-tracking; de credit-registry is de klant-eenheid. Nooit conflateren (risico uit de umbrella).
 - Bron van waarheid voor waarden: ADR-deelbeslissingen 3, 4, 5, 8, 9.
+
+## Afronding 2026-07-07 (branch `feat/pricing-credits-fase0`)
+
+- **Additief i.p.v. rename** (afwijking van de oorspronkelijke `PRO`→`STARTER`-strategie): omdat de Stripe-producten al **live** zijn en de webhook-mapping-code `PRO` refereert, is `PRO` **behouden** als legacy-tier (buiten `ALL_TIERS`) en zijn `STARTER` + `GROWTH` toegevoegd. De echte `PRO`→`STARTER`-cutover + data-remap is bewust deferred naar Fase 3/5 (de credit-model-go-live). Er zijn 0 live subscriptions, dus de latere migratie blijft schoon.
+- **Geleverd**: `CreditBalance` + `CreditTransaction` + `CreditTransactionType` (pooled op `Organization`), `PlanTier` +`STARTER`/`GROWTH`, `plan-limits.ts` herschreven (€39/€89/€299 · 400/1.200/4.000cr · floor €15 · top-up €0,10 · packs), `credit-costs.ts` (per-actie + `ZERO_COST_ACTIONS` + `tokensToCredits`), `credits/types.ts` (ledger-contracten voor Fase 1), backfill-script. Type-breekpunten gefixt: `config.ts`, `plans.ts`, `tier-resolver.ts`, `PlanBadge.tsx`, `UpgradeModal.tsx`.
+- **Verificatie**: `npx tsc --noEmit` 0 errors; eslint 0 errors (1 pre-existing warning); lokale `prisma db push` additief zonder data-loss; enum + tabellen bevestigd in DB; backfill 2/2 CreditBalances geseed.
+- **Nog te doen bij merge naar main**: **Neon `prisma db push`** (gotcha `neon-schema-push-on-deploy`) + backfill `--apply` op Neon. Nu niet gedaan want de branch is nog niet gemerged en er draait geen prod-verkeer (URL niet gedeeld).
