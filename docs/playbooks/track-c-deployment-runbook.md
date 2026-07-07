@@ -131,23 +131,25 @@ Scaffold staat in `src/app/marketing/` met COPY-TODO markers door alle pagina's.
 
 ## Fase 8 — Pilot-onboarding Better Brands
 
-Zie ook `tasks/pilot-onboarding-better-brands.md`. Pure data-actie:
+Zie ook `tasks/pilot-onboarding-better-brands.md`. **Alleen het merk-DNA** wordt gemigreerd
+(brand foundation, geen content/telemetrie-historie) naar een vers prod-account.
 
-1. Lokaal workspace exporteren (raw SQL of pg_dump):
-   ```sql
-   -- Voor BB workspace + alle relaties:
-   pg_dump -h localhost -U erikjager branddock \
-     --table=workspaces --table=brand_assets --table=brand_voiceguides \
-     --table=brand_personalities --table=fidelity_configs \
-     --table=personas --table=products --table=competitors \
-     --where="workspace_id = '<BB-workspace-id>'" \
-     > better-brands-export.sql
-   ```
-2. Import naar Neon: `psql <neon-url> < better-brands-export.sql`.
-3. Better Brands stakeholder account aanmaken via signup-flow (productie).
-4. Workspace-owner-koppeling via Settings → Team (workspace-switch + invite).
-5. Welcome-email handmatig sturen via Emailit met 1-pager onboarding-instructie.
-6. 30-min onboarding-sessie inplannen.
+> ⚠️ De oude pg_dump-snippet hier was fout (niet-bestaande snake_case-tabelnamen, en
+> `pg_dump` heeft geen `--where`-flag). Vervangen door de dedicated migratie-scripts.
+
+**Technisch (jij draait, met prod-creds):** volg de runbook in
+[`scripts/migrate-brand-dna/README.md`](../../scripts/migrate-brand-dna/README.md):
+1. Owner registreert zich op prod (auto-provisioning maakt org+workspace+owner + lege assets).
+2. `export.ts` (lokaal) → inspecteerbare `brand-dna-<slug>.json`-bundle.
+3. `upload-images.ts` (R2-creds) → merk-beelden naar R2 + URLs herschreven.
+4. `prisma db push` tegen Neon (schema actueel), dan `import.ts --dry-run`, dan de echte import.
+5. `scripts/prod/create-vector-indexes.ts` als pgvector-data voor het eerst op prod landt.
+
+**Operationeel (mens-stappen):**
+6. Welcome-email via Emailit met login-link + 1-pager onboarding.
+7. 30-min onboarding-sessie inplannen + feedback-kanaal afspreken.
+8. Prod-smoke: BB logt in, workspace-switcher toont alleen BB (tenant-isolatie), assets/voice
+   gevuld, content genereren → F-VAL-score zichtbaar → STRICT triggert onder threshold.
 
 ## Fase 9 — Onboarding-flow-test
 

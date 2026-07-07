@@ -4,8 +4,8 @@ title: Eerste pilot-klant Better Brands live krijgen
 fase: pre-launch
 priority: now
 effort: 2 dagen
-owner: claude-code
-status: open
+owner: claude-code + user (prod-run + onboarding)
+status: in-progress
 created: 2026-05-07
 completed: -
 related-adr: -
@@ -19,24 +19,32 @@ Better Brands is voorbereid als pilot workspace (BrandPersonality + BrandVoicegu
 
 # Voorstel
 
-Na `vercel-deployment` task af: clone Better Brands workspace data naar productie, creëer Better Brands user/owner in Better Auth, hand-over instructies + F-VAL demo flow + basic feedback-loop.
+**Aanpak besloten 2026-07-07 (2 keuzes):** (1) **alleen merk-DNA** migreren (brand foundation, geen content/telemetrie-historie) naar een **vers prod-account** — behoudt de F-VAL-kalibratie, laag risico-oppervlak; (2) **gebruiker draait de prod-commando's** (heeft Neon-URL + R2-creds), agent levert scripts + runbook + smoke-checklist.
+
+Flow: BB-owner registreert op prod (auto-provisioning maakt org+workspace+owner + lege assets) → `export` (lokaal) → `upload-images` (R2) → `import` (prod, re-parent merk-DNA naar de verse workspace) → onboarding + smoke. Volledige runbook: [`scripts/migrate-brand-dna/README.md`](../scripts/migrate-brand-dna/README.md).
 
 # Acceptatiecriteria
 
-- [ ] Better Brands workspace data gemigreerd naar productie Neon DB (export uit lokaal, import in Neon)
-- [ ] Better Brands organization owner-account aangemaakt (email-adres bekend)
-- [ ] Welcome email (handmatig of via Emailit) verstuurd met login-link + 1-pager onboarding
+**Technisch geleverd (agent, 2026-07-07):**
+- [x] Merk-DNA-migratiescripts (`scripts/migrate-brand-dna/`: export + import + upload-images + README-runbook) — ~18 modellen incl. pgvector-centroid + user-FK-remap + fresh-workspace-guard
+- [x] Cross-DB round-trip bewezen (export lokaal → import scratch-DB → 8/8 asserts groen, incl. centroid-restore 1536-dim, geen dubbele assets)
+- [x] `create-vector-indexes.ts` dekt nu alle 4 vector-kolommen (miste `CompetitorContentItem`); foute Fase-8 pg_dump-snippet in de deployment-runbook gecorrigeerd
+- [x] Prod-smoke-checklist + welkomst-1-pager-outline opgeleverd (README + Notes hieronder)
+
+**Prod-run + onboarding (USER, met prod-creds):**
+- [ ] BB-owner registreert op prod → merk-DNA geïmporteerd (runbook stap 0-6)
+- [ ] Welcome email (via Emailit) verstuurd met login-link + 1-pager onboarding
 - [ ] 30-min onboarding sessie ingepland met Better Brands stakeholder
 - [ ] F-VAL demo getoond live: Branddock content vs vanille GPT-4o gap
 - [ ] Feedback-kanaal afgesproken (Slack channel of email loop)
-- [ ] Eerste live content-creatie sessie geobserveerd
-- [ ] 1-week feedback loop ingesteld voor iteratie
-- [ ] Smoke-test: Better Brands kan login, content creëren, F-VAL score zien, content downloaden
+- [ ] Eerste live content-creatie sessie geobserveerd + 1-week feedback loop ingesteld
+- [ ] Prod-smoke: BB kan login, content creëren, F-VAL score zien, content downloaden; workspace-switcher toont alleen BB (tenant-isolatie)
 
 # Bestanden die ik aanraak
 
-- Geen code-changes — pure data migratie + onboarding
-- Mogelijk: `scripts/migrate-workspace-to-prod.ts` (nieuw) als handmatige export/import te omslachtig is
+- `scripts/migrate-brand-dna/` (nieuw): `models.ts` (registry), `bundle.ts`, `export.ts`, `import.ts`, `upload-images.ts`, `README.md`
+- `scripts/prod/create-vector-indexes.ts` (bugfix: 4e vector-index)
+- `docs/playbooks/track-c-deployment-runbook.md` (Fase 8 gecorrigeerd)
 
 # Bestanden die ik NIET aanraak
 
@@ -74,3 +82,15 @@ Pre-conditions:
 3. F-VAL pijler 1 vereist gevulde BrandPersonality + BrandVoiceguide → BB heeft beide ✓
 
 Onboarding 1-pager idealiter in Notion of PDF — niet in repo. User maakt deze.
+
+**2026-07-07 — technisch deel geleverd.** Merk-DNA-migratie gebouwd + cross-DB round-trip-geverifieerd (zie acceptatie). BB-workspace bevestigd lokaal aanwezig (`cmnomsobx009q44msn0gpw7vb`, "Better brands", 87 merk-DNA-rijen: 11 assets, voiceguide+centroid, styleguide+11 kleuren/4 fonts/3 logos/5 componenten, FidelityConfig STRICT, 37 brand rules, 3 personas, 3 producten, 2 concurrenten, 7 lokale beeld-refs). tsc + eslint schoon. **Resteert = jouw prod-run** (runbook `scripts/migrate-brand-dna/README.md`) + de onboarding-mens-stappen.
+
+**Welkomst-1-pager outline** (voor Notion/PDF/Emailit):
+- **Welkom bij Branddock** — één regel: "je merk-DNA staat klaar; laten we er content mee maken."
+- **Inloggen**: login-link (prod-URL) + "wachtwoord instellen via de reset-link".
+- **Wat je ziet**: jouw brand assets, brand voice, brandstyle en personas zijn al gevuld (gemigreerd uit onze samenwerking). STRICT brand-fidelity staat aan.
+- **Eerste taak (5 min)**: maak één content-item via Create → kies een type → genereer → bekijk de F-VAL-score.
+- **Waarom het anders is**: elke output wordt getoetst aan jóuw merk-DNA (F-VAL 3-pijler), niet aan een generiek model.
+- **Early-access framing**: "dit is een pilot — we bouwen samen; jouw feedback stuurt de roadmap."
+- **Feedback + hulp**: het afgesproken kanaal (Slack/e-mail) + "reply op deze mail werkt ook".
+- **Volgende stap**: link/aanbod voor de 30-min onboarding-sessie.

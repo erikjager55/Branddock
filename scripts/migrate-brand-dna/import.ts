@@ -1,0 +1,278 @@
+/**
+ * Merk-DNA IMPORT — schrijft een geëxporteerde bundle naar een VERS
+ * prod-account (owner meldt zich eerst normaal aan → auto-provisioning maakt
+ * org+workspace+owner). Re-parent de merk-DNA naar die workspace.
+ *
+ * Run (tegen de DIRECTE/unpooled prod DATABASE_URL — niet de PgBouncer-pooler):
+ *   npx tsx scripts/migrate-brand-dna/import.ts brand-dna-<slug>.json --email <owner> [--slug <ws>] --confirm-host <db-host> [--dry-run] [--force]
+ *
+ * Veiligheid: (1) draait in één transactie (wipe + insert atomisch); (2) weigert een
+ * workspace die al merk-DNA/content bevat (campaigns/media/personas/producten/
+ * concurrenten/strategie/voice/style of >12 assets) tenzij --force; (3) een echte
+ * (niet-dry-run) schrijfactie eist --confirm-host gelijk aan de DB-host, zodat je
+ * niet per ongeluk de verkeerde database wipet. Zie scripts/migrate-brand-dna/README.md.
+ */
+import './load-env';
+import { Prisma } from '@prisma/client';
+import { prisma } from '../../src/lib/prisma';
+import { BRAND_DNA_MODELS, BrandDnaModel, USER_REF_FIELDS, delegateFor } from './models';
+import { BrandDnaBundle, loadBundle } from './bundle';
+
+/** Minimale tx-interface voor raw SQL — vermijdt het extended-client-type. */
+interface RawTx {
+  $executeRaw(query: Prisma.Sql): Promise<number>;
+}
+
+interface Target {
+  workspaceId: string;
+  workspaceName: string;
+  ownerUserId: string;
+}
+
+interface Flags {
+  bundlePath: string;
+  email?: string;
+  slug?: string;
+  confirmHost?: string;
+  dryRun: boolean;
+  force: boolean;
+}
+
+function parseArgs(argv: string[]): Flags {
+  const flags: Flags = { bundlePath: '', dryRun: false, force: false };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '--email') flags.email = argv[++i];
+    else if (a === '--slug') flags.slug = argv[++i];
+    else if (a === '--confirm-host') flags.confirmHost = argv[++i];
+    else if (a === '--dry-run') flags.dryRun = true;
+    else if (a === '--force') flags.force = true;
+    else if (!a.startsWith('--') && !flags.bundlePath) flags.bundlePath = a;
+  }
+  return flags;
+}
+
+/** Resolve doel-workspace + owner-user via workspace-slug of owner-email. */
+async function resolveTarget(flags: Flags): Promise<Target> {
+  if (flags.slug) {
+    const ws = await prisma.workspace.findFirst({
+      where: { slug: flags.slug },
+      select: { id: true, name: true, organizationId: true },
+    });
+    if (!ws) throw new Error(`Workspace-slug '${flags.slug}' niet gevonden op deze DB.`);
+    const owner = await prisma.organizationMember.findFirst({
+      where: { organizationId: ws.organizationId, role: 'owner' },
+      select: { userId: true },
+    });
+    if (!owner) throw new Error(`Geen owner voor org ${ws.organizationId}.`);
+    return { workspaceId: ws.id, workspaceName: ws.name, ownerUserId: owner.userId };
+  }
+  if (flags.email) {
+    const member = await prisma.organizationMember.findFirst({
+      where: { role: 'owner', user: { email: { equals: flags.email, mode: 'insensitive' } } },
+      select: {
+        userId: true,
+        organization: {
+          select: { workspaces: { orderBy: { createdAt: 'asc' }, select: { id: true, name: true } } },
+        },
+      },
+    });
+    const workspaces = member?.organization?.workspaces ?? [];
+    if (!member || workspaces.length === 0) throw new Error(`Geen owner-workspace voor e-mail '${flags.email}'.`);
+    if (workspaces.length > 1) {
+      throw new Error(`Owner '${flags.email}' heeft ${workspaces.length} workspaces — kies er één met --slug <workspace-slug>.`);
+    }
+    return { workspaceId: workspaces[0].id, workspaceName: workspaces[0].name, ownerUserId: member.userId };
+  }
+  throw new Error('Geef --email <owner> of --slug <workspace-slug>.');
+}
+
+/**
+ * Weiger een workspace die al gebruikt is (clobber-bescherming). Probeert álle
+ * modellen die de wipe raakt — niet alleen campaigns/media — zodat half-onboarde
+ * workspaces (personas/producten/strategie toegevoegd, nog geen campaign) niet
+ * stil worden overschreven.
+ */
+async function assertFresh(workspaceId: string, force: boolean): Promise<void> {
+  const [campaigns, media, assets, personas, products, competitors, strategies, voiceguide, styleguide] =
+    await Promise.all([
+      prisma.campaign.count({ where: { workspaceId } }),
+      prisma.mediaAsset.count({ where: { workspaceId } }),
+      prisma.brandAsset.count({ where: { workspaceId } }),
+      prisma.persona.count({ where: { workspaceId } }),
+      prisma.product.count({ where: { workspaceId } }),
+      prisma.competitor.count({ where: { workspaceId } }),
+      prisma.businessStrategy.count({ where: { workspaceId } }),
+      prisma.brandVoiceguide.count({ where: { workspaceId } }),
+      prisma.brandStyleguide.count({ where: { workspaceId } }),
+    ]);
+  const used =
+    campaigns > 0 || media > 0 || assets > 12 || personas > 0 || products > 0 ||
+    competitors > 0 || strategies > 0 || voiceguide > 0 || styleguide > 0;
+  console.log(
+    `[import] doel-staat: campaigns=${campaigns} media=${media} brandAssets=${assets} personas=${personas} ` +
+      `products=${products} competitors=${competitors} strategies=${strategies} voiceguide=${voiceguide} styleguide=${styleguide}`,
+  );
+  if (used && !force) {
+    throw new Error(
+      'Doel-workspace lijkt al in gebruik (merk-DNA of content aanwezig). Gebruik --force om bewust te overschrijven.',
+    );
+  }
+}
+
+/** Remap workspace/user-FK's; strip auto-managed updatedAt. */
+function transformRow(
+  raw: Record<string, unknown>,
+  workspaceId: string,
+  ownerUserId: string,
+): Record<string, unknown> {
+  const data: Record<string, unknown> = { ...raw };
+  delete data.updatedAt;
+  // Remap op aanwezigheid (niet op scope): sommige parent-scoped modellen
+  // (research-methods) hebben óók een workspaceId-kolom die geremapt moet.
+  if ('workspaceId' in data) data.workspaceId = workspaceId;
+  for (const field of USER_REF_FIELDS) {
+    if (data[field] != null) data[field] = ownerUserId;
+  }
+  return data;
+}
+
+/**
+ * Los cross-workspace-botsingen op globaal-unieke velden op door de waarde te
+ * suffixen met een workspace-token. Voorkomt dat één collision de hele
+ * atomische import laat terugrollen.
+ */
+async function resolveGlobalUniques(
+  tx: unknown,
+  model: BrandDnaModel,
+  data: Record<string, unknown>,
+  workspaceId: string,
+): Promise<void> {
+  for (const field of model.globallyUniqueFields ?? []) {
+    const value = data[field];
+    if (value == null) continue;
+    let candidate = String(value);
+    let n = 0;
+    // Blijf suffixen tot de kandidaat écht vrij is (ook de suffix zelf gecheckt).
+    while (await delegateFor(tx, model.accessor).findFirst({ where: { [field]: candidate, NOT: { workspaceId } } })) {
+      n++;
+      candidate = `${String(value)}-${workspaceId.slice(-6)}${n > 1 ? `-${n}` : ''}`;
+    }
+    if (candidate !== String(value)) {
+      data[field] = candidate;
+      console.log(`[import] ${model.label}.${field} botsing → ${candidate}`);
+    }
+  }
+}
+
+/** Herstel pgvector-kolommen via raw SQL (::vector). */
+async function restoreVectors(
+  tx: RawTx,
+  model: BrandDnaModel,
+  columns: Record<string, Record<string, string>>,
+): Promise<void> {
+  for (const [col, byId] of Object.entries(columns)) {
+    for (const [id, literal] of Object.entries(byId)) {
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE ${Prisma.raw(`"${model.table}"`)}
+        SET ${Prisma.raw(`"${col}"`)} = ${literal}::vector
+        WHERE "id" = ${id}
+      `);
+    }
+  }
+}
+
+async function runDryRun(bundle: BrandDnaBundle, target: Target): Promise<void> {
+  console.log('\n[import] DRY-RUN — geen writes.');
+  for (const model of BRAND_DNA_MODELS) {
+    const insertCount = (bundle.records[model.accessor] ?? []).length;
+    let wipeCount = 0;
+    if (model.scope.kind === 'workspace') {
+      wipeCount = await delegateFor(prisma, model.accessor).count({ where: { workspaceId: target.workspaceId } });
+    }
+    if (insertCount || wipeCount) {
+      console.log(`[import] ${model.label}: wipe ${wipeCount} → insert ${insertCount}`);
+    }
+  }
+  if (bundle.localImageRefs.length > 0) {
+    console.log(`\n[import] LET OP: ${bundle.localImageRefs.length} lokale beeld-refs nog niet naar R2 (draai upload-images).`);
+  }
+}
+
+/** Host uit DATABASE_URL (zonder credentials) — zodat de operator ziet waar hij schrijft. */
+function dbHost(): string {
+  try {
+    return new URL(process.env.DATABASE_URL ?? '').host || '(onbekend)';
+  } catch {
+    return '(onbekend)';
+  }
+}
+
+async function runImport(bundle: BrandDnaBundle, target: Target): Promise<void> {
+  await prisma.$transaction(
+    async (tx) => {
+      // Wipe: workspace-scoped modellen in omgekeerde volgorde; children cascaden mee.
+      for (const model of [...BRAND_DNA_MODELS].reverse()) {
+        if (model.scope.kind !== 'workspace') continue;
+        const { count } = await delegateFor(tx, model.accessor).deleteMany({
+          where: { workspaceId: target.workspaceId },
+        });
+        if (count) console.log(`[import] wiped ${model.label}: ${count}`);
+      }
+      // Insert: in volgorde; FK's naar mee-gemigreerde rijen blijven geldig (IDs behouden).
+      for (const model of BRAND_DNA_MODELS) {
+        const rows = bundle.records[model.accessor] ?? [];
+        for (const raw of rows) {
+          const data = transformRow(raw, target.workspaceId, target.ownerUserId);
+          if (model.globallyUniqueFields) await resolveGlobalUniques(tx, model, data, target.workspaceId);
+          await delegateFor(tx, model.accessor).create({ data });
+        }
+        if (rows.length) console.log(`[import] inserted ${model.label}: ${rows.length}`);
+        const vcols = bundle.vectors[model.accessor];
+        if (vcols) await restoreVectors(tx, model, vcols);
+      }
+    },
+    { timeout: 120_000, maxWait: 20_000 },
+  );
+}
+
+async function main(): Promise<void> {
+  const flags = parseArgs(process.argv.slice(2));
+  if (!flags.bundlePath) {
+    console.error('Usage: import.ts <bundle.json> --email <owner> [--slug <ws>] --confirm-host <db-host> [--dry-run] [--force]');
+    process.exit(1);
+  }
+  const bundle = loadBundle(flags.bundlePath);
+  const target = await resolveTarget(flags);
+  const host = dbHost();
+  console.log(`[import] DB-host=${host}`);
+  console.log(`[import] bron=${bundle.meta.sourceWorkspaceName} → doel=${target.workspaceName} (${target.workspaceId}), owner=${target.ownerUserId}`);
+
+  await assertFresh(target.workspaceId, flags.force);
+
+  if (flags.dryRun) {
+    await runDryRun(bundle, target);
+    return;
+  }
+
+  // Verplichte host-bevestiging vóór een destructieve schrijfactie: voorkomt
+  // dat je per ongeluk de verkeerde (bv. lokale) database wipet.
+  if (flags.confirmHost !== host) {
+    console.error(`[import] Veiligheidscheck: draai opnieuw met --confirm-host ${host} om de wipe+import tegen deze DB te bevestigen.`);
+    process.exit(1);
+  }
+
+  if (bundle.localImageRefs.length > 0) {
+    console.warn(`[import] LET OP: ${bundle.localImageRefs.length} beeld-refs wijzen nog naar lokale /uploads/ — die resolven NIET op prod. Draai upload-images eerst als je de beelden wilt.`);
+  }
+
+  await runImport(bundle, target);
+  console.log('\n[import] KLAAR — merk-DNA gemigreerd.');
+}
+
+main()
+  .catch((err) => {
+    console.error('[import] Crashed:', err);
+    process.exit(1);
+  })
+  .finally(() => prisma.$disconnect());

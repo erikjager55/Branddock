@@ -1,5 +1,5 @@
 /**
- * Idempotente aanmaak van de pgvector-extension + HNSW-indexen op de 3
+ * Idempotente aanmaak van de pgvector-extension + HNSW-indexen op de 4
  * vector-kolommen.
  *
  * Draai dit ÉÉN keer tegen de productie-DB (Neon) NÁ `prisma db push`. db push
@@ -22,6 +22,11 @@ const INDEXES: Array<{ table: string; column: string; name: string }> = [
     table: 'BrandVoiceguide',
     column: 'centroidEmbedding',
     name: 'BrandVoiceguide_centroidEmbedding_hnsw_idx',
+  },
+  {
+    table: 'CompetitorContentItem',
+    column: 'embedding',
+    name: 'CompetitorContentItem_embedding_hnsw_idx',
   },
 ];
 

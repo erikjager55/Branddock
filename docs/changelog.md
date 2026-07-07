@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 368. Merk-DNA-migratie-tooling voor pilot-onboarding (Better Brands)
+
+Scripts om **alleen het merk-fundament** van één workspace (brand assets, voice+centroid, brandstyle, personas, producten, concurrenten, trends, `FidelityConfig` STRICT, brand rules — ~18 modellen) van lokaal naar productie te migreren en te re-parenten in een vers-aangemeld prod-account (content/telemetrie-historie blijft lokaal). `scripts/migrate-brand-dna/`: `export` (lokaal → inspecteerbare JSON-bundle incl. pgvector via raw SQL), `upload-images` (lokale `/uploads/` → R2 + URL-rewrite, `R2_PUBLIC_URL` verplicht), `import` (één atomische transactie: fresh-workspace-guard over álle wipe-modellen, wipe+insert met `workspaceId`- en user-FK-remap, `Product.slug`-collision-resolver, `--confirm-host`-gate tegen wrong-DB-wipes, pgvector-restore). Bonus-fixes: `create-vector-indexes.ts` dekt nu alle 4 vector-kolommen (miste `CompetitorContentItem`); de foute Fase-8 pg_dump-snippet in de deployment-runbook gecorrigeerd. Geverifieerd via cross-DB round-trip (schema-kloon → export → import → 12/12 asserts groen, incl. confirm-host-gate, collision-resolver, centroid-restore 1536-dim, en +11 eerder stil-gedropte research-methods). Twee 2-subagent reviewrondes: ronde 1 → 1 CRITICAL + 5 WARNING; ronde 2 → 1 CRITICAL (`assertFresh` te smal) + 4 WARNING; alles gefixt. Prod-run + onboarding-mens-stappen resteren (task blijft `in-progress`).
+
+- Task: [tasks/pilot-onboarding-better-brands.md](../tasks/pilot-onboarding-better-brands.md)
+- ADR: -
+- Spec: [scripts/migrate-brand-dna/README.md](../scripts/migrate-brand-dna/README.md)
+- Commit: <hash>
+
 ### 367. Content-items test-coverage Ronde 1 gefinaliseerd — pre-launch content-flow bugvrij (Ronde 2 gated)
 
 Afronding van `content-items-test-coverage`: Ronde 1 was al compleet en gemerged op `main` (playbook `testplan-content-items.md` via `23e0c0e5`/#67, ebook-fix-bundel `fe95fef9`). 24/24 zichtbare content-types handmatig door de 6-staps flow (Setup → Knowledge → Strategy → Concept → Content → Canvas) getest op Napking: **23 passed, 1 bug (ebook) — inmiddels gefixt**, 0 nieuwe bugs. Representanten 4/8 via picker + 4/8 hidden-skip (categorieën bewust uit de Add-Content-picker); varianten 16/16 passed met vooraf hard-geverifieerde reachability. Picker-realiteit vastgelegd: 31 van 55 code-type-definities zijn hidden, 24 zichtbaar — de oude 53-type-matrix is achterhaald. Geen open P1/P2; 3 structuur-leen-observaties (product-page/social-ad/linkedin-article lenen component-structuur) doorgeschoven als post-launch content-kwaliteit-nit. **Ronde 2 (generator-evaluatie) expliciet deferred** — gated op asset-generator-integratie. Lichte finalize (status/doc, geen code-diff → geen 2-subagent review). Task → `tasks/done/`.
