@@ -57,6 +57,7 @@ export function AssetResearchSidebarCard({ asset, onStartAnalysis, isLocked = fa
           return (
             <div
               key={config.method}
+              data-testid={`research-method-${config.method.toLowerCase().replaceAll('_', '-')}`}
               className={`p-3 rounded-xl border border-dashed transition-colors ${
                 isCompleted
                   ? 'bg-emerald-50 border-emerald-200'
