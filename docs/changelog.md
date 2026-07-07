@@ -37,7 +37,7 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
-### 366. Content-items test-coverage Ronde 1 gefinaliseerd — pre-launch content-flow bugvrij (Ronde 2 gated)
+### 367. Content-items test-coverage Ronde 1 gefinaliseerd — pre-launch content-flow bugvrij (Ronde 2 gated)
 
 Afronding van `content-items-test-coverage`: Ronde 1 was al compleet en gemerged op `main` (playbook `testplan-content-items.md` via `23e0c0e5`/#67, ebook-fix-bundel `fe95fef9`). 24/24 zichtbare content-types handmatig door de 6-staps flow (Setup → Knowledge → Strategy → Concept → Content → Canvas) getest op Napking: **23 passed, 1 bug (ebook) — inmiddels gefixt**, 0 nieuwe bugs. Representanten 4/8 via picker + 4/8 hidden-skip (categorieën bewust uit de Add-Content-picker); varianten 16/16 passed met vooraf hard-geverifieerde reachability. Picker-realiteit vastgelegd: 31 van 55 code-type-definities zijn hidden, 24 zichtbaar — de oude 53-type-matrix is achterhaald. Geen open P1/P2; 3 structuur-leen-observaties (product-page/social-ad/linkedin-article lenen component-structuur) doorgeschoven als post-launch content-kwaliteit-nit. **Ronde 2 (generator-evaluatie) expliciet deferred** — gated op asset-generator-integratie. Lichte finalize (status/doc, geen code-diff → geen 2-subagent review). Task → `tasks/done/`.
 
@@ -45,6 +45,14 @@ Afronding van `content-items-test-coverage`: Ronde 1 was al compleet en gemerged
 - ADR: -
 - Spec: [docs/playbooks/testplan-content-items.md](playbooks/testplan-content-items.md)
 - Commits: `23e0c0e5` (Ronde 1 compleet, #67), `fe95fef9` (ebook-fix-bundel)
+
+### 366. Stripe billing — LIVE op productie (go-live)
+
+`stripe-billing-live` is volledig live gegaan op productie (`branddock-7y9n.vercel.app`). Bovenop de hardening (#79 — dode change-plan-exploit weg, one-time-purchase-completion, invoice/yearly-bug, env fail-fast) landden twee checkout-redirect-404-fixes (#85 checkout-success/cancel, #86 portal-return — de hybride SPA heeft geen URL-adresseerbare pagina's, dus redirect naar `/?checkout=…` + `App.tsx` opent de billing-tab) en een billing-styling-pass (#88 — PAID-badge groen [case-bug `PAID`≠`paid`], "Pro Pro"-redundantie weg, payment-copy naar "beheer via Stripe"). Go-live op het betterbrands.nl Stripe-account: 3 live-producten (PRO €29 / AGENCY €99 / ENTERPRISE €249), live-webhook (`we_…`, 9 events, enabled) op de Vercel-URL, Customer Portal (cancel at_period_end), en de live-vars + `NEXT_PUBLIC_BILLING_ENABLED=true` via een geïmporteerd `.env` in Vercel. End-to-end geverifieerd in test-mode (checkout→PRO, cancel→FREE) + live bevestigd. **Beide harde launch-blockers (Vercel + Stripe) zijn nu weg**; kritieke pad naar de eerste pilot = `pilot-onboarding-better-brands`.
+
+- Task: [tasks/stripe-billing-live.md](../tasks/stripe-billing-live.md) — done (LIVE)
+- PR's: #79 (hardening) · #85/#86 (redirect-fixes) · #88 (styling) · go-live via Stripe-API + Vercel-env
+- Playbook: [docs/playbooks/stripe-go-live.md](playbooks/stripe-go-live.md)
 
 ### 365. Agents content sources — bronnen kiezen per agent-run (Brand-Assistant-pariteit)
 
