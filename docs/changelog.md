@@ -44,7 +44,7 @@ Scripts om **alleen het merk-fundament** van één workspace (brand assets, voic
 - Task: [tasks/pilot-onboarding-better-brands.md](../tasks/pilot-onboarding-better-brands.md)
 - ADR: -
 - Spec: [scripts/migrate-brand-dna/README.md](../scripts/migrate-brand-dna/README.md)
-- Commit: <hash>
+- Commit: 368f2416
 
 ### 367. Content-items test-coverage Ronde 1 gefinaliseerd — pre-launch content-flow bugvrij (Ronde 2 gated)
 
