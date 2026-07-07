@@ -36,7 +36,7 @@ async function main(): Promise<void> {
 
   for (const o of missing) {
     await prisma.creditBalance.create({ data: { organizationId: o.id, balance: 0 } });
-    console.log(`  ✓ CreditBalance geseed voor ${o.name}`);
+    console.log(`  [ok] CreditBalance geseed voor ${o.name}`);
   }
   console.log(`Klaar: ${missing.length} CreditBalance-records aangemaakt.`);
 }

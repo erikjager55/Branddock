@@ -15,8 +15,8 @@ import { ZERO_COST_ACTIONS, tokensToCredits } from '@/lib/billing/credits/credit
 let pass = 0;
 let fail = 0;
 function check(label: string, cond: boolean): void {
-  if (cond) { pass++; console.log(`  ✓ ${label}`); }
-  else { fail++; console.error(`  ✗ ${label}`); }
+  if (cond) { pass++; console.log(`  [ok] ${label}`); }
+  else { fail++; console.error(`  [x] ${label}`); }
 }
 
 async function makeOrg(slug: string): Promise<string> {

@@ -122,3 +122,19 @@ Aanpak: centrale `withCreditMetering`/`chargeAfter`-wrapper (`meter-generation.t
 4. **RESERVATION_REAP cron-scheduling** (Vercel Cron) + **deploy-smoke** (echte AI-calls nodig): de hele fase is lokaal niet end-to-end testbaar.
 
 Status `in-progress`: de duurste paden (long-form, agents) + primaire beeld/video zijn afgedekt; het resterende is mechanisch (het patroon + de referentie-routes staan) maar vereist deploy-smoke. Kandidaat om af te splitsen als `pricing-credits-fase2-rest` als je 'm los wilt finaliseren.
+
+## T-review 2026-07-07 (2 code-reviewers, 2 rondes) — Fase-3-gates vóór billing-ON
+
+De hele credit-branch is adversarieel gereviewd. **Ronde 1** vond 2 CRITICAL (gefixt: agent-charge boekte gratis-agents af → `def.billable`-gate; reconcile/release TOCTOU → atomaire `WHERE status='RESERVED' RETURNING`-claim) + WARNINGs (gefixt: subscription-sync STARTER/GROWTH-mapping, reconcile-failure-swallow, chargeAfter-logging, SEO-charge-vóór-COMPLETED). **Ronde 2**: beide reviewers 0 CRITICAL; 1 WARNING gefixt (agent-charge alleen op `COMPLETED`, niet op FAILED/AWAITING_CONFIRMATION-proposal). Smoke 8/8, tsc/lint groen.
+
+**Harde gates die dicht MOETEN vóór `NEXT_PUBLIC_BILLING_ENABLED=true`** (nu veilig omdat billing OFF is; de reviewers bevestigen "safe to merge als scaffolding zolang billing uit blijft"):
+1. **Pre-flight-guard bedraden** — `enforceCreditBalance` wordt nergens aangeroepen; alle sites gebruiken post-hoc `chargeAfter({force:true})`. Zonder guard kan het saldo onbegrensd negatief. Bedraad op de generatie-routes.
+2. **Credit-grants bedraden** — `grantCredits` heeft geen live caller: geen trial-grant (300cr) en geen maand-plan-grant. Bij billing-ON heeft élke org 0 credits. (Fase 4 trial + Fase 3 plan/topup.)
+3. **Billable-agent-content chargen bij confirm** — content-creator eindigt op AWAITING_CONFIRMATION; de echte levering + charge horen ná goedkeuring in de confirm-route, niet op de proposal (nu gated op COMPLETED, dus dormant).
+4. **grant/deduct idempotent op P2002** — bij dubbele Stripe-webhook gooit `grantCredits` nu een unique-error i.p.v. idempotent te returnen (saldo is wél veilig via rollback).
+5. **RESERVATION_REAP-cron** inplannen zodra het reserve-pad bedraad is (anders lekt `reserved` bij crash).
+6. **Ongewirede reserve-edges**: `reserveCredits`-idempotency-stale + `resolveActual` bij `estimate=0` — fixen bij het bedraden van `withCreditMetering`.
+7. **Neon `db push`** (alle credit-modellen + enum-waarden) vóór billing-ON.
+8. **Resterende billable generatie-routes** bedraden (zie hierboven, met de generate-vs-compose/cache-hit-nuances).
+
+Deferred MINORs (dormant): AGENCY-limietverlaging (15ws/10seats) verifiëren bij cutover; token-accurate SEO-charge i.p.v. vaste 80; `PrismaTx`-cast.

@@ -211,9 +211,10 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
 
     // Credit-afboeking (Fase 2): alleen content-producerende agents (def.billable)
     // boeken output-credits af; analyse/F-VAL/research/exploratie = gratis (ADR §2/§3).
-    // Post-hoc (de run draaide al) — nooit blokkeren; idempotent per run zodat een
-    // retry/AWAITING_CONFIRMATION-resume niet dubbel boekt.
-    if (def.billable) {
+    // Alleen op COMPLETED: een FAILED-run levert niets; een AWAITING_CONFIRMATION-run
+    // is een *proposal* (de echte levering + charge horen bij de confirm-route — Fase 3),
+    // dus geen charge op proposal-tokens. Post-hoc, idempotent per run.
+    if (def.billable && response.status === "COMPLETED") {
       await chargeAfter(
         {
           workspaceId,

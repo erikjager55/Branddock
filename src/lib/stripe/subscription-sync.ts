@@ -248,7 +248,7 @@ async function findOrCreatePlan(tier: PlanTier) {
       maxStorageGb: config.limits.STORAGE_MB / 1024,
       features: config.features,
       isRecommended: tier === "PRO",
-      sortOrder: ["FREE", "PRO", "AGENCY", "ENTERPRISE"].indexOf(tier),
+      sortOrder: ["FREE", "STARTER", "PRO", "GROWTH", "AGENCY", "ENTERPRISE"].indexOf(tier),
     },
   });
 }
