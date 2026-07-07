@@ -100,14 +100,11 @@ export async function runSeoGenerationJob(jobId: string): Promise<void> {
     throw err;
   }
 
-  await prisma.seoGenerationJob.update({
-    where: { id: jobId },
-    data: { status: 'COMPLETED', stepLabel: 'Complete', currentStep: 8, completedAt: new Date() },
-  });
-
-  // Credit-afboeking (Fase 2, ADR 2026-07-07): vaste long-form-kost op completion,
-  // idempotent per job (de generator surfaced geen output-tokens hier; token-
-  // accurate afboeking is een latere refinement). Post-hoc — nooit blokkeren.
+  // Credit-afboeking (Fase 2, ADR 2026-07-07): vaste long-form-kost, idempotent per
+  // job (de generator surfaced geen output-tokens hier; token-accurate afboeking is
+  // een latere refinement). VÓÓR de COMPLETED-status zodat een crash tussendoor de
+  // charge niet permanent overslaat (de COMPLETED-guard bovenaan zou 'm dan skippen);
+  // de idempotencyKey dekt de re-dispatch. Post-hoc — nooit blokkeren.
   await chargeAfter(
     {
       workspaceId: job.workspaceId,
@@ -116,5 +113,10 @@ export async function runSeoGenerationJob(jobId: string): Promise<void> {
       idempotencyKey: `seo-charge:${jobId}`,
     },
     { actualCredits: CREDIT_COSTS['long-form'] },
-  ).catch(() => {});
+  );
+
+  await prisma.seoGenerationJob.update({
+    where: { id: jobId },
+    data: { status: 'COMPLETED', stepLabel: 'Complete', currentStep: 8, completedAt: new Date() },
+  });
 }

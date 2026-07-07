@@ -209,13 +209,26 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
       error: result.persisted.error,
     };
 
-    // Credit-afboeking (Fase 2): output-token-gebaseerd op de pooled org-balans.
-    // Post-hoc (de run draaide al) — nooit blokkeren; de pre-flight-guard zit op
-    // de run-route. Gratis als billing uit staat of de org niet resolvet.
-    await chargeAfter(
-      { workspaceId, action: "agent-deliverable", feature: `agent:${def.id}` },
-      { outputTokens: result.totalOutputTokens, model: result.costBreakdown.model },
-    ).catch(() => {});
+    // Credit-afboeking (Fase 2): alleen content-producerende agents (def.billable)
+    // boeken output-credits af; analyse/F-VAL/research/exploratie = gratis (ADR §2/§3).
+    // Post-hoc (de run draaide al) — nooit blokkeren; idempotent per run zodat een
+    // retry/AWAITING_CONFIRMATION-resume niet dubbel boekt.
+    if (def.billable) {
+      await chargeAfter(
+        {
+          workspaceId,
+          action: "agent-deliverable",
+          feature: `agent:${def.id}`,
+          idempotencyKey: `agent-charge:${runId}`,
+        },
+        { outputTokens: result.totalOutputTokens, model: result.costBreakdown.model },
+      ).catch((e) => {
+        console.warn("[run-agent] credit-charge failed (swallowed)", {
+          runId,
+          error: e instanceof Error ? e.message : String(e),
+        });
+      });
+    }
 
     void emitAgentRunCompleted({
       runId,

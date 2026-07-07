@@ -76,14 +76,23 @@ export async function withCreditMetering<T>(
     feature: ctx.feature,
     idempotencyKey: ctx.idempotencyKey,
   });
+  let result: T;
   try {
-    const result = await fn();
-    await reconcileReservation(reservation.reservationId, toReconcile(ctx.action, extract(result)));
-    return result;
+    result = await fn();
   } catch (err) {
     await releaseReservation(reservation.reservationId).catch(() => {});
     throw err;
   }
+  // Reconcile mag een geslaagde generatie nooit laten falen — de output bestaat al.
+  try {
+    await reconcileReservation(reservation.reservationId, toReconcile(ctx.action, extract(result)));
+  } catch (e) {
+    console.warn('[withCreditMetering] reconcile failed (swallowed)', {
+      reservationId: reservation.reservationId,
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+  return result;
 }
 
 /**
@@ -100,15 +109,25 @@ export async function chargeAfter(ctx: MeterContext, outcome: MeterOutcome): Pro
     r.actualCredits ?? (r.outputTokens != null ? tokensToCredits(r.outputTokens, r.model) : 0);
   if (credits <= 0) return;
 
-  await deductCredits({
-    organizationId,
-    workspaceId: ctx.workspaceId,
-    credits,
-    action: ctx.action,
-    feature: ctx.feature,
-    outputTokens: r.outputTokens,
-    reason: `usage ${ctx.feature ?? ctx.action}`,
-    force: true,
-    idempotencyKey: ctx.idempotencyKey,
-  });
+  // Money-code: een verloren afboeking = gemiste omzet → altijd loggen (geen stille catch).
+  try {
+    await deductCredits({
+      organizationId,
+      workspaceId: ctx.workspaceId,
+      credits,
+      action: ctx.action,
+      feature: ctx.feature,
+      outputTokens: r.outputTokens,
+      reason: `usage ${ctx.feature ?? ctx.action}`,
+      force: true,
+      idempotencyKey: ctx.idempotencyKey,
+    });
+  } catch (e) {
+    console.warn('[chargeAfter] credit deduct failed (swallowed)', {
+      organizationId,
+      action: ctx.action,
+      credits,
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
 }

@@ -11,6 +11,7 @@ const persona: AgentPersona = { name: "Milo", role: "Content Creator", icon: "Pe
 
 export const contentCreatorAgent: AgentDefinition = {
   id: "content-creator",
+  billable: true, // enige content-producerende agent → boekt output-credits af (ADR 2026-07-07)
   agentVersion: "content-creator@0.1.0",
   persona,
   buildSystemPrompt({ workspaceId, contextSelection }) {

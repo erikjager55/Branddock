@@ -65,32 +65,46 @@ export async function reconcileReservation(
   params: ReconcileParams = {},
 ): Promise<ReconcileResult> {
   return prisma.$transaction(async (tx) => {
-    const res = await tx.creditReservation.findUnique({ where: { id: reservationId } });
-    if (!res || res.status !== 'RESERVED') {
+    // Atomaire claim: de RESERVED→SETTLED-transitie is het serialisatie-punt.
+    // Alleen de call die de rij claimt (RETURNING niet-leeg) raakt het saldo —
+    // dat sluit een race met een tweede reconcile óf de reaper/release uit.
+    const claimed = await tx.$queryRaw<
+      { estimatedCredits: number; organizationId: string; workspaceId: string | null; action: string | null; feature: string | null }[]
+    >`
+      UPDATE credit_reservation
+      SET status = 'SETTLED', "updatedAt" = now()
+      WHERE id = ${reservationId} AND status = 'RESERVED'
+      RETURNING "estimatedCredits", "organizationId", "workspaceId", action, feature`;
+    if (claimed.length === 0) {
+      // Al gereconcilieerd/vrijgegeven door een andere call — idempotent.
+      const res = await tx.creditReservation.findUnique({
+        where: { id: reservationId },
+        select: { organizationId: true },
+      });
       const bal = res ? await tx.creditBalance.findUnique({ where: { organizationId: res.organizationId } }) : null;
       return { creditsSpent: 0, balanceAfter: bal?.balance ?? 0 };
     }
-    const actual = resolveActual(params, res.estimatedCredits);
+    const r = claimed[0];
+    const actual = resolveActual(params, r.estimatedCredits);
     const rows = await tx.$queryRaw<{ balance: number }[]>`
       UPDATE credit_balance
-      SET reserved = GREATEST(0, reserved - ${res.estimatedCredits}),
+      SET reserved = GREATEST(0, reserved - ${r.estimatedCredits}),
           balance = balance - ${actual},
           "lifetimeSpent" = "lifetimeSpent" + ${actual},
           "updatedAt" = now()
-      WHERE "organizationId" = ${res.organizationId}
+      WHERE "organizationId" = ${r.organizationId}
       RETURNING balance`;
     const balanceAfter = rows.length ? Number(rows[0].balance) : 0;
-    await tx.creditReservation.update({ where: { id: reservationId }, data: { status: 'SETTLED' } });
     if (actual > 0) {
       await tx.creditTransaction.create({
         data: {
-          organizationId: res.organizationId,
-          workspaceId: res.workspaceId,
+          organizationId: r.organizationId,
+          workspaceId: r.workspaceId,
           amount: -actual,
           type: 'RECONCILE',
-          reason: `reconcile ${res.action ?? 'run'}`,
-          action: res.action,
-          feature: res.feature,
+          reason: `reconcile ${r.action ?? 'run'}`,
+          action: r.action,
+          feature: r.feature,
           outputTokens: params.outputTokens,
           balanceAfter,
         },
@@ -103,15 +117,21 @@ export async function reconcileReservation(
 /** Geef een reservering vrij (run gefaald/geannuleerd). Idempotent — geen dubbele vrijgave. */
 export async function releaseReservation(reservationId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    const res = await tx.creditReservation.findUnique({ where: { id: reservationId } });
-    if (!res || res.status !== 'RESERVED') return;
-    if (res.estimatedCredits > 0) {
+    // Atomaire claim (zelfde patroon als reconcile): alleen de winnende call
+    // geeft de earmark vrij — voorkomt dubbel-release bij reaper↔release-race.
+    const claimed = await tx.$queryRaw<{ estimatedCredits: number; organizationId: string }[]>`
+      UPDATE credit_reservation
+      SET status = 'RELEASED', "updatedAt" = now()
+      WHERE id = ${reservationId} AND status = 'RESERVED'
+      RETURNING "estimatedCredits", "organizationId"`;
+    if (claimed.length === 0) return; // al verwerkt — idempotent
+    const r = claimed[0];
+    if (r.estimatedCredits > 0) {
       await tx.$executeRaw`
         UPDATE credit_balance
-        SET reserved = GREATEST(0, reserved - ${res.estimatedCredits}), "updatedAt" = now()
-        WHERE "organizationId" = ${res.organizationId}`;
+        SET reserved = GREATEST(0, reserved - ${r.estimatedCredits}), "updatedAt" = now()
+        WHERE "organizationId" = ${r.organizationId}`;
     }
-    await tx.creditReservation.update({ where: { id: reservationId }, data: { status: 'RELEASED' } });
   });
 }
 
