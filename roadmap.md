@@ -106,7 +106,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 
 | ID | Titel | Effort | Sprint | Status |
 |---|---|---|---|---|
-| `content-items-test-coverage` | Handmatige testplan 53 types (representanten + Ronde 1 + Ronde 2). Playbook: `docs/playbooks/testplan-content-items.md`. Levert baseline-data voor golden-sets. Ronde 1 ✅ COMPLEET 2026-07-01 (24 zichtbare types: 23 passed, 1 bug ebook, 0 nieuwe bugs). Representanten 4/8 + varianten 16/16; 31/55 code-types hidden (4 categorieën bewust uit picker). Ronde 2 gated op asset-generator-integratie. | 1d representanten + 2-3d full | #4-6 | in-progress (Ronde 1 done, Ronde 2 gated) |
+| `content-items-test-coverage` | Handmatige testplan 53 types (representanten + Ronde 1 + Ronde 2). Playbook: `docs/playbooks/testplan-content-items.md`. Levert baseline-data voor golden-sets. Ronde 1 ✅ COMPLEET 2026-07-01 (24 zichtbare types: 23 passed, 1 bug ebook, 0 nieuwe bugs). Representanten 4/8 + varianten 16/16; 31/55 code-types hidden (4 categorieën bewust uit picker). Ronde 2 gated op asset-generator-integratie. | 1d representanten + 2-3d full | #4-6 | ✅ **done 2026-07-07** (Ronde 1 compleet + gefinaliseerd, changelog #366; Ronde 2 gated op asset-generator) |
 | `pre-launch-browser-smoke-batch` | Δ-1 Surface C + claw-page-awareness + locale-picker browser-smoke. VB Compose/Trained deferred post-vercel. | ~1-2u | #4 (3/5 done) | partial |
 | `code-debt-pre-launch-cleanup` | Persist-TODOs + cleanup + suggest-visual-briefing error-UX. Verspreid. | ~6d | #4-7 fill-in | 2/12 done |
 | `compose-pipeline-gemini-migration` | FAL Flux → Gemini Image (nano-banana) compose-route migratie. | ~1d | #5.B fill-in | ✅ done 2026-05-12 |

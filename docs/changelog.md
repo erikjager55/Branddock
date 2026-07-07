@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 366. Content-items test-coverage Ronde 1 gefinaliseerd — pre-launch content-flow bugvrij (Ronde 2 gated)
+
+Afronding van `content-items-test-coverage`: Ronde 1 was al compleet en gemerged op `main` (playbook `testplan-content-items.md` via `23e0c0e5`/#67, ebook-fix-bundel `fe95fef9`). 24/24 zichtbare content-types handmatig door de 6-staps flow (Setup → Knowledge → Strategy → Concept → Content → Canvas) getest op Napking: **23 passed, 1 bug (ebook) — inmiddels gefixt**, 0 nieuwe bugs. Representanten 4/8 via picker + 4/8 hidden-skip (categorieën bewust uit de Add-Content-picker); varianten 16/16 passed met vooraf hard-geverifieerde reachability. Picker-realiteit vastgelegd: 31 van 55 code-type-definities zijn hidden, 24 zichtbaar — de oude 53-type-matrix is achterhaald. Geen open P1/P2; 3 structuur-leen-observaties (product-page/social-ad/linkedin-article lenen component-structuur) doorgeschoven als post-launch content-kwaliteit-nit. **Ronde 2 (generator-evaluatie) expliciet deferred** — gated op asset-generator-integratie. Lichte finalize (status/doc, geen code-diff → geen 2-subagent review). Task → `tasks/done/`.
+
+- Task: [tasks/done/content-items-test-coverage.md](../tasks/done/content-items-test-coverage.md)
+- ADR: -
+- Spec: [docs/playbooks/testplan-content-items.md](playbooks/testplan-content-items.md)
+- Commits: `23e0c0e5` (Ronde 1 compleet, #67), `fe95fef9` (ebook-fix-bundel)
+
 ### 365. Agents content sources — bronnen kiezen per agent-run (Brand-Assistant-pariteit)
 
 Elke agent-use-case heeft nu een inklapbare "Content sources"-kiezer (zelfde modulelijst en labels als de Brand Assistant). Zonder selectie draait de run ongewijzigd op de volledige merkcontext; met selectie bevat de system-prompt alleen de gekozen bronnen (zelfde module-fetches als de Claw-overlay, incl. expliciete notitie wanneer het merkfundament is uitgesloten). Server-side gevalideerd en gefilterd; deselect-all wordt in de UI geblokkeerd. Deterministisch bewezen (prompt 20,9k → 7,7k bij personas-only).
