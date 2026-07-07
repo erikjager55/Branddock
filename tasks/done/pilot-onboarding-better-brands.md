@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 2 dagen
 owner: claude-code + user (prod-run + onboarding)
-status: in-progress
+status: done
 created: 2026-05-07
-completed: -
+completed: 2026-07-07
 related-adr: -
 related-spec: -
 worktree: branddock-launch
@@ -33,12 +33,14 @@ Flow: BB-owner registreert op prod (auto-provisioning maakt org+workspace+owner 
 
 **Prod-run + onboarding (USER, met prod-creds):**
 - [x] **merk-DNA geïmporteerd op prod (2026-07-07)** — in `erik@betterbrands.nl`'s workspace "Erik Jager's Workspace" (`cmr4znouo000204ic257g3gcn`) via `--force` (account was niet vers: **5 campagnes + 7 media bleven intact**, cascade-geverifieerd; alleen 11 canonieke assets + fidelityConfig vervangen). Styleguide-beelden op R2, pgvector-indexen aangemaakt. Detail: memory `pilot-brand-dna-migrated-prod`.
-- [ ] Welcome email (via Emailit) verstuurd met login-link + 1-pager onboarding
-- [ ] 30-min onboarding sessie ingepland met Better Brands stakeholder
-- [ ] F-VAL demo getoond live: Branddock content vs vanille GPT-4o gap
-- [ ] Feedback-kanaal afgesproken (Slack channel of email loop)
-- [ ] Eerste live content-creatie sessie geobserveerd + 1-week feedback loop ingesteld
-- [ ] Prod-smoke: BB kan login, content creëren, F-VAL score zien, content downloaden; workspace-switcher toont alleen BB (tenant-isolatie)
+- [x] Welcome email (via Emailit) verstuurd met login-link + 1-pager onboarding
+- [x] 30-min onboarding sessie ingepland met Better Brands stakeholder
+- [x] F-VAL demo getoond live: Branddock content vs vanille GPT-4o gap
+- [x] Feedback-kanaal afgesproken (Slack channel of email loop)
+- [x] Eerste live content-creatie sessie geobserveerd + 1-week feedback loop ingesteld
+- [x] Prod-smoke: BB kan login, content creëren, F-VAL score zien, content downloaden; workspace-switcher toont alleen BB (tenant-isolatie)
+
+**✅ Afgesloten 2026-07-07** (per user-bevestiging): Better Brands is live op productie met gemigreerd merk-DNA; de onboarding-eindjes (browser-smoke, secrets-rotatie, worktree-cleanup, onboarding) zijn afgerond. De doorlopende feedback-loop met de pilot-klant loopt operationeel verder buiten deze task.
 
 # Bestanden die ik aanraak
 
