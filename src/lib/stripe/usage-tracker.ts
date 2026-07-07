@@ -7,6 +7,9 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
+import { isBillingEnabled } from './feature-flags';
+import { ZERO_COST_ACTIONS, tokensToCredits } from '@/lib/billing/credits/credit-costs';
+import { deductCredits } from '@/lib/billing/credits/ledger';
 
 // ─── Track a single AI usage event ──────────────────────────
 
@@ -17,10 +20,27 @@ export interface TrackAiUsageParams {
   model: string;
   feature: string; // e.g. 'brand-analysis', 'content-studio', 'alignment-scan'
   cost?: number;
+  // Credit-model (ADR 2026-07-07): output-only afboeking op de pooled org-balans.
+  outputTokens?: number; // alleen output telt voor credits (input/merkcontext gratis)
+  action?: string; // credit-actie-label (bv 'long-form'); valt terug op feature
+  organizationId?: string; // optioneel; anders afgeleid uit workspaceId
+}
+
+/** Workspace → Organization (voor de pooled credit-boeking). */
+export async function resolveOrgForWorkspace(workspaceId: string): Promise<string | null> {
+  const ws = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { organizationId: true },
+  });
+  return ws?.organizationId ?? null;
 }
 
 /**
  * Records an AI usage event. Called after every AI completion call.
+ * Schrijft altijd een AiUsageRecord (COGS-analytics) en boekt — als billing aan
+ * staat en de actie niet gratis is — de output-credits af op de org-balans.
+ * Post-hoc: nooit blokkeren (de output is al gemaakt); de pre-flight-guard
+ * (reserveCredits/enforceCreditBalance) voorkomt overspend.
  */
 export async function trackAiUsage(params: TrackAiUsageParams): Promise<void> {
   await prisma.aiUsageRecord.create({
@@ -32,6 +52,29 @@ export async function trackAiUsage(params: TrackAiUsageParams): Promise<void> {
       feature: params.feature,
       cost: params.cost ?? null,
     },
+  });
+
+  if (!isBillingEnabled()) return;
+
+  // Gratis acties (merkcontext, F-VAL, chat, setup, exploratie) boeken 0 credits.
+  const label = params.action ?? params.feature;
+  if (ZERO_COST_ACTIONS.has(label) || ZERO_COST_ACTIONS.has(params.feature)) return;
+
+  const credits = tokensToCredits(params.outputTokens ?? 0, params.model);
+  if (credits <= 0) return;
+
+  const organizationId = params.organizationId ?? (await resolveOrgForWorkspace(params.workspaceId));
+  if (!organizationId) return;
+
+  await deductCredits({
+    organizationId,
+    workspaceId: params.workspaceId,
+    credits,
+    action: params.action,
+    feature: params.feature,
+    outputTokens: params.outputTokens,
+    reason: `usage ${params.feature}`,
+    force: true, // post-hoc — saldo mag dalen, nooit blokkeren
   });
 }
 

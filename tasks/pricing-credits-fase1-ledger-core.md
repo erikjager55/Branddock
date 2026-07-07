@@ -5,8 +5,9 @@ fase: launch
 priority: now
 effort: 2-3 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-07-07
+completed: 2026-07-07
 related-adr: docs/adr/2026-07-07-pricing-credits-launch.md
 related-spec: tasks/pricing-credits-billing.md
 worktree: branddock-feat-pricing-credits
@@ -84,3 +85,11 @@ Bouw de **ledger-core** als één centrale, transactionele module op de Fase-0-t
 - **Integration-First**: de contracten die Fase 2 consumeert liggen hier vast — `reserveCredits(orgId, estimate, ctx) → {reservationId}` en `reconcileReservation(reservationId, {outputTokens|count}) → {creditsSpent}`. Schrijf deze signatures eerst en peg Fase 2 erop.
 - **Verificatie-noot**: Stripe-flows zijn hier niet nodig; de ledger is puur DB + logica en dus lokaal unit-smokebaar.
 - Reaper voor stale reservations: klein, kan als `RESERVATION_REAP` job-type in Fase 2 (`handlers.ts`) mee.
+
+## Afronding 2026-07-07 (branch `feat/pricing-credits-fase0`)
+
+- **Schema-toevoeging (buiten de oorspronkelijke file-lijst)**: reserveringen hebben een id + status nodig voor crash-release + idempotentie → nieuw `CreditReservation`-model + `CreditReservationStatus`-enum (RESERVED/SETTLED/RELEASED) + `idempotencyKey @unique` op `CreditTransaction`. Additief; lokale db push met `--accept-data-loss` (unique-constraint op een lege tabel, geen echte loss).
+- **Geleverd**: `ledger.ts` (`getBalance`/`grantCredits`/`deductCredits`, atomaire conditionele UPDATE + RETURNING, idempotent, `force` voor post-hoc), `reservation.ts` (`reserveCredits`/`reconcileReservation`/`releaseReservation` met status), `errors.ts` (`InsufficientCreditsError` + 402), `usage-tracker.ts` (output-only afboeking op niet-gratis acties + `resolveOrgForWorkspace`), `enforcement.ts` (`enforceCreditBalance`, auto-topup-hook als TODO Fase 3).
+- **Concurrency bewezen**: smoke `scripts/dev/credit-ledger-smoke.ts` — 8/8 groen, incl. 2× gelijktijdige deduct van 50 op saldo 60 → precies 1 slaagt, saldo 10 (geen dubbel-boeking). Output-only: F-VAL/merkcontext = 0 credits geverifieerd. Idempotentie + insufficient + release-pad groen.
+- **Verificatie**: `tsc --noEmit` 0 errors op tracked code (de enige error zit in een untracked scratch-script `scripts/migrate-brand-dna/`, niet in git/CI); eslint 0 errors. Prisma-adapter-tx-typefrictie opgelost met `Omit<typeof prisma, …>` i.p.v. `Prisma.TransactionClient`.
+- **Nog te doen bij merge**: Neon db push (CreditReservation + idempotencyKey). Auto-topup-uitvoering = Fase 3; site-bedrading = Fase 2.

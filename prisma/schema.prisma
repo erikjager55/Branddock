@@ -36,6 +36,7 @@ model Organization {
   // Credit-billing (pooled op org-niveau — ADR 2026-07-07-pricing-credits-launch)
   creditBalance      CreditBalance?
   creditTransactions CreditTransaction[]
+  creditReservations CreditReservation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3679,20 +3680,47 @@ model CreditTransaction {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   workspaceId    String? // welk merk verbruikte (attributie); null bij grant/topup
 
-  amount       Int                   // positief = grant/topup, negatief = deduct
-  type         CreditTransactionType
-  reason       String
-  feature      String?
-  action       String? // bv 'long-form', 'image'
-  outputTokens Int? // werkelijke output-tokens bij een deduct
-  balanceAfter Int
-  metadata     Json?
+  amount         Int                   // positief = grant/topup, negatief = deduct
+  type           CreditTransactionType
+  reason         String
+  feature        String?
+  action         String? // bv 'long-form', 'image'
+  outputTokens   Int? // werkelijke output-tokens bij een deduct
+  balanceAfter   Int
+  idempotencyKey String? @unique // voorkomt dubbel-boeken bij re-dispatch
+  metadata       Json?
 
   createdAt DateTime @default(now())
 
   @@index([organizationId, createdAt])
   @@index([workspaceId, createdAt])
   @@map("credit_transaction")
+}
+
+model CreditReservation {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workspaceId    String?
+
+  estimatedCredits Int
+  status           CreditReservationStatus @default(RESERVED)
+  action           String?
+  feature          String?
+  idempotencyKey   String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([status, createdAt]) // reaper: stale RESERVED opruimen
+  @@map("credit_reservation")
+}
+
+enum CreditReservationStatus {
+  RESERVED // gereserveerd, run loopt
+  SETTLED // gereconcilieerd naar werkelijk verbruik
+  RELEASED // vrijgegeven (run gefaald/geannuleerd)
 }
 
 enum CreditTransactionType {
