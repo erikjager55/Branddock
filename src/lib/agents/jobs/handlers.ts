@@ -179,3 +179,23 @@ registerHandler('SEO_GENERATE', async (job) => {
   await runSeoGenerationJob(jobId);
   return { jobId };
 });
+
+// ─── Credit-billing (ADR 2026-07-07) — floor-vs-credit per job-type ──────────
+// Beslissing (ADR: recurring achtergrond-AI + merk-DNA-setup = floor-gedekt = 0 cr;
+// alleen user-facing content-output kost credits):
+//   • CREDIT-KOSTEND: SEO_GENERATE (long-form-content) — de afboek-haak zit in
+//     `runSeoGenerationJob` zelf (op COMPLETED, idempotent per job).
+//   • FLOOR-GEDEKT (0 cr, GÉÉN haak): ALIGNMENT_SCAN, TREND_RESEARCH, DAM_AUTO_TAG,
+//     BUG_REPORT_ANALYZE, CHAT_FEEDBACK_ANALYZE (recurring achtergrond-analyse) +
+//     WEBSITE_SCAN, BRANDVOICE_ANALYZE_URL, BRANDSTYLE_ANALYZE_URL/PDF (merk-DNA-
+//     setup, credit-vrij per ADR) + MEMORY_DECAY/HEARTBEAT/AGENT_TASK/*_CLEANUP
+//     (geen AI). Bewuste keuze — herzie alleen met expliciete ADR-aanvulling.
+
+// Reaper: geef reserveringen vrij die tussen reserve en reconcile bleven hangen
+// (gecrashte run). Draai periodiek via cron (Vercel Cron / dispatchJob).
+registerHandler('RESERVATION_REAP', async (job) => {
+  const { olderThanMinutes } = (job.payload ?? {}) as { olderThanMinutes?: number };
+  const { reapStaleReservations } = await import('@/lib/billing/credits/reservation');
+  const released = await reapStaleReservations(olderThanMinutes ?? 30);
+  return { released };
+});

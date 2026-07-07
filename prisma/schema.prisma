@@ -5201,6 +5201,7 @@ enum AgentJobType {
   WEBSITE_SCAN
   BRANDVOICE_ANALYZE_URL
   SEO_GENERATE
+  RESERVATION_REAP // credit-reservering-reaper: stale RESERVED vrijgeven (Fase 2)
 }
 
 // Serverless-safe SEO-generatie: de 8-staps-pipeline draait als resumable job

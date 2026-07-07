@@ -12,6 +12,8 @@
 
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
+import { chargeAfter } from '@/lib/billing/credits/meter-generation';
+import { CREDIT_COSTS } from '@/lib/billing/credits/credit-costs';
 import type { CanvasContextStack } from './canvas-context';
 import type {
   SeoInput,
@@ -102,4 +104,17 @@ export async function runSeoGenerationJob(jobId: string): Promise<void> {
     where: { id: jobId },
     data: { status: 'COMPLETED', stepLabel: 'Complete', currentStep: 8, completedAt: new Date() },
   });
+
+  // Credit-afboeking (Fase 2, ADR 2026-07-07): vaste long-form-kost op completion,
+  // idempotent per job (de generator surfaced geen output-tokens hier; token-
+  // accurate afboeking is een latere refinement). Post-hoc — nooit blokkeren.
+  await chargeAfter(
+    {
+      workspaceId: job.workspaceId,
+      action: 'long-form',
+      feature: 'seo-generate',
+      idempotencyKey: `seo-charge:${jobId}`,
+    },
+    { actualCredits: CREDIT_COSTS['long-form'] },
+  ).catch(() => {});
 }

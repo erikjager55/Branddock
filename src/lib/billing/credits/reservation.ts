@@ -115,6 +115,21 @@ export async function releaseReservation(reservationId: string): Promise<void> {
   });
 }
 
+/**
+ * Reaper: geef reserveringen vrij die langer dan `olderThanMinutes` RESERVED
+ * bleven (gecrashte/gekilde run tussen reserve en reconcile). Voorkomt een
+ * credit-lek waarbij `reserved` blijft hangen. Draait als RESERVATION_REAP-job.
+ */
+export async function reapStaleReservations(olderThanMinutes = 30): Promise<number> {
+  const cutoff = new Date(Date.now() - olderThanMinutes * 60_000);
+  const stale = await prisma.creditReservation.findMany({
+    where: { status: 'RESERVED', createdAt: { lt: cutoff } },
+    select: { id: true },
+  });
+  for (const r of stale) await releaseReservation(r.id);
+  return stale.length;
+}
+
 /** Werkelijke credits: expliciet meegegeven → tekst-output-tokens → anders de schatting. */
 function resolveActual(params: ReconcileParams, estimate: number): number {
   if (typeof params.actualCredits === 'number') return Math.max(0, Math.ceil(params.actualCredits));

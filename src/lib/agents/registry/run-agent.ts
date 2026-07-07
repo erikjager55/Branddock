@@ -26,6 +26,7 @@ import {
 } from "@/lib/ai/feature-models.server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { chargeAfter } from "@/lib/billing/credits/meter-generation";
 import { clearRunCollector } from "./run-collector";
 import { getAgentDefinition, isTestAgentAllowed } from "./index";
 import type { AgentContextSelection } from "./types";
@@ -207,6 +208,14 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
       truncated: result.truncated,
       error: result.persisted.error,
     };
+
+    // Credit-afboeking (Fase 2): output-token-gebaseerd op de pooled org-balans.
+    // Post-hoc (de run draaide al) — nooit blokkeren; de pre-flight-guard zit op
+    // de run-route. Gratis als billing uit staat of de org niet resolvet.
+    await chargeAfter(
+      { workspaceId, action: "agent-deliverable", feature: `agent:${def.id}` },
+      { outputTokens: result.totalOutputTokens, model: result.costBreakdown.model },
+    ).catch(() => {});
 
     void emitAgentRunCompleted({
       runId,
