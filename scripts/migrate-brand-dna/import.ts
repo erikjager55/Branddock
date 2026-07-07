@@ -68,7 +68,8 @@ async function resolveTarget(flags: Flags): Promise<Target> {
     return { workspaceId: ws.id, workspaceName: ws.name, ownerUserId: owner.userId };
   }
   if (flags.email) {
-    const member = await prisma.organizationMember.findFirst({
+    // Álle owner-memberships (een e-mail kan owner van meerdere orgs zijn).
+    const memberships = await prisma.organizationMember.findMany({
       where: { role: 'owner', user: { email: { equals: flags.email, mode: 'insensitive' } } },
       select: {
         userId: true,
@@ -77,43 +78,40 @@ async function resolveTarget(flags: Flags): Promise<Target> {
         },
       },
     });
-    const workspaces = member?.organization?.workspaces ?? [];
-    if (!member || workspaces.length === 0) throw new Error(`Geen owner-workspace voor e-mail '${flags.email}'.`);
-    if (workspaces.length > 1) {
-      throw new Error(`Owner '${flags.email}' heeft ${workspaces.length} workspaces — kies er één met --slug <workspace-slug>.`);
+    const workspaces = memberships.flatMap((m) => m.organization?.workspaces ?? []);
+    if (memberships.length === 0 || workspaces.length === 0) {
+      throw new Error(`Geen owner-workspace voor e-mail '${flags.email}'.`);
     }
-    return { workspaceId: workspaces[0].id, workspaceName: workspaces[0].name, ownerUserId: member.userId };
+    if (workspaces.length > 1) {
+      throw new Error(`Owner '${flags.email}' heeft ${workspaces.length} workspaces (over ${memberships.length} org(s)) — kies er één met --slug <workspace-slug>.`);
+    }
+    return { workspaceId: workspaces[0].id, workspaceName: workspaces[0].name, ownerUserId: memberships[0].userId };
   }
   throw new Error('Geef --email <owner> of --slug <workspace-slug>.');
 }
 
 /**
- * Weiger een workspace die al gebruikt is (clobber-bescherming). Probeert álle
- * modellen die de wipe raakt — niet alleen campaigns/media — zodat half-onboarde
- * workspaces (personas/producten/strategie toegevoegd, nog geen campaign) niet
- * stil worden overschreven.
+ * Weiger een workspace die al gebruikt is (clobber-bescherming). Een vers-
+ * geprovisionde workspace heeft exact 11 canonieke brand assets (auth.
+ * provisionNewUser) en verder niets; élk ander signaal (of >11 assets) betekent
+ * dat de owner al werk heeft dat de wipe stil zou vernietigen (incl. cascades
+ * naar niet-gemigreerde data). --force overschrijft dit bewust.
  */
+const NONFRESH_MODELS = [
+  'campaign', 'mediaAsset', 'persona', 'product', 'competitor', 'businessStrategy',
+  'brandVoiceguide', 'brandStyleguide', 'brandVoice', 'brandRule', 'fidelityConfig',
+  'trend', 'workshop', 'interview',
+];
+
 async function assertFresh(workspaceId: string, force: boolean): Promise<void> {
-  const [campaigns, media, assets, personas, products, competitors, strategies, voiceguide, styleguide] =
-    await Promise.all([
-      prisma.campaign.count({ where: { workspaceId } }),
-      prisma.mediaAsset.count({ where: { workspaceId } }),
-      prisma.brandAsset.count({ where: { workspaceId } }),
-      prisma.persona.count({ where: { workspaceId } }),
-      prisma.product.count({ where: { workspaceId } }),
-      prisma.competitor.count({ where: { workspaceId } }),
-      prisma.businessStrategy.count({ where: { workspaceId } }),
-      prisma.brandVoiceguide.count({ where: { workspaceId } }),
-      prisma.brandStyleguide.count({ where: { workspaceId } }),
-    ]);
-  const used =
-    campaigns > 0 || media > 0 || assets > 12 || personas > 0 || products > 0 ||
-    competitors > 0 || strategies > 0 || voiceguide > 0 || styleguide > 0;
-  console.log(
-    `[import] doel-staat: campaigns=${campaigns} media=${media} brandAssets=${assets} personas=${personas} ` +
-      `products=${products} competitors=${competitors} strategies=${strategies} voiceguide=${voiceguide} styleguide=${styleguide}`,
+  const assets = await prisma.brandAsset.count({ where: { workspaceId } });
+  const counts = await Promise.all(
+    NONFRESH_MODELS.map((m) => delegateFor(prisma, m).count({ where: { workspaceId } })),
   );
-  if (used && !force) {
+  const nonFresh = counts.reduce((sum, n) => sum + n, 0);
+  const summary = NONFRESH_MODELS.map((m, i) => `${m}=${counts[i]}`).join(' ');
+  console.log(`[import] doel-staat: brandAssets=${assets} ${summary}`);
+  if ((assets > 11 || nonFresh > 0) && !force) {
     throw new Error(
       'Doel-workspace lijkt al in gebruik (merk-DNA of content aanwezig). Gebruik --force om bewust te overschrijven.',
     );

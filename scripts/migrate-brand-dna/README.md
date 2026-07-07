@@ -49,13 +49,16 @@ DATABASE_URL="<prod-neon-pooled-url>" npx prisma db push
 ```
 
 ### Stap 4 — Dry-run tegen productie (schrijft niets)
+> Gebruik hier **dezelfde DIRECTE (unpooled) URL** als voor de echte import in stap 5, zodat
+> de getoonde `DB-host=…` exact de host is die je straks aan `--confirm-host` geeft.
 ```bash
-DATABASE_URL="<prod-neon-pooled-url>" \
+DATABASE_URL="<prod-neon-DIRECT-url>" \
   npx tsx scripts/migrate-brand-dna/import.ts brand-dna-better-brands.json \
   --email owner@betterbrands.example --dry-run
 ```
-Toont per model: hoeveel er gewist en ingevoegd zou worden. De **fresh-workspace-guard**
-weigert een workspace die al content bevat (campaigns/media/>12 assets) — dat is opzet.
+Toont de `DB-host`, de doel-staat per guard-model, en per model hoeveel er gewist/ingevoegd
+zou worden. De **fresh-workspace-guard** weigert (buiten `--force`) een workspace met >11
+brand assets of enig ander merk-DNA/content-signaal — dat is opzet.
 
 ### Stap 5 — Echte import tegen productie
 > Gebruik hier de **directe (unpooled) Neon-URL**, niet de pooler. De import draait één
