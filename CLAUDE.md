@@ -46,7 +46,7 @@ Branddock is een SaaS-platform voor **brand strategy, research validatie en AI c
 ### Planning
 - **Plan-mode default voor 3+ stappen of architecturale impact.** Plan moet bevatten: scope, file-list, acceptatiecriteria, smoke-test, out-of-scope. User approval vóór uitvoering.
 - **Eén taak = één task-file** in `tasks/<id>.md` met gestandaardiseerd template (zie `tasks/_template.md`). Geen werk zonder task-file (uitzondering: bugfixes <30 min).
-- **Worktrees voor parallel werk** — naming `branddock-feat-<id>`, file-ownership vooraf in task-file.
+- **Worktree per taak (verplicht bij code-wijzigingen).** Elke code-wijziging die je commit hoort in een **eigen worktree** met precies **één Claude-sessie**. De main-worktree (`branddock-app`) is voor coördineren/reviewen/lezen/docs — niet voor feature-commits. Spin er één op met `scripts/dev/worktree.sh <task-id>` (regelt branch vanaf origin/main + `.env.local` + `npm ci` + `prisma generate`). Naming `branddock-<id>`, file-ownership vooraf in task-file. **De `session-guard` hook blokkeert branch-switch/reset/rebase als er al een levende sessie in dezelfde worktree draait** (`.claude/hooks/session-guard.sh`) — geborgd n.a.v. de multi-sessie-churn van 2026-07-07 (zie `gotchas.md`).
 - **ADR voor non-triviale architectuur-beslissingen** in `docs/adr/<datum>-<id>.md`.
 
 ### Verification
@@ -273,5 +273,5 @@ Volledige ADRs in `docs/adr/`. Snel referentie:
 
 - **Pre-launch eindigt bij livegang** (Vercel + custom domain), niet bij 5 betalende klanten
 - **Lange CLAUDE.md = onbetrouwbare instructies** — houd dit bestand <300 regels
-- **Twee parallelle Claude Code sessies in dezelfde werkboom = race condition risico** — gebruik worktrees
+- **Twee Claude-sessies in dezelfde werkboom = race condition** (gebeurde 2026-07-07: main-reset ↔ cherry-pick, AA-conflicten in de gedeelde index, verdwenen `node_modules/eslint` — zie `gotchas.md`). Nu geborgd: de `session-guard` hook detecteert een co-sessie (per-worktree heartbeat-lock) en blokkeert HEAD/branch-mutaties. Werk elke taak in een eigen worktree via `scripts/dev/worktree.sh <task-id>`.
 - **Auto memory** in `~/.claude/projects/-Users-erikjager/memory/` is persistent — gebruik voor cross-sessie context
