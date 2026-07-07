@@ -14,6 +14,7 @@ import { buildNegativePrompt } from '@/lib/ai/image-quality/negative-prompts';
 import { mapGeneratedVideo } from '@/features/media-library/utils/media-utils';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { fetchWithSizeLimit, AI_VIDEO_SIZE_CAP } from '@/lib/security/fetch-with-limit';
+import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 
 const generateSchema = z.object({
   name: z.string().min(1).max(200),
@@ -173,6 +174,9 @@ export async function POST(request: NextRequest) {
 
     invalidateCache(cacheKeys.media.aiVideos(workspaceId));
     invalidateCache(cacheKeys.prefixes.media(workspaceId));
+
+    // Credit-afboeking (Fase 2): 1 videoclip = video-credits (count-gebaseerd), post-hoc.
+    await chargeAfter({ workspaceId, action: 'video-clip', feature: 'ai-video' }, { count: 1 }).catch(() => {});
 
     return NextResponse.json(
       mapGeneratedVideo(generatedVideo as unknown as Record<string, unknown>),

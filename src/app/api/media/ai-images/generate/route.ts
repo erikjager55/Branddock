@@ -16,6 +16,7 @@ import { LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/mode
 import { mapGeneratedImage } from '@/features/media-library/utils/media-utils';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
+import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 import type { ConsistentModelType } from '@prisma/client';
 
 const generateSchema = z.object({
@@ -339,6 +340,9 @@ export async function POST(request: NextRequest) {
 
     invalidateCache(cacheKeys.media.aiImages(workspaceId));
     invalidateCache(cacheKeys.prefixes.media(workspaceId));
+
+    // Credit-afboeking (Fase 2): 1 beeld = image-credits (count-gebaseerd), post-hoc.
+    await chargeAfter({ workspaceId, action: 'image', feature: 'ai-image' }, { count: 1 }).catch(() => {});
 
     return NextResponse.json(
       mapGeneratedImage(image as unknown as Record<string, unknown>),
