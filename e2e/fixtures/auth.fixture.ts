@@ -20,7 +20,10 @@ async function loginViaApi(page: Page, email: string, password: string) {
     // Click "Skip" or the last step's complete button to dismiss
     const skipBtn = page.locator('[data-testid="onboarding-wizard"] button', { hasText: /skip|get started|close/i });
     if (await skipBtn.first().isVisible({ timeout: 1_000 }).catch(() => false)) {
-      await skipBtn.first().click();
+      // Bounded + swallow: de tour-wizard detacht zichzelf uit de DOM tijdens de
+      // klik → een kale click hangt 30s. 5s cap + catch; de wizard verdwijnt toch.
+      await skipBtn.first().click({ timeout: 5_000 }).catch(() => {});
+      await wizard.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
     }
   }
 }

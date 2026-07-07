@@ -167,7 +167,10 @@ test.describe('Performance Benchmarks', () => {
         hasText: /skip|get started|close/i,
       });
       if (await skipBtn.first().isVisible({ timeout: 1_000 }).catch(() => false)) {
-        await skipBtn.first().click();
+        // Bounded + swallow: de tour-wizard detacht zichzelf uit de DOM tijdens de
+        // klik → een kale click hangt 30s. 5s cap + catch; de wizard verdwijnt toch.
+        await skipBtn.first().click({ timeout: 5_000 }).catch(() => {});
+        await wizard.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
       }
     }
 

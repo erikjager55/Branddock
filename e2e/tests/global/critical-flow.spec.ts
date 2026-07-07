@@ -21,7 +21,11 @@ test.describe('Critical Flow: Login → Dashboard → Brand Asset → AI Explora
         hasText: /skip|get started|close/i,
       });
       if (await skipBtn.first().isVisible({ timeout: 1_000 }).catch(() => false)) {
-        await skipBtn.first().click();
+        // Bounded + swallow: de tour-wizard detacht zichzelf uit de DOM terwijl
+        // we klikken (auto-advance/re-render), waardoor een kale click 30s hangt.
+        // 5s cap + catch — de wizard verdwijnt sowieso.
+        await skipBtn.first().click({ timeout: 5_000 }).catch(() => {});
+        await wizard.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
       }
     }
 
@@ -42,6 +46,8 @@ test.describe('Critical Flow: Login → Dashboard → Brand Asset → AI Explora
     const assetGrid = page.locator('[data-testid="asset-grid"]');
     await expect(assetGrid).toBeVisible({ timeout: 10_000 });
     const assetCards = assetGrid.locator('[data-testid="brand-asset-card"]');
+    // Wacht tot de async-geladen cards er zijn — .count() wacht zelf niet (race).
+    await expect(assetCards.first()).toBeVisible({ timeout: 10_000 });
     const assetCount = await assetCards.count();
     expect(assetCount).toBeGreaterThan(0);
 
@@ -69,6 +75,8 @@ test.describe('Critical Flow: Login → Dashboard → Brand Asset → AI Explora
 
     // Verify campaign cards are loaded from seed data
     const campaignCards = page.locator('[data-testid^="campaign-card-"]');
+    // Wacht tot de async-geladen cards er zijn — .count() wacht zelf niet (race).
+    await expect(campaignCards.first()).toBeVisible({ timeout: 10_000 });
     const campaignCount = await campaignCards.count();
     expect(campaignCount).toBeGreaterThan(0);
   });
@@ -88,7 +96,11 @@ test.describe('Critical Flow: Login → Dashboard → Brand Asset → AI Explora
         hasText: /skip|get started|close/i,
       });
       if (await skipBtn.first().isVisible({ timeout: 1_000 }).catch(() => false)) {
-        await skipBtn.first().click();
+        // Bounded + swallow: de tour-wizard detacht zichzelf uit de DOM terwijl
+        // we klikken (auto-advance/re-render), waardoor een kale click 30s hangt.
+        // 5s cap + catch — de wizard verdwijnt sowieso.
+        await skipBtn.first().click({ timeout: 5_000 }).catch(() => {});
+        await wizard.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
       }
     }
 
