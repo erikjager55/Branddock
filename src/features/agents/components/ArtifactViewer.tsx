@@ -12,6 +12,7 @@ import {
   Table2,
   ShieldCheck,
   Link2,
+  Info,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -45,9 +46,13 @@ const SEVERITY_STYLES: Record<string, string> = {
 export function ArtifactViewer({
   artifact,
   onNavigate,
+  agentId,
 }: {
   artifact: AgentArtifactFull;
   onNavigate: (section: string) => void;
+  /** Run-agent — de content-creator levert een concept-REPORT dat pas op
+   *  goedkeuren via de Canvas-pipeline de definitieve, gescoorde content wordt. */
+  agentId?: string;
 }) {
   const icon = (() => {
     switch (artifact.type) {
@@ -87,7 +92,7 @@ export function ArtifactViewer({
       </div>
 
       <div className="px-4 py-4">
-        {artifact.type === 'REPORT' && <ReportBody artifact={artifact} />}
+        {artifact.type === 'REPORT' && <ReportBody artifact={artifact} agentId={agentId} />}
         {artifact.type === 'TABLE' && <TableArtifactView artifact={artifact} />}
         {artifact.type === 'FINDINGS' && <FindingsBody artifact={artifact} />}
         {artifact.type === 'LINK' && <LinkBody artifact={artifact} onNavigate={onNavigate} />}
@@ -100,10 +105,23 @@ export function ArtifactViewer({
 
 // ─── REPORT ──────────────────────────────────────────────────
 
-function ReportBody({ artifact }: { artifact: AgentArtifactFull }) {
+function ReportBody({ artifact, agentId }: { artifact: AgentArtifactFull; agentId?: string }) {
+  const { t } = useTranslation('agents');
   const markdown = typeof artifact.content.markdown === 'string' ? artifact.content.markdown : '';
+  // Het content-creator-REPORT is een concept-voorstel; de definitieve,
+  // F-VAL-gescoorde content ontstaat pas na goedkeuren via de Canvas-pipeline.
+  const isDraftPreview = agentId === 'content-creator' && artifact.content.answerFallback !== true;
   return (
     <div data-testid="artifact-report-markdown">
+      {isDraftPreview && (
+        <div
+          data-testid="artifact-report-draft-note"
+          className="flex items-start gap-2 mb-3 px-3 py-2 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-800"
+        >
+          <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+          <span>{t('inbox.run.draftPreview')}</span>
+        </div>
+      )}
       <MarkdownContent content={markdown} />
     </div>
   );

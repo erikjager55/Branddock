@@ -56,7 +56,9 @@ export const strategistAgent: AgentDefinition = {
   timeoutMs: 720_000,
   maxToolCalls: 8,
   // Het strategie-rapport is groot — default 4096 kapt de artifacts-JSON af.
-  maxTokens: 16_000,
+  // 16k bleek nog te krap: een zware turn kapte af bij ~57k chars output
+  // (dogfood 2026-07-07, zelfde klasse als de 2026-05-24 SEO-maxTokens-gotcha).
+  maxTokens: 32_000,
 };
 
 export function registerStrategistTools(): void {

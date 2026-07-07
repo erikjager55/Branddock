@@ -85,6 +85,8 @@ const ns = {
       noArtifacts: 'Deze run leverde geen resultaten op',
       detailError: 'Kon run-details niet laden',
       detailRetry: 'Opnieuw proberen',
+      draftPreview:
+        'Dit is een concept — de definitieve, op merkfideliteit gescoorde versie ontstaat nadat je het voorstel goedkeurt.',
     },
     status: {
       QUEUED: 'In wachtrij',

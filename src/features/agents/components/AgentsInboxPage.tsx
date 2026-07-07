@@ -242,7 +242,12 @@ function RunArtifacts({
   return (
     <div className="space-y-3">
       {run.artifacts.map((artifact) => (
-        <ArtifactViewer key={artifact.id} artifact={artifact} onNavigate={onNavigate} />
+        <ArtifactViewer
+          key={artifact.id}
+          artifact={artifact}
+          onNavigate={onNavigate}
+          agentId={run.agentId}
+        />
       ))}
     </div>
   );

@@ -85,6 +85,8 @@ const ns = {
       noArtifacts: 'This run produced no results',
       detailError: 'Could not load run details',
       detailRetry: 'Try again',
+      draftPreview:
+        'This is a concept preview — the final, brand-fidelity-scored version is generated after you approve the proposal.',
     },
     status: {
       QUEUED: 'Queued',

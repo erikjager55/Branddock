@@ -145,7 +145,10 @@ export async function generateCreativeAngles(
       userPrompt,
       {
         responseSchema: buildAngleSchema(n),
-        maxTokens: 300 + n * 200,
+        // Ruimer budget: 300 + n*200 (n=2 → 700) kapte de angles-JSON af
+        // (dogfood 2026-07-07). Angles zijn kort, maar JSON-overhead +
+        // structured-output-marges vragen meer kop.
+        maxTokens: 800 + n * 500,
         timeoutMs: 30_000,
       },
     );
