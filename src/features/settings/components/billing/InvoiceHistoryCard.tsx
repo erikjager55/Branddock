@@ -64,15 +64,19 @@ export function InvoiceHistoryCard() {
                 <td className="px-5 py-3">
                   <Badge
                     variant={
-                      inv.status === 'paid'
+                      // DB slaat de status uppercase op (PAID/PENDING/…) — normaliseer,
+                      // anders valt 'PAID' door naar danger (rood).
+                      inv.status?.toLowerCase() === 'paid'
                         ? 'success'
-                        : inv.status === 'pending'
+                        : inv.status?.toLowerCase() === 'pending'
                         ? 'warning'
+                        : inv.status?.toLowerCase() === 'refunded'
+                        ? 'teal'
                         : 'danger'
                     }
                     size="sm"
                   >
-                    {inv.status}
+                    {inv.status.charAt(0).toUpperCase() + inv.status.slice(1).toLowerCase()}
                   </Badge>
                 </td>
                 <td className="px-5 py-3 text-right">

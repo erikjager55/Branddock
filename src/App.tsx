@@ -145,18 +145,19 @@ function AppContent() {
     useClawStore.getState().setCurrentPage(activeSection);
   }, [activeSection]);
 
-  // Post-Stripe-checkout redirect landt op /?checkout=success|cancel (de SPA is
-  // niet URL-adresseerbaar): open de billing-tab, toon feedback, schoon de query
-  // zodat een refresh de melding niet herhaalt.
+  // Post-Stripe-checkout/portal redirect landt op /?checkout=success|cancel|return
+  // (de SPA is niet URL-adresseerbaar): open de billing-tab, toon feedback, schoon
+  // de query zodat een refresh de melding niet herhaalt.
   useEffect(() => {
     const checkout = new URLSearchParams(window.location.search).get('checkout');
-    if (checkout !== 'success' && checkout !== 'cancel') return;
+    if (checkout !== 'success' && checkout !== 'cancel' && checkout !== 'return') return;
     setActiveSectionRaw('settings-billing');
     if (checkout === 'success') {
       toast.success('Betaling geslaagd — je abonnement is bijgewerkt.');
-    } else {
+    } else if (checkout === 'cancel') {
       toast.info('Checkout geannuleerd — er is niets in rekening gebracht.');
     }
+    // 'return' (Customer Portal "terug") → alleen navigeren, geen toast
     window.history.replaceState({}, '', window.location.pathname);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
