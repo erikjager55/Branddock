@@ -37,6 +37,32 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 371. Session/worktree-guard — één Claude-sessie per worktree geborgd
+
+Voorkomt de multi-sessie-in-één-werkboom-race van 2026-07-07 (twee sessies deelden één `.git`/HEAD/index + `node_modules` → main-reset ↔ cherry-pick, `AA`-conflicten in de gedeelde index, verdwenen `node_modules/eslint`, ongegenereerde Prisma-client). Twee lagen: **structureel** — `scripts/dev/worktree.sh <task-id>` maakt in één commando een geïsoleerde worktree (branch vanaf `origin/main` + `.env.local` + `npm ci` + `prisma generate`), zodat de setup-frictie die worktrees deed mijden verdwijnt; **vangnet** — `.claude/hooks/session-guard.sh`, een per-worktree heartbeat-lock (geen PID → zelfhelend, stale na 15 min). SessionStart waarschuwt bij een levende co-sessie; PreToolUse(Bash) blokkeert (`exit 2`) HEAD/branch/index-mutaties (`checkout/switch/reset/rebase/cherry-pick/branch -f/-D/worktree/stash/merge`) onder een co-sessie — `commit`/`push`/edits/npm blijven vrij. Fail-open bij interne fouten. CLAUDE.md maakt "worktree per taak" een harde regel; `.gitignore` negeert de lock. Guard-logica getest op 6 scenario's (co-sessie-block, solo-allow, stale-takeover, non-git-allow, commit-allow, eigen-sessie-allow).
+
+- Task: -
+- ADR: -
+- Spec: `gotchas.md` (2026-07-07)
+- Commit: `08fcceb1` (#96)
+
+### 370. CI-e2e-gate hersteld — critical-flow structureel groen
+
+De CI-`e2e`-gate (`critical-flow.spec`) stond al lang rood op `main` én elke PR. Drie gelaagde, puur test-side oorzaken (de app was correct): (1) **stale testid** — de AI-Exploration-methode op de brand-asset-detail-pagina miste `data-testid="research-method-ai-exploration"` (weggevallen bij een refactor van `AssetResearchSidebarCard`); (2) **detach-hang** — de onboarding-tour detacht zichzelf uit de DOM tijdens de skip-klik → kale `.click()` hangt 30s; (3) **count-race** — `campaignCards.count()` telde vóór de async-geladen cards er waren → 0. Fixes: testid hersteld op de gedragsneutrale method-card; skip-klik `click({timeout:5s}).catch()` + `waitFor('hidden')` in `critical-flow.spec` (2×), `auth.fixture`, `performance.spec`; `await expect(cards.first()).toBeVisible()` vóór beide counts. Gediagnosticeerd door het Playwright-report-artifact te downloaden en de a11y-snapshot van het faalmoment te lezen. Gate nu groen (e2e + check success). Les vastgelegd in `gotchas.md`.
+
+- Task: -
+- ADR: -
+- Spec: `gotchas.md` (2026-07-07)
+- Commit: `16ba8107` (#93)
+
+### 369. Credit-model billing — ledger + metering-scaffolding (Fase 0-2, billing OFF)
+
+Prepaid credit-model per ADR `2026-07-07-pricing-credits-launch` (laag maandtarief + tokenbundel + output-only overage; merkcontext en F-VAL nooit gemeterd; iDEAL/SEPA + BTW; 28-daagse gratis tier). **Fase 0** — datamodel + config: `CreditBalance`/`CreditTransaction`/`CreditReservation` (+ enums), `PlanTier` +STARTER/GROWTH (PRO legacy behouden, additief schema), `plan-limits.ts` (Starter €39/400cr · Growth €89/1.200cr · Agency €299/4.000cr · floor €15 · top-up €0,10 · trial 300/28d), credit-kosten-registry. **Fase 1** — ledger-core: atomaire `deduct`/`grant`/`reserve`/`reconcile`/`release` + reaper, concurrency-veilig via conditionele `UPDATE … WHERE … RETURNING`, idempotent via `idempotencyKey`. **Fase 2** — metering-wiring (tracking-only, post-hoc `chargeAfter`): SEO long-form, content-agents, en alle primaire beeld/video/content-routes (`generate-visual`/`-trained`/`-feature-visuals`/`-video`, `personas/generate-image`, `landing-pages/generate-page`) met per-route pad-guards zodat alleen echte generatie boekt; compose/upload-routes bewust niet (dubbel-charge). Alles achter `isBillingEnabled()` → **billing staat OFF** (`NEXT_PUBLIC_BILLING_ENABLED=false`), dus dormant scaffolding zonder runtime-impact. Adversariële T-review (2 rondes): 2 CRITICAL gefixt (C1 agent-billable-gating, C2 reservering-TOCTOU) + hardening. Verificatie: tsc 0, lint 0, ledger-concurrency-smoke 8/8, deploy-smoke groen (Vercel + check). **Fase-3-gates vóór billing-ON**: `enforceCreditBalance`-wiring, credit-grants (trial/plan/topup), confirm-time charge, reaper-cron, en een **Neon `db push`** voor het schema-delta — gedocumenteerd in de task-file.
+
+- Task: [tasks/pricing-credits-billing.md](../tasks/pricing-credits-billing.md)
+- ADR: [docs/adr/2026-07-07-pricing-credits-launch.md](adr/2026-07-07-pricing-credits-launch.md)
+- Commit: `e7ff8542` (#92)
+
 ### 368. Merk-DNA-migratie-tooling voor pilot-onboarding (Better Brands)
 
 Scripts om **alleen het merk-fundament** van één workspace (brand assets, voice+centroid, brandstyle, personas, producten, concurrenten, trends, `FidelityConfig` STRICT, brand rules — ~18 modellen) van lokaal naar productie te migreren en te re-parenten in een vers-aangemeld prod-account (content/telemetrie-historie blijft lokaal). `scripts/migrate-brand-dna/`: `export` (lokaal → inspecteerbare JSON-bundle incl. pgvector via raw SQL), `upload-images` (lokale `/uploads/` → R2 + URL-rewrite, `R2_PUBLIC_URL` verplicht), `import` (één atomische transactie: fresh-workspace-guard over álle wipe-modellen, wipe+insert met `workspaceId`- en user-FK-remap, `Product.slug`-collision-resolver, `--confirm-host`-gate tegen wrong-DB-wipes, pgvector-restore). Bonus-fixes: `create-vector-indexes.ts` dekt nu alle 4 vector-kolommen (miste `CompetitorContentItem`); de foute Fase-8 pg_dump-snippet in de deployment-runbook gecorrigeerd. Geverifieerd via cross-DB round-trip (schema-kloon → export → import → 12/12 asserts groen, incl. confirm-host-gate, collision-resolver, centroid-restore 1536-dim, en +11 eerder stil-gedropte research-methods). Twee 2-subagent reviewrondes: ronde 1 → 1 CRITICAL + 5 WARNING; ronde 2 → 1 CRITICAL (`assertFresh` te smal) + 4 WARNING; alles gefixt. Prod-run + onboarding-mens-stappen resteren (task blijft `in-progress`).
