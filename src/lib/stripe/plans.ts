@@ -77,9 +77,11 @@ export function getAiOverageRate(tier: PlanTier): number | null {
 
 const TIER_ORDER: Record<PlanTier, number> = {
   FREE: 0,
-  PRO: 1,
-  AGENCY: 2,
-  ENTERPRISE: 3,
+  PRO: 1, // legacy — zelfde niveau als STARTER
+  STARTER: 1,
+  GROWTH: 2,
+  AGENCY: 3,
+  ENTERPRISE: 4,
 };
 
 /**

@@ -25,11 +25,13 @@ const cache = new Map<string, CacheEntry>();
 
 /** ENTERPRISE gets the AGENCY bucket until we add a dedicated tier. */
 function mapPlanTier(
-  planTier: 'FREE' | 'PRO' | 'AGENCY' | 'ENTERPRISE',
+  planTier: 'FREE' | 'PRO' | 'STARTER' | 'GROWTH' | 'AGENCY' | 'ENTERPRISE',
 ): RateLimitTier {
   switch (planTier) {
-    case 'PRO':
+    case 'PRO': // legacy
+    case 'STARTER':
       return 'PRO';
+    case 'GROWTH':
     case 'AGENCY':
     case 'ENTERPRISE':
       return 'AGENCY';
