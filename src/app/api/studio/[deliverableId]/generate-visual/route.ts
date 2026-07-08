@@ -34,6 +34,7 @@ import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { chargeAfter } from '@/lib/billing/credits/meter-generation';
+import { enforceCreditsForAction } from '@/lib/stripe/enforcement';
 import { parseLogoIntent, stripLogoMentions, type LogoPosition } from '@/lib/visual/logo-intent';
 import { compositeLogoOverlay, sampleCornerLuminance, DARK_CORNER_LUMINANCE_THRESHOLD } from '@/lib/visual/logo-overlay';
 import { getBrandLogo, getBrandLogos, pickLogoForBackground, type BrandLogo } from '@/lib/brand/get-brand-logo';
@@ -194,6 +195,10 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: access.error }, { status: access.status });
     }
     const workspaceId = access.workspaceId;
+    // Gate B (Fase 3): pre-flight 402 bij ontoereikend saldo. count=1 = conservatieve
+    // per-unit-schatting (blokkeert 0-saldo op elke dure route); exacte count = follow-up.
+    const creditBlock = await enforceCreditsForAction(workspaceId, 'image', 1);
+    if (creditBlock) return creditBlock;
 
     const rateLimit = await withAiRateLimit(workspaceId);
     if (rateLimit instanceof Response) return rateLimit;

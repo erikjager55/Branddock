@@ -26,6 +26,7 @@ import { invalidateCache } from '@/lib/api/cache';
 import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { chargeAfter } from '@/lib/billing/credits/meter-generation';
+import { enforceCreditsForAction } from '@/lib/stripe/enforcement';
 import { ingestUploadsToLibrary } from '@/lib/media/ingest-uploads-to-library';
 import { patchHeroVisualUrl } from '@/lib/deliverable/patch-hero-visual';
 import { LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
@@ -135,6 +136,10 @@ export async function POST(request: Request, { params }: RouteParams) {
     // Resource-based: workspace van het deliverable i.p.v. cookie-gelijkheid
     // (zombie-tab fix — docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
     const workspaceId = await resolveDeliverableWorkspaceId((await params).deliverableId);
+    // Gate B (Fase 3): pre-flight 402 bij ontoereikend saldo. count=1 = conservatieve
+    // per-unit-schatting (blokkeert 0-saldo op elke dure route); exacte count = follow-up.
+    const creditBlock = await enforceCreditsForAction(workspaceId ?? '', 'image', 1);
+    if (creditBlock) return creditBlock;
     if (!workspaceId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

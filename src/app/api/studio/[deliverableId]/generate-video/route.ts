@@ -10,6 +10,7 @@ import { withAiRateLimit } from '@/lib/ai/middleware';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { chargeAfter } from '@/lib/billing/credits/meter-generation';
+import { enforceCreditsForAction } from '@/lib/stripe/enforcement';
 import { getStorageProvider } from '@/lib/storage';
 import { getFalVideoProviderById, FAL_VIDEO_PROVIDERS } from '@/lib/integrations/fal/fal-video-providers';
 import { buildVideoPromptFromScript } from '@/lib/studio/video-prompt-builder';
@@ -50,6 +51,10 @@ export async function POST(
     // Resource-based: workspace van het deliverable i.p.v. cookie-gelijkheid
     // (zombie-tab fix — docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
     const workspaceId = await resolveDeliverableWorkspaceId((await params).deliverableId);
+    // Gate B (Fase 3): pre-flight 402 bij ontoereikend saldo. count=1 = conservatieve
+    // per-unit-schatting (blokkeert 0-saldo op elke dure route); exacte count = follow-up.
+    const creditBlock = await enforceCreditsForAction(workspaceId ?? '', 'video-clip', 1);
+    if (creditBlock) return creditBlock;
     if (!workspaceId) {
       return NextResponse.json({ error: 'No workspace found' }, { status: 403 });
     }
