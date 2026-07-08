@@ -63,38 +63,54 @@ export async function getBalance(organizationId: string): Promise<CreditBalanceS
  */
 export async function grantCredits(p: GrantParams): Promise<CreditBalanceSnapshot> {
   if (p.credits <= 0) return getBalance(p.organizationId);
-  return prisma.$transaction(async (tx) => {
-    if (p.idempotencyKey) {
-      const existing = await tx.creditTransaction.findUnique({ where: { idempotencyKey: p.idempotencyKey } });
-      if (existing) return getBalanceTx(tx, p.organizationId);
+  try {
+    return await prisma.$transaction(async (tx) => {
+      if (p.idempotencyKey) {
+        const existing = await tx.creditTransaction.findUnique({ where: { idempotencyKey: p.idempotencyKey } });
+        if (existing) return getBalanceTx(tx, p.organizationId);
+      }
+      const bal = await tx.creditBalance.upsert({
+        where: { organizationId: p.organizationId },
+        create: {
+          organizationId: p.organizationId,
+          balance: p.credits,
+          reserved: 0,
+          lifetimeGranted: p.credits,
+          lifetimeSpent: 0,
+        },
+        update: {
+          balance: { increment: p.credits },
+          lifetimeGranted: { increment: p.credits },
+        },
+      });
+      await tx.creditTransaction.create({
+        data: {
+          organizationId: p.organizationId,
+          amount: p.credits,
+          type: p.type,
+          reason: p.reason,
+          balanceAfter: bal.balance,
+          idempotencyKey: p.idempotencyKey,
+          metadata: (p.metadata as Prisma.InputJsonValue) ?? undefined,
+        },
+      });
+      return snapshot(bal);
+    });
+  } catch (e) {
+    // Concurrent grant met dezelfde idempotencyKey: de check-then-act (findUnique →
+    // create) mist elkaar en de 2e transactie botst op de @unique idempotencyKey
+    // (P2002). Die tx rolt VOLLEDIG terug — de dubbele increment wordt ongedaan
+    // gemaakt, dus het saldo klopt (precies één keer opgehoogd). Behandel als
+    // idempotent succes i.p.v. door te gooien.
+    if (
+      p.idempotencyKey &&
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === 'P2002'
+    ) {
+      return getBalance(p.organizationId);
     }
-    const bal = await tx.creditBalance.upsert({
-      where: { organizationId: p.organizationId },
-      create: {
-        organizationId: p.organizationId,
-        balance: p.credits,
-        reserved: 0,
-        lifetimeGranted: p.credits,
-        lifetimeSpent: 0,
-      },
-      update: {
-        balance: { increment: p.credits },
-        lifetimeGranted: { increment: p.credits },
-      },
-    });
-    await tx.creditTransaction.create({
-      data: {
-        organizationId: p.organizationId,
-        amount: p.credits,
-        type: p.type,
-        reason: p.reason,
-        balanceAfter: bal.balance,
-        idempotencyKey: p.idempotencyKey,
-        metadata: (p.metadata as Prisma.InputJsonValue) ?? undefined,
-      },
-    });
-    return snapshot(bal);
-  });
+    throw e;
+  }
 }
 
 /**
