@@ -14,6 +14,7 @@ import {
 } from "./subscription-sync";
 import { resolveWorkspaceFromCustomer } from "./customer";
 import { handlePurchaseSuccess, type PurchaseType } from "./one-time";
+import { handleTopupSuccess } from "./topup";
 
 // ─── payment_intent.succeeded (one-time purchases) ──────────
 
@@ -23,6 +24,11 @@ import { handlePurchaseSuccess, type PurchaseType } from "./one-time";
  * PaymentIntent — guards on the metadata.type set by createPaymentIntent.
  */
 async function handlePaymentIntentSucceeded(pi: Stripe.PaymentIntent): Promise<void> {
+  // Credit top-up (Fase 3): org-pooled credits toekennen via grantCredits('TOPUP').
+  if (pi.metadata?.type === "credit_topup") {
+    await handleTopupSuccess(pi);
+    return;
+  }
   const workspaceId = pi.metadata?.workspaceId;
   const type = pi.metadata?.type;
   const itemId = pi.metadata?.itemId;
