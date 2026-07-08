@@ -23,6 +23,8 @@ import { getToolByName } from "@/lib/claw/tools/registry";
 import { orchestrateContentGeneration } from "@/lib/ai/canvas-orchestrator";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { chargeAfter } from "@/lib/billing/credits/meter-generation";
+import { getAgentDefinition } from "@/lib/agents/registry";
 
 // Contentgeneratie ná approve kan minuten duren (zelfde budget als de run-route).
 export const maxDuration = 800;
@@ -267,6 +269,22 @@ export async function POST(
       // Nieuw artefact + gegenereerde content → verse invalidatie.
       invalidateCache(cacheKeys.prefixes.agents(workspaceId));
       invalidateCache(cacheKeys.prefixes.studio(workspaceId));
+
+      // Gate C (Fase 3): confirm-time charge. Content-producerende agents leveren
+      // hun deliverable pas ná approve — de run zelf eindigt AWAITING_CONFIRMATION,
+      // dus run-agent boekt niet. Flat 'agent-deliverable', idempotent per
+      // run+deliverable (voorkomt dubbel-charge bij een confirm-retry).
+      if (getAgentDefinition(run.agentId)?.billable) {
+        await chargeAfter(
+          {
+            workspaceId,
+            action: "agent-deliverable",
+            feature: `agent:${run.agentId}`,
+            idempotencyKey: `agent-confirm:${run.id}:${deliverableId}`,
+          },
+          { count: 1 },
+        ).catch(() => {});
+      }
     }
 
     // create_campaign: LINK-artefact naar de campagne + (Strategist)
