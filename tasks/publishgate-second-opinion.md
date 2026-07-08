@@ -1,8 +1,8 @@
 ---
 id: publishgate-second-opinion
 title: Δ-4 PublishGate second-opinion — onafhankelijke Anthropic-call naast F-VAL composite
-fase: pre-launch
-priority: now
+fase: post-launch
+priority: later
 effort: 3-4 dagen
 owner: claude-code
 status: open
@@ -12,6 +12,8 @@ related-adr: 2026-05-08-fval-output-schema-bevindingen
 related-spec: tasks/_drafts/idea-brand-control-program.md
 worktree: branddock-program-p2
 ---
+
+> **Status-sync 2026-07-08**: `fase` pre-launch → **post-launch**, `priority` now → **later**. De frontmatter stond nog op de aanmaak-stand (2026-05-08); het roadmap-besluit van 2026-05-12 verplaatste Δ-4 naar post-launch (geen pilot-evidence dat F-VAL gaten heeft die een 2nd-opinion vangt). Nu consistent met roadmap Post-launch-tabel (`delta-4-publishgate-2nd-opinion`).
 
 # Probleem
 

@@ -138,3 +138,11 @@ De hele credit-branch is adversarieel gereviewd. **Ronde 1** vond 2 CRITICAL (ge
 8. **Resterende billable generatie-routes** bedraden (zie hierboven, met de generate-vs-compose/cache-hit-nuances).
 
 Deferred MINORs (dormant): AGENCY-limietverlaging (15ws/10seats) verifiëren bij cutover; token-accurate SEO-charge i.p.v. vaste 80; `PrismaTx`-cast.
+
+## Reconciliatie 2026-07-08 (status-sync)
+
+**Gemerged op `main`** via PR #92 (changelog #369) + de "resterende billable generatie-routes"-commit `51a108e6`. De primaire wiring draait dus op main, **dormant achter `NEXT_PUBLIC_BILLING_ENABLED=false`** — dode scaffolding zonder runtime-impact.
+
+Status blijft bewust **`in-progress`**: de acceptatie-DoD is niet gehaald zolang de **8 harde billing-ON-gates** (zie "T-review"-blok hierboven) open staan. Wat er ligt vs. rest:
+- ✅ **Gemerged**: `withCreditMetering`/`chargeAfter`-wrapper, SEO long-form, content-agents, primaire + geclassificeerde secundaire beeld/video-routes (met generate-vs-compose pad-guards), reaper-handler, floor-gedekte jobs = 0 cr.
+- ⏳ **Rest (= de billing-ON-gates, deels herbelegd)**: canvas-orchestrator non-SEO content-afboeking, pre-flight `enforceCreditBalance`-wiring op de routes, confirm-time agent-charge, `RESERVATION_REAP`-cron, grant-callers (trial/plan/topup → Fase 3/4), audit-grep-afronding, Neon `db push` vóór cutover. Kandidaat om als `pricing-credits-fase2-rest` af te splitsen als je Fase 2 los wilt finaliseren.
