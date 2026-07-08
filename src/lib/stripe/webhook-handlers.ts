@@ -15,6 +15,10 @@ import {
 import { resolveWorkspaceFromCustomer } from "./customer";
 import { handlePurchaseSuccess, type PurchaseType } from "./one-time";
 import { handleTopupSuccess } from "./topup";
+import { resolveOrgForWorkspace } from "./usage-tracker";
+import { grantCredits } from "@/lib/billing/credits/ledger";
+import { PLAN_CONFIGS } from "@/lib/constants/plan-limits";
+import type { PlanTier } from "@/types/billing";
 
 // ─── payment_intent.succeeded (one-time purchases) ──────────
 
@@ -174,6 +178,31 @@ export async function handleInvoicePaid(
     where: { workspaceId },
     data: { stripeCurrentPeriodUsage: 0 },
   });
+
+  // Plan-grant (Fase 3): ken de maandbundel toe bij een betaalde subscription-
+  // invoice (initieel + elke cyclus). Idempotent per invoice; org-pooled → grant
+  // op de org. FREE (monthlyCredits 0) en niet-subscription-invoices → geen grant.
+  const isSubscriptionRenewal =
+    invoice.billing_reason === "subscription_create" ||
+    invoice.billing_reason === "subscription_cycle";
+  if (isSubscriptionRenewal) {
+    const organizationId = await resolveOrgForWorkspace(workspaceId);
+    const ws = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { planTier: true },
+    });
+    const tier = (ws?.planTier ?? "FREE") as PlanTier;
+    const monthlyCredits = PLAN_CONFIGS[tier]?.monthlyCredits ?? 0;
+    if (organizationId && monthlyCredits > 0) {
+      await grantCredits({
+        organizationId,
+        credits: monthlyCredits,
+        type: "PLAN_GRANT",
+        reason: `Maandbundel ${tier} (${monthlyCredits} credits)`,
+        idempotencyKey: `plan-grant:${invoice.id}`,
+      });
+    }
+  }
 }
 
 // ─── invoice.payment_failed ─────────────────────────────────
