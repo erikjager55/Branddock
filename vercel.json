@@ -6,6 +6,10 @@
       "schedule": "* * * * *"
     },
     {
+      "path": "/api/cron/reap-reservations",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/reconcile-competitor-counts",
       "schedule": "0 3 * * *"
     },
