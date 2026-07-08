@@ -6,6 +6,9 @@ import { createAuthMiddleware, APIError } from "better-auth/api";
 import { prisma } from "./prisma";
 import { ac, owner, admin, member, viewer } from "./auth-permissions";
 import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from "./constants/canonical-brand-assets";
+import { TRIAL_CREDITS, TRIAL_DAYS } from "./constants/plan-limits";
+import { grantCredits } from "./billing/credits/ledger";
+import { isBillingEnabled } from "./stripe/feature-flags";
 import { checkAuthEmailRateLimit } from "./auth/auth-rate-limiter";
 import { redis } from "./redis";
 import { trySendTransactional } from "./email/transactional";
@@ -56,7 +59,7 @@ async function provisionNewUser(userId: string, userName: string) {
 
   const slug = `user-${userId.substring(0, 8).toLowerCase()}`;
 
-  await prisma.$transaction(async (tx) => {
+  const orgId = await prisma.$transaction(async (tx) => {
     const org = await tx.organization.create({
       data: {
         name: `${userName}'s Brand`,
@@ -79,7 +82,7 @@ async function provisionNewUser(userId: string, userName: string) {
     });
 
     const workspace = org.workspaces[0];
-    if (!workspace) return;
+    if (!workspace) return null;
 
     // Create 11 canonical brand assets with active research methods
     for (const asset of CANONICAL_BRAND_ASSETS) {
@@ -104,7 +107,33 @@ async function provisionNewUser(userId: string, userName: string) {
     }
 
     console.log(`[auth] Provisioned org ${org.id} + workspace + 11 brand assets for user ${userId}`);
+    return org.id;
   });
+
+  // Trial-grant (reverse-trial, Fase 3): een nieuwe org krijgt TRIAL_CREDITS voor
+  // TRIAL_DAYS dagen. Alleen bij billing-aan — pre-launch is de app gratis en
+  // bestaande gebruikers krijgen `unlimitedCredits`. Idempotent (key per org) +
+  // fail-soft: een gefaalde grant mag het provisionen van een gebruiker nooit breken.
+  if (orgId && isBillingEnabled()) {
+    try {
+      await grantCredits({
+        organizationId: orgId,
+        credits: TRIAL_CREDITS,
+        type: 'TRIAL_GRANT',
+        reason: `${TRIAL_DAYS}-daagse reverse-trial`,
+        idempotencyKey: `trial:${orgId}`,
+      });
+      await prisma.organization.update({
+        where: { id: orgId },
+        data: { trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000) },
+      });
+    } catch (e) {
+      console.warn('[auth] trial-grant failed (swallowed)', {
+        orgId,
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
 }
 
 // ─── Sync OAuth tokens to WorkspaceIntegration ─────────────
