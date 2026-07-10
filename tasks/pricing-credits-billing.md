@@ -113,6 +113,8 @@ Deze umbrella blijft de **epic-tracker**. De uitvoerbare eenheden zijn de 7 fase
 
 Fase 4 (trial-expiry-deel) + Fase 6 (billing-UX) grotendeels geleverd; Fase 5 open.
 
+> **Pre-merge review (2 reviewers + round-2, 2026-07-10)**: ready-to-merge, fixes in `bfccca62` (plan-grant-sync, atomic trial-expiry, deploy-gates, card-error-state, dead-code). **LAUNCH-BLOCKER (WARNING)**: `handleInvoicePaid` synct nu de subscription (`updatePlanFromStripe`) → dat routeert elke betaalde renewal door `mapPriceToTier`, die een niet-gemapte price-id naar `FREE` mapt en `workspace.planTier` overschrijft. **Vóór billing-aan: zorg dat ÁLLE live Stripe subscription-price-ids in de `STRIPE_PRICE_*`-env-map staan**, anders downgradet een geldige renewal een betalende klant naar FREE + 0 credits. Overweeg `mapPriceToTier`/`updatePlanFromStripe` te hardenen zodat een succesvol-betaalde invoice nooit naar FREE downgradet. Overige gedocumenteerde follow-ups: count=1-enforcement, refund/dispute-clawback, `reserved` bij trial-expiry, i18n-keys + settings-toggle-UI.
+
 | Fase | Task-file | Effort | Status | Kern |
 |---|---|---|---|---|
 | 0 | `tasks/done/pricing-credits-fase0-datamodel.md` | 1-2 d | ✅ **done** (#369, main) | Schema (`CreditBalance`/`CreditTransaction`, pooled op Organization) + `PlanTier`-mapping + `plan-limits.ts` herschrijven + credit-kosten-registry |
