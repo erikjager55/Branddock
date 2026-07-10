@@ -13,7 +13,8 @@
 import type Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 import { getStripeClient } from './client';
-import { STRIPE_CURRENCY } from './config';
+import { STRIPE_CURRENCY, getCheckoutUrls } from './config';
+import { getOrCreateCustomer } from './customer';
 import { isBillingEnabled } from './feature-flags';
 import { TOPUP_PACKS } from '@/lib/constants/plan-limits';
 import { grantCredits } from '@/lib/billing/credits/ledger';
@@ -85,6 +86,60 @@ export async function createTopupPayment(params: CreateTopupParams): Promise<Top
     console.error('[createTopupPayment] Error:', err);
     return { success: false, error: err instanceof Error ? err.message : 'Top-up-betaling aanmaken faalde.' };
   }
+}
+
+export interface CreateTopupCheckoutParams {
+  organizationId: string;
+  workspaceId: string;
+  packId: string;
+  baseUrl: string;
+}
+
+/**
+ * Maakt een Stripe Checkout-sessie (mode: payment) voor een credit-pack en geeft
+ * de redirect-URL terug — spiegel van de subscription-checkout. De credit_topup-
+ * metadata gaat via `payment_intent_data.metadata` mee op de PaymentIntent, zodat
+ * de bestaande `handleTopupSuccess`-webhook (payment_intent.succeeded) de credits
+ * toekent. Prijs server-side uit de pack-catalogus.
+ */
+export async function createTopupCheckout(params: CreateTopupCheckoutParams): Promise<{ url: string }> {
+  if (!isBillingEnabled()) throw new Error('Billing is disabled');
+  const pack = getTopupPack(params.packId);
+  if (!pack) throw new Error('Onbekend top-up-pack');
+
+  const stripe = getStripeClient();
+  const customerId = await getOrCreateCustomer(params.workspaceId);
+  const urls = getCheckoutUrls(params.baseUrl);
+  const meta: Record<string, string> = {
+    type: 'credit_topup',
+    organizationId: params.organizationId,
+    workspaceId: params.workspaceId,
+    credits: String(pack.credits),
+    packId: pack.id,
+  };
+
+  const session = await stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: 'payment',
+    currency: STRIPE_CURRENCY,
+    line_items: [
+      {
+        price_data: {
+          currency: STRIPE_CURRENCY,
+          product_data: { name: `Branddock credit top-up — ${pack.credits} credits` },
+          unit_amount: Math.round(pack.priceEur * 100),
+        },
+        quantity: 1,
+      },
+    ],
+    success_url: urls.success,
+    cancel_url: urls.cancel,
+    metadata: meta,
+    payment_intent_data: { metadata: meta },
+  });
+
+  if (!session.url) throw new Error('Stripe did not return a checkout URL');
+  return { url: session.url };
 }
 
 /**

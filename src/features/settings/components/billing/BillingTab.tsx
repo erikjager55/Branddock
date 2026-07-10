@@ -5,6 +5,8 @@ import { useBillingPlan } from '@/hooks/use-billing';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { BillingBanner, UpgradeModal } from '@/components/billing';
 import { CurrentPlanCard } from './CurrentPlanCard';
+import { CreditBalanceCard } from './CreditBalanceCard';
+import { TopupCard } from './TopupCard';
 import { UsageOverviewCard } from './UsageOverviewCard';
 import { PlanComparisonTable } from './PlanComparisonTable';
 import { PaymentMethodsCard } from './PaymentMethodsCard';
@@ -34,6 +36,10 @@ export function BillingTab() {
 
       {/* Current Plan */}
       <CurrentPlanCard />
+
+      {/* Credits (alleen bij billing-aan — de query is anders disabled) */}
+      {!billing.isFreeBeta && <CreditBalanceCard />}
+      {!billing.isFreeBeta && <TopupCard />}
 
       {/* Usage Overview */}
       <UsageOverviewCard />

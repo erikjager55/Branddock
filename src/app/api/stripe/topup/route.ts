@@ -1,17 +1,18 @@
 // =============================================================
-// POST /api/stripe/topup — start een prepaid credit-pack-aankoop (Fase 3, A3).
+// /api/stripe/topup — prepaid credit-pack-aankoop (Fase 3, A3).
 //
-// Auth: member+ (viewers zijn read-only). Prijs wordt server-side afgeleid uit
-// TOPUP_PACKS (nooit uit de body). Retourneert een PaymentIntent-clientSecret;
-// de webhook (payment_intent.succeeded, type 'credit_topup') kent de credits toe.
+// GET  → pack-catalogus (voor de top-up-UI).
+// POST → start een Stripe Checkout-sessie voor een pack en geeft de redirect-URL
+//        terug (spiegel van de subscription-checkout). Prijs server-side uit
+//        TOPUP_PACKS. Auth: member+ (viewers zijn read-only). De webhook
+//        (payment_intent.succeeded, type 'credit_topup') kent de credits toe.
 // =============================================================
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireWorkspaceRole } from '@/lib/auth/require-role';
-import { getServerSession } from '@/lib/auth-server';
 import { resolveOrgForWorkspace } from '@/lib/stripe/usage-tracker';
-import { createTopupPayment, listTopupPacks } from '@/lib/stripe/topup';
+import { createTopupCheckout, listTopupPacks } from '@/lib/stripe/topup';
 
 const bodySchema = z.object({ packId: z.string().min(1) });
 
@@ -26,11 +27,6 @@ export async function POST(request: Request) {
   const role = await requireWorkspaceRole(['owner', 'admin', 'member']);
   if (role instanceof NextResponse) return role;
   const workspaceId = role.workspaceId;
-
-  const session = await getServerSession();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
   let body: unknown;
   try {
@@ -48,17 +44,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No organization for workspace' }, { status: 404 });
   }
 
-  const result = await createTopupPayment({
-    organizationId,
-    workspaceId,
-    userId: session.user.id,
-    packId: parsed.data.packId,
-  });
-  if (!result.success) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
+  try {
+    const baseUrl = new URL(request.url).origin;
+    const { url } = await createTopupCheckout({
+      organizationId,
+      workspaceId,
+      packId: parsed.data.packId,
+      baseUrl,
+    });
+    return NextResponse.json({ url });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Top-up aanmaken faalde' },
+      { status: 400 },
+    );
   }
-  return NextResponse.json({
-    clientSecret: result.clientSecret,
-    paymentIntentId: result.paymentIntentId,
-  });
 }
