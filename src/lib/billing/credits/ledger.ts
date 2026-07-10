@@ -151,7 +151,7 @@ export async function deductCredits(
         organizationId: p.organizationId,
         workspaceId: p.workspaceId,
         amount: -p.credits,
-        type: 'DEDUCT',
+        type: p.type ?? 'DEDUCT',
         reason: p.reason,
         feature: p.feature,
         action: p.action,
