@@ -17,6 +17,7 @@ import { isBillingEnabled, getEffectivePlan } from './feature-flags';
 import { getBalance } from '@/lib/billing/credits/ledger';
 import { InsufficientCreditsError, insufficientCreditsResponse } from '@/lib/billing/credits/errors';
 import { isOrgUnlimited } from '@/lib/billing/credits/exempt';
+import { maybeAutoTopup } from '@/lib/billing/credits/auto-topup';
 import { CREDIT_COSTS } from '@/lib/billing/credits/credit-costs';
 import { resolveOrgForWorkspace } from '@/lib/stripe/usage-tracker';
 import type { CreditAction } from '@/types/billing';
@@ -279,10 +280,17 @@ export async function enforceCreditBalance(
   if (estimatedCredits <= 0) return null;
   if (await isOrgUnlimited(organizationId)) return null; // unlimited-free-org → nooit blokkeren
 
-  const balance = await getBalance(organizationId);
+  let balance = await getBalance(organizationId);
   if (balance.available >= estimatedCredits) return null;
 
-  // TODO(Fase 3): auto-topup-hook — probeer credits bij te kopen vóór de 402.
+  // Auto-topup-hook (Fase 3-scaffolding): probeer bij een tekort optimistisch bij te
+  // kopen. No-op tot Fase 5 het SEPA-mandaat + de off-session-charge invult; dan
+  // re-check het saldo vóór de 402.
+  const auto = await maybeAutoTopup(organizationId, estimatedCredits - balance.available);
+  if (auto.topped) {
+    balance = await getBalance(organizationId);
+    if (balance.available >= estimatedCredits) return null;
+  }
 
   return insufficientCreditsResponse(
     new InsufficientCreditsError(organizationId, estimatedCredits, balance.available),
