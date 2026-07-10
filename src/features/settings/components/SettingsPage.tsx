@@ -21,9 +21,10 @@ import { VisualFidelityDashboardTab } from './visual-fidelity/VisualFidelityDash
 import { BugTriageTab } from './developer/BugTriageTab';
 import { FeatureTriageTab } from './developer/FeatureTriageTab';
 import { FeedbackTriageTab } from './developer/FeedbackTriageTab';
+import { CreditAdminPanel } from './developer/CreditAdminPanel';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
 
-const DEVELOPER_TABS: SettingsTab[] = ['administrator', 'ai-models', 'ai-prompts', 'author-profile', 'visual-fidelity', 'bug-triage', 'feature-triage', 'feedback-triage'];
+const DEVELOPER_TABS: SettingsTab[] = ['administrator', 'ai-models', 'ai-prompts', 'author-profile', 'visual-fidelity', 'bug-triage', 'feature-triage', 'feedback-triage', 'credit-admin'];
 
 interface SettingsPageProps {
   initialTab?: SettingsTab;
@@ -93,6 +94,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
         return <FeatureTriageTab />;
       case 'feedback-triage':
         return <FeedbackTriageTab />;
+      case 'credit-admin':
+        return <CreditAdminPanel />;
       default:
         return <AccountTab />;
     }

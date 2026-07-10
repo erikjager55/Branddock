@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain, Plug, Bug, Lightbulb, MessageSquarePlus, FileText, FileCode, Image as ImageIcon, ShieldCheck, IdCard } from 'lucide-react';
+import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain, Plug, Bug, Lightbulb, MessageSquarePlus, FileText, FileCode, Image as ImageIcon, ShieldCheck, IdCard, Coins } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useSettingsStore, type SettingsTab } from '@/stores/useSettingsStore';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
@@ -62,6 +62,18 @@ export function SettingsSubNav() {
           <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
             Developer
           </p>
+          <button
+            data-testid="settings-tab-credit-admin"
+            onClick={() => setActiveTab('credit-admin')}
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'credit-admin'
+                ? 'bg-primary/10 text-primary'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <Coins className="w-4 h-4" />
+            Credit Admin
+          </button>
           <button
             data-testid="settings-tab-ai-models"
             onClick={() => setActiveTab('ai-models')}
