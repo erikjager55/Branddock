@@ -14,6 +14,14 @@ import {
 } from "./subscription-sync";
 import { resolveWorkspaceFromCustomer } from "./customer";
 import { handlePurchaseSuccess, type PurchaseType } from "./one-time";
+import { handleTopupSuccess } from "./topup";
+import { resolveOrgForWorkspace } from "./usage-tracker";
+import { updatePlanFromStripe } from "./subscription-sync";
+import { getStripeClient } from "./client";
+import { isCreditsEnabled } from "./feature-flags";
+import { grantCredits } from "@/lib/billing/credits/ledger";
+import { PLAN_CONFIGS } from "@/lib/constants/plan-limits";
+import type { PlanTier } from "@/types/billing";
 
 // ─── payment_intent.succeeded (one-time purchases) ──────────
 
@@ -23,6 +31,11 @@ import { handlePurchaseSuccess, type PurchaseType } from "./one-time";
  * PaymentIntent — guards on the metadata.type set by createPaymentIntent.
  */
 async function handlePaymentIntentSucceeded(pi: Stripe.PaymentIntent): Promise<void> {
+  // Credit top-up (Fase 3): org-pooled credits toekennen via grantCredits('TOPUP').
+  if (pi.metadata?.type === "credit_topup") {
+    await handleTopupSuccess(pi);
+    return;
+  }
   const workspaceId = pi.metadata?.workspaceId;
   const type = pi.metadata?.type;
   const itemId = pi.metadata?.itemId;
@@ -168,6 +181,38 @@ export async function handleInvoicePaid(
     where: { workspaceId },
     data: { stripeCurrentPeriodUsage: 0 },
   });
+
+  // Plan-grant (Fase 3): ken de maandbundel toe bij een betaalde subscription-
+  // invoice (initieel + elke cyclus). Idempotent per invoice; org-pooled → grant
+  // op de org. FREE (monthlyCredits 0) en niet-subscription-invoices → geen grant.
+  const isSubscriptionRenewal =
+    invoice.billing_reason === "subscription_create" ||
+    invoice.billing_reason === "subscription_cycle";
+  if (isSubscriptionRenewal && isCreditsEnabled()) {
+    // Sync de subscription eerst zodat workspace.planTier vers is — de maandbundel is
+    // dan order-onafhankelijk van de subscription.*/checkout-webhooks. (Een mis-ordered
+    // invoice.paid las anders FREE → 0 credits, eenmalig en nooit hersteld.) Bij een
+    // transiente sync-fout throwt dit → Stripe retryt → invoice-upsert + grant zijn
+    // idempotent, dus veilig at-least-once.
+    await updatePlanFromStripe(workspaceId, getStripeClient());
+
+    const organizationId = await resolveOrgForWorkspace(workspaceId);
+    const ws = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { planTier: true },
+    });
+    const tier = (ws?.planTier ?? "FREE") as PlanTier;
+    const monthlyCredits = PLAN_CONFIGS[tier]?.monthlyCredits ?? 0;
+    if (organizationId && monthlyCredits > 0) {
+      await grantCredits({
+        organizationId,
+        credits: monthlyCredits,
+        type: "PLAN_GRANT",
+        reason: `Maandbundel ${tier} (${monthlyCredits} credits)`,
+        idempotencyKey: `plan-grant:${invoice.id}`,
+      });
+    }
+  }
 }
 
 // ─── invoice.payment_failed ─────────────────────────────────

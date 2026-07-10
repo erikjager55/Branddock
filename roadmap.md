@@ -68,10 +68,10 @@
 
 | Fase | Task | Wanneer | Effort | Status |
 |---|---|---|---|---|
-| 1 | [`i18n-ui-foundation`](tasks/i18n-ui-foundation.md) — i18next runtime + Display-language selector + CI-guard + volledige extractie/remediation | pre-launch | 2-3 wk | ✅ **done** (#65/#68/#70/#71) |
+| 1 | [`i18n-ui-foundation`](tasks/done/i18n-ui-foundation.md) — i18next runtime + Display-language selector + CI-guard + volledige extractie/remediation | pre-launch | 2-3 wk | ✅ **done** (#65/#68/#70/#71) |
 | 1b | [`i18n-ai-translation-pipeline`](tasks/i18n-ai-translation-pipeline.md) — automatische AI-vertaling (Opus + validatie-gate + judge) + de/es/fr | **post-launch** (en/nl geseed; niet-blokkerend) | 1-2 wk + per-namespace | open |
-| 2 | [`content-locale-foundation`](tasks/content-locale-foundation.md) — Content-language selector + Brand/BrandLocaleProfile datamodel | pre-launch | 2-3 wk | ✅ **done** (#73) |
-| 3 | [`content-locale-target-picker`](tasks/content-locale-target-picker.md) — per-generatie target-locale + analyze-lek dichten | pre-launch | 1-2 wk | ✅ **done** (#74; F-VAL-pack + bulk-UI = post-launch follow-up) |
+| 2 | [`content-locale-foundation`](tasks/done/content-locale-foundation.md) — Content-language selector + Brand/BrandLocaleProfile datamodel | pre-launch | 2-3 wk | ✅ **done** (#73) |
+| 3 | [`content-locale-target-picker`](tasks/done/content-locale-target-picker.md) — per-generatie target-locale + analyze-lek dichten | pre-launch | 1-2 wk | ✅ **done** (#74; F-VAL-pack + bulk-UI = post-launch follow-up) |
 | 4+5 | [`multi-market-transcreation-enterprise`](tasks/multi-market-transcreation-enterprise.md) — transcreatie-fan-out + per-locale F-VAL + compliance/hreflang/RBAC/org-billing | LATER (enterprise, go/no-go) | multi-maand | blocked |
 
 **Kritieke aandachtspunten** (uit de adversariële review, verwerkt in de task-files): twee parallelle content-locale-paden (`getBrandContext` inline `'en'` + `resolveLocaleForBrand` `'en-GB'`) moeten béide profiel-precedentie krijgen; cache-key in dezelfde commit als locale-aware maken (anders cross-locale bleed); LandingPage unique-key-flip is een compile-break (raakt `p/[slug]` + `publish-page.ts`); `prisma/seed.ts` moet `Brand`+default-profiel seeden; F-VAL-packs dekken 4 van 7 talen (markt-activatie gated op pack); server-e-mails/PDF/notifications vallen buiten de client-i18next-laag.
@@ -118,7 +118,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | **`content-test-regression-#7B`** | Layer 3 item-specific regression: LearningEvent → regression-corpus auto-promote + nightly run + alert. Plan §4 sub-sprint #7.B. | ~3d | #7 week 2 | open task-file |
 | **`video-chain-explainer-showcase`** | Multi-modal: full 5-staps chain (Plan/Script-per-scene/Storyboard/Coherence/Assembly) voor explainer-video als showcase. Lightweight chains voor video-ad + tiktok-script. Plan §3.0.5. | ~4d | #5-6 fill-in | open task-file |
 | **`image-quality-chain`** | Multi-modal: negative prompts + multi-candidate (3-4) selection UI + visual-fidelity dimension-breakdown + image-to-image refine-loop + OCR text-check + brand-color validation. Plan §3.0.5. | ~6d | #6 fill-in | ✅ done 2026-05-17 (#253, `tasks/done/image-quality-chain.md`) |
-| [`lp-feature-image-diversity`](tasks/lp-feature-image-diversity.md) | LP feature-beelden divers + relevant voor sectietekst: stijl-laag-sanering, imageBrief uit copy-LLM, server-side prompt-bouw + coherence/diversity-poort. Audit: `docs/audits/2026-06-10-lp-feature-image-diversity.md`. | 8,5-9,5d | #6-7 | in-progress 2026-06-10 |
+| [`lp-feature-image-diversity`](tasks/done/lp-feature-image-diversity.md) | LP feature-beelden divers + relevant voor sectietekst: stijl-laag-sanering, imageBrief uit copy-LLM, server-side prompt-bouw + coherence/diversity-poort. Audit: `docs/audits/2026-06-10-lp-feature-image-diversity.md`. | 8,5-9,5d | #6-7 | ✅ **done** (+ `lp-feature-image-followups` done) |
 | [`context-picker-strategy-observations`](tasks/done/context-picker-strategy-observations.md) | Brand Assistant context-picker: `StrategyObservation` toevoegen (Tier-1 gap uit audit 2026-05-19). Hardcoded Claw-pattern, geen registry-entry. Tier-2 cleanups (Campaign → registry, Deliverable workaround) als follow-up. | ~4u | #6 fill-in | ✅ done 2026-05-19 (smoke partial — 0 observations in DB) |
 | [`web-page-builder-canvas-step-mvp`](tasks/web-page-builder-canvas-step-mvp.md) | Puck als Canvas Step 3 Medium-renderer voor 5 web-page types + brandstyle-analyzer Fase A-E + LP design batches 1-8 + F-VAL vision-judge dim 8 + DTS content-quality C1-C11 + brand-fidelity Step 2 LP. **Promoted post-launch → pre-launch 2026-05-29** (130 commits in feature-branch, 5 dagen extra scope landed). | 6-8w landed | #6 | partial — finalisatie + 4 squash-merges in plan `zippy-twirling-feigenbaum` |
 
@@ -138,14 +138,24 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 **Track C — Launch infra** (worktree `branddock-launch`)
 | ID | Titel | Effort | Sprint | Status |
 |---|---|---|---|---|
-| [`vercel-deployment`](tasks/vercel-deployment.md) | Vercel + Neon DB + serverless-hardening + monitoring | ~2wk | #5 | ✅ **DONE + LIVE 2026-07-05** (PR #76) |
-| [`stripe-billing-live`](tasks/stripe-billing-live.md) | Stripe live billing — checkout + webhooks + plan enforcement | 1w | #6 | ✅ **LIVE 2026-07-06** (PR #79 hardening + #85/#86 redirect-fixes + #88 styling + go-live) — checkout/webhook(9 events)/portal live op het betterbrands.nl-account; `NEXT_PUBLIC_BILLING_ENABLED=true` in Vercel; end-to-end getest (checkout→PRO, cancel→FREE) |
-| [`pricing-credits-billing`](tasks/pricing-credits-billing.md) | Credit-based billing — prepaid bundel + top-up + metering-wiring (incl. background-jobs) + iDEAL/SEPA + BTW. ADR [`2026-07-07`](docs/adr/2026-07-07-pricing-credits-launch.md). Herziet de zojuist live-gegane vaste-prijs-tiers. | 3-4wk (gefaseerd 0-6) | #6-7 | open — **launch-blocker** (pricing besloten; fair-use-rem nog niet aangesloten) |
+| [`vercel-deployment`](tasks/done/vercel-deployment.md) | Vercel + Neon DB + serverless-hardening + monitoring | ~2wk | #5 | ✅ **DONE + LIVE 2026-07-05** (PR #76) |
+| [`stripe-billing-live`](tasks/done/stripe-billing-live.md) | Stripe live billing — checkout + webhooks + plan enforcement | 1w | #6 | ✅ **LIVE 2026-07-06** (PR #79 hardening + #85/#86 redirect-fixes + #88 styling + go-live) — checkout/webhook(9 events)/portal live op het betterbrands.nl-account; `NEXT_PUBLIC_BILLING_ENABLED=true` in Vercel; end-to-end getest (checkout→PRO, cancel→FREE) |
+| [`pricing-credits-billing`](tasks/pricing-credits-billing.md) | Credit-based billing — prepaid bundel + top-up + metering-wiring (incl. background-jobs) + iDEAL/SEPA + BTW. ADR [`2026-07-07`](docs/adr/2026-07-07-pricing-credits-launch.md). Herziet de zojuist live-gegane vaste-prijs-tiers. | 3-4wk (gefaseerd 0-6) | #6-7 | 🔄 **in-progress** — **launch-blocker**. Fase 0 ✅ + 1 ✅ + 2-primaire-wiring gemerged (#369, dormant achter billing-OFF); Fase 3 begonnen (unlimited-org-uitzondering, top-up-kern rest); Fase 4-6 open + 8 billing-ON-gates |
 | [`pilot-onboarding-better-brands`](tasks/pilot-onboarding-better-brands.md) | Better Brands eerste pilot live | 2d | #6 (na vercel) | open task-file |
 | [`review-live-pricing`](tasks/review-live-pricing.md) | Prijzen op de live site nalopen (bedragen + yearly-toggle + dubbele producten) | <1u | #6 | open — na stripe go-live (2026-07-07) |
 | `onboarding-flow-test` | Onboarding flow met 3 externe gebruikers | 1w | #7 | task-file volgt |
 | `marketing-site-pricing` | Marketing site + pricing pagina | 1w | #6-7 | task-file volgt |
 | [`ci-golden-set-e2e-fixes`](tasks/ci-golden-set-e2e-fixes.md) | CI-gates groen vóór livegang: `evaluate` (golden-set) faalt 0/10 (ontbrekende AI-keys in PR-context) + `e2e` flaky (rauwe `onboarding.skipTour`-i18n-key) | 0.5d | #7 | open — niet-blokkerend, wél groen maken vóór go-live |
+
+**Track D — Serverless-hardening (post-deploy follow-up, ontstaan uit `vercel-deployment`)**
+
+> Toegevoegd aan de roadmap 2026-07-08 (doc-sync — deze werkstroom draaide al maar stond nergens in Now). Maakt de zwaarste synchrone flows serverless-veilig op Vercel (fire-and-forget → queue, lange pipelines resumable). Voedt óók de credit-metering (Fase 2 `handlers.ts`).
+
+| ID | Titel | Effort | Status |
+|---|---|---|---|
+| [`serverless-hardening-jobs`](tasks/serverless-hardening-jobs.md) | A1 — fire-and-forget onboarding-pipelines → `AgentJob`-queue | representant done + 3-5d rest | 🔄 in-progress (2026-07-01) |
+| [`serverless-seo-decompose`](tasks/serverless-seo-decompose.md) | SEO 8-staps-pipeline decompose → resumable queued job (A3-deel-2) | 1-2d | 🔄 in-progress (2026-07-06) |
+| [`seo-pipeline-speedup`](tasks/seo-pipeline-speedup.md) | SEO 8-staps-pipeline versnellen (kwaliteit behouden) | — | 🔄 in-progress (2026-07-06) |
 
 ### Sprint-volgorde
 
@@ -239,8 +249,8 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 **Launch-fase (live-gang infra + billing)**
 | ID | Titel | Fase | Effort | Notitie |
 |---|---|---|---|---|
-| [`vercel-deployment`](tasks/vercel-deployment.md) | Vercel + Neon DB + custom domain + monitoring | launch | 3 dagen | ✅ **done 2026-07-05** — live op branddock-7y9n.vercel.app |
-| [`stripe-billing-live`](tasks/stripe-billing-live.md) | Stripe live billing — checkout + webhooks + plan enforcement | launch | 1 week | ✅ **LIVE 2026-07-06** — go-live afgerond (zie Track C-tabel) |
+| [`vercel-deployment`](tasks/done/vercel-deployment.md) | Vercel + Neon DB + custom domain + monitoring | launch | 3 dagen | ✅ **done 2026-07-05** — live op branddock-7y9n.vercel.app |
+| [`stripe-billing-live`](tasks/done/stripe-billing-live.md) | Stripe live billing — checkout + webhooks + plan enforcement | launch | 1 week | ✅ **LIVE 2026-07-06** — go-live afgerond (zie Track C-tabel) |
 | [`pilot-onboarding-better-brands`](tasks/pilot-onboarding-better-brands.md) | Better Brands eerste pilot live | launch | 2 dagen | Voorwaarde: vercel-deployment done |
 | `onboarding-flow-test` | Onboarding flow met 3 externe gebruikers | launch | 1 week | Validation pre-klant — task-file volgt |
 | `marketing-site-pricing` | Marketing site + pricing pagina | launch | 1 week | Conversie-driver — task-file volgt |
@@ -251,7 +261,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 
 | ID | Titel | Fase | Effort | Notitie |
 |---|---|---|---|---|
-| `delta-4-publishgate-2nd-opinion` | Δ-4 PublishGate 2nd-opinion review-pass | post-launch | onbekend | Verplaatst 2026-05-12 uit BCP Phase 2: preventief bouwen zonder pilot-evidence onverstandig. 4 mogelijke interpretaties open: (a) extra AI-call ander model, (b) heuristic conflict-detector, (c) human-in-the-loop, (d) adversarial probe. |
+| [`publishgate-second-opinion`](tasks/publishgate-second-opinion.md) | Δ-4 PublishGate 2nd-opinion review-pass — onafhankelijke Anthropic-call naast F-VAL composite | post-launch | 3-4d | Verplaatst 2026-05-12 uit BCP Phase 2: preventief bouwen zonder pilot-evidence onverstandig. Task-file frontmatter 2026-07-08 gesynct naar post-launch/later. 4 interpretaties open: (a) extra AI-call ander model, (b) heuristic conflict-detector, (c) human-in-the-loop, (d) adversarial probe. |
 | [`geo-seo-followup-later`](tasks/geo-seo-followup-later.md) | GEO/SEO opvolg-bucket: externe entity-reinforcement (Wikidata/G2/Reddit) + live AI-crawler-citation-meting + restschema (`BreadcrumbList`/`howToSchema`) + deploy-time browser-smoke + nightly staleness-recompute | post-launch | gefaseerd | **Tracker/staging-bucket** (toegevoegd 2026-06-25) — geen uitvoerbare eenheid; splits per sub-item af zodra concreet. Meeste sub-items dep op `vercel-deployment` of eigen ADR/research; read-time staleness-flag al gewired (#338). |
 | [`validate-brand-domain-component-fit`](tasks/validate-brand-domain-component-fit.md) | Meet of merk-/domein-specifieke web-page componenten de pipeline raken vóór bouwen (pipeline-fit-telling + wizard-of-oz) | post-launch | 1-2d analyse | Verdict needs-validation-first uit feature-planner 2026-06-24. Gate vóór idea `brand-domain-specific-components`. Pas zinvol met pilot-data. |
 | [`security-residual-hardening`](tasks/security-residual-hardening.md) | Security-audit restscope: L4 (workspace-config rol-checks), L6 (Help-Center markdown-escape), L9 (ad-tokens version-prefix/rotatie), Zod-coverage-sweep mutatie-routes, CSP-bron-consolidatie (+nonce `script-src`), claw/confirm dubbele-resolutie, `image-scraper`/`knowledge-research` sync→async SSRF-upgrade | post-launch | 1-2d | **SSRF-blok al afgevinkt** (#349 safeFetch per-hop redirect-revalidatie + #350 convergentie). Resterende items lager-risico/breder — splits per sub-item af. Bron: `docs/audits/2026-06-26-security-audit.md`. De HIGH-findings H1–H8 + MEDIUM/LOW zijn al gemerged (#345–#350). |

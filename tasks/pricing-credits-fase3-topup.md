@@ -5,7 +5,7 @@ fase: launch
 priority: now
 effort: 2-3 dagen
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-07-07
 related-adr: docs/adr/2026-07-07-pricing-credits-launch.md
 related-spec: tasks/pricing-credits-billing.md
@@ -84,3 +84,19 @@ Bouw een prepaid top-up-flow op de bestaande Stripe-primitives (`one-time.ts`-pa
 - **Anti-Abstraction**: hergebruik `one-time.ts` (server-side-prijs-patroon + PaymentIntent) en `webhook-handlers.ts` (bestaande event-afhandeling + `ProcessedStripeEvent`-idempotentie) — geen nieuwe payment-abstractie. De in-arrears `metered.ts` wordt vervangen, niet uitgebreid (ADR D6).
 - **Integration-First**: het webhook→`grantCredits`-contract + de `maybeAutoTopup(orgId, shortfall)`-signature liggen hier vast; Fase 6 toont alleen de resultaten.
 - **Verificatie-noot**: deze omgeving kan Stripe niet volledig draaien; leun op Stripe-testmode + CLI-webhook-triggers op de deploy voor de eind-smoke.
+
+## Voortgang 2026-07-08 (branch `feat/pricing-credits-fase3`) — status-sync
+
+Status `open` → **`in-progress`** gezet: er ligt één commit op deze branch (`b7359d9c`), maar die dekt een **neventaak**, niet de Fase-3-kern.
+
+**✅ Geleverd (commit `b7359d9c`, nog NIET gemerged — leeft op deze branch):**
+- **Unlimited-credits-uitzondering per organisatie** — comped/pre-launch-orgs (`Organization.unlimitedCredits=true`) short-circuiten álle credit-paden (reserve/enforce/deduct/charge), los van plan-tier of saldo. `exempt.ts` (gecachte `isOrgUnlimited`, 60s TTL + invalidate), gewired in `withCreditMetering` + `chargeAfter` + `enforceCreditBalance`, `scripts/dev/set-unlimited-credits.ts` (comp een org via slug/naam/workspaceId), `credit-exempt-smoke` 4/4. Additief schema-veld → **Neon `db push` vereist bij merge**.
+- **Waarom dit eerst kwam**: enabler voor dogfooding/pilot met billing-ON zónder eigen orgs te belasten. Stond niet in de originele acceptatiecriteria hierboven — het is een operationele uitzondering, geen top-up-werk.
+
+**⏳ Fase-3-KERN — nog volledig te bouwen (de acceptatiecriteria hierboven zijn nog niet geraakt):**
+- `src/lib/billing/credits/topup.ts` (pack-catalogus + `createTopupCheckout`, server-side prijs) — **bestaat niet**.
+- `src/lib/billing/credits/auto-topup.ts` (`maybeAutoTopup` + plafond + optimistisch grant) — **bestaat niet**.
+- `src/app/api/stripe/topup/route.ts` — **bestaat niet**.
+- Webhook-handler `grantCredits('TOPUP')` + idempotent + SEPA-terugdraai-afhandeling — nog niet bedraad.
+- `metered.ts` in-arrears-deprecatie — nog niet gedaan.
+- **Dependency-herinnering**: de handmatige iDEAL-pack-aankoop kan nu; de **auto-topup-tak wacht op het SEPA-mandaat uit Fase 5**.

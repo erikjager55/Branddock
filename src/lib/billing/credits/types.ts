@@ -17,6 +17,7 @@ export interface DeductParams {
   reason: string;
   idempotencyKey?: string; // voorkomt dubbel-boeken bij re-dispatch
   force?: boolean; // post-hoc: sla de saldo-guard over (output al gemaakt, saldo mag dalen)
+  type?: CreditTransactionType; // default DEDUCT; EXPIRY voor verlopen trial-credits
 }
 
 /** Toekenning (trial/plan/topup/refund). */

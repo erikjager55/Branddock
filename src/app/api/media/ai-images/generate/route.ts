@@ -17,6 +17,7 @@ import { mapGeneratedImage } from '@/features/media-library/utils/media-utils';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { chargeAfter } from '@/lib/billing/credits/meter-generation';
+import { enforceCreditsForAction } from '@/lib/stripe/enforcement';
 import type { ConsistentModelType } from '@prisma/client';
 
 const generateSchema = z.object({
@@ -73,6 +74,10 @@ function toFalImageSize(ar: string): string {
 export async function POST(request: NextRequest) {
   try {
     const workspaceId = await resolveWorkspaceId();
+    // Gate B (Fase 3): pre-flight 402 bij ontoereikend saldo. count=1 = conservatieve
+    // per-unit-schatting (blokkeert 0-saldo op elke dure route); exacte count = follow-up.
+    const creditBlock = await enforceCreditsForAction(workspaceId ?? '', 'image', 1);
+    if (creditBlock) return creditBlock;
     if (!workspaceId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

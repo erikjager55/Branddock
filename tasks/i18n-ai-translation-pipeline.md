@@ -1,8 +1,8 @@
 ---
 id: i18n-ai-translation-pipeline
 title: Automatische AI-vertaal-pipeline voor UI-strings (geen handmatige vertaling)
-fase: pre-launch
-priority: now
+fase: post-launch
+priority: later
 effort: 1-2 weken (engine) + doorlopend per namespace
 owner: claude-code
 status: open
@@ -12,6 +12,8 @@ related-adr: docs/adr/2026-06-28-multilingual-i18n-and-multi-market-content.md
 related-spec: -
 worktree: -
 ---
+
+> **Status-sync 2026-07-08**: `fase` pre-launch → **post-launch**, `priority` now → **later** — consistent met de roadmap §🌍 Meertaligheid (Fase 1b = post-launch parkeer; en/nl al geseed door de extractie-waves, dus niet-blokkerend voor launch).
 
 # Probleem
 

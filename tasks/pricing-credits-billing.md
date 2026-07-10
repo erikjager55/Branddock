@@ -5,7 +5,7 @@ fase: launch
 priority: now
 effort: 3-4 weken (gefaseerd; GESPLITST in 7 fase-task-files 2026-07-07)
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-07-07
 related-adr: docs/adr/2026-07-07-pricing-credits-launch.md
 related-spec: -
@@ -107,15 +107,23 @@ Bouw het credit-model werkend in de app: een pooled credit-ledger op account-niv
 
 Deze umbrella blijft de **epic-tracker**. De uitvoerbare eenheden zijn de 7 fase-task-files hieronder — elk volledig volgens `tasks/_template.md` (frontmatter, probleem, voorstel, acceptatie incl. tsc/lint/smoke, file-lists aanraak/NIET-aanraak, smoke, risico's, out-of-scope, notes met dependencies). Bouw + finaliseer per fase-file, niet in deze umbrella.
 
-| Fase | Task-file | Effort | Kern |
-|---|---|---|---|
-| 0 | `tasks/pricing-credits-fase0-datamodel.md` | 1-2 d | Schema (`CreditBalance`/`CreditTransaction`, pooled op Organization) + `PlanTier`-mapping + `plan-limits.ts` herschrijven + credit-kosten-registry |
-| 1 | `tasks/pricing-credits-fase1-ledger-core.md` | 2-3 d | Ledger-core (deduct/grant/reserve/reconcile) + output-only metering + pre-flight-reservering + balans-guard |
-| 2 | `tasks/pricing-credits-fase2-metering-wiring.md` | 3-5 d | Afboeking bedraden op alle generatie-sites incl. background-jobs (`handlers.ts`) + audit-grep |
-| 3 | `tasks/pricing-credits-fase3-topup.md` | 2-3 d | Prepaid top-up-packs + auto-topup (plafond/melding/toggle); in-arrears `metered.ts` → prepaid |
-| 4 | `tasks/pricing-credits-fase4-trial.md` | 1-2 d | 28-daagse no-card reverse trial (300 cr, read-only lock dag 28) |
-| 5 | `tasks/pricing-credits-fase5-payments-tax.md` | 4-6 d | iDEAL/SEPA payment-methods + iDEAL→SEPA-mandaat + Stripe Tax/BTW (VAT + reverse-charge + OSS + factuur-velden) |
-| 6 | `tasks/pricing-credits-fase6-usage-ux.md` | 2-3 d | In-app usage-UX (balans/meter/pre-flight-schatting/top-up-CTA/auto-topup-instelling/trial-countdown) |
+> **Live status (bijgewerkt 2026-07-08 na status-sync)**: Fase 0 ✅ + Fase 1 ✅ + Fase 2-primaire-wiring **gemerged op `main`** via PR #92 (changelog #369), dormant achter `NEXT_PUBLIC_BILLING_ENABLED=false`. Fase 2 blijft `in-progress` tot de 8 billing-ON-gates dicht zijn. Fase 3 `in-progress` maar alleen de **unlimited-credits-org-uitzondering** (commit `b7359d9c`, ongemergd op branch `feat/pricing-credits-fase3`) is geleverd — de top-up-kern (`topup.ts`/`auto-topup.ts`/`/api/stripe/topup`) is nog niet gebouwd. **Solo-gates B/A1/E/C/D geleverd (2026-07-08, branch `feat/pricing-credits-fase3`, dormant achter billing-OFF)**: B pre-flight-enforcement op de dure routes (`6d63ebdb`), A1 trial-grant 300cr/28d bij signup (`6c621b1b`), E grant-idempotentie/P2002-vangnet (`d0f50caa`), C confirm-time charge voor agent-deliverables (`d7ae3655`), D reaper-cron `/api/cron/reap-reservations` (`e5a44b3d`) — elk tsc 0 / lint 0 + eigen smoke (exempt 4/4, enforce 4/4, grant-idem 4/4, reaper 5/5). **A2/A3-code geleverd (2026-07-08)**: A3 handmatige top-up (`topup.ts` + `/api/stripe/topup` + webhook `credit_topup`-tak; **dynamische PaymentIntent-bedragen** → géén pre-created Stripe-prices nodig voor packs; top-up-smoke 4/4) + A2 plan-grant-maandbundel bij subscription-invoice (`handleInvoicePaid`, idempotent per invoice). Grants-trio compleet: trial (A1) + plan (A2) + top-up (A3). Resteert: **auto-topup** (hangt aan SEPA-mandaat → Fase 5), **Stripe subscription-products/prices** (Starter/Growth/Agency — jouw dashboard, nodig voor A2-abonnementen) + **Tax/iDEAL-SEPA** (Fase 5), en de **Neon `db push`** (credit-modellen + `unlimitedCredits` + `trialEndsAt` + auto-topup-velden) vóór billing-ON.
+
+> **Autonome sessie 2026-07-10** (branch `feat/pricing-credits-fase3`, PR #98): **Fase 6-UX** — `GET /api/billing/balance`, `use-credits.ts`, `CreditBalanceCard` + `TopupCard` in Settings→Billing, en `createTopupCheckout` (Checkout-redirect; hergebruikt de `handleTopupSuccess`-webhook) → commit `ba6760ee`. **Auto-topup-scaffolding** — `Organization.autoTopup*`/`sepaMandateStatus` + `maybeAutoTopup` (no-op tot Fase 5) gewired in `enforceCreditBalance` → `cbaf7330`. **Trial-credit-expiry** — `expireTrialCredits` + `/api/cron/expire-trials` (dagelijks), veilig-heuristiek `lifetimeGranted === TRIAL_CREDITS` → `a0bf66a8`. **In-app Pad A end-to-end getest** (enforce 402 + metering −20). Smoke-suite **39/39**, tsc 0. **Resteert alleen nog**: Fase 5 (Stripe subscription-products/prices + Stripe Tax/BTW + iDEAL/SEPA-mandaat + de auto-topup off-session-charge), Pad B (echte `sk_test_`-top-up-test), Neon `db push`, en de go-live-vlag.
+
+Fase 4 (trial-expiry-deel) + Fase 6 (billing-UX) grotendeels geleverd; Fase 5 open.
+
+> **Pre-merge review (2 reviewers + round-2, 2026-07-10)**: ready-to-merge, fixes in `bfccca62` (plan-grant-sync, atomic trial-expiry, deploy-gates, card-error-state, dead-code). **LAUNCH-BLOCKER (WARNING)**: `handleInvoicePaid` synct nu de subscription (`updatePlanFromStripe`) → dat routeert elke betaalde renewal door `mapPriceToTier`, die een niet-gemapte price-id naar `FREE` mapt en `workspace.planTier` overschrijft. **Vóór billing-aan: zorg dat ÁLLE live Stripe subscription-price-ids in de `STRIPE_PRICE_*`-env-map staan**, anders downgradet een geldige renewal een betalende klant naar FREE + 0 credits. Overweeg `mapPriceToTier`/`updatePlanFromStripe` te hardenen zodat een succesvol-betaalde invoice nooit naar FREE downgradet. Overige gedocumenteerde follow-ups: count=1-enforcement, refund/dispute-clawback, `reserved` bij trial-expiry, i18n-keys + settings-toggle-UI.
+
+| Fase | Task-file | Effort | Status | Kern |
+|---|---|---|---|---|
+| 0 | `tasks/done/pricing-credits-fase0-datamodel.md` | 1-2 d | ✅ **done** (#369, main) | Schema (`CreditBalance`/`CreditTransaction`, pooled op Organization) + `PlanTier`-mapping + `plan-limits.ts` herschrijven + credit-kosten-registry |
+| 1 | `tasks/done/pricing-credits-fase1-ledger-core.md` | 2-3 d | ✅ **done** (#369, main) | Ledger-core (deduct/grant/reserve/reconcile) + output-only metering + pre-flight-reservering + balans-guard |
+| 2 | `tasks/pricing-credits-fase2-metering-wiring.md` | 3-5 d | 🔄 **in-progress** — primaire wiring gemerged (#369); 8 billing-ON-gates open | Afboeking bedraden op alle generatie-sites incl. background-jobs (`handlers.ts`) + audit-grep |
+| 3 | `tasks/pricing-credits-fase3-topup.md` | 2-3 d | 🔄 **in-progress** — alleen unlimited-org-uitzondering (`b7359d9c`, ongemergd); top-up-kern nog te bouwen | Prepaid top-up-packs + auto-topup (plafond/melding/toggle); in-arrears `metered.ts` → prepaid |
+| 4 | `tasks/pricing-credits-fase4-trial.md` | 1-2 d | ⬜ open | 28-daagse no-card reverse trial (300 cr, read-only lock dag 28) |
+| 5 | `tasks/pricing-credits-fase5-payments-tax.md` | 4-6 d | ⬜ open | iDEAL/SEPA payment-methods + iDEAL→SEPA-mandaat + Stripe Tax/BTW (VAT + reverse-charge + OSS + factuur-velden) |
+| 6 | `tasks/pricing-credits-fase6-usage-ux.md` | 2-3 d | ⬜ open | In-app usage-UX (balans/meter/pre-flight-schatting/top-up-CTA/auto-topup-instelling/trial-countdown) |
 
 ## Dependency-volgorde (kritiek pad + parallellisme)
 

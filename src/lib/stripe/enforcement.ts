@@ -13,9 +13,14 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import type { PlanTier, FeatureKey, EffectivePlan } from '@/types/billing';
 import { PLAN_LIMITS } from '@/lib/constants/plan-limits';
-import { isBillingEnabled, getEffectivePlan } from './feature-flags';
+import { isBillingEnabled, isCreditsEnabled, getEffectivePlan } from './feature-flags';
 import { getBalance } from '@/lib/billing/credits/ledger';
 import { InsufficientCreditsError, insufficientCreditsResponse } from '@/lib/billing/credits/errors';
+import { isOrgUnlimited } from '@/lib/billing/credits/exempt';
+import { maybeAutoTopup } from '@/lib/billing/credits/auto-topup';
+import { CREDIT_COSTS } from '@/lib/billing/credits/credit-costs';
+import { resolveOrgForWorkspace } from '@/lib/stripe/usage-tracker';
+import type { CreditAction } from '@/types/billing';
 
 // ─── PlanLimitError ─────────────────────────────────────────
 
@@ -271,15 +276,46 @@ export async function enforceCreditBalance(
   organizationId: string,
   estimatedCredits: number,
 ): Promise<NextResponse | null> {
-  if (!isBillingEnabled()) return null;
+  if (!isCreditsEnabled()) return null;
   if (estimatedCredits <= 0) return null;
+  if (await isOrgUnlimited(organizationId)) return null; // unlimited-free-org → nooit blokkeren
 
-  const balance = await getBalance(organizationId);
+  let balance = await getBalance(organizationId);
   if (balance.available >= estimatedCredits) return null;
 
-  // TODO(Fase 3): auto-topup-hook — probeer credits bij te kopen vóór de 402.
+  // Auto-topup-hook (Fase 3-scaffolding): probeer bij een tekort optimistisch bij te
+  // kopen. No-op tot Fase 5 het SEPA-mandaat + de off-session-charge invult; dan
+  // re-check het saldo vóór de 402.
+  const auto = await maybeAutoTopup(organizationId, estimatedCredits - balance.available);
+  if (auto.topped) {
+    balance = await getBalance(organizationId);
+    if (balance.available >= estimatedCredits) return null;
+  }
 
   return insufficientCreditsResponse(
     new InsufficientCreditsError(organizationId, estimatedCredits, balance.available),
   );
+}
+
+/**
+ * Route-boundary pre-flight-guard voor een generatie-actie: schat de kost uit de
+ * registry (× count voor beeld/video), resolvet de org uit de workspace, en geeft
+ * een 402 als het saldo niet dekt (of `null` als het mag / billing-uit / gratis /
+ * unlimited-org). Mirror van {@link enforceCreditsForAction} op de metering-kant.
+ *
+ * Gebruik bovenaan een route, ná body-parse (count bekend):
+ *   `const blocked = await enforceCreditsForAction(ws, 'image', numImages); if (blocked) return blocked;`
+ */
+export async function enforceCreditsForAction(
+  workspaceId: string,
+  action: CreditAction | string,
+  count = 1,
+): Promise<NextResponse | null> {
+  if (!isCreditsEnabled()) return null;
+  if (!workspaceId) return null;
+  const estimate = (CREDIT_COSTS[action as CreditAction] ?? 0) * Math.max(1, count);
+  if (estimate <= 0) return null;
+  const organizationId = await resolveOrgForWorkspace(workspaceId);
+  if (!organizationId) return null;
+  return enforceCreditBalance(organizationId, estimate); // checkt óók exempt + billing
 }

@@ -18,6 +18,16 @@ export function isBillingEnabled(): boolean {
   return process.env.NEXT_PUBLIC_BILLING_ENABLED === 'true';
 }
 
+/**
+ * Aparte vlag voor het CREDIT-model (metering/enforcement/grants/top-up), los van
+ * subscription-billing. Default OFF: het credit-model kan zo dormant meedeployen
+ * terwijl subscription-billing (isBillingEnabled) al aan staat. Zet pas op 'true'
+ * bij de credit-launch (na de launch-checklist + bestaande orgs comped).
+ */
+export function isCreditsEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_CREDITS_ENABLED === 'true';
+}
+
 // ─── Billing mode ───────────────────────────────────────────
 
 /**
