@@ -9,7 +9,7 @@
 // =============================================================
 
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { isCreditsEnabled } from '@/lib/stripe/feature-flags';
+import { isCreditsEnabled, isTopupEnabled } from '@/lib/stripe/feature-flags';
 import type { PlanTier } from '@/types/billing';
 
 export interface CreditBalance {
@@ -69,12 +69,12 @@ export function useCreditBalance() {
   });
 }
 
-/** Top-up-pack-catalogus. */
+/** Top-up-pack-catalogus (alleen als kopen ook echt kan — pilotfase: uit). */
 export function useTopupPacks() {
   return useQuery({
     queryKey: ['billing', 'credits', 'packs'],
     queryFn: fetchPacks,
-    enabled: isCreditsEnabled(),
+    enabled: isCreditsEnabled() && isTopupEnabled(),
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   });

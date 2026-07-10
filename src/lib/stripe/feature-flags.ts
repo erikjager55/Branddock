@@ -28,6 +28,16 @@ export function isCreditsEnabled(): boolean {
   return process.env.NEXT_PUBLIC_CREDITS_ENABLED === 'true';
 }
 
+/**
+ * Aparte vlag voor het KOPEN van credits (top-up-Checkout). Default OFF: in de
+ * pilotfase draaien credits (metering + saldo + maximum via admin-grants) zónder
+ * gekoppelde betaling — pilots kunnen niet per ongeluk bij live-Stripe uitkomen.
+ * De betaling later koppelen = alleen deze vlag op 'true'.
+ */
+export function isTopupEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_TOPUP_ENABLED === 'true';
+}
+
 // ─── Billing mode ───────────────────────────────────────────
 
 /**
