@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ShoppingCart, Loader2 } from 'lucide-react';
 import { Card, Button, Badge } from '@/components/shared';
 import { useTopupPacks, useTopup, useCreditBalance } from '@/hooks/use-credits';
+import { isTopupEnabled } from '@/lib/stripe/feature-flags';
 
 /**
  * Prepaid credit-pack-aankoop: toont de TOPUP_PACKS-catalogus + een "Kopen"-knop
@@ -16,6 +17,8 @@ export function TopupCard() {
   const { data: packs, isLoading } = useTopupPacks();
   const topup = useTopup();
 
+  // Pilotfase: credits kunnen aan staan zonder gekoppelde betaling — dan geen koop-UI.
+  if (!isTopupEnabled()) return null;
   if (balance?.unlimited) return null;
 
   return (

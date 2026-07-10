@@ -6,6 +6,7 @@
 // =============================================================
 
 import { NextResponse } from 'next/server';
+import { isTopupEnabled } from '@/lib/stripe/feature-flags';
 
 export class InsufficientCreditsError extends Error {
   public readonly organizationId: string;
@@ -21,11 +22,15 @@ export class InsufficientCreditsError extends Error {
   }
 }
 
-/** 402-response voor een route-boundary guard. */
+/** 402-response voor een route-boundary guard. Copy is topup-bewust: in de
+ * pilotfase (kopen uit) verwijzen we naar contact i.p.v. een koopknop die er niet is. */
 export function insufficientCreditsResponse(err: InsufficientCreditsError): NextResponse {
+  const suffix = isTopupEnabled()
+    ? 'Koop credits bij of wacht op je maandtegoed.'
+    : 'Neem contact op voor extra credits.';
   return NextResponse.json(
     {
-      error: `Onvoldoende credits: ${err.required} nodig, ${err.available} beschikbaar. Koop credits bij of wacht op je maandtegoed.`,
+      error: `Onvoldoende credits: ${err.required} nodig, ${err.available} beschikbaar. ${suffix}`,
       required: err.required,
       available: err.available,
       topUpRequired: true,
