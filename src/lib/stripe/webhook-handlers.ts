@@ -16,6 +16,8 @@ import { resolveWorkspaceFromCustomer } from "./customer";
 import { handlePurchaseSuccess, type PurchaseType } from "./one-time";
 import { handleTopupSuccess } from "./topup";
 import { resolveOrgForWorkspace } from "./usage-tracker";
+import { updatePlanFromStripe } from "./subscription-sync";
+import { getStripeClient } from "./client";
 import { grantCredits } from "@/lib/billing/credits/ledger";
 import { PLAN_CONFIGS } from "@/lib/constants/plan-limits";
 import type { PlanTier } from "@/types/billing";
@@ -186,6 +188,13 @@ export async function handleInvoicePaid(
     invoice.billing_reason === "subscription_create" ||
     invoice.billing_reason === "subscription_cycle";
   if (isSubscriptionRenewal) {
+    // Sync de subscription eerst zodat workspace.planTier vers is — de maandbundel is
+    // dan order-onafhankelijk van de subscription.*/checkout-webhooks. (Een mis-ordered
+    // invoice.paid las anders FREE → 0 credits, eenmalig en nooit hersteld.) Bij een
+    // transiente sync-fout throwt dit → Stripe retryt → invoice-upsert + grant zijn
+    // idempotent, dus veilig at-least-once.
+    await updatePlanFromStripe(workspaceId, getStripeClient());
+
     const organizationId = await resolveOrgForWorkspace(workspaceId);
     const ws = await prisma.workspace.findUnique({
       where: { id: workspaceId },

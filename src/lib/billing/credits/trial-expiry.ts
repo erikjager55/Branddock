@@ -8,41 +8,59 @@
 // iemand heeft bijgekocht of een abonnement heeft, is `lifetimeGranted` hoger en
 // blijft het saldo staan — betaalde credits verlopen dus nooit.
 //
-// Draait als dagelijkse cron (/api/cron/expire-trials).
+// Het nul-zetten gebeurt atomisch (SELECT … FOR UPDATE binnen een transactie),
+// zodat een concurrent spend niet tussen lezen en verlopen valt en het saldo
+// nooit negatief kan gaan. Draait als dagelijkse cron (/api/cron/expire-trials).
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
-import { deductCredits } from './ledger';
 import { TRIAL_CREDITS } from '@/lib/constants/plan-limits';
 
 export async function expireTrialCredits(): Promise<number> {
   const now = new Date();
 
-  const balances = await prisma.creditBalance.findMany({
+  const candidates = await prisma.creditBalance.findMany({
     where: {
       lifetimeGranted: TRIAL_CREDITS, // enkel de trial-bundel, niets bijgekocht/abonnement
       balance: { gt: 0 },
       organization: { trialEndsAt: { lt: now }, unlimitedCredits: false },
     },
-    select: { organizationId: true, balance: true },
+    select: { organizationId: true },
   });
 
   let expired = 0;
-  for (const b of balances) {
-    if (b.balance <= 0) continue;
+  for (const { organizationId } of candidates) {
     try {
-      await deductCredits({
-        organizationId: b.organizationId,
-        credits: b.balance,
-        type: 'EXPIRY',
-        reason: 'Trial-credits verlopen (28-daagse trial)',
-        force: true,
-        idempotencyKey: `trial-expiry:${b.organizationId}`,
+      const zeroed = await prisma.$transaction(async (tx) => {
+        // Row-lock: een concurrent deduct wacht tot deze tx klaar is, dus we zetten
+        // exact het huidige saldo op 0 (nooit een stale bedrag → nooit negatief).
+        const rows = await tx.$queryRaw<{ balance: number }[]>`
+          SELECT balance FROM credit_balance WHERE "organizationId" = ${organizationId} FOR UPDATE`;
+        const cur = rows[0] ? Number(rows[0].balance) : 0;
+        if (cur <= 0) return 0;
+
+        await tx.$executeRaw`
+          UPDATE credit_balance
+          SET balance = 0,
+              "lifetimeSpent" = "lifetimeSpent" + ${cur},
+              "updatedAt" = now()
+          WHERE "organizationId" = ${organizationId}`;
+
+        await tx.creditTransaction.create({
+          data: {
+            organizationId,
+            amount: -cur,
+            type: 'EXPIRY',
+            reason: 'Trial-credits verlopen (28-daagse trial)',
+            balanceAfter: 0,
+          },
+        });
+        return cur;
       });
-      expired++;
+      if (zeroed > 0) expired++;
     } catch (e) {
       console.warn('[trial-expiry] expiry failed for org', {
-        organizationId: b.organizationId,
+        organizationId,
         error: e instanceof Error ? e.message : String(e),
       });
     }

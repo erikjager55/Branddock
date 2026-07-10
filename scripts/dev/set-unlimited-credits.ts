@@ -57,13 +57,13 @@ async function main(): Promise<void> {
     data: { unlimitedCredits: value },
     select: { name: true, slug: true, unlimitedCredits: true },
   });
-  console.log(`✅ ${updated.name} (${updated.slug}) → unlimitedCredits = ${updated.unlimitedCredits}`);
+  console.log(`[ok] ${updated.name} (${updated.slug}) -> unlimitedCredits = ${updated.unlimitedCredits}`);
   console.log('   (server-cache verloopt binnen 60s; direct effect na herstart.)');
 }
 
 main()
+  .then(() => process.exit(0))
   .catch((e) => {
     console.error(e);
     process.exit(1);
-  })
-  .finally(() => process.exit(0));
+  });

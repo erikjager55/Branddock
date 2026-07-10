@@ -102,6 +102,10 @@ export async function grantCredits(p: GrantParams): Promise<CreditBalanceSnapsho
     // (P2002). Die tx rolt VOLLEDIG terug — de dubbele increment wordt ongedaan
     // gemaakt, dus het saldo klopt (precies één keer opgehoogd). Behandel als
     // idempotent succes i.p.v. door te gooien.
+    // Brede P2002-catch is hier veilig: de CreditBalance-upsert gebruikt native
+    // ON CONFLICT (throwt niet op de organizationId-unique), dus de ENIGE unique die
+    // in deze transactie een P2002 kan geven is de idempotencyKey op CreditTransaction.
+    // (meta.target scopen is niet betrouwbaar met de pg-adapter — die is vaak leeg.)
     if (
       p.idempotencyKey &&
       e instanceof Prisma.PrismaClientKnownRequestError &&

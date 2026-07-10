@@ -123,8 +123,10 @@ async function provisionNewUser(userId: string, userName: string) {
         reason: `${TRIAL_DAYS}-daagse reverse-trial`,
         idempotencyKey: `trial:${orgId}`,
       });
-      await prisma.organization.update({
-        where: { id: orgId },
+      // updateMany met null-guard: alleen zetten als de trial-klok nog niet loopt,
+      // zodat een retry van provisionNewUser de 28-daagse termijn niet reset.
+      await prisma.organization.updateMany({
+        where: { id: orgId, trialEndsAt: null },
         data: { trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000) },
       });
     } catch (e) {

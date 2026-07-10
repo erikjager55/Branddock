@@ -21,6 +21,22 @@ export async function GET() {
   if (role instanceof NextResponse) return role;
   const workspaceId = role.workspaceId;
 
+  // Billing-uit → gratis/onbeperkt, zonder de credit-kolommen te raken (deploy-safety
+  // vóór de Neon `db push`).
+  if (!isBillingEnabled()) {
+    return NextResponse.json({
+      billingEnabled: false,
+      unlimited: true,
+      balance: 0,
+      reserved: 0,
+      available: 0,
+      tier: 'ENTERPRISE' as PlanTier,
+      monthlyCredits: 0,
+      trialEndsAt: null,
+      trialDaysLeft: null,
+    });
+  }
+
   const organizationId = await resolveOrgForWorkspace(workspaceId);
   if (!organizationId) {
     return NextResponse.json({ error: 'No organization for workspace' }, { status: 404 });

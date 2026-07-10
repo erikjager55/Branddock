@@ -12,7 +12,18 @@ import { useCreditBalance } from '@/hooks/use-credits';
  */
 export function CreditBalanceCard() {
   const { t } = useTranslation('settings-billing');
-  const { data, isLoading } = useCreditBalance();
+  const { data, isLoading, isError } = useCreditBalance();
+
+  if (isError) {
+    return (
+      <Card padding="lg">
+        <h3 className="text-sm font-semibold text-gray-900">{t('credits.title', { defaultValue: 'Credits' })}</h3>
+        <p className="mt-1 text-sm text-red-600">
+          {t('credits.error', { defaultValue: 'Kon het credit-saldo niet laden.' })}
+        </p>
+      </Card>
+    );
+  }
 
   if (isLoading || !data) {
     return (

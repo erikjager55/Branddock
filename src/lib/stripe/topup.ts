@@ -2,16 +2,15 @@
 // Credit top-up — prepaid pack-aankoop (Fase 3, Gate A3).
 //
 // Server-side prijs uit TOPUP_PACKS (NOOIT uit de client — H3-patroon uit
-// one-time.ts): een PaymentIntent met `type: 'credit_topup'`-metadata; de webhook
-// (payment_intent.succeeded) kent de credits toe via grantCredits('TOPUP'),
-// idempotent per PaymentIntent. Credits zijn org-pooled → grant op de org.
+// one-time.ts): createTopupCheckout maakt een Stripe Checkout-sessie (mode:
+// payment) met `type: 'credit_topup'`-metadata op de PaymentIntent; de webhook
+// (payment_intent.succeeded → handleTopupSuccess) kent de credits toe via
+// grantCredits('TOPUP'), idempotent per PaymentIntent. Credits zijn org-pooled.
 //
-// Auto-topup (optimistisch tegen een SEPA-mandaat) is Fase 5 — hier alleen de
-// handmatige pack-aankoop (iDEAL/kaart via de standaard PaymentIntent-flow).
+// Auto-topup (optimistisch tegen een SEPA-mandaat) is Fase 5.
 // =============================================================
 
 import type Stripe from 'stripe';
-import { prisma } from '@/lib/prisma';
 import { getStripeClient } from './client';
 import { STRIPE_CURRENCY, getCheckoutUrls } from './config';
 import { getOrCreateCustomer } from './customer';
@@ -35,57 +34,6 @@ export function getTopupPack(packId: string): TopupPack | null {
 /** Volledige pack-catalogus (voor de top-up-UI). */
 export function listTopupPacks(): TopupPack[] {
   return TOPUP_PACKS.map((p) => ({ id: String(p.credits), ...p }));
-}
-
-export interface CreateTopupParams {
-  organizationId: string;
-  workspaceId: string;
-  userId: string;
-  packId: string;
-}
-
-export interface TopupResult {
-  success: boolean;
-  clientSecret?: string;
-  paymentIntentId?: string;
-  error?: string;
-}
-
-/**
- * Maakt een PaymentIntent voor een prepaid credit-pack. Prijs server-side uit de
- * catalogus. Alleen bij billing-aan (zonder billing is de app gratis → geen top-up).
- */
-export async function createTopupPayment(params: CreateTopupParams): Promise<TopupResult> {
-  const { organizationId, workspaceId, userId, packId } = params;
-
-  if (!isBillingEnabled()) {
-    return { success: false, error: 'Top-up is niet beschikbaar wanneer billing uit staat.' };
-  }
-  const pack = getTopupPack(packId);
-  if (!pack) return { success: false, error: 'Onbekend top-up-pack.' };
-
-  try {
-    const stripeCustomerId = await resolveOrgStripeCustomer(organizationId, workspaceId);
-    const stripe = getStripeClient();
-    const pi = await stripe.paymentIntents.create({
-      amount: Math.round(pack.priceEur * 100), // euro → cents
-      currency: STRIPE_CURRENCY,
-      customer: stripeCustomerId,
-      description: `Branddock credit top-up: ${pack.credits} credits`,
-      metadata: {
-        type: 'credit_topup',
-        organizationId,
-        workspaceId,
-        userId,
-        credits: String(pack.credits),
-        packId: pack.id,
-      },
-    });
-    return { success: true, clientSecret: pi.client_secret ?? undefined, paymentIntentId: pi.id };
-  } catch (err) {
-    console.error('[createTopupPayment] Error:', err);
-    return { success: false, error: err instanceof Error ? err.message : 'Top-up-betaling aanmaken faalde.' };
-  }
 }
 
 export interface CreateTopupCheckoutParams {
@@ -161,30 +109,4 @@ export async function handleTopupSuccess(pi: Stripe.PaymentIntent): Promise<void
     idempotencyKey: `topup:${pi.id}`,
     metadata: { paymentIntentId: pi.id, packId: packId ?? null },
   });
-}
-
-// ─── Org Stripe customer (create-if-missing) ────────────────
-
-async function resolveOrgStripeCustomer(organizationId: string, workspaceId: string): Promise<string> {
-  const org = await prisma.organization.findUnique({
-    where: { id: organizationId },
-    select: { stripeCustomerId: true, name: true },
-  });
-  if (org?.stripeCustomerId) return org.stripeCustomerId;
-
-  const owner = await prisma.organizationMember.findFirst({
-    where: { organizationId, role: 'owner' },
-    include: { user: { select: { email: true } } },
-  });
-  const stripe = getStripeClient();
-  const customer = await stripe.customers.create({
-    email: owner?.user.email ?? undefined,
-    name: org?.name ?? undefined,
-    metadata: { organizationId, workspaceId },
-  });
-  await prisma.organization.update({
-    where: { id: organizationId },
-    data: { stripeCustomerId: customer.id },
-  });
-  return customer.id;
 }
