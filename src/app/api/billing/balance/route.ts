@@ -11,7 +11,7 @@ import { requireWorkspaceRole } from '@/lib/auth/require-role';
 import { resolveOrgForWorkspace } from '@/lib/stripe/usage-tracker';
 import { getBalance } from '@/lib/billing/credits/ledger';
 import { isOrgUnlimited } from '@/lib/billing/credits/exempt';
-import { isBillingEnabled } from '@/lib/stripe/feature-flags';
+import { isCreditsEnabled } from '@/lib/stripe/feature-flags';
 import { PLAN_CONFIGS } from '@/lib/constants/plan-limits';
 import { prisma } from '@/lib/prisma';
 import type { PlanTier } from '@/types/billing';
@@ -23,7 +23,7 @@ export async function GET() {
 
   // Billing-uit → gratis/onbeperkt, zonder de credit-kolommen te raken (deploy-safety
   // vóór de Neon `db push`).
-  if (!isBillingEnabled()) {
+  if (!isCreditsEnabled()) {
     return NextResponse.json({
       billingEnabled: false,
       unlimited: true,
@@ -57,7 +57,7 @@ export async function GET() {
     : null;
 
   return NextResponse.json({
-    billingEnabled: isBillingEnabled(),
+    billingEnabled: isCreditsEnabled(),
     unlimited,
     balance: balance.balance,
     reserved: balance.reserved,

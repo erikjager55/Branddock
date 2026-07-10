@@ -8,7 +8,7 @@ import { ac, owner, admin, member, viewer } from "./auth-permissions";
 import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from "./constants/canonical-brand-assets";
 import { TRIAL_CREDITS, TRIAL_DAYS } from "./constants/plan-limits";
 import { grantCredits } from "./billing/credits/ledger";
-import { isBillingEnabled } from "./stripe/feature-flags";
+import { isCreditsEnabled } from "./stripe/feature-flags";
 import { checkAuthEmailRateLimit } from "./auth/auth-rate-limiter";
 import { redis } from "./redis";
 import { trySendTransactional } from "./email/transactional";
@@ -111,10 +111,10 @@ async function provisionNewUser(userId: string, userName: string) {
   });
 
   // Trial-grant (reverse-trial, Fase 3): een nieuwe org krijgt TRIAL_CREDITS voor
-  // TRIAL_DAYS dagen. Alleen bij billing-aan — pre-launch is de app gratis en
-  // bestaande gebruikers krijgen `unlimitedCredits`. Idempotent (key per org) +
+  // TRIAL_DAYS dagen. Alleen bij credits-aan — tot de credit-launch is de app gratis
+  // en bestaande gebruikers krijgen `unlimitedCredits`. Idempotent (key per org) +
   // fail-soft: een gefaalde grant mag het provisionen van een gebruiker nooit breken.
-  if (orgId && isBillingEnabled()) {
+  if (orgId && isCreditsEnabled()) {
     try {
       await grantCredits({
         organizationId: orgId,

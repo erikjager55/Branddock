@@ -16,7 +16,7 @@
 import { reserveCredits, reconcileReservation, releaseReservation } from './reservation';
 import { deductCredits } from './ledger';
 import { CREDIT_COSTS, isZeroCostAction, tokensToCredits } from './credit-costs';
-import { isBillingEnabled } from '@/lib/stripe/feature-flags';
+import { isCreditsEnabled } from '@/lib/stripe/feature-flags';
 import { resolveOrgForWorkspace } from '@/lib/stripe/usage-tracker';
 import { isOrgUnlimited } from './exempt';
 import type { CreditAction } from '@/types/billing';
@@ -67,7 +67,7 @@ export async function withCreditMetering<T>(
   fn: () => Promise<T>,
   extract: (result: T) => MeterOutcome,
 ): Promise<T> {
-  if (!isBillingEnabled() || isFree(ctx)) return fn();
+  if (!isCreditsEnabled() || isFree(ctx)) return fn();
   const organizationId = await resolveOrg(ctx);
   if (!organizationId) return fn();
   if (await isOrgUnlimited(organizationId)) return fn(); // unlimited-free-org → nooit meteren
@@ -102,7 +102,7 @@ export async function withCreditMetering<T>(
  * de generatie al af is; het saldo mag dalen (force). Nooit blokkeren.
  */
 export async function chargeAfter(ctx: MeterContext, outcome: MeterOutcome): Promise<void> {
-  if (!isBillingEnabled() || isFree(ctx)) return;
+  if (!isCreditsEnabled() || isFree(ctx)) return;
   const organizationId = await resolveOrg(ctx);
   if (!organizationId) return;
   if (await isOrgUnlimited(organizationId)) return; // unlimited-free-org → nooit afboeken

@@ -8,17 +8,17 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { isCronAuthorized } from '@/lib/auth/cron-auth';
-import { isBillingEnabled } from '@/lib/stripe/feature-flags';
+import { isCreditsEnabled } from '@/lib/stripe/feature-flags';
 import { expireTrialCredits } from '@/lib/billing/credits/trial-expiry';
 
 export async function GET(request: NextRequest) {
   if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  // Billing-uit → geen trials om te verlopen. Ook deploy-safety: raakt de nieuwe
+  // Credits-uit → geen trials om te verlopen. Ook deploy-safety: raakt de nieuwe
   // credit-kolommen niet vóór de Neon `db push`.
-  if (!isBillingEnabled()) {
-    return NextResponse.json({ expired: 0, skipped: 'billing-off' });
+  if (!isCreditsEnabled()) {
+    return NextResponse.json({ expired: 0, skipped: 'credits-off' });
   }
 
   try {

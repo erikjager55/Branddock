@@ -9,7 +9,7 @@
 // =============================================================
 
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { isBillingEnabled } from '@/lib/stripe/feature-flags';
+import { isCreditsEnabled } from '@/lib/stripe/feature-flags';
 import type { PlanTier } from '@/types/billing';
 
 export interface CreditBalance {
@@ -63,7 +63,7 @@ export function useCreditBalance() {
   return useQuery({
     queryKey: ['billing', 'credits', 'balance'],
     queryFn: fetchBalance,
-    enabled: isBillingEnabled(),
+    enabled: isCreditsEnabled(),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
@@ -74,7 +74,7 @@ export function useTopupPacks() {
   return useQuery({
     queryKey: ['billing', 'credits', 'packs'],
     queryFn: fetchPacks,
-    enabled: isBillingEnabled(),
+    enabled: isCreditsEnabled(),
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   });

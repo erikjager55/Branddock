@@ -2,6 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { useBillingPlan } from '@/hooks/use-billing';
+import { isCreditsEnabled } from '@/lib/stripe/feature-flags';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { BillingBanner, UpgradeModal } from '@/components/billing';
 import { CurrentPlanCard } from './CurrentPlanCard';
@@ -37,9 +38,9 @@ export function BillingTab() {
       {/* Current Plan */}
       <CurrentPlanCard />
 
-      {/* Credits (alleen bij billing-aan — de query is anders disabled) */}
-      {!billing.isFreeBeta && <CreditBalanceCard />}
-      {!billing.isFreeBeta && <TopupCard />}
+      {/* Credits (alleen bij credits-aan — losgekoppeld van subscription-billing) */}
+      {isCreditsEnabled() && <CreditBalanceCard />}
+      {isCreditsEnabled() && <TopupCard />}
 
       {/* Usage Overview */}
       <UsageOverviewCard />

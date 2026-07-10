@@ -13,7 +13,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import type { PlanTier, FeatureKey, EffectivePlan } from '@/types/billing';
 import { PLAN_LIMITS } from '@/lib/constants/plan-limits';
-import { isBillingEnabled, getEffectivePlan } from './feature-flags';
+import { isBillingEnabled, isCreditsEnabled, getEffectivePlan } from './feature-flags';
 import { getBalance } from '@/lib/billing/credits/ledger';
 import { InsufficientCreditsError, insufficientCreditsResponse } from '@/lib/billing/credits/errors';
 import { isOrgUnlimited } from '@/lib/billing/credits/exempt';
@@ -276,7 +276,7 @@ export async function enforceCreditBalance(
   organizationId: string,
   estimatedCredits: number,
 ): Promise<NextResponse | null> {
-  if (!isBillingEnabled()) return null;
+  if (!isCreditsEnabled()) return null;
   if (estimatedCredits <= 0) return null;
   if (await isOrgUnlimited(organizationId)) return null; // unlimited-free-org → nooit blokkeren
 
@@ -311,7 +311,7 @@ export async function enforceCreditsForAction(
   action: CreditAction | string,
   count = 1,
 ): Promise<NextResponse | null> {
-  if (!isBillingEnabled()) return null;
+  if (!isCreditsEnabled()) return null;
   if (!workspaceId) return null;
   const estimate = (CREDIT_COSTS[action as CreditAction] ?? 0) * Math.max(1, count);
   if (estimate <= 0) return null;

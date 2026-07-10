@@ -14,7 +14,7 @@ import type Stripe from 'stripe';
 import { getStripeClient } from './client';
 import { STRIPE_CURRENCY, getCheckoutUrls } from './config';
 import { getOrCreateCustomer } from './customer';
-import { isBillingEnabled } from './feature-flags';
+import { isCreditsEnabled } from './feature-flags';
 import { TOPUP_PACKS } from '@/lib/constants/plan-limits';
 import { grantCredits } from '@/lib/billing/credits/ledger';
 
@@ -51,7 +51,7 @@ export interface CreateTopupCheckoutParams {
  * toekent. Prijs server-side uit de pack-catalogus.
  */
 export async function createTopupCheckout(params: CreateTopupCheckoutParams): Promise<{ url: string }> {
-  if (!isBillingEnabled()) throw new Error('Billing is disabled');
+  if (!isCreditsEnabled()) throw new Error('Credits zijn niet ingeschakeld');
   const pack = getTopupPack(params.packId);
   if (!pack) throw new Error('Onbekend top-up-pack');
 
