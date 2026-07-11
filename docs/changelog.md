@@ -37,6 +37,30 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 374. Credits LIVE in pilotmodus — top-up-gate + activatie (betaling nog niet gekoppeld)
+
+Het credit-model draait sinds 2026-07-10 live op productie in **pilotmodus**: pilots zien hun creditsaldo (Settings → Billing) dalen per generatie en hebben een hard **maximum** (het via het Credit Admin-paneel gegrante budget → bij 0 een nette 402), terwijl de **koop-flow volledig dicht** is. Daarvoor een derde vlag: `NEXT_PUBLIC_TOPUP_ENABLED` (default uit) — `TopupCard` verbergt zich, `createTopupCheckout` weigert server-side (geen route naar live-Stripe-charges), en de 402-copy is topup-bewust ("Neem contact op voor extra credits" i.p.v. een koopverwijzing). Activatie-volgorde: eerst grants/comps via het admin-paneel (eigen org unlimited, pilots capped), daarna `NEXT_PUBLIC_CREDITS_ENABLED=true` + rebuild-redeploy (NEXT_PUBLIC-vars zijn build-time). Betaling later koppelen = alleen `NEXT_PUBLIC_TOPUP_ENABLED=true` (na de launch-checklist: Stripe-price-map, Tax, iDEAL/SEPA). User-geverifieerd op prod. Bijvangst: `scripts/dev/credit-admin.ts` (saldo tonen/granten/zetten via CLI) alsnog gecommit.
+
+- Task: [tasks/pricing-credits-fase6-usage-ux.md](../tasks/pricing-credits-fase6-usage-ux.md)
+- ADR: [docs/adr/2026-07-07-pricing-credits-launch.md](adr/2026-07-07-pricing-credits-launch.md)
+- Commit: `6ecbaaab` (#100)
+
+### 373. Superuser Credit Admin-paneel — pilot-comps en grants vanuit de app
+
+In-app platformbeheer van credits, zodat pilot-comps niet langer CLI-scripts vereisen. Nieuwe developer-only Settings-tab **Credit Admin** (zelfde `DEVELOPER_EMAILS`/`requireDeveloper()`-gating als AI Models/Bug Triage): per organisatie het saldo, een "Make unlimited"-toggle (comp aan/uit, met `invalidateOrgUnlimited`-cache-bust) en een grant-invoer (`grantCredits` type TOPUP met de admin-e-mail in de reason als audit-trail). API `/api/admin/credit-orgs` (GET lijst / POST grant|setUnlimited, zod-gevalideerd, 403 voor niet-superusers — live geverifieerd). Werkt bewust óók met credits-uit zodat pilot-orgs vóór de launch voorbereid konden worden. `DEVELOPER_EMAILS` in Vercel (Production+Preview) gezet op beide admin-adressen via de Vercel CLI.
+
+- Task: [tasks/pricing-credits-fase6-usage-ux.md](../tasks/pricing-credits-fase6-usage-ux.md)
+- ADR: -
+- Commit: `#99`
+
+### 372. Credit-model Fase 3+6 — billing-ON-gates, grants-trio, billing-UX en credit-vlag-ontkoppeling
+
+Voltooit het credit-model tot live-klaar (PR #98, 2 reviewers × 2 rondes → ready-to-merge). **Gates**: unlimited-free-uitzondering per org (`Organization.unlimitedCredits`, gecachte `isOrgUnlimited` gewired in metering/charge/enforcement); pre-flight `enforceCreditsForAction` (402) op de 6 dure generatie-routes; trial-grant 300cr/28d bij signup (fail-soft, idempotent); plan-grant-maandbundel bij subscription-invoice (order-onafhankelijk via sync-first — review-CRITICAL-fix); handmatige top-up (Stripe Checkout + webhook-grant, idempotent per PaymentIntent, server-side prijs); grant-idempotentie (P2002-vangnet); confirm-time charge voor agent-deliverables; reaper-cron (15 min) + trial-expiry-cron (dagelijks, atomair nul-zetten via `FOR UPDATE`, alleen pure-trial-orgs). **Fase 6-UX**: `/api/billing/balance`, `use-credits`-hooks, `CreditBalanceCard` (saldo/trial/onbeperkt) + `TopupCard` in Settings → Billing. **Kritieke ontkoppeling**: prod bleek `NEXT_PUBLIC_BILLING_ENABLED=true` (subscriptions live) — een merge zou 0-saldo-orgs direct blokkeren; nieuwe `NEXT_PUBLIC_CREDITS_ENABLED`-vlag scheidt het credit-model van subscription-billing. Verificatie: smoke-suite 39/39 (ledger/exempt/enforce/grant-idem/reaper/topup/auto-topup/trial-expiry), in-app Pad-A-test (402 bij 0 saldo → grant 30 → video −20), tsc 0/lint 0. Launch-blocker gedocumenteerd: alle live Stripe-price-ids in de env-map vóór betaling-koppelen.
+
+- Task: [tasks/pricing-credits-billing.md](../tasks/pricing-credits-billing.md)
+- ADR: [docs/adr/2026-07-07-pricing-credits-launch.md](adr/2026-07-07-pricing-credits-launch.md)
+- Commit: `840efb23` (#98)
+
 ### 371. Session/worktree-guard — één Claude-sessie per worktree geborgd
 
 Voorkomt de multi-sessie-in-één-werkboom-race van 2026-07-07 (twee sessies deelden één `.git`/HEAD/index + `node_modules` → main-reset ↔ cherry-pick, `AA`-conflicten in de gedeelde index, verdwenen `node_modules/eslint`, ongegenereerde Prisma-client). Twee lagen: **structureel** — `scripts/dev/worktree.sh <task-id>` maakt in één commando een geïsoleerde worktree (branch vanaf `origin/main` + `.env.local` + `npm ci` + `prisma generate`), zodat de setup-frictie die worktrees deed mijden verdwijnt; **vangnet** — `.claude/hooks/session-guard.sh`, een per-worktree heartbeat-lock (geen PID → zelfhelend, stale na 15 min). SessionStart waarschuwt bij een levende co-sessie; PreToolUse(Bash) blokkeert (`exit 2`) HEAD/branch/index-mutaties (`checkout/switch/reset/rebase/cherry-pick/branch -f/-D/worktree/stash/merge`) onder een co-sessie — `commit`/`push`/edits/npm blijven vrij. Fail-open bij interne fouten. CLAUDE.md maakt "worktree per taak" een harde regel; `.gitignore` negeert de lock. Guard-logica getest op 6 scenario's (co-sessie-block, solo-allow, stale-takeover, non-git-allow, commit-allow, eigen-sessie-allow).
