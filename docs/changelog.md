@@ -37,6 +37,17 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 376. Content-flow friction-tickets #7.A — afgeleide type→categorie-map, expliciete Plan-and-Solve-set, few-shot-diversiteit ads
+
+Uitvoering van de CF-tickets uit de #7.A flow-analyse, na een verificatie-sweep die 4 van de 9 tickets achterhaald toonde (CF-1 templates / CF-2 twitter-thread / CF-9 LP-F-VAL waren al geland; CF-6/7 skip zolang de betrokken types hidden zijn). Geland: `TYPE_TO_CATEGORY` wordt afgeleid uit de 8 template-collecties (de handmatige voorganger had 9 phantom-IDs + 11 ontbrekende types die stil op `'long-form'` terugvielen, o.a. `facebook-ad`); Plan-and-Solve-eligibility is een expliciete set (long-form-categorie + `proposal-template`/`impact-report`, PUCK-website-types bewust uitgesloten); `getPromptTemplate()` warnt (once-per-type, niet op lege legacy-id) bij een generic-fallback-hit; `smoke:prompt-contracts` sectie (g) bewaakt de dekking via het échte lookup-pad (`hasDedicatedTemplate`) + een cross-collectie-collision-assert; en de 6 zichtbare ad-types kregen een tweede few-shot-anchor in een contrasterende branche + expliciete niet-kopiëren-instructie (anti example-bleed; 41 velden programmatisch binnen hun character-limits gevalideerd; versions advertising 1.3.0 / social-media 2.1.0). Kwaliteit: 2×2 reviewer-subagents over 2 rondes (r1: 4 WARNINGs gevonden + gefixt; r2: 0 CRITICAL / 0 WARNING, alle claims onafhankelijk gereproduceerd — 23/24 zichtbare types byte-identiek gedrag; enige delta is de bedoelde facebook-ad-fix op een dormant pad). Gates: tsc 0 · lint 0 · prompt-contracts 293/293.
+
+- Task: [tasks/done/content-flow-improvements-7a.md](../tasks/done/content-flow-improvements-7a.md)
+- ADR: [adr/2026-07-12-type-category-derivation-plan-and-solve.md](adr/2026-07-12-type-category-derivation-plan-and-solve.md)
+- Spec: `docs/specs/content-flow-synthesis.md` (bron-tickets §F)
+- Commits: `9adf77dd` (CF-1/3/4 + smoke g + ADR) · `eaff014d` (CF-5/8) · `02415d29` (review-fixes r1)
+
+> NB nummering: #375 is bewust overgeslagen — dat nummer is geclaimd door de agents-dogfood-r2-entry uit de parallelle sessie (nog niet op main) om een renumber-collision te vermijden.
+
 ### 374. Credits LIVE in pilotmodus — top-up-gate + activatie (betaling nog niet gekoppeld)
 
 Het credit-model draait sinds 2026-07-10 live op productie in **pilotmodus**: pilots zien hun creditsaldo (Settings → Billing) dalen per generatie en hebben een hard **maximum** (het via het Credit Admin-paneel gegrante budget → bij 0 een nette 402), terwijl de **koop-flow volledig dicht** is. Daarvoor een derde vlag: `NEXT_PUBLIC_TOPUP_ENABLED` (default uit) — `TopupCard` verbergt zich, `createTopupCheckout` weigert server-side (geen route naar live-Stripe-charges), en de 402-copy is topup-bewust ("Neem contact op voor extra credits" i.p.v. een koopverwijzing). Activatie-volgorde: eerst grants/comps via het admin-paneel (eigen org unlimited, pilots capped), daarna `NEXT_PUBLIC_CREDITS_ENABLED=true` + rebuild-redeploy (NEXT_PUBLIC-vars zijn build-time). Betaling later koppelen = alleen `NEXT_PUBLIC_TOPUP_ENABLED=true` (na de launch-checklist: Stripe-price-map, Tax, iDEAL/SEPA). User-geverifieerd op prod. Bijvangst: `scripts/dev/credit-admin.ts` (saldo tonen/granten/zetten via CLI) alsnog gecommit.

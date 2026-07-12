@@ -5,9 +5,9 @@ fase: pre-launch
 priority: next
 effort: "gemengd — zie per ticket"
 owner: claude-code
-status: in-review
+status: done
 created: 2026-05-29
-completed: -
+completed: 2026-07-12
 related-adr: docs/adr/2026-07-12-type-category-derivation-plan-and-solve.md
 related-spec: docs/specs/content-flow-synthesis.md
 worktree: branddock-content-flow-7a (feat/content-flow-7a)
@@ -36,7 +36,7 @@ Per ticket een afgebakende fix; aanpakken in prio-volgorde (HIGH eerst). HIGH-it
 
 ## MED
 - [x] **CF-3 — Plan-and-Solve generaliseren.** ✅ geland in `9adf77dd`, gewijzigd t.o.v. ticket-scope: eligibility = long-form-categorie + `EXTRA_PLAN_AND_SOLVE_TYPES` (`proposal-template`, `impact-report`). **Website-types bewust uitgesloten** — sinds het Puck-paradigma lopen alle 5 `PUCK_WEBPAGE_TYPES` via de structured-variant-flow; Plan-and-Solve's single-body-markdown zou dat contract breken. NB: `usePlanAndSolve` heeft geen UI-toggle (dormant pad). ADR: `2026-07-12-type-category-derivation-plan-and-solve`.
-- [x] **CF-4 — `TYPE_TO_CATEGORY` synchroniseren.** ✅ geland in `9adf77dd`: map wordt afgeleid uit de 8 template-collecties (kan niet meer divergeren). Werkelijke delta: 9 phantoms + 11 ontbrekende (waaronder `facebook-ad`/`linkedin-video-ad`, niet in het ticket genoemd). Runtime-blast-radius bleek klein: `getPromptVersionForType` had 0 call-sites; enige consumer was de dormante Plan-and-Solve-check. Smoke-sectie (g) bewaakt de dekking (292/292 PASS).
+- [x] **CF-4 — `TYPE_TO_CATEGORY` synchroniseren.** ✅ geland in `9adf77dd`: map wordt afgeleid uit de 8 template-collecties (kan niet meer divergeren). Werkelijke delta: 9 phantoms + 11 ontbrekende (waaronder `facebook-ad`/`linkedin-video-ad`, niet in het ticket genoemd). Runtime-blast-radius bleek klein: `getPromptVersionForType` had 0 call-sites; enige consumer was de dormante Plan-and-Solve-check. Smoke-sectie (g) bewaakt de dekking (293/293 PASS na de review-fix-ronde).
 - [x] **CF-5 — Few-shot uitbreiden advertising + email.** ✅ advertising-helft geland in `eaff014d`: tweede anchor in een contrasterende branche voor de 6 **zichtbare** ad-types (search/social/display/native-ad + linkedin-ad/facebook-ad) + expliciete niet-kopiëren-instructie (anti example-bleed — alle bestaande anchors waren brand-strategy-SaaS; zelfde leak-klasse als de Effie-gotcha 2026-05-17). 41 velden programmatisch binnen hun character-limits gevalideerd. Versions: advertising 1.3.0, social-media 2.1.0, registry gesynct. **Email-helft SKIP**: hele email-categorie staat `hidden: true` — uitbreiden bij re-enable. Hidden ad-types (retargeting-ad, video-ad) idem.
 - [ ] **CF-6 — Email sequence-coherentie-pass.** ⏸️ **SKIP** (2026-07-12): `welcome-sequence`/`nurture-sequence` staan `hidden: true` — onbereikbaar via de picker. Oppakken bij email-categorie-re-enable, samen met `studio-siblings-context-variation` (post-launch).
 - [ ] **CF-7 — Elevated review public-facing pr.** ⏸️ **SKIP** (2026-07-12): `press-release` + `impact-report` staan `hidden: true`, én het mechanisme is per-workspace DB-config (`WorkspaceContentTypeThreshold` via Settings → Validation), geen code-defaults — preventief tunen zonder pilot-data is tegen projectbeleid (zelfde rationale als CF-10 en de Δ-4-verplaatsing).
