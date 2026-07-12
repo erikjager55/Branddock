@@ -62,8 +62,10 @@ In de context van **een handgeschreven type→categorie-map die aantoonbaar was 
 per ongeluk korte-output-types toeliet**, facing **het risico dat elke toekomstige consumer
 van de map onjuiste tracking of routing erft**, kozen we voor **afleiding van de map uit de
 template-collecties zelf + een expliciete eligibility-set voor Plan-and-Solve + een
-CI-smoke-guard**, to achieve **een structureel niet-divergeerbare bron van waarheid met
-gelijkblijvend runtime-gedrag voor alle zichtbare types**, accepting tradeoff **dat de
+CI-smoke-guard**, to achieve **een structureel niet-divergeerbare bron van waarheid met effectief
+gelijkblijvend runtime-gedrag voor alle zichtbare types (enige delta:
+facebook-ad's dormante Plan-and-Solve-eligibility vervalt — de bedoelde
+bugfix)**, accepting tradeoff **dat de
 prompt-version-registry nu de (server-only) template-bestanden importeert en dat
 website-types bewust buiten de Plan-and-Solve-scope blijven totdat het Puck-paradigma
 heroverwogen wordt**.

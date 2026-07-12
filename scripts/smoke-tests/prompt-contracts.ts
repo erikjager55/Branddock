@@ -49,6 +49,7 @@ import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 import * as fallbackRegistryModule from '../../src/lib/ai/component-templates-fallback';
+import { hasDedicatedTemplate } from '../../src/lib/studio/prompt-templates';
 import {
   getComponentTemplateFallback,
   type ComponentTemplateItem,
@@ -680,13 +681,16 @@ const EXPECTED_CATEGORY = new Map<string, PromptCategory>(
   // CF-1: a canonical type without a dedicated template silently degrades to
   // the generic prompt (measurable quality drop — the 2026-05-29 flow
   // analysis found 5 such types). All 55 are covered today; keep it that way.
+  // Checked against the REAL lookup object via hasDedicatedTemplate — a
+  // dropped spread line in prompt-templates/index.ts would leave the
+  // collections intact but break the actual runtime path.
   const untemplated = [...DELIVERABLE_TYPES_SET].filter(
-    (type) => !TEMPLATE_REGISTRY_TYPES.has(type),
+    (type) => !hasDedicatedTemplate(type),
   );
   assert(
-    'every canonical deliverable-type has a dedicated prompt template',
+    'every canonical deliverable-type resolves to a dedicated template (real lookup path)',
     untemplated.length === 0,
-    `generic-fallback types (add to the matching category file): ${untemplated.join(', ')}`,
+    `generic-fallback types (add to the matching category file, or a spread line dropped from TEMPLATE_REGISTRY): ${untemplated.join(', ')}`,
   );
 
   // Reverse: a template key that no canonical type can ever reach is dead
@@ -698,6 +702,20 @@ const EXPECTED_CATEGORY = new Map<string, PromptCategory>(
     'no orphaned template keys outside deliverable-types',
     orphaned.length === 0,
     `template keys without a canonical type: ${orphaned.join(', ')}`,
+  );
+
+  // Cross-collection key collisions: a type registered in TWO collection
+  // files would silently last-win in three places at once (TEMPLATE_REGISTRY
+  // spread, the derived TYPE_TO_CATEGORY, and EXPECTED_CATEGORY here) — all
+  // green while one template is dead and the version-stamp flips category.
+  const totalCollectionKeys = COLLECTION_CATEGORY.reduce(
+    (sum, [collection]) => sum + Object.keys(collection).length,
+    0,
+  );
+  assert(
+    'no duplicate type-keys across template collections',
+    totalCollectionKeys === EXPECTED_CATEGORY.size,
+    `${totalCollectionKeys} keys across collections vs ${EXPECTED_CATEGORY.size} unique — a type is registered in two category files`,
   );
 }
 

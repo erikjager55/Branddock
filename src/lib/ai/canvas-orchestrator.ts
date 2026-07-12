@@ -454,8 +454,8 @@ export async function* orchestrateContentGeneration(
   const usePlanAndSolve =
     stack.contentTypeInputs?.usePlanAndSolve === true ||
     stack.contentTypeInputs?.usePlanAndSolve === 'true';
-  const contentTypeCategory = stack.deliverableTypeId
-    ? (await import('./prompt-version-registry')).getCategoryForType(stack.deliverableTypeId)
+  const contentTypeCategory = deliverableTypeId
+    ? (await import('./prompt-version-registry')).getCategoryForType(deliverableTypeId)
     : null;
   // CF-3 (content-flow-improvements-7a): eligibility = long-form-categorie +
   // expliciete long-output-types buiten die categorie. Vóór de CF-4-mapfix

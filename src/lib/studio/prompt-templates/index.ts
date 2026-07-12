@@ -46,6 +46,20 @@ const TEMPLATE_REGISTRY: Record<string, PromptTemplate> = {
 };
 
 /**
+ * True wanneer een type een dedicated template heeft in het werkelijke
+ * lookup-object (niet slechts in een van de collecties). Gebruikt door
+ * smoke:prompt-contracts sectie (g) zodat CI het échte pad test — een
+ * weggevallen spread-regel hierboven zou anders onopgemerkt blijven.
+ */
+export function hasDedicatedTemplate(deliverableTypeId: string): boolean {
+  return deliverableTypeId in TEMPLATE_REGISTRY;
+}
+
+// Eén warn per type per proces — het fallback-pad zit op het hot path
+// (2× per generatie via buildCanvasPrompt) en mag niet spammen.
+const warnedFallbackTypes = new Set<string>();
+
+/**
  * Get the prompt template for a deliverable type.
  * Falls back to a generic content template if no specific template exists.
  */
@@ -57,9 +71,15 @@ export function getPromptTemplate(deliverableTypeId: string): PromptTemplate {
   // degradeerde eerder STIL naar de generieke prompt (merkbare kwaliteits-
   // drop). Alle 55 canonieke types hebben inmiddels een template; deze warn
   // + smoke:prompt-contracts sectie (g) bewaken dat dat zo blijft.
-  console.warn(
-    `[prompt-templates] no dedicated template for '${deliverableTypeId}' — falling back to the generic content template. Add an entry to the matching src/lib/studio/prompt-templates/<category>.ts file.`,
-  );
+  // Lege id niet warnen: legacy deliverables zonder contentType nemen dit
+  // pad bewust (`getPromptTemplate(stack.deliverableTypeId ?? '')`) — daar
+  // is de generic fallback het ontworpen gedrag, geen ontbrekend template.
+  if (deliverableTypeId && !warnedFallbackTypes.has(deliverableTypeId)) {
+    warnedFallbackTypes.add(deliverableTypeId);
+    console.warn(
+      `[prompt-templates] no dedicated template for '${deliverableTypeId}' — falling back to the generic content template. Add an entry to the matching src/lib/studio/prompt-templates/<category>.ts file.`,
+    );
+  }
 
   // Fallback: generic content template
   return {

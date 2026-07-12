@@ -55,6 +55,33 @@ Per ticket verschillend — zie inline file-refs in de categorie-rapporten. Gé�
 - Video-categorie her-activeren (hangt op `video-chain-explainer-showcase`).
 - Carousel multi-slide pipeline (eigen task).
 
+# Review-ronde (2026-07-12)
+
+Twee parallelle code-reviewer subagents op de branch-diff: **0 CRITICAL, 4 WARNINGs
+(waarvan 1 dubbel gerapporteerd), alle gefixt** in de review-fix-commit:
+- Smoke sectie (g) testte de collecties, niet het echte lookup-pad → nu via nieuwe
+  export `hasDedicatedTemplate()` tegen het werkelijke `TEMPLATE_REGISTRY` (vangt een
+  weggevallen spread-regel).
+- Geen guard op cross-collectie key-collisions (drievoudig stil last-wins) → assert
+  som-van-collectie-keys === unieke keys.
+- Fallback-warn vuurde misleidend op het legacy-pad met lege contentType (2× per
+  generatie op het hot path) → alleen warnen bij truthy id + once-per-type throttle.
+- Minors: `Record<string, PromptTemplate>`-typing, consistente lokale
+  `deliverableTypeId`, RDA-voorbeeld-image 200/200 → ~178 chars marge, ADR-Y-statement
+  gepreciseerd ("effectief gelijkblijvend; enige delta facebook-ad dormant").
+
+Beide reviewers bevestigden onafhankelijk: 23/24 zichtbare types byte-identiek gedrag;
+enige delta is facebook-ad's dormante Plan-and-Solve-eligibility (bedoelde bugfix);
+geen import-cycles; geen client-side prompt-IP-lek (0 client-imports van registry én
+studio-templates). Gates na fixes: tsc 0 errors · lint 0 errors (966 pre-existing
+warnings codebase-breed) · prompt-contracts **293/293 PASS**.
+
+**Follow-up (optioneel, niet blokkerend)**: (a) versie-map en type→categorie-map
+splitsen zodra een derde lichte consumer de registry importeert (~380KB
+template-strings in de serverless bundle van 2 API-routes — gedocumenteerde tradeoff
+in de ADR); (b) eslint `no-restricted-imports`-guard tegen toekomstige client-import
+van de registry.
+
 # Notes
 
 Bron: `docs/specs/content-flow-synthesis.md` §F. Friction-secties (§6) in de categorie-rapporten zijn deels *pending Ronde 1* — nieuwe tickets kunnen hier bijkomen zodra het handmatige testplan vordert.

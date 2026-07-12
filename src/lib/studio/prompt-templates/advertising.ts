@@ -342,7 +342,7 @@ A second example in a different vertical, so you anchor on the SLOT-DIVERSITY pa
 "description-4": "Try your first box half price. No commitment, cancel anytime."
 "description-5": "Order by Sunday, cook on Tuesday. Delivery windows you choose."
 "business-name": "GreenCrate"
-"image": "Top-down shot of an open delivery box with vibrant fresh vegetables, herbs and a recipe card on a light wooden table, natural morning light. Works in landscape (full spread) and square (box centered)."
+"image": "Top-down shot of an open delivery box with fresh vegetables and herbs on a light wooden table, natural morning light. Works in landscape (full spread) and square (box centered)."
 
 IMPORTANT: the two examples span different industries on purpose. Mirror their slot-diversity discipline (5 genuinely different hook-types, 5 genuinely different description-angles) — never their industry, wording, product claims or numbers. Every claim in your output must come from the provided brand context.
 

@@ -21,6 +21,7 @@ import { WEBSITE_TEMPLATES } from '@/lib/studio/prompt-templates/website';
 import { VIDEO_AUDIO_TEMPLATES } from '@/lib/studio/prompt-templates/video-audio';
 import { SALES_TEMPLATES } from '@/lib/studio/prompt-templates/sales';
 import { PR_HR_TEMPLATES } from '@/lib/studio/prompt-templates/pr-hr';
+import type { PromptTemplate } from '@/lib/studio/prompt-templates/helpers';
 
 /**
  * Categorieën corresponderen met de 8 prompt-template files in
@@ -123,7 +124,7 @@ export function getPromptVersion(category: PromptCategory): string {
  * getDeliverableTypeById en raakt deze map niet.
  */
 const CATEGORY_COLLECTIONS: ReadonlyArray<
-  readonly [Record<string, unknown>, PromptCategory]
+  readonly [Record<string, PromptTemplate>, PromptCategory]
 > = [
   [LONG_FORM_TEMPLATES, 'long-form'],
   [SOCIAL_MEDIA_TEMPLATES, 'social-media'],
