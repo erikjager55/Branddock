@@ -14,7 +14,8 @@ import {
 } from "./subscription-sync";
 import { resolveWorkspaceFromCustomer } from "./customer";
 import { handlePurchaseSuccess, type PurchaseType } from "./one-time";
-import { handleTopupSuccess } from "./topup";
+import { handleTopupSuccess, handleTopupFailure } from "./topup";
+import { handleSetupIntentSucceeded, handleMandateUpdated } from "./sepa-mandate";
 import { resolveOrgForWorkspace } from "./usage-tracker";
 import { updatePlanFromStripe } from "./subscription-sync";
 import { getStripeClient } from "./client";
@@ -342,6 +343,19 @@ export async function dispatchWebhookEvent(
       await handlePaymentIntentSucceeded(
         event.data.object as Stripe.PaymentIntent
       );
+      return true;
+
+    // ─── Fase 5a: SEPA-mandaat + auto-topup-reversal ─────────
+    case "payment_intent.payment_failed":
+      await handleTopupFailure(event.data.object as Stripe.PaymentIntent);
+      return true;
+
+    case "setup_intent.succeeded":
+      await handleSetupIntentSucceeded(event.data.object as Stripe.SetupIntent);
+      return true;
+
+    case "mandate.updated":
+      await handleMandateUpdated(event.data.object as Stripe.Mandate);
       return true;
 
     default:

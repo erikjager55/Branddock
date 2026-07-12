@@ -16,7 +16,8 @@ import { STRIPE_CURRENCY, getCheckoutUrls } from './config';
 import { getOrCreateCustomer } from './customer';
 import { isCreditsEnabled, isTopupEnabled } from './feature-flags';
 import { TOPUP_PACKS } from '@/lib/constants/plan-limits';
-import { grantCredits } from '@/lib/billing/credits/ledger';
+import { grantCredits, deductCredits } from '@/lib/billing/credits/ledger';
+import { prisma } from '@/lib/prisma';
 
 export interface TopupPack {
   id: string; // stabiele identifier = het credits-aantal als string
@@ -71,6 +72,10 @@ export async function createTopupCheckout(params: CreateTopupCheckoutParams): Pr
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: 'payment',
+    // iDEAL naast kaart (Fase 5a, ADR D10) — de NL-norm voor losse betalingen.
+    // Bewust géén sepa_debit voor one-offs: een incasso settelt pas na dagen
+    // en de webhook-grant zou de credits dagenlang laten "hangen".
+    payment_method_types: ['card', 'ideal'],
     currency: STRIPE_CURRENCY,
     line_items: [
       {
@@ -110,5 +115,49 @@ export async function handleTopupSuccess(pi: Stripe.PaymentIntent): Promise<void
     reason: `Top-up ${credits} credits (pack ${packId ?? '?'})`,
     idempotencyKey: `topup:${pi.id}`,
     metadata: { paymentIntentId: pi.id, packId: packId ?? null },
+  });
+
+  // Auto-topup (Fase 5a): een optimistische grant bestond al onder dezelfde
+  // idempotencyKey — markeer hem als door Stripe bevestigd zodat hij niet
+  // meer meetelt in het blootstellingsplafond.
+  if (pi.metadata?.optimistic === 'true') {
+    await prisma.creditTransaction.updateMany({
+      where: { idempotencyKey: `topup:${pi.id}` },
+      data: { metadata: { paymentIntentId: pi.id, packId: packId ?? null, optimistic: true, settled: true } },
+    });
+  }
+}
+
+/**
+ * Webhook: gefaalde (auto-)top-up-incasso → draai een optimistische grant
+ * terug. Idempotent via de reversal-key; alleen relevant voor optimistische
+ * auto-topups (een gewone Checkout-topup grant pas op succeeded, dus daar
+ * valt niets terug te draaien). Force-deduct: het saldo mag hierdoor onder
+ * nul — de org heeft de credits mogelijk al uitgegeven.
+ */
+export async function handleTopupFailure(pi: Stripe.PaymentIntent): Promise<void> {
+  if (pi.metadata?.type !== 'credit_topup') return;
+  if (pi.metadata?.optimistic !== 'true') return;
+  const organizationId = pi.metadata?.organizationId;
+  const credits = Number(pi.metadata?.credits ?? 0);
+  if (!organizationId || !Number.isFinite(credits) || credits <= 0) return;
+
+  // Alleen terugdraaien wat daadwerkelijk optimistisch is toegekend.
+  const granted = await prisma.creditTransaction.findUnique({
+    where: { idempotencyKey: `topup:${pi.id}` },
+    select: { id: true },
+  });
+  if (!granted) return;
+
+  await deductCredits({
+    organizationId,
+    credits,
+    reason: `Auto-topup teruggedraaid — SEPA-incasso mislukt (${pi.id})`,
+    force: true,
+    idempotencyKey: `topup-reversal:${pi.id}`,
+  });
+  await prisma.creditTransaction.updateMany({
+    where: { idempotencyKey: `topup:${pi.id}` },
+    data: { metadata: { paymentIntentId: pi.id, optimistic: true, settled: true, reversed: true } },
   });
 }

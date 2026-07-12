@@ -24,6 +24,7 @@ import {
   Play,
   Circle,
   Swords,
+  Coins,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useShellStore } from '../stores/useShellStore';
@@ -74,6 +75,7 @@ const TYPE_ICONS: Record<NotificationType, React.ComponentType<{ className?: str
   NEW_PERSONA_CREATED: UserPlus,
   NEW_RESEARCH_STARTED: Play,
   COMPETITOR_MAJOR_EVENT: Swords,
+  AUTO_TOPUP: Coins,
 };
 
 const TYPE_COLORS: Record<NotificationType, string> = {
@@ -88,6 +90,7 @@ const TYPE_COLORS: Record<NotificationType, string> = {
   NEW_PERSONA_CREATED: 'bg-purple-100 text-purple-600',
   NEW_RESEARCH_STARTED: 'bg-blue-100 text-blue-600',
   COMPETITOR_MAJOR_EVENT: 'bg-red-100 text-red-600',
+  AUTO_TOPUP: 'bg-emerald-100 text-emerald-600',
 };
 
 export function ActivityFeed({ isOpen, onClose, onNavigate }: ActivityFeedProps) {
