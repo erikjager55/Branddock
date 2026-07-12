@@ -4,10 +4,19 @@ title: SEO 8-staps-pipeline versnellen (kwaliteit behouden)
 fase: pre-launch
 priority: now
 owner: claude-code
-status: in-progress
+status: open
 created: 2026-07-06
-worktree: branddock-seo (feat/seo-pipeline-speedup)
+worktree: "- (branddock-seo opgeruimd; heropen bij Fase 3/4)"
 ---
+
+> **Doc-sync 2026-07-12**: alle geplande code is **gemerged op `main`** via PR #83
+> (merge `78e802b6`, 2026-07-06) — Fase 0 timings + Fase 1 model-tiering
+> (`canvas-seo-research`) + Fase 2 wave-executor — plús een **round 2** die verder
+> ging dan dit plan (`3be8f487`: checklist-only stap 8, variant B op het snelle
+> model, outline-cap). Er wordt níet meer actief gebouwd; status → `open` omdat de
+> rest **meting-gated** is: de deploy-meting (Fase-0-timings + F-VAL-vergelijk, nu
+> onderdeel van [`pre-launch-browser-smoke-batch`](pre-launch-browser-smoke-batch.md))
+> is de go/no-go voor Fase 3 (context-trim) en Fase 4 (stappen mergen/conditioneel).
 
 ## Doel
 De SEO-pipeline (~11 min, 8 sequentiële AI-calls) versnellen naar ~5-7 min, met de

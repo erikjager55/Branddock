@@ -5,11 +5,19 @@ fase: pre-launch
 priority: now
 effort: representant done + 3-5d resterend
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-07-01
+completed: 2026-07-06
 related-spec: plan snug-popping-tulip (Fase 2 A1)
-worktree: branddock-launch
+worktree: "- (branddock-launch opgeruimd)"
 ---
+
+> **Doc-sync 2026-07-12**: A1 is compleet en volledig **gemerged op `main`** — het
+> laatste deel (Tier 3: website-scanner + brandvoice Map→DB) via PR #78 (merge
+> `662979c2`, 2026-07-06). De file stond stale op in-progress terwijl er niets meer
+> te bouwen was. Enige rest = de Fase-5 deploy-smoke; die is verplaatst naar
+> [`pre-launch-browser-smoke-batch`](pre-launch-browser-smoke-batch.md) (de
+> bestaande bucket voor uitgestelde deploy-smokes).
 
 # Probleem
 
@@ -54,7 +62,7 @@ Latency-noot: minute-cron → tot ~60s start-latency. Acceptabel (spinner dekt h
 - [x] Tier 2 gemigreerd (DAM/bug/feedback, 2026-07-03).
 - [x] Tier 1-restant gemigreerd (alignment/scan, trend-radar, 2026-07-05).
 - [x] Tier 3 gemigreerd (website-scanner + brandvoice: in-memory Map → DB-progress, 2026-07-06). A1 compleet.
-- [ ] Smoke (Fase 5): start elke pipeline op de deploy → job enqueued → cron verwerkt → progress + resultaat verschijnen cross-instance.
+- [ ] Smoke (Fase 5): start elke pipeline op de deploy → job enqueued → cron verwerkt → progress + resultaat verschijnen cross-instance. → **verplaatst naar `pre-launch-browser-smoke-batch` (doc-sync 2026-07-12)** — hoort bij de gebundelde deploy-smokes, niet bij deze (afgeronde) bouwtaak.
 
 # Verificatie-noot
 Deze omgeving kan tsc/app niet draaien; verificatie = lint (per file) + CI-tsc/build + Fase 5 deploy-smoke.
