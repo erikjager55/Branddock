@@ -106,7 +106,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 
 | ID | Titel | Effort | Sprint | Status |
 |---|---|---|---|---|
-| `content-items-test-coverage` | Handmatige testplan 53 types (representanten + Ronde 1 + Ronde 2). Playbook: `docs/playbooks/testplan-content-items.md`. Levert baseline-data voor golden-sets. Ronde 1 ✅ COMPLEET 2026-07-01 (24 zichtbare types: 23 passed, 1 bug ebook, 0 nieuwe bugs). Representanten 4/8 + varianten 16/16; 31/55 code-types hidden (4 categorieën bewust uit picker). Ronde 2 gated op asset-generator-integratie. | 1d representanten + 2-3d full | #4-6 | in-progress (Ronde 1 done, Ronde 2 gated) |
+| `content-items-test-coverage` | Handmatige testplan 53 types (representanten + Ronde 1 + Ronde 2). Playbook: `docs/playbooks/testplan-content-items.md`. Levert baseline-data voor golden-sets. Ronde 1 ✅ COMPLEET 2026-07-01 (24 zichtbare types: 23 passed, 1 bug ebook, 0 nieuwe bugs). Representanten 4/8 + varianten 16/16; 31/55 code-types hidden (4 categorieën bewust uit picker). Ronde 2 gated op asset-generator-integratie. | 1d representanten + 2-3d full | #4-6 | ✅ **done 2026-07-07** (#367, → `tasks/done/`; Ronde 2 blijft gated op asset-generator) |
 | `pre-launch-browser-smoke-batch` | Δ-1 Surface C + claw-page-awareness + locale-picker browser-smoke. VB Compose/Trained deferred post-vercel. | ~1-2u | #4 (3/5 done) | partial |
 | `code-debt-pre-launch-cleanup` | Persist-TODOs + cleanup + suggest-visual-briefing error-UX. Verspreid. | ~6d | #4-7 fill-in | 2/12 done |
 | `compose-pipeline-gemini-migration` | FAL Flux → Gemini Image (nano-banana) compose-route migratie. | ~1d | #5.B fill-in | ✅ done 2026-05-12 |
@@ -150,12 +150,13 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 **Track D — Serverless-hardening (post-deploy follow-up, ontstaan uit `vercel-deployment`)**
 
 > Toegevoegd aan de roadmap 2026-07-08 (doc-sync — deze werkstroom draaide al maar stond nergens in Now). Maakt de zwaarste synchrone flows serverless-veilig op Vercel (fire-and-forget → queue, lange pipelines resumable). Voedt óók de credit-metering (Fase 2 `handlers.ts`).
+> **Doc-sync 2026-07-12**: de bouw van alle drie is al op 2026-07-06 gemerged (PR #78/#80/#83) — de tabel stond stale op in-progress. Rest = de gebundelde deploy-smokes in [`pre-launch-browser-smoke-batch`](tasks/pre-launch-browser-smoke-batch.md); de SEO-meting daaruit is de go/no-go voor speedup Fase 3/4.
 
 | ID | Titel | Effort | Status |
 |---|---|---|---|
-| [`serverless-hardening-jobs`](tasks/serverless-hardening-jobs.md) | A1 — fire-and-forget onboarding-pipelines → `AgentJob`-queue | representant done + 3-5d rest | 🔄 in-progress (2026-07-01) |
-| [`serverless-seo-decompose`](tasks/serverless-seo-decompose.md) | SEO 8-staps-pipeline decompose → resumable queued job (A3-deel-2) | 1-2d | 🔄 in-progress (2026-07-06) |
-| [`seo-pipeline-speedup`](tasks/seo-pipeline-speedup.md) | SEO 8-staps-pipeline versnellen (kwaliteit behouden) | — | 🔄 in-progress (2026-07-06) |
+| [`serverless-hardening-jobs`](tasks/done/serverless-hardening-jobs.md) | A1 — fire-and-forget onboarding-pipelines → `AgentJob`-queue | representant done + 3-5d rest | ✅ **done 2026-07-06** (PR #78 Tier 3 = laatste deel; Fase-5-smoke → smoke-batch) |
+| [`serverless-seo-decompose`](tasks/done/serverless-seo-decompose.md) | SEO 8-staps-pipeline decompose → resumable queued job (A3-deel-2) | 1-2d | ✅ **done 2026-07-06** (PR #80 + resumable-fix `0705eb87`; deploy-smoke → smoke-batch) |
+| [`seo-pipeline-speedup`](tasks/seo-pipeline-speedup.md) | SEO 8-staps-pipeline versnellen (kwaliteit behouden) | — | ⏸️ **meting-gated** — code gemerged 2026-07-06 (PR #83 + round 2 `3be8f487`); deploy-meting beslist Fase 3/4 |
 
 ### Sprint-volgorde
 

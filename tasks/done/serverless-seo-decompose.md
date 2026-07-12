@@ -5,10 +5,19 @@ fase: pre-launch
 priority: now
 effort: 1-2 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-07-06
-worktree: branddock-a3 (feat/serverless-a3-seo-decompose)
+completed: 2026-07-06
+worktree: "- (branddock-a3 opgeruimd)"
 ---
+
+> **Doc-sync 2026-07-12**: volledig **gemerged op `main`** via PR #80 (merge
+> `875a80f3`, 2026-07-06) + resumable-fix `0705eb87` (checkpoint + continuation).
+> Op main geverifieerd aanwezig: `SeoGenerationJob`-model, `SEO_GENERATE`-handler,
+> `seo_queued`-event in de orchestrator, `seo-progress`-route en de client-polling.
+> De file stond stale op in-progress. Enige rest = de deploy-smoke (laatste
+> acceptatie-item); die is verplaatst naar
+> [`pre-launch-browser-smoke-batch`](pre-launch-browser-smoke-batch.md).
 
 ## Probleem
 `runSeoPipeline` (async generator, 8 sequentiële stappen) draait **inline** in de SSE-routes
@@ -47,12 +56,12 @@ finaliseer (variant B + geo-polish + persist); job.status=COMPLETED
 `maxAttempts` hoog genoeg voor continuations; idempotencyKey per (jobId, step).
 
 ## Acceptatie
-- [ ] `SeoGenerationJob` in schema + Neon.
-- [ ] SEO-generatie loopt volledig via de queue; geen inline-run in de SSE-route.
-- [ ] Client polt + toont dezelfde 8-stap-progress; op COMPLETED verschijnen de 2 varianten.
-- [ ] Niet-SEO content-types blijven de bestaande inline SSE-flow (byte-identiek).
-- [ ] tsc + lint groen (CI `check`).
-- [ ] Smoke op de deploy: genereer een long-form SEO-deliverable → progress loopt → 2 varianten persisted (cross-instance, geen timeout).
+- [x] `SeoGenerationJob` in schema + Neon (schema op main via PR #80; Neon-push onderdeel van de deploy-ronde 2026-07-06 — definitieve bevestiging bij de deploy-smoke).
+- [x] SEO-generatie loopt volledig via de queue; geen inline-run in de SSE-route (`seo_queued` + `dispatchJob(SEO_GENERATE)` in canvas-orchestrator).
+- [x] Client polt + toont dezelfde 8-stap-progress; op COMPLETED verschijnen de 2 varianten (`seo-progress`-route + `useCanvasOrchestration`-polling).
+- [x] Niet-SEO content-types blijven de bestaande inline SSE-flow (byte-identiek).
+- [x] tsc + lint groen (CI `check` op PR #80).
+- [ ] Smoke op de deploy: genereer een long-form SEO-deliverable → progress loopt → 2 varianten persisted (cross-instance, geen timeout). → **verplaatst naar `pre-launch-browser-smoke-batch` (doc-sync 2026-07-12)**.
 
 ## Risico
 Raakt de kern content-generatie-UX + de flow die net groen getest is. Niet-SEO-pad MOET
