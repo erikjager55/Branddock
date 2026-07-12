@@ -59,12 +59,15 @@ export const PROMPT_VERSIONS: Record<PromptCategory, string> = {
   // drift, gevonden door smoke:prompt-contracts) — gelijkgetrokken met de
   // file zodat AICallSnapshot.promptVersion truthful is.
   'long-form': '1.3.0',
+  // 2.1.0 social-media / 1.3.0 advertising (2026-07-12, CF-5): tweede
+  // few-shot anchor per zichtbaar ad-type in een contrasterende branche +
+  // niet-kopiëren-instructie. Minor: content-tuning, output compat.
   // 2.0.0 (2026-06-11) = prompt-audit Fase 2: output-schema gewijzigd naar
   // per-group component-contracten (C3/C4/C5) — nieuwe/hernoemde groepen voor
   // email-sequences, website-types, sales, pr-hr, video-outlines en
   // linkedin-carousel/tiktok-script. Major: output-format breaking t.o.v. 1.2.0.
-  'social-media': '2.0.0',
-  'advertising': '1.2.0',
+  'social-media': '2.1.0',
+  'advertising': '1.3.0',
   'email': '2.0.0',
   'website': '2.0.0',
   'video-audio': '2.0.0',
