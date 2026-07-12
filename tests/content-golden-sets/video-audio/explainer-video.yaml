@@ -1,7 +1,7 @@
 description: 'Golden-set explainer-video — video representant (60s + 120s scripts)'
 
 providers:
-  - id: anthropic:messages:claude-sonnet-4-5-20251001
+  - id: anthropic:messages:claude-sonnet-4-6
     config: { max_tokens: 3500, temperature: 0.7 }
 
 prompts:

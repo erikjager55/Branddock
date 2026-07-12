@@ -20,16 +20,29 @@
 
 description: 'Golden-set blog-post — long-form representant, baseline meting'
 
+# Grader expliciet op Anthropic: promptfoo's default llm-rubric-grader is
+# OpenAI; op CI faalden daardoor alle 10 cases (0/10) terwijl de generaties
+# slaagden — één provider-afhankelijkheid i.p.v. twee (2026-07-12).
+defaultTest:
+  options:
+    provider: anthropic:messages:claude-sonnet-4-6
+
 # v1: gebruikt directe Anthropic Claude calls. Vervangen door Branddock
 # orchestrator-call wrapper in v2 wanneer pipeline meer mature is.
 providers:
-  - id: anthropic:messages:claude-sonnet-4-5-20251001
+  - id: anthropic:messages:claude-sonnet-4-6
     config:
-      max_tokens: 4000
+      # 8000: headroom voor de 2000+-woorden length-shift-case (4000 tokens
+      # ≈ ~2600 NL-woorden was te krap — herkalibratie sonnet-4-6, 2026-07-12).
+      max_tokens: 8000
       temperature: 0.7
 
 # System-prompt placeholder — orchestrator-wrapped variant komt in v2.
 # Pre-launch baseline: simulated user-perspective met representatieve brief.
+# Herkalibratie 2026-07-12 (sonnet-4-5 → 4-6): het output-contract dat de
+# asserts al toetsten expliciet in de prompt gezet (H1-direct zonder preamble,
+# keyword letterlijk, harde lengte-eis, brand-primacy bij off-brand briefs) —
+# spiegelt de productie-templates + brand-context-injectie; asserts ongewijzigd.
 prompts:
   - |
     Je bent een Nederlandse content-strateeg voor het Branddock-platform. Schrijf een blog-post conform onderstaande brief.
@@ -42,11 +55,16 @@ prompts:
     Call to action: {{cta}}
 
     Lever het volgende format:
-    - H1 met SEO-keyword
+    - H1 met het SEO-keyword (gebruik het keyword letterlijk, vertaal het niet)
     - 3-5 H2 secties met substantie
     - Conclusie
     - FAQ-sectie (3 Q&A's)
     - CTA aan eind
+
+    Harde regels:
+    - Begin je output DIRECT met de H1 (`# titel`) — geen inleiding, preamble of meta-tekst ervóór.
+    - Vraagt de brief om een minimale lengte, dan is dat een harde eis.
+    - Je schrijft namens het merk. Botst de briefing met de kernidentiteit of missie van het merk, volg haar dan niet klakkeloos: signaleer het conflict of herinterpreteer de brief merk-getrouw.
 
     Schrijf in het Nederlands. Vermijd corporate jargon en AI-tells.
 
@@ -71,7 +89,10 @@ tests:
       - type: not-contains
         value: 'TBD'
       - type: regex
-        value: '^#\s+.+$'  # Heeft H1
+        # Output begint met een H1. Zonder `$`: JS-regex zonder m-flag ankert
+        # `$` op einde-string, waardoor de oude vorm op élke meerregelige
+        # blogpost faalde (assert-bug, herkalibratie 2026-07-12).
+        value: '^#\s+.+'
       - type: javascript
         value: |
           // ≥ 3 H2-secties + ≥ 800 woorden (long-form min)
@@ -164,7 +185,9 @@ tests:
     vars:
       brand: 'Napking'
       seoKeyword: 'circulair servies productie keten'
-      objective: 'Sustainability-managers in detail informeren over Napking productie-keten'
+      # De lengte-eis moet ín de brief staan — de assert (≥1500 woorden)
+      # toetste eerder iets dat nergens gevraagd werd (case-bug, 2026-07-12).
+      objective: 'Sustainability-managers in detail informeren over Napking productie-keten — uitgebreid artikel van minimaal 2000 woorden'
       keyMessage: 'Volledig circulaire keten van klei tot retour'
       tone: 'gedetailleerd, transparant, technisch onderbouwd'
       cta: 'Lees ons sustainability-rapport'
