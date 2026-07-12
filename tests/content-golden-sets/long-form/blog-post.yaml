@@ -20,6 +20,13 @@
 
 description: 'Golden-set blog-post — long-form representant, baseline meting'
 
+# Grader expliciet op Anthropic: promptfoo's default llm-rubric-grader is
+# OpenAI; op CI faalden daardoor alle 10 cases (0/10) terwijl de generaties
+# slaagden — één provider-afhankelijkheid i.p.v. twee (2026-07-12).
+defaultTest:
+  options:
+    provider: anthropic:messages:claude-sonnet-4-6
+
 # v1: gebruikt directe Anthropic Claude calls. Vervangen door Branddock
 # orchestrator-call wrapper in v2 wanneer pipeline meer mature is.
 providers:
