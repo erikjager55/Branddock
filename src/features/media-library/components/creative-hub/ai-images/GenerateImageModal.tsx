@@ -11,6 +11,7 @@ import {
   type FalUsageCategory,
 } from '@/lib/integrations/fal/fal-providers';
 import type { GeneratedImageWithMeta } from '@/features/media-library/types/media.types';
+import { CreditCostHint } from '@/components/shared';
 
 // ─── Constants ──────────────────────────────────────────────
 
@@ -526,7 +527,8 @@ export function GenerateImageModal({
             )}
 
             {/* Actions */}
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <CreditCostHint action="image" />
               <Button variant="secondary" onClick={handleClose} disabled={generateImage.isPending}>
                 {t('actions.cancel')}
               </Button>

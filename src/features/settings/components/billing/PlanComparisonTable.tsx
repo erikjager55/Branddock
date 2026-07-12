@@ -3,17 +3,36 @@
 import { Check, Minus, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { Card, Button, Badge } from '@/components/shared';
 import { useBillingPlan } from '@/hooks/use-billing';
 import { PLAN_CONFIGS, ALL_TIERS, formatLimit } from '@/lib/constants/plan-limits';
 import { cn } from '@/lib/constants/design-tokens';
 import type { PlanTier, FeatureKey } from '@/types/billing';
 
+/** review-live-pricing: toon de jaarlijks-toggle alleen als er echte
+ *  yearly-Stripe-prijzen geconfigureerd zijn — anders belooft de UI -20%
+ *  terwijl de checkout server-side fail-safe weigert. */
+function useYearlyAvailable(): boolean {
+  const { data } = useQuery<{ yearlyAvailable?: boolean }>({
+    queryKey: ['stripe-prices'],
+    queryFn: async () => {
+      const res = await fetch('/api/stripe/prices');
+      if (!res.ok) return {};
+      return res.json();
+    },
+    staleTime: 5 * 60_000,
+  });
+  return data?.yearlyAvailable === true;
+}
+
 export function PlanComparisonTable() {
   const { t } = useTranslation('settings-billing');
   const billing = useBillingPlan();
+  const yearlyAvailable = useYearlyAvailable();
   const [cycle, setCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [loadingTier, setLoadingTier] = useState<PlanTier | null>(null);
+  const effectiveCycle: 'monthly' | 'yearly' = yearlyAvailable ? cycle : 'monthly';
 
   const COMPARISON_ROWS: { label: string; key: FeatureKey }[] = [
     { label: t('comparison.rows.workspaces'), key: 'WORKSPACES' },
@@ -31,7 +50,7 @@ export function PlanComparisonTable() {
     if (billing.isFreeBeta || tier === 'FREE') return;
     setLoadingTier(tier);
     try {
-      await billing.openCheckout(tier, cycle);
+      await billing.openCheckout(tier, effectiveCycle);
     } finally {
       setLoadingTier(null);
     }
@@ -41,6 +60,7 @@ export function PlanComparisonTable() {
     <Card padding="lg">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-sm font-semibold text-gray-900">{t('comparison.title')}</h3>
+        {yearlyAvailable && (
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCycle('monthly')}
@@ -75,6 +95,7 @@ export function PlanComparisonTable() {
             </span>
           </button>
         </div>
+        )}
       </div>
 
       <div className="overflow-x-auto">
@@ -87,7 +108,7 @@ export function PlanComparisonTable() {
               {ALL_TIERS.map((tier) => {
                 const config = PLAN_CONFIGS[tier];
                 const isCurrent = tier === billing.plan.tier && !billing.isFreeBeta;
-                const price = cycle === 'monthly'
+                const price = effectiveCycle === 'monthly'
                   ? config.monthlyPriceEur
                   : Math.round(config.monthlyPriceEur * 12 * 0.8);
 
@@ -109,7 +130,7 @@ export function PlanComparisonTable() {
                           &euro;{price}
                         </span>
                         <span className="text-xs text-gray-500">
-                          /{cycle === 'monthly' ? t('comparison.perMonthShort') : t('comparison.perYearShort')}
+                          /{effectiveCycle === 'monthly' ? t('comparison.perMonthShort') : t('comparison.perYearShort')}
                         </span>
                       </div>
                       {isCurrent && (

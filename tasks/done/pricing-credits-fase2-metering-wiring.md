@@ -5,7 +5,8 @@ fase: launch
 priority: now
 effort: 3-5 dagen
 owner: claude-code
-status: in-progress
+status: done
+completed: 2026-07-12
 created: 2026-07-07
 related-adr: docs/adr/2026-07-07-pricing-credits-launch.md
 related-spec: tasks/pricing-credits-billing.md
@@ -146,3 +147,8 @@ Deferred MINORs (dormant): AGENCY-limietverlaging (15ws/10seats) verifiëren bij
 Status blijft bewust **`in-progress`**: de acceptatie-DoD is niet gehaald zolang de **8 harde billing-ON-gates** (zie "T-review"-blok hierboven) open staan. Wat er ligt vs. rest:
 - ✅ **Gemerged**: `withCreditMetering`/`chargeAfter`-wrapper, SEO long-form, content-agents, primaire + geclassificeerde secundaire beeld/video-routes (met generate-vs-compose pad-guards), reaper-handler, floor-gedekte jobs = 0 cr.
 - ⏳ **Rest (= de billing-ON-gates, deels herbelegd)**: canvas-orchestrator non-SEO content-afboeking, pre-flight `enforceCreditBalance`-wiring op de routes, confirm-time agent-charge, `RESERVATION_REAP`-cron, grant-callers (trial/plan/topup → Fase 3/4), audit-grep-afronding, Neon `db push` vóór cutover. Kandidaat om als `pricing-credits-fase2-rest` af te splitsen als je Fase 2 los wilt finaliseren.
+
+
+## Reconciliatie 2026-07-12 — GELEVERD (gespreid over #369/#372/#381 + completion-PR)
+
+Alle acceptatiecriteria zijn gerealiseerd: `withCreditMetering`/`chargeAfter` (#369), tekst-/beeld-/video-sites + agents bedraad (#369/#372, agents-confirm #372, extra post-hoc-routes gedekt via de Fase-4-lock #380), reaper-cron (#372, vercel.json */15), SEO via `chargeAfter` in `seo-generation-job.ts`. **2d afgerond in deze completion-ronde**: de credit-keuze per background-job-type staat nu expliciet gedocumenteerd in `src/lib/agents/jobs/handlers.ts` (floor-gedekt/zero-cost vs output-kostend; enige kostende = SEO_GENERATE, al bedraad). Zero-cost-garantie (merkcontext/F-VAL/chat) zit in `ZERO_COST_ACTIONS` + smokes (39/39 in #372).

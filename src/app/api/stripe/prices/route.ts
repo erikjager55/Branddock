@@ -19,6 +19,19 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // review-live-pricing: de UI toont alleen een jaarlijks-toggle als er écht
+  // yearly-prijzen geconfigureerd zijn — anders belooft de toggle -20% terwijl
+  // de checkout server-side met een 400 weigert (fail-safe uit PR #79).
+  const ids = getStripePriceIds();
+  // Starter/Growth zijn de canonical ADR-tiers; legacy PRO telt bewust niet
+  // mee (staat niet in ALL_TIERS, dus zijn yearly-prijs mag de toggle niet
+  // voor de andere tiers aanzetten). NB (W3, gedocumenteerd in user-taak #6):
+  // het getoonde jaarbedrag is de -20%-lijstprijs uit config — de yearly-
+  // Stripe-prijzen MOETEN daarmee matchen bij aanmaak.
+  const yearlyAvailable = Boolean(
+    ids.starterYearly || ids.growthYearly || ids.agencyYearly || ids.enterpriseYearly,
+  );
+
   // When billing is disabled, return static prices from config
   if (!isBillingEnabled()) {
     const prices = ALL_TIERS.map((tier) => {
@@ -33,13 +46,13 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ prices });
+    return NextResponse.json({ prices, yearlyAvailable });
   }
 
   // When billing is enabled, fetch live prices from Stripe
   try {
     const stripe = getStripeClient();
-    const priceIds = getStripePriceIds();
+    const priceIds = ids;
     const activePriceIds = [
       priceIds.proMonthly,
       priceIds.agencyMonthly,
@@ -68,7 +81,7 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ prices });
+    return NextResponse.json({ prices, yearlyAvailable });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error(`[stripe/prices] Error: ${message}`);
@@ -86,6 +99,6 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ prices });
+    return NextResponse.json({ prices, yearlyAvailable });
   }
 }

@@ -112,3 +112,10 @@ Productie-readiness vereist evidence dat verse gebruikers het zonder begeleiding
 **Compensation-budget**: ~€150 (3× €50). Trek uit pre-launch buffer-budget.
 
 **Volgorde-discipline**: P1-fixes binnen 1 week na sessies (anders verdamprt momentum). P2/P3 evalueren tegen launch-go/no-go.
+
+
+## Voortgang 2026-07-12 (agent-deel geleverd)
+
+- **Testprotocol geschreven**: `docs/playbooks/onboarding-test-protocol.md` — 6 taken, score-rubric, debrief-vragen, verwerkings-format en een expliciet go/no-go-criterium voor betaalde acquisitie.
+- **Werving + observatie** (menswerk) staat als user-taak #8 op de takenlijst.
+- Restpunt vóór de sessies: de geautomatiseerde technische pre-check (Playwright signup→workspace→asset→persona→generatie) draaien zodra er een verse test-run gepland wordt — zodat testers alleen op UX struikelen, niet op techniek.
