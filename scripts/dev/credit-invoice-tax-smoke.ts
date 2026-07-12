@@ -49,22 +49,30 @@ async function main(): Promise<void> {
   check('NL: taxRate 21%', nl.taxRate === 0.21);
   check('NL: geen reverse-charge', nl.reverseCharge === false);
 
-  // (2) EU-B2B met geldig VAT → reverse-charge (0%, btw verlegd)
+  // (2) EU-B2B met geldig VAT → reverse-charge. PRIMAIR pad onder
+  // automatic_tax: taxability_reason op de tax-regel (review-W1) — het
+  // customer_tax_exempt-veld is daar een dode snapshot.
   const be = extractInvoiceTax(fabInvoice({
     amount_paid: 3900,
     total_excluding_tax: 3900,
-    total_taxes: [],
-    customer_tax_exempt: 'reverse',
-    customer_tax_ids: [{ type: 'eu_vat', value: 'BE0123456789' }],
+    total_taxes: [{ amount: 0, taxability_reason: 'reverse_charge' }],
+    customer_tax_ids: [
+      { type: 'nl_kvk', value: '12345678' },
+      { type: 'eu_vat', value: 'BE0123456789' },
+    ],
   }));
-  check('B2B: reverseCharge true', be.reverseCharge === true);
+  check('B2B: reverseCharge via taxability_reason', be.reverseCharge === true);
   check('B2B: taxAmount 0', be.taxAmount === 0);
-  check('B2B: customerVatNumber uit tax_id_collection', be.customerVatNumber === 'BE0123456789');
-  check('B2B: sellerVatNumber uit env', be.sellerVatNumber === (process.env.SELLER_VAT_NUMBER ?? null));
+  check('B2B: eu_vat geprefereerd boven ander tax-id', be.customerVatNumber === 'BE0123456789');
+  check('B2B: sellerVatNumber uit env', be.sellerVatNumber === 'NL000000000B01');
+  const beLegacy = extractInvoiceTax(fabInvoice({
+    amount_paid: 3900, total_excluding_tax: 3900, total_taxes: [], customer_tax_exempt: 'reverse',
+  }));
+  check('B2B: legacy customer_tax_exempt-pad blijft werken', beLegacy.reverseCharge === true);
 
-  // (3) Pre-tax factuur (geen automatic_tax) → nette nulls, geen crash
+  // (3) Pre-tax factuur (geen automatic_tax) → nette nulls, geen fake 0
   const pre = extractInvoiceTax(fabInvoice({ amount_paid: 2900, total_excluding_tax: null }));
-  check('pre-tax: netAmount null + taxRate null', pre.netAmount === null && pre.taxRate === null);
+  check('pre-tax: taxAmount/netAmount/taxRate alle null', pre.taxAmount === null && pre.netAmount === null && pre.taxRate === null);
 
   // (4) end-to-end mapping via handleInvoicePaid → Invoice-rij met BTW-velden
   const s = Date.now();
@@ -86,6 +94,25 @@ async function main(): Promise<void> {
     check('upsert: rij aangemaakt met totaal €47,19', row?.amount === 47.19);
     check('upsert: BTW-velden gepersisteerd', row?.taxAmount === 8.19 && row?.netAmount === 39 && row?.taxRate === 0.21);
     check('upsert: customerVatNumber gepersisteerd', row?.customerVatNumber === 'NL123456789B01');
+    check('upsert: sellerVatNumber gepersisteerd (create-tak)', row?.sellerVatNumber === 'NL000000000B01');
+
+    // (5) update-tak (review-M2): retry van hetzelfde event — waarden stabiel,
+    // sellerVatNumber wordt niet herschreven (create-only, review-M6).
+    process.env.SELLER_VAT_NUMBER = 'NL999999999B99';
+    await handleInvoicePaid(fabInvoice({
+      id: `in_e2e_${s}`,
+      customer: `cus_smoke_${s}`,
+      amount_paid: 4719,
+      total_excluding_tax: 3900,
+      total_taxes: [{ amount: 819 }],
+      customer_tax_ids: [{ type: 'eu_vat', value: 'NL123456789B01' }],
+      billing_reason: 'manual',
+    }));
+    const row2 = await prisma.invoice.findUnique({ where: { stripeInvoiceId: `in_e2e_${s}` } });
+    check('update-tak: tax-velden stabiel na retry', row2?.taxAmount === 8.19 && row2?.netAmount === 39);
+    check('update-tak: sellerVatNumber NIET herschreven na env-wijziging', row2?.sellerVatNumber === 'NL000000000B01');
+    const usage = await prisma.subscription.findFirst({ where: { workspaceId: ws.id } });
+    check("billing_reason 'manual' → geen usage-reset-write nodig (geen subscription-rij aangeraakt)", usage === null);
   } finally {
     await prisma.invoice.deleteMany({ where: { workspaceId: ws.id } });
     await prisma.subscription.deleteMany({ where: { workspaceId: ws.id } });

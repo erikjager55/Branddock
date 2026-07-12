@@ -77,12 +77,24 @@ export async function createTopupCheckout(params: CreateTopupCheckoutParams): Pr
     // en de webhook-grant zou de credits dagenlang laten "hangen".
     payment_method_types: ['card', 'ideal'],
     currency: STRIPE_CURRENCY,
+    // Fase 5b — Stripe Tax: pack-prijzen zijn EXCLUSIEF BTW (tax_behavior),
+    // Stripe telt het juiste tarief erbij op (NL 21% / reverse-charge / OSS).
+    automatic_tax: { enabled: true },
+    billing_address_collection: 'required',
+    customer_update: { address: 'auto', name: 'auto' },
+    tax_id_collection: { enabled: true },
+    // Review-W3: payment-mode maakt zonder dit géén Stripe-invoice — en een
+    // BTW-factuur is bij elke betaalde levering verplicht (NL/EU-B2B). De
+    // invoice.paid-webhook persisteert hem dan gratis in de factuur-historie
+    // (billing_reason 'manual' → geen plan-grant, geen usage-reset).
+    invoice_creation: { enabled: true },
     line_items: [
       {
         price_data: {
           currency: STRIPE_CURRENCY,
           product_data: { name: `Branddock credit top-up — ${pack.credits} credits` },
           unit_amount: Math.round(pack.priceEur * 100),
+          tax_behavior: 'exclusive',
         },
         quantity: 1,
       },

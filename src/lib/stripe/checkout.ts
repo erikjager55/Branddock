@@ -56,6 +56,14 @@ export async function createCheckoutSession(
     // ook direct (IBAN zonder bank-redirect). Kaart blijft beschikbaar.
     payment_method_types: ['card', 'ideal', 'sepa_debit'],
     currency: STRIPE_CURRENCY,
+    // Fase 5b — Stripe Tax berekent NL 21% / EU-B2B reverse-charge / OSS.
+    // Vereist een klant-adres (jurisdictie) — Checkout verzamelt en bewaart
+    // het op de customer; tax_id_collection doet VAT-invoer mét VIES-validatie
+    // (Stripe = bron van waarheid, geen eigen tarief-/VIES-logica).
+    automatic_tax: { enabled: true },
+    billing_address_collection: 'required',
+    customer_update: { address: 'auto', name: 'auto' },
+    tax_id_collection: { enabled: true },
     line_items: [
       {
         price: priceId,

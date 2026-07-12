@@ -151,20 +151,34 @@ export function extractInvoiceTax(invoice: Stripe.Invoice): {
   sellerVatNumber: string | null;
 } {
   // API 2026-02+ (clover): het veld heet `total_taxes` (voorheen total_tax_amounts).
-  const taxCents = (invoice.total_taxes ?? []).reduce(
+  const totalTaxes = invoice.total_taxes ?? [];
+  const taxCents = totalTaxes.reduce(
     (sum: number, t: Stripe.Invoice.TotalTax) => sum + (t.amount ?? 0),
     0,
   );
   const netCents = invoice.total_excluding_tax ?? null;
-  const taxAmount = taxCents / 100;
+  // Geen tax-data (pre-Stripe-Tax-factuur) → nette nulls, geen fake 0.
+  const hasTaxData = totalTaxes.length > 0 || netCents !== null;
+  const taxAmount = hasTaxData ? taxCents / 100 : null;
   const netAmount = netCents !== null ? netCents / 100 : null;
-  const reverseCharge = invoice.customer_tax_exempt === "reverse";
-  const customerVatNumber = invoice.customer_tax_ids?.[0]?.value ?? null;
+  // Belt-and-braces (review-W1): onder automatic_tax signaleert Stripe Tax
+  // reverse-charge via total_taxes[].taxability_reason — customer_tax_exempt
+  // is slechts de handmatige customer-snapshot (dekt het niet-Tax-pad).
+  const reverseCharge =
+    invoice.customer_tax_exempt === "reverse" ||
+    totalTaxes.some((t) => t.taxability_reason === "reverse_charge");
+  // Voorkeur voor het EU-VAT-nummer als de customer meerdere tax-ids heeft.
+  const taxIds = invoice.customer_tax_ids ?? [];
+  const customerVatNumber =
+    taxIds.find((t) => t.type === "eu_vat")?.value ?? taxIds[0]?.value ?? null;
 
   return {
     taxAmount,
     // Effectief tarief afgeleid uit Stripe's eigen bedragen — geen tarief-logica.
-    taxRate: netAmount && netAmount > 0 ? Math.round((taxAmount / netAmount) * 10000) / 10000 : null,
+    taxRate:
+      taxAmount !== null && netAmount && netAmount > 0
+        ? Math.round((taxAmount / netAmount) * 10000) / 10000
+        : null,
     netAmount,
     reverseCharge,
     customerVatNumber,
@@ -216,15 +230,25 @@ export async function handleInvoicePaid(
       amount: (invoice.amount_paid ?? 0) / 100,
       status: "PAID",
       pdfUrl: invoice.invoice_pdf ?? null,
-      ...tax,
+      // sellerVatNumber alleen bij create: een event-retry ná een
+      // env-wijziging mag een historische factuur niet herschrijven (review-M6).
+      taxAmount: tax.taxAmount,
+      taxRate: tax.taxRate,
+      netAmount: tax.netAmount,
+      reverseCharge: tax.reverseCharge,
+      customerVatNumber: tax.customerVatNumber,
     },
   });
 
-  // Reset AI usage counter on the subscription for this new period
-  await prisma.subscription.updateMany({
-    where: { workspaceId },
-    data: { stripeCurrentPeriodUsage: 0 },
-  });
+  // Reset AI usage counter on the subscription for this new period.
+  // Alleen voor subscription-invoices: een top-up-factuur (invoice_creation,
+  // billing_reason 'manual') mag de periode-teller niet mid-cyclus nullen.
+  if (invoice.billing_reason?.startsWith("subscription")) {
+    await prisma.subscription.updateMany({
+      where: { workspaceId },
+      data: { stripeCurrentPeriodUsage: 0 },
+    });
+  }
 
   // Plan-grant (Fase 3): ken de maandbundel toe bij een betaalde subscription-
   // invoice (initieel + elke cyclus). Idempotent per invoice; org-pooled → grant
