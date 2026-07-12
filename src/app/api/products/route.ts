@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { enforcePlanLimit } from "@/lib/stripe/enforcement";
+import { enforcePlanLimit, enforceNotLocked } from "@/lib/stripe/enforcement";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { PRODUCT_LIST_SELECT } from "@/lib/db/queries";
 import { setCache, cachedJson, invalidateCache } from "@/lib/api/cache";
@@ -147,6 +147,11 @@ export async function POST(request: NextRequest) {
     // M5: server-side plan-limit enforcement (no-op while billing disabled).
     const limited = await enforcePlanLimit(workspaceId, "PRODUCTS");
     if (limited) return limited;
+
+    // Fase 4: verlopen no-card trial → read-only-lock op entity-creatie
+    // (lezen + bestaande data blijven volledig toegankelijk).
+    const locked = await enforceNotLocked(workspaceId);
+    if (locked) return locked;
 
     const body = await request.json();
     const parsed = createProductSchema.safeParse(body);

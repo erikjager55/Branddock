@@ -11,6 +11,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
 import { chargeAfter } from '@/lib/billing/credits/meter-generation';
+import { enforceNotLocked } from '@/lib/stripe/enforcement';
 
 /**
  * POST /api/landing-pages/generate-page
@@ -89,6 +90,10 @@ export async function POST(request: NextRequest) {
   if (!membership) {
     return NextResponse.json({ error: 'No access to this workspace' }, { status: 403 });
   }
+
+  // Fase 4: verlopen no-card trial → generatie dicht (read-only-lock).
+  const trialLock = await enforceNotLocked(workspaceId);
+  if (trialLock) return trialLock;
 
   const ctx = await assembleCanvasContext(deliverable.id, workspaceId);
   const promptInputs = {

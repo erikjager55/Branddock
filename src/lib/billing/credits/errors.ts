@@ -22,6 +22,24 @@ export class InsufficientCreditsError extends Error {
   }
 }
 
+/** 402-response voor een verlopen no-card trial (Fase 4 read-only-lock).
+ * Onderscheiden van "onvoldoende credits" via `trialExpired: true` zodat de UI
+ * een conversie-CTA kan tonen i.p.v. een top-up-melding. Merk-data blijft
+ * volledig leesbaar — alleen muterende/generatieve acties krijgen deze 402. */
+export function trialLockedResponse(): NextResponse {
+  const suffix = isTopupEnabled()
+    ? 'Kies een plan of koop credits om verder te gaan — je merkdata staat veilig en blijft zichtbaar.'
+    : 'Neem contact op om je account te activeren — je merkdata staat veilig en blijft zichtbaar.';
+  return NextResponse.json(
+    {
+      error: `Je gratis trialperiode is afgelopen. ${suffix}`,
+      trialExpired: true,
+      upgradeRequired: true,
+    },
+    { status: 402 },
+  );
+}
+
 /** 402-response voor een route-boundary guard. Copy is topup-bewust: in de
  * pilotfase (kopen uit) verwijzen we naar contact i.p.v. een koopknop die er niet is. */
 export function insufficientCreditsResponse(err: InsufficientCreditsError): NextResponse {
