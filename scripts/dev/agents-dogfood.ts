@@ -15,6 +15,11 @@
  *
  * Run: node --env-file-if-exists=.env.local node_modules/.bin/tsx \
  *      scripts/dev/agents-dogfood.ts
+ *
+ * Env: DOGFOOD_RUN_DATE=<label>  → bestandsnamen-suffix (default: vandaag)
+ *      DOGFOOD_ONLY=<id[,id]>    → gerichte retry. LET OP: geef dan ook een
+ *      eigen DOGFOOD_RUN_DATE mee (bv. "2026-07-12-strategist-retry"), anders
+ *      overschrijft de retry het JSONL/rapport van de volle sweep van vandaag.
  */
 
 import { appendFileSync, writeFileSync } from "node:fs";
@@ -23,7 +28,8 @@ import { prisma } from "../../src/lib/prisma";
 
 const WORKSPACE_ID = "cmnomsobx009q44msn0gpw7vb"; // Better brands
 const USER_ID = "demo-user-erik-001"; // owner erik@branddock.com
-const RUN_DATE = "2026-07-07";
+// Overridebaar zodat een herhaalronde niet het rapport van een eerdere ronde overschrijft.
+const RUN_DATE = process.env.DOGFOOD_RUN_DATE ?? new Date().toISOString().slice(0, 10);
 const JSONL = `docs/reports/agents-dogfood-${RUN_DATE}.jsonl`;
 const REPORT = `docs/reports/agents-dogfood-${RUN_DATE}.md`;
 
@@ -138,11 +144,20 @@ function fmtArtifacts(a: RowResult["artifacts"]): string {
 }
 
 async function main() {
-  console.log(`\n=== Agents dogfood-sweep · Better Brands · ${RUN_DATE} ===\n`);
+  // DOGFOOD_ONLY=strategist[,data-analyst] → gerichte retry zonder volle sweep.
+  const only = (process.env.DOGFOOD_ONLY ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const specs = only.length ? SPECS.filter((s) => only.includes(s.agentId)) : SPECS;
+  if (only.length && specs.length === 0) {
+    // Typo-guard: anders wist de writeFileSync hieronder het JSONL van vandaag
+    // en deelt het rapport door 0 runs (NaN) — zonder foutmelding.
+    console.error(`DOGFOOD_ONLY matcht geen enkele agent (${only.join(",")}) — bekende ids: ${SPECS.map((s) => s.agentId).join(", ")}`);
+    process.exit(1);
+  }
+  console.log(`\n=== Agents dogfood-sweep · Better Brands · ${RUN_DATE}${only.length ? ` · only: ${only.join(",")}` : ""} ===\n`);
   writeFileSync(JSONL, "");
   const rows: RowResult[] = [];
 
-  for (const spec of SPECS) {
+  for (const spec of specs) {
     process.stdout.write(`→ ${spec.agentId} / ${spec.useCaseId} ... `);
     const r = await runOne(spec);
     rows.push(r);

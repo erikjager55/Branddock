@@ -7,15 +7,18 @@
  *
  * Spiegelt het approve-pad van
  * `src/app/api/agents/runs/[runId]/confirm/route.ts`: atomische claim →
- * getToolByName().execute() → settle → runDeliverableGeneration → LINK-artefact.
+ * getToolByName().execute() → settle → runDeliverableGeneration → LINK-artefact
+ * → confirm-time credit-charge (Gate C, Fase 3 — no-op bij credits-uit/unlimited-org).
  *
  * Run: node --env-file-if-exists=.env.local node_modules/.bin/tsx \
  *      scripts/dev/agents-confirm-path.ts
  */
 
 import { orchestrateContentGeneration } from "../../src/lib/ai/canvas-orchestrator";
+import { getAgentDefinition } from "../../src/lib/agents/registry";
 import { getToolByName } from "../../src/lib/claw/tools/registry";
 import { prisma } from "../../src/lib/prisma";
+import { chargeAfter } from "../../src/lib/billing/credits/meter-generation";
 
 const BB = "cmnomsobx009q44msn0gpw7vb";
 const USER_ID = "demo-user-erik-001";
@@ -113,6 +116,20 @@ async function confirmRun(agentId: string): Promise<void> {
         fidelityScore: gen.fidelityScore,
       },
     });
+    // Gate C route-parity (Fase 3): confirm-time charge — flat 'agent-deliverable',
+    // idempotent per run+deliverable. No-op bij credits-uit of unlimited-org.
+    if (getAgentDefinition(run.agentId)?.billable) {
+      await chargeAfter(
+        {
+          workspaceId: BB,
+          action: "agent-deliverable",
+          feature: `agent:${run.agentId}`,
+          idempotencyKey: `agent-confirm:${run.id}:${res.deliverableId}`,
+        },
+        { count: 1 },
+      ).catch(() => {});
+      console.log("  confirm-time charge aangeroepen (agent-deliverable, route-parity)");
+    }
   } else if (toolName === "create_campaign" && typeof res.campaignId === "string") {
     console.log(`  campagne ${res.campaignId.slice(-6)} aangemaakt (strategist write-through, geen content-F-VAL)`);
   } else {
