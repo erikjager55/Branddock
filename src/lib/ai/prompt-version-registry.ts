@@ -13,6 +13,16 @@
 //   3. Run golden-set CI (sub-sprint #5.B) om regression te detecteren
 // =============================================================
 
+import { LONG_FORM_TEMPLATES } from '@/lib/studio/prompt-templates/long-form';
+import { SOCIAL_MEDIA_TEMPLATES } from '@/lib/studio/prompt-templates/social-media';
+import { ADVERTISING_TEMPLATES } from '@/lib/studio/prompt-templates/advertising';
+import { EMAIL_TEMPLATES } from '@/lib/studio/prompt-templates/email';
+import { WEBSITE_TEMPLATES } from '@/lib/studio/prompt-templates/website';
+import { VIDEO_AUDIO_TEMPLATES } from '@/lib/studio/prompt-templates/video-audio';
+import { SALES_TEMPLATES } from '@/lib/studio/prompt-templates/sales';
+import { PR_HR_TEMPLATES } from '@/lib/studio/prompt-templates/pr-hr';
+import type { PromptTemplate } from '@/lib/studio/prompt-templates/helpers';
+
 /**
  * Categorieën corresponderen met de 8 prompt-template files in
  * src/lib/studio/prompt-templates/, plus prompt-families buiten die map
@@ -50,12 +60,15 @@ export const PROMPT_VERSIONS: Record<PromptCategory, string> = {
   // drift, gevonden door smoke:prompt-contracts) — gelijkgetrokken met de
   // file zodat AICallSnapshot.promptVersion truthful is.
   'long-form': '1.3.0',
+  // 2.1.0 social-media / 1.3.0 advertising (2026-07-12, CF-5): tweede
+  // few-shot anchor per zichtbaar ad-type in een contrasterende branche +
+  // niet-kopiëren-instructie. Minor: content-tuning, output compat.
   // 2.0.0 (2026-06-11) = prompt-audit Fase 2: output-schema gewijzigd naar
   // per-group component-contracten (C3/C4/C5) — nieuwe/hernoemde groepen voor
   // email-sequences, website-types, sales, pr-hr, video-outlines en
   // linkedin-carousel/tiktok-script. Major: output-format breaking t.o.v. 1.2.0.
-  'social-media': '2.0.0',
-  'advertising': '1.2.0',
+  'social-media': '2.1.0',
+  'advertising': '1.3.0',
   'email': '2.0.0',
   'website': '2.0.0',
   'video-audio': '2.0.0',
@@ -96,81 +109,38 @@ export function getPromptVersion(category: PromptCategory): string {
 }
 
 /**
- * Map content-type → prompt-category. Hergebruikt door call-sites die
- * deliverable-type kennen maar niet expliciet category.
+ * Map content-type → prompt-category, afgeleid uit de 8 template-collecties
+ * zelf (CF-4, content-flow-improvements-7a). De handmatige voorganger was
+ * gedivergeerd: ~9 phantom-IDs (battle-card, product-demo, crisis-statement, …)
+ * en ~11 echte types die ontbraken en daardoor via de fallback op 'long-form'
+ * landden (o.a. facebook-ad, proposal-template, impact-report). Door de map
+ * uit dezelfde bron als TEMPLATE_REGISTRY op te bouwen kán hij niet opnieuw
+ * divergeren; smoke:prompt-contracts sectie (g) bewaakt de dekking tegen
+ * DELIVERABLE_TYPE_IDS.
  *
- * Categorie-mapping consistent met src/lib/studio/prompt-templates/ files.
+ * NB: linkedin-ad / facebook-ad / linkedin-article leven in social-media.ts
+ * terwijl hun UI-categorie afwijkt (CF-8) — de prompt-versie-categorie volgt
+ * bewust het template-bestand; model-routing gebruikt de UI-categorie via
+ * getDeliverableTypeById en raakt deze map niet.
  */
-const TYPE_TO_CATEGORY: Record<string, PromptCategory> = {
-  // Long-form (7)
-  'blog-post': 'long-form',
-  'pillar-page': 'long-form',
-  'whitepaper': 'long-form',
-  'case-study': 'long-form',
-  'ebook': 'long-form',
-  'article': 'long-form',
-  'thought-leadership': 'long-form',
+const CATEGORY_COLLECTIONS: ReadonlyArray<
+  readonly [Record<string, PromptTemplate>, PromptCategory]
+> = [
+  [LONG_FORM_TEMPLATES, 'long-form'],
+  [SOCIAL_MEDIA_TEMPLATES, 'social-media'],
+  [ADVERTISING_TEMPLATES, 'advertising'],
+  [EMAIL_TEMPLATES, 'email'],
+  [WEBSITE_TEMPLATES, 'website'],
+  [VIDEO_AUDIO_TEMPLATES, 'video-audio'],
+  [SALES_TEMPLATES, 'sales-enablement'],
+  [PR_HR_TEMPLATES, 'pr-hr-comms'],
+];
 
-  // Social Media (13)
-  'linkedin-post': 'social-media',
-  'linkedin-article': 'social-media',
-  'linkedin-carousel': 'social-media',
-  'linkedin-ad': 'social-media',
-  'linkedin-newsletter': 'social-media',
-  'linkedin-video': 'social-media',
-  'linkedin-event': 'social-media',
-  'linkedin-poll': 'social-media',
-  'instagram-post': 'social-media',
-  'twitter-thread': 'social-media',
-  'facebook-post': 'social-media',
-  'tiktok-script': 'social-media',
-  'social-carousel': 'social-media',
-
-  // Advertising & Paid (6)
-  'search-ad': 'advertising',
-  'social-ad': 'advertising',
-  'display-ad': 'advertising',
-  'retargeting-ad': 'advertising',
-  'video-ad': 'advertising',
-  'native-ad': 'advertising',
-
-  // Email (5)
-  'newsletter': 'email',
-  'welcome-sequence': 'email',
-  'promotional-email': 'email',
-  'nurture-sequence': 'email',
-  're-engagement-email': 'email',
-
-  // Website & Landing Pages (5)
-  'landing-page': 'website',
-  'product-page': 'website',
-  'faq-page': 'website',
-  'comparison-page': 'website',
-  'microsite': 'website',
-
-  // Video & Audio (5)
-  'explainer-video': 'video-audio',
-  'promo-video': 'video-audio',
-  'product-demo': 'video-audio',
-  'podcast-outline': 'video-audio',
-  'webinar-outline': 'video-audio',
-
-  // Sales Enablement (4)
-  'one-pager': 'sales-enablement',
-  'sales-deck': 'sales-enablement',
-  'battle-card': 'sales-enablement',
-  'objection-handler': 'sales-enablement',
-
-  // PR, HR & Communications (8)
-  'press-release': 'pr-hr-comms',
-  'media-pitch': 'pr-hr-comms',
-  'company-announcement': 'pr-hr-comms',
-  'job-description': 'pr-hr-comms',
-  'recruitment-post': 'pr-hr-comms',
-  'employee-newsletter': 'pr-hr-comms',
-  'crisis-statement': 'pr-hr-comms',
-  'thought-leadership-bio': 'pr-hr-comms',
-};
+const TYPE_TO_CATEGORY: Record<string, PromptCategory> = Object.fromEntries(
+  CATEGORY_COLLECTIONS.flatMap(([collection, category]) =>
+    Object.keys(collection).map((typeId) => [typeId, category] as const),
+  ),
+);
 
 /**
  * Type-to-category lookup met fallback. Onbekende types → 'long-form'
