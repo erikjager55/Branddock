@@ -5,11 +5,12 @@ fase: launch
 priority: now
 effort: 1-2 dagen
 owner: claude-code
-status: open
+status: done
+completed: 2026-07-12
 created: 2026-07-07
 related-adr: docs/adr/2026-07-07-pricing-credits-launch.md
 related-spec: tasks/pricing-credits-billing.md
-worktree: branddock-feat-pricing-credits
+worktree: branddock-pricing-fase4 (branch feat/pricing-credits-fase4-trial)
 ---
 
 # Probleem
@@ -22,16 +23,16 @@ Implementeer de trial-lifecycle op de bestaande org-velden (`Organization.trialE
 
 # Acceptatiecriteria
 
-- [ ] Trial-start: bij org-creatie (of eerste workspace) éénmalig `grantCredits(org, 300, 'TRIAL_GRANT')` + `trialEndsAt = now + 28 dagen` + `subscriptionStatus = TRIALING`. **Éénmalig** — een re-trigger kent geen tweede 300 toe (idempotent op org).
-- [ ] Geen kaart vereist tot de eerste top-up/conversie (geen Stripe-customer/PaymentMethod-eis om te starten — de trial draait puur op de credit-grant).
-- [ ] `src/lib/billing/credits/trial.ts` (nieuw): `startTrial(orgId)` (idempotent), `getTrialState(orgId)` → `{ isTrialing, daysRemaining, isLocked, creditsRemaining }`, `isReadOnlyLocked(orgId)` → boolean.
-- [ ] **Read-only lock op dag 28**: een account met verstreken `trialEndsAt`, geen betaald plan én geen top-up-historie → `isReadOnlyLocked = true`. Alle **muterende/generatieve** routes weigeren met een nette 402/423 (upgrade-CTA), maar **lees**-routes + de merk-data blijven volledig intact (niet wissen).
-- [ ] Lock-enforcement centraal: `enforceCreditBalance` (Fase 1) / een route-guard `enforceNotLocked(orgId)` weigert generatie + entity-creatie bij lock; hergebruikt het bestaande 402-response-patroon.
-- [ ] Lock lift: zodra een eerste top-up (Fase 3) of een betaald plan actief is → `subscriptionStatus` uit `TRIALING`, lock weg, generatie weer toegestaan.
-- [ ] Dagelijkse trial-sweep: `TRIAL_SWEEP` job-type/cron die aflopende trials markeert + een verval-melding stuurt (T-3/T-0). Alternatief: on-read-evaluatie in `getTrialState` (geen cron nodig) — kies de simpelste die geen stale state geeft.
-- [ ] `npx tsc --noEmit` 0 errors
-- [ ] `npm run lint` 0 errors
-- [ ] Smoke-test uitgevoerd (zie plan)
+- [x] Trial-start — **bestond al** (Fase-3-werk, #372): `provisionNewUser` in `src/lib/auth.ts` grant 300cr (`idempotencyKey trial:<orgId>`) + zet `trialEndsAt` éénmalig (updateMany met null-guard); `subscriptionStatus` default al `TRIALING` in het schema. Geverifieerd, niet opnieuw gebouwd.
+- [x] Geen kaart vereist — bevestigd: de trial draait puur op de credit-grant; nergens een Stripe-customer/PaymentMethod-eis in het startpad.
+- [x] `src/lib/billing/credits/trial.ts` (nieuw): `getTrialState(orgId)` → `{ isTrialing, daysRemaining, isLocked, creditsRemaining }` + `isReadOnlyLocked(orgId)`. Bewust **geen** `startTrial` — de start leeft al in auth.ts (geen tweede pad; anti-duplicatie).
+- [x] **Read-only lock**: on-read afgeleid (geen stale cron-state) uit `trialEndsAt` + betaal-historie (`lifetimeGranted > TRIAL_CREDITS` óf actieve subscription óf unlimited). Dekking (na review-W1-uitbreiding): de 6 gemeterde generatie-routes via `enforceCreditBalance` (lock-402 vóór saldo-402, `trialExpired: true`-CTA), de 5 post-hoc/chargeAfter-generatie-ingangen (landing-pages generate-page, persona generate-image, studio edit-image, consistent-models generate, agents run+confirm) en de 4 entity-create-routes via `enforceNotLocked`. Lees-routes + merk-data volledig intact — geen delete-pad geraakt. **Bewust restpunt**: PATCH/DELETE-bewerkingen van bestaande entiteiten blijven open (geen centrale mutation-chokepoint; copy zegt daarom "genereren en nieuwe items aanmaken", niet "bewerken") — bij een centrale route-wrapper later alsnog afdichten.
+- [x] Lock-enforcement centraal: één edit in `enforceCreditBalance` dekt alle 6 generatie-routes; `enforceNotLocked(workspaceId)` + `trialLockedResponse()` (errors.ts) spiegelen het bestaande 402-patroon.
+- [x] Lock-lift impliciet: élke top-up/plan-grant verhoogt `lifetimeGranted` boven de trial-bundel (ledger = audit-trail) en een actieve subscription telt ook — geen aparte unlock-write nodig (smoke-case B/E).
+- [x] Meldingen: T-3/T-0 via `trial-notify.ts`, ingehaakt in de bestáánde dagelijkse `/api/cron/expire-trials` (geen nieuw job-type). In-app (`NotificationType.TRIAL_EXPIRING`, additief enum-lid → Neon db push) + e-mail via Emailit, dedup zonder schema-velden via het createdAt-venster rond `trialEndsAt`. Lock-state zelf is on-read (geen cron-afhankelijkheid).
+- [x] `npx tsc --noEmit` 0 errors
+- [x] eslint 0 errors op alle geraakte files
+- [x] Smoke: nieuw `scripts/dev/credit-trial-lock-smoke.ts` **16/16** (state-matrix A-F, lock-402 wint van saldo-402, entity-guard, T-3/T-0 + dedup); regressie `credit-trial-expiry-smoke` 5/5 + `credit-enforce-smoke` 4/4. UI: lock-banner in CreditBalanceCard + `isLocked` in /api/billing/balance.
 
 # Bestanden die ik aanraak
 

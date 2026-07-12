@@ -25,6 +25,7 @@ import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { chargeAfter } from "@/lib/billing/credits/meter-generation";
 import { getAgentDefinition } from "@/lib/agents/registry";
+import { enforceNotLocked } from "@/lib/stripe/enforcement";
 
 // Contentgeneratie ná approve kan minuten duren (zelfde budget als de run-route).
 export const maxDuration = 800;
@@ -58,6 +59,11 @@ export async function POST(
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Fase 4: verlopen no-card trial → geen tool-executes/canvas-generatie
+    // meer via confirm (read-only-lock).
+    const trialLock = await enforceNotLocked(workspaceId);
+    if (trialLock) return trialLock;
 
     let rawBody: unknown;
     try {

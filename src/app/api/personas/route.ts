@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { enforcePlanLimit } from "@/lib/stripe/enforcement";
+import { enforcePlanLimit, enforceNotLocked } from "@/lib/stripe/enforcement";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { z } from "zod";
 import { PERSONA_RESEARCH_METHOD_SELECT } from "@/lib/db/queries";
@@ -170,6 +170,11 @@ export async function POST(request: NextRequest) {
     // M5: server-side plan-limit enforcement (no-op while billing disabled).
     const limited = await enforcePlanLimit(workspaceId, "PERSONAS");
     if (limited) return limited;
+
+    // Fase 4: verlopen no-card trial → read-only-lock op entity-creatie
+    // (lezen + bestaande data blijven volledig toegankelijk).
+    const locked = await enforceNotLocked(workspaceId);
+    if (locked) return locked;
 
     const body = await request.json();
     const parsed = createPersonaSchema.safeParse(body);
