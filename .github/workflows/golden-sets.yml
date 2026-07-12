@@ -20,6 +20,13 @@ concurrency:
   group: golden-sets-${{ github.ref }}
   cancel-in-progress: true
 
+# De PR-comment-stap schrijft naar issues/PR's; zonder expliciete grant faalt
+# hij met "Resource not accessible by integration" (default-token is read-only).
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   evaluate:
     runs-on: ubuntu-latest
