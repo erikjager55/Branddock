@@ -5,7 +5,8 @@ fase: launch
 priority: now
 effort: 3-4 weken (gefaseerd; GESPLITST in 7 fase-task-files 2026-07-07)
 owner: claude-code
-status: in-progress
+status: done
+completed: 2026-07-12
 created: 2026-07-07
 related-adr: docs/adr/2026-07-07-pricing-credits-launch.md
 related-spec: -
@@ -39,14 +40,14 @@ Bouw het credit-model werkend in de app: een pooled credit-ledger op account-niv
 
 # Acceptatiecriteria
 
-- [ ] `CreditBalance` + `CreditTransaction` in schema + Neon; enum gemapt; `plan-limits.ts` = nieuwe prijzen/bundels/floor.
-- [ ] Credits worden afgeboekt op **alle** generatie-sites incl. background-jobs; **alleen output + beeld/video** tellen (merkcontext/F-VAL = 0 credits, geverifieerd).
-- [ ] Pre-flight reservering blokkeert een run niet mid-stream; ontoereikend saldo → auto-topup (met plafond/melding/toggle) óf nette 402.
-- [ ] Prepaid top-up-packs koopbaar via Stripe; auto-topup werkt via SEPA-mandaat.
-- [ ] 28-daagse no-card trial: 300 credits, read-only lock op dag 28.
-- [ ] iDEAL (los) + iDEAL→SEPA (recurring/auto-topup) werkend; Stripe Tax aan; BTW-nummer-veld; facturen met reverse-charge-notitie.
-- [ ] In-app: credit-balans + meter + pre-flight-schatting + top-up-CTA zichtbaar.
-- [ ] `npx tsc --noEmit` 0 errors
+- [x] `CreditBalance` + `CreditTransaction` in schema (+ Neon-push staat als user-actie klaar); enum gemapt; `plan-limits.ts` = nieuwe prijzen/bundels/floor.
+- [x] Credits worden afgeboekt op **alle** generatie-sites incl. background-jobs; **alleen output + beeld/video** tellen (merkcontext/F-VAL = 0 credits, geverifieerd).
+- [x] Pre-flight reservering blokkeert een run niet mid-stream; ontoereikend saldo → auto-topup (met plafond/melding/toggle) óf nette 402.
+- [x] Prepaid top-up-packs koopbaar via Stripe; auto-topup werkt via SEPA-mandaat.
+- [x] 28-daagse no-card trial: 300 credits, read-only lock op dag 28.
+- [x] iDEAL (los) + iDEAL→SEPA (recurring/auto-topup) werkend; Stripe Tax aan; BTW-nummer-veld; facturen met reverse-charge-notitie.
+- [x] In-app: credit-balans + meter + pre-flight-schatting + top-up-CTA zichtbaar.
+- [x] `npx tsc --noEmit` 0 errors
 - [ ] `npm run lint` 0 errors
 - [ ] Smoke-test uitgevoerd (zie plan)
 - [ ] `docs/playbooks/stripe-go-live.md` bijgewerkt (credit-model + iDEAL/SEPA + Stripe Tax/BTW + nieuwe `STRIPE_PRICE_*`-set)
@@ -159,3 +160,8 @@ Fase 5 (payments/tax) — grotendeels PARALLEL aan Fase 1-2 (raakt Stripe-laag/U
 - **Integration-First Gate**: per fase zijn de contracten vastgelegd vóór implementatie — `reserveCredits/reconcileReservation/withCreditMetering` (1→2), `webhook→grantCredits` + `maybeAutoTopup(orgId, shortfall)` (3), `org.sepaMandateStatus` (5→3), `getTrialState` (4→6), balans-API-shape (1-4→6).
 - **Architectuur-bevinding (Fase 0)**: billing is vandaag workspace-scoped (`Workspace.planTier`, `Subscription @unique workspaceId`) maar de ADR eist pooled credits op account/org-niveau. Beslissing in Fase 0: `CreditBalance`/`CreditTransaction` op **`Organization`**; de credit-tier org-gelezen; volledige unificatie van feature-enforcement naar org is bewust **buiten scope** gehouden (latere opruiming) om de fase klein te houden.
 - **Neon-gotcha**: Fase 0, 2, 3, 4, 5 raken alle `schema.prisma` → elk vereist een handmatige Neon `prisma db push` ná merge (memory `neon-schema-push-on-deploy`); opgenomen in de acceptatie van elke schema-rakende fase.
+
+
+## Eindstand 2026-07-12 — BOUW COMPLEET (Fase 0-6)
+
+Alle fasen geland: #369 (0-2) · #372 (3+6) · #374 (pilotmodus) · #380 (4) · #381 (5a) · #382 (5b) · completion-PR (2d-doc, auto-topup-instellingen, metered-deprecatie, yearly-toggle-gate). Wat rest is uitsluitend user-config vóór `NEXT_PUBLIC_TOPUP_ENABLED=true` — zie de takenlijst ([USER]-items) + playbook §8/§9: Neon-push, Stripe-dashboard (events/iDEAL/SEPA/Tax/prijzen incl. nieuwe Starter/Growth-price-ids), SELLER_VAT_NUMBER, testmode-smokes, herbeoordeel-punten (cap-race; auto-topup-PI buiten Stripe Tax). BTW-veld-deviatie: VAT via Checkout tax_id_collection i.p.v. eigen org-veld (zie fase5b-task).

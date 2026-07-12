@@ -10,6 +10,11 @@
 //
 // All functions are no-op when BILLING_ENABLED=false.
 //
+// DEPRECATED (Fase 3, ADR 2026-07-07): het in-arrears-usage-pad is vervangen
+// door het prepaid credit-model (ledger + top-ups). Deze module blijft staan
+// voor de legacy-PRO-compat maar zit NIET in een actief cron-pad (geen
+// usage-report-cron in vercel.json) — niet opnieuw aansluiten.
+//
 // Requires a Billing Meter configured in Stripe Dashboard with:
 //  - event_name matching METER_EVENT_NAME (default: 'ai_token_overage')
 //  - customer_mapping.event_payload_key = 'stripe_customer_id'
