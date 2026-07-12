@@ -3905,6 +3905,15 @@ model Invoice {
   // S10: Stripe fields
   stripeInvoiceId String? @unique
 
+  // Fase 5b — BTW-laag (Stripe Tax berekent; wij persisteren het resultaat).
+  // `amount` blijft het TOTAAL (incl. BTW) — bestaand contract van de UI.
+  taxAmount         Float?  // BTW-bedrag in euro's
+  taxRate           Float?  // effectief tarief (0.21 = 21%)
+  netAmount         Float?  // exclusief BTW
+  reverseCharge     Boolean @default(false) // EU-B2B "btw verlegd"
+  customerVatNumber String? // uit Checkout tax_id_collection (VIES-gevalideerd door Stripe)
+  sellerVatNumber   String? // uit config (SELLER_VAT_NUMBER) op factuurmoment
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

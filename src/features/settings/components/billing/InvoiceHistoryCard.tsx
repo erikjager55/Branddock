@@ -54,12 +54,36 @@ export function InvoiceHistoryCard() {
               >
                 <td className="px-5 py-3 font-medium text-gray-900">
                   {inv.invoiceNumber}
+                  {/* Fase 5b: beide VAT-nummers zichtbaar wanneer bekend. */}
+                  {(inv.customerVatNumber || inv.sellerVatNumber) && (
+                    <p className="mt-0.5 text-xs font-normal text-gray-400">
+                      {inv.sellerVatNumber && `${t('invoices.vatSeller', { defaultValue: 'BTW verkoper' })}: ${inv.sellerVatNumber}`}
+                      {inv.sellerVatNumber && inv.customerVatNumber && ' · '}
+                      {inv.customerVatNumber && `${t('invoices.vatCustomer', { defaultValue: 'BTW klant' })}: ${inv.customerVatNumber}`}
+                    </p>
+                  )}
                 </td>
                 <td className="px-5 py-3 text-gray-600">
                   {formatDate(new Date(inv.issuedAt))}
                 </td>
                 <td className="px-5 py-3 text-gray-900 font-medium tabular-nums">
                   &euro;{inv.amount.toFixed(2)}
+                  {/* Fase 5b: BTW-uitsplitsing (Stripe Tax); reverse-charge = "btw verlegd". */}
+                  {inv.netAmount !== null && (
+                    <p className="mt-0.5 text-xs font-normal text-gray-400">
+                      {inv.reverseCharge
+                        ? t('invoices.reverseCharge', {
+                            defaultValue: 'netto €{{net}} · btw verlegd (reverse charge)',
+                            net: inv.netAmount.toFixed(2),
+                          })
+                        : t('invoices.taxBreakdown', {
+                            defaultValue: 'netto €{{net}} · btw €{{tax}}{{rate}}',
+                            net: inv.netAmount.toFixed(2),
+                            tax: (inv.taxAmount ?? 0).toFixed(2),
+                            rate: inv.taxRate ? ` (${Math.round(inv.taxRate * 100)}%)` : '',
+                          })}
+                    </p>
+                  )}
                 </td>
                 <td className="px-5 py-3">
                   <Badge

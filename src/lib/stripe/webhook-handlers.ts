@@ -135,6 +135,57 @@ export async function handleSubscriptionPaused(
  * Triggered when an invoice is successfully paid.
  * Creates/updates our Invoice record and resets AI usage counters.
  */
+
+// ─── Fase 5b: BTW-extractie uit een Stripe-invoice ───────────
+// Stripe Tax is de bron: total_excluding_tax + total_tax_amounts staan op
+// élke invoice zodra automatic_tax aan staat. Reverse-charge (EU-B2B met
+// geldig VAT) herkent Stripe zelf: customer_tax_exempt === 'reverse'.
+// Het VAT-nummer komt uit Checkout's tax_id_collection (VIES-gevalideerd).
+
+export function extractInvoiceTax(invoice: Stripe.Invoice): {
+  taxAmount: number | null;
+  taxRate: number | null;
+  netAmount: number | null;
+  reverseCharge: boolean;
+  customerVatNumber: string | null;
+  sellerVatNumber: string | null;
+} {
+  // API 2026-02+ (clover): het veld heet `total_taxes` (voorheen total_tax_amounts).
+  const totalTaxes = invoice.total_taxes ?? [];
+  const taxCents = totalTaxes.reduce(
+    (sum: number, t: Stripe.Invoice.TotalTax) => sum + (t.amount ?? 0),
+    0,
+  );
+  const netCents = invoice.total_excluding_tax ?? null;
+  // Geen tax-data (pre-Stripe-Tax-factuur) → nette nulls, geen fake 0.
+  const hasTaxData = totalTaxes.length > 0 || netCents !== null;
+  const taxAmount = hasTaxData ? taxCents / 100 : null;
+  const netAmount = netCents !== null ? netCents / 100 : null;
+  // Belt-and-braces (review-W1): onder automatic_tax signaleert Stripe Tax
+  // reverse-charge via total_taxes[].taxability_reason — customer_tax_exempt
+  // is slechts de handmatige customer-snapshot (dekt het niet-Tax-pad).
+  const reverseCharge =
+    invoice.customer_tax_exempt === "reverse" ||
+    totalTaxes.some((t) => t.taxability_reason === "reverse_charge");
+  // Voorkeur voor het EU-VAT-nummer als de customer meerdere tax-ids heeft.
+  const taxIds = invoice.customer_tax_ids ?? [];
+  const customerVatNumber =
+    taxIds.find((t) => t.type === "eu_vat")?.value ?? taxIds[0]?.value ?? null;
+
+  return {
+    taxAmount,
+    // Effectief tarief afgeleid uit Stripe's eigen bedragen — geen tarief-logica.
+    taxRate:
+      taxAmount !== null && netAmount && netAmount > 0
+        ? Math.round((taxAmount / netAmount) * 10000) / 10000
+        : null,
+    netAmount,
+    reverseCharge,
+    customerVatNumber,
+    sellerVatNumber: process.env.SELLER_VAT_NUMBER ?? null,
+  };
+}
+
 export async function handleInvoicePaid(
   invoice: Stripe.Invoice
 ): Promise<void> {
@@ -156,6 +207,10 @@ export async function handleInvoicePaid(
   // Upsert Invoice record
   const invoiceNumber = invoice.number ?? `INV-${invoice.id.slice(-8)}`;
 
+  // Fase 5b — BTW-laag: Stripe Tax berekent, wij persisteren het resultaat
+  // (nooit een eigen tarief-engine). `amount` blijft het totaal incl. BTW.
+  const tax = extractInvoiceTax(invoice);
+
   await prisma.invoice.upsert({
     where: { stripeInvoiceId: invoice.id },
     create: {
@@ -169,19 +224,31 @@ export async function handleInvoicePaid(
       pdfUrl: invoice.invoice_pdf ?? null,
       issuedAt: new Date((invoice.created ?? 0) * 1000),
       stripeInvoiceId: invoice.id,
+      ...tax,
     },
     update: {
       amount: (invoice.amount_paid ?? 0) / 100,
       status: "PAID",
       pdfUrl: invoice.invoice_pdf ?? null,
+      // sellerVatNumber alleen bij create: een event-retry ná een
+      // env-wijziging mag een historische factuur niet herschrijven (review-M6).
+      taxAmount: tax.taxAmount,
+      taxRate: tax.taxRate,
+      netAmount: tax.netAmount,
+      reverseCharge: tax.reverseCharge,
+      customerVatNumber: tax.customerVatNumber,
     },
   });
 
-  // Reset AI usage counter on the subscription for this new period
-  await prisma.subscription.updateMany({
-    where: { workspaceId },
-    data: { stripeCurrentPeriodUsage: 0 },
-  });
+  // Reset AI usage counter on the subscription for this new period.
+  // Alleen voor subscription-invoices: een top-up-factuur (invoice_creation,
+  // billing_reason 'manual') mag de periode-teller niet mid-cyclus nullen.
+  if (invoice.billing_reason?.startsWith("subscription")) {
+    await prisma.subscription.updateMany({
+      where: { workspaceId },
+      data: { stripeCurrentPeriodUsage: 0 },
+    });
+  }
 
   // Plan-grant (Fase 3): ken de maandbundel toe bij een betaalde subscription-
   // invoice (initieel + elke cyclus). Idempotent per invoice; org-pooled → grant

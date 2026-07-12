@@ -71,3 +71,14 @@ Maak per betaalde tier een Product met een **recurring monthly** Price (EUR). No
 - **Test-mode smoke**: (1) mandaat-setup met de iDEAL-testbank → status 'active' én `sepaPaymentMethodId` is een **sepa_debit**-pm (het generated pm van de SetupAttempt — niet het single-use iDEAL-pm); (2) zet op een test-org `autoTopupEnabled=true`, `autoTopupPackId='500'`, `autoTopupExposureCap>=500`, saldo laag → genereer → PI (processing) + optimistische +500; (3) laat de test-incasso falen (test-IBAN `NL62ABNA…`-failure-variant) → reversal −500 + metadata reversed.
 - **Kill-switch**: één gefaalde of teruggeboekte incasso zet `autoTopupEnabled` automatisch uit (warn-log); herstel het mandaat en zet hem bewust weer aan.
 - **Schema-delta's** (batchen in één Neon `prisma db push`): `Organization.sepaPaymentMethodId`, enum `NotificationType.AUTO_TOPUP` (+ `TRIAL_EXPIRING` uit Fase 4).
+
+
+## 9. Stripe Tax / BTW (Fase 5b, 2026-07-12)
+
+- [ ] **Neon `prisma db push`** vóór/gelijk met de deploy: de 6 nieuwe `Invoice`-tax-kolommen — zonder push 500't `GET /api/settings/billing/invoices` (Settings → Billing) direct na deploy.
+- [ ] **Stripe Tax activeren** (Dashboard → Settings → Tax): origin-adres = NL-vestigingsadres; registraties toevoegen — **NL** (21%) en **EU-OSS** (Union OSS voor B2C in andere EU-landen).
+- [ ] **`tax_behavior` op de dashboard-prijzen**: alle `STRIPE_PRICE_*`-prijzen op **exclusive** zetten (de app-prijzen zijn ex-BTW; Checkout telt BTW erbij op). Top-up-packs gaan via `price_data` en staan al op exclusive in code. **Volgorde-gekoppeld**: met `automatic_tax` aan faalt de subscription-checkout hard zolang een prijs `tax_behavior: unspecified` heeft — prijzen éérst bijwerken, dan billing aan.
+- [ ] **`SELLER_VAT_NUMBER`** in de Vercel-env (verschijnt op de factuurregel in de app; het officiële Stripe-factuur-PDF haalt het uit de Tax-settings).
+- [ ] Checkout verzamelt adres (`billing_address_collection: required`) + VAT-nummer (`tax_id_collection`) — **VIES-validatie doet Stripe**; geldig EU-B2B-VAT buiten NL → reverse-charge (0%, "btw verlegd"), ongeldig VAT → gewoon lokaal tarief (fail-closed).
+- [ ] **Test-mode smoke**: (1) NL-klant zonder VAT → 21% op de factuur, `Invoice.taxRate=0.21`; (2) checkout met test-VAT `DE123456789` (Stripe-testmode accepteert format-valide nummers) → 0% + reverse-charge-notitie + beide VAT-nummers op de kaart; (3) EU-B2C (bv. Frans adres, geen VAT) → OSS-tarief van het klantland.
+- **Bekende beperking (herbeoordeel vóór topup-enable, samen met de W2-cap-race)**: de **off-session auto-topup-PI** loopt buiten Stripe Tax om (PaymentIntents kennen geen automatic_tax) — het pack-bedrag wordt zonder BTW-berekening geïncasseerd. Nette oplossing t.z.t.: auto-topup via een `charge_automatically`-invoice met `automatic_tax` i.p.v. een kale PI.

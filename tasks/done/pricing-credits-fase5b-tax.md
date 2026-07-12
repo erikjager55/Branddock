@@ -5,11 +5,12 @@ fase: launch
 priority: now
 effort: 4-6 dagen
 owner: claude-code
-status: open
+status: done
+completed: 2026-07-12
 created: 2026-07-07
 related-adr: docs/adr/2026-07-07-pricing-credits-launch.md
 related-spec: tasks/pricing-credits-billing.md
-worktree: nieuw aan te maken (5a geland via branddock-pricing-fase5)
+worktree: branddock-pricing-fase5b (branch feat/pricing-credits-fase5b-tax)
 ---
 
 # Probleem
@@ -100,3 +101,15 @@ Deze fase is de grootste en dekt twee losse zorgen. Als hij >1 week dreigt, spli
 ## Reconciliatie 2026-07-12 — 5a afgesplitst en GELAND
 
 Conform de Simplicity-noot hierboven is deze fase gesplitst. **5a (payment-methods & mandaat) is done** — zie `tasks/done/pricing-credits-fase5a-payments.md` (iDEAL op checkout/top-up, Checkout-mode-'setup' mandaat-flow, mandaat-webhooks, auto-topup-invulpunt volledig live incl. exposure-cap/optimistische grant/reversal, `/api/stripe/setup-mandate` + PaymentMethodsCard-blok). Voor dit 5b-restant gelden alleen nog de **Tax/BTW-acceptatiecriteria** (automatic_tax, VAT+VIES via Stripe tax_id, reverse-charge/OSS, Invoice-BTW-velden + webhook-mapping, InvoiceHistoryCard, playbook). De payment-methods/mandaat-criteria hierboven zijn afgehandeld; de "Bestanden"-lijst versmalt tot customer.ts / webhook-handlers.ts (invoice-mapping) / schema (Invoice + org-VAT) / InvoiceHistoryCard / PaymentMethodsCard (VAT-invoer) / stripe-go-live.md.
+
+
+## Afronding 2026-07-12 — geleverd + bewuste deviaties
+
+**Geleverd**: `automatic_tax` + `billing_address_collection: required` + `customer_update(address/name: auto)` + `tax_id_collection` op subscription- én top-up-Checkout (top-up-`price_data` met `tax_behavior: 'exclusive'`); `extractInvoiceTax` in webhook-handlers (API clover: `total_taxes`) → `Invoice.taxAmount/taxRate/netAmount/reverseCharge/customerVatNumber/sellerVatNumber` (additief schema); invoices-API + `InvoiceHistoryCard` tonen netto/BTW(+tarief)/totaal, "btw verlegd (reverse charge)" en beide VAT-nummers; playbook §9 met de dashboard-acties (Stripe Tax aan, origin-adres, prijs-`tax_behavior`, OSS-registratie, `SELLER_VAT_NUMBER`-env). Smoke `credit-invoice-tax-smoke` **17/17** (NL-21%, reverse-charge via `taxability_reason` — het primaire automatic_tax-pad — én het legacy `customer_tax_exempt`-pad, eu_vat-voorkeur bij meerdere tax-ids, pre-tax-nulls, end-to-end upsert incl. update-tak-stabiliteit en create-only sellerVatNumber).
+
+**Review-ronde (code-reviewer subagent, 0 CRITICAL / 3 WARNINGs / 6 MINORs — alle verwerkt)**: (W1) reverse-charge-detectie belt-and-braces — `customer_tax_exempt` is onder automatic_tax een dode customer-snapshot; `total_taxes[].taxability_reason === 'reverse_charge'` is de echte bron (de eerste smoke valideerde de aanname i.p.v. Stripe-gedrag); (W2) Neon-push van de Invoice-kolommen expliciet in playbook §9 — zonder push 500't de invoices-route direct na deploy; (W3) `invoice_creation` op de top-up-Checkout — een BTW-factuur is verplicht bij elke levering; bijvangst: de usage-reset in invoice.paid is nu gegate op subscription-billing_reasons (een top-up-factuur mag de periode-teller niet nullen). MINORs: taxAmount echt null op pre-tax-facturen, eu_vat-voorkeur, sellerVatNumber create-only (event-retry na env-wijziging herschrijft historie niet), volgorde-koppeling prijzen↔automatic_tax in het playbook.
+
+**Bewuste deviaties t.o.v. de oorspronkelijke acceptatie (Integration-First)**:
+1. **Geen `vatNumber`-veld op Organization en geen eigen VIES-endpoint** — Checkout's `tax_id_collection` verzamelt + VIES-valideert het VAT-nummer en bewaart het op de Stripe-customer (bron van waarheid); per factuur persisteren wij het gebruikte nummer (`Invoice.customerVatNumber`). Een eigen veld zou een tweede, driftende bron zijn.
+2. **Geen `SetupIntent`-route los van Checkout** — al in 5a gedekt via Checkout `mode:'setup'`.
+3. **Off-session auto-topup-PI valt buiten Stripe Tax** (PI's kennen geen automatic_tax) — gedocumenteerd in playbook §9 als herbeoordeel-punt vóór `NEXT_PUBLIC_TOPUP_ENABLED=true` (nette oplossing: invoice-based auto-topup).
