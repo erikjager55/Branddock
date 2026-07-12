@@ -15,8 +15,46 @@
 #   scripts/dev/worktree.sh <task-id> [base-branch] [branch-naam]
 #   scripts/dev/worktree.sh pricing-credits
 #   scripts/dev/worktree.sh e2e-fix origin/main fix/e2e-flow
+#   scripts/dev/worktree.sh --done <task-id>   # opruimen ná merge (weigert dirty tree)
 # ─────────────────────────────────────────────────────────────────────────────
 set -uo pipefail
+
+# ── --done <task-id>: taak-worktree + gemergde branch opruimen ──────────────
+if [ "${1:-}" = "--done" ]; then
+  TASK="${2:-}"
+  if [ -z "$TASK" ]; then
+    echo "Gebruik: scripts/dev/worktree.sh --done <task-id>" >&2
+    exit 1
+  fi
+  ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "Niet in een git-repo." >&2; exit 1; }
+  DIR="$(dirname "$ROOT")/branddock-$TASK"
+  if [ "$ROOT" = "$DIR" ]; then
+    # Vanuit de doel-worktree zelf: remove zou slagen maar de branch-delete
+    # faalt daarna stil (cwd weg) — draai dit vanuit de main-worktree.
+    echo "🚫 Je staat ín $DIR — draai --done vanuit de main-worktree (branddock-app)." >&2
+    exit 1
+  fi
+  if [ ! -d "$DIR" ]; then
+    echo "Geen worktree op $DIR" >&2
+    exit 1
+  fi
+  if [ -n "$(git -C "$DIR" status --porcelain 2>/dev/null)" ]; then
+    echo "🚫 Worktree is niet schoon ($DIR) — commit/stash eerst, of ruim handmatig op." >&2
+    exit 1
+  fi
+  BRANCH=$(git -C "$DIR" branch --show-current)
+  git -C "$ROOT" worktree remove "$DIR" || { echo "worktree remove faalde." >&2; exit 1; }
+  echo "→ worktree verwijderd: $DIR"
+  if [ -n "$BRANCH" ]; then
+    # -d = safe delete: weigert zolang de branch niet gemerged is.
+    if git -C "$ROOT" branch -d "$BRANCH" 2>/dev/null; then
+      echo "→ branch verwijderd: $BRANCH"
+    else
+      echo "⚠️  Branch '$BRANCH' is niet (volledig) gemerged — laten staan. Verwijder bewust met: git branch -D $BRANCH"
+    fi
+  fi
+  exit 0
+fi
 
 TASK="${1:-}"
 BASE="${2:-origin/main}"
