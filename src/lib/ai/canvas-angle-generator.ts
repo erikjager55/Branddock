@@ -150,6 +150,12 @@ export async function generateCreativeAngles(
         // structured-output-marges vragen meer kop.
         maxTokens: 800 + n * 500,
         timeoutMs: 30_000,
+        // Gemini 2.5-flash heeft dynamic thinking standaard AAN en die
+        // thinking-tokens tellen mee in maxOutputTokens — het budget hierboven
+        // werd erdoor opgegeten (1800 budget, 214 chars output; dogfood
+        // 2026-07-12). Angles zijn framing-keuzes, geen deep reasoning:
+        // thinking expliciet uit.
+        thinking: { google: { thinkingBudget: 0 } },
       },
     );
 

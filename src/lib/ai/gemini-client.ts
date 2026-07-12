@@ -282,8 +282,11 @@ export async function createGeminiStructuredCompletion<T>(
   const temperature = options?.temperature ?? 0.3;
   const maxOutputTokens = options?.maxOutputTokens ?? 4000;
   const useThinking = !!options?.thinkingConfig;
-  // Thinking mode needs more time — default 10 min
-  const defaultTimeout = useThinking ? 600_000 : 60_000;
+  // Thinking mode needs more time — default 10 min. thinkingBudget: 0 betekent
+  // thinking expliciet UIT (de config moet dan wél mee naar de request) →
+  // normale timeout.
+  const defaultTimeout =
+    useThinking && options!.thinkingConfig!.thinkingBudget > 0 ? 600_000 : 60_000;
 
   // Learning Loop tracking — opt-in via `tracking` parameter
   const startTime = Date.now();

@@ -1579,7 +1579,13 @@ export async function buildStrategyFoundation(
   // Scale thinking budget by rigor. Base 16k maps to Deliberate's full 16k;
   // Balanced gets ~6k; Fast skips thinking entirely (rigor multiplier 0).
   const foundationThinking = thinkingForRigor(resolvedProvider, 16_000, rigor);
-  const foundationBudget = budgetWithThinking(16_000, foundationThinking);
+  // Output-budget 16k → 24k: de foundation-JSON kapte op fast-tier/Haiku af
+  // bij 57.606 chars ≈ 16k tokens (dogfood 2026-07-12, agent-pad) waardoor de
+  // strategist-tool faalde. De Claude-wrapper streamt (geen SDK-non-streaming-
+  // plafond) en budgetWithThinking schaalt de timeout mee. Caveat: deliberate
+  // rigor + een workspace-model met een output-cap < 36k (gpt-4.1: 32.768)
+  // geeft een API 400 — Anthropic-modellen (64k-cap, de default) passen ruim.
+  const foundationBudget = budgetWithThinking(24_000, foundationThinking);
 
   const raw = await withStepContext('Phase 2 (Strategy Foundation)', Math.round(foundationBudget.timeoutMs / 1000), () =>
     createStructuredCompletion<StrategyFoundation>(
