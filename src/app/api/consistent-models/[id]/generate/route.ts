@@ -13,6 +13,7 @@ import type { ConsistentModelType } from '@prisma/client';
 import { z } from 'zod';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
+import { enforceNotLocked } from "@/lib/stripe/enforcement";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -42,6 +43,10 @@ export async function POST(
     if (!workspaceId) {
       return NextResponse.json({ error: 'No workspace' }, { status: 400 });
     }
+
+    // Fase 4: verlopen no-card trial -> generatie dicht (read-only-lock).
+    const trialLock = await enforceNotLocked(workspaceId);
+    if (trialLock) return trialLock;
 
     const rateLimit = await withAiRateLimit(workspaceId);
     if (rateLimit instanceof Response) return rateLimit;

@@ -15,10 +15,11 @@ import type { PlanTier, FeatureKey, EffectivePlan } from '@/types/billing';
 import { PLAN_LIMITS } from '@/lib/constants/plan-limits';
 import { isBillingEnabled, isCreditsEnabled, getEffectivePlan } from './feature-flags';
 import { getBalance } from '@/lib/billing/credits/ledger';
-import { InsufficientCreditsError, insufficientCreditsResponse } from '@/lib/billing/credits/errors';
+import { InsufficientCreditsError, insufficientCreditsResponse, trialLockedResponse } from '@/lib/billing/credits/errors';
 import { isOrgUnlimited } from '@/lib/billing/credits/exempt';
 import { maybeAutoTopup } from '@/lib/billing/credits/auto-topup';
 import { CREDIT_COSTS } from '@/lib/billing/credits/credit-costs';
+import { isReadOnlyLocked } from '@/lib/billing/credits/trial';
 import { resolveOrgForWorkspace } from '@/lib/stripe/usage-tracker';
 import type { CreditAction } from '@/types/billing';
 
@@ -280,6 +281,13 @@ export async function enforceCreditBalance(
   if (estimatedCredits <= 0) return null;
   if (await isOrgUnlimited(organizationId)) return null; // unlimited-free-org → nooit blokkeren
 
+  // Fase 4: verlopen no-card trial zonder conversie → read-only-lock. Vóór de
+  // saldo-check zodat de gebruiker een conversie-CTA krijgt (trialExpired) en
+  // niet een misleidende "koop credits bij"-melding op restsaldo dat de
+  // expiry-cron nog niet heeft genuld. Dekt via deze ene plek alle
+  // generatie-routes die enforceCreditsForAction gebruiken.
+  if (await isReadOnlyLocked(organizationId)) return trialLockedResponse();
+
   let balance = await getBalance(organizationId);
   if (balance.available >= estimatedCredits) return null;
 
@@ -318,4 +326,23 @@ export async function enforceCreditsForAction(
   const organizationId = await resolveOrgForWorkspace(workspaceId);
   if (!organizationId) return null;
   return enforceCreditBalance(organizationId, estimate); // checkt óók exempt + billing
+}
+
+/**
+ * Fase 4 read-only-lock-guard voor NIET-gemeterde mutaties (entity-creatie):
+ * een verlopen no-card trial zonder conversie krijgt een 402 met
+ * `trialExpired: true`; lees-routes en bestaande merk-data blijven volledig
+ * toegankelijk. Gemeterde generatie-routes zijn al gedekt via
+ * {@link enforceCreditBalance}.
+ *
+ * Gebruik naast de bestaande plan-guard, ná workspace-resolutie:
+ *   `const locked = await enforceNotLocked(workspaceId); if (locked) return locked;`
+ */
+export async function enforceNotLocked(workspaceId: string): Promise<NextResponse | null> {
+  if (!isCreditsEnabled()) return null;
+  if (!workspaceId) return null;
+  const organizationId = await resolveOrgForWorkspace(workspaceId);
+  if (!organizationId) return null;
+  if (await isReadOnlyLocked(organizationId)) return trialLockedResponse();
+  return null;
 }

@@ -28,6 +28,7 @@ import { getStorageProvider } from '@/lib/storage';
 import { importGeneratedImageToLibrary } from '@/lib/media/import-generated-image';
 import { mediaCategoryForDeliverableType } from '@/lib/media/ingest-uploads-to-library';
 import { chargeAfter } from '@/lib/billing/credits/meter-generation';
+import { enforceNotLocked } from '@/lib/stripe/enforcement';
 
 const editImageSchema = z
   .object({
@@ -53,6 +54,10 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: access.error }, { status: access.status });
     }
     const workspaceId = access.workspaceId;
+
+    // Fase 4: verlopen no-card trial → generatie dicht (read-only-lock).
+    const trialLock = await enforceNotLocked(workspaceId);
+    if (trialLock) return trialLock;
 
     const deliverable = await prisma.deliverable.findUnique({
       where: { id: deliverableId },

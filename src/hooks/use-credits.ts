@@ -22,6 +22,10 @@ export interface CreditBalance {
   monthlyCredits: number;
   trialEndsAt: string | null;
   trialDaysLeft: number | null;
+  /** Fase 4: verlopen no-card trial zonder conversie → generatie + nieuwe items dicht. */
+  isLocked: boolean;
+  /** Trial loopt écht (onderscheidt geconverteerde orgs met rest-trialEndsAt). */
+  isTrialing: boolean;
 }
 
 export interface TopupPack {

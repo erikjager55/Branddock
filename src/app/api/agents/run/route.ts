@@ -26,6 +26,7 @@ import { ALL_CONTEXT_MODULES, type ContextModule } from "@/lib/claw/claw.types";
 import type { AgentContextSelection } from "@/lib/agents/registry/types";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { enforceNotLocked } from "@/lib/stripe/enforcement";
 
 export const maxDuration = 800;
 
@@ -86,6 +87,10 @@ export async function POST(request: Request) {
     const role = await requireWorkspaceRole(["owner", "admin", "member"]);
     if (role instanceof NextResponse) return role;
     const workspaceId = role.workspaceId;
+
+    // Fase 4: verlopen no-card trial -> generatie dicht (read-only-lock).
+    const trialLock = await enforceNotLocked(workspaceId);
+    if (trialLock) return trialLock;
     const session = await getServerSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

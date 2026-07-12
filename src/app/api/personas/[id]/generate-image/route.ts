@@ -9,6 +9,7 @@ import { cacheKeys } from "@/lib/api/cache-keys";
 import { createVersion } from "@/lib/versioning";
 import { buildPersonaSnapshot } from "@/lib/snapshot-builders";
 import { getStorageProvider } from "@/lib/storage";
+import { enforceNotLocked } from "@/lib/stripe/enforcement";
 
 type GeminiImagePart = {
   inlineData?: { mimeType?: string; data?: string };
@@ -32,6 +33,10 @@ export async function POST(
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
+
+    // Fase 4: verlopen no-card trial -> generatie dicht (read-only-lock).
+    const trialLock = await enforceNotLocked(workspaceId);
+    if (trialLock) return trialLock;
 
     const session = await getServerSession();
 
