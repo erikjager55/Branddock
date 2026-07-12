@@ -5,13 +5,20 @@ fase: pre-launch
 priority: next
 effort: "gemengd — zie per ticket"
 owner: claude-code
-status: open
+status: in-review
 created: 2026-05-29
 completed: -
-related-adr: -
+related-adr: docs/adr/2026-07-12-type-category-derivation-plan-and-solve.md
 related-spec: docs/specs/content-flow-synthesis.md
-worktree: -
+worktree: branddock-content-flow-7a (feat/content-flow-7a)
 ---
+
+> **Verificatie-sweep 2026-07-12** (autonome sessie): alle 9 tickets zijn eerst
+> tegen de actuele main geverifieerd — ze dateren van 2026-05-29 en een flink
+> deel bleek intussen geland via andere werkstromen (Puck-paradigma,
+> prompt-audit Fase 2, Track 5 F-VAL-wiring, hidden-flags-besluit). Verdicts
+> per ticket hieronder; uitgevoerd werk in commits `9adf77dd` (CF-1/3/4 +
+> smoke-sectie g + ADR) en `eaff014d` (CF-5/8).
 
 # Probleem
 
@@ -24,17 +31,17 @@ Per ticket een afgebakende fix; aanpakken in prio-volgorde (HIGH eerst). HIGH-it
 # Tickets
 
 ## HIGH
-- [ ] **CF-1 — 5 untemplated kerntypes → generieke prompt.** `whitepaper`, `ebook`, `article` (long-form), `newsletter` (email), `microsite` (website) hebben **geen** entry in TEMPLATE_REGISTRY → `getPromptTemplate()` valt stil terug op de generieke prompt (`prompt-templates/index.ts:56-74`). Schrijf dedicated templates (in resp. `long-form.ts`/`email.ts`/`website.ts`) **en** voeg een `console.warn` toe op de generic-fallback hit zodat dit nooit meer stil gebeurt.
-- [ ] **CF-2 — `twitter-thread` afmaken.** Routing + preview-map gaten + ontbrekende content-templates-fallback. Volgende open Ronde 1-representant. (`social-media.ts` + preview-map dispatch + `component-templates-fallback.ts`.)
+- [x] **CF-1 — 5 untemplated kerntypes → generieke prompt.** ✅ **GROTENDEELS VERVALLEN + rest geland** (2026-07-12): alle 55 canonieke types bleken inmiddels een dedicated template te hebben (whitepaper/ebook/article in `long-form.ts` — incl. de ebook-verbeterplan-prompt-fixes, `newsletter` in `email.ts`, `microsite` in `website.ts`). Rest-scope geland in `9adf77dd`: `console.warn` op de generic-fallback-hit + smoke-sectie (g) die afdwingt dat élk canoniek type een template heeft en houdt.
+- [x] **CF-2 — `twitter-thread` afmaken.** ✅ **VERVALLEN** (2026-07-12): al volledig bedraad op main — template in `social-media.ts`, `XThreadPreview` in `preview-map.ts:112`, fallback-entry in `component-templates-fallback.ts:150`, inputs in `content-type-inputs.ts:134`. Type is zichtbaar en passeerde Ronde 1 (23/24 passed, alleen ebook-bug).
 
 ## MED
-- [ ] **CF-3 — Plan-and-Solve generaliseren.** Verruim conditie `contentTypeCategory === 'long-form'` (`canvas-orchestrator.ts:396`) naar een `LONG_OUTPUT_TYPES`-set zodat lange types buiten long-form ook PLAN→EXECUTE→ASSEMBLY kunnen nemen: `microsite`/`faq-page`/`comparison-page` (website), `proposal-template` (sales), `impact-report` (pr-hr). ADR-waardig (raakt orchestrator-pad).
-- [ ] **CF-4 — `TYPE_TO_CATEGORY` synchroniseren.** `prompt-version-registry.ts` mist ~17 echte types en bevat ~9 phantom-IDs (`battle-card`, `objection-handler`, `product-demo`, `company-announcement`, `job-description`, `recruitment-post`, `employee-newsletter`, `crisis-statement`, `thought-leadership-bio`). Daardoor geeft `getCategoryForType()` de fallback `'long-form'` voor echte types (bv. `internal-comms`, `proposal-template`, `testimonial-video`) → verkeerde prompt-versie-tracking/routing. Genereer de map idealiter uit TEMPLATE_REGISTRY-keys zodat hij niet opnieuw kan divergeren.
-- [ ] **CF-5 — Few-shot uitbreiden advertising + email.** Advertising (strengste format, ≈7) en email (≈5) ondergevoed. 1→2-3 anchors per type, met name ad-format slots en email subject/preheader.
-- [ ] **CF-6 — Email sequence-coherentie-pass.** `welcome-sequence`/`nurture-sequence` per-email zonder cross-email consistentie. Lichte siblings-context check; sluit aan op `studio-siblings-context-variation`.
-- [ ] **CF-7 — Elevated review public-facing pr.** `press-release` + `impact-report` verhoogde fidelity-threshold + human-review-flag via `per-type-thresholds.ts` (mechanisme bestaat al — waarde + UX-flag instellen).
-- [ ] **CF-8 — Categorie-grens ad/long-form templates.** `linkedin-ad`/`facebook-ad` (UI advertising) en `linkedin-article` (UI long-form) leven in `social-media.ts`. Documenteer expliciet of verplaats naar het categorie-bestand dat de UI suggereert.
-- [ ] **CF-9 — landing-page Step 2 brand-fidelity wiring verifiëren** op `main` (FidelityScoreBar gap gevonden in web-page-builder worktree — bevestigen of het ook op main speelt).
+- [x] **CF-3 — Plan-and-Solve generaliseren.** ✅ geland in `9adf77dd`, gewijzigd t.o.v. ticket-scope: eligibility = long-form-categorie + `EXTRA_PLAN_AND_SOLVE_TYPES` (`proposal-template`, `impact-report`). **Website-types bewust uitgesloten** — sinds het Puck-paradigma lopen alle 5 `PUCK_WEBPAGE_TYPES` via de structured-variant-flow; Plan-and-Solve's single-body-markdown zou dat contract breken. NB: `usePlanAndSolve` heeft geen UI-toggle (dormant pad). ADR: `2026-07-12-type-category-derivation-plan-and-solve`.
+- [x] **CF-4 — `TYPE_TO_CATEGORY` synchroniseren.** ✅ geland in `9adf77dd`: map wordt afgeleid uit de 8 template-collecties (kan niet meer divergeren). Werkelijke delta: 9 phantoms + 11 ontbrekende (waaronder `facebook-ad`/`linkedin-video-ad`, niet in het ticket genoemd). Runtime-blast-radius bleek klein: `getPromptVersionForType` had 0 call-sites; enige consumer was de dormante Plan-and-Solve-check. Smoke-sectie (g) bewaakt de dekking (292/292 PASS).
+- [x] **CF-5 — Few-shot uitbreiden advertising + email.** ✅ advertising-helft geland in `eaff014d`: tweede anchor in een contrasterende branche voor de 6 **zichtbare** ad-types (search/social/display/native-ad + linkedin-ad/facebook-ad) + expliciete niet-kopiëren-instructie (anti example-bleed — alle bestaande anchors waren brand-strategy-SaaS; zelfde leak-klasse als de Effie-gotcha 2026-05-17). 41 velden programmatisch binnen hun character-limits gevalideerd. Versions: advertising 1.3.0, social-media 2.1.0, registry gesynct. **Email-helft SKIP**: hele email-categorie staat `hidden: true` — uitbreiden bij re-enable. Hidden ad-types (retargeting-ad, video-ad) idem.
+- [ ] **CF-6 — Email sequence-coherentie-pass.** ⏸️ **SKIP** (2026-07-12): `welcome-sequence`/`nurture-sequence` staan `hidden: true` — onbereikbaar via de picker. Oppakken bij email-categorie-re-enable, samen met `studio-siblings-context-variation` (post-launch).
+- [ ] **CF-7 — Elevated review public-facing pr.** ⏸️ **SKIP** (2026-07-12): `press-release` + `impact-report` staan `hidden: true`, én het mechanisme is per-workspace DB-config (`WorkspaceContentTypeThreshold` via Settings → Validation), geen code-defaults — preventief tunen zonder pilot-data is tegen projectbeleid (zelfde rationale als CF-10 en de Δ-4-verplaatsing).
+- [x] **CF-8 — Categorie-grens ad/long-form templates.** ✅ geland in `eaff014d`: gekozen voor **documenteren, niet verplaatsen** — headers van `social-media.ts` + `advertising.ts` + toelichting in `prompt-version-registry.ts`. Verplaatsen zou de afgeleide prompt-versie-categorie flippen zonder baat; model-routing volgt toch al de UI-categorie via `getDeliverableTypeById`.
+- [x] **CF-9 — landing-page Step 2 brand-fidelity wiring verifiëren.** ✅ **VERVALLEN** (2026-07-12): wiring staat op main — `LandingPageGenerateBlock.tsx` heeft `scoreVariantFidelity` (fire-and-forget F-VAL, Track 5 uit plan zippy-twirling-feigenbaum) + per-variant score-toggle; `Step2ContentVariants.tsx:398` rendert `FidelityScoreBar` voor content-deliverables.
 
 ## LOW / defer
 - [ ] **CF-10 — Per-categorie F-VAL threshold-profielen** — uitstellen tot pilot-data (geen preventieve tuning).
