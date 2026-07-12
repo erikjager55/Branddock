@@ -58,7 +58,10 @@ export const strategistAgent: AgentDefinition = {
   // Het strategie-rapport is groot — default 4096 kapt de artifacts-JSON af.
   // 16k bleek nog te krap: een zware turn kapte af bij ~57k chars output
   // (dogfood 2026-07-07, zelfde klasse als de 2026-05-24 SEO-maxTokens-gotcha).
-  maxTokens: 32_000,
+  // 32k blokkeerde vervolgens ÉLKE run: boven 21.333 weigert de Anthropic SDK
+  // non-streaming calls volledig (dogfood 2026-07-12). 21.333 is het harde
+  // plafond zolang de loop non-streaming is; meer ruimte vereist streaming.
+  maxTokens: 21_333,
 };
 
 export function registerStrategistTools(): void {

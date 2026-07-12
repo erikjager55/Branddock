@@ -37,6 +37,14 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 375. Agents dogfood-ronde 2 — strategist-regressie gevonden + gefixt, credit-metering op agents praktijk-gevalideerd
+
+Herhaalmeting van de agents-dogfood (ronde 1 = #366-tijdvak, rapport 2026-07-07), autonoom uitgevoerd. **Hoofdvondst**: de ronde-1-hygiëne-fix (strategist `maxTokens` 16k→32k) bleek een fatale regressie — de Anthropic SDK weigert non-streaming calls met `maxTokens > 21.333` client-side ("Streaming is required…"), waardoor élke Stella-run sinds 2026-07-07 instant faalde, óók op productie. Fix: `NONSTREAMING_MAX_TOKENS`-clamp in `runLoopCore` (defense-in-depth voor alle agents, warn bij clamp) + strategist-definitie op 21.333; gevalideerd met een echte run (COMPLETED, 241,9s, $0,09). **Credit-metering op agent-runs voor het eerst in de praktijk gemeten**: sweep met credits aan boekt correct 0 transacties (5 gratis agents; Milo-proposal boekt niet), confirm-pad boekt exact −3 credits (`agent-deliverable`, idempotencyKey) — geen instrumentatie-blocker meer voor Fase 2. Guardrails opnieuw groen: ~$0,09/run, eindcontent F-VAL 73 (>70). Open bevindingen: angle-generator-truncatie niet verholpen (Gemini thinking-tokens eten het `maxOutputTokens`-budget) en de oorspronkelijke strategist-truncatie zit in de gedeelde `createClaudeStructuredCompletion`-default (16k) — beide non-fataal, gedocumenteerd. Harnassen verbeterd: `DOGFOOD_RUN_DATE`/`DOGFOOD_ONLY` op de sweep, route-parity credit-charge in het confirm-pad. Les vastgelegd als gotcha 2026-07-12.
+
+- Task: [tasks/done/agents-dogfood-ronde2.md](../tasks/done/agents-dogfood-ronde2.md)
+- ADR: [docs/adr/2026-07-05-agents-architectuur.md](adr/2026-07-05-agents-architectuur.md)
+- Rapport: [docs/reports/agents-dogfood-2026-07-12.md](reports/agents-dogfood-2026-07-12.md)
+
 ### 374. Credits LIVE in pilotmodus — top-up-gate + activatie (betaling nog niet gekoppeld)
 
 Het credit-model draait sinds 2026-07-10 live op productie in **pilotmodus**: pilots zien hun creditsaldo (Settings → Billing) dalen per generatie en hebben een hard **maximum** (het via het Credit Admin-paneel gegrante budget → bij 0 een nette 402), terwijl de **koop-flow volledig dicht** is. Daarvoor een derde vlag: `NEXT_PUBLIC_TOPUP_ENABLED` (default uit) — `TopupCard` verbergt zich, `createTopupCheckout` weigert server-side (geen route naar live-Stripe-charges), en de 402-copy is topup-bewust ("Neem contact op voor extra credits" i.p.v. een koopverwijzing). Activatie-volgorde: eerst grants/comps via het admin-paneel (eigen org unlimited, pilots capped), daarna `NEXT_PUBLIC_CREDITS_ENABLED=true` + rebuild-redeploy (NEXT_PUBLIC-vars zijn build-time). Betaling later koppelen = alleen `NEXT_PUBLIC_TOPUP_ENABLED=true` (na de launch-checklist: Stripe-price-map, Tax, iDEAL/SEPA). User-geverifieerd op prod. Bijvangst: `scripts/dev/credit-admin.ts` (saldo tonen/granten/zetten via CLI) alsnog gecommit.

@@ -78,6 +78,14 @@ export class OutputContractError extends Error {
 
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 const DEFAULT_MAX_TOKENS = 4096;
+// De Anthropic SDK weigert non-streaming calls die >10 min kúnnen duren:
+// max_tokens > 600s × 128.000/3600 = 21.333 → instant AnthropicError, óók met
+// een per-request timeout (de check leest alleen de client-constructor-timeout).
+// Zolang de loop non-streaming is, is dit het harde plafond per turn
+// (dogfood 2026-07-12: strategist 32k → elke run FAILED vóór de eerste call).
+// NB: legacy-modellen (Opus 4.0/4.1) hebben strakkere per-model SDK-caps (8192);
+// die staan niet in feature-models — wordt zo'n ID ooit toegevoegd, verlaag dan mee.
+const NONSTREAMING_MAX_TOKENS = 21_333;
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_MAX_TOOL_CALLS = 20;
 
@@ -253,7 +261,18 @@ export async function runAgentWithContract<TParsed, TPersisted>(
  * aan het output-contract van de caller.
  */
 async function runLoopCore(input: LoopCoreInput): Promise<LoopOutcome> {
-  const { systemPrompt, userMessage, ctx, model, maxTokens, timeoutMs, maxToolCalls } = input;
+  const { systemPrompt, userMessage, ctx, model, timeoutMs, maxToolCalls } = input;
+  // Clamp i.p.v. falen: een gekapte turn levert partial output (het contract
+  // rapporteert dit via `lastStopReason === "max_tokens"`); een geweigerde
+  // call faalt de hele run vóór de eerste token.
+  const maxTokens = Math.min(input.maxTokens, NONSTREAMING_MAX_TOKENS);
+  if (input.maxTokens > NONSTREAMING_MAX_TOKENS) {
+    console.warn("[brandclaw agent-loop] maxTokens boven non-streaming plafond — geclamped", {
+      requested: input.maxTokens,
+      clamped: maxTokens,
+      runId: ctx.runId,
+    });
+  }
 
   const client = getClient();
   const registry = getToolRegistry();
