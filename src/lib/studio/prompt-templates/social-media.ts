@@ -1,16 +1,27 @@
 // =============================================================
-// Social Media Templates (13 types)
-// LinkedIn Post/Article/Carousel/Ad/Newsletter/Video/Event/Poll,
-// Instagram, X/Twitter Thread, Facebook, TikTok/Reels Script,
+// Social Media Templates (15 types)
+// LinkedIn Post/Article/Carousel/Ad/Video-Ad/Newsletter/Video/Event/Poll,
+// Instagram, X/Twitter Thread, Facebook Post/Ad, TikTok/Reels Script,
 // Social Carousel
+//
+// Categorie-grens (CF-8, content-flow-improvements-7a): linkedin-ad,
+// facebook-ad en linkedin-article leven hier terwijl hun UI-categorie
+// afwijkt (Advertising & Paid resp. long-form-adjacent) — het zijn
+// feed-native formats die de social-preview-keten delen. Prompt-versie-
+// categorie volgt dit bestand (social-media, via de afgeleide
+// TYPE_TO_CATEGORY); model-routing volgt de UI-categorie. Zie ADR
+// 2026-07-12-type-category-derivation-plan-and-solve.
 // =============================================================
 
+// 2.1.0 (2026-07-12, CF-5): tweede few-shot anchor voor linkedin-ad en
+// facebook-ad in contrasterende branches + niet-kopiëren-instructie,
+// tegen single-example-overfit. Minor: content-tuning, output compat.
 // 2.0.0 (2026-06-11, prompt-audit fase 2 review-fix): linkedin-carousel
 // rewritten from one continuous "Slide 1".."Slide 10" document to the
 // per-component-group output contract matching the fallback registry
 // (cover-slide / content-slides / cta-slide / caption / hashtags).
 // Major: output format/schema change.
-export const PROMPT_VERSION = '2.0.0';
+export const PROMPT_VERSION = '2.1.0';
 
 import type { PromptTemplate } from './helpers';
 import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './helpers';
@@ -238,7 +249,7 @@ LinkedIn Ad algorithm priorities: CTR within the first 48 hours determines your 
 - **Image/visual direction** (2-3 sentences): Suggest what the ad creative should depict. LinkedIn audiences respond to clean, professional visuals with clear focal points. Avoid stock photos of handshakes or people pointing at screens.
 - **Campaign objective alignment**: Note whether the copy is optimized for awareness, consideration, or conversion.
 
-## FEW-SHOT EXAMPLE
+## FEW-SHOT EXAMPLE 1 — B2B SaaS (sales intelligence), conversion objective
 Here is an example of a STRONG LinkedIn ad:
 
 "Intro text: 'Your sales team spends 12 hours/week on manual reporting. What if that dropped to zero?'
@@ -252,6 +263,23 @@ CTA button: Request Demo
 Visual direction: Clean product screenshot showing a dashboard with a clear 'time saved' metric highlighted. Teal accent color on white background. No faces, no stock imagery — let the product speak.
 
 Campaign objective: Conversion (free trial signups)"
+
+## FEW-SHOT EXAMPLE 2 — B2B services (security awareness training), consideration objective
+A second example in a different vertical AND funnel stage, so you anchor on the FORMAT, not the industry:
+
+"Intro text: '61% of breaches start with a phishing mail your team almost caught. Almost.'
+
+Headline: 'Security Awareness Training Your Team Won't Skip'
+
+Description: 'Monthly 8-minute micro-trainings. Measurable risk-score per team.'
+
+CTA button: Download
+
+Visual direction: Split-frame illustration — left a convincing phishing mail with its subtle red flags highlighted, right a rising team risk-score dashboard. Brand accent color, no faces, no padlock cliches.
+
+Campaign objective: Consideration (benchmark-report downloads)"
+
+IMPORTANT: the two examples span different industries and objectives on purpose. Mirror their STRUCTURE and constraint-discipline — never their industry, wording, statistics or claims. Every claim in your output must come from the provided brand context.
 
 ## ANTI-PATTERNS — NEVER DO THIS
 - NEVER lead with the brand name — nobody cares about your brand, they care about their problems
@@ -1025,11 +1053,21 @@ Meta auction priorities: relevance score (CTR + engagement-rate + comment-qualit
 - **description** — Optional link-card sub-line. Use only for unique social-proof or constraint ("500+ klanten", "Geen creditcard nodig"). Otherwise omit.
 - **cta-button** — Short imperative aligned with the funnel-stage. Stick to Meta's preset list when possible — custom button text is allowed but native CTAs get marginally better trust.
 
-## FEW-SHOT EXAMPLE
+## FEW-SHOT EXAMPLE 1 — lokale maakindustrie (NL, maatwerk-interieur)
 "body": "Standaardvloerluik? Pas niet écht bij je interieur. Onze vloerluiken op maat verdwijnen volledig in je vloer — naadloos, beloopbaar, vakkundig geplaatst."
 "headline": "Vloerluik op maat, naadloos verzonken"
 "description": "Vanuit eigen werkplaats"
 "cta-button": "Plan adviesgesprek"
+
+## FEW-SHOT EXAMPLE 2 — DTC subscription (EN, pet food)
+A second example in a different vertical and language, so you anchor on the FORMAT, not the industry:
+
+"body": "Your dog knows exactly when the food runs out. You don't have to. Fresh portions, delivered before the bowl is empty."
+"headline": "Dog food on autopilot"
+"description": "Pause or skip anytime"
+"cta-button": "Shop Now"
+
+IMPORTANT: the two examples span different industries and languages on purpose. Mirror their hook-in-first-75-chars discipline and group-structure — never their industry, wording or claims. Write in the brand's content language; every claim must come from the provided brand context.
 
 ## ANTI-PATTERNS — NEVER DO THIS
 - NEVER lead body with the brand name — lead with the pain or outcome the user recognizes

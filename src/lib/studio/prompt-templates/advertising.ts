@@ -2,9 +2,19 @@
 // Advertising & Paid Templates (6 types)
 // Search Ad, Social Ad, Display Ad, Retargeting Ad,
 // Video Ad Script, Native Ad
+//
+// Categorie-grens (CF-8, content-flow-improvements-7a): linkedin-ad en
+// facebook-ad hebben UI-categorie "Advertising & Paid" maar hun templates
+// leven bewust in social-media.ts — het zijn feed-native formats die de
+// social-preview-keten delen. Prompt-versie-categorie volgt het bestand
+// (social-media); model-routing volgt de UI-categorie. Zie ADR
+// 2026-07-12-type-category-derivation-plan-and-solve.
 // =============================================================
 
-export const PROMPT_VERSION = '1.2.0';
+// 1.3.0 (2026-07-12, CF-5): tweede few-shot anchor per zichtbaar ad-type in
+// een contrasterende branche + expliciete niet-kopiëren-instructie, tegen
+// single-example-overfit (zelfde leak-klasse als de Effie-rubric-gotcha).
+export const PROMPT_VERSION = '1.3.0';
 
 import type { PromptTemplate } from './helpers';
 import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './helpers';
@@ -84,7 +94,7 @@ You must output the following structure with strict character limits. Count ever
 9. **Sitelink 3** (title max 25 chars, description max 35 chars): Third supporting link.
 10. **Sitelink 4** (title max 25 chars, description max 35 chars): Fourth supporting link.
 
-## FEW-SHOT EXAMPLE
+## FEW-SHOT EXAMPLE 1 — B2B SaaS (brand strategy platform)
 Here is an example of a well-structured search ad for a brand strategy SaaS product:
 
 **Headline 1:** Brand Strategy in 30 Days
@@ -97,6 +107,22 @@ Here is an example of a well-structured search ad for a brand strategy SaaS prod
 **Sitelink 2:** Customer Stories | See how teams build brands
 **Sitelink 3:** How It Works | 3 steps to a brand strategy
 **Sitelink 4:** Book a Demo | Talk to a brand strategist
+
+## FEW-SHOT EXAMPLE 2 — DTC e-commerce (custom ergonomic furniture)
+A second example in a different vertical, so you anchor on the FORMAT, not the industry:
+
+**Headline 1:** Ergonomic Chairs, Custom Fit
+**Headline 2:** Free Delivery in 5 Days
+**Headline 3:** Rated 4.9 by 3,200 Buyers
+**Description 1:** Configure seat depth, lumbar support and fabric in 3 minutes. Built to your posture.
+**Description 2:** Try it 30 days at home. Free returns, no questions. Order your custom chair today.
+**Display Path:** /Custom-Chairs /30-Day-Trial
+**Sitelink 1:** Compare Models | Find the right fit fast
+**Sitelink 2:** Fabric Guide | See all 24 fabric options
+**Sitelink 3:** Showroom Visits | Book a free sit-test
+**Sitelink 4:** Business Orders | Volume pricing for teams
+
+IMPORTANT: the two examples span different industries on purpose. Mirror their STRUCTURE and character-limit discipline — never their industry, wording, product claims or numbers. Every claim in your output must come from the provided brand context.
 
 ## ANTI-PATTERNS — NEVER DO THESE
 1. NEVER exceed character limits — the ad will be disapproved by the platform. Count every character.
@@ -171,7 +197,7 @@ For each of the 3 variations (A, B, C), output:
 4. **Creative Direction**: Describe the ideal image or video for this variation — style (photography, illustration, UGC), colors, subjects, composition, text overlay if any.
 5. **Testing Hypothesis**: One sentence explaining what this variation tests and the expected learning. Format: "This variation tests [variable] because [rationale]. Expected learning: [what we will know after the test]."
 
-## FEW-SHOT EXAMPLE
+## FEW-SHOT EXAMPLE 1 — B2B SaaS (brand platform), emotional appeal
 **Variation A (Emotional Appeal):**
 Primary Text:
 Your brand isn't what you say it is. It's what they feel when they see your logo.
@@ -182,6 +208,22 @@ Headline: Fix Your Brand Perception Gap
 Description: Free audit. Real insights.
 Creative Direction: Split-screen image — left side shows a polished brand presentation, right side shows confused customer faces. Before/after brand perception chart overlay. Clean, professional photography with a subtle green-to-white gradient.
 Testing Hypothesis: This variation tests emotional appeal by highlighting the gap between brand intent and customer perception. Expected learning: whether fear of brand misalignment drives higher CTR than rational ROI messaging.
+
+## FEW-SHOT EXAMPLE 2 — B2B software (payroll for accountants), social-proof appeal
+A second example in a different vertical AND testing a different psychological appeal:
+
+**Variation C (Social Proof Appeal):**
+Primary Text:
+2,300 accounting firms switched their payroll runs to us last quarter.
+Their average time per client dropped from 4 hours to 40 minutes — verified across 18,000 payroll runs.
+See the 40-minute workflow in a live demo →
+
+Headline: Payroll in 40 Minutes, Not 4 Hours
+Description: Trusted by 2,300 firms
+Creative Direction: Authentic over-the-shoulder photo of an accountant at a tidy desk, one monitor showing a clean payroll dashboard with a visible "3h 20m saved" badge. Soft daylight, no staged stock-photo smiles.
+Testing Hypothesis: This variation tests social-proof appeal with peer-count and verified outcome data. Expected learning: whether peer-adoption numbers outperform emotional time-pressure messaging for a professional audience.
+
+IMPORTANT: the two examples span different industries on purpose. Mirror their STRUCTURE, hook-discipline and constraint-compliance — never their industry, wording, product claims or numbers. Every claim in your output must come from the provided brand context.
 
 ## ANTI-PATTERNS — NEVER DO THESE
 1. NEVER use stock-looking, generic images — they achieve 3x lower CTR compared to authentic, specific visuals. Always specify photography style, subject, and composition.
@@ -269,7 +311,7 @@ For each asset slot, follow this guidance:
 
 **image** — single art-direction (≤200 chars) that translates well across landscape (1.91:1, 1200×628) AND square (1:1, 1200×1200). Specify: subject, composition, color palette, mood. No text overlay (Google downranks >20% text-on-image).
 
-## FEW-SHOT EXAMPLE (single complete RDA variant for a brand-strategy SaaS)
+## FEW-SHOT EXAMPLE 1 (complete RDA variant — B2B brand-strategy SaaS)
 
 "short-headline-1": "Build your brand in 30 days"
 "short-headline-2": "Stop guessing about brand fit"
@@ -284,6 +326,25 @@ For each asset slot, follow this guidance:
 "description-5": "Get your brand blueprint in 30 days. Start your free trial today."
 "business-name": "Branddock"
 "image": "Overhead studio shot of a single laptop on a clean desk, screen showing a brand-strategy dashboard with teal accent colors. Warm natural lighting from the left. White and pale-gray composition. Translates well to both landscape crop (more desk visible) and square crop (laptop centered)."
+
+## FEW-SHOT EXAMPLE 2 (complete RDA variant — DTC meal-delivery subscription)
+A second example in a different vertical, so you anchor on the SLOT-DIVERSITY pattern, not the industry:
+
+"short-headline-1": "Dinner solved in 15 minutes"
+"short-headline-2": "Still deciding what to eat?"
+"short-headline-3": "Loved by 40,000 households"
+"short-headline-4": "Skip the supermarket queue"
+"short-headline-5": "First box half price"
+"long-headline": "Chef-designed dinners delivered weekly — 15-minute recipes loved by 40,000 households"
+"description-1": "Fresh, pre-portioned ingredients and step-by-step recipes. Zero food waste."
+"description-2": "Swap meals, skip weeks or cancel online anytime. You stay in control."
+"description-3": "Rated 4.8 out of 5 in 12,000 reviews from busy families and couples."
+"description-4": "Try your first box half price. No commitment, cancel anytime."
+"description-5": "Order by Sunday, cook on Tuesday. Delivery windows you choose."
+"business-name": "GreenCrate"
+"image": "Top-down shot of an open delivery box with fresh vegetables and herbs on a light wooden table, natural morning light. Works in landscape (full spread) and square (box centered)."
+
+IMPORTANT: the two examples span different industries on purpose. Mirror their slot-diversity discipline (5 genuinely different hook-types, 5 genuinely different description-angles) — never their industry, wording, product claims or numbers. Every claim in your output must come from the provided brand context.
 
 ## ANTI-PATTERNS — NEVER DO THESE
 1. NEVER emit per-size groups like "leaderboard-headline" — RDA does NOT use them. Static banner sizes are a different format.
@@ -598,6 +659,22 @@ When Tropicana changed its orange juice packaging in 2009, sales dropped 20% in 
 ...The lesson for brand leaders is clear: the rebrand itself is not the risk. The risk is rebranding without evidence. The 27% do not have bigger budgets or better agencies. They simply validate before they launch.
 
 **Disclosure:** "Sponsored by Branddock" — small text, positioned above headline in standard byline area.
+
+## FEW-SHOT EXAMPLE 2 — different vertical (logistics / last-mile delivery), condensed skeleton
+A second example so you anchor on the editorial FORM, not the industry:
+
+**Headline:** The Hidden Reason 1 in 5 Online Orders Arrives Late — and It Isn't the Courier
+**Subheadline:** Warehouse data from 4 million shipments points to a bottleneck most retailers never measure.
+
+[Opening — no brand mention] The parcel left the warehouse on time. The courier scanned it on time. And still it arrived a day late. An analysis of 4 million European shipments shows the delay usually happens before the label is even printed...
+
+[Brand integration — paragraph 3+] ...One of the companies studying this gap is FlowDock, whose slotting software reshuffles pick-routes overnight. "Retailers optimize the truck, but the truck was never the problem," says its head of operations...
+
+[Closing — thought leadership, not sales] The takeaway for retailers: measure the hours between order and label, not just label and doorbell. That invisible window is where late deliveries are born.
+
+**Disclosure:** "Presented by FlowDock" — small text in the byline area, above the headline.
+
+IMPORTANT: the two examples span different industries on purpose. Mirror their editorial FORM (journalism headline, value-first opening, buried brand, reflective closing) — never their industry, wording, statistics or claims. Every fact in your output must come from the provided brand context.
 
 ## ANTI-PATTERNS — NEVER DO THESE
 1. NEVER use the word "Sponsored" in the headline itself — the disclosure belongs in the standard tag position, not in the creative content. Including it in the headline kills click-through.
