@@ -1,5 +1,7 @@
-// Pricing-page met 3-tier matrix + FAQ.
-// Tier-prijzen: PLACEHOLDER — finalize sprint #7 voor go-live.
+// Pricing-page met 3-tier matrix + top-up-packs + FAQ.
+// Prijzen = ADR 2026-07-07-pricing-credits-launch (credit-model, launch-
+// definitief): Starter €39/400cr · Growth €89/1.200cr · Agency €299/4.000cr,
+// 28d no-card trial, top-up €0,10/credit. Bron: PLAN_CONFIGS + TOPUP_PACKS.
 
 import Link from 'next/link';
 import { Check } from 'lucide-react';
@@ -15,78 +17,88 @@ interface Tier {
   highlighted?: boolean;
 }
 
-// PRICING-TODO: valideer met user vóór go-live; placeholder per task §70-74
 const TIERS: Tier[] = [
   {
     id: 'starter',
     name: 'Starter',
-    pricePerMonth: 49,
-    description: 'For solo founders and early-stage teams',
+    pricePerMonth: 39,
+    description: 'For solo founders and early-stage brands',
     features: [
-      '1 workspace',
-      '1 user',
-      '50 content items per month',
-      'Brand Voice + Content Studio',
+      '400 credits per month',
+      '1 workspace · 1 user',
+      'Full brand DNA + Brand Voice',
+      'AI content across 25+ content types',
+      'Brand-fit scoring (F-VAL) on every piece — free',
       'Email support',
     ],
-    ctaLabel: 'Start trial',
+    ctaLabel: 'Start free trial',
     ctaHref: '/?utm_source=marketing-site&utm_medium=pricing-starter',
   },
   {
-    id: 'pro',
-    name: 'Pro',
-    pricePerMonth: 149,
-    description: 'The sweet spot for SMB marketing teams',
+    id: 'growth',
+    name: 'Growth',
+    pricePerMonth: 89,
+    description: 'The sweet spot for growing marketing teams',
     features: [
-      '3 workspaces',
-      '5 users',
-      '200 content items per month',
-      'Brandclaw competitive intelligence',
+      '1,200 credits per month',
+      '3 workspaces · 5 users',
+      'Everything in Starter',
+      'AI agents (research, strategy, content, data)',
+      'Competitive intelligence & trend radar',
       'Priority support',
-      'F-VAL custom thresholds',
     ],
-    ctaLabel: 'Start trial',
-    ctaHref: '/?utm_source=marketing-site&utm_medium=pricing-pro',
+    ctaLabel: 'Start free trial',
+    ctaHref: '/?utm_source=marketing-site&utm_medium=pricing-growth',
     highlighted: true,
   },
   {
     id: 'agency',
     name: 'Agency',
-    pricePerMonth: 399,
-    description: 'For agencies + multi-tenant scenarios',
+    pricePerMonth: 299,
+    description: 'For agencies managing multiple brands',
     features: [
-      '10 workspaces',
-      '20 users',
-      'Unlimited content items',
-      'Multi-tenant organization',
-      'White-label branding',
-      'Dedicated success manager',
+      '4,000 credits per month',
+      '10 workspaces · 20 users',
+      'Everything in Growth',
+      'Multi-tenant client management',
+      'Dedicated onboarding',
     ],
-    ctaLabel: 'Contact sales',
-    ctaHref: '/marketing/contact',
+    ctaLabel: 'Start free trial',
+    ctaHref: '/?utm_source=marketing-site&utm_medium=pricing-agency',
   },
+];
+
+// Top-up-packs — zelfde bron als de in-app catalogus (TOPUP_PACKS).
+const TOPUPS = [
+  { credits: '500', price: '€50' },
+  { credits: '1,500', price: '€135 (10% off)' },
+  { credits: '5,000', price: '€400 (20% off)' },
 ];
 
 const FAQ_ITEMS = [
   {
     q: 'Do I get a trial?',
-    a: '14 days free on the Starter or Pro tier. No credit card required. Cancel anytime.',
+    a: '28 days free with 300 credits — no credit card required. After the trial your brand data stays safe and visible; you only pick a plan when you want to keep generating.',
   },
   {
-    q: 'How is a content item counted?',
-    a: 'Every unique generation (blog post, social post, email, etc.) counts as 1 content item. Regenerations of the same variant don\'t count.',
+    q: 'How do credits work?',
+    a: 'Credits only count what we generate for you (output): a short piece ≈ 5, long-form ≈ 80, an image 2, a video clip 20. Your brand context and every brand-fit check (F-VAL) are always free — that\'s the point of Branddock.',
+  },
+  {
+    q: 'What if I run out of credits?',
+    a: 'Top up on demand at €0.10 per credit (packs from 500 credits, volume discounts up to 20%) — or enable auto top-up with your own spending cap. Never a surprise invoice.',
   },
   {
     q: 'Can I switch between tiers?',
     a: 'Yes, upgrade or downgrade at any time. Pro-rated billing. No lock-in.',
   },
   {
-    q: 'What happens if I exceed my limit?',
-    a: 'Your content item limit resets every month. If you go over, generation pauses until reset — no surprise invoices.',
+    q: 'How do you handle payments and VAT?',
+    a: 'Pay by iDEAL, SEPA direct debit or card via Stripe. Prices exclude VAT; EU businesses with a valid VAT number get reverse-charged invoices automatically.',
   },
   {
     q: 'Which AI models do you use?',
-    a: 'Claude (Anthropic), GPT-4 (OpenAI) and Gemini (Google). For each content type we pick the most suitable model.',
+    a: 'Claude (Anthropic), GPT (OpenAI) and Gemini (Google). For each content type we pick the most suitable model.',
   },
 ];
 
@@ -107,9 +119,25 @@ export default function PricingPage() {
           ))}
         </div>
 
+        {/* Top-up-packs */}
+        <div className="mt-12 max-w-2xl mx-auto">
+          <h2 className="text-gray-900 text-center mb-2">Need more? Top up any time.</h2>
+          <p className="text-gray-600 text-center text-sm mb-6">
+            €0.10 per credit, volume discounts included. Credits never expire while your plan is active.
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            {TOPUPS.map((t) => (
+              <div key={t.credits} className="rounded-lg border border-gray-200 bg-white p-4 text-center">
+                <div className="text-lg font-semibold text-gray-900">{t.credits} credits</div>
+                <div className="text-sm text-gray-600">{t.price}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="mt-12 text-center text-sm text-gray-500">
-          Prices exclude VAT. Monthly or annual (10% discount). Annual billing
-          available after the pilot phase.
+          Prices exclude VAT. 28-day free trial with 300 credits — no credit card required.
+          Need more than Agency? <Link href="/marketing/contact" className="underline hover:text-gray-700">Talk to us about Enterprise</Link>.
         </div>
       </section>
 
