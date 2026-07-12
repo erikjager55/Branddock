@@ -134,6 +134,43 @@ export async function handleSubscriptionPaused(
  * Triggered when an invoice is successfully paid.
  * Creates/updates our Invoice record and resets AI usage counters.
  */
+
+// ─── Fase 5b: BTW-extractie uit een Stripe-invoice ───────────
+// Stripe Tax is de bron: total_excluding_tax + total_tax_amounts staan op
+// élke invoice zodra automatic_tax aan staat. Reverse-charge (EU-B2B met
+// geldig VAT) herkent Stripe zelf: customer_tax_exempt === 'reverse'.
+// Het VAT-nummer komt uit Checkout's tax_id_collection (VIES-gevalideerd).
+
+export function extractInvoiceTax(invoice: Stripe.Invoice): {
+  taxAmount: number | null;
+  taxRate: number | null;
+  netAmount: number | null;
+  reverseCharge: boolean;
+  customerVatNumber: string | null;
+  sellerVatNumber: string | null;
+} {
+  // API 2026-02+ (clover): het veld heet `total_taxes` (voorheen total_tax_amounts).
+  const taxCents = (invoice.total_taxes ?? []).reduce(
+    (sum: number, t: Stripe.Invoice.TotalTax) => sum + (t.amount ?? 0),
+    0,
+  );
+  const netCents = invoice.total_excluding_tax ?? null;
+  const taxAmount = taxCents / 100;
+  const netAmount = netCents !== null ? netCents / 100 : null;
+  const reverseCharge = invoice.customer_tax_exempt === "reverse";
+  const customerVatNumber = invoice.customer_tax_ids?.[0]?.value ?? null;
+
+  return {
+    taxAmount,
+    // Effectief tarief afgeleid uit Stripe's eigen bedragen — geen tarief-logica.
+    taxRate: netAmount && netAmount > 0 ? Math.round((taxAmount / netAmount) * 10000) / 10000 : null,
+    netAmount,
+    reverseCharge,
+    customerVatNumber,
+    sellerVatNumber: process.env.SELLER_VAT_NUMBER ?? null,
+  };
+}
+
 export async function handleInvoicePaid(
   invoice: Stripe.Invoice
 ): Promise<void> {
@@ -155,6 +192,10 @@ export async function handleInvoicePaid(
   // Upsert Invoice record
   const invoiceNumber = invoice.number ?? `INV-${invoice.id.slice(-8)}`;
 
+  // Fase 5b — BTW-laag: Stripe Tax berekent, wij persisteren het resultaat
+  // (nooit een eigen tarief-engine). `amount` blijft het totaal incl. BTW.
+  const tax = extractInvoiceTax(invoice);
+
   await prisma.invoice.upsert({
     where: { stripeInvoiceId: invoice.id },
     create: {
@@ -168,11 +209,13 @@ export async function handleInvoicePaid(
       pdfUrl: invoice.invoice_pdf ?? null,
       issuedAt: new Date((invoice.created ?? 0) * 1000),
       stripeInvoiceId: invoice.id,
+      ...tax,
     },
     update: {
       amount: (invoice.amount_paid ?? 0) / 100,
       status: "PAID",
       pdfUrl: invoice.invoice_pdf ?? null,
+      ...tax,
     },
   });
 

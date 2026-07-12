@@ -33,6 +33,13 @@ export async function GET() {
       periodEnd: inv.periodEnd.toISOString(),
       pdfUrl: inv.pdfUrl,
       issuedAt: inv.issuedAt.toISOString(),
+      // Fase 5b — BTW-uitsplitsing (null op pre-tax facturen).
+      taxAmount: inv.taxAmount,
+      taxRate: inv.taxRate,
+      netAmount: inv.netAmount,
+      reverseCharge: inv.reverseCharge,
+      customerVatNumber: inv.customerVatNumber,
+      sellerVatNumber: inv.sellerVatNumber,
     }));
 
     return NextResponse.json({ invoices });

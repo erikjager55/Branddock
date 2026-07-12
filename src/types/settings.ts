@@ -279,6 +279,13 @@ export interface InvoiceItem {
   periodEnd: string;
   pdfUrl: string | null;
   issuedAt: string;
+  // Fase 5b — BTW-uitsplitsing (null op facturen van vóór Stripe Tax).
+  taxAmount: number | null;
+  taxRate: number | null;
+  netAmount: number | null;
+  reverseCharge: boolean;
+  customerVatNumber: string | null;
+  sellerVatNumber: string | null;
 }
 
 export interface InvoicesResponse {
