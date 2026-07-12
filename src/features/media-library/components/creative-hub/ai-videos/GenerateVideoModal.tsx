@@ -11,6 +11,7 @@ import {
   DEFAULT_VIDEO_PROVIDER,
   type FalVideoProvider,
 } from '@/lib/integrations/fal/fal-video-providers';
+import { CreditCostHint } from '@/components/shared';
 
 // ─── Constants ──────────────────────────────────────────────
 
@@ -381,7 +382,8 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
             )}
 
             {/* Actions */}
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <CreditCostHint action="video-clip" />
               <Button variant="secondary" onClick={handleClose} disabled={generateVideo.isPending}>
                 {t('actions.cancel')}
               </Button>

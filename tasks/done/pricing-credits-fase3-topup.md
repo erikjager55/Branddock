@@ -5,7 +5,8 @@ fase: launch
 priority: now
 effort: 2-3 dagen
 owner: claude-code
-status: in-progress
+status: done
+completed: 2026-07-12
 created: 2026-07-07
 related-adr: docs/adr/2026-07-07-pricing-credits-launch.md
 related-spec: tasks/pricing-credits-billing.md
@@ -100,3 +101,8 @@ Status `open` → **`in-progress`** gezet: er ligt één commit op deze branch (
 - Webhook-handler `grantCredits('TOPUP')` + idempotent + SEPA-terugdraai-afhandeling — nog niet bedraad.
 - `metered.ts` in-arrears-deprecatie — nog niet gedaan.
 - **Dependency-herinnering**: de handmatige iDEAL-pack-aankoop kan nu; de **auto-topup-tak wacht op het SEPA-mandaat uit Fase 5**.
+
+
+## Reconciliatie 2026-07-12 — GELEVERD (#372/#374/#381 + completion-PR)
+
+Top-up-packs + checkout + webhook-grant idempotent (#372), topup-gate/pilotmodus (#374), auto-topup volledig (Fase 5a #381: mandaat, exposure-cap, optimistische grant, reversal incl. dispute/refund-pad, kill-switch — strenger dan de hier gevraagde 'pauze tot handmatige actie': één failure zet de toggle uit). Instellingen-API + UI-toggle/pack/plafond geleverd in deze completion-ronde (`/api/billing/auto-topup` + PaymentMethodsCard; aanzetten vereist actief mandaat + pack, fail-closed 409). `metered.ts` in-arrears-pad expliciet gedeprecieerd (comment; geen actieve cron in vercel.json). Enige bewuste afwijking: reversal-boeking loopt als force-`DEDUCT` met idempotencyKey i.p.v. negatief `REFUND`-type — zelfde netto-effect, ledger blijft append-only consistent.

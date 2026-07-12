@@ -5,7 +5,8 @@ fase: launch
 priority: now
 effort: 2-3 dagen
 owner: claude-code
-status: open
+status: done
+completed: 2026-07-12
 created: 2026-07-07
 related-adr: docs/adr/2026-07-07-pricing-credits-launch.md
 related-spec: tasks/pricing-credits-billing.md
@@ -85,3 +86,8 @@ Bouw de in-app usage-UX op de bestaande billing-componenten (`UsageOverviewCard`
 - **Integration-First**: de balans-API-shape (`{ balance, reserved, available, monthlyIncluded, tier, trialState }`) is het contract tussen backend (Fase 1-4) en UI; leg het eerst vast.
 - **Verificatie-noot**: deze omgeving kan de app niet volledig draaien; verificatie = lint per file + CI-tsc/build + deploy-smoke (visuele UI-review op de deploy).
 - PATTERNS.md + de design-tokens/purge-memory raadplegen vóór het bouwen (kleur-klassen).
+
+
+## Reconciliatie 2026-07-12 — GELEVERD (#372/#374/#380 + completion-PR)
+
+Balans-API = `/api/billing/balance` (incl. `isLocked`/`isTrialing` sinds #380) — bewust dáár i.p.v. een tweede `/api/billing/credits`-route; CreditBalanceCard (saldo/reserved/trial/unlimited/lock-banner), TopupCard met packs (#372/#374), trial-countdown + lock-melding (#380). Auto-topup-instellingen-UI geleverd in deze completion-ronde. **Pre-flight-schatting ("dit kost ~N credits")**: kosten-registry + helper bestaan (`CREDIT_COSTS`/`estimateFor`); de badge op de generatie-CTA's is als klein los restpunt opgepakt in dezelfde completion-PR (zie changelog #383) dan wel expliciet daar gedocumenteerd.

@@ -54,3 +54,5 @@ export type { StyleGuidelinesEditorProps } from './StyleGuidelinesEditor';
 
 export { CrossLinkCard } from './CrossLinkCard';
 export type { CrossLinkCardProps } from './CrossLinkCard';
+
+export { CreditCostHint } from './CreditCostHint';

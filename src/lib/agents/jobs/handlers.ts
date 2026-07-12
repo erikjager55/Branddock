@@ -1,3 +1,13 @@
+// ─── Credit-keuze per job-type (Fase 2d, ADR 2026-07-07) ────────────────
+// Achtergrond-jobs zijn grotendeels FLOOR-GEDEKT (€15 platform-floor) of
+// setup/analyse (ZERO_COST_ACTIONS) en boeken dus GEEN credits:
+//   ALIGNMENT_SCAN, TREND_RESEARCH, WEBSITE_SCAN, BRANDVOICE_ANALYZE_URL,
+//   BRANDSTYLE_ANALYZE_URL/PDF ('setup'/'brand-analysis'), DAM_AUTO_TAG,
+//   BUG_REPORT_ANALYZE, CHAT_FEEDBACK_ANALYZE (intern), RESERVATION_REAP.
+// Credit-kostende output loopt via de eigen lib van de job:
+//   SEO_GENERATE → chargeAfter in src/lib/ai/seo-generation-job.ts ('long-form').
+// Nieuwe job-types: bepaal expliciet floor-gedekt vs output-kostend en leg de
+// keuze hiér vast (audit-grep Fase 2d, gecompleteerd 2026-07-12).
 // =============================================================
 // Agent Job handler registry (4.4)
 //

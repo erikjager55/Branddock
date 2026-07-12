@@ -26,6 +26,8 @@ import {
 import { useFormFillStore, type FormFillField } from '@/stores/useFormFillStore';
 import { generateCanvasVisual, setHeroImage as persistHeroImage, persistAdditionalContext } from '../../../api/canvas.api';
 import type { CanvasImageVariant } from '../../../types/canvas.types';
+import { CreditCostHint } from '@/components/shared';
+import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 
 /**
  * Format een ContentTypeInputValue naar de preview-string die de AI ziet
@@ -598,6 +600,22 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
             <Sparkles className="h-4 w-4" />
             {generateCtaLabel}
           </button>
+        )}
+        {/* Pre-flight-kostenindicatie (Fase 6): short vs long-form via het
+            CLIENT-SAFE deliverable-type-register — nooit de server-side
+            prompt-registry importeren (die scheept 5k regels prompt-IP de
+            publieke bundle in; review-CRITICAL 2026-07-12). Onbekend type →
+            geen hint (liever stil dan een verkeerde schatting). */}
+        {contentType && getDeliverableTypeById(contentType) && (
+          <div className="mt-1.5 flex justify-center">
+            <CreditCostHint
+              action={
+                getDeliverableTypeById(contentType)?.category === 'Long-Form Content'
+                  ? 'long-form'
+                  : 'short'
+              }
+            />
+          </div>
         )}
       </div>
     </div>

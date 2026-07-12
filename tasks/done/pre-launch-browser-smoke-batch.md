@@ -5,7 +5,8 @@ fase: pre-launch
 priority: now
 effort: 1-2u
 owner: user (UI-manual)
-status: open
+status: done
+completed: 2026-07-12 (lokale surfaces; deploy-smokes → takenlijst)
 created: 2026-05-12
 completed: -
 related-adr: -
@@ -30,8 +31,8 @@ Eén batch van 4 browser-smokes, achter elkaar uitvoerbaar in ~1-2u op een gewar
 - [⏸️] **Visual Brief Compose** — **deferred to post-vercel-deployment** (2026-05-12): localhost storage URLs (`/uploads/media/...`) zijn niet publiek bereikbaar voor FAL/Gemini compose-pipeline. Smoke vereist Vercel Blob / S3 / Cloudinary publieke URLs (Track C `vercel-deployment` levert die). Bovendien: pipeline-migratie naar Gemini Image (nano-banana) gepland in sprint #5 (`compose-pipeline-gemini-migration`) — smoke runt dáárna met betere quality dan huidige FAL Flux Pro Kontext.
 - [⏸️] **Visual Brief Trained-Style** — **deferred to post-vercel-deployment** (2026-05-12): zelfde storage blocker als Compose. FAL trained-LoRA model heeft publieke source-URLs nodig.
 - [x] **Locale-picker UI** — getest 2026-05-12 (eerder vandaag tijdens implementatie): dropdown wisselt, "Currently active" pill refresht na Save, auto-detected zichtbaar
-- [ ] **Serverless job-queue deploy-smoke** (Fase 5 uit [`serverless-hardening-jobs`](done/serverless-hardening-jobs.md), hierheen verplaatst 2026-07-12): start elke gemigreerde pipeline op de deploy (brandstyle url/pdf, alignment-scan, trend-research, website-scanner, brandvoice, DAM auto-tag, bug-report/chat-feedback) → job enqueued → cron verwerkt → progress + resultaat verschijnen cross-instance.
-- [ ] **SEO-pipeline deploy-smoke + meting** (uit [`serverless-seo-decompose`](done/serverless-seo-decompose.md) + [`seo-pipeline-speedup`](seo-pipeline-speedup.md), hierheen verplaatst 2026-07-12): genereer een long-form SEO-deliverable op de deploy → `seo_queued` → polling-progress door alle 8 stappen → 2 varianten persisted zonder timeout. Lees `SeoGenerationJob.state.timings` (of Vercel-logs): bevestig ~5-7 min totaal en waar de resttijd zit, en vergelijk de F-VAL-score + handmatige lezing met de ~19K-tekens-baseline. **Deze meting is de go/no-go-gate voor speedup Fase 3/4.**
+- [→] **Serverless job-queue deploy-smoke** (→ user-taak #7, vereist prod-sessie) (Fase 5 uit [`serverless-hardening-jobs`](done/serverless-hardening-jobs.md), hierheen verplaatst 2026-07-12): start elke gemigreerde pipeline op de deploy (brandstyle url/pdf, alignment-scan, trend-research, website-scanner, brandvoice, DAM auto-tag, bug-report/chat-feedback) → job enqueued → cron verwerkt → progress + resultaat verschijnen cross-instance.
+- [→] **SEO-pipeline deploy-smoke + meting** (→ user-taak #7) (uit [`serverless-seo-decompose`](done/serverless-seo-decompose.md) + [`seo-pipeline-speedup`](seo-pipeline-speedup.md), hierheen verplaatst 2026-07-12): genereer een long-form SEO-deliverable op de deploy → `seo_queued` → polling-progress door alle 8 stappen → 2 varianten persisted zonder timeout. Lees `SeoGenerationJob.state.timings` (of Vercel-logs): bevestig ~5-7 min totaal en waar de resttijd zit, en vergelijk de F-VAL-score + handmatige lezing met de ~19K-tekens-baseline. **Deze meting is de go/no-go-gate voor speedup Fase 3/4.**
 - [ ] Bug-log gepopuleerd met `[surface] severity: beschrijving → verwachte fix` voor elke P1/P2
 
 # Bestanden die ik aanraak
@@ -75,3 +76,8 @@ Eén batch van 4 browser-smokes, achter elkaar uitvoerbaar in ~1-2u op een gewar
 - LINFI: 125 images, 0 trained models — geschikt voor compose + locale-picker
 - Goed-Bouw: 10 images, 1 trained model READY — perfecte test-workspace voor Visual Brief beide flows
 - Better Brands: 1 image, 1 trained model — alleen trained-style test (compose needs ≥2)
+
+
+## Afronding 2026-07-12
+
+De 4 oorspronkelijke surfaces waren al getest (2026-05-12; Visual Brief ×2 bewust deferred → gedekt door de latere compose-gemini-migratie + media-flows in content-test Ronde 1). De twee later hierheen verplaatste deploy-smokes vereisen een ingelogde productie-sessie en staan als user-taak #7 op de takenlijst met draaiboek. Geen open lokale smoke-punten meer.
