@@ -60,7 +60,7 @@ function FeatureTrio() {
         'Build your brand voice from sample texts or a voiceguide. Branddock learns from your material — not from the generic web.',
     },
     {
-      title: 'Content Studio with 53 types',
+      title: 'Content Canvas with 25+ types',
       body:
         'From blog post to LinkedIn ad to email sequence. With automated quality gates and F-VAL fidelity scoring per output.',
     },

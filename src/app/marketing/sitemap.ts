@@ -9,8 +9,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/marketing/about`, lastModified: now, priority: 0.6 },
     { url: `${base}/marketing/contact`, lastModified: now, priority: 0.5 },
     { url: `${base}/marketing/features/brand-voice`, lastModified: now, priority: 0.8 },
-    { url: `${base}/marketing/features/content-studio`, lastModified: now, priority: 0.8 },
+    { url: `${base}/marketing/features/content-canvas`, lastModified: now, priority: 0.8 },
     { url: `${base}/marketing/features/brand-alignment`, lastModified: now, priority: 0.8 },
-    { url: `${base}/marketing/features/brandclaw`, lastModified: now, priority: 0.7 },
+    { url: `${base}/marketing/features/agents`, lastModified: now, priority: 0.7 },
   ];
 }

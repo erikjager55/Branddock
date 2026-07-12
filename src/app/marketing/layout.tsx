@@ -71,15 +71,16 @@ function MarketingNav() {
 
 function MarketingFooter() {
   return (
+    <>
     <footer className="border-t border-gray-200 bg-gray-50">
       <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
         <div>
           <div className="font-semibold text-gray-900 mb-3">Product</div>
           <ul className="space-y-1.5 text-gray-600">
             <li><Link href="/marketing/features/brand-voice" className="hover:text-gray-900">Brand Voice</Link></li>
-            <li><Link href="/marketing/features/content-studio" className="hover:text-gray-900">Content Studio</Link></li>
+            <li><Link href="/marketing/features/content-canvas" className="hover:text-gray-900">Content Canvas</Link></li>
             <li><Link href="/marketing/features/brand-alignment" className="hover:text-gray-900">Brand Alignment</Link></li>
-            <li><Link href="/marketing/features/brandclaw" className="hover:text-gray-900">Brandclaw</Link></li>
+            <li><Link href="/marketing/features/agents" className="hover:text-gray-900">AI Agents</Link></li>
           </ul>
         </div>
         <div>
@@ -91,10 +92,11 @@ function MarketingFooter() {
           </ul>
         </div>
         <div>
-          <div className="font-semibold text-gray-900 mb-3">Legal</div>
+          <div className="font-semibold text-gray-900 mb-3">Support</div>
+          {/* Legal-pagina's (terms/privacy) bestaan nog niet — links bewust
+              verwijderd i.p.v. 404's; aanmaken = user-taak (juridische copy). */}
           <ul className="space-y-1.5 text-gray-600">
-            <li><Link href="/marketing/legal/terms" className="hover:text-gray-900">Terms</Link></li>
-            <li><Link href="/marketing/legal/privacy" className="hover:text-gray-900">Privacy</Link></li>
+            <li><a href="mailto:hello@branddock.com" className="hover:text-gray-900">Questions? Email us</a></li>
           </ul>
         </div>
         <div>
@@ -108,5 +110,39 @@ function MarketingFooter() {
         © {new Date().getFullYear()} Branddock. All rights reserved.
       </div>
     </footer>
+
+      {/* Schema.org JSON-LD (SEO-acceptatie): Organization + WebSite + Product. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@graph': [
+              {
+                '@type': 'Organization',
+                name: 'Branddock',
+                url: 'https://branddock-7y9n.vercel.app/marketing',
+              },
+              {
+                '@type': 'WebSite',
+                name: 'Branddock',
+                url: 'https://branddock-7y9n.vercel.app/marketing',
+              },
+              {
+                '@type': 'Product',
+                name: 'Branddock',
+                description:
+                  'Brand-validated AI content platform: brand DNA, AI agents and a brand-fit score on every piece of content.',
+                offers: [
+                  { '@type': 'Offer', name: 'Starter', price: '39', priceCurrency: 'EUR' },
+                  { '@type': 'Offer', name: 'Growth', price: '89', priceCurrency: 'EUR' },
+                  { '@type': 'Offer', name: 'Agency', price: '299', priceCurrency: 'EUR' },
+                ],
+              },
+            ],
+          }),
+        }}
+      />
+    </>
   );
 }

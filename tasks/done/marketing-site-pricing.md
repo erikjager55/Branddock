@@ -5,7 +5,8 @@ fase: pre-launch
 priority: now
 effort: 1 week
 owner: claude-code + user (copywriting + design beslissingen)
-status: open
+status: done
+completed: 2026-07-12 (MVP launch-klaar; content-rest → user-taak #9)
 created: 2026-05-12
 completed: -
 related-adr: -
@@ -143,3 +144,8 @@ Aanbeveling: (a) voor MVP, migrate naar (b) post-launch als marketing-velocity v
 **Copywriting-handoff**: user levert copywriting input vóór sprint-start (key-message per pagina, value-prop, customer-quotes geselecteerd). Anders blocked op copy-decisions.
 
 **Pricing-rationale**: tier-structuur volgt cost-model — Starter dekt unit-economics, Pro is sweet-spot voor SMB, Agency multi-tenant. Validatie via pilot-feedback in sprint #6.
+
+
+## Afronding 2026-07-12 — scaffold naar launch-klaar gebracht
+
+De site bestond al als scaffold (`4a2f7fd8`, optie (a) route-group /marketing — conform de eigen aanbeveling; door de NL→EN-migratie is de copy Engels, wat de oorspronkelijke "NL eerst"-acceptatie superseded). Deze ronde: **pricing volledig naar het ADR-credit-model** (Starter €39/400cr · Growth €89/1.200cr · Agency €299/4.000cr — de tiers in deze task-file (€49/€149/€399) waren stale; top-up-packs 500/1.500/5.000; 28d no-card-trial; credit-FAQ met de "merkcontext & F-VAL altijd gratis"-differentiator; iDEAL/SEPA/BTW-antwoord); **stale features gemoderniseerd** (Content Studio/"53 types" → Content Canvas/25+; Brandclaw → AI Agents met de echte zes agents + human-in-the-loop-framing) incl. nav/footer/sitemap-slugs; **JSON-LD** (Organization/WebSite/Product+offers) toegevoegd; dode legal-links verwijderd (pagina's bestaan nog niet — user-taak). **Visueel geverifieerd**: alle 6 pagina's HTTP 200, 0 console-errors (Playwright, screenshots naar user). UTM-tracking zat al op elke CTA; PostHog-events wachten op een client-side PostHog-key (niet geconfigureerd — bewust gelaten). Lighthouse ≥90-run + product-screenshots + quote + Calendly + domein = user-taak #9.

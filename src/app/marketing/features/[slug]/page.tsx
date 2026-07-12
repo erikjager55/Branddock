@@ -29,20 +29,20 @@ const FEATURES: Record<string, FeatureSpec> = {
     ],
     screenshotPath: '/marketing/features/brand-voice.png', // TODO: vervang
   },
-  'content-studio': {
-    slug: 'content-studio',
-    title: 'Content Studio with 53 types',
-    tagline: 'From blog post to press release to LinkedIn ad — one canvas, all formats.',
+  'content-canvas': {
+    slug: 'content-canvas',
+    title: 'Content Canvas — 25+ content types',
+    tagline: 'From blog post to landing page to LinkedIn ad — one canvas, all formats.',
     description:
-      'Briefing in, AI content out, with automated quality gates at every step. Multivariate output (2-3 headline options), property evals (18 deterministic checks), F-VAL composite scoring per variant.',
+      'Briefing in, on-brand content out, with automated quality gates at every step. Multivariate output, deterministic property checks, and a brand-fit score (F-VAL) on every variant — plus full web pages and SEO/GEO long-form with a visual page builder.',
     bullets: [
-      '53 content types, from blog and social to press release and case study',
-      'Multivariate output: 2-3 headline options + 1 preferred variant per generation',
-      'Layer 1 property evals: 18 deterministic checks per variant (placeholder, PII, banned phrases, claim substantiation)',
-      'Chain-of-prompts upgrades: implicit CoT + Plan-and-Solve + Tree-of-Thoughts angles',
-      'Auto-iterate orchestrator: when a score is below threshold, an automatic feedback-driven rewrite (max 2 attempts)',
+      '25+ content types, from blog and social to ads, landing pages and SEO/GEO long-form',
+      'Multivariate output: multiple angles + 1 preferred variant per generation',
+      'Deterministic property checks per variant (placeholders, PII, banned phrases, claims)',
+      'Visual web-page builder with publishable pages on your own URL',
+      'Auto-iterate: when a score is below threshold, an automatic feedback-driven rewrite',
     ],
-    screenshotPath: '/marketing/features/content-studio.png',
+    screenshotPath: '/marketing/features/content-canvas.png',
   },
   'brand-alignment': {
     slug: 'brand-alignment',
@@ -59,19 +59,21 @@ const FEATURES: Record<string, FeatureSpec> = {
     ],
     screenshotPath: '/marketing/features/brand-alignment.png',
   },
-  'brandclaw': {
-    slug: 'brandclaw',
-    title: 'Brandclaw competitive intelligence',
-    tagline: 'Monitor competitors at brand level, not just pricing.',
+  'agents': {
+    slug: 'agents',
+    title: 'AI agents that know your brand',
+    tagline: 'Six specialist agents — research, strategy, content, brand review, market and data.',
     description:
-      'Brandclaw tracks competitor messaging shifts, new content items and strategic moves. For pro+ tiers — autonomous marketing loop in development.',
+      'Branddock agents run real work on top of your brand DNA: market research with sources, strategy foundations, content proposals, brand-fit reviews and data analysis. Every agent proposes — you approve. Nothing ships without you.',
     bullets: [
-      'Competitor content-item discovery via sitemap monitoring',
-      'AI event classifier for strategic moves (rebranding, pricing change, etc.)',
-      'Battlecard generation on demand (post-launch)',
-      'Strategic analyst stub (post-launch transformation)',
+      'Research analyst: sourced market research into your knowledge library',
+      'Strategist: evidence-based strategy foundations, written straight into your campaigns',
+      'Content creator: proposals that generate through the same brand-validated pipeline',
+      'Brand guardian: independent brand-fit reviews (F-VAL) on any text',
+      'Market & data analysts: competitor moves and your own content-production numbers',
+      'Human-in-the-loop by design: agents propose, you confirm',
     ],
-    screenshotPath: null, // Brandclaw is post-launch — geen screenshot beschikbaar
+    screenshotPath: null, // screenshot volgt (user-taak: echte product-screenshots)
   },
 };
 
