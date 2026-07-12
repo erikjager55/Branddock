@@ -53,6 +53,14 @@ export function getPromptTemplate(deliverableTypeId: string): PromptTemplate {
   const template = TEMPLATE_REGISTRY[deliverableTypeId];
   if (template) return template;
 
+  // CF-1 (content-flow-improvements-7a): een type zonder dedicated template
+  // degradeerde eerder STIL naar de generieke prompt (merkbare kwaliteits-
+  // drop). Alle 55 canonieke types hebben inmiddels een template; deze warn
+  // + smoke:prompt-contracts sectie (g) bewaken dat dat zo blijft.
+  console.warn(
+    `[prompt-templates] no dedicated template for '${deliverableTypeId}' — falling back to the generic content template. Add an entry to the matching src/lib/studio/prompt-templates/<category>.ts file.`,
+  );
+
   // Fallback: generic content template
   return {
     systemPrompt: buildBaseSystemPrompt(

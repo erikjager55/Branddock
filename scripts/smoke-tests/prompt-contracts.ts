@@ -30,6 +30,13 @@
  *      PROMPT_VERSION constant matches its category entry in
  *      src/lib/ai/prompt-version-registry.ts (AICallSnapshot.promptVersion
  *      must stay truthful; drift fails).
+ *  (g) TYPE→CATEGORY COVERAGE (CF-1/CF-4, content-flow-improvements-7a) —
+ *      every canonical deliverable-type has a dedicated prompt template (the
+ *      generic fallback is a quality drop and must never re-appear
+ *      silently), and getCategoryForType resolves every templated type to
+ *      the category of the collection that registers it (the hand-written
+ *      predecessor of TYPE_TO_CATEGORY had drifted: 9 phantom-IDs + 11
+ *      missing types falling back to 'long-form').
  *
  * No DB, no LLM calls — pure registry imports, plus source parsing for the
  * non-exported consts (CONTENT_TYPE_TO_MEDIUM, FALLBACK_BY_CONTENT_TYPE and
@@ -48,6 +55,7 @@ import {
 } from '../../src/lib/ai/component-templates-fallback';
 import {
   PROMPT_VERSIONS,
+  getCategoryForType,
   type PromptCategory,
 } from '../../src/lib/ai/prompt-version-registry';
 import { DELIVERABLE_TYPE_IDS } from '../../src/features/campaigns/lib/deliverable-types';
@@ -643,6 +651,65 @@ for (const { file, version } of versionedFiles) {
     `${file} PROMPT_VERSION matches PROMPT_VERSIONS['${category}']`,
     PROMPT_VERSIONS[category] === version,
     `template ${version} vs registry ${PROMPT_VERSIONS[category]} — bump the registry (or file) so AICallSnapshot.promptVersion stays truthful`,
+  );
+}
+
+// ─── (g) Type→category coverage (CF-1/CF-4) ──────────────────
+console.log('\n## (g) Type→category coverage (CF-1/CF-4)\n');
+
+// Category per collection — the same pairing prompt-version-registry.ts
+// derives TYPE_TO_CATEGORY from. Re-declared here (not imported) so a bug
+// in the registry's derivation wiring cannot vouch for itself.
+const COLLECTION_CATEGORY: ReadonlyArray<readonly [Record<string, unknown>, PromptCategory]> = [
+  [LONG_FORM_TEMPLATES, 'long-form'],
+  [SOCIAL_MEDIA_TEMPLATES, 'social-media'],
+  [ADVERTISING_TEMPLATES, 'advertising'],
+  [EMAIL_TEMPLATES, 'email'],
+  [WEBSITE_TEMPLATES, 'website'],
+  [VIDEO_AUDIO_TEMPLATES, 'video-audio'],
+  [SALES_TEMPLATES, 'sales-enablement'],
+  [PR_HR_TEMPLATES, 'pr-hr-comms'],
+];
+const EXPECTED_CATEGORY = new Map<string, PromptCategory>(
+  COLLECTION_CATEGORY.flatMap(([collection, category]) =>
+    Object.keys(collection).map((typeId) => [typeId, category] as const),
+  ),
+);
+
+{
+  // CF-1: a canonical type without a dedicated template silently degrades to
+  // the generic prompt (measurable quality drop — the 2026-05-29 flow
+  // analysis found 5 such types). All 55 are covered today; keep it that way.
+  const untemplated = [...DELIVERABLE_TYPES_SET].filter(
+    (type) => !TEMPLATE_REGISTRY_TYPES.has(type),
+  );
+  assert(
+    'every canonical deliverable-type has a dedicated prompt template',
+    untemplated.length === 0,
+    `generic-fallback types (add to the matching category file): ${untemplated.join(', ')}`,
+  );
+
+  // Reverse: a template key that no canonical type can ever reach is dead
+  // weight and usually a typo'd ID.
+  const orphaned = [...TEMPLATE_REGISTRY_TYPES].filter(
+    (type) => !DELIVERABLE_TYPES_SET.has(type),
+  );
+  assert(
+    'no orphaned template keys outside deliverable-types',
+    orphaned.length === 0,
+    `template keys without a canonical type: ${orphaned.join(', ')}`,
+  );
+}
+
+// CF-4: getCategoryForType must resolve every templated type to the category
+// of the collection that registers it — never via the 'long-form' fallback
+// (which is reserved for genuinely unknown types at runtime).
+for (const [type, expected] of [...EXPECTED_CATEGORY.entries()].sort()) {
+  const actual = getCategoryForType(type);
+  assert(
+    `${type} → '${expected}'`,
+    actual === expected,
+    `getCategoryForType returned '${actual}'`,
   );
 }
 

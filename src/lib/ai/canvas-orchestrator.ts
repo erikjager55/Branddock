@@ -52,6 +52,18 @@ import type { PropertyEvalContext } from '@/lib/content-test/types';
 import OpenAI from 'openai';
 
 /**
+ * Long-output-types buiten de long-form-categorie die de Plan-and-Solve-chain
+ * (PLAN→EXECUTE→ASSEMBLY) mogen nemen wanneer de user er expliciet om vraagt
+ * (CF-3, content-flow-improvements-7a). Korte-output-types produceren met de
+ * single-body-assembly van Plan-and-Solve onbruikbare output en horen hier
+ * dus nooit in; PUCK-website-types evenmin (structured-variant-contract).
+ */
+const EXTRA_PLAN_AND_SOLVE_TYPES: ReadonlySet<string> = new Set([
+  'proposal-template',
+  'impact-report',
+]);
+
+/**
  * Build PropertyEvalContext uit canvas-stack. Hergebruikt door alle variant-
  * loops zodat we niet per variant duplicate werk doen.
  */
@@ -416,10 +428,11 @@ export async function* orchestrateContentGeneration(
   // Falls back to legacy 1-call/2-variant flow if angle generation fails.
   //
   // Plan-and-Solve dispatch (content-test #5.B chain-pattern C, opt-in):
-  // Wanneer contentTypeInputs.usePlanAndSolve === true AND content-type
-  // categorie is 'long-form', dispatch naar runPlanAndSolveStream. Produceert
-  // 1 variant met assembledContent (full markdown). Bypassed de angle-
-  // generation omdat Plan-and-Solve eigen structuur-discipline heeft.
+  // Wanneer contentTypeInputs.usePlanAndSolve === true AND het content-type
+  // long-output is (long-form-categorie of EXTRA_PLAN_AND_SOLVE_TYPES),
+  // dispatch naar runPlanAndSolveStream. Produceert 1 variant met
+  // assembledContent (full markdown). Bypassed de angle-generation omdat
+  // Plan-and-Solve eigen structuur-discipline heeft.
   // F29 (audit 2026-05-13): per-content-type model routing. Experimenteel
   // gemeten welk model best scoort per categorie (Social → GPT-5.4, Ads →
   // Gemini 3.1 Pro, Website → Sonnet 4.6, overige → Opus 4.7). Workspace-
@@ -444,7 +457,18 @@ export async function* orchestrateContentGeneration(
   const contentTypeCategory = stack.deliverableTypeId
     ? (await import('./prompt-version-registry')).getCategoryForType(stack.deliverableTypeId)
     : null;
-  const isPlanAndSolveEligible = usePlanAndSolve && contentTypeCategory === 'long-form';
+  // CF-3 (content-flow-improvements-7a): eligibility = long-form-categorie +
+  // expliciete long-output-types buiten die categorie. Vóór de CF-4-mapfix
+  // waren proposal-template/impact-report alleen per óngeluk eligible (ze
+  // ontbraken in TYPE_TO_CATEGORY en vielen op 'long-form' terug); dit maakt
+  // dat bewust. Website-types horen hier NIET in: PUCK_WEBPAGE_TYPES lopen
+  // via de structured-variant-flow (paradigma B) en de single-body-markdown
+  // van Plan-and-Solve zou dat contract breken (W1-dubbelpad-gate).
+  // ADR: docs/adr/2026-07-12-type-category-derivation-plan-and-solve.md
+  const isPlanAndSolveEligible =
+    usePlanAndSolve &&
+    (contentTypeCategory === 'long-form' ||
+      EXTRA_PLAN_AND_SOLVE_TYPES.has(deliverableTypeId));
 
   let textResult: TextGenerationResult;
   let angles: Awaited<ReturnType<typeof generateCreativeAngles>> = null;
