@@ -18,7 +18,7 @@ function check(label: string, cond: boolean): void {
 }
 
 const stamp = Date.now();
-async function mkOrg(tag: string, data: Partial<{ autoTopupEnabled: boolean; autoTopupPackId: string; sepaMandateStatus: string }>): Promise<string> {
+async function mkOrg(tag: string, data: Partial<{ autoTopupEnabled: boolean; autoTopupPackId: string; sepaMandateStatus: string; sepaPaymentMethodId: string }>): Promise<string> {
   const o = await prisma.organization.create({ data: { name: 'at-smoke', slug: `at-${stamp}-${tag}`, ...data } });
   return o.id;
 }
@@ -28,15 +28,19 @@ async function main(): Promise<void> {
   try {
     const disabled = await mkOrg('disabled', {}); ids.push(disabled);
     const noMandate = await mkOrg('nomandate', { autoTopupEnabled: true }); ids.push(noMandate);
-    const noPack = await mkOrg('nopack', { autoTopupEnabled: true, sepaMandateStatus: 'active' }); ids.push(noPack);
-    const ready = await mkOrg('ready', { autoTopupEnabled: true, sepaMandateStatus: 'active', autoTopupPackId: '500' }); ids.push(ready);
+    // Fase 5a: een 'actief' mandaat vereist óók een PaymentMethod-id (fail-closed).
+    const noPack = await mkOrg('nopack', { autoTopupEnabled: true, sepaMandateStatus: 'active', sepaPaymentMethodId: `pm_at_${stamp}` }); ids.push(noPack);
+    const ready = await mkOrg('ready', { autoTopupEnabled: true, sepaMandateStatus: 'active', sepaPaymentMethodId: `pm_at2_${stamp}`, autoTopupPackId: '500' }); ids.push(ready);
 
     check('shortfall ≤ 0 → no-op (no-shortfall)', (await maybeAutoTopup(disabled, 0)).reason === 'no-shortfall');
     check('autoTopup uit → disabled', (await maybeAutoTopup(disabled, 50)).reason === 'disabled');
     check('aan, geen mandaat → no-mandate', (await maybeAutoTopup(noMandate, 50)).reason === 'no-mandate');
     check('aan + mandaat, geen pack → no-pack', (await maybeAutoTopup(noPack, 50)).reason === 'no-pack');
+    // Fase 5a: het invulpunt is geïmplementeerd — met de default exposure-cap 0
+    // stopt de flow deterministisch op 'over-cap' (0 + pack.credits > 0),
+    // vóór enige Stripe-call. Zie credit-sepa-mandate-smoke voor de volle keten.
     const r = await maybeAutoTopup(ready, 50);
-    check('aan + mandaat + pack → not-implemented (Fase 5), topped=false', r.reason === 'not-implemented' && r.topped === false);
+    check('aan + mandaat + pack, cap 0 → over-cap, topped=false', r.reason === 'over-cap' && r.topped === false);
   } finally {
     for (const id of ids) await prisma.organization.delete({ where: { id } }).catch(() => {});
   }

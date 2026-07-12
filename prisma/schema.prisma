@@ -49,6 +49,9 @@ model Organization {
   autoTopupPackId      String?
   autoTopupExposureCap Int     @default(0)
   sepaMandateStatus    String? // null = geen mandaat; 'active' na Fase 5-mandaat-setup
+  // Het herbruikbare sepa_debit-PaymentMethod-id uit de iDEAL→SEPA-setup —
+  // hier draaien de off-session auto-topup-charges tegen (Fase 5a).
+  sepaPaymentMethodId  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -547,6 +550,7 @@ enum NotificationType {
   NEW_RESEARCH_STARTED
   COMPETITOR_MAJOR_EVENT
   TRIAL_EXPIRING
+  AUTO_TOPUP
 }
 
 enum NotificationCategory {

@@ -51,6 +51,10 @@ export async function createCheckoutSession(
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: 'subscription',
+    // Fase 5a (ADR D10): iDEAL als eerste betaling — Stripe zet daar native
+    // een herbruikbaar SEPA-mandaat achter voor de renewals; sepa_debit mag
+    // ook direct (IBAN zonder bank-redirect). Kaart blijft beschikbaar.
+    payment_method_types: ['card', 'ideal', 'sepa_debit'],
     currency: STRIPE_CURRENCY,
     line_items: [
       {
