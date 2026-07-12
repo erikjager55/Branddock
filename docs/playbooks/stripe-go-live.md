@@ -35,7 +35,10 @@ Maak per betaalde tier een Product met een **recurring monthly** Price (EUR). No
   - `checkout.session.completed`
   - `customer.subscription.created` · `customer.subscription.updated` · `customer.subscription.deleted` · `customer.subscription.paused`
   - `invoice.paid` · `invoice.payment_failed` · `invoice.finalized`
-  - `payment_intent.succeeded` *(voor one-time research-bundle/workshop-aankopen)*
+  - `payment_intent.succeeded` *(one-time aankopen + credit-top-ups)*
+  - `payment_intent.payment_failed` *(Fase 5a: auto-topup-reversal bij gefaalde SEPA-incasso)*
+  - `setup_intent.succeeded` · `mandate.updated` *(Fase 5a: iDEAL→SEPA-mandaat-lifecycle)*
+  - `charge.dispute.created` · `charge.refunded` *(Fase 5a: late terugboekingen → credits-reversal + auto-topup-kill-switch)*
 - [ ] Kopieer het signing secret → `STRIPE_WEBHOOK_SECRET`. De route verifieert de HMAC (`constructEvent`) + is idempotent (`ProcessedStripeEvent`).
 
 ## 5. Customer Portal
@@ -59,3 +62,12 @@ Maak per betaalde tier een Product met een **recurring monthly** Price (EUR). No
 ---
 
 **Nog buiten scope (per-token-fase later)**: usage-metering/overage (`reportUsageToStripe` + Stripe Billing Meter `ai_token_overage` + `STRIPE_PRICE_AI_OVERAGE` + een cron), 14-dagen trial, en PaymentMethod-sync-from-Stripe (de portal beheert kaarten).
+
+
+## 8. iDEAL/SEPA + auto-topup (Fase 5a, 2026-07-12)
+
+- **Payment-methods**: top-up-Checkout biedt `card + ideal`; subscription-Checkout `card + ideal + sepa_debit` (iDEAL-eerste-betaling → Stripe zet native een SEPA-mandaat achter de renewals). Activeer **iDEAL** en **SEPA-incasso** in Stripe → Settings → Payment methods (beide vereisen een geactiveerd EUR-account).
+- **Incasso-mandaat voor auto-topup**: Settings → Billing → Betaalmethode → "Instellen via iDEAL" start een gehoste Checkout-`setup`-flow; `setup_intent.succeeded` activeert het mandaat (`Organization.sepaMandateStatus/sepaPaymentMethodId`). Auto-topup chargt off-session tegen dit mandaat, optimistisch (credits direct, reversal bij `payment_intent.payment_failed`), begrensd door `autoTopupExposureCap`.
+- **Test-mode smoke**: (1) mandaat-setup met de iDEAL-testbank → status 'active' én `sepaPaymentMethodId` is een **sepa_debit**-pm (het generated pm van de SetupAttempt — niet het single-use iDEAL-pm); (2) zet op een test-org `autoTopupEnabled=true`, `autoTopupPackId='500'`, `autoTopupExposureCap>=500`, saldo laag → genereer → PI (processing) + optimistische +500; (3) laat de test-incasso falen (test-IBAN `NL62ABNA…`-failure-variant) → reversal −500 + metadata reversed.
+- **Kill-switch**: één gefaalde of teruggeboekte incasso zet `autoTopupEnabled` automatisch uit (warn-log); herstel het mandaat en zet hem bewust weer aan.
+- **Schema-delta's** (batchen in één Neon `prisma db push`): `Organization.sepaPaymentMethodId`, enum `NotificationType.AUTO_TOPUP` (+ `TRIAL_EXPIRING` uit Fase 4).

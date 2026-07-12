@@ -14,7 +14,7 @@ import {
 } from "./subscription-sync";
 import { resolveWorkspaceFromCustomer } from "./customer";
 import { handlePurchaseSuccess, type PurchaseType } from "./one-time";
-import { handleTopupSuccess, handleTopupFailure } from "./topup";
+import { handleTopupSuccess, handleTopupFailure, handleTopupChargeReversed, handleTopupDisputeCreated } from "./topup";
 import { handleSetupIntentSucceeded, handleMandateUpdated } from "./sepa-mandate";
 import { resolveOrgForWorkspace } from "./usage-tracker";
 import { updatePlanFromStripe } from "./subscription-sync";
@@ -356,6 +356,16 @@ export async function dispatchWebhookEvent(
 
     case "mandate.updated":
       await handleMandateUpdated(event.data.object as Stripe.Mandate);
+      return true;
+
+    // Late terugboekingen (SEPA-reclaim/chargeback of refund) — kunnen wéken
+    // na succeeded komen en arriveren als charge-event (review-W1).
+    case "charge.dispute.created":
+      await handleTopupDisputeCreated(event.data.object as Stripe.Dispute);
+      return true;
+
+    case "charge.refunded":
+      await handleTopupChargeReversed(event.data.object as Stripe.Charge);
       return true;
 
     default:

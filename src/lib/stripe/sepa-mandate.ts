@@ -68,8 +68,10 @@ export async function createSepaMandateCheckout(
 
   // Markeer als pending zodat de UI direct status kan tonen; 'active' volgt
   // pas via de webhook (nooit optimistisch activeren — auto-topup leest dit).
-  await prisma.organization.update({
-    where: { id: params.organizationId },
+  // Een al-actief mandaat NIET degraderen: een afgebroken her-setup mag een
+  // werkend mandaat niet stil uitschakelen (review-W4).
+  await prisma.organization.updateMany({
+    where: { id: params.organizationId, NOT: { sepaMandateStatus: 'active' } },
     data: { sepaMandateStatus: 'pending' },
   });
 
@@ -86,14 +88,59 @@ export async function createSepaMandateCheckout(
 export async function handleSetupIntentSucceeded(si: Stripe.SetupIntent): Promise<void> {
   if (si.metadata?.type !== 'sepa_mandate_setup') return;
   const organizationId = si.metadata.organizationId;
-  const paymentMethodId =
-    typeof si.payment_method === 'string' ? si.payment_method : si.payment_method?.id;
-  if (!organizationId || !paymentMethodId) return;
+  if (!organizationId) return;
 
+  // KRITIEK (review): bij een iDEAL-setup is `si.payment_method` het
+  // single-use iDEAL-pm — het HERBRUIKBARE sepa_debit-pm staat op de
+  // SetupAttempt (`payment_method_details.ideal.generated_sepa_debit`).
+  // Her-ophalen met expand (webhook-events zijn niet ge-expand) en het
+  // generated pm prefereren; anders alleen accepteren als het pm zélf
+  // sepa_debit is (directe IBAN-setup). Invariant: sepaPaymentMethodId
+  // bevat nooit een niet-incasseerbaar pm.
+  const paymentMethodId = await resolveSepaPaymentMethodId(si);
+  if (!paymentMethodId) {
+    console.warn('[sepa-mandate] setup_intent.succeeded zonder bruikbaar sepa_debit-pm', {
+      setupIntentId: si.id,
+      organizationId,
+    });
+    return;
+  }
+
+  await activateMandate(organizationId, paymentMethodId);
+}
+
+/**
+ * Pure persistentie-stap (apart exporteerbaar voor de smoke — de resolve-stap
+ * hierboven vereist een echte Stripe-retrieve en hoort bij de deploy-smoke).
+ */
+export async function activateMandate(
+  organizationId: string,
+  paymentMethodId: string,
+): Promise<void> {
   await prisma.organization.update({
     where: { id: organizationId },
     data: { sepaMandateStatus: 'active', sepaPaymentMethodId: paymentMethodId },
   });
+}
+
+/** Resolve het herbruikbare sepa_debit-pm uit een geslaagde mandaat-setup. */
+async function resolveSepaPaymentMethodId(si: Stripe.SetupIntent): Promise<string | null> {
+  const stripe = getStripeClient();
+  const full = await stripe.setupIntents.retrieve(si.id, { expand: ['latest_attempt'] });
+
+  const attempt = full.latest_attempt;
+  if (attempt && typeof attempt !== 'string') {
+    const ideal = attempt.payment_method_details?.ideal;
+    const generated = ideal?.generated_sepa_debit;
+    const generatedId = typeof generated === 'string' ? generated : generated?.id;
+    if (generatedId) return generatedId;
+  }
+
+  const pmId =
+    typeof full.payment_method === 'string' ? full.payment_method : full.payment_method?.id;
+  if (!pmId) return null;
+  const pm = await stripe.paymentMethods.retrieve(pmId);
+  return pm.type === 'sepa_debit' ? pmId : null;
 }
 
 /**

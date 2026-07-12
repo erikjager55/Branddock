@@ -1,6 +1,6 @@
 ---
-id: pricing-credits-fase5-payments-tax
-title: Credit-billing Fase 5 — iDEAL/SEPA payment-methods + Stripe Tax/BTW (VAT-nummer + reverse-charge + OSS + factuur-velden)
+id: pricing-credits-fase5b-tax
+title: Credit-billing Fase 5b — Stripe Tax/BTW (VAT-nummer + VIES + reverse-charge + OSS + factuur-velden)
 fase: launch
 priority: now
 effort: 4-6 dagen
@@ -9,7 +9,7 @@ status: open
 created: 2026-07-07
 related-adr: docs/adr/2026-07-07-pricing-credits-launch.md
 related-spec: tasks/pricing-credits-billing.md
-worktree: branddock-feat-pricing-credits
+worktree: nieuw aan te maken (5a geland via branddock-pricing-fase5)
 ---
 
 # Probleem
@@ -95,3 +95,8 @@ Deze fase is de grootste en dekt twee losse zorgen. Als hij >1 week dreigt, spli
 - **Simplicity**: bij >1 week → splits 5a/5b in eigen task-files (zie sub-noot). 5a eerst (dependency voor Fase 3).
 - **Verificatie-noot**: deze omgeving kan Stripe niet volledig draaien; leun op Stripe-testmode + test-VAT-nummers (VIES-sandbox) op de deploy voor de eind-smoke.
 - Playbook-gevolg (ADR Notes): `docs/playbooks/stripe-go-live.md` uitbreiden met credit-model + iDEAL/SEPA + Stripe Tax/BTW/OSS + de nieuwe `STRIPE_PRICE_*`-set.
+
+
+## Reconciliatie 2026-07-12 — 5a afgesplitst en GELAND
+
+Conform de Simplicity-noot hierboven is deze fase gesplitst. **5a (payment-methods & mandaat) is done** — zie `tasks/done/pricing-credits-fase5a-payments.md` (iDEAL op checkout/top-up, Checkout-mode-'setup' mandaat-flow, mandaat-webhooks, auto-topup-invulpunt volledig live incl. exposure-cap/optimistische grant/reversal, `/api/stripe/setup-mandate` + PaymentMethodsCard-blok). Voor dit 5b-restant gelden alleen nog de **Tax/BTW-acceptatiecriteria** (automatic_tax, VAT+VIES via Stripe tax_id, reverse-charge/OSS, Invoice-BTW-velden + webhook-mapping, InvoiceHistoryCard, playbook). De payment-methods/mandaat-criteria hierboven zijn afgehandeld; de "Bestanden"-lijst versmalt tot customer.ts / webhook-handlers.ts (invoice-mapping) / schema (Invoice + org-VAT) / InvoiceHistoryCard / PaymentMethodsCard (VAT-invoer) / stripe-go-live.md.

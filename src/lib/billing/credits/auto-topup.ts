@@ -32,18 +32,26 @@ export interface AutoTopupResult {
 
 /** Som van optimistisch toegekende, nog niet door Stripe bevestigde credits. */
 async function unsettledOptimisticCredits(organizationId: string): Promise<number> {
+  // De settled-check gebeurt in JS: een SQL `NOT (metadata->settled = true)`
+  // matcht rijen zonder de key níet (JSON-NULL-semantiek) — precies de rijen
+  // die we willen meetellen. Optimistische rijen per org zijn er hooguit een
+  // handvol, dus dit is goedkoop.
+  // 90-dagen-venster: SEPA settelt < ~14 dagen; dit begrenst de scan terwijl
+  // een hangende PI ruim binnen het venster blijft meetellen (review-M2).
   const rows = await prisma.creditTransaction.findMany({
     where: {
       organizationId,
       type: 'TOPUP',
-      AND: [
-        { metadata: { path: ['optimistic'], equals: true } },
-        { NOT: { metadata: { path: ['settled'], equals: true } } },
-      ],
+      metadata: { path: ['optimistic'], equals: true },
+      createdAt: { gte: new Date(Date.now() - 90 * 86_400_000) },
     },
-    select: { amount: true },
+    select: { amount: true, metadata: true },
   });
-  return rows.reduce((sum, r) => sum + Math.max(0, r.amount), 0);
+  return rows.reduce((sum, r) => {
+    const meta = (r.metadata ?? {}) as Record<string, unknown>;
+    if (meta.settled === true) return sum;
+    return sum + Math.max(0, r.amount);
+  }, 0);
 }
 
 /**
@@ -79,6 +87,12 @@ export async function maybeAutoTopup(
 
   // (1) Blootstellingsplafond: nooit meer onbevestigde optimistische credits
   // uit laten staan dan de cap — begrenst het verlies bij falende incasso's.
+  // BEKEND-GEACCEPTEERD (review-W2): twee gelijktijdige tekort-requests kunnen
+  // de check allebei passeren (race) → tijdelijk tot cap+pack outstanding en
+  // een dubbele incasso voor één tekort-moment. Mitigatie-lagen: de
+  // failure-kill-switch (topup.ts) stopt cycli, en het venster is ~1s bij een
+  // toch al zeldzame samenloop. Serialiseren (advisory-lock om check+charge)
+  // kan bij het topup-enable-moment alsnog, zie task-file.
   const outstanding = await unsettledOptimisticCredits(organizationId);
   if (outstanding + pack.credits > org.autoTopupExposureCap) {
     return { topped: false, reason: 'over-cap' };
