@@ -189,8 +189,9 @@ export function stripArtifactHusks(raw: string): string {
 /**
  * Parse artifact-drafts uit de final agent-message. Verwacht een JSON-blok
  * (markdown-fenced of plain) met shape `{ "artifacts": [{ type, title,
- * content, fidelityScore? }] }`. Lenient: invalide items worden geskipt,
- * geen parseable JSON → lege array.
+ * content }] }`. Lenient: invalide items worden geskipt, geen parseable
+ * JSON → lege array. `fidelityScore` is server-owned en wordt uit
+ * model-output genegeerd (zie comment bij de push hieronder).
  */
 export function extractArtifactDrafts(finalMessage: string | null): AgentArtifactDraft[] {
   if (!finalMessage) return [];
@@ -225,11 +226,6 @@ export function extractArtifactDrafts(finalMessage: string | null): AgentArtifac
     if (typeof raw.title !== "string" || raw.title.trim().length === 0) continue;
     if (!raw.content || typeof raw.content !== "object" || Array.isArray(raw.content)) continue;
 
-    const fidelityScore =
-      typeof raw.fidelityScore === "number" && Number.isFinite(raw.fidelityScore)
-        ? Math.min(100, Math.max(0, raw.fidelityScore))
-        : undefined;
-
     // knowledgeResourceId is een server-owned reserved key (write-back van de
     // accept-materialisatie) — strip hem uit model-output, anders kan een
     // hallucinerend/geïnjecteerd model via accept/dismiss een willekeurige
@@ -244,11 +240,15 @@ export function extractArtifactDrafts(finalMessage: string | null): AgentArtifac
     void _reserved;
     void _forged;
 
+    // fidelityScore is sinds het report-scoring-contract óók server-owned:
+    // een model-authored score zou als echte F-VAL-badge renderen zónder
+    // backing ContentReviewLog én de echte scoring blokkeren (de wrapper
+    // filtert op `fidelityScore: null`) — precies de "stille score" die
+    // ADR D5 verbiedt. Server-drafts (run-collector/fval-gate) zetten hem wél.
     drafts.push({
       type: type as AgentArtifactType,
       title: raw.title.trim(),
       content: safeContent,
-      ...(fidelityScore !== undefined ? { fidelityScore } : {}),
     });
   }
   return drafts;

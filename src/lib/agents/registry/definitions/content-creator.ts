@@ -2,7 +2,7 @@
 // matrix: create_deliverable via proposal; orchestrateContentGeneration
 // draait in de confirm-route ná goedkeuring — nooit in een loop-turn).
 
-import { artifactOutputContract } from "../artifact-contract";
+import { reportScoringOutputContract } from "../fval-report-contract";
 import { registerClawToolsForAgent } from "../tool-bridge";
 import { buildAgentSystemPrompt } from "./shared";
 import type { AgentDefinition, AgentPersona } from "../types";
@@ -45,7 +45,9 @@ export const contentCreatorAgent: AgentDefinition = {
     },
   ],
   featureKey: "agent-content-creator",
-  outputContract: artifactOutputContract,
+  // Scoort de inline content-draft (REPORT) met F-VAL ná de run-finalize —
+  // ADR D5: nooit een stille ongescoorde content-output (dogfood r1/r2).
+  outputContract: reportScoringOutputContract,
   maxToolCalls: 8,
 };
 
