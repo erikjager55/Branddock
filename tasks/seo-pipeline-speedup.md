@@ -116,7 +116,14 @@ was pure dependency-graph-verspilling. Verwachte winst: de volledige stap-8-duur
 (8-stappen-tracker intact). Bewuste input-delta: variant B ziet de accumulatedContext
 zonder het stap-8-checklist-JSON (mechanische ruis over variant A). Samen met de
 #388-kick (enqueue→start 2s i.p.v. tot 3 min): verwachte wall-clock ~12 min → ~8 min.
-Validatie-run + step:0/9-uitlezing volgen na deploy — resultaat wordt hier bijgeschreven.
+**Validatie-run (2026-07-13, na deploy #388+#389)**: wall-clock **7,5 min** (was 12,0
+in de ochtend-run; doel 5-7 vrijwel gehaald). Decompositie sluitend: enqueue→start **0s**
+(kick, was 2m53), step:0 setup **0,1s**, stappen 1-7 effectief ~6m0s, concurrent slot
+**85,6s** (staart step:10) waarin stap 8 (52,1s) volledig verscholen zit, step:9
+restant+persist 33,7s (= 85,6−52,1 + ~0,2s persist — de meting klopt op de seconde).
+De run is nu vrijwel pure AI-tijd; outputs gezond (2 varianten 16,7K/17,2K tekens +
+checklist met meta-description). Resterende route naar <7 min: **Fase 4b** (stap 7 =
+74-102s premium, mergen/skippen) — gegate op de F-VAL-A/B.
 
 **Fase 4b blijft open en gegate op een F-VAL-A/B**: checklist in stap 7 mergen (spaart de
 resterende stap-8-call) óf stap 7 conditioneel skippen (~102s premium) — beide raken de
