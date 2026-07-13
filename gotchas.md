@@ -2,6 +2,13 @@
 
 Lessons learned from past mistakes. Read this at the start of every session.
 
+## 2026-07-13: "Neon-push gedaan" bleek niet waar — élke prod-sign-up 500'de dagenlang op een missende kolom
+**What went wrong**: De Fase-4/5a/5b-schema-delta moest handmatig naar Neon (`prisma db push`); dat was gerapporteerd als gedaan en de taak stond op afgevinkt. De taak-#7-deploy-smoke ving vervolgens dat **elke nieuwe sign-up op productie 500'de**: `provisionNewUser → organization.create` faalde op `The column Organization.sepaPaymentMethodId does not exist`. De push was wél gedraaid (shell-history bevestigt) maar vermoedelijk vanuit een checkout met een ouder `schema.prisma` — `db push` meldt dan gewoon "in sync" en niemand merkt iets, want bestaande sessies raken de nieuwe kolommen niet; alleen de org-CREATE (nieuwe registraties) raakt álle kolommen. Onboarding was dus stil kapot vanaf de 5a-deploy tot de smoke.
+**Rule**:
+- Een handmatige prod-schema-push is pas "gedaan" na een **verificatie-write die de nieuwe kolommen raakt** — bv. een test-sign-up (raakt org-create volledig) of een gerichte `SELECT column_name FROM information_schema.columns WHERE table_name='…'`. "Het commando gaf geen fout" bewijst niets over wélk schema er gepusht is.
+- Draai schema-pushes altijd vanuit een verse checkout van actuele `main` (of geef het schema-pad expliciet); worktrees maken het makkelijk om per ongeluk een oude `schema.prisma` te pushen.
+- Elke flow die alleen nieuwe gebruikers raakt (sign-up/provisioning) hoort in de standaard-deploy-smoke — bestaande-sessie-smokes zien deze klasse per definitie niet.
+
 ## 2026-07-12: Stripe-webhook-endpoint zonder api_version-pin leverde 2019-10-17-events terwijl de SDK-code clover-shapes verwacht
 **What went wrong**: Tijdens de billing-testmode-smoke toonde de `stripe listen`-banner "API Version [2019-10-17]" — de account-default. Het **live prod-endpoint** bleek óók zonder `api_version` aangemaakt (`api_version: null` = account-default), dus élk prod-webhook-event zou in de 2019-shape binnenkomen terwijl `webhook-handlers.ts` op SDK 20.x/clover-types leunt (o.a. `invoice.total_taxes` — heet in oude versies `total_tax_amounts`; de hele Fase-5b-BTW-extractie had stil `null`-tax-velden opgeleverd). Niets in tsc/review vangt dit: de types beschrijven wat de SDK belooft, niet wat het endpoint werkelijk stuurt. Gefixt door het endpoint opnieuw aan te maken met expliciete `api_version: '2026-02-25.clover'` (uit `node_modules/stripe/cjs/apiVersion.js`) + het nieuwe signing-secret in Vercel + redeploy.
 **Rule**:
