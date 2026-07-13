@@ -93,19 +93,32 @@ async function runJob(job: AgentJob): Promise<JobRunResult> {
     };
   }
 
-  const claimed = job.type === 'AGENT_TASK' ? await claimAgentTaskJob(job) : await claimJob(job);
-  if (!claimed) {
-    // Claim verloren aan een concurrerende tick, óf de workspace-cap houdt
-    // deze AGENT_TASK tegen — job onaangeraakt, volgende tick opnieuw.
-    return { id: job.id, type: job.type, status: 'SKIPPED', attempts: job.attempts };
+  let claimed: boolean;
+  let freshJob: AgentJob;
+  try {
+    claimed = job.type === 'AGENT_TASK' ? await claimAgentTaskJob(job) : await claimJob(job);
+    if (!claimed) {
+      // Claim verloren aan een concurrerende tick, óf de workspace-cap houdt
+      // deze AGENT_TASK tegen — job onaangeraakt, volgende tick opnieuw.
+      return { id: job.id, type: job.type, status: 'SKIPPED', attempts: job.attempts };
+    }
+    freshJob = await prisma.agentJob.findUniqueOrThrow({ where: { id: job.id } });
+  } catch (err) {
+    // Claim-/refetch-fout (bv. P2028 advisory-lock-timeout, DB-hiccup): één
+    // flaky claim mag niet de hele cron-tick 500'en. Onaangeraakte jobs komen
+    // de volgende tick terug; een wél-geclaimde rij vangt de reaper.
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[agent-job ${job.id}] claim faalde:`, message);
+    return { id: job.id, type: job.type, status: 'SKIPPED', attempts: job.attempts, error: message };
   }
-
-  const freshJob = await prisma.agentJob.findUniqueOrThrow({ where: { id: job.id } });
 
   try {
     const result = await handler(freshJob);
-    await prisma.agentJob.update({
-      where: { id: job.id },
+    // Conditioneel op RUNNING: leeft een handler >900s (hangende tool-execute)
+    // dan heeft de reaper de rij al op RETRY/FAILED gezet en draait er mogelijk
+    // al een nieuwe attempt — die is dan leidend, deze write vervalt.
+    const finalized = await prisma.agentJob.updateMany({
+      where: { id: job.id, status: 'RUNNING' },
       data: {
         status: 'COMPLETED',
         completedAt: new Date(),
@@ -113,19 +126,22 @@ async function runJob(job: AgentJob): Promise<JobRunResult> {
         errorMessage: null,
       },
     });
-
-    const runtimeMs = freshJob.startedAt ? Date.now() - freshJob.startedAt.getTime() : null;
-    void trackEvent({
-      event: 'agent_job_completed',
-      workspaceId: freshJob.workspaceId,
-      properties: {
-        job_id: job.id,
-        job_type: job.type,
-        attempts: freshJob.attempts,
-        runtime_ms: runtimeMs,
-        triggered_by: freshJob.triggeredBy,
-      },
-    });
+    if (finalized.count === 0) {
+      console.warn(`[agent-job ${job.id}] al gereaped tijdens de run — terminale write overgeslagen`);
+    } else {
+      const runtimeMs = freshJob.startedAt ? Date.now() - freshJob.startedAt.getTime() : null;
+      void trackEvent({
+        event: 'agent_job_completed',
+        workspaceId: freshJob.workspaceId,
+        properties: {
+          job_id: job.id,
+          job_type: job.type,
+          attempts: freshJob.attempts,
+          runtime_ms: runtimeMs,
+          triggered_by: freshJob.triggeredBy,
+        },
+      });
+    }
 
     return {
       id: job.id,
@@ -139,8 +155,9 @@ async function runJob(job: AgentJob): Promise<JobRunResult> {
     const willRetry = freshJob.attempts < freshJob.maxAttempts;
     const nextAttemptAt = willRetry ? new Date(Date.now() + computeBackoffMs(freshJob.attempts)) : null;
 
-    await prisma.agentJob.update({
-      where: { id: job.id },
+    // Zelfde reaper-guard als het success-pad.
+    await prisma.agentJob.updateMany({
+      where: { id: job.id, status: 'RUNNING' },
       data: {
         status: willRetry ? 'RETRY' : 'FAILED',
         errorMessage: message,
@@ -201,11 +218,23 @@ export async function runPendingJobs(
 
   // Gescheiden fetches (review-W 2026-07-13): een AGENT_TASK-backlog mag de
   // rest-batch niet uit de `take` verdringen, en andersom.
-  const agentTasks = await prisma.agentJob.findMany({
+  const agentTaskCandidates = await prisma.agentJob.findMany({
     where: { ...dueFilter, type: 'AGENT_TASK' },
     orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],
-    take: 10,
+    take: 50,
   });
+  // Eén kandidaat per workspace (volgorde-behoudend): cap-geblokkeerde jobs
+  // houden hun oude createdAt en zouden anders het hele fetch-venster bezet
+  // houden — een workspace met een grote due-backlog mag andere workspaces
+  // niet verdringen (review-W ronde 3).
+  const seenWorkspaces = new Set<string>();
+  const agentTasks: AgentJob[] = [];
+  for (const job of agentTaskCandidates) {
+    const key = job.workspaceId ?? 'global';
+    if (seenWorkspaces.has(key)) continue;
+    seenWorkspaces.add(key);
+    agentTasks.push(job);
+  }
   const rest = await prisma.agentJob.findMany({
     where: { ...dueFilter, type: { not: 'AGENT_TASK' } },
     orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],

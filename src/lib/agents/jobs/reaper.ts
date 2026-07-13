@@ -58,7 +58,14 @@ export async function reapStaleAgentRuns(): Promise<number> {
   const cutoff = new Date(Date.now() - STALE_AFTER_SECONDS * 1000);
   const stale = await prisma.agentRun.findMany({
     where: { status: 'RUNNING', createdAt: { lt: cutoff } },
-    select: { id: true, workspaceId: true, agentId: true, userId: true, triggerType: true },
+    select: {
+      id: true,
+      workspaceId: true,
+      agentId: true,
+      userId: true,
+      triggerType: true,
+      createdAt: true,
+    },
   });
   if (stale.length === 0) return 0;
 
@@ -79,9 +86,13 @@ export async function reapStaleAgentRuns(): Promise<number> {
 
   // Een gereapte run zou anders stil sneuvelen — de in-process notify-hook
   // draait immers nooit. Zeldzaam pad (platform-kill); een mogelijk dubbele
-  // melding bij een latere job-retry is beter dan stilte.
+  // melding bij een latere job-retry is beter dan stilte. Alleen recente
+  // runs (≤24h): historische wedges van vóór deze reaper mogen bij de
+  // eerste prod-tick geen notificatie-burst geven (review-W ronde 3).
+  const notifyCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const { notifyAgentRunFinished } = await import('@/lib/agents/notify-run-finished');
   for (const run of stale) {
+    if (run.createdAt < notifyCutoff) continue;
     await notifyAgentRunFinished({
       workspaceId: run.workspaceId,
       runId: run.id,
