@@ -79,7 +79,7 @@ uit `SeoGenerationJob.state.timings` (prod-DB), wall-clock uit `startedAt→comp
 | 5 | 100,4s | 86,2-118,3 | snel |
 | 6 first draft | 109,7s | 93,1-123,4 | premium |
 | 7 editorial | 102,1s | 82,4-116,4 | premium |
-| 8 publication prep | 73,3s | **42,4-130,0** | premium |
+| 8 publication prep | 73,3s | **42,4-130,0** | snel (checklist-only, correctie 4a: stond hier onterecht als premium) |
 
 **Totalen**: wall-clock gem. **10,9 min** (pilot; verse run 12,0 min) vs effectieve
 AI-tijd **~7,5-8,5 min** → **2,4-4,5 min niet-AI-overhead** per run (cron-pickup,
@@ -106,3 +106,18 @@ allemaal COMPLETED via de minuut-cron, cross-instance). Kanttekeningen: de
 status-GET-routes van brandstyle/brandvoice gaven 404 tegen het smoke-account (jobs
 zelf COMPLETED — routegedrag checken bij de eerstvolgende UI-run); DAM auto-tag en
 alignment-scan niet gesmoked (vereisen media-upload resp. gevuld merk-DNA).
+
+## Fase 4a uitgevoerd (2026-07-13) — stap 8 ∥ staart
+
+Taak `seo-fase4a-tail-parallel`: stap 8 (checklist-only, snel model) draait nu concurrent
+met de variant-B/GEO-staart — beide hingen alleen aan de stap-7-output, de oude volgorde
+was pure dependency-graph-verspilling. Verwachte winst: de volledige stap-8-duur
+(42-130s) verdwijnt achter de staart. Events/checkpoint/resume-semantiek ongewijzigd
+(8-stappen-tracker intact). Bewuste input-delta: variant B ziet de accumulatedContext
+zonder het stap-8-checklist-JSON (mechanische ruis over variant A). Samen met de
+#388-kick (enqueue→start 2s i.p.v. tot 3 min): verwachte wall-clock ~12 min → ~8 min.
+Validatie-run + step:0/9-uitlezing volgen na deploy — resultaat wordt hier bijgeschreven.
+
+**Fase 4b blijft open en gegate op een F-VAL-A/B**: checklist in stap 7 mergen (spaart de
+resterende stap-8-call) óf stap 7 conditioneel skippen (~102s premium) — beide raken de
+kwaliteit-kritische keten.

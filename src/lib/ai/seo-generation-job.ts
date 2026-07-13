@@ -44,14 +44,16 @@ export async function runSeoGenerationJob(jobId: string): Promise<void> {
   // Overhead-instrumentatie (job-queue-latency, Fase 3b uit de #387-meting):
   // de stap-timings dekken alleen de 8 wave-stappen; dit meet de rest van de
   // invocation. step:0 = handler-start → eerste stap-event (imports +
-  // context-opbouw). step:9 = laatste checkpoint → COMPLETED — LET OP
-  // (review-W3): dat is níet alleen persist + charge, de generator draait
-  // dáár ook nog variant-B + GEO-polish (1-3 AI-calls); step:9 kwantificeert
-  // dus vooral die verborgen AI-staart. Bij een continuation-run meet step:0
-  // de resume-setup van de laatste invocation (de budget-return hieronder
-  // slaat het schrijfblok over — single-invocation is het normale pad).
+  // context-opbouw). step:9 = laatste checkpoint → COMPLETED — sinds Fase 4a
+  // (stap 8 ∥ staart) is het laatste checkpoint het stap-8-einde en meet
+  // step:9 dus het staart-RESTANT ná stap 8 + persist + charge; de échte
+  // staart-duur komt als step:10 uit het complete-event (tailMs). Bij een
+  // continuation-run meet step:0 de resume-setup van de laatste invocation
+  // (de budget-return hieronder slaat het schrijfblok over —
+  // single-invocation is het normale pad).
   let firstStepAt: number | null = null;
   let lastCheckpointAt: number | null = null;
+  let tailMs: number | null = null;
 
   try {
     for await (const event of runSeoPipeline(
@@ -100,8 +102,11 @@ export async function runSeoGenerationJob(jobId: string): Promise<void> {
           data: { status: 'FAILED', stepLabel: 'Failed', errors: { push: message } },
         });
         return; // domein-fout: geen throw (dure pipeline niet nodeloos retry-en)
+      } else if (event.event === 'complete') {
+        const d = event.data as { tailMs?: number };
+        if (typeof d.tailMs === 'number') tailMs = d.tailMs;
       }
-      // 'text_complete' + 'complete': de generator persist de DeliverableComponents.
+      // 'text_complete': de generator persist de DeliverableComponents.
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
@@ -134,6 +139,7 @@ export async function runSeoGenerationJob(jobId: string): Promise<void> {
   const extraTimings: { step: number; ms: number }[] = [];
   if (firstStepAt !== null) extraTimings.push({ step: 0, ms: firstStepAt - startedAt });
   if (lastCheckpointAt !== null) extraTimings.push({ step: 9, ms: Date.now() - lastCheckpointAt });
+  if (tailMs !== null) extraTimings.push({ step: 10, ms: tailMs });
   if (extraTimings.length > 0) {
     const fresh = await prisma.seoGenerationJob.findUnique({
       where: { id: jobId },
