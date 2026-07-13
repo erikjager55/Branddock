@@ -57,6 +57,10 @@ export interface RunAgentInput {
   triggerSource?: string;
   /** Stempelt AgentRun.scheduleId (herkomst-relatie; SetNull bij delete). */
   scheduleId?: string;
+  /** Extra plafond bovenop def.timeoutMs. Het cron-pad geeft hiermee zijn
+   * invocation-rest-budget mee: reap/enqueue-overhead + prompt-build (60s)
+   * + loop moeten samen onder de 800s-platform-kill blijven. */
+  maxTimeoutMs?: number;
   /** false → onderdrukt de FAILED-notificatie (Fase-2-notify-hook): de
    * AGENT_TASK-handler zet dit alleen op de laatste queue-attempt, zodat
    * een retry-loop één fout-notificatie per job oplevert. Default true. */
@@ -100,6 +104,22 @@ async function withDeadline<T>(promise: Promise<T>, ms: number, message: string)
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Loop-default uit agent-loop.ts (DEFAULT_TIMEOUT_MS) — nodig om de
+ * caller-cap als écht plafond te laten werken: zonder deze spiegel zou een
+ * cap van 680s de effectieve timeout van default-agents (300s) juist
+ * verhógen (review-W 2026-07-13). */
+const DEFAULT_LOOP_TIMEOUT_MS = 5 * 60 * 1000;
+
+/** Per-agent timeout onder de platform-clamp én de optionele caller-cap. */
+function resolveTimeoutMs(
+  defTimeoutMs: number | undefined,
+  maxTimeoutMs: number | undefined,
+): number | undefined {
+  const base = defTimeoutMs !== undefined ? Math.min(defTimeoutMs, MAX_RUN_TIMEOUT_MS) : undefined;
+  if (maxTimeoutMs === undefined) return base;
+  return Math.min(base ?? DEFAULT_LOOP_TIMEOUT_MS, maxTimeoutMs);
 }
 
 function resolveUserMessage(
@@ -207,8 +227,7 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
           userId,
         },
         model: resolved.model,
-        timeoutMs:
-          def.timeoutMs !== undefined ? Math.min(def.timeoutMs, MAX_RUN_TIMEOUT_MS) : undefined,
+        timeoutMs: resolveTimeoutMs(def.timeoutMs, inputArgs.maxTimeoutMs),
         maxToolCalls: def.maxToolCalls,
         maxTokens: def.maxTokens,
       },
@@ -268,8 +287,11 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
     // Run-notificatie (Fase 2, slice 3). Het contract kan hier óók FAILED
     // persisten — die valt onder dezelfde notifyOnFailure-gate als de catch
     // (AGENT_TASK-retries → één fout-notificatie per job, niet per attempt).
+    // Awaiten, geen void: op het cron-pad kan de invocation direct na de
+    // response eindigen en zou een fire-and-forget-notify wegvallen; de
+    // helper is intern fail-soft (throwt nooit).
     if (response.status !== "FAILED" || inputArgs.notifyOnFailure !== false) {
-      void notifyAgentRunFinished({
+      await notifyAgentRunFinished({
         workspaceId,
         runId,
         agentId: def.id,
@@ -277,6 +299,7 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
         error: response.error,
         artifactCount: response.artifactIds.length,
         userId,
+        triggerType,
       });
     }
 
@@ -338,7 +361,7 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
     });
 
     if (inputArgs.notifyOnFailure !== false) {
-      void notifyAgentRunFinished({
+      await notifyAgentRunFinished({
         workspaceId,
         runId,
         agentId: def.id,
@@ -346,6 +369,7 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
         error: message,
         artifactCount: 0,
         userId,
+        triggerType,
       });
     }
 

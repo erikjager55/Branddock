@@ -28,7 +28,8 @@ function fail(msg: string): never {
   process.exit(1);
 }
 
-/** notify is fire-and-forget — poll kort tot de rij er is. */
+/** De notify wordt door run-agent ge-await, maar poll defensief — de smoke
+ * mag niet flaken op een toekomstige her-ordening van de notify-call. */
 async function countNotifications(type: string, runId: string): Promise<number> {
   for (let i = 0; i < 10; i++) {
     const count = await prisma.notification.count({

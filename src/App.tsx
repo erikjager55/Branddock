@@ -162,6 +162,19 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Notificatie-e-mails linken naar /?section=agents-inbox&run=<id> (de SPA
+  // is niet URL-adresseerbaar — zelfde patroon als de checkout-redirect):
+  // navigeer naar de inbox, focus de run, en schoon de query.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('section') !== 'agents-inbox') return;
+    const runId = params.get('run');
+    if (runId) useAgentsStore.getState().setInboxFocusRunId(runId);
+    setActiveSectionRaw('agents-inbox');
+    window.history.replaceState({}, '', window.location.pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Consume pending navigation requests from the Brand Assistant (e.g. the
   // "View →" action on a create-persona toast). Sets the relevant detail store
   // selectedId, switches activeSection, then clears the intent.

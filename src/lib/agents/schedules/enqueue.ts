@@ -16,8 +16,11 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { dispatchJob } from '@/lib/agents/jobs/dispatch';
-import { getWorkspaceUsers } from '@/lib/workspace/workspace-users';
+import { canActInWorkspace } from '@/lib/workspace/workspace-users';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 import { computeNextRunAt, type CadenceFields } from './cadence';
+import { isDevCadenceAllowed } from './schedule-api';
 
 /** Cap per tick — ruim boven realistisch pilot-gebruik, begrensd tegen een backlog-burst. */
 const MAX_DUE_PER_TICK = 25;
@@ -44,16 +47,34 @@ export async function enqueueDueSchedules(now: Date = new Date()): Promise<Enque
 
   for (const schedule of due) {
     try {
-      // Acting identity moet nog lid zijn: een vertrokken creator zou runs
-      // (en confirm-verantwoordelijkheid) op een spook-user zetten. Fail-soft
-      // disable — de UI toont het schedule als uitgeschakeld.
-      const members = await getWorkspaceUsers(schedule.workspaceId);
-      if (!members.some((u) => u.id === schedule.createdByUserId)) {
+      // Cadence-floor runtime-handhaving: een (via dev of DB) achtergebleven
+      // EVERY_MINUTE-rij mag in prod niet elke minuut AI-runs vuren — de
+      // create/PATCH-gate alleen is niet genoeg (review-W 2026-07-13).
+      if (schedule.cadence === 'EVERY_MINUTE' && !isDevCadenceAllowed()) {
         await prisma.agentSchedule.update({
           where: { id: schedule.id },
           data: { enabled: false },
         });
-        console.warn('[agent-schedules] creator niet langer workspace-lid — schedule gedisabled', {
+        invalidateCache(cacheKeys.prefixes.agents(schedule.workspaceId));
+        console.warn('[agent-schedules] EVERY_MINUTE niet toegestaan in prod — schedule gedisabled', {
+          scheduleId: schedule.id,
+          workspaceId: schedule.workspaceId,
+        });
+        disabled++;
+        continue;
+      }
+
+      // Acting identity moet nog een actief lid met schrijfrol zijn: een
+      // vertrokken of naar viewer gedowngradede creator zou runs (en
+      // confirm-verantwoordelijkheid) op een spook-identity zetten.
+      // Fail-soft disable — de UI toont het schedule als uitgeschakeld.
+      if (!(await canActInWorkspace(schedule.workspaceId, schedule.createdByUserId))) {
+        await prisma.agentSchedule.update({
+          where: { id: schedule.id },
+          data: { enabled: false },
+        });
+        invalidateCache(cacheKeys.prefixes.agents(schedule.workspaceId));
+        console.warn('[agent-schedules] creator geen actief lid met schrijfrol meer — schedule gedisabled', {
           scheduleId: schedule.id,
           workspaceId: schedule.workspaceId,
         });
@@ -97,6 +118,9 @@ export async function enqueueDueSchedules(now: Date = new Date()): Promise<Enque
           lastRunAt: now,
         },
       });
+      // Mutatie → verplichte invalidatie: de schedule-lijst-cache toont
+      // anders tot TTL een verouderde nextRunAt (CLAUDE.md #10).
+      invalidateCache(cacheKeys.prefixes.agents(schedule.workspaceId));
     } catch (err) {
       console.error('[agent-schedules] enqueue faalde voor schedule', {
         scheduleId: schedule.id,

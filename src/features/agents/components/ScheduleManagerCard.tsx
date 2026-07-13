@@ -27,8 +27,10 @@ const CADENCES: ScheduleCadenceValue[] =
     ? ['DAILY', 'WEEKLY', 'MONTHLY']
     : ['DAILY', 'WEEKLY', 'MONTHLY', 'EVERY_MINUTE'];
 
+// focus:ring-primary/20 i.p.v. /40: alleen /20-/30-/50 staan in de
+// gecompileerde index.css (Tailwind-4-purge-gotcha).
 const inputClass =
-  'w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/40';
+  'w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20';
 
 /**
  * Schedule-beheer op de agent-detail-pagina (agents-scheduling, slice 2):
@@ -339,7 +341,8 @@ function ScheduleCreateForm({
         <span className="text-xs font-medium text-gray-600">{t('detail.schedules.form.message')}</span>
         <textarea
           data-testid="schedule-message-input"
-          className={`mt-1 ${inputClass} min-h-[72px]`}
+          className={`mt-1 ${inputClass}`}
+          style={{ minHeight: 72 }}
           placeholder={t('detail.schedules.form.messagePlaceholder')}
           value={message}
           onChange={(e) => setMessage(e.target.value)}

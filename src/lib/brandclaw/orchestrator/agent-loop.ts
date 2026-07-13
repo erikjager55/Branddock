@@ -326,7 +326,10 @@ async function runLoopCore(input: LoopCoreInput): Promise<LoopOutcome> {
         abortReason ??= "timeout";
         break;
       }
-      // Anthropic API error → abort loop, persist truncated met partial trace
+      // Anthropic API error → abort loop, persist truncated met partial trace.
+      // Bewust géén turn-level retry voor mid-stream-fouten (SDK-retries
+      // gelden alleen tot de eerste byte): een herhaalde lange turn verdubbelt
+      // kosten en de queue-retry (AGENT_TASK maxAttempts) dekt het cron-pad al.
       console.error("[brandclaw agent-loop] Anthropic error:", err instanceof Error ? err.message : err);
       truncated = true;
       abortReason = "api_error";

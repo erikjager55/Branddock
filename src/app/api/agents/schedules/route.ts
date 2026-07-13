@@ -24,6 +24,10 @@ import {
 import { setCache, cachedJson, invalidateCache } from "@/lib/api/cache";
 import { cacheKeys, CACHE_TTL } from "@/lib/api/cache-keys";
 
+/** Elke run kost echt AI-budget en niet-billable agents chargen geen credits —
+ * zonder plafond is schedule-spam onbegrensde spend (review-W 2026-07-13). */
+const MAX_SCHEDULES_PER_WORKSPACE = 20;
+
 export async function GET(request: NextRequest) {
   try {
     const workspaceId = await resolveWorkspaceId();
@@ -85,6 +89,14 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid request body", details: parsed.error.flatten() },
+        { status: 400 },
+      );
+    }
+
+    const scheduleCount = await prisma.agentSchedule.count({ where: { workspaceId } });
+    if (scheduleCount >= MAX_SCHEDULES_PER_WORKSPACE) {
+      return NextResponse.json(
+        { error: `Schedule limit reached (${MAX_SCHEDULES_PER_WORKSPACE} per workspace) — delete an existing schedule first.` },
         { status: 400 },
       );
     }

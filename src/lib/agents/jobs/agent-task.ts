@@ -21,6 +21,11 @@ import {
 /** Zelfde cap als POST /api/agents/run: payload.input landt verbatim op AgentRun.input én in de prompt. */
 const MAX_INPUT_BYTES = 32_768;
 
+/** Loop-plafond op het cron-pad: 680s loop + 60s prompt-build + reap/enqueue-
+ * overhead blijft onder de 800s-invocation-kill (anders wedge → reaper →
+ * retry die op hetzelfde patroon sneuvelt). HTTP-runs houden MAX_RUN_TIMEOUT_MS. */
+const SCHEDULED_MAX_TIMEOUT_MS = 680_000;
+
 export const agentTaskPayloadSchema = z.object({
   agentId: z.string().min(1),
   useCaseId: z.string().min(1).optional(),
@@ -58,11 +63,26 @@ export async function runAgentTaskJob(job: AgentJob): Promise<Record<string, unk
     return { skipped: 'workspace-locked' };
   }
 
+  // Acting identity moet een actief lid met schrijfrol zijn: de payload is
+  // untrusted (webhook-pad kan willekeurige userIds meesturen) en een
+  // membership/rol kan tussen enqueue en run vervallen. Terminaal skippen —
+  // een retry verandert hier niets aan (review-W 2026-07-13).
+  const { canActInWorkspace } = await import('@/lib/workspace/workspace-users');
+  if (!(await canActInWorkspace(job.workspaceId, payload.userId))) {
+    console.warn('[agent-task] acting user is geen actief lid met schrijfrol — run geskipt', {
+      jobId: job.id,
+      workspaceId: job.workspaceId,
+    });
+    return { skipped: 'acting-user-not-authorized' };
+  }
+
   // Schedule kan tussen enqueue en run verwijderd/disabled zijn — geen
   // orphan-runs (tweede linie naast de job-cancel in de DELETE-route).
+  // Workspace-gescoped: een geforgede webhook-payload mag geen scheduleId
+  // uit een andere workspace op de run stempelen (review-W 2026-07-13).
   if (payload.scheduleId) {
-    const schedule = await prisma.agentSchedule.findUnique({
-      where: { id: payload.scheduleId },
+    const schedule = await prisma.agentSchedule.findFirst({
+      where: { id: payload.scheduleId, workspaceId: job.workspaceId },
       select: { enabled: true },
     });
     if (!schedule?.enabled) {
@@ -89,6 +109,7 @@ export async function runAgentTaskJob(job: AgentJob): Promise<Record<string, unk
     triggerSource: payload.scheduleId ? `schedule:${payload.scheduleId}` : `job:${job.id}`,
     scheduleId: payload.scheduleId,
     notifyOnFailure: isFinalAttempt,
+    maxTimeoutMs: SCHEDULED_MAX_TIMEOUT_MS,
   });
 
   if (res.status === 'FAILED') {

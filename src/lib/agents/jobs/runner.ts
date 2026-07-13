@@ -10,6 +10,7 @@
 // by the job's maxAttempts.
 // =============================================================
 
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getHandler } from './handlers';
 import { trackEvent } from '@/lib/analytics/posthog';
@@ -190,25 +191,35 @@ export async function runPendingJobs(
 ): Promise<RunPendingJobsResult> {
   const invocationStartedAt = Date.now();
   const now = new Date();
+  const dueFilter: Prisma.AgentJobWhereInput = {
+    status: { in: ['PENDING', 'RETRY'] },
+    AND: [
+      { OR: [{ scheduledAt: null }, { scheduledAt: { lte: now } }] },
+      { OR: [{ nextAttemptAt: null }, { nextAttemptAt: { lte: now } }] },
+    ],
+  };
 
-  const jobs = await prisma.agentJob.findMany({
-    where: {
-      status: { in: ['PENDING', 'RETRY'] },
-      AND: [
-        { OR: [{ scheduledAt: null }, { scheduledAt: { lte: now } }] },
-        { OR: [{ nextAttemptAt: null }, { nextAttemptAt: { lte: now } }] },
-      ],
-    },
+  // Gescheiden fetches (review-W 2026-07-13): een AGENT_TASK-backlog mag de
+  // rest-batch niet uit de `take` verdringen, en andersom.
+  const agentTasks = await prisma.agentJob.findMany({
+    where: { ...dueFilter, type: 'AGENT_TASK' },
+    orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],
+    take: 10,
+  });
+  const rest = await prisma.agentJob.findMany({
+    where: { ...dueFilter, type: { not: 'AGENT_TASK' } },
     orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],
     take: limit,
   });
 
-  const agentTasks = jobs.filter((j) => j.type === 'AGENT_TASK');
-  const rest = jobs.filter((j) => j.type !== 'AGENT_TASK');
-
   const results: JobRunResult[] = [];
-  if (agentTasks.length > 0) {
-    results.push(await runJob(agentTasks[0]));
+  // Max 1 gestárte agent-run per invocation, maar itereer door gecapte
+  // (SKIPPED) heen: anders blokkeert workspace A's lopende run elke tick
+  // de due runs van álle andere workspaces (head-of-line-blocking).
+  for (const job of agentTasks) {
+    const result = await runJob(job);
+    results.push(result);
+    if (result.status !== 'SKIPPED') break;
   }
   for (const job of rest) {
     if (Date.now() - invocationStartedAt > budgetMs) break;

@@ -2,11 +2,12 @@
 // Agent-run-notificaties (agents-scheduling, slice 3) — in-app +
 // e-mail bij COMPLETED / FAILED / AWAITING_CONFIRMATION.
 //
-// Patroon: notify-major-events.ts — fire-and-forget, fail-soft
-// (een notificatie-uitval mag een al-geslaagde run nooit breken).
-// Ontvanger = de run-owner (acting identity: sessie-user of
-// schedule-creator); alleen bij een ontbrekende owner valt hij
-// terug op alle workspace-users.
+// Patroon: notify-major-events.ts — fail-soft (throwt nooit; een
+// notificatie-uitval mag een al-geslaagde run nooit breken). De
+// callers AWAITEN deze helper: op het cron-pad kan een invocation
+// direct na de laatste write eindigen en zou fire-and-forget de
+// notificatie droppen. Ontvanger = de run-owner (acting identity);
+// een gezette maar niet-(meer-)lid owner → skip, geen broadcast.
 //
 // NotificationPreference: alléén `emailEnabled` wordt gerespecteerd
 // (ontbrekende rij = default true, conform het schema-default). De
@@ -33,6 +34,9 @@ export interface AgentRunNotificationInput {
   artifactCount: number;
   /** Acting identity van de run — de primaire ontvanger. */
   userId: string | null;
+  /** 'manual' | 'scheduled' | 'event_driven' — e-mail alleen voor scheduled
+   * runs (bij een manual run kijkt de user al mee; in-app krijgt hij wél). */
+  triggerType: string;
 }
 
 const TYPE_BY_STATUS: Record<AgentRunNotificationInput['status'], NotificationType> = {
@@ -62,21 +66,23 @@ export async function notifyAgentRunFinished(input: AgentRunNotificationInput): 
 
     const allUsers = await getWorkspaceUsers(input.workspaceId);
     // Run-owner only — een manual run van user A mag de rest van de
-    // workspace niet spammen. Owner onbekend/weg → hele workspace.
+    // workspace niet spammen. Een gezette maar niet-(meer-)lid owner
+    // betekent skippen, níet broadcasten (review-W 2026-07-13); alleen
+    // een onbekende owner (userId null) valt terug op de hele workspace.
     const recipients = input.userId
       ? allUsers.filter((u) => u.id === input.userId)
       : allUsers;
-    const effective = recipients.length > 0 ? recipients : allUsers;
-    if (effective.length === 0) {
+    if (recipients.length === 0) {
       console.warn('[notifyAgentRunFinished] geen ontvangers — overgeslagen', {
         workspaceId: input.workspaceId,
         runId: input.runId,
+        ownerSet: !!input.userId,
       });
       return;
     }
 
     await prisma.notification.createMany({
-      data: effective.map((u) => ({
+      data: recipients.map((u) => ({
         type: TYPE_BY_STATUS[input.status],
         category: 'SYSTEM' as const,
         title,
@@ -88,10 +94,13 @@ export async function notifyAgentRunFinished(input: AgentRunNotificationInput): 
     });
     invalidateCache(cacheKeys.prefixes.notifications(input.workspaceId));
 
-    // E-mail: per-user gegate op NotificationPreference.emailEnabled
+    // E-mail alleen voor scheduled runs (headless — de user kijkt niet mee).
+    if (input.triggerType !== 'scheduled') return;
+
+    // Per-user gegate op NotificationPreference.emailEnabled
     // (geen rij = default true). trySendTransactional no-opt in dev.
     const prefs = await prisma.notificationPreference.findMany({
-      where: { userId: { in: effective.map((u) => u.id) } },
+      where: { userId: { in: recipients.map((u) => u.id) } },
       select: { userId: true, emailEnabled: true },
     });
     const emailDisabled = new Set(prefs.filter((p) => !p.emailEnabled).map((p) => p.userId));
@@ -99,7 +108,7 @@ export async function notifyAgentRunFinished(input: AgentRunNotificationInput): 
     const inboxUrl = `${base}/?section=agents-inbox&run=${encodeURIComponent(input.runId)}`;
 
     await Promise.all(
-      effective
+      recipients
         .filter((u) => u.email && !emailDisabled.has(u.id))
         .map((u) =>
           trySendTransactional({
