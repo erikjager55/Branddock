@@ -5167,6 +5167,10 @@ enum AgentMemoryType {
 model AgentMemory {
   id String @id @default(cuid())
 
+  /// Code-registry agent id (Fase 2, per-agent memory). NULL = legacy/
+  /// ongescoped (Brandclaw-observations-pad); catalogus-agents scopen strikt.
+  agentId String?
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -5192,6 +5196,7 @@ model AgentMemory {
 
   @@index([workspaceId, memoryType])
   @@index([workspaceId, createdAt])
+  @@index([workspaceId, agentId])
 }
 
 // =============================================================

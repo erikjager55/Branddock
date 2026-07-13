@@ -112,6 +112,23 @@ const ns = {
         cancel: 'Cancel',
       },
     },
+    memory: {
+      title: 'Memory',
+      subtitle:
+        'Preferences and facts this agent remembers between runs. New memories only appear after you approve a remember-proposal.',
+      empty: 'No memories yet — approve a remember-proposal from a run to add one.',
+      delete: 'Forget',
+      loadError: 'Could not load memories',
+      retry: 'Try again',
+      deleteError: 'Could not delete the memory',
+      types: {
+        PREFERENCE: 'Preference',
+        FACT: 'Fact',
+        DECISION: 'Decision',
+        OUTCOME: 'Outcome',
+        OBSERVATION: 'Observation',
+      },
+    },
   },
   inbox: {
     title: 'Results Inbox',

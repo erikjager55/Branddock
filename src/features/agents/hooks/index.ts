@@ -6,12 +6,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchAgentCatalog,
+  fetchAgentMemories,
   fetchAgentRun,
   fetchAgentRuns,
   fetchAgentSchedules,
   createAgentSchedule,
   updateAgentSchedule,
   deleteAgentSchedule,
+  deleteAgentMemory,
   patchArtifact,
   startAgentRun,
   confirmProposal,
@@ -36,6 +38,7 @@ export const agentKeys = {
   run: (runId: string) => [...agentKeys.all, 'run', runId] as const,
   schedules: () => [...agentKeys.all, 'schedules'] as const,
   schedulesList: (agentId?: string) => [...agentKeys.schedules(), agentId ?? 'all'] as const,
+  memories: (agentId: string) => [...agentKeys.all, 'memories', agentId] as const,
 };
 
 /** Registry-catalogus — code-based, dus lang vers (5 min). */
@@ -168,6 +171,28 @@ export function useDeleteAgentSchedule() {
     mutationFn: (scheduleId: string) => deleteAgentSchedule(scheduleId),
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: agentKeys.schedules() });
+    },
+  });
+}
+
+// ─── Memories (agents-scheduling, slice 4) ───────────────────
+
+/** Memory-items van één agent (klein; mutaties invalideren gericht). */
+export function useAgentMemories(agentId: string) {
+  return useQuery({
+    queryKey: agentKeys.memories(agentId),
+    queryFn: () => fetchAgentMemories(agentId),
+    staleTime: 30_000,
+    select: (data) => data.memories,
+  });
+}
+
+export function useDeleteAgentMemory(agentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (memoryId: string) => deleteAgentMemory(memoryId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: agentKeys.memories(agentId) });
     },
   });
 }

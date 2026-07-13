@@ -83,7 +83,11 @@ export function clawToolToAgentTool(clawTool: ClawToolDefinition): BrandclawTool
           errorCode: "NO_USER_CONTEXT",
         };
       }
-      const toolCtx = { workspaceId: ctx.workspaceId, userId };
+      // agentId server-owned uit de run-namespace — memory-tools scopen erop.
+      const bridgedAgentId = ctx.nodeType.startsWith("agent:")
+        ? ctx.nodeType.slice("agent:".length)
+        : undefined;
+      const toolCtx = { workspaceId: ctx.workspaceId, userId, agentId: bridgedAgentId };
 
       if (clawTool.requiresConfirmation) {
         if (!clawTool.buildProposal) {

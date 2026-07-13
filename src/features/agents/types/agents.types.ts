@@ -190,6 +190,27 @@ export interface UpdateScheduleBody {
   timezone?: string;
 }
 
+// ─── Memories (GET /api/agents/memories + DELETE /[memoryId]) ──
+
+export type AgentMemoryTypeValue =
+  | 'OBSERVATION'
+  | 'PREFERENCE'
+  | 'DECISION'
+  | 'FACT'
+  | 'OUTCOME';
+
+export interface AgentMemoryItem {
+  id: string;
+  content: string;
+  memoryType: AgentMemoryTypeValue;
+  source: string | null;
+  createdAt: string;
+}
+
+export interface AgentMemoriesResponse {
+  memories: AgentMemoryItem[];
+}
+
 // ─── LINK artifact payload ───────────────────────────────────
 
 export interface LinkArtifactContent {

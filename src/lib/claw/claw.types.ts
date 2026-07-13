@@ -78,6 +78,9 @@ export interface ClawToolDefinition {
 export interface ToolExecutionContext {
   workspaceId: string;
   userId: string;
+  /** Code-registry agent id — alleen gezet in agent-runs (tool-bridge) en
+   * de agents-confirm-route. Server-owned: nooit uit tool-params afleiden. */
+  agentId?: string;
 }
 
 // ─── Context Selection ───────────────────────────────────────

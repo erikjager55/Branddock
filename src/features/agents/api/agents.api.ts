@@ -5,6 +5,7 @@
 
 import type {
   AgentCatalogResponse,
+  AgentMemoriesResponse,
   AgentRunsResponse,
   AgentRunDetailResponse,
   AgentSchedulesResponse,
@@ -97,6 +98,17 @@ export function updateAgentSchedule(
 
 export function deleteAgentSchedule(scheduleId: string): Promise<{ deleted: boolean }> {
   return json(`/api/agents/schedules/${scheduleId}`, { method: 'DELETE' });
+}
+
+// ─── Memories ─────────────────────────────────────────────────
+
+/** Memory-items van één agent (user-bevestigd via het confirm-pad). */
+export function fetchAgentMemories(agentId: string): Promise<AgentMemoriesResponse> {
+  return json(`/api/agents/memories?agentId=${encodeURIComponent(agentId)}`);
+}
+
+export function deleteAgentMemory(memoryId: string): Promise<{ deleted: boolean }> {
+  return json(`/api/agents/memories/${memoryId}`, { method: 'DELETE' });
 }
 
 /** Run detail including full artifact content. */

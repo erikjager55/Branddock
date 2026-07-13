@@ -112,6 +112,23 @@ const ns = {
         cancel: 'Annuleren',
       },
     },
+    memory: {
+      title: 'Geheugen',
+      subtitle:
+        'Voorkeuren en feiten die deze agent tussen runs onthoudt. Nieuwe herinneringen ontstaan alleen nadat jij een onthoud-voorstel goedkeurt.',
+      empty: 'Nog geen herinneringen — keur een onthoud-voorstel uit een run goed om er een toe te voegen.',
+      delete: 'Vergeet',
+      loadError: 'Kon herinneringen niet laden',
+      retry: 'Opnieuw proberen',
+      deleteError: 'Kon de herinnering niet verwijderen',
+      types: {
+        PREFERENCE: 'Voorkeur',
+        FACT: 'Feit',
+        DECISION: 'Beslissing',
+        OUTCOME: 'Uitkomst',
+        OBSERVATION: 'Observatie',
+      },
+    },
   },
   inbox: {
     title: 'Resultaten-inbox',

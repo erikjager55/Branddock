@@ -17,6 +17,8 @@ export type MemoryType = AgentMemoryType;
 
 export interface StoreMemoryInput {
   workspaceId: string;
+  /** Code-registry agent id — scopes the memory to one catalog agent (Fase 2). */
+  agentId?: string;
   content: string;
   memoryType: MemoryType;
   confidence?: number;         // 0..1, defaults to 1.0
@@ -40,6 +42,8 @@ export interface RecalledMemory {
 
 export interface RecallOptions {
   workspaceId: string;
+  /** Strikte agent-scoping: alleen memories van déze agent (Fase 2). */
+  agentId?: string;
   query: string;
   limit?: number;              // default 8
   memoryType?: MemoryType;     // optional filter
@@ -67,15 +71,16 @@ export async function storeMemory(input: StoreMemoryInput): Promise<string> {
   // every other value is passed as a parameter.
   await prisma.$executeRawUnsafe(
     `INSERT INTO "AgentMemory"
-       (id, "workspaceId", content, "memoryType", embedding,
+       (id, "workspaceId", "agentId", content, "memoryType", embedding,
         confidence, "decayWeight", "accessCount",
         source, metadata, "createdAt", "updatedAt")
      VALUES
-       ($1, $2, $3, $4::"AgentMemoryType", '${vectorLiteral}'::vector,
-        $5, 1.0, 0,
-        $6, $7::jsonb, NOW(), NOW())`,
+       ($1, $2, $3, $4, $5::"AgentMemoryType", '${vectorLiteral}'::vector,
+        $6, 1.0, 0,
+        $7, $8::jsonb, NOW(), NOW())`,
     id,
     input.workspaceId,
+    input.agentId ?? null,
     content,
     input.memoryType,
     confidence,
@@ -105,6 +110,10 @@ export async function recallRelevant(options: RecallOptions): Promise<RecalledMe
 
   const typeFilter = options.memoryType
     ? Prisma.sql`AND "memoryType" = ${options.memoryType}::"AgentMemoryType"`
+    : Prisma.empty;
+  // Strikt: een agent ziet uitsluitend zíjn memories (geen NULL-legacy-rijen).
+  const agentFilter = options.agentId
+    ? Prisma.sql`AND "agentId" = ${options.agentId}`
     : Prisma.empty;
 
   const rows = await prisma.$queryRaw<Array<{
@@ -137,6 +146,7 @@ export async function recallRelevant(options: RecallOptions): Promise<RecalledMe
     WHERE "workspaceId" = ${options.workspaceId}
       AND embedding IS NOT NULL
       ${typeFilter}
+      ${agentFilter}
       AND (1 - (embedding <=> ${Prisma.raw(`'${vectorLiteral}'`)}::vector)) >= ${minSimilarity}
     ORDER BY score DESC
     LIMIT ${limit}
