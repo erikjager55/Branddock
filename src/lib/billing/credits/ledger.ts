@@ -18,7 +18,7 @@ import { InsufficientCreditsError } from './errors';
 
 // De pg-adapter-client levert bij $transaction een tx die niet exact
 // `Prisma.TransactionClient` is; leid het type af uit de client zelf.
-type PrismaTx = Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
+export type PrismaTx = Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 function snapshot(row: {
   organizationId: string;
@@ -58,44 +58,54 @@ export async function getBalance(organizationId: string): Promise<CreditBalanceS
 }
 
 /**
+ * Grant-body binnen een bestaande transactie — voor callers die de grant
+ * atomair met eigen checks moeten uitvoeren (bv. de auto-topup-cap-claim
+ * onder een advisory lock). Zelfde implementatie als grantCredits; de
+ * P2002-idempotentie-vangst zit alleen in de wrapper (in een meegegeven tx
+ * moet een botsing juist de hele buitentransactie terugrollen).
+ */
+export async function grantCreditsTx(tx: PrismaTx, p: GrantParams): Promise<CreditBalanceSnapshot> {
+  if (p.credits <= 0) return getBalanceTx(tx, p.organizationId);
+  if (p.idempotencyKey) {
+    const existing = await tx.creditTransaction.findUnique({ where: { idempotencyKey: p.idempotencyKey } });
+    if (existing) return getBalanceTx(tx, p.organizationId);
+  }
+  const bal = await tx.creditBalance.upsert({
+    where: { organizationId: p.organizationId },
+    create: {
+      organizationId: p.organizationId,
+      balance: p.credits,
+      reserved: 0,
+      lifetimeGranted: p.credits,
+      lifetimeSpent: 0,
+    },
+    update: {
+      balance: { increment: p.credits },
+      lifetimeGranted: { increment: p.credits },
+    },
+  });
+  await tx.creditTransaction.create({
+    data: {
+      organizationId: p.organizationId,
+      amount: p.credits,
+      type: p.type,
+      reason: p.reason,
+      balanceAfter: bal.balance,
+      idempotencyKey: p.idempotencyKey,
+      metadata: (p.metadata as Prisma.InputJsonValue) ?? undefined,
+    },
+  });
+  return snapshot(bal);
+}
+
+/**
  * Ken credits toe (trial/plan/topup/refund). Idempotent via idempotencyKey.
  * Maakt de CreditBalance aan als die nog niet bestaat.
  */
 export async function grantCredits(p: GrantParams): Promise<CreditBalanceSnapshot> {
   if (p.credits <= 0) return getBalance(p.organizationId);
   try {
-    return await prisma.$transaction(async (tx) => {
-      if (p.idempotencyKey) {
-        const existing = await tx.creditTransaction.findUnique({ where: { idempotencyKey: p.idempotencyKey } });
-        if (existing) return getBalanceTx(tx, p.organizationId);
-      }
-      const bal = await tx.creditBalance.upsert({
-        where: { organizationId: p.organizationId },
-        create: {
-          organizationId: p.organizationId,
-          balance: p.credits,
-          reserved: 0,
-          lifetimeGranted: p.credits,
-          lifetimeSpent: 0,
-        },
-        update: {
-          balance: { increment: p.credits },
-          lifetimeGranted: { increment: p.credits },
-        },
-      });
-      await tx.creditTransaction.create({
-        data: {
-          organizationId: p.organizationId,
-          amount: p.credits,
-          type: p.type,
-          reason: p.reason,
-          balanceAfter: bal.balance,
-          idempotencyKey: p.idempotencyKey,
-          metadata: (p.metadata as Prisma.InputJsonValue) ?? undefined,
-        },
-      });
-      return snapshot(bal);
-    });
+    return await prisma.$transaction((tx) => grantCreditsTx(tx, p));
   } catch (e) {
     // Concurrent grant met dezelfde idempotencyKey: de check-then-act (findUnique →
     // create) mist elkaar en de 2e transactie botst op de @unique idempotencyKey
