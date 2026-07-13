@@ -44,7 +44,7 @@ De `AGENT_TASK`-stub is een echte brug geworden: job-queue → registry → `run
 - Task: [tasks/done/agents-scheduling.md](tasks/done/agents-scheduling.md)
 - ADR: [docs/adr/2026-07-05-agents-architectuur.md](adr/2026-07-05-agents-architectuur.md) (D7 autonomie-trap 2; geen nieuwe ADR nodig)
 - Spec: `-`
-- Commit: (wordt na commit ingevuld)
+- Commit: `7b1cb76d..97afb568` (10 commits op branch `feat/agents-scheduling`: 5 slices + 3 review-fix-rondes + finalize)
 
 ### 386. Auto-topup BTW-compliant (invoice-based) + cap-race atomair dicht — laatste gate vóór topup-enable
 
