@@ -1088,7 +1088,15 @@ function AppContent() {
         isOpen={isNotificationPanelOpen}
         onClose={() => closeNotifications()}
         onNavigate={(route: string) => {
-          handleSetActiveSection(route);
+          // Agent-run-notificaties deep-linken naar een specifieke run:
+          // actionUrl 'agents-inbox?run=<id>' → one-shot inbox-focus.
+          if (route.startsWith('agents-inbox?')) {
+            const runId = new URLSearchParams(route.split('?')[1] ?? '').get('run');
+            if (runId) useAgentsStore.getState().setInboxFocusRunId(runId);
+            handleSetActiveSection('agents-inbox');
+          } else {
+            handleSetActiveSection(route);
+          }
           closeNotifications();
         }}
       />

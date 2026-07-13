@@ -27,6 +27,7 @@ import {
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { chargeAfter } from "@/lib/billing/credits/meter-generation";
+import { notifyAgentRunFinished } from "@/lib/agents/notify-run-finished";
 import { clearRunCollector } from "./run-collector";
 import { getAgentDefinition, isTestAgentAllowed } from "./index";
 import type { AgentContextSelection } from "./types";
@@ -264,6 +265,21 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
       /* logged binnen trackEvent */
     });
 
+    // Run-notificatie (Fase 2, slice 3). Het contract kan hier óók FAILED
+    // persisten — die valt onder dezelfde notifyOnFailure-gate als de catch
+    // (AGENT_TASK-retries → één fout-notificatie per job, niet per attempt).
+    if (response.status !== "FAILED" || inputArgs.notifyOnFailure !== false) {
+      void notifyAgentRunFinished({
+        workspaceId,
+        runId,
+        agentId: def.id,
+        status: response.status,
+        error: response.error,
+        artifactCount: response.artifactIds.length,
+        userId,
+      });
+    }
+
     return response;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Agent run failed unexpectedly";
@@ -320,6 +336,18 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
     }).catch(() => {
       /* logged binnen trackEvent */
     });
+
+    if (inputArgs.notifyOnFailure !== false) {
+      void notifyAgentRunFinished({
+        workspaceId,
+        runId,
+        agentId: def.id,
+        status: "FAILED",
+        error: message,
+        artifactCount: 0,
+        userId,
+      });
+    }
 
     return {
       runId,

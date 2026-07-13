@@ -26,6 +26,9 @@ import {
   Swords,
   Clock,
   Coins,
+  Bot,
+  AlertTriangle,
+  Hourglass,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useShellStore } from '../stores/useShellStore';
@@ -78,6 +81,9 @@ const TYPE_ICONS: Record<NotificationType, React.ComponentType<{ className?: str
   COMPETITOR_MAJOR_EVENT: Swords,
   TRIAL_EXPIRING: Clock,
   AUTO_TOPUP: Coins,
+  AGENT_RUN_COMPLETED: Bot,
+  AGENT_RUN_FAILED: AlertTriangle,
+  AGENT_RUN_AWAITING_CONFIRMATION: Hourglass,
 };
 
 const TYPE_COLORS: Record<NotificationType, string> = {
@@ -94,6 +100,9 @@ const TYPE_COLORS: Record<NotificationType, string> = {
   COMPETITOR_MAJOR_EVENT: 'bg-red-100 text-red-600',
   TRIAL_EXPIRING: 'bg-amber-100 text-amber-600',
   AUTO_TOPUP: 'bg-emerald-100 text-emerald-600',
+  AGENT_RUN_COMPLETED: 'bg-emerald-100 text-emerald-600',
+  AGENT_RUN_FAILED: 'bg-red-100 text-red-600',
+  AGENT_RUN_AWAITING_CONFIRMATION: 'bg-amber-100 text-amber-600',
 };
 
 export function ActivityFeed({ isOpen, onClose, onNavigate }: ActivityFeedProps) {
