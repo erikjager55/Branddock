@@ -244,6 +244,11 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
       error: result.persisted.error,
     };
 
+    // Terminale write → verplichte invalidatie (CLAUDE.md #10): op het
+    // queue-pad is er geen route die dit dekt — zonder deze call toont de
+    // inbox na de notificatie-klik tot TTL een stale RUNNING.
+    invalidateCache(cacheKeys.prefixes.agents(workspaceId));
+
     // Credit-afboeking (Fase 2): alleen content-producerende agents (def.billable)
     // boeken output-credits af; analyse/F-VAL/research/exploratie = gratis (ADR §2/§3).
     // Alleen op COMPLETED: een FAILED-run levert niets; een AWAITING_CONFIRMATION-run
@@ -341,6 +346,7 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
     } catch {
       console.warn("[agents run-agent] failed to mark run FAILED", { runId, message });
     }
+    invalidateCache(cacheKeys.prefixes.agents(workspaceId));
 
     void emitAgentRunCompleted({
       runId,

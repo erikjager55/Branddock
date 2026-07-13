@@ -114,11 +114,13 @@ async function runJob(job: AgentJob): Promise<JobRunResult> {
 
   try {
     const result = await handler(freshJob);
-    // Conditioneel op RUNNING: leeft een handler >900s (hangende tool-execute)
-    // dan heeft de reaper de rij al op RETRY/FAILED gezet en draait er mogelijk
-    // al een nieuwe attempt — die is dan leidend, deze write vervalt.
+    // Conditioneel op de éigen claim (status + startedAt): leeft een handler
+    // >900s (hangende tool-execute) dan heeft de reaper de rij al op
+    // RETRY/FAILED gezet en kan er al een nieuwe attempt RUNNING zijn — met
+    // een verse startedAt, dus deze write matcht dan niets en de nieuwe
+    // attempt blijft leidend.
     const finalized = await prisma.agentJob.updateMany({
-      where: { id: job.id, status: 'RUNNING' },
+      where: { id: job.id, status: 'RUNNING', startedAt: freshJob.startedAt },
       data: {
         status: 'COMPLETED',
         completedAt: new Date(),
@@ -155,9 +157,9 @@ async function runJob(job: AgentJob): Promise<JobRunResult> {
     const willRetry = freshJob.attempts < freshJob.maxAttempts;
     const nextAttemptAt = willRetry ? new Date(Date.now() + computeBackoffMs(freshJob.attempts)) : null;
 
-    // Zelfde reaper-guard als het success-pad.
+    // Zelfde eigen-claim-guard als het success-pad.
     await prisma.agentJob.updateMany({
-      where: { id: job.id, status: 'RUNNING' },
+      where: { id: job.id, status: 'RUNNING', startedAt: freshJob.startedAt },
       data: {
         status: willRetry ? 'RETRY' : 'FAILED',
         errorMessage: message,
@@ -218,23 +220,31 @@ export async function runPendingJobs(
 
   // Gescheiden fetches (review-W 2026-07-13): een AGENT_TASK-backlog mag de
   // rest-batch niet uit de `take` verdringen, en andersom.
-  const agentTaskCandidates = await prisma.agentJob.findMany({
-    where: { ...dueFilter, type: 'AGENT_TASK' },
-    orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],
-    take: 50,
-  });
-  // Eén kandidaat per workspace (volgorde-behoudend): cap-geblokkeerde jobs
-  // houden hun oude createdAt en zouden anders het hele fetch-venster bezet
-  // houden — een workspace met een grote due-backlog mag andere workspaces
-  // niet verdringen (review-W ronde 3).
-  const seenWorkspaces = new Set<string>();
-  const agentTasks: AgentJob[] = [];
-  for (const job of agentTaskCandidates) {
-    const key = job.workspaceId ?? 'global';
-    if (seenWorkspaces.has(key)) continue;
-    seenWorkspaces.add(key);
-    agentTasks.push(job);
-  }
+  //
+  // Fairness in SQL (review-W ronde 4): DISTINCT ON pakt per workspace de
+  // hoogste-prioriteit due job, zodat het venster workspaces telt in plaats
+  // van jobs — een grote backlog (of een priority-0-webhook-burst) van één
+  // workspace kan de schedules van andere workspaces niet meer verdringen.
+  const agentTaskIds = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT id FROM (
+      SELECT DISTINCT ON ("workspaceId") id, priority, "createdAt"
+      FROM "AgentJob"
+      WHERE type = 'AGENT_TASK'::"AgentJobType"
+        AND status IN ('PENDING'::"AgentJobStatus", 'RETRY'::"AgentJobStatus")
+        AND ("scheduledAt" IS NULL OR "scheduledAt" <= NOW())
+        AND ("nextAttemptAt" IS NULL OR "nextAttemptAt" <= NOW())
+      ORDER BY "workspaceId", priority ASC, "createdAt" ASC
+    ) per_workspace
+    ORDER BY priority ASC, "createdAt" ASC
+    LIMIT 25
+  `;
+  const agentTasks: AgentJob[] =
+    agentTaskIds.length > 0
+      ? await prisma.agentJob.findMany({
+          where: { id: { in: agentTaskIds.map((row) => row.id) } },
+          orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],
+        })
+      : [];
   const rest = await prisma.agentJob.findMany({
     where: { ...dueFilter, type: { not: 'AGENT_TASK' } },
     orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],
