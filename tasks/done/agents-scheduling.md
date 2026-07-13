@@ -5,9 +5,9 @@ fase: launch
 priority: next
 effort: 2-3 weken
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-07-05
-completed: -
+completed: 2026-07-13
 related-adr: docs/adr/2026-07-05-agents-architectuur.md
 related-spec: tasks/_drafts/idea-agents-feature.md
 worktree: branddock-agents-scheduling
@@ -145,7 +145,37 @@ alles additief:** model `AgentSchedule` (+ Workspace-relatie),
 _AWAITING_CONFIRMATION). Zonder push 500't de schedules-API op prod; de
 cron-tick degradeert (enqueue-stap faalt fail-soft per schedule).
 
-**Restpunten vóór done:** golden e2e (smoke-stap 6, één echte DAILY-schedule
-op prod ná deploy + Neon-push — vervult ook de Phase-C-BB-smoke) · browser-
-smoke schedule-UI/inbox-filter/notificatie-klik (e2e "Agents UI"-suite draait
-bij task-finalize vanuit een schone worktree, zie e2e-gotcha in START_HERE).
+**Restpunten ná merge (deploy-checklist):** golden e2e (smoke-stap 6, één
+echte DAILY-schedule op prod ná deploy + Neon-push — vervult ook de
+Phase-C-BB-smoke) · browser-smoke schedule-UI/inbox-filter/notificatie-klik.
+
+## Finalize 2026-07-13 — review-loop + gates
+
+- **Review**: 5 rondes × 2 verse code-reviewer-subagents. Ronde 1-4 vonden
+  samen 22 WARNINGs (0 CRITICAL) — alle gefixt in `b4bdb2c1`, `03d0bde9`,
+  `bf0e142e`: identity-validatie op het untrusted webhook-pad, EVERY_MINUTE-
+  runtime-gate, ge-awaite owner-only notificaties (e-mail alleen scheduled),
+  werkende e-mail-deep-link, reaper-notify + 24h-bounds, eigen-claim-guard
+  op terminale job-writes, DISTINCT ON-workspace-fairness, 680s-timeout-cap,
+  cache-invalidatie op cron-pad + terminale run-writes, schedule-cap 20,
+  purge-veilige styling. **Ronde 5: 0 CRITICAL / 0 WARNING (beide reviewers
+  ready-to-merge)**; het startedAt-claim-guard-mechaniek is adversarieel
+  geverifieerd tot op DB-kolomprecisie (timestamp(3) = JS-ms, read-back-
+  equality).
+- **Gates**: `npx tsc --noEmit` 0 errors · `npm run lint` 0 errors (966
+  repo-brede pre-existing warnings) · smokes: cadence-DST, brug, schedule
+  (incl. echte content-creator-proposal-run), notify (happy + fail-gate),
+  memory, en de volledige dogfood-sweep door de gestreamde loop.
+- **Open MINORs (bewust gedeferred, geen productie-faalscenario)**: PATCH
+  mist `enforceNotLocked` + cancelt geen pending job bij pause (≤1 tick-
+  venster); one-click delete zonder confirm (schedules + memories);
+  server-notificatie-copy EN-only; e-mail-deep-link zonder workspace-switch
+  voor multi-workspace-users; `enqueued`-teller telt deduped dispatches;
+  TOCTOU op de 20-cap (overshoot max 1); `DEFAULT_LOOP_TIMEOUT_MS`-spiegel;
+  tablist zonder pijltjes-navigatie; telemetrie-ruis op het zombie-error-pad;
+  agent-task-smoke assert de DB-rij niet; `AGENTS_DEV_CADENCE` ontbreekt in
+  de CLAUDE.md-env-lijst.
+- **Post-merge-aandachtspunt**: main heeft inmiddels de job-queue
+  instant-kick (#388, `kickWorker` op dispatch) — na merge draait elke kick
+  ook de reapers + schedule-enqueue uit de cron-route-body. Idempotent en
+  claim-veilig, maar check de extra DB-last bewust bij de deploy-smoke.
