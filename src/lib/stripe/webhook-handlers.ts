@@ -14,7 +14,14 @@ import {
 } from "./subscription-sync";
 import { resolveWorkspaceFromCustomer } from "./customer";
 import { handlePurchaseSuccess, type PurchaseType } from "./one-time";
-import { handleTopupSuccess, handleTopupFailure, handleTopupChargeReversed, handleTopupDisputeCreated } from "./topup";
+import {
+  handleTopupSuccess,
+  handleTopupFailure,
+  handleTopupChargeReversed,
+  handleTopupDisputeCreated,
+  settleTopupInvoice,
+  handleTopupInvoiceFailure,
+} from "./topup";
 import { handleSetupIntentSucceeded, handleMandateUpdated } from "./sepa-mandate";
 import { resolveOrgForWorkspace } from "./usage-tracker";
 import { updatePlanFromStripe } from "./subscription-sync";
@@ -240,6 +247,12 @@ export async function handleInvoicePaid(
     },
   });
 
+  // Invoice-based auto-topup (credit-autotopup-invoice-tax): de betaalde
+  // incasso bevestigt de optimistische claim — settle hem (idempotent).
+  if (invoice.metadata?.type === "credit_topup" && invoice.metadata?.optimistic === "true") {
+    await settleTopupInvoice(invoice);
+  }
+
   // Reset AI usage counter on the subscription for this new period.
   // Alleen voor subscription-invoices: een top-up-factuur (invoice_creation,
   // billing_reason 'manual') mag de periode-teller niet mid-cyclus nullen.
@@ -287,7 +300,10 @@ export async function handleInvoicePaid(
 
 /**
  * Triggered when an invoice payment fails.
- * Marks the subscription as PAST_DUE.
+ * Marks the subscription as PAST_DUE — behalve voor topup-invoices: die
+ * draaien de optimistische claim terug (+ kill-switch) en raken de
+ * subscription-status niet (een mislukte bijkoop is geen wanbetaling op
+ * het abonnement).
  */
 export async function handleInvoicePaymentFailed(
   invoice: Stripe.Invoice
@@ -302,11 +318,16 @@ export async function handleInvoicePaymentFailed(
   const workspaceId = await resolveWorkspaceFromCustomer(customerId);
   if (!workspaceId) return;
 
-  // Update subscription status
-  await prisma.subscription.updateMany({
-    where: { workspaceId },
-    data: { status: "PAST_DUE" },
-  });
+  const isTopupInvoice = invoice.metadata?.type === "credit_topup";
+  if (isTopupInvoice) {
+    await handleTopupInvoiceFailure(invoice);
+  } else {
+    // Update subscription status
+    await prisma.subscription.updateMany({
+      where: { workspaceId },
+      data: { status: "PAST_DUE" },
+    });
+  }
 
   // Create a failed Invoice record
   const invoiceNumber = invoice.number ?? `INV-${invoice.id.slice(-8)}`;

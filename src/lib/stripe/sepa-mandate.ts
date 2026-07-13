@@ -50,6 +50,11 @@ export async function createSepaMandateCheckout(
     // iDEAL-setup levert een herbruikbaar sepa_debit-mandaat (Stripe-native
     // chaining); sepa_debit direct mag ook (IBAN-invoer zonder bank-redirect).
     payment_method_types: ['ideal', 'sepa_debit'],
+    // Adres verplicht: de auto-topup-invoice draait met automatic_tax en
+    // Stripe Tax heeft een klant-locatie nodig — zonder adres faalt elke
+    // latere incasso al op de finalize (credit-autotopup-invoice-tax).
+    billing_address_collection: 'required',
+    customer_update: { address: 'auto', name: 'auto' },
     success_url: urls.success,
     cancel_url: urls.cancel,
     metadata: {

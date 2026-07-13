@@ -81,7 +81,7 @@ Maak per betaalde tier een Product met een **recurring monthly** Price (EUR). No
 - [x] **`SELLER_VAT_NUMBER`** in de Vercel-env (verschijnt op de factuurregel in de app; het officiële Stripe-factuur-PDF haalt het uit de Tax-settings). *(2026-07-12: prod+preview+`.env.local`.)*
 - [x] Checkout verzamelt adres (`billing_address_collection: required`) + VAT-nummer (`tax_id_collection`) — **VIES-validatie doet Stripe**; geldig EU-B2B-VAT buiten NL → reverse-charge (0%, "btw verlegd"), ongeldig VAT → gewoon lokaal tarief (fail-closed).
 - [x] **Test-mode smoke**: (1) NL-klant zonder VAT → 21% op de factuur, `Invoice.taxRate=0.21`; (2) checkout met test-VAT `DE123456789` (Stripe-testmode accepteert format-valide nummers) → 0% + reverse-charge-notitie + beide VAT-nummers op de kaart; (3) EU-B2C (bv. Frans adres, geen VAT) → OSS-tarief van het klantland. *(Resultaten: zie §10.)*
-- **Bekende beperking (herbeoordeel vóór topup-enable, samen met de W2-cap-race)**: de **off-session auto-topup-PI** loopt buiten Stripe Tax om (PaymentIntents kennen geen automatic_tax) — het pack-bedrag wordt zonder BTW-berekening geïncasseerd. Nette oplossing t.z.t.: auto-topup via een `charge_automatically`-invoice met `automatic_tax` i.p.v. een kale PI.
+- ~~**Bekende beperking (herbeoordeel vóór topup-enable, samen met de W2-cap-race)**: de off-session auto-topup-PI loopt buiten Stripe Tax om~~ — **OPGELOST (credit-autotopup-invoice-tax, 2026-07-13)**: auto-topup loopt nu via een `charge_automatically`-invoice met `automatic_tax` (idempotency-anker = invoice-id; settle op `invoice.paid`, reversal + kill-switch op `invoice.payment_failed`; de mandaat-Checkout verzamelt sinds deze taak verplicht een adres voor de tax-locatie). De **W2-cap-race** is tegelijk gedicht: cap-check + optimistische claim gebeuren atomair onder een `pg_advisory_xact_lock` per org. Zie §11 voor de smoke-resultaten.
 
 ## 10. Testmode-deploy-smoke — resultaten (2026-07-12)
 
@@ -94,4 +94,20 @@ Volledige keten gedraaid tegen echte Stripe-testmode: lokale dev-server als webh
 - **Checkout-UI**: toont VAT 21% €8,19 bij NL-adres (visueel geverifieerd). De submit zelf weigert headless (bot-detectie, geen confirm-request) — factuur-keten daarom API-gedreven gesmoked (`subscriptions.create` + `automatic_tax`); dat pad raakt exact dezelfde webhook-handlers.
 - **Kritieke bijvangst**: het prod-webhook-endpoint had geen `api_version`-pin → events kwamen in account-default **2019-10-17**-shape (breekt o.a. `invoice.total_taxes`). Endpoint opnieuw aangemaakt met `api_version: '2026-02-25.clover'` (= SDK-pin), nieuw signing-secret in Vercel, oud endpoint verwijderd. Zie gotcha 2026-07-12. **Regel: endpoints altijd expliciet pinnen op de SDK-versie.**
 
-**Restpunten vóór `NEXT_PUBLIC_TOPUP_ENABLED=true`**: de twee herbeoordeel-punten hierboven (W2-cap-race + auto-topup-PI buiten Stripe Tax); EU-OSS-beslissing is B2C-buiten-NL-gating, geen blokkade.
+**Restpunten vóór `NEXT_PUBLIC_TOPUP_ENABLED=true`**: ~~de twee herbeoordeel-punten hierboven (W2-cap-race + auto-topup-PI buiten Stripe Tax)~~ — beide opgelost in §11 (2026-07-13). **Er staat niets meer tussen de huidige staat en de topup-enable-schakelaar**; EU-OSS-beslissing is B2C-buiten-NL-gating, geen blokkade.
+
+## 11. Invoice-based auto-topup + cap-race-fix — smoke-resultaten (2026-07-13)
+
+Taak `credit-autotopup-invoice-tax`. E2E-testmode-smoke (herdraaibaar: `scripts/dev/credit-autotopup-e2e-smoke.ts`, zelfde harnas als §10):
+
+- **BTW op de incasso**: auto-topup-invoice `automatic_tax` → `€50 net + €10,50 BTW (21%) = €60,50`, `Invoice`-rij met alle tax-velden + seller-VAT via de bestaande `invoice.paid`-persistentie. ✅
+- **Claim → settle**: grant gekeyd `topup:<invoice.id>`, `invoice.paid` → `settled=true`. ✅
+- **Cap-race**: 2 parallelle `maybeAutoTopup` (cap = één pack) → **precies één** claim (`topped`) en één `over-cap`; saldo exact 3 + één pack. ✅
+- **Fail-pad**: fail-IBAN-mandaat → `invoice.payment_failed` → reversal −500 + kill-switch. ✅
+- Unit-smokes: ledger 8/8, autotopup-guards 5/5, sepa-mandaat 19/19, invoice-tax 17/17 (let op: die laatste vereist `SELLER_VAT_NUMBER` in de run-env, zie de script-header).
+
+Ontwerp-notities: claim-vóór-charge (draft-invoice eerst, claim atomair onder advisory lock, dán finalize+pay); synchrone pay-fout wordt alleen teruggedraaid als een geslaagde `voidInvoice` bewijst dat er niets geïncasseerd wordt (een netwerk-throw ná een geslaagde pay laat de claim staan — webhooks maken het af). Een mislukte bijkoop raakt de subscription-status niet (geen PAST_DUE). De dispute/refund-fallback herleidt invoice-charges zonder PI-metadata via `invoicePayments.list` naar de invoice.
+
+Review-ronde (code-reviewer subagent): 1 CRITICAL **empirisch weerlegd** in testmode (invoice-items gaan bij `invoices.del` van een draft aantoonbaar mee weg — geen wees-items die op een latere abonnementsfactuur kunnen opduiken); 5 WARNINGs gefixt: regrant-pad voor "betaling ná reversal" (dashboard-retry op een open invoice → credits alsnog, onder aparte `:regrant`-key, audit intact), tax-locatie-pre-check op de customer (mandaten zonder adres falen goedkoop en gelogd i.p.v. per generatie de invoice-cyclus te draaien — n.b. prod heeft nog géén mandaten, de setup-flow was altijd topup-gated), notificatie toont het bedrag incl. BTW (matcht het bankafschrift), `tax_behavior: 'exclusive'` expliciet op het invoice-item (niet dashboard-afhankelijk), en een `sk_test_`-guard op de e2e-smoke.
+
+**Ops-regels**: (1) een open/failed topup-invoice in het Stripe-dashboard **niet handmatig innen zonder te weten dat het regrant-pad bestaat** — innen mag (klant krijgt alsnog credits via `topup:<id>:regrant`), voiden is het conservatieve alternatief; (2) een openstaande optimistische claim zonder settle (zichtbaar in de ledger: `optimistic` zonder `settled`, invoice draft/void) is de bekende crash-window — handmatig herstellen met een reversal onder `topup-reversal:<invoice.id>`.

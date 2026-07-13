@@ -129,9 +129,9 @@ export async function handleTopupSuccess(pi: Stripe.PaymentIntent): Promise<void
     metadata: { paymentIntentId: pi.id, packId: packId ?? null },
   });
 
-  // Auto-topup (Fase 5a): een optimistische grant bestond al onder dezelfde
-  // idempotencyKey — markeer hem als door Stripe bevestigd zodat hij niet
-  // meer meetelt in het blootstellingsplafond.
+  // LEGACY (PI-gebaseerde auto-topup van vóór credit-autotopup-invoice-tax):
+  // de invoice-flow zet geen metadata op de PI, dus deze branch vuurt alleen
+  // nog voor eventuele oude in-flight PI-topups. Bewust laten staan.
   if (pi.metadata?.optimistic === 'true') {
     await prisma.creditTransaction.updateMany({
       where: { idempotencyKey: `topup:${pi.id}` },
@@ -227,6 +227,118 @@ async function disableAutoTopupAfterFailure(organizationId: string, piId: string
   }
 }
 
+// ─── Invoice-based auto-topup (credit-autotopup-invoice-tax) ─────────────
+// De auto-topup-incasso loopt via een charge_automatically-invoice met
+// automatic_tax (BTW-compliant); het idempotency-anker is het invoice-id:
+// grant-key `topup:<invoice.id>`, reversal-key `topup-reversal:<invoice.id>`.
+// De PI achter zo'n invoice draagt GEEN metadata — de PI-handlers hierboven
+// negeren hem dus; settle/failure lopen via de invoice-events hieronder.
+
+/**
+ * Webhook (invoice.paid, topup-branch): markeer de optimistische claim als
+ * door Stripe bevestigd. De grant vooraf is defensief-idempotent — mocht de
+ * claim-transactie ooit verloren zijn gegaan, dan herstelt dit hem alsnog
+ * (zelfde key, dus nooit dubbel). Eén uitzondering (review-W1): is de claim
+ * al TERUGGEDRAAID (bv. failure-webhook of void-pad) en komt de betaling
+ * daarna alsnog binnen — een dashboard-"retry" op een open invoice — dan is
+ * de idempotente grant een no-op terwijl de klant wél betaald heeft; ken de
+ * credits dan alsnog toe onder een aparte regrant-key en laat de
+ * reversal-audit op de originele rij intact.
+ */
+export async function settleTopupInvoice(invoice: Stripe.Invoice): Promise<void> {
+  if (invoice.metadata?.type !== 'credit_topup') return;
+  if (invoice.metadata?.optimistic !== 'true') return;
+  const organizationId = invoice.metadata?.organizationId;
+  const credits = Number(invoice.metadata?.credits ?? 0);
+  const packId = invoice.metadata?.packId ?? null;
+  if (!organizationId || !Number.isFinite(credits) || credits <= 0) return;
+
+  const existing = await prisma.creditTransaction.findUnique({
+    where: { idempotencyKey: `topup:${invoice.id}` },
+    select: { metadata: true },
+  });
+  const existingMeta = (existing?.metadata ?? {}) as Record<string, unknown>;
+  if (existingMeta.reversed === true) {
+    console.warn('[settleTopupInvoice] betaling binnengekomen ná reversal — regrant', {
+      organizationId,
+      invoiceId: invoice.id,
+    });
+    await grantCredits({
+      organizationId,
+      credits,
+      type: 'TOPUP',
+      reason: `Auto-topup alsnog betaald na eerdere terugboeking (${invoice.id})`,
+      idempotencyKey: `topup:${invoice.id}:regrant`,
+      metadata: { invoiceId: invoice.id, packId, regrant: true, settled: true },
+    });
+    return;
+  }
+
+  await grantCredits({
+    organizationId,
+    credits,
+    type: 'TOPUP',
+    reason: `Auto-topup ${credits} credits (pack ${packId ?? '?'})`,
+    idempotencyKey: `topup:${invoice.id}`,
+    metadata: { invoiceId: invoice.id, packId, optimistic: true },
+  });
+  await prisma.creditTransaction.updateMany({
+    where: { idempotencyKey: `topup:${invoice.id}` },
+    data: {
+      metadata: { invoiceId: invoice.id, packId, credits, optimistic: true, settled: true },
+    },
+  });
+}
+
+/**
+ * Webhook (invoice.payment_failed, topup-branch): draai de optimistische
+ * claim terug en zet de kill-switch — spiegel van handleTopupFailure, maar
+ * gekeyd op het invoice-id. Idempotent over het synchrone reverseClaim-pad
+ * in maybeAutoTopup (zelfde reversal-key).
+ */
+export async function handleTopupInvoiceFailure(invoice: Stripe.Invoice): Promise<void> {
+  if (invoice.metadata?.type !== 'credit_topup') return;
+  if (invoice.metadata?.optimistic !== 'true') return;
+  const organizationId = invoice.metadata?.organizationId;
+  const credits = Number(invoice.metadata?.credits ?? 0);
+  if (!organizationId || !Number.isFinite(credits) || credits <= 0) return;
+
+  // In de invoice-flow gaat de claim altijd vóór de betaling, dus een
+  // ontbrekende grant betekent: claim al teruggedraaid (void-pad) of nooit
+  // gezet — niets terug te draaien, alleen de kill-switch borgen.
+  const granted = await prisma.creditTransaction.findUnique({
+    where: { idempotencyKey: `topup:${invoice.id}` },
+    select: { id: true },
+  });
+  if (!granted) {
+    await disableAutoTopupAfterFailure(organizationId, invoice.id ?? 'onbekend');
+    return;
+  }
+
+  await deductCredits({
+    organizationId,
+    credits,
+    reason: `Auto-topup teruggedraaid — SEPA-incasso mislukt (${invoice.id})`,
+    force: true,
+    idempotencyKey: `topup-reversal:${invoice.id}`,
+  });
+  await prisma.creditTransaction.updateMany({
+    where: { idempotencyKey: `topup:${invoice.id}` },
+    data: {
+      metadata: {
+        invoiceId: invoice.id,
+        packId: invoice.metadata?.packId ?? null,
+        credits,
+        optimistic: true,
+        settled: true,
+        reversed: true,
+      },
+    },
+  });
+
+  await disableAutoTopupAfterFailure(organizationId, invoice.id ?? 'onbekend');
+}
+
 /**
  * Webhook: dispute/chargeback of refund op een credit-top-up-charge (review-W1)
  * — een SEPA-incasso kan wéken na `succeeded` teruggeboekt worden
@@ -244,14 +356,43 @@ export async function handleTopupDisputeCreated(dispute: Stripe.Dispute): Promis
 }
 
 export async function handleTopupChargeReversed(charge: Stripe.Charge): Promise<void> {
-  if (charge.metadata?.type !== 'credit_topup') return;
   const piId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id;
-  const organizationId = charge.metadata?.organizationId;
-  const credits = Number(charge.metadata?.credits ?? 0);
-  if (!piId || !organizationId || !Number.isFinite(credits) || credits <= 0) return;
+  if (!piId) return;
+
+  // Twee smaken: (a) Checkout-topup — de charge erft de PI-metadata en het
+  // anker is het PI-id; (b) invoice-based auto-topup — de invoice-PI draagt
+  // géén metadata, dus herleid de charge via InvoicePayments naar de invoice
+  // en gebruik het invoice-id als anker.
+  // Bewust conservatief: óók een PARTIËLE refund reverseert de volledige
+  // credits (geld deels terug = vertrouwensbreuk; liever te veel terugnemen
+  // dan een half-betaald pack laten staan) — zelfde semantiek als het
+  // Checkout-pad.
+  let organizationId = charge.metadata?.organizationId;
+  let credits = Number(charge.metadata?.credits ?? 0);
+  let packId: string | null = charge.metadata?.packId ?? null;
+  let refId = piId;
+
+  if (charge.metadata?.type !== 'credit_topup') {
+    const stripe = getStripeClient();
+    const payments = await stripe.invoicePayments.list({
+      payment: { type: 'payment_intent', payment_intent: piId },
+      limit: 1,
+    });
+    const invId = payments.data[0]?.invoice;
+    const invoiceId = typeof invId === 'string' ? invId : invId?.id;
+    if (!invoiceId) return;
+    const invoice = await stripe.invoices.retrieve(invoiceId);
+    if (invoice.metadata?.type !== 'credit_topup') return;
+    organizationId = invoice.metadata?.organizationId;
+    credits = Number(invoice.metadata?.credits ?? 0);
+    packId = invoice.metadata?.packId ?? null;
+    refId = invoiceId;
+  }
+
+  if (!organizationId || !Number.isFinite(credits) || credits <= 0) return;
 
   const granted = await prisma.creditTransaction.findUnique({
-    where: { idempotencyKey: `topup:${piId}` },
+    where: { idempotencyKey: `topup:${refId}` },
     select: { id: true },
   });
   if (!granted) return;
@@ -259,16 +400,16 @@ export async function handleTopupChargeReversed(charge: Stripe.Charge): Promise<
   await deductCredits({
     organizationId,
     credits,
-    reason: `Top-up teruggeboekt — dispute/refund op de betaling (${piId})`,
+    reason: `Top-up teruggeboekt — dispute/refund op de betaling (${refId})`,
     force: true,
-    idempotencyKey: `topup-reversal:${piId}`,
+    idempotencyKey: `topup-reversal:${refId}`,
   });
   await prisma.creditTransaction.updateMany({
-    where: { idempotencyKey: `topup:${piId}` },
+    where: { idempotencyKey: `topup:${refId}` },
     data: {
       metadata: {
-        paymentIntentId: piId,
-        packId: charge.metadata?.packId ?? null,
+        chargeRef: refId,
+        packId,
         credits,
         settled: true,
         reversed: true,
@@ -276,5 +417,5 @@ export async function handleTopupChargeReversed(charge: Stripe.Charge): Promise<
       },
     },
   });
-  await disableAutoTopupAfterFailure(organizationId, piId);
+  await disableAutoTopupAfterFailure(organizationId, refId);
 }

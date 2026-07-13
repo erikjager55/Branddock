@@ -30,7 +30,7 @@ export async function notifyAutoTopup(params: {
         type: 'AUTO_TOPUP' as const,
         category: 'SYSTEM' as const,
         title: 'Credits automatisch bijgekocht',
-        description: `Je saldo was op — er zijn automatisch ${params.credits} credits bijgekocht (€${params.priceEur.toFixed(2)}, via SEPA-incasso). Beheer dit onder Settings → Billing.`,
+        description: `Je saldo was op — er zijn automatisch ${params.credits} credits bijgekocht (€${params.priceEur.toFixed(2)} incl. btw, via SEPA-incasso). Beheer dit onder Settings → Billing.`,
         actionUrl: 'settings',
         workspaceId,
         userId: u.id,
