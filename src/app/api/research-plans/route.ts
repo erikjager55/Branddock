@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import type { ResearchPlanWithMeta, ResearchPlanListResponse } from "@/types/research-plan";
+
+// L8 Zod-sweep (audit 2026-06-26): de POST spreadde `configuration` (vrije
+// JSON) + `unlockedMethods`/`unlockedAssets`-arrays ongevalideerd in
+// prisma.create. Cap de arrays en begrens de vrije JSON tot een object.
+const createResearchPlanSchema = z.object({
+  method: z.string().min(1).max(200),
+  entryMode: z.string().max(50).optional(),
+  unlockedMethods: z.array(z.string().max(200)).max(100).optional(),
+  unlockedAssets: z.array(z.string().max(200)).max(100).optional(),
+  // rationale is een Record<string,string> in het contract (types + Prisma
+  // + de GET in dit bestand), niet een losse string.
+  rationale: z.record(z.string().max(200), z.string().max(10000)).optional(),
+  configuration: z.record(z.string(), z.unknown()).optional(),
+});
 
 // GET /api/research-plans
 export async function GET(request: NextRequest) {
@@ -58,12 +73,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { method, entryMode, unlockedMethods, unlockedAssets, rationale, configuration } = body;
-
-    if (!method) {
-      return NextResponse.json({ error: "method is required" }, { status: 400 });
+    const parsed = createResearchPlanSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request body", details: parsed.error.flatten() },
+        { status: 400 },
+      );
     }
+    const { method, entryMode, unlockedMethods, unlockedAssets, rationale, configuration } =
+      parsed.data;
 
     const plan = await prisma.researchPlan.create({
       data: {
@@ -72,7 +90,9 @@ export async function POST(request: NextRequest) {
         unlockedMethods: unlockedMethods ?? [],
         unlockedAssets: unlockedAssets ?? [],
         rationale: rationale ?? undefined,
-        configuration: configuration ?? undefined,
+        configuration: (configuration ?? undefined) as
+          | import("@prisma/client").Prisma.InputJsonValue
+          | undefined,
         workspaceId,
       },
     });

@@ -1,7 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import type { KnowledgeWithMeta, KnowledgeListResponse } from "@/types/knowledge";
+
+// L8 Zod-sweep (audit 2026-06-26): de POST spreadde `rest.*` (rating, tags,
+// difficulty, rel/ai-JSON-velden) ongevalideerd in prisma.create — een
+// string-`rating` of arbitraire JSON landde zo in de DB. Cap + type-guard
+// per veld; onbekende keys worden genegeerd (geen `.strict()` — de client
+// stuurt soms extra UI-velden mee).
+const strArray = z.array(z.string().max(200)).max(100);
+const createKnowledgeSchema = z.object({
+  title: z.string().min(1).max(500),
+  description: z.string().max(5000).optional(),
+  type: z.string().max(100).optional(),
+  author: z.string().max(300).optional(),
+  category: z.string().max(200).optional(),
+  tags: strArray.optional(),
+  difficulty: z.string().max(100).nullish(),
+  language: z.string().max(20).optional(),
+  url: z.string().max(2000).optional(),
+  thumbnail: z.string().max(2000).nullish(),
+  rating: z.number().min(0).max(5).optional(),
+  aiSummary: z.string().max(20000).nullish(),
+  aiKeyTakeaways: strArray.nullish(),
+  relatedTrends: strArray.nullish(),
+  relatedPersonas: strArray.nullish(),
+  relatedAssets: strArray.nullish(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,24 +98,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { title, ...rest } = body;
-
-    if (!title) {
-      return NextResponse.json({ error: "title is required" }, { status: 400 });
+    const parsed = createKnowledgeSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request body", details: parsed.error.flatten() },
+        { status: 400 },
+      );
     }
+    const data = parsed.data;
 
     const resource = await prisma.knowledgeResource.create({
       data: {
-        title, description: rest.description ?? "", type: rest.type ?? "article",
-        author: rest.author ?? "", category: rest.category ?? "", tags: rest.tags ?? [],
-        difficulty: rest.difficulty ?? null, language: rest.language ?? "en",
-        url: rest.url ?? "", thumbnail: rest.thumbnail ?? null, rating: rest.rating ?? 0,
-        aiSummary: rest.aiSummary ?? null,
-        aiKeyTakeaways: rest.aiKeyTakeaways ?? undefined,
-        relatedTrends: rest.relatedTrends ?? undefined,
-        relatedPersonas: rest.relatedPersonas ?? undefined,
-        relatedAssets: rest.relatedAssets ?? undefined,
+        title: data.title, description: data.description ?? "", type: data.type ?? "article",
+        author: data.author ?? "", category: data.category ?? "", tags: data.tags ?? [],
+        difficulty: data.difficulty ?? null, language: data.language ?? "en",
+        url: data.url ?? "", thumbnail: data.thumbnail ?? null, rating: data.rating ?? 0,
+        aiSummary: data.aiSummary ?? null,
+        aiKeyTakeaways: data.aiKeyTakeaways ?? undefined,
+        relatedTrends: data.relatedTrends ?? undefined,
+        relatedPersonas: data.relatedPersonas ?? undefined,
+        relatedAssets: data.relatedAssets ?? undefined,
         workspaceId,
       },
     });

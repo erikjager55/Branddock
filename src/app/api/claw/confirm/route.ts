@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
+import { getServerSession } from '@/lib/auth-server';
 import { requireWorkspaceRole } from '@/lib/auth/require-role';
 import { getToolByName } from '@/lib/claw/tools/registry';
 import type { ClawMessage, ClawToolResult } from '@/lib/claw/claw.types';
@@ -15,15 +15,18 @@ const confirmSchema = z.object({
 
 /** POST /api/claw/confirm — approve or reject a pending mutation */
 export async function POST(req: NextRequest) {
-  const session = await getServerSession();
-  if (!session) return new Response('Unauthorized', { status: 401 });
-
-  const workspaceId = await resolveWorkspaceId();
-  if (!workspaceId) return new Response('No workspace', { status: 400 });
-
   // M3: executing a mutation via the agent is member+ — viewers are read-only.
+  // requireWorkspaceRole levert de (cookie-gebonden) workspaceId + rol in één
+  // call; de losse resolveWorkspaceId() is daarmee redundant (review-MINOR
+  // #348: 2-3 minder DB/session-roundtrips per request).
   const role = await requireWorkspaceRole(['owner', 'admin', 'member']);
   if (role instanceof NextResponse) return role;
+  const workspaceId = role.workspaceId;
+
+  // userId komt uit de sessie (requireWorkspaceRole valideert al dat er een
+  // sessie is, maar geeft de user-id niet terug).
+  const session = await getServerSession();
+  if (!session) return new Response('Unauthorized', { status: 401 });
 
   const body = await req.json();
   const parsed = confirmSchema.safeParse(body);

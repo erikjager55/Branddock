@@ -1,25 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decideHostRoute } from '@/lib/landing-pages/host-router';
+import { buildSecurityHeaders } from '@/lib/security/security-headers';
 
 // ─── Security headers applied to ALL responses ───────────
+// Waarden komen uit de gedeelde bron (security-headers.ts) zodat ze niet
+// kunnen driften met de next.config.ts-laag (audit-MINOR #348).
 const isProduction = process.env.NODE_ENV === 'production';
 
-const SECURITY_HEADERS: Record<string, string> = {
-  'X-Frame-Options': 'DENY',
-  'X-Content-Type-Options': 'nosniff',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'X-XSS-Protection': '0',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-  // L1 (security-audit): non-breaking CSP hardening — blocks clickjacking,
-  // plugin objects, <base> injection and form hijacking WITHOUT a default-src/
-  // script-src (which would break Next.js inline scripts). A full nonce-based
-  // script-src CSP is a larger follow-up.
-  'Content-Security-Policy':
-    "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
-  ...(isProduction
-    ? { 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains' }
-    : {}),
-};
+const SECURITY_HEADERS = buildSecurityHeaders(isProduction);
 
 // ─── Auth route rate limiting (per IP, sliding window) ─────
 // Protects /api/auth/* from brute-force login attempts.
