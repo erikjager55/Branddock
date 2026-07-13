@@ -11,6 +11,7 @@
 // =============================================================
 
 import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
 import type { AgentJob } from './types';
 import {
   contextSelectionSchema,
@@ -57,6 +58,18 @@ export async function runAgentTaskJob(job: AgentJob): Promise<Record<string, unk
     return { skipped: 'workspace-locked' };
   }
 
+  // Schedule kan tussen enqueue en run verwijderd/disabled zijn — geen
+  // orphan-runs (tweede linie naast de job-cancel in de DELETE-route).
+  if (payload.scheduleId) {
+    const schedule = await prisma.agentSchedule.findUnique({
+      where: { id: payload.scheduleId },
+      select: { enabled: true },
+    });
+    if (!schedule?.enabled) {
+      return { skipped: 'schedule-removed-or-disabled' };
+    }
+  }
+
   // attempts is al geïncrementeerd door de claim: op de laatste poging mag
   // de notify-hook de FAILED-notificatie sturen (één per job, niet per attempt).
   const isFinalAttempt = job.attempts >= job.maxAttempts;
@@ -74,6 +87,7 @@ export async function runAgentTaskJob(job: AgentJob): Promise<Record<string, unk
     contextSelection: sanitizeContextSelection(payload.contextSelection),
     triggerType: 'scheduled',
     triggerSource: payload.scheduleId ? `schedule:${payload.scheduleId}` : `job:${job.id}`,
+    scheduleId: payload.scheduleId,
     notifyOnFailure: isFinalAttempt,
   });
 

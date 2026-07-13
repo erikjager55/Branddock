@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runPendingJobs } from '@/lib/agents/jobs/runner';
 import { reapStaleJobs, reapStaleAgentRuns } from '@/lib/agents/jobs/reaper';
+import { enqueueDueSchedules } from '@/lib/agents/schedules/enqueue';
 import { isCronAuthorized } from '@/lib/auth/cron-auth';
 
 /** Max jobs per invocation. Keeps each cron run well under the
@@ -28,11 +29,16 @@ export async function GET(request: NextRequest) {
   const reapedJobs = await reapStaleJobs();
   const reapedRuns = await reapStaleAgentRuns();
 
+  // Due schedules → AGENT_TASK-jobs (vóór de runner, zodat een zojuist
+  // due geworden schedule nog dezelfde tick meedraait).
+  const schedules = await enqueueDueSchedules();
+
   const result = await runPendingJobs({ limit });
 
   return NextResponse.json({
     processed: result.processed,
     reaped: { jobs: reapedJobs, runs: reapedRuns },
+    schedules,
     counts: {
       completed: result.results.filter((r) => r.status === 'COMPLETED').length,
       retry: result.results.filter((r) => r.status === 'RETRY').length,

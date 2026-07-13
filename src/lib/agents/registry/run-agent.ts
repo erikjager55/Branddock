@@ -54,6 +54,8 @@ export interface RunAgentInput {
   /** Override voor AgentRun.triggerSource + de loop-ctx (default: userId).
    * Scheduled runs: `schedule:<scheduleId>` of `job:<jobId>`. */
   triggerSource?: string;
+  /** Stempelt AgentRun.scheduleId (herkomst-relatie; SetNull bij delete). */
+  scheduleId?: string;
   /** false → onderdrukt de FAILED-notificatie (Fase-2-notify-hook): de
    * AGENT_TASK-handler zet dit alleen op de laatste queue-attempt, zodat
    * een retry-loop één fout-notificatie per job oplevert. Default true. */
@@ -160,6 +162,7 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
       input: { ...runInput, useCaseId: useCaseId ?? null } as Prisma.InputJsonValue,
       triggerType,
       triggerSource,
+      scheduleId: inputArgs.scheduleId ?? null,
       userId,
       agentVersion: def.agentVersion,
       promptVersion: def.promptVersion,
