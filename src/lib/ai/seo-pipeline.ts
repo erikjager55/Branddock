@@ -105,8 +105,14 @@ export async function* runSeoPipeline(
   const researchModel = await resolveFeatureModel(workspaceId, 'canvas-seo-research');
 
   // Pipeline state accumulator — hydrateer vanaf een checkpoint (resume) of leeg.
+  // Timings gaan mee (review-W4): anders wist de eerste checkpoint van een
+  // continuation-run de per-stap-metingen van de eerdere invocation(s).
   const state: SeoPipelineState = initialState
-    ? { outputs: [...initialState.outputs], accumulatedContext: initialState.accumulatedContext }
+    ? {
+        outputs: [...initialState.outputs],
+        accumulatedContext: initialState.accumulatedContext,
+        timings: initialState.timings ? [...initialState.timings] : undefined,
+      }
     : { outputs: [], accumulatedContext: '' };
 
   // ── Uitvoering in waves (parallel waar de deps het toelaten) ───────────
