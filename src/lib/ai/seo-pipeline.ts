@@ -1,12 +1,15 @@
 // =============================================================
 // SEO Pipeline Engine
 //
-// 8-step sequential pipeline that runs inside the Content Canvas
-// for website deliverable types. Each step accumulates context
-// from all previous steps and yields SSE progress events.
+// 8-step pipeline that runs inside the Content Canvas for website
+// deliverable types. Steps run in dependency-waves (2‖3 parallel;
+// step 8 concurrent with the variant/polish tail since Fase 4a).
+// Each step accumulates context from all previous steps and yields
+// SSE progress events.
 //
-// After all 8 steps, generates 2 content variants and persists
-// them as DeliverableComponent records (same format as canvas).
+// The variant-B/GEO-polish tail runs concurrently with step 8 (both
+// depend only on step 7); afterwards the 2 content variants are
+// persisted as DeliverableComponent records (same format as canvas).
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
@@ -116,10 +119,13 @@ export async function* runSeoPipeline(
     : { outputs: [], accumulatedContext: '' };
 
   // ── Uitvoering in waves (parallel waar de deps het toelaten) ───────────
-  // Stap 2 & 3 hangen beide enkel aan stap 1 → parallel; 4-8 sequentieel.
+  // Stap 2 & 3 hangen beide enkel aan stap 1 → parallel; 4-7 sequentieel.
   // Kwaliteit-kritische prose-stappen (6 draft, 7 editorial) op het premium model;
   // de research/planning-stappen + de checklist-only stap 8 op het snelle model.
-  const WAVES: readonly (readonly number[])[] = [[1], [2, 3], [4], [5], [6], [7], [8]];
+  // Stap 8 zit niet in de waves (Fase 4a): hij is checklist-only en de
+  // variant-B/GEO-staart hangt uitsluitend aan stap 7 — stap 8 draait daarom
+  // in het concurrent-slot ná de waves, verborgen achter de staart.
+  const WAVES: readonly (readonly number[])[] = [[1], [2, 3], [4], [5], [6], [7]];
   const QUALITY_STEPS = new Set<number>([6, 7]);
   const timings: { step: number; ms: number }[] = state.timings ? [...state.timings] : [];
   const stepTracking = { workspaceId, deliverableId };
@@ -204,76 +210,127 @@ export async function* runSeoPipeline(
     }
   }
 
-  // ── Generate 2 variants from final output ──────────────
-
-  const step8Output = state.outputs.find((o) => o.step === 8);
-  if (!step8Output) {
-    yield { event: 'error', data: { message: 'SEO pipeline completed but step 8 output is missing', recoverable: false } };
-    return;
-  }
+  // ── Concurrent slot: stap 8 ∥ variant-B/GEO-staart (Fase 4a) ───────────
+  // Stap 8 is checklist-only (ronde 2) en de staart hangt uitsluitend aan de
+  // stap-7-output — de oude volgorde (eerst stap 8, dán de staart) was pure
+  // dependency-graph-verspilling (~42-130s). Bewuste input-delta: variant B
+  // ziet de accumulatedContext nu ZONDER het stap-8-checklist-JSON-blok —
+  // mechanische output over variant A, ruis geen signaal (task-file 4a).
 
   const stripFences = (s: string): string =>
     s.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
 
   // finalContent = de editorial-reviewed content uit stap 7 (geen 3e volledige
-  // rewrite meer in stap 8 — dat was ~100s redundant). Stap 8 levert enkel de
-  // technische SEO-checklist. Kwaliteit-neutraal: stap 7 is de laatste prose-pass.
-  let finalContent: string;
-  let seoChecklist: SeoChecklist | null = null;
-
+  // rewrite meer in stap 8 — dat was ~100s redundant; stap 7 is de laatste
+  // prose-pass).
   const step7Output = state.outputs.find((o) => o.step === 7);
-  try {
-    finalContent = (JSON.parse(stripFences(step7Output!.rawText)) as EditorialReview).revisedContent;
-  } catch {
-    finalContent = step7Output?.rawText ?? step8Output.rawText;
+  if (!step7Output) {
+    yield { event: 'error', data: { message: 'SEO pipeline completed waves but step 7 output is missing', recoverable: false } };
+    return;
   }
+  let finalContent: string;
   try {
-    seoChecklist = (JSON.parse(stripFences(step8Output.rawText)) as PublicationPrep).checklist;
+    finalContent = (JSON.parse(stripFences(step7Output.rawText)) as EditorialReview).revisedContent;
   } catch {
-    console.warn('[seo-pipeline] Step 8 checklist parse failed — checklist unavailable.');
+    finalContent = step7Output.rawText;
   }
 
-  // Generate variant B — alternative angle. Op het snelle research-model (Sonnet):
-  // variant B is de alternatieve optie (niet de default-geselecteerde) → speed > premium.
-  let variantBContent: string;
-  try {
-    variantBContent = await generateAlternativeVariant(
+  // Stap 8 starten (of hergebruiken bij resume) — zelfde event/checkpoint-
+  // semantiek als een wave, alleen loopt de staart er nu naast.
+  const existingStep8 = state.outputs.find((o) => o.step === 8);
+  let step8Promise: ReturnType<typeof executeStep> | null = null;
+  if (existingStep8) {
+    yield { event: 'seo_step', data: { ...stepEventFor(8), status: 'complete' as const } };
+  } else {
+    yield { event: 'seo_step', data: stepEventFor(8) };
+    step8Promise = executeStep(8);
+  }
+
+  // De staart: variant B (snel model) ∥ GEO-polish-A (premium, alleen bij het
+  // seo-geo-profiel) → GEO-polish-B. Beide bouwstenen zijn fail-soft: variant-B-
+  // fout valt terug op een kopie van A (dan één polish i.p.v. twee dubbele
+  // calls op dezelfde input), runGeoPolish geeft bij fout de input terug.
+  const applyGeo = shouldApplyGeoPolish(optimizationGoals, contentType);
+  const polishOpts = {
+    locale: stack.brand.contentLanguage ?? 'en',
+    voiceDirective,
+    tracking: { workspaceId, deliverableId },
+  };
+  // N.b. resume-nuance: op het resume-pad (stap 8 al in state) bevat de
+  // gecheckpointe accumulatedContext het checklist-blok wél — variant B
+  // krijgt daar dus de pre-4a-input. Acceptabel: resume is het zeldzame pad.
+  const tailStartedAt = Date.now();
+  const tailPromise: Promise<{ a: string; b: string; ms: number }> = (async () => {
+    const variantBPromise = generateAlternativeVariant(
       finalContent,
       state.accumulatedContext,
       voiceDirective,
       researchModel,
       { workspaceId, deliverableId },
-    );
-  } catch {
-    // Fallback: hergebruik de editorial-review-content (stap 7) als variant B.
-    variantBContent = finalContent;
+    ).catch(() => finalContent);
+    if (!applyGeo) {
+      return { a: finalContent, b: await variantBPromise, ms: Date.now() - tailStartedAt };
+    }
+    const polishAPromise = runGeoPolish(finalContent, textModel, polishOpts);
+    const variantB = await variantBPromise;
+    if (variantB === finalContent) {
+      const a = await polishAPromise;
+      return { a, b: a, ms: Date.now() - tailStartedAt };
+    }
+    const [a, b] = await Promise.all([polishAPromise, runGeoPolish(variantB, textModel, polishOpts)]);
+    return { a, b, ms: Date.now() - tailStartedAt };
+  })();
+  // Defensief: tussen creatie en de await hieronder (en op het error-pad)
+  // mag een onverwachte rejection nooit een unhandledRejection worden — de
+  // latere `await` ziet de waarde/rejection gewoon nog.
+  void tailPromise.catch(() => {});
+
+  // Stap 8 afronden — bij een fout geldt dezelfde harde error-semantiek als
+  // een wave-fout (de checklist is een productonderdeel); de staart-promise
+  // wordt dan netjes losgelaten (hij is fail-soft en rejectt niet).
+  let step8Raw: string;
+  if (step8Promise) {
+    try {
+      const r = await step8Promise;
+      state.outputs.push({ step: r.step, name: r.name, rawText: r.rawText });
+      state.accumulatedContext += `\n\n## Step ${r.step}: ${labelOf(r.step)}\n${r.rawText}\n---`;
+      timings.push({ step: r.step, ms: r.ms });
+      console.log(`[seo-pipeline] step ${r.step} (${r.name}) ${r.ms}ms via research model`);
+      yield {
+        event: 'seo_step',
+        data: { ...stepEventFor(8), status: 'complete' as const, preview: generatePreview(8, r.rawText) },
+      };
+      state.timings = timings;
+      yield { event: 'seo_checkpoint', data: { state } };
+      step8Raw = r.rawText;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[seo-pipeline] step 8 failed:', message);
+      yield { event: 'seo_step', data: { ...stepEventFor(8), status: 'error' as const, preview: message } };
+      yield {
+        event: 'error',
+        data: {
+          ...buildAiErrorEvent(err, { recoverable: false }),
+          message: `SEO pipeline failed in wave [${labelOf(8)}]: ${message}`,
+        },
+      };
+      return;
+    }
+  } else {
+    step8Raw = existingStep8!.rawText;
   }
 
-  // ── GEO-polish (composable stage, Fase 3) ──────────────
-  // Alleen voor het seo-geo-profiel op long-form: herschrijf de SEO-output
-  // answer-first/citeerbaar zonder de SEO-structuur te slopen. Fail-soft (geeft
-  // bij fout de originele content terug) → kan de pipeline nooit breken. Bewust
-  // long-form-only (ADR open vraag #2) om het productie-SEO-pad ongemoeid te laten.
-  if (shouldApplyGeoPolish(optimizationGoals, contentType)) {
-    // Stil polishen — geen extra seo_step-event om de 8-stap frontend-tracker
-    // niet te verwarren; de gepolishte content komt mee in text_complete.
-    const polishOpts = {
-      locale: stack.brand.contentLanguage ?? 'en',
-      voiceDirective,
-      tracking: { workspaceId, deliverableId },
-    };
-    if (variantBContent === finalContent) {
-      // Fallback-pad: variant B is een kopie van A → polish één keer i.p.v. twee
-      // dubbele calls (kosten/latency + divergerende rewrites van dezelfde input).
-      finalContent = await runGeoPolish(finalContent, textModel, polishOpts);
-      variantBContent = finalContent;
-    } else {
-      [finalContent, variantBContent] = await Promise.all([
-        runGeoPolish(finalContent, textModel, polishOpts),
-        runGeoPolish(variantBContent, textModel, polishOpts),
-      ]);
-    }
+  let seoChecklist: SeoChecklist | null = null;
+  try {
+    seoChecklist = (JSON.parse(stripFences(step8Raw)) as PublicationPrep).checklist;
+  } catch {
+    console.warn('[seo-pipeline] Step 8 checklist parse failed — checklist unavailable.');
   }
+
+  const tail = await tailPromise;
+  finalContent = tail.a;
+  const variantBContent = tail.b;
+  console.log(`[seo-pipeline] variant/polish-staart ${tail.ms}ms (concurrent met stap 8)`);
 
   // Yield text_complete events (same format as canvas-orchestrator)
   yield {
@@ -394,7 +451,9 @@ export async function* runSeoPipeline(
 
   yield {
     event: 'complete',
-    data: { totalDuration: Date.now() - startTime, componentCount: 2 },
+    // tailMs = echte duur van de variant/polish-staart (liep concurrent met
+    // stap 8) — de driver persisteert hem als timing-entry step:10.
+    data: { totalDuration: Date.now() - startTime, componentCount: 2, tailMs: tail.ms },
   };
 }
 
