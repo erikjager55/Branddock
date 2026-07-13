@@ -27,15 +27,19 @@
 //   - Per-tool retry: 0 (v1). Failures gaan direct als isError naar agent
 //     zodat die kan kiezen om alternatief te zoeken of stop.
 //
+// Streaming (agents-scheduling slice 5, 2026-07-13): elke turn loopt via
+// client.messages.stream(...).finalMessage() — de SDK accumuleert text- en
+// tool_use-input-deltas + usage tot een compleet Message, dus alles ná de
+// call-site bleef byte-identiek. Dit heft het non-streaming SDK-plafond van
+// 21.333 max_tokens per turn op (gotcha 2026-07-12); de wallclock-guards
+// (timeoutMs → AbortSignal, maxToolCalls) blijven de echte begrenzing.
+//
 // Niet inbegrepen v1:
-//   - Streaming response (we wachten op complete response per turn voor
-//     simpel state-management; latency-tradeoff acceptabel voor batch-mode
-//     Analyst-runs).
 //   - Prompt-caching (toekomst — system-prompt is per node identiek
 //     binnen agentVersion, cache_control headers leveren ~90% korting).
 // =============================================================
 
-import Anthropic from "@anthropic-ai/sdk";
+import Anthropic, { APIUserAbortError } from "@anthropic-ai/sdk";
 import { getToolRegistry } from "./tool-registry";
 import { computeRunCost } from "./cost-calculator";
 import type { CostBreakdown } from "./cost-calculator";
@@ -78,14 +82,6 @@ export class OutputContractError extends Error {
 
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 const DEFAULT_MAX_TOKENS = 4096;
-// De Anthropic SDK weigert non-streaming calls die >10 min kúnnen duren:
-// max_tokens > 600s × 128.000/3600 = 21.333 → instant AnthropicError, óók met
-// een per-request timeout (de check leest alleen de client-constructor-timeout).
-// Zolang de loop non-streaming is, is dit het harde plafond per turn
-// (dogfood 2026-07-12: strategist 32k → elke run FAILED vóór de eerste call).
-// NB: legacy-modellen (Opus 4.0/4.1) hebben strakkere per-model SDK-caps (8192);
-// die staan niet in feature-models — wordt zo'n ID ooit toegevoegd, verlaag dan mee.
-const NONSTREAMING_MAX_TOKENS = 21_333;
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_MAX_TOOL_CALLS = 20;
 
@@ -261,18 +257,7 @@ export async function runAgentWithContract<TParsed, TPersisted>(
  * aan het output-contract van de caller.
  */
 async function runLoopCore(input: LoopCoreInput): Promise<LoopOutcome> {
-  const { systemPrompt, userMessage, ctx, model, timeoutMs, maxToolCalls } = input;
-  // Clamp i.p.v. falen: een gekapte turn levert partial output (het contract
-  // rapporteert dit via `lastStopReason === "max_tokens"`); een geweigerde
-  // call faalt de hele run vóór de eerste token.
-  const maxTokens = Math.min(input.maxTokens, NONSTREAMING_MAX_TOKENS);
-  if (input.maxTokens > NONSTREAMING_MAX_TOKENS) {
-    console.warn("[brandclaw agent-loop] maxTokens boven non-streaming plafond — geclamped", {
-      requested: input.maxTokens,
-      clamped: maxTokens,
-      runId: ctx.runId,
-    });
-  }
+  const { systemPrompt, userMessage, ctx, model, timeoutMs, maxToolCalls, maxTokens } = input;
 
   const client = getClient();
   const registry = getToolRegistry();
@@ -317,7 +302,10 @@ async function runLoopCore(input: LoopCoreInput): Promise<LoopOutcome> {
 
     let response;
     try {
-      response = await client.messages.create(
+      // Streaming per turn: finalMessage() accumuleert text- én tool_use-
+      // input-deltas + usage tot een compleet Message — geen SDK-preflight
+      // op max_tokens meer. De rest-deadline bindt de turn via AbortSignal.
+      const stream = client.messages.stream(
         {
           model,
           max_tokens: maxTokens,
@@ -326,9 +314,18 @@ async function runLoopCore(input: LoopCoreInput): Promise<LoopOutcome> {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           messages: messages as any,
         },
-        { timeout: Math.max(1000, deadline - Date.now()) },
+        { signal: AbortSignal.timeout(Math.max(1000, deadline - Date.now())) },
       );
+      response = await stream.finalMessage();
     } catch (err) {
+      if (err instanceof APIUserAbortError || Date.now() >= deadline) {
+        // Deadline-abort mid-stream: zelfde semantiek als de wallclock-check
+        // bovenaan de turn — partial trace persisten als timeout.
+        console.error("[brandclaw agent-loop] turn afgebroken op rest-deadline");
+        truncated = true;
+        abortReason ??= "timeout";
+        break;
+      }
       // Anthropic API error → abort loop, persist truncated met partial trace
       console.error("[brandclaw agent-loop] Anthropic error:", err instanceof Error ? err.message : err);
       truncated = true;

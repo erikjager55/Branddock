@@ -55,13 +55,12 @@ export const strategistAgent: AgentDefinition = {
   // Volledige keten = 4 zware stappen van 1-3 min + model-turns.
   timeoutMs: 720_000,
   maxToolCalls: 8,
-  // Het strategie-rapport is groot — default 4096 kapt de artifacts-JSON af.
-  // 16k bleek nog te krap: een zware turn kapte af bij ~57k chars output
-  // (dogfood 2026-07-07, zelfde klasse als de 2026-05-24 SEO-maxTokens-gotcha).
-  // 32k blokkeerde vervolgens ÉLKE run: boven 21.333 weigert de Anthropic SDK
-  // non-streaming calls volledig (dogfood 2026-07-12). 21.333 is het harde
-  // plafond zolang de loop non-streaming is; meer ruimte vereist streaming.
-  maxTokens: 21_333,
+  // Het strategie-rapport is groot — default 4096 kapt de artifacts-JSON af;
+  // 16k bleek te krap voor een zware turn (~57k chars, dogfood 2026-07-07).
+  // Sinds de streaming-refactor (agents-scheduling slice 5) geldt het oude
+  // non-streaming SDK-plafond van 21.333 niet meer; 32k geeft ruime marge
+  // binnen de wallclock-guard (timeoutMs blijft de echte begrenzing).
+  maxTokens: 32_000,
 };
 
 export function registerStrategistTools(): void {
