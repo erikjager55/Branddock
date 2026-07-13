@@ -38,6 +38,9 @@ export class UnknownUseCaseError extends Error {}
 
 export interface RunAgentInput {
   workspaceId: string;
+  /** Acting identity van de run. Manual: de sessie-user. Scheduled (Fase 2):
+   * de schedule-creator — vereist, want het propose-only write-pad
+   * (tool-bridge NO_USER_CONTEXT-guard) weigert zonder user. */
   userId: string;
   /** Unvalidated agent id from the request body. */
   agentId: string;
@@ -48,6 +51,13 @@ export interface RunAgentInput {
    * beïnvloedt alleen de system-prompt — bewust niet op de run-rij persisted. */
   contextSelection?: AgentContextSelection;
   triggerType?: TriggerType;
+  /** Override voor AgentRun.triggerSource + de loop-ctx (default: userId).
+   * Scheduled runs: `schedule:<scheduleId>` of `job:<jobId>`. */
+  triggerSource?: string;
+  /** false → onderdrukt de FAILED-notificatie (Fase-2-notify-hook): de
+   * AGENT_TASK-handler zet dit alleen op de laatste queue-attempt, zodat
+   * een retry-loop één fout-notificatie per job oplevert. Default true. */
+  notifyOnFailure?: boolean;
 }
 
 export interface RunAgentResponse {
@@ -67,7 +77,8 @@ export interface RunAgentResponse {
  * elke Anthropic-request-timeout aan de rest-deadline). Restgaten die dit
  * niet dekt: hangende tool-executes (pipeline-tools in motor-wiring moeten
  * eigen timeouts hebben — belegd in die task) en een harde proces-kill;
- * daarvoor is de reaper Fase 2 + de stale-RUNNING-heuristiek in de inbox.
+ * daarvoor zijn de cron-reapers (src/lib/agents/jobs/reaper.ts) + de
+ * stale-RUNNING-heuristiek in de inbox.
  */
 const MAX_RUN_TIMEOUT_MS = 740_000;
 
@@ -122,6 +133,7 @@ function resolveUserMessage(
  */
 export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentResponse> {
   const { workspaceId, userId, agentId, useCaseId, triggerType = "manual" } = inputArgs;
+  const triggerSource = inputArgs.triggerSource ?? userId;
   const runInput = inputArgs.input ?? {};
 
   const def = getAgentDefinition(agentId);
@@ -147,7 +159,7 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
       // use-case dragen, niet een user-supplied input.useCaseId.
       input: { ...runInput, useCaseId: useCaseId ?? null } as Prisma.InputJsonValue,
       triggerType,
-      triggerSource: userId,
+      triggerSource,
       userId,
       agentVersion: def.agentVersion,
       promptVersion: def.promptVersion,
@@ -187,7 +199,7 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
           promptVersion: def.promptVersion,
           runId,
           triggerType,
-          triggerSource: userId,
+          triggerSource,
           userId,
         },
         model: resolved.model,

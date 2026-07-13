@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { runPendingJobs } from '@/lib/agents/jobs/runner';
+import { reapStaleJobs, reapStaleAgentRuns } from '@/lib/agents/jobs/reaper';
 import { isCronAuthorized } from '@/lib/auth/cron-auth';
 
 /** Max jobs per invocation. Keeps each cron run well under the
@@ -22,14 +23,21 @@ export async function GET(request: NextRequest) {
   const limitParam = request.nextUrl.searchParams.get('limit');
   const limit = limitParam ? Math.max(1, Math.min(100, parseInt(limitParam, 10) || DEFAULT_BATCH_SIZE)) : DEFAULT_BATCH_SIZE;
 
+  // Reap vóór de run: een gewedgede RUNNING-AGENT_TASK blokkeert anders via
+  // de per-workspace-cap alle volgende scheduled runs van die workspace.
+  const reapedJobs = await reapStaleJobs();
+  const reapedRuns = await reapStaleAgentRuns();
+
   const result = await runPendingJobs({ limit });
 
   return NextResponse.json({
     processed: result.processed,
+    reaped: { jobs: reapedJobs, runs: reapedRuns },
     counts: {
       completed: result.results.filter((r) => r.status === 'COMPLETED').length,
       retry: result.results.filter((r) => r.status === 'RETRY').length,
       failed: result.results.filter((r) => r.status === 'FAILED').length,
+      skipped: result.results.filter((r) => r.status === 'SKIPPED').length,
     },
     results: result.results,
   });

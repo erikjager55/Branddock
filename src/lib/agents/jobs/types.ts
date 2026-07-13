@@ -12,7 +12,9 @@ export type JobHandler = (job: AgentJob) => Promise<Record<string, unknown> | vo
 export interface JobRunResult {
   id: string;
   type: AgentJobType;
-  status: 'COMPLETED' | 'FAILED' | 'RETRY';
+  /** SKIPPED: claim verloren aan een concurrerende tick óf tegengehouden door
+   * de per-workspace AGENT_TASK-cap — job onaangeraakt, volgende tick opnieuw. */
+  status: 'COMPLETED' | 'FAILED' | 'RETRY' | 'SKIPPED';
   attempts: number;
   error?: string;
   result?: Record<string, unknown>;

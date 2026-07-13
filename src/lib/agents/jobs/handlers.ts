@@ -6,6 +6,8 @@
 //   BUG_REPORT_ANALYZE, CHAT_FEEDBACK_ANALYZE (intern), RESERVATION_REAP.
 // Credit-kostende output loopt via de eigen lib van de job:
 //   SEO_GENERATE → chargeAfter in src/lib/ai/seo-generation-job.ts ('long-form').
+//   AGENT_TASK → chargeAfter in src/lib/agents/registry/run-agent.ts (billable
+//   agents, op COMPLETED — zie het blok onderaan dit bestand).
 // Nieuwe job-types: bepaal expliciet floor-gedekt vs output-kostend en leg de
 // keuze hiér vast (audit-grep Fase 2d, gecompleteerd 2026-07-12).
 // =============================================================
@@ -51,12 +53,11 @@ registerHandler('HEARTBEAT', async (job) => {
 });
 
 registerHandler('AGENT_TASK', async (job) => {
-  // Generic catch-all for Brandclaw agent tasks. Until Fase 6 ships
-  // the actual agent loop, this handler simply logs the payload and
-  // resolves — gives us an end-to-end path to validate dispatch /
-  // retry / webhook plumbing without a real agent in place yet.
-  console.info(`[agent-job ${job.id}] AGENT_TASK payload:`, job.payload);
-  return { acknowledged: true };
+  // Fase-2-brug (agents-scheduling): queue → registry → runAgent met
+  // triggerType 'scheduled'. Payload-validatie + logica leven in
+  // ./agent-task; lazy import houdt de cron-cold-start licht.
+  const { runAgentTaskJob } = await import('./agent-task');
+  return runAgentTaskJob(job);
 });
 
 registerHandler('BRANDSTYLE_SNAPSHOT_CLEANUP', async (job) => {
@@ -194,11 +195,15 @@ registerHandler('SEO_GENERATE', async (job) => {
 // Beslissing (ADR: recurring achtergrond-AI + merk-DNA-setup = floor-gedekt = 0 cr;
 // alleen user-facing content-output kost credits):
 //   • CREDIT-KOSTEND: SEO_GENERATE (long-form-content) — de afboek-haak zit in
-//     `runSeoGenerationJob` zelf (op COMPLETED, idempotent per job).
+//     `runSeoGenerationJob` zelf (op COMPLETED, idempotent per job). AGENT_TASK
+//     (Fase 2: draait catalogus-agents via run-agent) — de afboek-haak zit in
+//     run-agent's chargeAfter (alleen def.billable-agents, op COMPLETED,
+//     idempotent per run; proposals charged pas bij de confirm-route). Geen
+//     haak in de handler zelf.
 //   • FLOOR-GEDEKT (0 cr, GÉÉN haak): ALIGNMENT_SCAN, TREND_RESEARCH, DAM_AUTO_TAG,
 //     BUG_REPORT_ANALYZE, CHAT_FEEDBACK_ANALYZE (recurring achtergrond-analyse) +
 //     WEBSITE_SCAN, BRANDVOICE_ANALYZE_URL, BRANDSTYLE_ANALYZE_URL/PDF (merk-DNA-
-//     setup, credit-vrij per ADR) + MEMORY_DECAY/HEARTBEAT/AGENT_TASK/*_CLEANUP
+//     setup, credit-vrij per ADR) + MEMORY_DECAY/HEARTBEAT/*_CLEANUP
 //     (geen AI). Bewuste keuze — herzie alleen met expliciete ADR-aanvulling.
 
 // Reaper: geef reserveringen vrij die tussen reserve en reconcile bleven hangen

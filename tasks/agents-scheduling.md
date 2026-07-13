@@ -5,12 +5,12 @@ fase: launch
 priority: next
 effort: 2-3 weken
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-07-05
 completed: -
 related-adr: docs/adr/2026-07-05-agents-architectuur.md
 related-spec: tasks/_drafts/idea-agents-feature.md
-worktree: -
+worktree: branddock-agents-scheduling
 ---
 
 > **Gate**: starten pas wanneer alle vier Fase-1-tasks (`agents-foundation`, `agents-motor-wiring`, `agents-ui-inbox`, `agents-data-analyst` óf diens expliciete drop-besluit) op `done` staan. De oorspronkelijke harde dependency — Vercel Cron in productie — is **vervuld per 2026-07-05** (`vercel-deployment` live op branddock-7y9n.vercel.app, main=production, Vercel Pro + Fluid); de enige resterende volgorde-dep is Fase 1 zelf.

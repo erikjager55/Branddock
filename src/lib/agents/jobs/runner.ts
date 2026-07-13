@@ -18,10 +18,57 @@ import type { JobRunResult, RunPendingJobsResult, AgentJob } from './types';
 const DEFAULT_LIMIT = 20;
 const MAX_BACKOFF_MS = 60 * 60 * 1000; // cap retry delay at 1 hour
 
+/** Rest-budget binnen één invocation (maxDuration 800s): voorbij dit punt
+ *  geen nieuwe jobs meer claimen — een mid-run platform-kill laat anders een
+ *  gewedgede RUNNING-rij achter. Niet-gestarte jobs blijven PENDING voor de
+ *  volgende minuut-tick. */
+const DEFAULT_BUDGET_MS = 600_000;
+
 function computeBackoffMs(attempts: number): number {
   const base = 60 * 1000; // 1 min
   const delay = base * Math.pow(2, attempts);
   return Math.min(delay, MAX_BACKOFF_MS);
+}
+
+/** Atomic claim: only one runner should pick up this job. */
+async function claimJob(job: AgentJob): Promise<boolean> {
+  const claim = await prisma.agentJob.updateMany({
+    where: { id: job.id, status: { in: ['PENDING', 'RETRY'] } },
+    data: { status: 'RUNNING', startedAt: new Date(), attempts: { increment: 1 } },
+  });
+  return claim.count === 1;
+}
+
+/**
+ * AGENT_TASK-claim met per-workspace cap = 1 (agents-scheduling, geërfd uit
+ * strategy-analyst Phase C): agent-runs duren minuten en kosten AI-budget —
+ * twee tegelijk per workspace stapelt kosten en vertekent de run-historie.
+ * De advisory-xact-lock serialiseert concurrerende cron-ticks per workspace
+ * (transaction-scoped, dus veilig met connection-pooling); de RUNNING-count
+ * erbinnen is daardoor race-vrij. Een geblokkeerde job blijft onaangeraakt
+ * (geen attempt verbrand) en wordt de volgende tick opnieuw geëvalueerd.
+ */
+async function claimAgentTaskJob(job: AgentJob): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const lockKey = `agent-task:${job.workspaceId ?? 'global'}`;
+    // ::text-cast: de lock-functie returnt void en dat kan $queryRaw niet
+    // deserialiseren.
+    await tx.$queryRaw`SELECT (pg_advisory_xact_lock(hashtext(${lockKey})))::text`;
+    const running = await tx.agentJob.count({
+      where: {
+        type: 'AGENT_TASK',
+        status: 'RUNNING',
+        workspaceId: job.workspaceId,
+        id: { not: job.id },
+      },
+    });
+    if (running > 0) return false;
+    const claim = await tx.agentJob.updateMany({
+      where: { id: job.id, status: { in: ['PENDING', 'RETRY'] } },
+      data: { status: 'RUNNING', startedAt: new Date(), attempts: { increment: 1 } },
+    });
+    return claim.count === 1;
+  });
 }
 
 async function runJob(job: AgentJob): Promise<JobRunResult> {
@@ -45,14 +92,11 @@ async function runJob(job: AgentJob): Promise<JobRunResult> {
     };
   }
 
-  // Atomic claim: only one runner should pick up this job.
-  const claim = await prisma.agentJob.updateMany({
-    where: { id: job.id, status: { in: ['PENDING', 'RETRY'] } },
-    data: { status: 'RUNNING', startedAt: new Date(), attempts: { increment: 1 } },
-  });
-  if (claim.count === 0) {
-    // Another runner beat us to it, or status changed; skip.
-    return { id: job.id, type: job.type, status: 'COMPLETED', attempts: job.attempts };
+  const claimed = job.type === 'AGENT_TASK' ? await claimAgentTaskJob(job) : await claimJob(job);
+  if (!claimed) {
+    // Claim verloren aan een concurrerende tick, óf de workspace-cap houdt
+    // deze AGENT_TASK tegen — job onaangeraakt, volgende tick opnieuw.
+    return { id: job.id, type: job.type, status: 'SKIPPED', attempts: job.attempts };
   }
 
   const freshJob = await prisma.agentJob.findUniqueOrThrow({ where: { id: job.id } });
@@ -134,10 +178,17 @@ async function runJob(job: AgentJob): Promise<JobRunResult> {
  *  - status in PENDING or RETRY
  *  - scheduledAt is null or in the past
  *  - for RETRY: nextAttemptAt is null or in the past
+ *
+ * AGENT_TASK-jobs (echte agent-runs, tot ~740s elk) krijgen een eigen
+ * regime: maximaal één per invocation, als eerste zodat hij het volle
+ * maxDuration-budget heeft. De rest draait erna tot het tijdbudget op is.
+ * Vercel Cron vuurt elke minuut een onafhankelijke invocation, dus wat
+ * blijft liggen is binnen een minuut weer aan de beurt.
  */
 export async function runPendingJobs(
-  { limit = DEFAULT_LIMIT }: { limit?: number } = {},
+  { limit = DEFAULT_LIMIT, budgetMs = DEFAULT_BUDGET_MS }: { limit?: number; budgetMs?: number } = {},
 ): Promise<RunPendingJobsResult> {
+  const invocationStartedAt = Date.now();
   const now = new Date();
 
   const jobs = await prisma.agentJob.findMany({
@@ -152,8 +203,15 @@ export async function runPendingJobs(
     take: limit,
   });
 
+  const agentTasks = jobs.filter((j) => j.type === 'AGENT_TASK');
+  const rest = jobs.filter((j) => j.type !== 'AGENT_TASK');
+
   const results: JobRunResult[] = [];
-  for (const job of jobs) {
+  if (agentTasks.length > 0) {
+    results.push(await runJob(agentTasks[0]));
+  }
+  for (const job of rest) {
+    if (Date.now() - invocationStartedAt > budgetMs) break;
     results.push(await runJob(job));
   }
 
