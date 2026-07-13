@@ -42,6 +42,9 @@ export async function dispatchJob(input: DispatchJobInput): Promise<DispatchedJo
       select: { id: true, status: true },
     });
     if (existing && existing.status !== 'COMPLETED' && existing.status !== 'FAILED' && existing.status !== 'CANCELLED') {
+      // Ook een dedupe-join mag de bestaande (mogelijk nog PENDING) job
+      // versnellen — de debounce in kickWorker begrenst het effect.
+      if (existing.status === 'PENDING' || existing.status === 'RETRY') kickWorker();
       return { id: existing.id, deduped: true };
     }
   }
@@ -60,7 +63,58 @@ export async function dispatchJob(input: DispatchJobInput): Promise<DispatchedJo
     select: { id: true },
   });
 
+  // Direct verwerkbaar (geen delayed schedule)? Kick de worker meteen i.p.v.
+  // op de minuut-cron te wachten.
+  if (!input.scheduledAt || input.scheduledAt.getTime() <= Date.now()) {
+    kickWorker();
+  }
+
   return { id: job.id, deduped: false };
+}
+
+/**
+ * Fire-and-forget self-request naar de cron-worker (job-queue-latency): de
+ * taak-#7-meting liet tot ~3 min queue-wacht zien (minuut-cron + een bezette
+ * invocation). Een kick start een vérse invocation die de zojuist enqueued
+ * job direct claimt; de atomaire claim in de runner voorkomt dubbel-werk met
+ * gelijktijdige cron-ticks. Fail-silent by design — bij ontbrekend secret,
+ * ontbrekende base-URL of een netwerk-fout blijft de minuut-cron het vangnet.
+ *
+ * Serverless-semantiek (review-W1): een kale dangling fetch kan door Vercel
+ * post-response bevroren worden vóór de request de deur uit is — daarom wordt
+ * de fetch-promise aan `after()` (next/server) gehangen zodat de invocation
+ * lang genoeg leeft; buiten een request-context (scripts, jobs-smoke) faalt
+ * dat stil en blijft de dangling fetch het best-effort-pad. De 5s-abort
+ * voorkomt dat we 800s op de run-jobs-response wachten; de ontvangende
+ * invocation draait door na een client-abort.
+ *
+ * Debounce (review-W2): batch-dispatchers (media-bulk, backfill-tags) zouden
+ * anders per item een invocation kicken — max 1 kick per 10s per instance,
+ * de rest vangt diezelfde verse invocation of de minuut-cron.
+ *
+ * N.b. op preview-deploys wijst BETTER_AUTH_URL naar prod — de kick raakt
+ * dan de prod-worker; previews leunden altijd al op de prod-cron (review-M3).
+ */
+const KICK_DEBOUNCE_MS = 10_000;
+let lastKickAt = 0;
+
+function kickWorker(): void {
+  const secret = process.env.CRON_SECRET;
+  const base = process.env.BETTER_AUTH_URL;
+  if (!secret || !base) return;
+  if (Date.now() - lastKickAt < KICK_DEBOUNCE_MS) return;
+  lastKickAt = Date.now();
+
+  const kicked = fetch(`${base.replace(/\/$/, '')}/api/cron/run-jobs`, {
+    headers: { authorization: `Bearer ${secret}` },
+    signal: AbortSignal.timeout(5_000),
+  }).then(
+    () => {},
+    () => {},
+  );
+  void import('next/server')
+    .then((m) => m.after(kicked))
+    .catch(() => {});
 }
 
 /** Mark a job as cancelled. Only works on PENDING/RETRY jobs. */

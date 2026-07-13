@@ -41,6 +41,18 @@ export async function runSeoGenerationJob(jobId: string): Promise<void> {
   const startedAt = Date.now();
   const { runSeoPipeline } = await import('./seo-pipeline');
 
+  // Overhead-instrumentatie (job-queue-latency, Fase 3b uit de #387-meting):
+  // de stap-timings dekken alleen de 8 wave-stappen; dit meet de rest van de
+  // invocation. step:0 = handler-start → eerste stap-event (imports +
+  // context-opbouw). step:9 = laatste checkpoint → COMPLETED — LET OP
+  // (review-W3): dat is níet alleen persist + charge, de generator draait
+  // dáár ook nog variant-B + GEO-polish (1-3 AI-calls); step:9 kwantificeert
+  // dus vooral die verborgen AI-staart. Bij een continuation-run meet step:0
+  // de resume-setup van de laatste invocation (de budget-return hieronder
+  // slaat het schrijfblok over — single-invocation is het normale pad).
+  let firstStepAt: number | null = null;
+  let lastCheckpointAt: number | null = null;
+
   try {
     for await (const event of runSeoPipeline(
       job.deliverableId,
@@ -54,12 +66,14 @@ export async function runSeoGenerationJob(jobId: string): Promise<void> {
     )) {
       if (event.event === 'seo_step') {
         const d = event.data as SeoStepEvent;
+        if (firstStepAt === null) firstStepAt = Date.now();
         await prisma.seoGenerationJob.update({
           where: { id: jobId },
           data: { currentStep: d.step, stepLabel: d.label },
         });
       } else if (event.event === 'seo_checkpoint') {
         const { state } = event.data as { state: SeoPipelineState };
+        lastCheckpointAt = Date.now();
         await prisma.seoGenerationJob.update({
           where: { id: jobId },
           data: { state: state as unknown as Prisma.InputJsonValue },
@@ -114,6 +128,26 @@ export async function runSeoGenerationJob(jobId: string): Promise<void> {
     },
     { actualCredits: CREDIT_COSTS['long-form'] },
   );
+
+  // Niet-stap-timings bijschrijven in de gepersisteerde state (append-only,
+  // los van de generator-timings; de aggregatie-query groept op step).
+  const extraTimings: { step: number; ms: number }[] = [];
+  if (firstStepAt !== null) extraTimings.push({ step: 0, ms: firstStepAt - startedAt });
+  if (lastCheckpointAt !== null) extraTimings.push({ step: 9, ms: Date.now() - lastCheckpointAt });
+  if (extraTimings.length > 0) {
+    const fresh = await prisma.seoGenerationJob.findUnique({
+      where: { id: jobId },
+      select: { state: true },
+    });
+    const st = (fresh?.state as unknown as SeoPipelineState | null) ?? null;
+    if (st) {
+      st.timings = [...(st.timings ?? []), ...extraTimings];
+      await prisma.seoGenerationJob.update({
+        where: { id: jobId },
+        data: { state: st as unknown as Prisma.InputJsonValue },
+      });
+    }
+  }
 
   await prisma.seoGenerationJob.update({
     where: { id: jobId },
