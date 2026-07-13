@@ -142,8 +142,10 @@ gebatchte `DATABASE_URL=<neon> npx prisma db push` vanaf deze branch/main,
 alles additief:** model `AgentSchedule` (+ Workspace-relatie),
 `AgentRun.scheduleId` + index, `AgentMemory.agentId` + index,
 `NotificationType` +3 waarden (AGENT_RUN_COMPLETED/_FAILED/
-_AWAITING_CONFIRMATION). Zonder push 500't de schedules-API op prod; de
-cron-tick degradeert (enqueue-stap faalt fail-soft per schedule).
+_AWAITING_CONFIRMATION). Zonder push 500'en de schedules-API én de
+runs-inbox (select op `scheduleId`) op prod; de cron-tick zelf blijft
+draaien (de enqueue-stap is in de route fail-soft gewrapt). Conform de
+gotcha 2026-07-13: push pas "gedaan" ná een verificatie-write.
 
 **Restpunten ná merge (deploy-checklist):** golden e2e (smoke-stap 6, één
 echte DAILY-schedule op prod ná deploy + Neon-push — vervult ook de

@@ -62,3 +62,69 @@ De SEO-pipeline (~11 min, 8 sequentiële AI-calls) versnellen naar ~5-7 min, met
    dat de research-stappen sneller zijn + waar de resttijd zit (input voor Fase 4).
 3. Vergelijk de F-VAL-score + een handmatige lezing vs de ~19K-tekens-baseline van de
    eerdere smoke → kwaliteit moet standhouden.
+
+## Meting (deploy-smoke 2026-07-13 — de go/no-go-gate is gedraaid)
+
+Databronnen: 6 voltooide pilot-runs op prod (6-7 juli, ná de Fase-1/2-deploy) + 1 verse
+smoke-run op de actuele deploy (13 juli, smoke-account `erik+claude-smoke-7e@`). Per-stap
+uit `SeoGenerationJob.state.timings` (prod-DB), wall-clock uit `startedAt→completedAt`.
+
+**Per-stap (gemiddeld over 6 pilot-runs; verse run vergelijkbaar):**
+
+| Stap | gem. | spreiding | model |
+|---|---|---|---|
+| 1 kickoff | 16,8s | 12,7-22,9 | snel |
+| 2 ‖ 3 (parallel) | 61,6s effectief | — | snel |
+| 4 | 43,6s | 35,2-48,3 | snel |
+| 5 | 100,4s | 86,2-118,3 | snel |
+| 6 first draft | 109,7s | 93,1-123,4 | premium |
+| 7 editorial | 102,1s | 82,4-116,4 | premium |
+| 8 publication prep | 73,3s | **42,4-130,0** | snel (checklist-only, correctie 4a: stond hier onterecht als premium) |
+
+**Totalen**: wall-clock gem. **10,9 min** (pilot; verse run 12,0 min) vs effectieve
+AI-tijd **~7,5-8,5 min** → **2,4-4,5 min niet-AI-overhead** per run (cron-pickup,
+checkpoint-persist, context-opbouw, en vermoedelijk de F-VAL-judge ná stap 8 — die valt
+búiten de 8 getimede stappen). **Kwaliteit**: F-VAL op de pilot-runs 92,0 en 90,0,
+beide threshold-met.
+
+**Verdict (go/no-go per fase):**
+- **Doel 5-7 min is nog NIET gehaald** (9-13 min in de praktijk).
+- **NIEUW — grootste hefboom: de niet-AI-overhead (2,4-4,5 min).** Eerst uitzoeken waar
+  die zit (instrumenteer buiten de stap-calls: context-opbouw, checkpoint-saves,
+  F-VAL-judge, queue-gaps) — potentieel gratis winst zonder kwaliteitsrisico. → **Fase 3b
+  (overhead-analyse), vóór alles.**
+- **Fase 4 (stap 7/8 mergen of conditioneel skippen): GO** — 7+8 kost gem. 2,9 min
+  premium-tijd; de stap-8-spreiding (42-130s) suggereert bovendien dat het
+  checklist-only-pad niet altijd actief is. Vereist de geplande F-VAL-A/B.
+- **Fase 3 (context-trim): NO-GO als latency-maatregel** — de stappen zijn
+  output-gedomineerd, precies zoals voorspeld. Hooguit later als kosten-optimalisatie.
+
+**Bijvangst job-queue-smoke (zelfde sessie)**: alle 7 gemigreerde job-types draaiden
+end-to-end op de deploy (WEBSITE_SCAN 6m, TREND_RESEARCH 7m, BRANDSTYLE_ANALYZE_URL 3m,
+BRANDVOICE_ANALYZE_URL 3m, BUG_REPORT_ANALYZE, CHAT_FEEDBACK_ANALYZE, SEO_GENERATE 12m —
+allemaal COMPLETED via de minuut-cron, cross-instance). Kanttekeningen: de
+status-GET-routes van brandstyle/brandvoice gaven 404 tegen het smoke-account (jobs
+zelf COMPLETED — routegedrag checken bij de eerstvolgende UI-run); DAM auto-tag en
+alignment-scan niet gesmoked (vereisen media-upload resp. gevuld merk-DNA).
+
+## Fase 4a uitgevoerd (2026-07-13) — stap 8 ∥ staart
+
+Taak `seo-fase4a-tail-parallel`: stap 8 (checklist-only, snel model) draait nu concurrent
+met de variant-B/GEO-staart — beide hingen alleen aan de stap-7-output, de oude volgorde
+was pure dependency-graph-verspilling. Verwachte winst: de volledige stap-8-duur
+(42-130s) verdwijnt achter de staart. Events/checkpoint/resume-semantiek ongewijzigd
+(8-stappen-tracker intact). Bewuste input-delta: variant B ziet de accumulatedContext
+zonder het stap-8-checklist-JSON (mechanische ruis over variant A). Samen met de
+#388-kick (enqueue→start 2s i.p.v. tot 3 min): verwachte wall-clock ~12 min → ~8 min.
+**Validatie-run (2026-07-13, na deploy #388+#389)**: wall-clock **7,5 min** (was 12,0
+in de ochtend-run; doel 5-7 vrijwel gehaald). Decompositie sluitend: enqueue→start **0s**
+(kick, was 2m53), step:0 setup **0,1s**, stappen 1-7 effectief ~6m0s, concurrent slot
+**85,6s** (staart step:10) waarin stap 8 (52,1s) volledig verscholen zit, step:9
+restant+persist 33,7s (= 85,6−52,1 + ~0,2s persist — de meting klopt op de seconde).
+De run is nu vrijwel pure AI-tijd; outputs gezond (2 varianten 16,7K/17,2K tekens +
+checklist met meta-description). Resterende route naar <7 min: **Fase 4b** (stap 7 =
+74-102s premium, mergen/skippen) — gegate op de F-VAL-A/B.
+
+**Fase 4b blijft open en gegate op een F-VAL-A/B**: checklist in stap 7 mergen (spaart de
+resterende stap-8-call) óf stap 7 conditioneel skippen (~102s premium) — beide raken de
+kwaliteit-kritische keten.

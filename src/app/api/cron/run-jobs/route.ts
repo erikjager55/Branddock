@@ -30,8 +30,18 @@ export async function GET(request: NextRequest) {
   const reapedRuns = await reapStaleAgentRuns();
 
   // Due schedules → AGENT_TASK-jobs (vóór de runner, zodat een zojuist
-  // due geworden schedule nog dezelfde tick meedraait).
-  const schedules = await enqueueDueSchedules();
+  // due geworden schedule nog dezelfde tick meedraait). Fail-soft: een
+  // ontbrekende AgentSchedule-tabel (deploy vóór de Neon-push, zie gotcha
+  // 2026-07-13) mag de job-queue-tick zelf nooit neerhalen.
+  let schedules = { enqueued: 0, disabled: 0 };
+  try {
+    schedules = await enqueueDueSchedules();
+  } catch (err) {
+    console.error(
+      '[cron run-jobs] schedule-enqueue faalde — tick draait door zonder schedules:',
+      err instanceof Error ? err.message : err,
+    );
+  }
 
   const result = await runPendingJobs({ limit });
 
