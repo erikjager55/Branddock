@@ -1,8 +1,8 @@
 ---
 id: video-chain-explainer-showcase
 title: Multi-modal video chain — explainer-video full + lightweight video-ad/tiktok
-fase: pre-launch
-priority: now
+fase: post-launch
+priority: later
 effort: ~4 dagen
 owner: claude-code
 status: open
@@ -12,6 +12,16 @@ related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md §3.0.5
 worktree: -
 ---
+
+> **Triage 2026-07-14 (doc-keeper-audit)**: (1) **Gate: de hele "Video & Audio"-
+> categorie staat hidden** in de Add-Content-picker sinds 2026-05-19
+> (`deliverable-types.ts`) — explainer-video/video-ad/tiktok-script zijn voor nieuwe
+> deliverables onbereikbaar; bouw dit pas ná de re-enable-beslissing. (2) **Premisse
+> deels ingehaald**: per-scene visuals bestaan al (scene-visual-split in
+> `useCanvasStore`, `VideoSceneEditor.tsx`, `video-prompt-builder.ts` per-scene naar
+> fal.ai) — alleen de script-chain (plan/coherence/assembly) ontbreekt; sluit daarop
+> aan, niet greenfield. Modify-target `content-studio/.../video-output.tsx` is stale →
+> `canvas/medium/Video*.tsx`.
 
 # Probleem
 

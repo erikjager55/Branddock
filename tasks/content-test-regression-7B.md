@@ -2,7 +2,7 @@
 id: content-test-regression-7B
 title: Content-test sub-sprint #7.B — Layer 3 item-specific regression corpus
 fase: pre-launch
-priority: now
+priority: later
 effort: ~3 dagen
 owner: claude-code
 status: open
@@ -12,6 +12,17 @@ related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md §2 Layer 3 + §4 #7.B
 worktree: -
 ---
+
+> **Triage 2026-07-14 (doc-keeper-audit)**: (1) **Data-gate dicht** — prod heeft op
+> 2026-07-14 0× `content.rejected` en 0× `content.edited` (2× approved); start pas na
+> 1-2 weken echte pilot-traffic en check het volume eerst in de prod-DB. De emissie-
+> infra staat klaar (LearningEvent + editDistance, `event-emitter.ts`, approval-routes).
+> (2) **De-scope "Studio UI"**: de oude Content Studio is verwijderd — het levende
+> surface voor de promote-knop is het PublishGate-findings-block
+> (`canvas/PublishGate.tsx`) en/of de Brand-Alignment "Content Review"-tab.
+> (3) **De-scope promptfoo**: Layer 2 draait op de eigen golden-sets-runner
+> (`tests/content-golden-sets/` + `.github/workflows/golden-sets.yml`, nightly bestaat
+> al) — Layer 3 hoort dáárop aan te sluiten, geen nieuw formaat introduceren.
 
 # Probleem
 

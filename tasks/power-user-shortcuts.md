@@ -2,16 +2,26 @@
 id: power-user-shortcuts
 title: Power-user shortcuts voor content items
 fase: post-launch
-priority: next
-effort: 1-2 dagen
+priority: later
+effort: ~1 dag (alleen stap 4+5 resteren)
 owner: claude-code
 status: open
 created: 2026-05-07
 completed: -
 related-adr: -
 related-spec: docs/archive/plans-pending-task-migration/IMPLEMENTATIEPLAN-POWER-USER-SHORTCUTS.md
-worktree: branddock-feat-power-user-shortcuts
+worktree: -
 ---
+
+> **Triage 2026-07-14 (doc-keeper-audit)**: stappen 1-3 bleken **al gebouwd in april 2026**
+> (commit `ccb7e1cd`, vóór de changelog-migratie en daardoor nooit als entry geland):
+> auto-inherit leeft in `CanvasPage.tsx` + `useCanvasStore` (`inheritedFrom`-slice +
+> inheritance-banner), "Add another like this" als `RepeatSplitButton.tsx` +
+> `deliverables/[did]/duplicate`-route, en bulk-add als `BulkGenerateModal.tsx` +
+> `bulk-create-deliverables`-route (incl. parallelle SSE-generatie — verder dan dit plan).
+> Rest = alleen stap 4 (recent-prompts-dropdown) + stap 5 (Brand-Assistant-banner);
+> beslis ná pilot-feedback of die überhaupt nodig zijn. File-refs uit het origineel
+> (`accordion/PromptSection.tsx`, `detail/DeliverableRow.tsx`) bestaan niet meer.
 
 # Probleem
 
@@ -28,19 +38,19 @@ Content-item creatie binnen een bestaande campagne is niet wezenlijk te lang (~7
 
 # Acceptatiecriteria
 
-## Stap 1 — Auto-inherit settings (~halve dag)
+## Stap 1 — Auto-inherit settings — ✅ AL GEBOUWD (ccb7e1cd, april 2026)
 - [ ] `findMostRecentCompletedInSameCampaign({ campaignId, contentType, excludeId })` query
 - [ ] Bij Canvas-load: settings.mediumConfig + settings.contentTypeInputs + settings.brief inherit
 - [ ] Per ge-erfd field: `inheritedFrom: previousDeliverable.id` in store
 - [ ] UI toont "Inherited from <title>" badge per veld met "Reset to default" knop
 - [ ] Werkt alleen wanneer >1 COMPLETED deliverable van zelfde type in campagne bestaat
 
-## Stap 2 — "Add another like this" knop (~2 uur)
+## Stap 2 — "Add another like this" — ✅ AL GEBOUWD (RepeatSplitButton + duplicate-route)
 - [ ] Knop op afgeronde deliverable in Content Library + Campaign Detail
 - [ ] Klik → maakt nieuwe Deliverable met type+settings van source → navigeert naar Canvas
 - [ ] Auto-inherit logic uit Stap 1 wordt automatisch geactiveerd
 
-## Stap 3 — Bulk-add deliverables (~halve dag)
+## Stap 3 — Bulk-add — ✅ AL GEBOUWD (BulkGenerateModal + bulk-create-deliverables)
 - [ ] Modal vanaf "+ Add Deliverable" knop in Campaign Detail
 - [ ] Multi-select content-types met kwantiteit (bv "3× linkedin-post + 2× email")
 - [ ] Per type: optioneel auto-inherit van laatste van dat type
@@ -54,7 +64,7 @@ Content-item creatie binnen een bestaande campagne is niet wezenlijk te lang (~7
 
 ## Stap 5 — Brand Assistant entry banner (~2 uur)
 - [ ] Banner op Campaigns overview wanneer campagnes-lijst >0 (niet voor lege state)
-- [ ] Tekst: "💬 Of vraag de Brand Assistant: 'Maak een nieuwe campagne voor X'"
+- [ ] Tekst (Lucide-icoon, geen emoji): "Of vraag de Brand Assistant: 'Maak een nieuwe campagne voor X'"
 - [ ] Banner op Content Library wanneer empty state
 - [ ] Klik → opent Brand Assistant chat met pre-prompted context
 
