@@ -135,7 +135,11 @@ Vier fases, strikt sequentieel:
 
 # Notes
 
-- **Fase-0-resultaten hier vastleggen** (prod-telling, BB-antwoorden, veldmapping, app-review-status, GO/NO-GO + datum + wie besliste).
+- **Fase-0-resultaten**:
+  - **2026-07-14, item 1 (prod-telling)**: `ConnectedAdAccount` = **0 rijen** (0 active) — herbevestigd (eerdere telling bij planning idem).
+  - **2026-07-14, bijvangst infra**: **`META_APP_ID`/`META_APP_SECRET` ontbreken volledig op Vercel-prod** — een Meta-account kóppelen kan op productie dus überhaupt nog niet. Dit is een voorwaarde vóór item 3 (insights-pull) en item 4 (app-review-check): Erik moet eerst de Meta-app-credentials op prod zetten (en de app in het Meta-dashboard hebben).
+  - **Items 2-4 wachten op Erik** (user-held): (2) BB-antwoord — draait Better Brands een Meta-account met actieve Advantage+-campagnes en wil je koppelen? Plus A3: "als iets je zou vertellen dat je ad moe is, wat zou je dan willen krijgen?"; (3) één handmatige Graph-API-insights-pull zodra er een token/account is (veldmapping → hier noteren); (4) app-review-status `ads_read` op de prod-app (development-mode vs approved).
+  - GO/NO-GO: _(na items 2-4 invullen; GO vereist ≥1 koppelbaar account + ≥2/3 signalen uit de API + één positief A3-signaal)_
 - Premisse-verificatie bij tech-planning (2026-07-14, tegen origin/main): `AgentSchedule` bestaat (schema r5423, cadence `DAILY`), `agents-scheduling` is done (#390), marktonderzoek-rapport gecommit (PR #128), `AdMetricSnapshot` heeft nul writers in `src/` (grep-bevestigd), `ads_read` in `META_OAUTH_SCOPES` bevestigd. Let op: lokale `main` liep bij planning achter op origin/main — worktree vanaf `origin/main` spinnen (dat doet `scripts/dev/worktree.sh` al).
 - Drempel-startwaarden (frequency 3,5 / CTR −25%/14d / creative 45d) zijn hypotheses uit de idea-file — kalibreren op de Fase-0-pull en de eerste 2 weken echte snapshots.
 - Weekplafond-cap (voorstel 3) is een product-beslissing — bevestigen bij ADR.
