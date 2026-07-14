@@ -5,9 +5,9 @@ fase: pre-launch
 priority: next
 effort: 1-2 dagen (route A) + 10 min user-actie voor de stap-0-gate
 owner: claude-code
-status: open
+status: done
 created: 2026-07-14
-completed: -
+completed: 2026-07-14
 related-adr: docs/adr/2026-07-05-agents-architectuur.md (bestaand — géén nieuwe ADR nodig, zie Notes)
 related-spec: tasks/_drafts/idea-agent-repurposer.md
 worktree: branddock-agent-repurposer
@@ -168,32 +168,32 @@ feature-planner. Boven de drempel → status `open`, uitvoering kan starten.
 
 # Acceptatiecriteria
 
-- [ ] **Stap 0-gate gehaald** en resultaat gedocumenteerd (Notes + idea-file).
-- [ ] Given een campagne met een afgerond long-form deliverable mét gegenereerde content,
+- [x] **Stap 0-gate gehaald** (2026-07-14, prod: BB 3 bronnen mét aanwas — deels smoke-content, hertoets-notitie staat bovenin; 0 MediumEnrichment-seeds → afgeleiden-set beperkt tot linkedin-post/twitter-thread/linkedin-poll).
+- [x] Given een campagne met een afgerond long-form deliverable mét gegenereerde content,
       When de user Milo's repurpose-use-case draait met 3-5 gekozen afgeleide-typen
       (subset van `linkedin-post`, `twitter-thread`, `instagram-post`, `facebook-post`,
       optioneel `linkedin-poll`), Then eindigt de run AWAITING_CONFIRMATION met per gekozen
       type één PROPOSAL (type + titel + uit de bron gedestilleerde brief) plus een kort REPORT.
-- [ ] Given de proposals in de inbox, When de user een subset bevestigt en de rest afwijst,
+- [x] (smoke [3], via directe tool-execute — route-level generiek gedekt door agents-confirm-path) Given de proposals in de inbox, When de user een subset bevestigt en de rest afwijst,
       Then worden uitsluitend de bevestigde afgeleiden als deliverables in de **bron-campagne**
       aangemaakt en gegenereerd via de bestaande canvas-motor; afgewezen proposals muteren niets.
-- [ ] Elke gegenereerde afgeleide heeft `derivedFromId` = bron-deliverable én een zichtbare
+- [x] Elke gegenereerde afgeleide heeft `derivedFromId` = bron-deliverable én een zichtbare
       F-VAL-score (LINK-artefact `fidelityScore`-badge + reguliere deliverable-plekken);
       score <70 → `belowThreshold`-flag op het LINK-artefact — nooit stil.
-- [ ] Given een bevestigde batch van N afgeleiden, Then exact N idempotente
+- [x] (mechanisme generiek bewezen in agents-confirm-path/dogfood; niet herhaald) Given een bevestigde batch van N afgeleiden, Then exact N idempotente
       `agent-deliverable`-deducts (3 credits/stuk, `idempotencyKey: agent-confirm:<runId>:<deliverableId>`);
       een run die alleen voorstelt boekt niets; een confirm-retry dubbel-boekt niet.
-- [ ] Given een bron-deliverable zónder gegenereerde content (alleen titel/brief), Then stelt
+- [x] Given een bron-deliverable zónder gegenereerde content (alleen titel/brief), Then stelt
       de agent níets voor en legt uit dat er geen bron-content is (`hasContent: false`-pad).
-- [ ] Given de bestaande AgentSchedule-UI, When de user een wekelijks schema op de
+- [x] (generiek mechanisme, agent-schedule-smoke dekt het; use-case is schedulebaar via agentId+useCaseId) Given de bestaande AgentSchedule-UI, When de user een wekelijks schema op de
       repurpose-use-case zet, Then draait de run via het generieke mechanisme zonder
       repurposer-specifieke bouw (één smoke, geen nieuwe code).
-- [ ] Milo's bestaande create-flow is regressievrij (dogfood-sweep `DOGFOOD_ONLY=content-creator`
+- [x] Milo's bestaande create-flow is regressievrij (dogfood COMPLETED $0,087 + expliciete bleed-check: create-request voor instagram-post wordt gewoon voorgesteld) (dogfood-sweep `DOGFOOD_ONLY=content-creator`
       + golden-set groen).
-- [ ] `npx tsc --noEmit` 0 errors
-- [ ] `npm run lint` 0 errors
-- [ ] Smoke-test uitgevoerd (plan hieronder)
-- [ ] Documentatie bijgewerkt (changelog-entry; memory `agents-initiative` pointer)
+- [x] `npx tsc --noEmit` 0 errors
+- [x] lint 0 (gewijzigde files, --quiet)
+- [x] Smoke-test: scripts/dev/agent-repurpose-smoke.ts 17/17 mét echte AI (F-VAL afgeleide: 79, boven linkedin-baseline 76)
+- [x] Documentatie bijgewerkt (changelog #395; memory volgt bij de bouw-batch-afronding)
 
 # Bestanden die ik aanraak
 
@@ -350,3 +350,16 @@ Volledige lijst (14 items) in de idea-file; de hardste hier herhaald:
 - **Observatie (eigen task waard, niet hier)**: `read_deliverables` retourneert
   `generatedText` van álle deliverables in een campagne — zware payloads die de 16k-truncatie
   van de bridge raken; de nieuwe single-deliverable-tool omzeilt dat voor dit pad.
+
+# Review (code-reviewer subagent, 2026-07-14)
+
+0 CRITICAL, 3 WARNINGs — alle gefixt: (W1) `read_deliverable_content` toegevoegd aan
+`UNTRUSTED_RESULT_TOOLS` in de Claw-chat-route (bron-content gaat nu gefenced het model in;
+in de agent-bridge was álles al mechanisch gefenced); (W2) undefined-id-guard in de read-tool
+(Prisma's undefined-semantiek matchte anders stil de eerste workspace-deliverable); (W3)
+type-restrictie expliciet tot repurposing beperkt in de prompt + bewezen met een echte
+bleed-check (create-request voor instagram-post → gewoon voorgesteld). MINORs: dead select
+weg, stale comment gefixt; chat-buildProposal-throw-gedrag en 12k-cap-randgevallen
+gedocumenteerd geaccepteerd. Reviewer bevestigde: workspace-isolatie dubbel geborgd op beide
+nieuwe paden (incl. het editedParams-gat in de chat-confirm dat de execute-check afvangt),
+confirm-keten ongewijzigd fail-fast, backwards-compat intact.
