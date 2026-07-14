@@ -16,6 +16,8 @@ const ns = {
       'Connect your publishing platforms to schedule and publish content directly from Branddock.',
     workspaceNote:
       'These integrations are workspace-specific. Switch workspace to configure a different client.',
+    adAccountsNote: 'Looking for advertising accounts (Meta ads)?',
+    adAccountsLink: 'Manage ad accounts',
     directConnection: 'Direct connection',
     accountCount_one: '{{count}} account',
     accountCount_other: '{{count}} accounts',
