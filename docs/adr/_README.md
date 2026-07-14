@@ -24,7 +24,7 @@ Eén bestand per beslissing. Format: lichtgewicht MADR.
 
 ## Voorbeelden
 
-Nog leeg — eerste retroactieve ADRs worden tijdens migratie week 1 dag 6-7 toegevoegd voor:
+Zie de gedateerde ADR-bestanden in deze map (2026-05 t/m heden).
 - Better Auth + organization plugin
 - Prisma 7 + pg adapter
 - Hybride Next.js SPA architectuur

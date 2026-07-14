@@ -2,6 +2,20 @@
 
 Lessons learned from past mistakes. Read this at the start of every session.
 
+## 2026-07-14: Vercel "sensitive" env-vars komen LEEG uit `vercel env pull` — lege string, geen error
+**What went wrong**: Gate-queries en debug-sessies gingen ervan uit dat `vercel env pull` de prod-env compleet oplevert. Vars die als *sensitive* zijn gemarkeerd (DATABASE_URL, META_APP_SECRET, CRON_SECRET, TOKEN_ENCRYPTION_KEY, …) komen echter als lege waarde terug — zonder foutmelding. Kostte een debug-cyclus (script leek te draaien maar had geen bruikbare waarde) en bij de Meta-setup ging een App Secret via een plak-verwisseling de verkeerde env-var in → rotatie nodig.
+**Rule**:
+- `vercel env pull` is géén bron voor sensitive values — reken op lege strings en fail-fast-check verplichte vars vóór gebruik.
+- Prod-acties met sensitive creds: de user levert de waarde via zijn eigen terminal/dashboard, of het draait op de prod-runtime zelf (cron/route) — nooit "even pullen".
+- Een secret dat door een terminal of chat is gegaan na een plak-fout: direct roteren, niet "waarschijnlijk niet gelekt" aannemen.
+
+## 2026-07-14: Agent-lane draait max één AGENT_TASK per workspace per runner-pass — een stale kapotte job maskeert stil elke scheduled run
+**What went wrong**: Bij de Iris-scheduled-smoke leek de cron-enqueue te falen: enqueue meldde succes, maar er kwam geen run. Werkelijke oorzaak: de agent-lane in `runPendingJobs` start max één échte AGENT_TASK per workspace per pass; een oude kapotte job (noop-payload van een eerdere task-smoke) claimde elke pass en de nieuwe scheduled job kwam nooit aan de beurt. Geen error — de run bleef gewoon uit.
+**Rule**:
+- Bij "scheduled run komt niet" éérst de `AgentJob`-queue van die workspace op oude PENDING/RETRY-rijen checken vóór je de cron/enqueue verdenkt.
+- Smokes die op een agent-run wachten draaien meerdere runner-passes (Iris-smoke doet max 4), nooit één.
+- Smoke-jobs met synthetische payloads na afloop opruimen — queue-vervuiling heeft hier maskeer-effect.
+
 ## 2026-07-13: "Neon-push gedaan" bleek niet waar — élke prod-sign-up 500'de dagenlang op een missende kolom
 **What went wrong**: De Fase-4/5a/5b-schema-delta moest handmatig naar Neon (`prisma db push`); dat was gerapporteerd als gedaan en de taak stond op afgevinkt. De taak-#7-deploy-smoke ving vervolgens dat **elke nieuwe sign-up op productie 500'de**: `provisionNewUser → organization.create` faalde op `The column Organization.sepaPaymentMethodId does not exist`. De push was wél gedraaid (shell-history bevestigt) maar vermoedelijk vanuit een checkout met een ouder `schema.prisma` — `db push` meldt dan gewoon "in sync" en niemand merkt iets, want bestaande sessies raken de nieuwe kolommen niet; alleen de org-CREATE (nieuwe registraties) raakt álle kolommen. Onboarding was dus stil kapot vanaf de 5a-deploy tot de smoke.
 **Rule**:
@@ -133,6 +147,7 @@ Lessons learned from past mistakes. Read this at the start of every session.
 **Rule**: When you extend a model's `query` hooks for encryption or any similar transform, grep for nested writes (`accounts: {`, `connectedAccount: {`, etc.) before shipping. If any exist, either refactor to explicit `prisma.account.create()` calls or extend the parent model too. Current Branddock code uses only direct delegate calls — verified for M10 in auth.ts + settings routes + seed.
 
 ## 2026-04-19: Tailwind 4 compiled index.css is incomplete — many teal shades missing
+**Recurrence 2026-07-14**: de standalone ad-accounts-pagina's — "Connect Meta"-knop rendererde onzichtbaar (`bg-emerald-600` gepurged, witte tekst op transparant; PR #134). De pagina was nooit browser-gesmoked omdat hij nergens gelinkt was; vindbaarheids-link toegevoegd.
 **What went wrong**: Buttons with `bg-teal-600` / `hover:bg-teal-700` had no background (white on white) because `src/index.css` is a committed, pre-compiled Tailwind 4 output — not a source file with `@tailwind` directives. Only `bg-teal-50/100/500` and `text-teal-600/700` were generated; `bg-teal-200/300/400/600/700/800/900` and most `hover:bg-teal-*` variants were missing. 21+ call sites across the codebase rendered transparent.
 **Rule**: Treat `src/index.css` as static content. Before using a Tailwind utility class, verify it appears in `src/index.css` via `grep`. If it's missing, either (a) append the rule to the bottom of `src/index.css` using the `--color-teal-*` CSS variables already defined, (b) use inline `style={{ backgroundColor: '#hex' }}`, or (c) swap to `bg-primary` (which uses the `--primary` CSS var and is pre-compiled). The default fix is (a) — one-line addition covers every usage.
 **Prior art**: CLAUDE.md "Tailwind purge workaround" entry mentions this for `min-h-0` and custom colors. Same pattern.

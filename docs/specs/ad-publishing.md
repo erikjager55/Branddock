@@ -94,6 +94,8 @@ Bij een poll-cycle bumpt de job dus BEIDE velden, ook als de status niet verande
 
 ### 3.2 `AdCampaign` (Fase C — voorbereiding van publish-flow)
 
+> ⚠️ **2026-07-14**: `deliverableId` is inmiddels **nullable** + er is een `origin`-discriminator (`'branddock' | 'external'`) + `externalName`/`creativeCreatedAt` bijgekomen (ads-watchdog-discovery, ADR [`2026-07-14-ads-watchdog-datamodel`](../adr/2026-07-14-ads-watchdog-datamodel.md), #399). Onderstaand blok is de oorspronkelijke Fase-A-versie.
+
 Eén row per gepubliceerd creative; meerdere campagnes per Deliverable mogelijk (zelfde creative naar Meta + LinkedIn = 2 rijen).
 
 ```prisma
@@ -135,7 +137,7 @@ model AdCampaign {
 
 ### 3.3 `AdMetricSnapshot` (Fase C — leeg gevuld, structuur klaar)
 
-Eén row per (campagne × tijdstip). Initiële release: lege table; fetch-job gerealiseerd door `sync-ad-insights` (tasks/agent-ads-watchdog.md, #399).
+Eén row per (campagne × tijdstip). Initiële release: lege table; fetch-job gerealiseerd door `sync-ad-insights` (tasks/done/agent-ads-watchdog.md, #399).
 
 ```prisma
 model AdMetricSnapshot {
