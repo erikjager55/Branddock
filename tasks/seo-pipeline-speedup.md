@@ -128,3 +128,29 @@ checklist met meta-description). Resterende route naar <7 min: **Fase 4b** (stap
 **Fase 4b blijft open en gegate op een F-VAL-A/B**: checklist in stap 7 mergen (spaart de
 resterende stap-8-call) óf stap 7 conditioneel skippen (~102s premium) — beide raken de
 kwaliteit-kritische keten.
+
+## Fase 4b gemeten — verdict: NO-GO, stap 7 blijft (2026-07-14)
+
+Taak `seo-fase4b-editorial-ab`. Gepaard A/B (n=4, BB-prod-workspace, echte pipeline-runs;
+arm A = stap-7-`revisedContent`, arm B = stap-6-draft uit exact dezelfde run; scoring
+`runFidelityScoring` skipPersist, judge cross-family gpt-5):
+
+| Brief | A (met 7) | B (zonder 7) | Δ | pijler-verschil |
+|---|---|---|---|---|
+| duurzame merkstrategie (aw) | 79 ✓ | 79 ✓ | 0 | — |
+| employer branding (co) | **83 ✓** | **77 ✓** | **+6** | judge 86→77, style 74→70 |
+| rebranding (de) | 73 ✗ | 72 ✗ | +1 | — |
+| merkarchetypen (aw) | 73 ✗ | 73 ✗ | 0 | — |
+
+Gem. A 77,0 vs B 75,25 (Δ 1,75). **Vooraf geregistreerde regel → NO-GO**: arm B zakt in
+2/4 onder de threshold (75) — al doet arm A dat daar óók — en de winst is heterogeen:
+meestal 0/+1, maar 1-op-4 een echte **+6** (editorial redt daar aantoonbaar kwaliteit).
+Een pass schrappen die soms 6 punten brand-fit levert is pre-launch niet verdedigbaar;
+een conditionele gate (mid-pipeline judge ~15s) is met n=4 niet betrouwbaar te bouwen.
+
+**Besluit: stap 7 blijft; de pipeline blijft op ~7,5 min** (t.o.v. 12 vóór #388/#389) —
+het restant naar 5-7 min is de kwaliteitsprijs niet waard. Herbezoek alleen met méér
+gepaarde data (de harness is herdraaibaar: `scripts/fidelity/fase4b-editorial-ab.ts`).
+
+Bijvangst: 2/4 briefs scoren in béide armen onder de threshold (73) — draft-kwaliteit is
+briefing-gevoelig (consistent met de pilot-F-VAL-bevinding), los van de editorial-vraag.
