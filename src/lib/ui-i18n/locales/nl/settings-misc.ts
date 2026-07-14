@@ -13,6 +13,8 @@ const ns = {
       'Koppel je publicatieplatforms om content direct vanuit Branddock in te plannen en te publiceren.',
     workspaceNote:
       'Deze integraties zijn workspace-specifiek. Wissel van workspace om een andere klant in te stellen.',
+    adAccountsNote: 'Op zoek naar advertentie-accounts (Meta ads)?',
+    adAccountsLink: 'Beheer ad-accounts',
     directConnection: 'Directe koppeling',
     accountCount_one: '{{count}} account',
     accountCount_other: '{{count}} accounts',
