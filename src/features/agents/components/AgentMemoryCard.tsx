@@ -58,7 +58,10 @@ export function AgentMemoryCard({ agentId }: { agentId: string }) {
                 size="sm"
                 icon={Trash2}
                 disabled={deleteMemory.isPending}
-                onClick={() => deleteMemory.mutate(memory.id)}
+                onClick={() => {
+                  if (!window.confirm(t('detail.memory.deleteConfirm'))) return;
+                  deleteMemory.mutate(memory.id);
+                }}
                 aria-label={t('detail.memory.delete')}
               >
                 {t('detail.memory.delete')}

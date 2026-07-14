@@ -83,6 +83,15 @@ async function main() {
   const runId = (r2.result as { runId?: string } | undefined)?.runId;
   if (!runId) fail("job-result mist runId");
 
+  // Finalize-MINOR: assert óók de AgentJob-DB-rij (niet alleen het
+  // in-memory runner-result) — de terminale write is een aparte updateMany
+  // met eigen-claim-guard en kan stil niets matchen.
+  const jobRow = await prisma.agentJob.findUniqueOrThrow({ where: { id: jobId } });
+  if (jobRow.status !== "COMPLETED") fail(`job-DB-rij hoort COMPLETED te zijn, is: ${jobRow.status}`);
+  if (jobRow.errorMessage !== null) fail(`job-DB-rij hoort geen errorMessage te hebben: ${jobRow.errorMessage}`);
+  if ((jobRow.result as { runId?: string } | null)?.runId !== runId) fail("job-DB-rij result.runId matcht de run niet");
+  console.log("✓ job-DB-rij: COMPLETED + result.runId consistent");
+
   const run = await prisma.agentRun.findUniqueOrThrow({
     where: { id: runId },
     include: { artifacts: true },
