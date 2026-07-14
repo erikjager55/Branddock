@@ -5,10 +5,10 @@ fase: post-launch
 priority: later
 effort: "Fase 0: ~1 dag (validatie, geen code) · bouw na go: 7-11 dagen"
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-07-14
 completed: -
-related-adr: docs/adr/<datum>-ads-watchdog-datamodel.md (te schrijven ná Fase 0, vóór Fase 1)
+related-adr: docs/adr/2026-07-14-ads-watchdog-datamodel.md
 related-spec: tasks/_drafts/idea-agent-ads-watchdog.md
 worktree: branddock-agent-ads-watchdog (alleen voor Fase 1+; Fase 0 is validatie zonder code)
 ---
@@ -138,8 +138,19 @@ Vier fases, strikt sequentieel:
 - **Fase-0-resultaten**:
   - **2026-07-14, item 1 (prod-telling)**: `ConnectedAdAccount` = **0 rijen** (0 active) — herbevestigd (eerdere telling bij planning idem).
   - **2026-07-14, bijvangst infra**: **`META_APP_ID`/`META_APP_SECRET` ontbreken volledig op Vercel-prod** — een Meta-account kóppelen kan op productie dus überhaupt nog niet. Dit is een voorwaarde vóór item 3 (insights-pull) en item 4 (app-review-check): Erik moet eerst de Meta-app-credentials op prod zetten (en de app in het Meta-dashboard hebben).
-  - **Items 2-4 wachten op Erik** (user-held): (2) BB-antwoord — draait Better Brands een Meta-account met actieve Advantage+-campagnes en wil je koppelen? Plus A3: "als iets je zou vertellen dat je ad moe is, wat zou je dan willen krijgen?"; (3) één handmatige Graph-API-insights-pull zodra er een token/account is (veldmapping → hier noteren); (4) app-review-status `ads_read` op de prod-app (development-mode vs approved).
-  - GO/NO-GO: _(na items 2-4 invullen; GO vereist ≥1 koppelbaar account + ≥2/3 signalen uit de API + één positief A3-signaal)_
+  - **2026-07-14, items 1-4 grotendeels afgerond** (Erik + Claude, stap-voor-stap-sessie):
+    - **Meta-app "Branddock" aangemaakt** (App ID 2087286845540129, development-mode, Business-type, use-cases "Create & manage ads" + "Measure ad performance"), redirect-URI geregistreerd, `META_APP_ID`/`META_APP_SECRET` op Vercel-prod (secret na een plak-verwisseling geroteerd en opnieuw gezet — het oude secret heeft kort als client_id in OAuth-URLs gestaan).
+    - **Item 2 ✅ GEKOPPELD**: `ConnectedAdAccount` rij aanwezig — "better brands" (`act_764986273365908`), workspace BB-prod, status active, long-lived token t/m 2026-09-12, alle 5 scopes. Koppel-bereidheid daarmee feitelijk beantwoord.
+    - **Item 3 ✅ VELDMAPPING** (handmatige read-only Graph-API-pull v20.0, 2 actieve ads, echte spend):
+      | signaal | veld | niveau | granulariteit |
+      |---|---|---|---|
+      | frequency | `insights.frequency` | **ad** | per dag (`time_increment=1`) |
+      | CTR-trend | `insights.ctr` | **ad** | per dag |
+      | creative-leeftijd | `ad.created_time` (+ `campaign.created_time`) | ad | — |
+      Alle drie op ad-niveau — de fijnste granulariteit; campagne-niveau werkt ook (fallback). NB: campagnes zijn reguliere OUTCOME_TRAFFIC/OUTCOME_ENGAGEMENT (geen Advantage+) — signalen identiek; drempel-startwaarden blijven bruikbaar. Discovery-velden voor Fase 1 bevestigd: `id,name,effective_status,created_time,creative{id},campaign{id,name,objective},adset{id,name}`.
+    - **Item 4 ✅ pragmatisch beantwoord**: development-mode volstaat voor de pilot — OAuth-koppeling én insights-reads werken op het eigen Business-account (bewezen). App-review (`ads_read` approved) is pas nodig voor accounts van externe klanten → aparte user-actie met doorlooptijd, niet blocking voor Fase 1.
+    - **UI-bug bijvangst**: de "Connect Meta"-knop op `/settings/integrations/ad-accounts` is onzichtbaar (Tailwind-4-purge: `bg-emerald-600` niet in de gecompileerde CSS) én de pagina is nergens gelinkt vanuit de Integrations-tab — beide fixen bij Fase 1.
+  - **GO/NO-GO: ✅ GO (2026-07-14, besloten door Erik + Claude)** — alle drie criteria gehaald: (1) account gekoppeld en werkend; (2) 3/3 signalen uit de API op ad-niveau; (3) A3-antwoord van Erik: **(c) "direct een voorstel voor een vers, on-brand creative dat je kunt bevestigen"** — het sterkste signaal, valideert exact de propose→confirm→create_deliverable-kern van het ontwerp. Fase 1 (metrics-sync) gestart; ADR: `docs/adr/2026-07-14-ads-watchdog-datamodel.md`.
 - Premisse-verificatie bij tech-planning (2026-07-14, tegen origin/main): `AgentSchedule` bestaat (schema r5423, cadence `DAILY`), `agents-scheduling` is done (#390), marktonderzoek-rapport gecommit (PR #128), `AdMetricSnapshot` heeft nul writers in `src/` (grep-bevestigd), `ads_read` in `META_OAUTH_SCOPES` bevestigd. Let op: lokale `main` liep bij planning achter op origin/main — worktree vanaf `origin/main` spinnen (dat doet `scripts/dev/worktree.sh` al).
 - Drempel-startwaarden (frequency 3,5 / CTR −25%/14d / creative 45d) zijn hypotheses uit de idea-file — kalibreren op de Fase-0-pull en de eerste 2 weken echte snapshots.
 - Weekplafond-cap (voorstel 3) is een product-beslissing — bevestigen bij ADR.
