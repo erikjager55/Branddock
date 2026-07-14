@@ -5843,9 +5843,18 @@ model ConnectedAdAccount {
 }
 
 model AdCampaign {
-  id            String      @id @default(cuid())
-  deliverableId String
-  deliverable   Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  id String @id @default(cuid())
+
+  // Nullable sinds de ads-watchdog (ADR 2026-07-14-ads-watchdog-datamodel):
+  // discovered externe ads hebben geen Branddock-deliverable. Elke query
+  // benoemt expliciet welke origin hij bedoelt ('branddock' | 'external').
+  deliverableId String?
+  deliverable   Deliverable? @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  origin        String       @default("branddock")
+
+  // Discovery-metadata voor externe ads (veldmapping Fase 0: ad.created_time).
+  externalName      String?
+  creativeCreatedAt DateTime?
 
   connectedAccountId String
   connectedAccount   ConnectedAdAccount @relation(fields: [connectedAccountId], references: [id], onDelete: Restrict)
@@ -5872,6 +5881,7 @@ model AdCampaign {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([connectedAccountId, externalAdId])
   @@index([deliverableId])
   @@index([connectedAccountId, status])
   @@index([externalCampaignId])

@@ -39,6 +39,45 @@ export interface MetaUserMe {
   email?: string;
 }
 
+// ─── Insights / discovery (ads-watchdog Fase 1) ─────────────
+// Veldmapping bewezen in Fase 0 (tasks/agent-ads-watchdog.md §Notes):
+// alle drie de fatigue-signalen op ad-niveau.
+
+export interface MetaActiveAd {
+  id: string;
+  name: string;
+  effective_status: string;
+  created_time: string; // ISO — signaal 3 (creative-leeftijd)
+  creative?: { id: string; name?: string };
+  campaign?: { id: string; name: string; objective?: string; created_time?: string };
+  adset?: { id: string; name: string };
+}
+
+export interface MetaActiveAdListResponse {
+  data: MetaActiveAd[];
+  paging?: { cursors: { before: string; after: string }; next?: string };
+}
+
+export interface MetaAdInsightRow {
+  ad_id: string;
+  ad_name?: string;
+  date_start: string; // "YYYY-MM-DD"
+  date_stop: string;
+  impressions?: string;
+  reach?: string;
+  frequency?: string; // signaal 1 — mee in `raw`; kolom-loos (impressions/reach)
+  ctr?: string; // signaal 2
+  clicks?: string;
+  spend?: string;
+  cpm?: string;
+  cpc?: string;
+}
+
+export interface MetaAdInsightListResponse {
+  data: MetaAdInsightRow[];
+  paging?: { cursors: { before: string; after: string }; next?: string };
+}
+
 export interface MetaErrorBody {
   error: {
     message: string;

@@ -7,6 +7,7 @@ export {
   appSecretProof,
 } from './oauth';
 export { fetchUserMe, fetchAdAccounts } from './client';
+export { fetchActiveAds, fetchAdInsightsDaily } from './insights';
 export {
   publishFacebookAd,
   validateFacebookCreative,
@@ -33,5 +34,7 @@ export type {
   MetaUserMe,
   MetaProviderConfig,
   MetaErrorBody,
+  MetaActiveAd,
+  MetaAdInsightRow,
 } from './types';
 export { MetaApiError } from './types';
