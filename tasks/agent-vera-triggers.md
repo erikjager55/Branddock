@@ -5,7 +5,7 @@ fase: post-launch
 priority: later
 effort: "Fase 0: 2 weken doorloop (~4 uur actief) · bouw: 6-9 dagen"
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-07-14
 completed: -
 related-adr: docs/adr/2026-07-05-agents-architectuur.md (aanvulling te schrijven vóór bouwfase — zie ADR-sectie)

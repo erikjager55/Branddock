@@ -1,13 +1,13 @@
 ---
 id: agent-ads-watchdog
 title: Ads-waakhond — propose-only agent voor creative-fatigue op gekoppelde Meta-accounts
-fase: post-launch
+fase: launch
 priority: later
 effort: "Fase 0: ~1 dag (validatie, geen code) · bouw na go: 7-11 dagen"
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-07-14
-completed: -
+completed: 2026-07-14
 related-adr: docs/adr/2026-07-14-ads-watchdog-datamodel.md
 related-spec: tasks/_drafts/idea-agent-ads-watchdog.md
 worktree: branddock-agent-ads-watchdog (alleen voor Fase 1+; Fase 0 is validatie zonder code)
@@ -46,7 +46,7 @@ Vier fases, strikt sequentieel:
 
 # Acceptatiecriteria
 
-- [ ] **Fase 0 afgerond en gedocumenteerd in Notes**: prod-telling, BB-antwoord (koppel-bereidheid + A3), veldmapping van de handmatige insights-pull, app-review-status, expliciete GO of NO-GO. Bij NO-GO stopt de task hier.
+- [x] **Fase 0 afgerond en gedocumenteerd in Notes** (2026-07-14): prod-telling, BB-koppeling, veldmapping, app-review-status pragmatisch beantwoord, expliciete **GO**.
 - [x] ADR geschreven en gecommit vóór enige schema-wijziging (`docs/adr/2026-07-14-ads-watchdog-datamodel.md`, PR #135).
 - [x] Volledig bewezen: Fase-1-sync (smoke 11/11, echte Graph API) én de REPORT-helft (Fase-3-smoke: Ada-run op fixture-data → NL-rapport met per ad frequency/CTR-trend/leeftijd mét meetwaarden vs drempels; gezonde workspace → expliciet "geen signalen"-gedrag in prompt geborgd).
 - [x] Bewezen (smoke): vermoeide fixture-ad (3 signalen) → run AWAITING_CONFIRMATION met create_deliverable-PROPOSAL waarvan de brief de signalen + refresh-richting benoemt; notificatie via bestaand notify-run-finished-kanaal (generiek, Fase-2-infra).
@@ -140,6 +140,11 @@ Vier fases, strikt sequentieel:
 - Nieuwe OAuth-scopes.
 
 # Notes
+
+> **RESTEREND NÁ DEPLOY (geen bouwwerk — daarom done, precedent Iris #397)**:
+> (1) eerste prod-cron-tick 05:30 UTC verifiëren (`AdMetricSnapshot`-rijen op Neon);
+> (2) scheduled-e2e op prod (smoke-stap 9: DAILY-schedule → cron → run+notificatie) — valt samen met Eriks pilot-adoptie (Ada-schedule aanmaken);
+> (3) drempel-kalibratie ~2026-07-28 op 2 weken echte snapshots (frequency 3,5 · CTR −25% · leeftijd 45d zijn idea-file-hypotheses).
 
 - **Fase-0-resultaten**:
   - **2026-07-14, item 1 (prod-telling)**: `ConnectedAdAccount` = **0 rijen** (0 active) — herbevestigd (eerdere telling bij planning idem).

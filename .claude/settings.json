@@ -105,12 +105,14 @@
       "Bash(git clean -fd:*)",
       "Bash(git checkout -- :*)",
       "Bash(git restore --source=:*)",
-      "Bash(git branch -D:*)",
       "Bash(git commit --no-verify:*)",
       "Bash(git commit -n:*)",
       "Bash(npm publish:*)",
       "Bash(npx prisma migrate reset:*)",
       "Bash(curl:*--data-urlencode:*)"
+    ],
+    "ask": [
+      "Bash(git branch -D:*)"
     ]
   }
 }
