@@ -53,9 +53,23 @@
 **Go** voor betaalde acquisitie als: alle 3 testers taak 1-5 halen met hooguit één ⚠️ per
 tester, en geen enkel P1 open blijft. Anders: fixes eerst, daarna 1 hertest met een verse tester.
 
-## Technische pre-check (agent, geautomatiseerd)
+## Technische pre-check (agent, geautomatiseerd) — KLAAR
 
-Draai vóór de sessies de technische variant van taak 1-5 (signup → workspace → asset →
-persona → generatie) geautomatiseerd door met Playwright — zodat testers alleen op UX
-struikelen, niet op kapotte techniek. Dit staat als restpunt in de task-file en hoort bij
-het inplannen van de eerste sessie.
+Draai vóór elke sessie de geautomatiseerde technische variant, zodat testers alleen op UX
+struikelen, niet op kapotte techniek:
+
+```
+# lokaal (eigen dev-server op 3001 tegen branddock_test):
+npm run test:onboarding-precheck
+
+# tegen productie:
+PLAYWRIGHT_BASE_URL=https://branddock-7y9n.vercel.app \
+  npx playwright test --config e2e/playwright.config.ts -g "Onboarding pre-check"
+```
+
+De spec (`e2e/tests/global/onboarding-precheck.spec.ts`) maakt een vers account aan en
+loopt taak 1-6 af. Taak 1-4 (signup → workspace → merk-asset → persona) zijn DB-only en
+worden hard geassert; taak 5-6 (generatie + on-brand-trace) hangen aan de Anthropic-API en
+worden als `⛔` gerapporteerd tot je de run tegen productie mét tegoed draait. De test print
+een rubric-samenvatting (✅/⚠️/❌/⛔) per taak. **Groen op 1-4 = de technische onboarding-gate
+is open; bevestig 5-6 live vóór de eerste sessie.**

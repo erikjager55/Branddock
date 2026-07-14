@@ -18,6 +18,7 @@
     "test:e2e:headed": "playwright test --config e2e/playwright.config.ts --headed",
     "test:e2e:debug": "playwright test --config e2e/playwright.config.ts --debug",
     "test:e2e:report": "playwright show-report",
+    "test:onboarding-precheck": "playwright test --config e2e/playwright.config.ts -g \"Onboarding pre-check\"",
     "test:brandstyle-eval": "tsx scripts/smoke-tests/brandstyle-provenance.ts && tsx scripts/smoke-tests/web-page-builder-phase60-provenance-consumption.ts",
     "smoke:provenance-consumption": "tsx scripts/smoke-tests/web-page-builder-phase60-provenance-consumption.ts",
     "smoke:hero-clobber-guard": "tsx scripts/smoke-tests/web-page-builder-phase61-hero-clobber-guard.ts",
