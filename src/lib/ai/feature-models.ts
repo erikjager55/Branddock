@@ -76,7 +76,8 @@ export type AiFeatureKey =
   | 'agent-content-creator'
   | 'agent-market-analyst'
   | 'agent-data-analyst'
-  | 'agent-reporter';
+  | 'agent-reporter'
+  | 'agent-seo-watchdog';
 
 export type AiProvider = 'anthropic' | 'openai' | 'google';
 
@@ -378,6 +379,15 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     key: 'agent-reporter',
     label: 'Agent — Reporter',
     description: 'Weekly client-ready brand report agent',
+    category: 'agents',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
+    supportedProviders: ['anthropic'],
+  },
+  {
+    key: 'agent-seo-watchdog',
+    label: 'Agent — SEO/GEO Watchdog',
+    description: 'Published GEO content decay-scan and maintenance report agent',
     category: 'agents',
     defaultProvider: 'anthropic',
     defaultModel: 'claude-sonnet-4-6',

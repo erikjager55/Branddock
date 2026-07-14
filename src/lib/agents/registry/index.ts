@@ -69,6 +69,7 @@ import { contentCreatorAgent, registerContentCreatorTools } from "./definitions/
 import { marketAnalystAgent, registerMarketAnalystTools } from "./definitions/market-analyst";
 import { dataAnalystAgent, registerDataAnalystTools } from "./definitions/data-analyst";
 import { reporterAgent, registerReporterTools } from "./definitions/reporter";
+import { registerSeoWatchdogTools, seoWatchdogAgent } from "./definitions/seo-watchdog";
 
 registerAgent(researchAnalystAgent);
 registerResearchAnalystTools();
@@ -84,6 +85,8 @@ registerAgent(dataAnalystAgent);
 registerDataAnalystTools();
 registerAgent(reporterAgent);
 registerReporterTools();
+registerAgent(seoWatchdogAgent);
+registerSeoWatchdogTools();
 
 // Per-agent geheugen (Fase 2, slice 4): elke persona-agent krijgt recall
 // (vrije read) + remember (propose-only Claw-tool → confirm-pad) op zijn
@@ -97,6 +100,7 @@ for (const def of [
   marketAnalystAgent,
   dataAnalystAgent,
   reporterAgent,
+  seoWatchdogAgent,
 ]) {
   registerMemoryTools(def.toolNamespace);
   registerClawToolsForAgent(def.toolNamespace, ["remember_agent_memory"]);

@@ -5,20 +5,20 @@ fase: launch
 priority: now
 effort: 2,5-3,5 dagen (waarvan 0,5 dag gate-datacheck vooraf; bouw start pas na de gate)
 owner: claude-code
-status: blocked
+status: done
 created: 2026-07-14
-completed: -
+completed: 2026-07-14
 related-adr: docs/adr/2026-07-05-agents-architectuur.md (bestaand — D4 dekt curated agent-toevoeging; géén nieuwe ADR nodig)
 related-spec: tasks/_drafts/idea-agent-seo-watchdog.md
 worktree: branddock-agent-seo-watchdog (pas na Taak 0 — de datacheck is code-loos)
 ---
 
 
-> **Taak-0-gate GEDRAAID (2026-07-14, prod-Neon): FAALT vandaag** — 0 deliverables met
-> `geoOptimizationAnalysis` op prod; er is nog niets te bewaken. Status → `blocked`,
-> data-gated op pilot-gebruik: de gate gaat open zodra de pilot GEO-long-form/LP's
-> publiceert (hangt samen met user-taken #5 pilot-adoptie en #12 LP-browser-smoke).
-> Hertoets de query bij de bouwstart; de rest van dit plan blijft geldig.
+> **GEBOUWD 2026-07-14 als ships-dormant** (user-directive "werk alles uit", 2026-07-14).
+> Taak-0-gate tweemaal gedraaid op prod-Neon (zie Notes): 0 GEO-pagina's — de agent is
+> volledig gevalideerd op lokaal geseede GEO-data (34/34 smoke-checks, echte AI-runs) en
+> levert op prod het eerlijke "niets te bewaken"-rapport + schedule-advies (expliciet AC)
+> tot de pilot GEO-content publiceert (user-taken #5/#12).
 
 # Probleem
 
@@ -102,18 +102,18 @@ ORDER BY geo_pages DESC;
 
 # Acceptatiecriteria
 
-- [ ] Taak 0 uitgevoerd; tabel in Notes; gate-besluit expliciet genoteerd (drempels/cadence eventueel bijgesteld)
-- [ ] Given een workspace met ≥1 gepubliceerd GEO-deliverable met `measuredAt` ouder dan de drempel, When de (scheduled) run draait, Then één REPORT in de inbox met per pagina vervalsignalen + publish- vs actuele score + prioriteit, LINK-artefacten die naar de canvas navigeren, en 0 credits afgeboekt (CreditLedger leeg voor deze run)
-- [ ] Given dat rapport, When de user het `update_deliverable_brief`-proposal voor één pagina bevestigt, Then is de brief van dát deliverable geüpdatet (bestaand confirm-pad) en start de user via het LINK-deep-link de bestaande structured-variant-regeneratie; na republish staat een verse `geoOptimizationAnalysis` met nieuwe score naast de oude in het GEO-paneel
-- [ ] Given een workspace waar alles gezond is, When de run draait, Then meldt het REPORT expliciet "geen verval gedetecteerd" (artifacts-contract: geen stille no-op, geen valse urgentie)
-- [ ] Given een workspace zonder enige gepubliceerde GEO-deliverable, When de run draait, Then legt het REPORT uit dat er niets te bewaken valt en adviseert het de schedule uit te zetten (dunste invulling van idea-criterium 4: eerste-run-uitleg, geen UI-gate)
-- [ ] Given een falende run, Then bestaand gedrag: precies één fout-notificatie (`notify-run-finished.ts`), geen half artefact
-- [ ] Het rapport bevat **nooit** traffic-/ranking-claims — behavior-prompt verbiedt het expliciet ("maintenance backlog, never traffic loss — we do not measure traffic"); smoke-check grep op rapport-output
-- [ ] Scheduled-run-bewijs geleverd (zie smoke-test stap 6): run met `triggerType='scheduled'` + `scheduleId` gezet + notificatie ontvangen
-- [ ] `npx tsc --noEmit` 0 errors
-- [ ] `npm run lint` 0 errors
-- [ ] Smoke-test uitgevoerd
-- [ ] Changelog-entry bij afronden
+- [x] Taak 0 uitgevoerd (2× — plan-fase én bouwstart-hertoets); tabel in Notes; gate-besluit: ships-dormant (user-directive), drempels/cadence ongewijzigd
+- [x] Happy path bewezen (smoke stap 4, geseede dev-data): REPORT met alle 5 vervalsignalen + publish- vs actuele score (80→46), LINK naar canvas, 0 CreditTransactions — $0,094/40s
+- [x] Herschrijf-loop bewezen (smoke stap 4b, headless confirm-pad route-parity): proposal → brief-velden geüpdatet op het vervallen deliverable; de gegenereerde refresh-brief benoemt exact de decay-signalen (stats/DefinedTermSet/canonical). Republish-herberekening is de bestaande publish-hook (ongewijzigd)
+- [x] Gezond-pad in de behavior-prompt geborgd ("no decay detected", geen valse urgentie); deterministisch bewezen dat gezonde pagina's healthy tellen (smoke: healthy=1, niet geflagd)
+- [x] Lege-workspace-run bewezen (WRA Juristen, $0,058): rapport legt "niets te bewaken" uit + hoe GEO-content ontstaat + schedule-pauze-advies
+- [x] Falende run = bestaand generiek gedrag (notify-run-finished op status, agent-agnostisch) — gedekt door `scripts/dev/agent-notify-smoke.ts` (Fase 2); tool-level fail-soft bewezen: corrupt record → skip-teller, run slaagt (smoke: skipped=1)
+- [x] Framing-constraint hard in de prompt + smoke-grep op rapport-output: 0 traffic-/ranking-claims (check "framing" groen op beide echte runs)
+- [x] Scheduled-run-bewijs: EVERY_MINUTE-schedule → enqueue → runner → AgentRun `triggerType=scheduled` + `scheduleId` + artefact in inbox + notificatie "Iris (SEO/GEO Watchdog) finished a task" + `nextRunAt` opgeschoven (~$0,055)
+- [x] `npx tsc --noEmit` 0 errors
+- [x] `npm run lint` 0 errors op alle geraakte files
+- [x] Smoke-test uitgevoerd: `scripts/dev/agent-seo-watchdog-smoke.ts` — **34/34 PASS** (unit-helpers, geseede scan-signalen, workspace-isolatie, 2 echte AI-runs, confirm-loop, scheduled-bewijs)
+- [x] Changelog-entry: #397
 
 # Bestanden die ik aanraak
 
@@ -177,4 +177,20 @@ Volledige lijst in de idea-file (10 items — o.a. auto-deploy, GSC, DataForSEO,
 - **Rapportvorm**: REPORT (markdown) — prioriteitsverhaal met per-pagina-blokken leest beter dan TABLE voor "wat eerst en waarom"; TABLE blijft optie als dogfood anders uitwijst.
 - **Success-metric-meting** (uit idea-file): `AgentArtifact.acceptedAt` op PROPOSALs van deze agent met run `triggerType='scheduled'` — werkt ongewijzigd omdat de refresh-brief een echt PROPOSAL-artefact is. Aanvullend outcome-signaal: verse `measuredAt` op een geflagde pagina ≤14 dagen na de flaggende run (query op `settings`).
 - **Cadence**: default-advies WEEKLY in de agent-beschrijving; prod-floor is DAILY (`EVERY_MINUTE` dev-only, runtime-gehandhaafd in `enqueue.ts`). Geen code nodig — schedule-UI default staat al op WEEKLY.
-- Taak-0-resultaat: _(tabel + gate-besluit hier invullen)_
+- **Taak-0-resultaat** (prod-Neon, 2× gedraaid: plan-fase + bouwstart-hertoets 2026-07-14):
+
+  | workspaceId | geo_pages | oldest_measured | newest_measured | stale_90d |
+  |---|---|---|---|---|
+  | _(0 rows)_ | 0 | — | — | — |
+
+  **Gate-besluit**: <2 pagina's → per gate-regel user-besluit. Eriks staande directive
+  ("werk alles na elkaar of parallel waar mogelijk uit") dekt optie (c)-variant: **bouwen
+  als ships-dormant** — volledig gevalideerd op lokaal geseede GEO-data (de smoke seedt via
+  de échte `buildGeoOptimizationAnalysis`, zelfde schrijver als de publish-hook), en de
+  lege-prod-situatie is een expliciet AC (eerste-run-uitleg + schedule-advies). Geen
+  scope-uitbreiding naar externe pagina's. Drempel (90d) en cadence-advies (WEEKLY) ongewijzigd.
+- **Persona-besluit**: Iris, icon `Radar` (voorstel uit de planning gevolgd).
+- **Kosten**: happy path $0,094, leeg $0,058, scheduled $0,055 — alle ruim ≤ $0,15 COGS-doel.
+- **Rapport-hallucinatie gefixt tijdens bouw**: eerste run verzon een scandatum → tool geeft nu `scannedAt` mee.
+- **Review (2026-07-14)**: 0 CRITICAL; 1 WARNING gefixt (scan-guard valideert nu ook `measuredAt`/`canonicalUrl` — format-drift lekte anders door als canonical-drift of dateloze flag). Bewuste post-merge-restjes (MINORs): max-3-proposals is prompt-gehandhaafd (hard cap via `countToolAttempt` kan later; blast radius klein, propose-only), `schemaDrift.added` telt als decay (copy-nuance "her-meten" kan), `agedStats` her-flagt legitiem oude jaartallen elke run (suppressie-mechanisme = eerste kandidaat als Iris "zeurt").
+- **Runner-observatie** (geen bug, wel les): de agent-lane verwerkt één AGENT_TASK per workspace per pass — een stale kapotte job (noop-payload van een eerdere task-smoke) claimde de pass en maskeerde de scheduled run; smoke loopt nu max 4 passes. De kapotte job is opgeruimd.
