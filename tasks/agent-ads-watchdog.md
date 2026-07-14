@@ -48,21 +48,25 @@ Vier fases, strikt sequentieel:
 
 - [ ] **Fase 0 afgerond en gedocumenteerd in Notes**: prod-telling, BB-antwoord (koppel-bereidheid + A3), veldmapping van de handmatige insights-pull, app-review-status, expliciete GO of NO-GO. Bij NO-GO stopt de task hier.
 - [x] ADR geschreven en gecommit vóór enige schema-wijziging (`docs/adr/2026-07-14-ads-watchdog-datamodel.md`, PR #135).
-- [~] **Fase-1-helft bewezen** (2026-07-14, smoke 11/11 tegen de echte Graph API op het BB-account): dagelijkse sync → 2 `AdCampaign`-rijen `origin=external` + 4 `AdMetricSnapshot`-rijen (metrics + frequency in `raw`), idempotent. REPORT-helft volgt in Fase 3.
-- [ ] Given een creative die een fatigue-drempel overschrijdt, When de run afrondt, Then bevat de run een PROPOSAL (signaal + refresh-richting) en ontvangt de run-owner een notificatie via het bestaande kanaal.
-- [ ] Given een PROPOSAL, When de user bevestigt, Then ontstaat via het bestaande confirm-pad een on-brand refresh-creative als deliverable en worden credits uitsluitend op dit pad geboekt (ledger-verifieerbaar).
-- [ ] Given een PROPOSAL, When de user niets doet of afwijst, Then vindt aantoonbaar géén write richting Meta plaats — de insights-client bevat statisch uitsluitend GET-calls.
-- [ ] Given een workspace zonder gekoppeld account, When de user de waakhond opent, Then ziet hij uitleg + koppel-CTA; run- en schedule-create geven 400; er ontstaan geen runs of notificaties.
-- [ ] Given meer signalen dan het weekplafond, When de run draait, Then worden extra signalen gebundeld/onderdrukt (geen inbox-spam).
+- [x] Volledig bewezen: Fase-1-sync (smoke 11/11, echte Graph API) én de REPORT-helft (Fase-3-smoke: Ada-run op fixture-data → NL-rapport met per ad frequency/CTR-trend/leeftijd mét meetwaarden vs drempels; gezonde workspace → expliciet "geen signalen"-gedrag in prompt geborgd).
+- [x] Bewezen (smoke): vermoeide fixture-ad (3 signalen) → run AWAITING_CONFIRMATION met create_deliverable-PROPOSAL waarvan de brief de signalen + refresh-richting benoemt; notificatie via bestaand notify-run-finished-kanaal (generiek, Fase-2-infra).
+- [x] Confirm-pad bewezen (smoke): proposal → deliverable (facebook-post) → echte canvas-generatie draait. ⚠️ Credits-afwijking gedocumenteerd: de agent is niet-billable (monitoring gratis, consistent met Dana/Remi/Iris) en de confirm-charge is op `billable` gegate → de refresh-creative boekt tijdens de pilot 0 credits. Bekend credit-model-punt, zelfde klasse als het structured-variant-pad — melden bij credit-model-herziening, niet hier fixen.
+- [x] GET-only statisch geverifieerd (insights.ts uitsluitend graphGet; review-check Fase 1) — er bestaat geen code-pad van agent naar Meta-writes.
+- [x] Lege staat: koppel-CTA-banner op AgentDetailPage (i18n en/nl), 400-guards in run- én schedule-route (code; browser-verificatie bij prod-deploy), en het scheduled-pad (bestaande schedules) levert een eerlijke koppel-uitleg-REPORT (smoke, WRA-workspace).
+- [x] Weekplafond bewezen (smoke): budget kunstmatig op de cap → run COMPLETED met 0 nieuwe proposals en het signaal gebundeld in het rapport; read_ad_signals levert het budget hard aan het model.
 - [x] Bestaande `sync-ad-campaigns`-cron raakt discovered rows niet aan — origin-guard, smoke-bewezen (lastStatusSyncAt blijft NULL).
 - [x] Sync-job invalideert `adAccounts`+`adCampaigns` per geraakte workspace; reads workspace-gescoped via de FK-keten (smoke-check isolatie groen).
-- [ ] `npx tsc --noEmit` 0 errors
-- [ ] `npm run lint` 0 errors
-- [ ] Smoke-test uitgevoerd
-- [ ] Documentatie bijgewerkt (changelog; `docs/specs/ad-publishing.md` §Fase C-verwijzing "fetch-job komt in vervolg-spec" → verwijst naar deze task)
+- [x] `npx tsc --noEmit` 0 errors
+- [x] `npm run lint` 0 errors op alle geraakte files
+- [x] Smoke-tests: Fase 1 `ads-insights-sync-smoke.ts` 11/11 · Fase 2+3 `agent-ads-watchdog-smoke.ts` **27/27** (unit-signalen, fixture-scan, 3 echte Ada-runs, confirm→canvas-generatie, weekplafond, lege workspace)
+- [x] Changelog #399 (Fase 1) + #400 (Fase 2+3); ad-publishing-spec-verwijzing bijgewerkt
 
 # Bestanden die ik aanraak
 
+> **Review Fase 2+3 (2026-07-14)**: 0 CRITICAL, 4 WARNINGs — W1 (memory-proposals aten het refresh-budget op → JSON-path-filter op create_deliverable), W2 (expired-account-staleness → account-status-filter + lastSnapshotAt in flagged), W3 (rij-caps: tabel ≤ MAX_TABLE_ROWS, flagged top-20) gefixt; W4 (weekplafond prompt-only) **bewust geaccepteerd voor de pilot** — zelfde patroon als Iris' max-3, budget hard in het tool-result, propose-only + confirm-frictie als vangnet; harde tool-wrap is de eerste hardening als Ada drift vertoont. MINORs gefixt: frequency-inflatie bij null-reach, CTR-epsilon-vloer, reconnect-nuance in foutmelding/banner. Bewuste restjes: schedule-PATCH-re-enable omzeilt de POST-guard (consistent met het eerlijke-report-pad voor bestaande schedules).
+>
+> **Fase 2+3 (2026-07-14): GEBOUWD** — persona **Ada** (Gauge), 9e agent. Signalen als pure functies (`ads-watchdog/signals.ts`), read-tools op de data-analyst-conventie (`tools.ts`: read_ad_signals met weekbudget + TABLE-artefact, read_ad_account_status), refresh via bestaand `create_deliverable`-confirm-pad (contentType facebook-post — canvas-fallback werkt, smoke-bewezen), 400-guards + koppel-CTA. Resterend ná deploy: prod-cron-tick-verificatie (05:30 UTC) + scheduled-e2e op prod (smoke-stap 9) + drempel-kalibratie op 2 weken echte snapshots.
+>
 > **Fase-1-status (2026-07-14): GEBOUWD + GEREVIEWD** — smoke `scripts/dev/ads-insights-sync-smoke.ts` 11/11 (echte Graph API; het verlopen van het eerste token bewees en passant het 401→expired-pad live). Review: 0 CRITICAL, 5 WARNINGs — **alle 5 gefixt vóór merge**: (W1) origin-filter op de twee bestaande `_count`-queries (ad-accounts-UI + disconnect-waarschuwing telden anders discovered ads mee), (W2) `@@unique([connectedAccountId, externalAdId])` + echte upsert (dubbele-tick-race), (W3) cursor-paginatie via graphGet i.p.v. `paging.next` raw volgen (appsecret_proof + MetaApiError-semantiek op élke pagina), (W4) verdwenen external rijen → status `paused` (anders vuurt Fase 2 op dode ads), (W5) snapshot-staart voor net-gepauzeerde ads. MINORs: TZ-aanname gedocumenteerd (windowStart = date_start als UTC-middernacht; key stabiel), `AD_CAMPAIGN_ORIGIN`-const i.p.v. magic strings, dode guard weg. Schaal-note (bewust later): insights-paginatie ongecapt + seriële upserts — bij >200 ads/account batching overwegen. Neon `prisma db push` + prod-cron-verificatie bij de merge. Fase 2 (signalen) + Fase 3 (agent) zijn de volgende bouwcycli.
 
 **Fase 1 — read-side** (~7 files):

@@ -31,6 +31,11 @@ const ns = {
       hint: 'Kies welke workspace-bronnen deze run als context mag gebruiken. Verwijder je de brand-modules, dan verdwijnt ook het merkfundament uit de prompt.',
     },
     back: 'Terug naar Agents',
+    adAccountGate: {
+      title: 'Geen advertentie-account gekoppeld',
+      body: 'Ada bewaakt de creative-gezondheid van je gekoppelde ad-accounts. Koppel eerst een Meta-advertentie-account (of herkoppel een verlopen account) — zonder actief account valt er niets te bewaken.',
+      cta: 'Ad-account koppelen',
+    },
     chatButton: 'Chat met {{name}}',
     inboxButton: 'Resultaten-inbox',
     useCasesTitle: 'Wat kan {{name}} voor je doen?',

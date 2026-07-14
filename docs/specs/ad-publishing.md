@@ -135,7 +135,7 @@ model AdCampaign {
 
 ### 3.3 `AdMetricSnapshot` (Fase C — leeg gevuld, structuur klaar)
 
-Eén row per (campagne × tijdstip). Initiële release: lege table; fetch-job komt in vervolg-spec.
+Eén row per (campagne × tijdstip). Initiële release: lege table; fetch-job gerealiseerd door `sync-ad-insights` (tasks/agent-ads-watchdog.md, #399).
 
 ```prisma
 model AdMetricSnapshot {
