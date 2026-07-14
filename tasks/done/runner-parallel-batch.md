@@ -54,7 +54,7 @@ tussen awaits; de route gebruikt results alleen voor counts.
 - [x] Regimes intact: max 1 gestarte agent-run per invocation; budget-check vóór elke rest-claim; SKIPPED-iteratie; prioriteits-startvolgorde; per-workspace-AGENT_TASK-cap
 - [x] `npx tsc --noEmit` 0 errors + lint 0
 - [x] scripts/jobs-smoke.ts groen (dispatch→claim→handle→complete, incl. dedupe)
-- [ ] Prod-validatie na deploy: burst van 2 gelijktijdige jobs → beide klaar in ~max(t₁,t₂) (volgt in de sessie, ná merge)
+- [x] Prod-validatie (2026-07-14, na deploy): burst van 2 website-scans → **beide gestart in dezelfde seconde** (08:54:07 UTC, 1-2s na enqueue via de kick); scan 1 liep 4m03 door terwijl scan 2 al klaar was — onder de oude sequentiële runner had scan 2 pas ná scan 1 gestart. (Scan 2 faalde inhoudelijk in 1s: bol.com blokkeert scrapers — content-fout, geen queue-fout; de AgentJob zelf COMPLETED netjes.)
 
 # Bestanden die ik aanraak
 
