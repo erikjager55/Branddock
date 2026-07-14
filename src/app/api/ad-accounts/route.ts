@@ -32,7 +32,9 @@ export async function GET() {
         lastRefreshedAt: true,
         lastErrorMessage: true,
         connectedBy: { select: { id: true, name: true, email: true } },
-        _count: { select: { campaigns: true } },
+        // Alleen via-Branddock-gepubliceerde campagnes tellen — discovered
+        // external rijen (ads-watchdog-sync) zouden de teller vervuilen.
+        _count: { select: { campaigns: { where: { origin: 'branddock' } } } },
         createdAt: true,
       },
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],

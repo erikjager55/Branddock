@@ -38,6 +38,9 @@ export async function syncAdCampaignStatus(): Promise<SyncResult> {
 
   const campaigns = await prisma.adCampaign.findMany({
     where: {
+      // origin-guard (ADR 2026-07-14): discovered externe ads horen niet
+      // in de 5-min-status-polling — hun status leeft bij Meta zelf.
+      origin: 'branddock',
       status: { in: ['publishing', 'active'] },
       externalAdId: { not: null },
       OR: [{ lastStatusSyncAt: null }, { lastStatusSyncAt: { lt: stale } }],
