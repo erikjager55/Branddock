@@ -168,15 +168,19 @@ Phase-C-BB-smoke) · browser-smoke schedule-UI/inbox-filter/notificatie-klik.
   repo-brede pre-existing warnings) · smokes: cadence-DST, brug, schedule
   (incl. echte content-creator-proposal-run), notify (happy + fail-gate),
   memory, en de volledige dogfood-sweep door de gestreamde loop.
-- **Open MINORs (bewust gedeferred, geen productie-faalscenario)**: PATCH
-  mist `enforceNotLocked` + cancelt geen pending job bij pause (≤1 tick-
-  venster); one-click delete zonder confirm (schedules + memories);
-  server-notificatie-copy EN-only; e-mail-deep-link zonder workspace-switch
-  voor multi-workspace-users; `enqueued`-teller telt deduped dispatches;
-  TOCTOU op de 20-cap (overshoot max 1); `DEFAULT_LOOP_TIMEOUT_MS`-spiegel;
-  tablist zonder pijltjes-navigatie; telemetrie-ruis op het zombie-error-pad;
-  agent-task-smoke assert de DB-rij niet; `AGENTS_DEV_CADENCE` ontbreekt in
-  de CLAUDE.md-env-lijst.
+- **MINORs-batch VERWERKT (2026-07-14, changelog #401)** — gefixt: PATCH
+  `enforceNotLocked` (re-enable = terugkerend AI-budget), delete-confirms op
+  schedules + memories (i18n en/nl), `enqueued`-teller telt deduped
+  dispatches niet meer mee, `DEFAULT_LOOP_TIMEOUT_MS` importeert nu de échte
+  loop-constante (spiegel-drift weg), zombie-error-pad slaat telemetrie +
+  error-log over als de eigen-claim-guard 0 rijen matcht (reaper-attempt is
+  leidend), agent-task-smoke assert nu óók de AgentJob-DB-rij,
+  `AGENTS_DEV_CADENCE` in de CLAUDE.md-env-lijst.
+  **Bewust open (klein UX-/randwerk, geen faalscenario)**: pending-job-cancel
+  bij pause (≤1 tick-venster), server-notificatie-copy EN-only (i18n-at-write
+  vergt workspace-taal op de server), e-mail-deep-link zonder
+  workspace-switch, TOCTOU op de 20-cap (overshoot max 1), tablist
+  pijltjes-navigatie (a11y-polish).
 - **Post-merge-aandachtspunt**: main heeft inmiddels de job-queue
   instant-kick (#388, `kickWorker` op dispatch) — na merge draait elke kick
   ook de reapers + schedule-enqueue uit de cron-route-body. Idempotent en

@@ -84,7 +84,7 @@ export async function enqueueDueSchedules(now: Date = new Date()): Promise<Enque
 
       const dueSlot = schedule.nextRunAt.toISOString();
       try {
-        await dispatchJob({
+        const dispatched = await dispatchJob({
           type: 'AGENT_TASK',
           workspaceId: schedule.workspaceId,
           payload: {
@@ -101,7 +101,9 @@ export async function enqueueDueSchedules(now: Date = new Date()): Promise<Enque
           maxAttempts: 2,
           triggeredBy: 'cron',
         });
-        enqueued++;
+        // Een dedupe-join is geen nieuwe enqueue (finalize-MINOR: de teller
+        // telde deduped dispatches mee en overrapporteerde).
+        if (!dispatched.deduped) enqueued++;
       } catch (err) {
         // P2002 op idempotencyKey: dit due-slot had al een terminale job —
         // dispatch is dan feitelijk al gebeurd; alleen de claim moet nog.

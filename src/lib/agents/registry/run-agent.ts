@@ -15,6 +15,7 @@ import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
+  DEFAULT_TIMEOUT_MS,
   OutputContractError,
   runAgentWithContract,
 } from "@/lib/brandclaw/orchestrator/agent-loop";
@@ -106,11 +107,10 @@ async function withDeadline<T>(promise: Promise<T>, ms: number, message: string)
   }
 }
 
-/** Loop-default uit agent-loop.ts (DEFAULT_TIMEOUT_MS) — nodig om de
- * caller-cap als écht plafond te laten werken: zonder deze spiegel zou een
- * cap van 680s de effectieve timeout van default-agents (300s) juist
- * verhógen (review-W 2026-07-13). */
-const DEFAULT_LOOP_TIMEOUT_MS = 5 * 60 * 1000;
+/** Loop-default rechtstreeks uit agent-loop.ts — was een handgespiegelde
+ * constante (finalize-MINOR: drift-risico); nodig om de caller-cap als écht
+ * plafond te laten werken (review-W 2026-07-13). */
+const DEFAULT_LOOP_TIMEOUT_MS = DEFAULT_TIMEOUT_MS;
 
 /** Per-agent timeout onder de platform-clamp én de optionele caller-cap. */
 function resolveTimeoutMs(

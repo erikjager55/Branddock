@@ -9,6 +9,7 @@
 // =============================================================
 
 import { NextResponse } from "next/server";
+import { enforceNotLocked } from "@/lib/stripe/enforcement";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -68,6 +69,11 @@ export async function PATCH(
     const role = await requireWorkspaceRole(["owner", "admin", "member"]);
     if (role instanceof NextResponse) return role;
     const workspaceId = role.workspaceId;
+
+    // Pariteit met POST (finalize-MINOR): een re-enable via PATCH geeft
+    // terugkerend AI-budget uit — zelfde trial-lock als schedule-create.
+    const trialLock = await enforceNotLocked(workspaceId);
+    if (trialLock) return trialLock;
 
     const existing = await prisma.agentSchedule.findFirst({
       where: { id: scheduleId, workspaceId },

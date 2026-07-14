@@ -163,7 +163,7 @@ async function runJob(job: AgentJob): Promise<JobRunResult> {
     const nextAttemptAt = willRetry ? new Date(Date.now() + computeBackoffMs(freshJob.attempts)) : null;
 
     // Zelfde eigen-claim-guard als het success-pad.
-    await prisma.agentJob.updateMany({
+    const errFinalized = await prisma.agentJob.updateMany({
       where: { id: job.id, status: 'RUNNING', startedAt: freshJob.startedAt },
       data: {
         status: willRetry ? 'RETRY' : 'FAILED',
@@ -172,6 +172,12 @@ async function runJob(job: AgentJob): Promise<JobRunResult> {
         completedAt: willRetry ? null : new Date(),
       },
     });
+    if (errFinalized.count === 0) {
+      // Al gereaped tijdens de run (zombie): de reaper-attempt is leidend en
+      // rapporteert zelf — geen dubbele error-telemetrie (finalize-MINOR).
+      console.warn(`[agent-job ${job.id}] al gereaped tijdens de run — error-write + telemetrie overgeslagen`);
+      return { id: job.id, type: job.type, status: willRetry ? 'RETRY' : 'FAILED', attempts: freshJob.attempts, error: message };
+    }
 
     console.error(`[agent-job ${job.id}] ${job.type} failed (attempt ${freshJob.attempts}/${freshJob.maxAttempts}):`, message);
 

@@ -60,6 +60,9 @@ export function ScheduleManagerCard({
   };
 
   const onDelete = (schedule: AgentSchedule) => {
+    // Finalize-MINOR: one-click delete zonder bevestiging was te makkelijk
+    // voor een destructieve actie op een lopend schema.
+    if (!window.confirm(t('detail.schedules.deleteConfirm'))) return;
     setRowError(null);
     deleteSchedule.mutate(schedule.id, {
       onError: (err) => setRowError(err instanceof Error ? err.message : t('detail.schedules.deleteError')),

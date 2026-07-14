@@ -82,7 +82,7 @@ export class OutputContractError extends Error {
 
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 const DEFAULT_MAX_TOKENS = 4096;
-const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
+export const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_MAX_TOOL_CALLS = 20;
 
 let cachedClient: AnthropicClient | null = null;
