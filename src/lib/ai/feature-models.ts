@@ -75,7 +75,8 @@ export type AiFeatureKey =
   | 'agent-strategist'
   | 'agent-content-creator'
   | 'agent-market-analyst'
-  | 'agent-data-analyst';
+  | 'agent-data-analyst'
+  | 'agent-reporter';
 
 export type AiProvider = 'anthropic' | 'openai' | 'google';
 
@@ -368,6 +369,15 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     key: 'agent-data-analyst',
     label: 'Agent — Data Analyst',
     description: 'Workspace data analysis agent producing tables',
+    category: 'agents',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
+    supportedProviders: ['anthropic'],
+  },
+  {
+    key: 'agent-reporter',
+    label: 'Agent — Reporter',
+    description: 'Weekly client-ready brand report agent',
     category: 'agents',
     defaultProvider: 'anthropic',
     defaultModel: 'claude-sonnet-4-6',

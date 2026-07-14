@@ -76,6 +76,11 @@ const SPECS: Spec[] = [
     useCaseId: "content-production",
     message: "",
   },
+  {
+    agentId: "reporter",
+    useCaseId: "weekly-report",
+    message: "geen extra focus",
+  },
 ];
 
 interface RowResult {

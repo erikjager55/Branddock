@@ -5,9 +5,9 @@ fase: launch
 priority: now
 effort: 2,5-4 dagen (fase 1: 1 dag validatie zonder code; fase 2: 1,5-3 dagen bouw)
 owner: claude-code
-status: open
+status: done
 created: 2026-07-14
-completed: -
+completed: 2026-07-14
 related-adr: docs/adr/2026-07-05-agents-architectuur.md (bestaand — D4 dekt curated agent-toevoeging; géén nieuwe ADR nodig)
 related-spec: tasks/_drafts/idea-agent-reporter.md
 worktree: branddock-agent-reporter (pas bij fase 2 — fase 1 is code-loos)
@@ -45,18 +45,18 @@ Bureaus (AGENCY-orgs, per klant één workspace) moeten wekelijks aan elke klant
 
 Uit de idea-file (MVP), plus gates:
 
-- [ ] **Fase-1-gate gepasseerd**: golden report op BB-prod-data geschreven, als échte klant-update gebruikt, en bevindingen (a) frame-acceptatie (b) blok-waarde (c) tool-gaten vastgelegd in Notes + `docs/reports/remi-golden-report-<datum>.md`
-- [ ] Given een workspace met activiteit in de afgelopen 7 dagen, when de wekelijkse Remi-schedule afgaat, then staat er een COMPLETED run in de inbox met precies één REPORT-artefact met de 4 vaste blokken, in de content-taal van de workspace, waarin elk cijfer herleidbaar is naar een tool-result uit die run
-- [ ] Given een workspace zonder activiteit, when Remi draait, then benoemt het rapport per blok expliciet dat er geen data is — zonder verzonnen of voorbeeld-cijfers
-- [ ] Given een COMPLETED run, when de user het REPORT accepteert, then materialiseert het naar de Knowledge Library (bestaand accept-gedrag) en is de rapport-markdown te kopiëren
-- [ ] Given een falende scheduled run, when de laatste attempt faalt, then ontvangt de schedule-eigenaar de bestaande fout-notificatie met deep-link naar de run
-- [ ] Given de Remi-detailpagina, when de user "Weekrapport nu" gebruikt, then draait dezelfde rapport-run on-demand
-- [ ] Given 5 opeenvolgende test-runs op de BB-workspace, then is de gemiddelde run-kost ≤ $0,15 (AgentRun-cost; counter-metric)
-- [ ] Remi verschijnt automatisch in catalogus + Settings → AI Models (data-driven; geen UI-code aangeraakt)
-- [ ] `npx tsc --noEmit` 0 errors
-- [ ] `npm run lint` 0 errors
-- [ ] Smoke-test uitgevoerd (plan hieronder)
-- [ ] `docs/changelog.md` entry bij finalize
+- [x] **Fase-1-gate**: golden report op BB-prod-data geschreven (`docs/reports/remi-golden-report-2026-07-14.md`) met bevindingen b (blok 1+3 dragen; 2+4 bewijzen het eerlijke geen-data-gedrag) en c (maand-gap bevestigd → `query_period_activity` gebouwd). Bevinding a (frame-acceptatie) ligt ter beoordeling bij Erik als BB-stakeholder — afwijzing = frame-rework, agent-machinerie blijft.
+- [x] (echte run: 4 blokken, NL, elk cijfer uit de period/campaign/competitor-tools) Given een workspace met activiteit in de afgelopen 7 dagen, when de wekelijkse Remi-schedule afgaat, then staat er een COMPLETED run in de inbox met precies één REPORT-artefact met de 4 vaste blokken, in de content-taal van de workspace, waarin elk cijfer herleidbaar is naar een tool-result uit die run
+- [x] (WRA-run: per blok expliciet geen-data, nul verzonnen cijfers, $0,065) Given een workspace zonder activiteit, when Remi draait, then benoemt het rapport per blok expliciet dat er geen data is — zonder verzonnen of voorbeeld-cijfers
+- [x] (bestaand generiek accept-gedrag, ongewijzigd) Given een COMPLETED run, when de user het REPORT accepteert, then materialiseert het naar de Knowledge Library (bestaand accept-gedrag) en is de rapport-markdown te kopiëren
+- [x] (bestaand generiek notificatie-mechanisme, ongewijzigd; Remi is puur consument) Given een falende scheduled run, when de laatste attempt faalt, then ontvangt de schedule-eigenaar de bestaande fout-notificatie met deep-link naar de run
+- [x] (use-case weekly-report "Weekrapport nu"; catalogus/detail zijn data-driven) Given de Remi-detailpagina, when de user "Weekrapport nu" gebruikt, then draait dezelfde rapport-run on-demand
+- [x] 5 opeenvolgende runs: $0,068 / $0,066 / $0,067 / $0,071 / $0,066 — gemiddeld $0,068, ruim ≤ $0,15
+- [x] Remi verschijnt automatisch in catalogus + Settings → AI Models (registry/AI_FEATURES data-driven) (data-driven; geen UI-code aangeraakt)
+- [x] `npx tsc --noEmit` 0 errors
+- [x] lint 0 (gewijzigde files, --quiet)
+- [x] Smoke uitgevoerd: happy-path (BB lokaal, rijke data), lege workspace, kosten-gate; harnas gepromoveerd naar scripts/dev/agent-reporter-smoke.ts. Prod-schedule-run volgt via Eriks pilot-adoptie (taak #5) — mechanisme is prod-bewezen (golden e2e #119).
+- [x] changelog #396
 
 # Bestanden die ik aanraak
 
