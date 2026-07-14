@@ -1,6 +1,13 @@
 # Puck v0.21.2 — `external` field typing-mismatch on custom row shapes
 
-> **Status**: draft, ready to file at <https://github.com/puckeditor/puck/issues>
+> **Status**: OBSOLETE — NIET ingediend (check 2026-07-14). Upstream opgelost in
+> `@puckeditor/core@0.22.x`: `mapRow` accepteert nu elke row-shape en mag
+> `Record<string, string | number | ReactElement>` teruggeven (hun issue #506,
+> closed met een typing-PR); `fetchList`/`mapProp` zijn `any`-getypeerd, dus de
+> `string | null`-collapse uit dit rapport bestaat niet meer. Restpunt is hooguit
+> een nette generic i.p.v. `any` — een voorkeur, geen blokkade. Actie verplaatst
+> naar `tasks/web-page-builder-acceptance-rest.md`: upgrade 0.21.2 → 0.22.x
+> overwegen (ontgrendelt `external`-velden voor bv. de persona-picker).
 > **Reporter**: Branddock dev team
 > **Found**: 2026-05-22 during spike-validation of Puck integration for our visual page builder
 > **Worktree branch**: `branddock-feat-web-page-builder-canvas`

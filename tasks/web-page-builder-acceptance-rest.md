@@ -26,16 +26,18 @@ geen van alle pre-launch-urgentie hebben maar wél echt zijn.
    Puck-editor-code. Meet eerst (bundle-analyzer) of de winst de split waard is.
 2. **Dual-render perf-meting** (≥50 componenten) in `docs/audits/` — er zijn geen
    perf-klachten bekend; alleen doen als de pilot LP's van die omvang oplevert.
-3. **Puck-bug-report indienen**: `docs/audits/puck-external-field-typing-issue.md`
-   staat klaar ("ready to file"); `@puckeditor/core` staat nog op `^0.21.2`. ~15 min,
-   extern werk onder Eriks GitHub-identiteit — expliciete user-go vereist. Check vóór
-   indienen of de issue in een nieuwere Puck-release al gefixt is.
+3. ~~Puck-bug-report indienen~~ **VERVALLEN (check 2026-07-14, user-go was gegeven)**:
+   de typing-klacht is upstream opgelost in `@puckeditor/core@0.22.x` (issue #506) —
+   indienen tegen 0.21.2 zou stale zijn. NIEUW restpunt in de plaats: **upgrade
+   0.21.2 → 0.22.x overwegen** — ontgrendelt `external`-velden (async fetch + search)
+   voor o.a. de persona-picker die nu op een statische `select` zit; changelog van
+   0.22 doornemen op breaking changes vóór de bump.
 
 # Acceptatiecriteria
 
 - [ ] Bundle-meting `/p/[slug]` + beslissing split ja/nee (met cijfers)
 - [ ] Perf-meting gedaan óf expliciet geskipt met reden (geen ≥50-component-LP's)
-- [ ] Puck-issue ingediend (na user-go) óf obsoleet verklaard na release-check
+- [x] Puck-issue obsoleet verklaard na release-check (0.22.x fixt het; audit-doc bijgewerkt) — vervangen door upgrade-overweging
 - [ ] `npx tsc --noEmit` 0 errors (alleen relevant bij de bundle-split)
 
 # Out-of-scope
