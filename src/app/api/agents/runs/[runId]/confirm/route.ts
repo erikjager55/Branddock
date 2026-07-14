@@ -42,6 +42,7 @@ const TOOL_CACHE_PREFIXES: Record<string, Array<(wsId: string) => string>> = {
   update_deliverable_brief: [cacheKeys.prefixes.campaigns, cacheKeys.prefixes.studio],
   start_alignment_scan: [cacheKeys.prefixes.alignment, cacheKeys.prefixes.dashboard],
   start_trend_scan: [cacheKeys.prefixes.trendRadar],
+  remember_agent_memory: [cacheKeys.prefixes.agents],
 };
 
 export async function POST(
@@ -192,7 +193,12 @@ export async function POST(
 
     let result: unknown;
     try {
-      result = await toolDef.execute(paramsCheck.data as Record<string, unknown>, { workspaceId, userId: session.user.id });
+      // agentId server-owned vanaf de run-rij — memory-writes scopen erop.
+      result = await toolDef.execute(paramsCheck.data as Record<string, unknown>, {
+        workspaceId,
+        userId: session.user.id,
+        agentId: run.agentId,
+      });
     } catch (err) {
       // Executie-fout: claim terugrollen zodat de user kan retryen; non-2xx
       // zodat clients dit niet als succes lezen.

@@ -27,6 +27,9 @@ export type AgentId =
   | "content-creator"
   | "market-analyst"
   | "data-analyst"
+  | "reporter"
+  | "seo-watchdog"
+  | "ads-watchdog"
   | "echo-test";
 
 /** Persona-framing (user-besluit 2026-07-05): benoemde agents, professioneel. */

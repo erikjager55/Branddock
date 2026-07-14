@@ -5,8 +5,14 @@
 
 import type {
   AgentCatalogResponse,
+  AgentMemoriesResponse,
   AgentRunsResponse,
   AgentRunDetailResponse,
+  AgentSchedulesResponse,
+  AgentScheduleResponse,
+  CreateScheduleBody,
+  UpdateScheduleBody,
+  RunTriggerFilter,
   StartAgentRunBody,
   StartAgentRunResponse,
   ArtifactAction,
@@ -58,8 +64,51 @@ export async function fetchAgentCatalog(): Promise<AgentCatalogResponse> {
 }
 
 /** Workspace-scoped runs list (max 50, artifacts-summary included). */
-export function fetchAgentRuns(): Promise<AgentRunsResponse> {
-  return json('/api/agents/runs');
+export function fetchAgentRuns(trigger?: RunTriggerFilter): Promise<AgentRunsResponse> {
+  const query = trigger ? `?trigger=${trigger}` : '';
+  return json(`/api/agents/runs${query}`);
+}
+
+// ─── Schedules ────────────────────────────────────────────────
+
+/** Schedules van de workspace, optioneel per agent. */
+export function fetchAgentSchedules(agentId?: string): Promise<AgentSchedulesResponse> {
+  const query = agentId ? `?agentId=${encodeURIComponent(agentId)}` : '';
+  return json(`/api/agents/schedules${query}`);
+}
+
+export function createAgentSchedule(body: CreateScheduleBody): Promise<AgentScheduleResponse> {
+  return json('/api/agents/schedules', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateAgentSchedule(
+  scheduleId: string,
+  body: UpdateScheduleBody,
+): Promise<AgentScheduleResponse> {
+  return json(`/api/agents/schedules/${scheduleId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export function deleteAgentSchedule(scheduleId: string): Promise<{ deleted: boolean }> {
+  return json(`/api/agents/schedules/${scheduleId}`, { method: 'DELETE' });
+}
+
+// ─── Memories ─────────────────────────────────────────────────
+
+/** Memory-items van één agent (user-bevestigd via het confirm-pad). */
+export function fetchAgentMemories(agentId: string): Promise<AgentMemoriesResponse> {
+  return json(`/api/agents/memories?agentId=${encodeURIComponent(agentId)}`);
+}
+
+export function deleteAgentMemory(memoryId: string): Promise<{ deleted: boolean }> {
+  return json(`/api/agents/memories/${memoryId}`, { method: 'DELETE' });
 }
 
 /** Run detail including full artifact content. */

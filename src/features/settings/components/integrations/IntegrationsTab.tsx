@@ -259,6 +259,14 @@ export function IntegrationsTab() {
             {t('integrations.workspaceNote')}
           </p>
         </div>
+        {/* Ad-accounts leven op een losstaande OAuth-pagina buiten de SPA-chrome
+            (changelog #266) — zonder deze verwijzing is die onvindbaar. */}
+        <p className="text-xs text-gray-500 mt-2">
+          {t('integrations.adAccountsNote')}{' '}
+          <a href="/settings/integrations/ad-accounts" className="text-primary hover:underline font-medium">
+            {t('integrations.adAccountsLink')} →
+          </a>
+        </p>
       </div>
 
       {/* Platform cards */}

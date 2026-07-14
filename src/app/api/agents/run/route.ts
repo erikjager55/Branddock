@@ -22,11 +22,14 @@ import {
   UnknownAgentError,
   UnknownUseCaseError,
 } from "@/lib/agents/registry/run-agent";
-import { ALL_CONTEXT_MODULES, type ContextModule } from "@/lib/claw/claw.types";
-import type { AgentContextSelection } from "@/lib/agents/registry/types";
+import {
+  contextSelectionSchema,
+  sanitizeContextSelection,
+} from "@/lib/agents/registry/context-selection";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { enforceNotLocked } from "@/lib/stripe/enforcement";
+import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 800;
 
@@ -35,19 +38,6 @@ export const maxDuration = 800;
 // request genoeg voor kosten-amplificatie + DB-bloat (byte-cap-conventie
 // uit de security-sweep 2026-06-30; rate-limit begrenst alleen frequentie).
 const MAX_INPUT_BYTES = 32_768;
-
-// Content-sources-selectie: zelfde vorm als de Claw-chat; onbekende module-
-// waarden worden server-side weggefilterd (geen 400 — forward-compatible).
-const contextSelectionSchema = z
-  .object({
-    modules: z.array(z.string().max(32)).max(24),
-    entityIds: z
-      .record(z.string().max(32), z.array(z.string().max(64)).max(50))
-      .optional()
-      .nullable()
-      .refine((v) => !v || Object.keys(v).length <= 24, { message: "too many entityIds keys" }),
-  })
-  .optional();
 
 const bodySchema = z.object({
   agentId: z.string().min(1),
@@ -60,24 +50,6 @@ const bodySchema = z.object({
       message: `input exceeds ${MAX_INPUT_BYTES} bytes`,
     }),
 });
-
-
-/** Filtert de selectie op bekende modules; lege selectie → undefined (default-gedrag). */
-function sanitizeContextSelection(
-  raw: z.infer<typeof contextSelectionSchema>,
-): AgentContextSelection | undefined {
-  if (!raw) return undefined;
-  const known = new Set<string>(ALL_CONTEXT_MODULES);
-  const modules = [...new Set(raw.modules)].filter((m): m is ContextModule => known.has(m));
-  if (modules.length === 0) return undefined;
-  const entityIds: Partial<Record<ContextModule, string[]>> = {};
-  for (const [mod, ids] of Object.entries(raw.entityIds ?? {})) {
-    if (known.has(mod) && Array.isArray(ids) && ids.length > 0) {
-      entityIds[mod as ContextModule] = ids;
-    }
-  }
-  return { modules, ...(Object.keys(entityIds).length > 0 ? { entityIds } : {}) };
-}
 
 export async function POST(request: Request) {
   try {
@@ -111,6 +83,21 @@ export async function POST(request: Request) {
         { error: "Invalid request body", details: parsed.error.flatten() },
         { status: 400 },
       );
+    }
+
+    // Lege-staat-guard (tasks/agent-ads-watchdog.md, Fase 3): de waakhond
+    // zonder gekoppeld account bewaakt een lege tuin — hard 400 met uitleg
+    // i.p.v. een run die AI-budget uitgeeft aan "niets te bewaken".
+    if (parsed.data.agentId === "ads-watchdog") {
+      const activeAccounts = await prisma.connectedAdAccount.count({
+        where: { workspaceId, status: "active" },
+      });
+      if (activeAccounts === 0) {
+        return NextResponse.json(
+          { error: "No active ad account — connect (or reconnect an expired) account under Settings → Integrations → ad accounts first." },
+          { status: 400 },
+        );
+      }
     }
 
     let result;

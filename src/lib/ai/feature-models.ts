@@ -75,7 +75,10 @@ export type AiFeatureKey =
   | 'agent-strategist'
   | 'agent-content-creator'
   | 'agent-market-analyst'
-  | 'agent-data-analyst';
+  | 'agent-data-analyst'
+  | 'agent-reporter'
+  | 'agent-seo-watchdog'
+  | 'agent-ads-watchdog';
 
 export type AiProvider = 'anthropic' | 'openai' | 'google';
 
@@ -368,6 +371,33 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     key: 'agent-data-analyst',
     label: 'Agent — Data Analyst',
     description: 'Workspace data analysis agent producing tables',
+    category: 'agents',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
+    supportedProviders: ['anthropic'],
+  },
+  {
+    key: 'agent-reporter',
+    label: 'Agent — Reporter',
+    description: 'Weekly client-ready brand report agent',
+    category: 'agents',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
+    supportedProviders: ['anthropic'],
+  },
+  {
+    key: 'agent-seo-watchdog',
+    label: 'Agent — SEO/GEO Watchdog',
+    description: 'Published GEO content decay-scan and maintenance report agent',
+    category: 'agents',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
+    supportedProviders: ['anthropic'],
+  },
+  {
+    key: 'agent-ads-watchdog',
+    label: 'Agent — Ads Watchdog',
+    description: 'Creative-fatigue scan and refresh-proposal agent for connected ad accounts',
     category: 'agents',
     defaultProvider: 'anthropic',
     defaultModel: 'claude-sonnet-4-6',

@@ -76,9 +76,12 @@ async function main() {
   assert("featureKey is agent-data-analyst", def?.featureKey === "agent-data-analyst");
   assert("has 4 use-cases", def?.useCases.length === 4);
   const toolNames = getToolRegistry().listToolNames("agent:data-analyst");
+  // Query-tools + de 2 memory-tools (recall + remember) — assert op de
+  // array-lengte i.p.v. een hardcoded count zodat een nieuwe curated tool
+  // (zoals query_period_activity) deze smoke niet stil laat verrotten.
   assert(
-    "7 query-tools registered under agent:data-analyst",
-    toolNames.length === 7,
+    `${dataAnalystQueryTools.length} query-tools + 2 memory-tools registered under agent:data-analyst`,
+    toolNames.length === dataAnalystQueryTools.length + 2,
     `got: ${toolNames.join(", ")}`,
   );
 

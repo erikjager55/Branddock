@@ -8,9 +8,12 @@ import { Button, EmptyState } from '@/components/shared';
 import { useClawStore } from '@/stores/useClawStore';
 import { useFormat } from '@/lib/ui-i18n/format';
 import { AgentIconTile } from './AgentIcon';
+import { AgentMemoryCard } from './AgentMemoryCard';
 import { RunStatusBadge } from './RunStatusBadge';
+import { ScheduleManagerCard } from './ScheduleManagerCard';
 import { UseCaseForm } from './UseCaseForm';
 import { useAgentCatalog, useAgentRuns } from '../hooks';
+import { useQuery } from '@tanstack/react-query';
 import { useAgentsStore } from '../stores/useAgentsStore';
 import { isRunStale } from '../lib/run-utils';
 
@@ -37,6 +40,23 @@ export function AgentDetailPage({
   const [selectedUseCaseId, setSelectedUseCaseId] = useState<string | null>(null);
 
   const agent = agents?.find((candidate) => candidate.id === agentId);
+  // Lege-staat-gate voor de ads-watchdog (tasks/agent-ads-watchdog.md):
+  // zonder gekoppeld account weigert de run-route (400) — leg dat hier uit
+  // mét koppel-CTA i.p.v. de user tegen de foutmelding te laten aanlopen.
+  const { data: adAccounts } = useQuery<{ accounts?: Array<{ status: string }> }>({
+    queryKey: ['ad-accounts', 'gate'],
+    queryFn: async () => {
+      const res = await fetch('/api/ad-accounts');
+      if (!res.ok) throw new Error('ad-accounts fetch failed');
+      return res.json();
+    },
+    enabled: agentId === 'ads-watchdog',
+    staleTime: 30_000,
+  });
+  const needsAdAccount =
+    agentId === 'ads-watchdog' &&
+    adAccounts !== undefined &&
+    !(adAccounts.accounts ?? []).some((a) => a.status === 'active');
   const agentRuns = (runs ?? []).filter((run) => run.agentId === agentId).slice(0, 5);
 
   const viewInInbox = (runId: string) => {
@@ -153,6 +173,24 @@ export function AgentDetailPage({
             />
           )}
         </SectionCard>
+
+        {needsAdAccount && (
+          <SectionCard title={t('detail.adAccountGate.title')}>
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm text-gray-600">{t('detail.adAccountGate.body')}</p>
+                <a href="/settings/integrations/ad-accounts" className="inline-block mt-3">
+                  <Button size="sm">{t('detail.adAccountGate.cta')}</Button>
+                </a>
+              </div>
+            </div>
+          </SectionCard>
+        )}
+
+        <ScheduleManagerCard agentId={agent.id} useCases={agent.useCases} />
+
+        <AgentMemoryCard agentId={agent.id} />
 
         <SectionCard icon={Inbox} title={t('detail.recentRuns.title')}>
           {agentRuns.length === 0 ? (

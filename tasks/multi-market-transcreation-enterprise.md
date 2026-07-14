@@ -74,3 +74,17 @@ Bouw bovenop de forward-compatible foundation (`Brand`/`BrandLocaleProfile`, loc
 - Dependencies: `[[content-locale-foundation]]` + `[[content-locale-target-picker]]` + job-queue-infra + F-VAL-packs per markt.
 - **Per-locale F-VAL Pijler-1 centroid**: een `voiceOverrides` JSON-delta levert géén per-locale schrijf-sample-corpus; zonder per-locale samples valt de centroid stil terug op de globale (zwakke per-markt-fidelity). `BrandLocaleProfile.centroidEmbedding` (`vector(1536)`) is `Unsupported` in Prisma → schrijven via raw SQL; blijft `null` tot per-locale samples in `localizedAssets` bestaan (of accepteer een gedocumenteerde globale-centroid-fallback).
 - `Persona.localeProfileId` is de nullable KOLOM uit `[[content-locale-foundation]]`; hier alleen de tagging-BEHAVIOR, geen tweede schema-add.
+
+## Agent-consumability-eisen (toegevoegd 2026-07-14, uit idea-agent-localization)
+
+De geplande Localization-agent (zie `tasks/_drafts/idea-agent-localization.md`, verdict
+needs-validation-first, expliciet gegate op dít epic) stelt drie eisen aan de bouw van de
+transcreatie-engine — goedkoop om nú mee te nemen, duur om achteraf in te bouwen:
+1. **Headless aanroepbaar**: de engine moet zonder UI-sessie werken (job-queue/agent-brug),
+   niet alleen via de matrix-UI.
+2. **PROPOSAL-compatibel met subset-confirm**: batch-output moet per markt/deliverable
+   accepteerbaar zijn via de bestaande agents-confirm-keten (niet alles-of-niets).
+3. **Glossary/do-not-translate op `BrandLocaleProfile`-niveau** (merk-data, afdwingbaar in
+   élke generatie) — níet in AgentMemory; de agent mag later entries vóórstellen via confirm.
+Plus de F-VAL-randvoorwaarde: per-target-locale-pack-threading (P3) is vereist vóór de
+agent per-markt-scores mag claimen; zonder die threading géén score-claims per taal.

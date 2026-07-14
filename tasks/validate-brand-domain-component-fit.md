@@ -15,7 +15,7 @@ worktree: -
 
 # Probleem
 
-De web-page-builder (Puck, Canvas Step 3) rendert voor elk merk dezelfde gesloten set generieke blokken (`BrandHero`, `FeatureGrid`, `PricingTable`, `FAQ`, `Footer`), alleen render-time gethematiseerd uit tokens. Het idee `idea-brand-domain-specific-components` stelt voor om merk-/domein-specifieke componenten te genereren (bijv. een `UnitCard`/`SpecList` voor een opslagbedrijf). De feature-planner-discovery (verdict: **needs-validation-first**) legde de dragende, **onbewezen** aanname bloot: dat een betekenisvol deel van de Branddock-pipeline een merk met een "gestructureerd, herhaald aanbod-object" betreft. Het enige bewijs is nu een extern voorbeeld (Nèjbox), geen Branddock-(pilot)data. Bouwen vóór dit gemeten is = risico op "bouwen voor onszelf".
+De web-page-builder (Puck, Canvas Step 3) rendert voor elk merk dezelfde gesloten set generieke blokken (inmiddels 11, o.a. `BrandHero`, `FeatureGrid`, `PricingTable`, `FAQ`, `Footer`, `StickyCtaBar`, `StatsBlock`, `BrandNav` — zie de README in `canvas/medium/`), alleen render-time gethematiseerd uit tokens. Het idee `idea-brand-domain-specific-components` stelt voor om merk-/domein-specifieke componenten te genereren (bijv. een `UnitCard`/`SpecList` voor een opslagbedrijf). De feature-planner-discovery (verdict: **needs-validation-first**) legde de dragende, **onbewezen** aanname bloot: dat een betekenisvol deel van de Branddock-pipeline een merk met een "gestructureerd, herhaald aanbod-object" betreft. Het enige bewijs is nu een extern voorbeeld (Nèjbox), geen Branddock-(pilot)data. Bouwen vóór dit gemeten is = risico op "bouwen voor onszelf".
 
 # Voorstel
 

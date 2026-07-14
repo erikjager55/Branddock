@@ -1,10 +1,19 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Bot, ArrowLeft, AlertTriangle, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import {
+  Bot,
+  ArrowLeft,
+  AlertTriangle,
+  CalendarClock,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PageShell, PageHeader } from '@/components/ui/layout';
 import { Button, EmptyState } from '@/components/shared';
+import { FILTER_PATTERNS } from '@/lib/constants/design-tokens';
 import { useFormat } from '@/lib/ui-i18n/format';
 import { resolveAgentIcon } from './AgentIcon';
 import { RunStatusBadge } from './RunStatusBadge';
@@ -12,7 +21,13 @@ import { ArtifactViewer } from './ArtifactViewer';
 import { useAgentCatalog, useAgentRun, useAgentRuns } from '../hooks';
 import { useAgentsStore } from '../stores/useAgentsStore';
 import { isRunStale } from '../lib/run-utils';
-import type { AgentRunSummary, CatalogAgent } from '../types/agents.types';
+import type { AgentRunSummary, CatalogAgent, RunTriggerFilter } from '../types/agents.types';
+
+const TRIGGER_TABS: Array<{ value: RunTriggerFilter | undefined; labelKey: string }> = [
+  { value: undefined, labelKey: 'inbox.filter.all' },
+  { value: 'manual', labelKey: 'inbox.filter.manual' },
+  { value: 'scheduled', labelKey: 'inbox.filter.scheduled' },
+];
 
 /**
  * Results-inbox: alle runs van de workspace met uitklapbare artefact-
@@ -22,7 +37,8 @@ import type { AgentRunSummary, CatalogAgent } from '../types/agents.types';
  */
 export function AgentsInboxPage({ onNavigate }: { onNavigate: (section: string) => void }) {
   const { t } = useTranslation('agents');
-  const { data: runs, isLoading, isError, refetch } = useAgentRuns();
+  const [triggerFilter, setTriggerFilter] = useState<RunTriggerFilter | undefined>(undefined);
+  const { data: runs, isLoading, isError, refetch } = useAgentRuns(triggerFilter);
   const { data: agents } = useAgentCatalog();
   const inboxFocusRunId = useAgentsStore((s) => s.inboxFocusRunId);
   const setInboxFocusRunId = useAgentsStore((s) => s.setInboxFocusRunId);
@@ -55,6 +71,27 @@ export function AgentsInboxPage({ onNavigate }: { onNavigate: (section: string) 
           </Button>
         }
       />
+
+      <div className={`${FILTER_PATTERNS.tabsContainer} w-fit mb-4`} role="tablist">
+        {TRIGGER_TABS.map((tab) => {
+          const active = triggerFilter === tab.value;
+          return (
+            <button
+              key={tab.labelKey}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              data-testid={`inbox-filter-${tab.value ?? 'all'}`}
+              className={`${FILTER_PATTERNS.tabItem} ${
+                active ? FILTER_PATTERNS.tabItemActive : FILTER_PATTERNS.tabItemInactive
+              }`}
+              onClick={() => setTriggerFilter(tab.value)}
+            >
+              {t(tab.labelKey)}
+            </button>
+          );
+        })}
+      </div>
 
       {isError ? (
         <div data-testid="inbox-error" className="flex flex-col items-center gap-3 py-16 text-center">
@@ -145,6 +182,15 @@ function RunCard({
           </div>
           <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
             <span>{formatRelative(run.createdAt)}</span>
+            {run.triggerType === 'scheduled' && (
+              <span
+                data-testid="run-scheduled-badge"
+                className="inline-flex items-center gap-1 text-gray-500"
+              >
+                <CalendarClock className="h-3.5 w-3.5" />
+                {t('inbox.run.scheduled')}
+              </span>
+            )}
             {run.totalCostUsd > 0 && (
               <span>
                 {t('inbox.run.cost')}: {formatCurrency(run.totalCostUsd, 'USD', { maximumFractionDigits: 4 })}

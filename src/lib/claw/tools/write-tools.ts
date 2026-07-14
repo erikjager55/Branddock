@@ -743,6 +743,7 @@ export const writeTools: ClawToolDefinition[] = [
         toneDirection: z.string().optional().describe('Tone hint (e.g. "punchy and direct")'),
         callToAction: z.string().optional().describe('Desired CTA'),
       }).optional().describe('Briefing fields to pre-fill in the Canvas Step 1'),
+      sourceDeliverableId: z.string().optional().describe('When repurposing existing content: the deliverable this new piece is derived from (must be in the same workspace). Sets the derived-from relation for traceability.'),
     }),
     requiresConfirmation: true,
     category: 'write',
@@ -752,6 +753,7 @@ export const writeTools: ClawToolDefinition[] = [
         contentType: string;
         title?: string;
         brief?: Record<string, string | undefined>;
+        sourceDeliverableId?: string;
       };
       // Workspace-gescoped: buildProposal is via de agents-tool-bridge ook
       // met model-gecontroleerde ids bereikbaar — geen cross-tenant titels.
@@ -766,6 +768,18 @@ export const writeTools: ClawToolDefinition[] = [
       ];
       if (campaign?.title) {
         changes.push({ field: 'campaign', label: 'Campaign', currentValue: null, proposedValue: campaign.title });
+      }
+      if (p.sourceDeliverableId) {
+        // Fail-fast in de proposal-fase: een onbestaande of cross-workspace
+        // bron mag nooit een dead-end proposal in de inbox opleveren.
+        const source = await prisma.deliverable.findFirst({
+          where: { id: p.sourceDeliverableId, campaign: { workspaceId: ctx.workspaceId } },
+          select: { title: true },
+        });
+        if (!source) {
+          throw new Error('Source deliverable not found in this workspace');
+        }
+        changes.push({ field: 'derivedFrom', label: 'Derived from', currentValue: null, proposedValue: source.title });
       }
       if (p.brief?.objective) changes.push({ field: 'objective', label: 'Objective', currentValue: null, proposedValue: p.brief.objective });
       if (p.brief?.keyMessage) changes.push({ field: 'keyMessage', label: 'Key message', currentValue: null, proposedValue: p.brief.keyMessage });
@@ -783,6 +797,7 @@ export const writeTools: ClawToolDefinition[] = [
         contentType: string;
         title?: string;
         brief?: { objective?: string; keyMessage?: string; toneDirection?: string; callToAction?: string };
+        sourceDeliverableId?: string;
       };
 
       // Verify campaign ownership — Claw operates per-workspace so cross-
@@ -796,6 +811,19 @@ export const writeTools: ClawToolDefinition[] = [
       }
       if (campaign.isLocked) {
         throw new Error(`Campaign "${campaign.title}" is locked. Unlock it first.`);
+      }
+
+      // Bron-validatie op execute-tijd (defense-in-depth naast buildProposal):
+      // de relatie wordt alleen gezet als de bron aantoonbaar van deze
+      // workspace is.
+      if (p.sourceDeliverableId) {
+        const source = await prisma.deliverable.findFirst({
+          where: { id: p.sourceDeliverableId, campaign: { workspaceId: ctx.workspaceId } },
+          select: { id: true },
+        });
+        if (!source) {
+          throw new Error('Source deliverable not found in this workspace');
+        }
       }
 
       const title = (p.title ?? p.contentType).trim() || p.contentType;
@@ -818,6 +846,7 @@ export const writeTools: ClawToolDefinition[] = [
           status: 'NOT_STARTED',
           progress: 0,
           approvalStatus: 'DRAFT',
+          ...(p.sourceDeliverableId ? { derivedFromId: p.sourceDeliverableId } : {}),
           ...(Object.keys(settings).length > 0 ? { settings } : {}),
         },
         select: { id: true, title: true, contentType: true },

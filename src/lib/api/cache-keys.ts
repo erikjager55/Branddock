@@ -101,8 +101,9 @@ export const cacheKeys = {
     detail: (deliverableId: string, versionId: string) => `content-versions:${deliverableId}:detail:${versionId}`,
   },
   agents: {
-    runs: (wsId: string) => `agents:${wsId}:runs`,
+    runs: (wsId: string, trigger: string = 'all') => `agents:${wsId}:runs:${trigger}`,
     runDetail: (wsId: string, runId: string) => `agents:${wsId}:run:${runId}`,
+    schedules: (wsId: string) => `agents:${wsId}:schedules`,
   },
 
   // Invalidation prefixes

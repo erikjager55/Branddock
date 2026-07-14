@@ -1,0 +1,1 @@
+{"agentId":"content-creator","useCaseId":"create-content","status":"COMPLETED","latencyMs":18654,"costUsd":0.086649,"inputTokens":24338,"outputTokens":909,"truncated":false,"artifacts":[{"type":"REPORT","title":"Agent response","fidelityScore":null}],"error":null}

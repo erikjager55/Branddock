@@ -6,6 +6,10 @@
       "schedule": "* * * * *"
     },
     {
+      "path": "/api/cron/sync-ad-insights",
+      "schedule": "30 5 * * *"
+    },
+    {
       "path": "/api/cron/reap-reservations",
       "schedule": "*/15 * * * *"
     },

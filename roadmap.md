@@ -80,6 +80,20 @@
 
 ## 🤖 Agents — user-facing persona-agents op merk-DNA (initiatief 2026-07-05)
 
+### 🤖 Agents-uitbreiding (gepland 2026-07-14 — marktonderzoek-gedreven, user-akkoord)
+
+Op basis van `docs/reports/agents-marktonderzoek-en-uitbreidingsadvies-2026-07-14.md`; volledige flow doorlopen (feature-planner → technical-planner), alle gates vooraf gedraaid op prod-data.
+
+| Task | Wat | Status/gate | Effort |
+|---|---|---|---|
+| [`agent-reporter`](tasks/agent-reporter.md) | "Remi" — scheduled week-/maandrapport per merk (agency-first; 4-blokken-skelet op Dana's tools) | **ready** — Fase 1 = code-loze golden-report-validatie op BB; credits-beslispunt bij Erik | 2,5-4d |
+| [`agent-repurposer`](tasks/agent-repurposer.md) | Long-form → on-brand social-afgeleiden, elk met F-VAL-score (route A: Milo-use-case) | **open** — gate marginaal gehaald (3 BB-bronnen, deels smoke-content; hertoets bij start); let op: 0 MediumEnrichment-seeds op prod | 1-2d |
+| [`agent-seo-watchdog`](tasks/agent-seo-watchdog.md) | Scheduled GEO-onderhouds-scan → herschrijf-proposals via bestaande pipeline | **blocked/data-gated** — 0 geo-geanalyseerde pagina's op prod; opent zodra pilot GEO-content publiceert | 2,5-3,5d |
+| [`agent-vera-triggers`](tasks/agent-vera-triggers.md) | Event-triggered brand-review (DAM-upload + approval→IN_REVIEW) | tweede ring — Fase 0 = 2-wk concierge-validatie; ADR-aanvulling vereist | 6-9d na go |
+| [`agent-ads-watchdog`](tasks/agent-ads-watchdog.md) | Creative-gezondheid-waakhond op Meta (read-only discovery + metrics-sync; nooit budget) | tweede ring — Fase 0 = validatie-sprint (0 gekoppelde accounts vermoed); ADR vereist | 7-11d na go |
+| localization-agent | Transcreatie-agent — **bewust géén task-file**: dubbel gegate op het multi-market-epic | idea-doc + agent-consumability-eisen op het epic gezet | — |
+
+
 > ADR: [`2026-07-05-agents-architectuur`](docs/adr/2026-07-05-agents-architectuur.md). Onderbouwing: [`docs/reports/agents-diepte-analyse-en-plan-2026-07-05.md`](docs/reports/agents-diepte-analyse-en-plan-2026-07-05.md) (adversarieel geverifieerde marktanalyse Sintra/Jasper + brede scan + codebase-inventaris) + [`tasks/_drafts/idea-agents-feature.md`](tasks/_drafts/idea-agents-feature.md) (feature-discovery, verdict `ready-to-build`, gepromoot 2026-07-05).
 > **Kernframe**: Agents = user-facing productlaag — human-in-the-loop taak-agents met persona's, gegrond in het volledige merk-DNA, elke content-output F-VAL-gevalideerd (de combinatie die géén onderzochte concurrent biedt). Brandclaw = de latere autonomie-trap op dezelfde motor (`runAgentLoop`). User-besluiten 2026-07-05: pre-launch MVP, persona-agents, Data Analyst in MVP, vaste maandprijs (per-token later; merkcontext/F-VAL nooit meteren).
 
@@ -115,12 +129,12 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | **`content-test-wiring-gates-#6A`** | Checkpoint-helper library + orchestrator gate-integratie + 8 stage-smokes. Plan §4 sub-sprint #6.A. | ~5d | #6 week 1-2 | 🔄 in-progress |
 | **`content-test-auto-iterate-#6B`** | Feedback-compiler + auto-iterate orchestrator + edit-distance signals + per-type fidelity thresholds + image refine-loop. Plan §4 sub-sprint #6.B. | ~6d | #6 week 2-3 | ✅ partial 5/7 (wiring + dashboard panels deferred) |
 | **`content-test-flow-analyse-#7A`** | 8 categorie-rapporten flow-analyse in `docs/specs/content-flow-*.md`. Plan §4 sub-sprint #7.A. | ~3d | #7 week 1 | open task-file |
-| **`content-test-regression-#7B`** | Layer 3 item-specific regression: LearningEvent → regression-corpus auto-promote + nightly run + alert. Plan §4 sub-sprint #7.B. | ~3d | #7 week 2 | open task-file |
-| **`video-chain-explainer-showcase`** | Multi-modal: full 5-staps chain (Plan/Script-per-scene/Storyboard/Coherence/Assembly) voor explainer-video als showcase. Lightweight chains voor video-ad + tiktok-script. Plan §3.0.5. | ~4d | #5-6 fill-in | open task-file |
+| **`content-test-regression-#7B`** | Layer 3 item-specific regression: LearningEvent → regression-corpus auto-promote + nightly run + alert. Plan §4 sub-sprint #7.B. **Triage 2026-07-14: → later, data-gated** — prod had 0× rejected/edited-events; start na 1-2 weken pilot-traffic (volume eerst checken). De-scopes in de task-file (golden-sets-runner i.p.v. promptfoo; PublishGate-surface i.p.v. de verwijderde Studio). | ~3d | data-gated | open task-file |
+| **`video-chain-explainer-showcase`** | Multi-modal: full 5-staps chain voor explainer-video als showcase + lightweight chains video-ad/tiktok. Plan §3.0.5. **Triage 2026-07-14: → post-launch/later, gated** — de hele Video&Audio-categorie staat hidden in de picker (geen bereikbare surface) en per-scene-visuals bestaan inmiddels al (alleen de script-chain ontbreekt); zie de task-file. | ~4d | gated op categorie-re-enable | open task-file |
 | **`image-quality-chain`** | Multi-modal: negative prompts + multi-candidate (3-4) selection UI + visual-fidelity dimension-breakdown + image-to-image refine-loop + OCR text-check + brand-color validation. Plan §3.0.5. | ~6d | #6 fill-in | ✅ done 2026-05-17 (#253, `tasks/done/image-quality-chain.md`) |
 | [`lp-feature-image-diversity`](tasks/done/lp-feature-image-diversity.md) | LP feature-beelden divers + relevant voor sectietekst: stijl-laag-sanering, imageBrief uit copy-LLM, server-side prompt-bouw + coherence/diversity-poort. Audit: `docs/audits/2026-06-10-lp-feature-image-diversity.md`. | 8,5-9,5d | #6-7 | ✅ **done** (+ `lp-feature-image-followups` done) |
 | [`context-picker-strategy-observations`](tasks/done/context-picker-strategy-observations.md) | Brand Assistant context-picker: `StrategyObservation` toevoegen (Tier-1 gap uit audit 2026-05-19). Hardcoded Claw-pattern, geen registry-entry. Tier-2 cleanups (Campaign → registry, Deliverable workaround) als follow-up. | ~4u | #6 fill-in | ✅ done 2026-05-19 (smoke partial — 0 observations in DB) |
-| [`web-page-builder-canvas-step-mvp`](tasks/web-page-builder-canvas-step-mvp.md) | Puck als Canvas Step 3 Medium-renderer voor 5 web-page types + brandstyle-analyzer Fase A-E + LP design batches 1-8 + F-VAL vision-judge dim 8 + DTS content-quality C1-C11 + brand-fidelity Step 2 LP. **Promoted post-launch → pre-launch 2026-05-29** (130 commits in feature-branch, 5 dagen extra scope landed). | 6-8w landed | #6 | partial — finalisatie + 4 squash-merges in plan `zippy-twirling-feigenbaum` |
+| [`web-page-builder-canvas-step-mvp`](tasks/done/web-page-builder-canvas-step-mvp.md) | Puck als Canvas Step 3 + de hele follow-up-stroom. **✅ AFGEHECHT 2026-07-14 (triage, #392)** — alles bleek al maanden gemerged (PR #14/#15, #267-#345); Track-4-rest gereconcilieerd, echte restjes → [`web-page-builder-acceptance-rest`](tasks/web-page-builder-acceptance-rest.md) (post-launch). | done | — | done |
 
 **Track B — Brandclaw + Competitive AI** (worktree `branddock-brandclaw`, Phase A+B gemerged 2026-05-18)
 | ID | Titel | Effort | Sprint | Status |
@@ -266,7 +280,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | [`geo-seo-followup-later`](tasks/geo-seo-followup-later.md) | GEO/SEO opvolg-bucket: externe entity-reinforcement (Wikidata/G2/Reddit) + live AI-crawler-citation-meting + restschema (`BreadcrumbList`/`howToSchema`) + deploy-time browser-smoke + nightly staleness-recompute | post-launch | gefaseerd | **Tracker/staging-bucket** (toegevoegd 2026-06-25) — geen uitvoerbare eenheid; splits per sub-item af zodra concreet. Meeste sub-items dep op `vercel-deployment` of eigen ADR/research; read-time staleness-flag al gewired (#338). |
 | [`validate-brand-domain-component-fit`](tasks/validate-brand-domain-component-fit.md) | Meet of merk-/domein-specifieke web-page componenten de pipeline raken vóór bouwen (pipeline-fit-telling + wizard-of-oz) | post-launch | 1-2d analyse | Verdict needs-validation-first uit feature-planner 2026-06-24. Gate vóór idea `brand-domain-specific-components`. Pas zinvol met pilot-data. |
 | [`security-residual-hardening`](tasks/security-residual-hardening.md) | Security-audit restscope: L4 (workspace-config rol-checks), L6 (Help-Center markdown-escape), L9 (ad-tokens version-prefix/rotatie), Zod-coverage-sweep mutatie-routes, CSP-bron-consolidatie (+nonce `script-src`), claw/confirm dubbele-resolutie, `image-scraper`/`knowledge-research` sync→async SSRF-upgrade | post-launch | 1-2d | **SSRF-blok al afgevinkt** (#349 safeFetch per-hop redirect-revalidatie + #350 convergentie). Resterende items lager-risico/breder — splits per sub-item af. Bron: `docs/audits/2026-06-26-security-audit.md`. De HIGH-findings H1–H8 + MEDIUM/LOW zijn al gemerged (#345–#350). |
-| [`power-user-shortcuts`](tasks/power-user-shortcuts.md) | Power-user shortcuts (5 micro-optimalisaties) | post-launch | 1-2 dagen | Gedistilleerd uit plan |
+| [`power-user-shortcuts`](tasks/power-user-shortcuts.md) | Power-user shortcuts — **triage 2026-07-14: stappen 1-3 bleken al gebouwd (april, `ccb7e1cd`)**; rest = alleen recent-prompts-dropdown + BA-banner, beslis na pilot-feedback | post-launch | ~1 dag rest | Gedistilleerd uit plan |
 | `learning-loop-dashboard-usage` | Per-sourceIdentifier dashboard | post-launch | halve dag | Task-file volgt |
 | `weekly-report-email-via-resend` | Weekly report email via Emailit | post-launch | 1 dag | Task-file volgt na weekly-report generator |
 | `studio-siblings-context-variation` | Variatie-borging tussen naburige posts (lexicale diversiteit Jaccard) | post-launch | ½-1 dag | Quality-enhancement na studio-P0. Geen Brandclaw-impact. |
@@ -300,6 +314,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 **Trigger om op te pakken**: post-launch + `vercel-deployment` gemerged, óf pilot-vraag naar externe-app-koppeling.
 
 ---
+
 
 ### 🤖 Brand Assistant standalone-app (post-launch — besluit 2026-06-19)
 

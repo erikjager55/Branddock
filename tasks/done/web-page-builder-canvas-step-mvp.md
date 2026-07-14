@@ -2,10 +2,10 @@
 id: web-page-builder-canvas-step-mvp
 title: Web-page builder MVP — Puck als Canvas Step 3 Medium-renderer voor 5 web-page types
 fase: pre-launch
-priority: now
+priority: -
 effort: 6-8 weken (1 dev), gefaseerd 6 phases + 4 follow-up werkstromen (totaal 13 dagen sinds 2026-05-24)
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-23
 started: 2026-05-24
 phases-complete: 6 of 6 (backend + UI) + 6.1 + 6.2 follow-ups + design-batches 1-8 + brandstyle Fase A-E (LP-fidelity werkstroom) + F-VAL vision-judge dim 8 + auto-iterate hardening + DTS content-quality C1-C11
@@ -84,6 +84,19 @@ Feature-branch `branddock-feat-web-page-builder-canvas` heeft 8 commits, niet-ge
 **Track 3 — Roadmap-update**: ✅ done 2026-05-29 (`dad0d003`)
 
 ---
+
+> **AFGEHECHT 2026-07-14 (doc-keeper-audit, changelog #392)**: alle 6 phases + de hele
+> follow-up-stroom zijn al maanden gemerged (PR #14/#15, #267/#268/#270, daarna
+> #276-#345); het status-blok hieronder beschreef een wereld die niet meer bestond.
+> Track-4-rest gereconcilieerd: README ✅ (`canvas/medium/README.md`, 11 componenten);
+> marketing-pricing-dogfood ✅ obsoleet (hand-coded geland via #384, conform de eigen
+> task-note); F-VAL-HTML-calibratie-doc de facto ingehaald door de echte judge-
+> uitbreidingen (#270/#316/#336). Wat nog echt open is verhuisde naar
+> `tasks/web-page-builder-acceptance-rest.md` (post-launch): render-route bundle-split,
+> dual-render-perf-meting, en het klaarliggende Puck-bug-report
+> (`docs/audits/puck-external-field-typing-issue.md` — indienen is een 15-min actie,
+> extern onder Eriks GitHub-identiteit). De browser-smoke-LP-matrix staat als
+> [USER]-item op de sessie-takenlijst.
 
 # Probleem
 

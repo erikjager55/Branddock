@@ -27,7 +27,7 @@ Per sub-item los oppakken wanneer de trigger zich voordoet (zie per item). Geen 
 - [ ] **Live AI-crawler-citation-meting** (Fase 3): meten óf een AI-antwoordmachine de pagina daadwerkelijk citeert (nu alleen de deterministische data-haak) — research + bron-keuze
 - [ ] **Restschema Fase 1a**: `BreadcrumbList` (zodra er site-hiërarchie is) + `howToSchema`-wiring (onzekere AI-string-vorm valideren vóór emit) — lage waarde nu
 - [ ] **Deploy-time browser-smoke** (Fase 1a, **dep: `vercel-deployment`**): op echte subdomeinen view-source faq/product → pagina-specifieke `<title>`/OG; `<ws>.branddock.app/sitemap.xml` listet alleen die workspace
-- [ ] **Nightly/cron staleness-recompute**: `isContentStale` periodiek herberekenen + flaggen (read-time flag komt uit `geo-seo-followup-measurement-dashboard`)
+- [x] **Nightly/cron staleness-recompute**: functioneel vervangen op agent-niveau door de SEO/GEO-watchdog-agent (`tasks/done/agent-seo-watchdog.md`, 2026-07-14) — scheduled scan herberekent staleness + 4 andere vervalsignalen en rapporteert push-based
 
 # Bestanden die ik aanraak
 

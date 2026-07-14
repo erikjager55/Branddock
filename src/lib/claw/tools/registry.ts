@@ -2,6 +2,7 @@ import type { ClawToolDefinition } from '../claw.types';
 import { readTools } from './read-tools';
 import { writeTools } from './write-tools';
 import { analyzeTools, navigateTools } from './analyze-tools';
+import { agentOnlyTools } from './memory-tools';
 
 const allTools: ClawToolDefinition[] = [
   ...readTools,
@@ -10,8 +11,11 @@ const allTools: ClawToolDefinition[] = [
   ...navigateTools,
 ];
 
+// Agent-only tools zijn wél opzoekbaar (tool-bridge + agents-confirm-route
+// via getToolByName) maar blijven buiten allTools: de Claw-chat-surface
+// (getToolsForClaude/getAllTools) heeft geen agent-context.
 const toolMap = new Map<string, ClawToolDefinition>(
-  allTools.map((t) => [t.name, t])
+  [...allTools, ...agentOnlyTools].map((t) => [t.name, t])
 );
 
 export function getToolByName(name: string): ClawToolDefinition | undefined {

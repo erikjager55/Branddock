@@ -59,3 +59,40 @@ export async function getWorkspaceUsers(workspaceId: string): Promise<WorkspaceU
   }
   return result;
 }
+
+/**
+ * Mag deze user als acting identity voor agent-runs in deze workspace
+ * optreden? Vereist een actief lidmaatschap mét schrijfrol (owner/admin/
+ * member — viewers zijn read-only, zelfde policy als de run-/confirm-routes)
+ * én workspace-toegang via de ACL-regel hierboven. Gebruikt door de
+ * AGENT_TASK-handler (untrusted payload, webhook-pad) en de schedule-enqueue
+ * (membership/rol kan tussen create en due-slot vervallen).
+ */
+export async function canActInWorkspace(workspaceId: string, userId: string): Promise<boolean> {
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { organizationId: true },
+  });
+  if (!workspace) return false;
+
+  const member = await prisma.organizationMember.findFirst({
+    where: {
+      organizationId: workspace.organizationId,
+      userId,
+      isActive: true,
+      role: { in: ["owner", "admin", "member"] },
+    },
+    select: {
+      role: true,
+      workspaceAccess: { select: { workspaceId: true } },
+    },
+  });
+  if (!member) return false;
+
+  return (
+    member.role === "owner" ||
+    member.role === "admin" ||
+    member.workspaceAccess.length === 0 ||
+    member.workspaceAccess.some((wa) => wa.workspaceId === workspaceId)
+  );
+}

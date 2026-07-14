@@ -323,6 +323,7 @@ model Workspace {
   // Agents foundation (ADR 2026-07-05-agents-architectuur, D3)
   agentRuns      AgentRun[]
   agentArtifacts AgentArtifact[]
+  agentSchedules AgentSchedule[]
 
   // Per-type fidelity thresholds (content-test #6.B)
   contentTypeThresholds WorkspaceContentTypeThreshold[]
@@ -551,6 +552,9 @@ enum NotificationType {
   COMPETITOR_MAJOR_EVENT
   TRIAL_EXPIRING
   AUTO_TOPUP
+  AGENT_RUN_COMPLETED
+  AGENT_RUN_FAILED
+  AGENT_RUN_AWAITING_CONFIRMATION
 }
 
 enum NotificationCategory {
@@ -5163,6 +5167,10 @@ enum AgentMemoryType {
 model AgentMemory {
   id String @id @default(cuid())
 
+  /// Code-registry agent id (Fase 2, per-agent memory). NULL = legacy/
+  /// ongescoped (Brandclaw-observations-pad); catalogus-agents scopen strikt.
+  agentId String?
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -5188,6 +5196,7 @@ model AgentMemory {
 
   @@index([workspaceId, memoryType])
   @@index([workspaceId, createdAt])
+  @@index([workspaceId, agentId])
 }
 
 // =============================================================
@@ -5336,8 +5345,15 @@ model AgentRun {
   /// 'manual' | 'scheduled' | 'event_driven' — plain TEXT (pattern StrategyObservationRun).
   triggerType   String
   triggerSource String?
-  /// Session-user who triggered a manual run. NULL for scheduled runs (Fase 2).
+  /// Acting identity van de run. Manual: de sessie-user. Scheduled (Fase 2):
+  /// de schedule-creator — het propose-only write-pad vereist een
+  /// verantwoordelijke user (tool-bridge NO_USER_CONTEXT-guard). Geen FK.
   userId        String?
+
+  /// Vullende schedule bij triggerType 'scheduled' (Fase 2). SetNull: een
+  /// verwijderd schedule laat de run-historie intact.
+  scheduleId String?
+  schedule   AgentSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
 
   agentVersion  String
   promptVersion String
@@ -5364,6 +5380,7 @@ model AgentRun {
   @@index([workspaceId, createdAt])
   @@index([workspaceId, status])
   @@index([workspaceId, agentId])
+  @@index([scheduleId])
 }
 
 model AgentArtifact {
@@ -5396,6 +5413,54 @@ model AgentArtifact {
   @@index([workspaceId, createdAt])
   @@index([workspaceId, acceptedAt])
   @@index([runId])
+}
+
+/// Terugkerende agent-run (agents-scheduling, Fase 2): de cron-tick enqueue't
+/// due schedules als AGENT_TASK-jobs. Cadence-algebra (cadence + timeOfDay +
+/// dayOfWeek/dayOfMonth + timezone) → `computeNextRunAt` in
+/// src/lib/agents/schedules/cadence.ts; nextRunAt is tegelijk het claim-token
+/// (conditionele update = exactly-once per due-slot).
+model AgentSchedule {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /// Code-registry agent id — plain TEXT (pattern AgentRun.agentId).
+  agentId   String
+  useCaseId String?
+
+  /// Run-input zoals de run-API hem kent: { message?, ...rest }.
+  input Json?
+  /// Content-sources-selectie, al gesanitized bij create (contextSelectionSchema).
+  /// Persisted (anders dan op AgentRun): scheduled runs worden headless herbouwd.
+  contextSelection Json?
+
+  /// 'EVERY_MINUTE' (dev-only) | 'DAILY' | 'WEEKLY' | 'MONTHLY' — plain TEXT.
+  cadence   String
+  /// "HH:MM" 24h, wall-clock in `timezone`.
+  timeOfDay String @default("08:00")
+  /// ISO-weekdag 1-7 (ma-zo) — alleen WEEKLY.
+  dayOfWeek Int?
+  /// 1-28 (geen maand-einde-ambiguïteit) — alleen MONTHLY.
+  dayOfMonth Int?
+  /// IANA-timezone voor de wall-clock-interpretatie.
+  timezone String @default("Europe/Amsterdam")
+
+  enabled   Boolean   @default(true)
+  nextRunAt DateTime
+  lastRunAt DateTime?
+
+  /// Acting identity voor de runs (zie AgentRun.userId). Creator weg uit de
+  /// workspace → enqueue-stap disable't het schedule fail-soft.
+  createdByUserId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  runs AgentRun[]
+
+  @@index([enabled, nextRunAt])
+  @@index([workspaceId, agentId])
 }
 
 // =============================================================
@@ -5778,9 +5843,18 @@ model ConnectedAdAccount {
 }
 
 model AdCampaign {
-  id            String      @id @default(cuid())
-  deliverableId String
-  deliverable   Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  id String @id @default(cuid())
+
+  // Nullable sinds de ads-watchdog (ADR 2026-07-14-ads-watchdog-datamodel):
+  // discovered externe ads hebben geen Branddock-deliverable. Elke query
+  // benoemt expliciet welke origin hij bedoelt ('branddock' | 'external').
+  deliverableId String?
+  deliverable   Deliverable? @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  origin        String       @default("branddock")
+
+  // Discovery-metadata voor externe ads (veldmapping Fase 0: ad.created_time).
+  externalName      String?
+  creativeCreatedAt DateTime?
 
   connectedAccountId String
   connectedAccount   ConnectedAdAccount @relation(fields: [connectedAccountId], references: [id], onDelete: Restrict)
@@ -5807,6 +5881,7 @@ model AdCampaign {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([connectedAccountId, externalAdId])
   @@index([deliverableId])
   @@index([connectedAccountId, status])
   @@index([externalCampaignId])

@@ -35,7 +35,9 @@ export async function DELETE(request: Request) {
       select: {
         id: true,
         status: true,
-        _count: { select: { campaigns: { where: { status: { in: ['publishing', 'active', 'paused'] } } } } },
+        // origin-filter: de disconnect-waarschuwing gaat over via-Branddock
+        // gepubliceerde campagnes; discovered external ads horen er niet in.
+        _count: { select: { campaigns: { where: { origin: 'branddock', status: { in: ['publishing', 'active', 'paused'] } } } } },
       },
     });
     if (!account) return NextResponse.json({ error: 'Account not found' }, { status: 404 });

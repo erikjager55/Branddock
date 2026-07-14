@@ -10427,7 +10427,15 @@ html {
   .focus\:ring-emerald-200:focus { --tw-ring-color: var(--color-emerald-200); }
   .focus\:border-emerald-300:focus { border-color: var(--color-emerald-300); }
 
+  /* Ad-accounts connect-UI (bugfix 2026-07-14): de Connect/Confirm-knoppen op
+   * /settings/integrations/ad-accounts renderden onzichtbaar (witte tekst op
+   * transparant) — bg-emerald-600/700 en border-emerald-500 ontbraken in de
+   * gecompileerde output. */
+  .bg-emerald-600 { background-color: var(--color-emerald-600); }
+  .border-emerald-500 { border-color: var(--color-emerald-500); }
+
   @media (hover: hover) {
+    .hover\:bg-emerald-700:hover { background-color: var(--color-emerald-700); }
     .hover\:border-emerald-300:hover { border-color: var(--color-emerald-300); }
     .group:hover .group-hover\:text-emerald-500 { color: var(--color-emerald-500); }
     .hover\:bg-emerald-100:hover { background-color: var(--color-emerald-100); }
