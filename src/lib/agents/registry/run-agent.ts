@@ -27,6 +27,7 @@ import {
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { chargeAfter } from "@/lib/billing/credits/meter-generation";
+import { notifyAgentRunFinished } from "@/lib/agents/notify-run-finished";
 import { clearRunCollector } from "./run-collector";
 import { getAgentDefinition, isTestAgentAllowed } from "./index";
 import type { AgentContextSelection } from "./types";
@@ -38,6 +39,9 @@ export class UnknownUseCaseError extends Error {}
 
 export interface RunAgentInput {
   workspaceId: string;
+  /** Acting identity van de run. Manual: de sessie-user. Scheduled (Fase 2):
+   * de schedule-creator — vereist, want het propose-only write-pad
+   * (tool-bridge NO_USER_CONTEXT-guard) weigert zonder user. */
   userId: string;
   /** Unvalidated agent id from the request body. */
   agentId: string;
@@ -48,6 +52,19 @@ export interface RunAgentInput {
    * beïnvloedt alleen de system-prompt — bewust niet op de run-rij persisted. */
   contextSelection?: AgentContextSelection;
   triggerType?: TriggerType;
+  /** Override voor AgentRun.triggerSource + de loop-ctx (default: userId).
+   * Scheduled runs: `schedule:<scheduleId>` of `job:<jobId>`. */
+  triggerSource?: string;
+  /** Stempelt AgentRun.scheduleId (herkomst-relatie; SetNull bij delete). */
+  scheduleId?: string;
+  /** Extra plafond bovenop def.timeoutMs. Het cron-pad geeft hiermee zijn
+   * invocation-rest-budget mee: reap/enqueue-overhead + prompt-build (60s)
+   * + loop moeten samen onder de 800s-platform-kill blijven. */
+  maxTimeoutMs?: number;
+  /** false → onderdrukt de FAILED-notificatie (Fase-2-notify-hook): de
+   * AGENT_TASK-handler zet dit alleen op de laatste queue-attempt, zodat
+   * een retry-loop één fout-notificatie per job oplevert. Default true. */
+  notifyOnFailure?: boolean;
 }
 
 export interface RunAgentResponse {
@@ -67,7 +84,8 @@ export interface RunAgentResponse {
  * elke Anthropic-request-timeout aan de rest-deadline). Restgaten die dit
  * niet dekt: hangende tool-executes (pipeline-tools in motor-wiring moeten
  * eigen timeouts hebben — belegd in die task) en een harde proces-kill;
- * daarvoor is de reaper Fase 2 + de stale-RUNNING-heuristiek in de inbox.
+ * daarvoor zijn de cron-reapers (src/lib/agents/jobs/reaper.ts) + de
+ * stale-RUNNING-heuristiek in de inbox.
  */
 const MAX_RUN_TIMEOUT_MS = 740_000;
 
@@ -86,6 +104,22 @@ async function withDeadline<T>(promise: Promise<T>, ms: number, message: string)
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Loop-default uit agent-loop.ts (DEFAULT_TIMEOUT_MS) — nodig om de
+ * caller-cap als écht plafond te laten werken: zonder deze spiegel zou een
+ * cap van 680s de effectieve timeout van default-agents (300s) juist
+ * verhógen (review-W 2026-07-13). */
+const DEFAULT_LOOP_TIMEOUT_MS = 5 * 60 * 1000;
+
+/** Per-agent timeout onder de platform-clamp én de optionele caller-cap. */
+function resolveTimeoutMs(
+  defTimeoutMs: number | undefined,
+  maxTimeoutMs: number | undefined,
+): number | undefined {
+  const base = defTimeoutMs !== undefined ? Math.min(defTimeoutMs, MAX_RUN_TIMEOUT_MS) : undefined;
+  if (maxTimeoutMs === undefined) return base;
+  return Math.min(base ?? DEFAULT_LOOP_TIMEOUT_MS, maxTimeoutMs);
 }
 
 function resolveUserMessage(
@@ -122,6 +156,7 @@ function resolveUserMessage(
  */
 export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentResponse> {
   const { workspaceId, userId, agentId, useCaseId, triggerType = "manual" } = inputArgs;
+  const triggerSource = inputArgs.triggerSource ?? userId;
   const runInput = inputArgs.input ?? {};
 
   const def = getAgentDefinition(agentId);
@@ -147,7 +182,8 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
       // use-case dragen, niet een user-supplied input.useCaseId.
       input: { ...runInput, useCaseId: useCaseId ?? null } as Prisma.InputJsonValue,
       triggerType,
-      triggerSource: userId,
+      triggerSource,
+      scheduleId: inputArgs.scheduleId ?? null,
       userId,
       agentVersion: def.agentVersion,
       promptVersion: def.promptVersion,
@@ -187,12 +223,11 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
           promptVersion: def.promptVersion,
           runId,
           triggerType,
-          triggerSource: userId,
+          triggerSource,
           userId,
         },
         model: resolved.model,
-        timeoutMs:
-          def.timeoutMs !== undefined ? Math.min(def.timeoutMs, MAX_RUN_TIMEOUT_MS) : undefined,
+        timeoutMs: resolveTimeoutMs(def.timeoutMs, inputArgs.maxTimeoutMs),
         maxToolCalls: def.maxToolCalls,
         maxTokens: def.maxTokens,
       },
@@ -208,6 +243,11 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
       truncated: result.truncated,
       error: result.persisted.error,
     };
+
+    // Terminale write → verplichte invalidatie (CLAUDE.md #10): op het
+    // queue-pad is er geen route die dit dekt — zonder deze call toont de
+    // inbox na de notificatie-klik tot TTL een stale RUNNING.
+    invalidateCache(cacheKeys.prefixes.agents(workspaceId));
 
     // Credit-afboeking (Fase 2): alleen content-producerende agents (def.billable)
     // boeken output-credits af; analyse/F-VAL/research/exploratie = gratis (ADR §2/§3).
@@ -249,6 +289,25 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
       /* logged binnen trackEvent */
     });
 
+    // Run-notificatie (Fase 2, slice 3). Het contract kan hier óók FAILED
+    // persisten — die valt onder dezelfde notifyOnFailure-gate als de catch
+    // (AGENT_TASK-retries → één fout-notificatie per job, niet per attempt).
+    // Awaiten, geen void: op het cron-pad kan de invocation direct na de
+    // response eindigen en zou een fire-and-forget-notify wegvallen; de
+    // helper is intern fail-soft (throwt nooit).
+    if (response.status !== "FAILED" || inputArgs.notifyOnFailure !== false) {
+      await notifyAgentRunFinished({
+        workspaceId,
+        runId,
+        agentId: def.id,
+        status: response.status,
+        error: response.error,
+        artifactCount: response.artifactIds.length,
+        userId,
+        triggerType,
+      });
+    }
+
     return response;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Agent run failed unexpectedly";
@@ -287,6 +346,7 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
     } catch {
       console.warn("[agents run-agent] failed to mark run FAILED", { runId, message });
     }
+    invalidateCache(cacheKeys.prefixes.agents(workspaceId));
 
     void emitAgentRunCompleted({
       runId,
@@ -305,6 +365,19 @@ export async function runAgent(inputArgs: RunAgentInput): Promise<RunAgentRespon
     }).catch(() => {
       /* logged binnen trackEvent */
     });
+
+    if (inputArgs.notifyOnFailure !== false) {
+      await notifyAgentRunFinished({
+        workspaceId,
+        runId,
+        agentId: def.id,
+        status: "FAILED",
+        error: message,
+        artifactCount: 0,
+        userId,
+        triggerType,
+      });
+    }
 
     return {
       runId,

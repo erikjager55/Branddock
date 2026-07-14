@@ -8,7 +8,9 @@ import { Button, EmptyState } from '@/components/shared';
 import { useClawStore } from '@/stores/useClawStore';
 import { useFormat } from '@/lib/ui-i18n/format';
 import { AgentIconTile } from './AgentIcon';
+import { AgentMemoryCard } from './AgentMemoryCard';
 import { RunStatusBadge } from './RunStatusBadge';
+import { ScheduleManagerCard } from './ScheduleManagerCard';
 import { UseCaseForm } from './UseCaseForm';
 import { useAgentCatalog, useAgentRuns } from '../hooks';
 import { useAgentsStore } from '../stores/useAgentsStore';
@@ -153,6 +155,10 @@ export function AgentDetailPage({
             />
           )}
         </SectionCard>
+
+        <ScheduleManagerCard agentId={agent.id} useCases={agent.useCases} />
+
+        <AgentMemoryCard agentId={agent.id} />
 
         <SectionCard icon={Inbox} title={t('detail.recentRuns.title')}>
           {agentRuns.length === 0 ? (

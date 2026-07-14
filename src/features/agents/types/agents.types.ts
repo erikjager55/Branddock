@@ -56,6 +56,7 @@ export interface AgentRunSummary {
   agentId: string;
   status: AgentRunStatusValue;
   triggerType: string;
+  scheduleId: string | null;
   latencyMs: number;
   totalCostUsd: number;
   truncated: boolean;
@@ -133,6 +134,81 @@ export interface ConfirmProposalResponse {
   executed: boolean;
   result?: unknown;
   runStatus: AgentRunStatusValue;
+}
+
+// ─── Schedules (GET/POST /api/agents/schedules + PATCH/DELETE /[scheduleId]) ──
+
+export type ScheduleCadenceValue = 'EVERY_MINUTE' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
+
+/** Inbox-filter op run-herkomst. */
+export type RunTriggerFilter = 'manual' | 'scheduled';
+
+export interface AgentSchedule {
+  id: string;
+  agentId: string;
+  useCaseId: string | null;
+  input: Record<string, unknown> | null;
+  cadence: string;
+  timeOfDay: string;
+  dayOfWeek: number | null;
+  dayOfMonth: number | null;
+  timezone: string;
+  enabled: boolean;
+  nextRunAt: string;
+  lastRunAt: string | null;
+  createdByUserId: string;
+  createdAt: string;
+}
+
+export interface AgentSchedulesResponse {
+  schedules: AgentSchedule[];
+}
+
+export interface AgentScheduleResponse {
+  schedule: AgentSchedule;
+}
+
+export interface CreateScheduleBody {
+  agentId: string;
+  useCaseId?: string;
+  input?: { message?: string };
+  cadence: ScheduleCadenceValue;
+  timeOfDay?: string;
+  dayOfWeek?: number;
+  dayOfMonth?: number;
+  timezone?: string;
+}
+
+export interface UpdateScheduleBody {
+  enabled?: boolean;
+  useCaseId?: string | null;
+  input?: { message?: string } | null;
+  cadence?: ScheduleCadenceValue;
+  timeOfDay?: string;
+  dayOfWeek?: number | null;
+  dayOfMonth?: number | null;
+  timezone?: string;
+}
+
+// ─── Memories (GET /api/agents/memories + DELETE /[memoryId]) ──
+
+export type AgentMemoryTypeValue =
+  | 'OBSERVATION'
+  | 'PREFERENCE'
+  | 'DECISION'
+  | 'FACT'
+  | 'OUTCOME';
+
+export interface AgentMemoryItem {
+  id: string;
+  content: string;
+  memoryType: AgentMemoryTypeValue;
+  source: string | null;
+  createdAt: string;
+}
+
+export interface AgentMemoriesResponse {
+  memories: AgentMemoryItem[];
 }
 
 // ─── LINK artifact payload ───────────────────────────────────

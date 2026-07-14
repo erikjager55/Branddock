@@ -57,6 +57,8 @@ export function resetAgentRegistryForTests(): void {
 // zonder expliciete flag.
 
 import { echoTestAgent } from "./agents/echo-test";
+import { registerMemoryTools } from "./memory-tools";
+import { registerClawToolsForAgent } from "./tool-bridge";
 import {
   registerResearchAnalystTools,
   researchAnalystAgent,
@@ -79,6 +81,22 @@ registerAgent(marketAnalystAgent);
 registerMarketAnalystTools();
 registerAgent(dataAnalystAgent);
 registerDataAnalystTools();
+
+// Per-agent geheugen (Fase 2, slice 4): elke persona-agent krijgt recall
+// (vrije read) + remember (propose-only Claw-tool → confirm-pad) op zijn
+// eigen namespace. Echo-test bewust niet: die is per contract tool-loos
+// (single text-turn smoke-instrument).
+for (const def of [
+  researchAnalystAgent,
+  brandGuardianAgent,
+  strategistAgent,
+  contentCreatorAgent,
+  marketAnalystAgent,
+  dataAnalystAgent,
+]) {
+  registerMemoryTools(def.toolNamespace);
+  registerClawToolsForAgent(def.toolNamespace, ["remember_agent_memory"]);
+}
 
 if (process.env.NODE_ENV !== "production" || process.env.AGENTS_ENABLE_TEST_AGENT === "1") {
   registerAgent(echoTestAgent);

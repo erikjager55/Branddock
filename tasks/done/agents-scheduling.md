@@ -5,12 +5,12 @@ fase: launch
 priority: next
 effort: 2-3 weken
 owner: claude-code
-status: open
+status: done
 created: 2026-07-05
-completed: -
+completed: 2026-07-13
 related-adr: docs/adr/2026-07-05-agents-architectuur.md
 related-spec: tasks/_drafts/idea-agents-feature.md
-worktree: -
+worktree: branddock-agents-scheduling
 ---
 
 > **Gate**: starten pas wanneer alle vier Fase-1-tasks (`agents-foundation`, `agents-motor-wiring`, `agents-ui-inbox`, `agents-data-analyst` óf diens expliciete drop-besluit) op `done` staan. De oorspronkelijke harde dependency — Vercel Cron in productie — is **vervuld per 2026-07-05** (`vercel-deployment` live op branddock-7y9n.vercel.app, main=production, Vercel Pro + Fluid); de enige resterende volgorde-dep is Fase 1 zelf.
@@ -86,3 +86,98 @@ Vier slices, in volgorde: (1) **AGENT_TASK-brug** — handler-payload `{agentId,
 - **Scope-toevoeging: per-workspace concurrency-cap** (uit Phase C, was daar cap=1 voor alleen de Analyst): de job-runner handhaaft een cap van 1 gelijktijdige agent-run per workspace voor ALLE scheduled runs — generiek in de `AGENT_TASK`-brug, niet per agent.
 - **Weekly Analyst-runs** (Phase C's Vercel Cron `0 9 * * 1`) worden hier NIET gebouwd: zodra Fase-3-item-1 de Strategy Analyst naar de catalogus verhuist, is dat een gewone `AgentSchedule`-rij op deze infra. Geen bespoke cron-route toevoegen.
 - **BB pilot smoke met productie-data** (uit Phase C): koppelen aan `pilot-onboarding-better-brands` + de eerste echte scheduled run op de live-omgeving (bestaat al als smoke-stap 6 in deze taak — die run vervult meteen de Phase-C-smoke).
+
+## Voortgang 2026-07-13 — bouw in 5 slices (worktree branddock-agents-scheduling)
+
+> Discovery-check + streaming-scope expliciet door Erik bevestigd bij start
+> (volledige Fase 2 + streaming-refactor als slice 5). Plan:
+> `~/.claude/plans/sorted-coalescing-boot.md`.
+
+- **Slice 1 (`7b1cb76d`)** — AGENT_TASK-brug + queue-hardening: Zod-payload
+  (untrusted), trial-lock-skip, `RunAgentInput.triggerSource/scheduleId/
+  notifyOnFailure`, max 1 AGENT_TASK per tick + advisory-lock workspace-cap=1
+  (SKIPPED zonder attempt), stale-RUNNING-reapers (900s, jobs + runs) in de
+  cron-tick. Smoke: `scripts/dev/agent-task-smoke.ts` (echte echo-run, $0.002).
+- **Slice 2 (`6e4d518a`)** — AgentSchedule + cron-enqueue + CRUD + UI:
+  cadence-algebra via Intl (DST-smoke groen: `scripts/smoke-tests/
+  agent-schedule-cadence.ts`), exactly-once per due-slot (idempotencyKey +
+  conditionele nextRunAt-claim + P2002-vangst), creator-weg → fail-soft
+  disable, EVERY_MINUTE dev-only, ScheduleManagerCard + inbox-filter.
+  Smoke: `scripts/dev/agent-schedule-smoke.ts` — incl. échte scheduled
+  content-creator-run → AWAITING_CONFIRMATION + PROPOSAL onder de
+  creator-identity ($0.11; acceptatiecriterium 3 bewezen).
+- **Slice 3 (`8c0eb54a`)** — notificaties: 3 nieuwe NotificationTypes,
+  `notify-run-finished.ts` (run-owner, emailEnabled-gate, fail-soft), hook in
+  run-agent, deep-link `agents-inbox?run=<id>` via ActivityFeed→App.tsx.
+  Smoke: `scripts/dev/agent-notify-smoke.ts` (2 modi; fail-gate = precies één
+  notificatie per job).
+- **Slice 4 (`9c7de2e0`)** — per-agent memory: `AgentMemory.agentId`,
+  recall-tool (vrij, agentId server-owned uit namespace) +
+  `remember_agent_memory` (propose-only Claw-tool → confirm-pad; forge-guard),
+  MEMORY_RULES in de gedeelde prompt, memories-API + AgentMemoryCard.
+  Smoke: `scripts/dev/agent-memory-smoke.ts` (scoping + isolatie groen).
+- **Slice 5** — streaming-refactor `runLoopCore`: `messages.stream()` +
+  `finalMessage()` per turn, `NONSTREAMING_MAX_TOKENS`-clamp verwijderd,
+  rest-deadline via AbortSignal (APIUserAbortError → timeout-semantiek),
+  strategist `maxTokens` 21.333 → 32.000. Validatie: echo-run groen +
+  volledige dogfood-sweep vs baseline 2026-07-12 (zie rapport
+  `docs/reports/agents-dogfood-2026-07-13-streaming.md`).
+
+**Kosten-query (acceptatiecriterium week-overzicht — geen code nodig):**
+
+```sql
+SELECT date_trunc('week', "createdAt") AS week, "agentId", "triggerType",
+       count(*) AS runs, round(sum("totalCostUsd")::numeric, 4) AS cost_usd
+FROM "AgentRun"
+WHERE "workspaceId" = $1
+GROUP BY 1, 2, 3
+ORDER BY 1 DESC, cost_usd DESC;
+```
+
+PostHog `agent_run_completed` draagt `trigger_type` + `total_cost_usd` per
+run (zelfde events voor scheduled als manual — geen aparte instrumentatie).
+
+**⚠️ Neon-push bij deploy (gotcha `neon-schema-push-on-deploy`) — één
+gebatchte `DATABASE_URL=<neon> npx prisma db push` vanaf deze branch/main,
+alles additief:** model `AgentSchedule` (+ Workspace-relatie),
+`AgentRun.scheduleId` + index, `AgentMemory.agentId` + index,
+`NotificationType` +3 waarden (AGENT_RUN_COMPLETED/_FAILED/
+_AWAITING_CONFIRMATION). Zonder push 500'en de schedules-API én de
+runs-inbox (select op `scheduleId`) op prod; de cron-tick zelf blijft
+draaien (de enqueue-stap is in de route fail-soft gewrapt). Conform de
+gotcha 2026-07-13: push pas "gedaan" ná een verificatie-write.
+
+**Restpunten ná merge (deploy-checklist):** golden e2e (smoke-stap 6, één
+echte DAILY-schedule op prod ná deploy + Neon-push — vervult ook de
+Phase-C-BB-smoke) · browser-smoke schedule-UI/inbox-filter/notificatie-klik.
+
+## Finalize 2026-07-13 — review-loop + gates
+
+- **Review**: 5 rondes × 2 verse code-reviewer-subagents. Ronde 1-4 vonden
+  samen 22 WARNINGs (0 CRITICAL) — alle gefixt in `b4bdb2c1`, `03d0bde9`,
+  `bf0e142e`: identity-validatie op het untrusted webhook-pad, EVERY_MINUTE-
+  runtime-gate, ge-awaite owner-only notificaties (e-mail alleen scheduled),
+  werkende e-mail-deep-link, reaper-notify + 24h-bounds, eigen-claim-guard
+  op terminale job-writes, DISTINCT ON-workspace-fairness, 680s-timeout-cap,
+  cache-invalidatie op cron-pad + terminale run-writes, schedule-cap 20,
+  purge-veilige styling. **Ronde 5: 0 CRITICAL / 0 WARNING (beide reviewers
+  ready-to-merge)**; het startedAt-claim-guard-mechaniek is adversarieel
+  geverifieerd tot op DB-kolomprecisie (timestamp(3) = JS-ms, read-back-
+  equality).
+- **Gates**: `npx tsc --noEmit` 0 errors · `npm run lint` 0 errors (966
+  repo-brede pre-existing warnings) · smokes: cadence-DST, brug, schedule
+  (incl. echte content-creator-proposal-run), notify (happy + fail-gate),
+  memory, en de volledige dogfood-sweep door de gestreamde loop.
+- **Open MINORs (bewust gedeferred, geen productie-faalscenario)**: PATCH
+  mist `enforceNotLocked` + cancelt geen pending job bij pause (≤1 tick-
+  venster); one-click delete zonder confirm (schedules + memories);
+  server-notificatie-copy EN-only; e-mail-deep-link zonder workspace-switch
+  voor multi-workspace-users; `enqueued`-teller telt deduped dispatches;
+  TOCTOU op de 20-cap (overshoot max 1); `DEFAULT_LOOP_TIMEOUT_MS`-spiegel;
+  tablist zonder pijltjes-navigatie; telemetrie-ruis op het zombie-error-pad;
+  agent-task-smoke assert de DB-rij niet; `AGENTS_DEV_CADENCE` ontbreekt in
+  de CLAUDE.md-env-lijst.
+- **Post-merge-aandachtspunt**: main heeft inmiddels de job-queue
+  instant-kick (#388, `kickWorker` op dispatch) — na merge draait elke kick
+  ook de reapers + schedule-enqueue uit de cron-route-body. Idempotent en
+  claim-veilig, maar check de extra DB-last bewust bij de deploy-smoke.
