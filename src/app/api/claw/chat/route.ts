@@ -29,6 +29,7 @@ import type {
 // audit H7 (finalize-review: tool-result path).
 const UNTRUSTED_RESULT_TOOLS = new Set([
   'review_content',
+  'read_deliverable_content',
   'read_landing_page_content',
   'read_competitors',
   'read_trends',

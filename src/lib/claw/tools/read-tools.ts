@@ -822,6 +822,65 @@ export const readTools: ClawToolDefinition[] = [
       return { deliverables, count: deliverables.length };
     },
   },
+  {
+    name: 'read_deliverable_content',
+    description:
+      'Read the full generated text content of one deliverable (assembled from its selected components). Use this to repurpose or summarize existing content. Returns hasContent: false when the deliverable has only a title/brief and no generated content yet.',
+    inputSchema: z.object({
+      deliverableId: z.string().describe('The deliverable ID to read'),
+    }),
+    requiresConfirmation: false,
+    category: 'read',
+    execute: async (params, ctx: ToolExecutionContext) => {
+      const p = params as { deliverableId?: unknown };
+      // Guard (review-W2): read-tool-input is niet schema-gevalideerd in de
+      // bridge/chat — een ontbrekend/verkeerd-gekeyed id zou via Prisma's
+      // undefined-semantiek anders stil de EERSTE workspace-deliverable matchen.
+      if (typeof p.deliverableId !== 'string' || p.deliverableId.trim().length === 0) {
+        return { error: 'Deliverable not found' };
+      }
+      // Workspace-isolatie via de campaign-relatie — zelfde patroon als
+      // read_deliverables; nooit cross-tenant content teruggeven.
+      const deliverable = await prisma.deliverable.findFirst({
+        where: { id: p.deliverableId, campaign: { workspaceId: ctx.workspaceId } },
+        select: {
+          id: true,
+          title: true,
+          contentType: true,
+          generatedText: true,
+          campaign: { select: { id: true, title: true } },
+          components: {
+            where: { generatedContent: { not: null }, isSelected: true },
+            select: { generatedContent: true },
+            orderBy: { order: 'asc' },
+          },
+        },
+      });
+      if (!deliverable) return { error: 'Deliverable not found' };
+
+      const assembled = deliverable.components
+        .map((c) => c.generatedContent ?? '')
+        .filter((t) => t.trim().length > 0)
+        .join('\n\n');
+      const raw = assembled.trim().length > 0 ? assembled : (deliverable.generatedText ?? '');
+      // In-tool cap ruim ónder de bridge-limiet van 16k (MAX_TOOL_RESULT_CHARS):
+      // een afgekapte JSON-payload is onbruikbaar, een gemarkeerd afgekapte
+      // content-string niet — het model wéét dan dat de staart mist.
+      const CAP = 12_000;
+      const truncated = raw.length > CAP;
+      const content = truncated ? raw.slice(0, CAP) : raw;
+      return {
+        deliverableId: deliverable.id,
+        title: deliverable.title,
+        contentType: deliverable.contentType,
+        campaignId: deliverable.campaign.id,
+        campaignTitle: deliverable.campaign.title,
+        content,
+        truncated,
+        hasContent: content.trim().length > 0,
+      };
+    },
+  },
 
   // ─── Competitor Activities ──────────────────────────────
   {
