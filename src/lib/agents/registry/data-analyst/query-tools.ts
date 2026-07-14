@@ -12,6 +12,7 @@
 // =============================================================
 
 import type { BrandclawTool } from "@/lib/brandclaw/orchestrator/types";
+import { queryPeriodActivityTool } from "./period-tools";
 import {
   queryContentCoverageTool,
   queryContentInventoryTool,
@@ -27,6 +28,7 @@ import {
 /** De volledige curated tool-set van de Data Analyst — read-only, workspace-scoped. */
 export const dataAnalystQueryTools: BrandclawTool[] = [
   queryContentProductionTool,
+  queryPeriodActivityTool,
   queryContentInventoryTool,
   queryFvalScoresTool,
   queryContentCoverageTool,
