@@ -29,6 +29,7 @@ import {
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { enforceNotLocked } from "@/lib/stripe/enforcement";
+import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 800;
 
@@ -82,6 +83,21 @@ export async function POST(request: Request) {
         { error: "Invalid request body", details: parsed.error.flatten() },
         { status: 400 },
       );
+    }
+
+    // Lege-staat-guard (tasks/agent-ads-watchdog.md, Fase 3): de waakhond
+    // zonder gekoppeld account bewaakt een lege tuin — hard 400 met uitleg
+    // i.p.v. een run die AI-budget uitgeeft aan "niets te bewaken".
+    if (parsed.data.agentId === "ads-watchdog") {
+      const activeAccounts = await prisma.connectedAdAccount.count({
+        where: { workspaceId, status: "active" },
+      });
+      if (activeAccounts === 0) {
+        return NextResponse.json(
+          { error: "No active ad account — connect (or reconnect an expired) account under Settings → Integrations → ad accounts first." },
+          { status: 400 },
+        );
+      }
     }
 
     let result;

@@ -1,5 +1,5 @@
 /**
- * Agents dogfood-sweep — draait de 6 persona-agents op de pilot-workspace
+ * Agents dogfood-sweep — draait alle persona-agents op de pilot-workspace
  * (Better Brands) met realistische use-cases en verzamelt de twee guardrail-
  * datapunten die Fase 2/3 eisen:
  *   - kosten per run (totalCostUsd + tokens)   → guardrail #2
@@ -84,6 +84,11 @@ const SPECS: Spec[] = [
   {
     agentId: "seo-watchdog",
     useCaseId: "weekly-decay-scan",
+    message: "geen extra focus",
+  },
+  {
+    agentId: "ads-watchdog",
+    useCaseId: "daily-fatigue-scan",
     message: "geen extra focus",
   },
 ];

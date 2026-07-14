@@ -105,6 +105,19 @@ export async function POST(request: Request) {
     if (!def) {
       return NextResponse.json({ error: `Unknown agent '${parsed.data.agentId}'` }, { status: 400 });
     }
+    // Lege-staat-guard (tasks/agent-ads-watchdog.md, Fase 3): geen schedule
+    // op een waakhond zonder gekoppeld account.
+    if (parsed.data.agentId === "ads-watchdog") {
+      const activeAccounts = await prisma.connectedAdAccount.count({
+        where: { workspaceId, status: "active" },
+      });
+      if (activeAccounts === 0) {
+        return NextResponse.json(
+          { error: "No active ad account — connect (or reconnect an expired) account under Settings → Integrations → ad accounts first." },
+          { status: 400 },
+        );
+      }
+    }
     if (parsed.data.useCaseId && !def.useCases.some((u) => u.id === parsed.data.useCaseId)) {
       return NextResponse.json(
         { error: `Unknown use-case '${parsed.data.useCaseId}' for agent '${def.id}'` },

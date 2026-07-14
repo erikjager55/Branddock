@@ -31,6 +31,11 @@ const ns = {
       hint: 'Choose which workspace sources this run may use as context. Removing the brand modules also removes the brand foundation from the prompt.',
     },
     back: 'Back to Agents',
+    adAccountGate: {
+      title: 'No advertising account connected',
+      body: 'Ada watches the creative health of your connected ad accounts. Connect a Meta ad account first (or reconnect an expired one) — without an active account there is nothing to monitor.',
+      cta: 'Connect ad account',
+    },
     chatButton: 'Chat with {{name}}',
     inboxButton: 'Results Inbox',
     useCasesTitle: 'What can {{name}} do for you?',
