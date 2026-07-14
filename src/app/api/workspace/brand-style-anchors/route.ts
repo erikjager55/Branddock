@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { requireWorkspaceRole } from '@/lib/auth/require-role';
 import { prisma } from '@/lib/prisma';
 import { fetchBrandStyleAnchors, auditStyleAnchorsForLogos } from '@/lib/ai/brand-style-anchors';
 
@@ -44,10 +45,11 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // L4 (audit 2026-06-26): workspace-config-mutatie is member+ — viewers
+    // zijn read-only (zelfde patroon als de andere workspace-mutatie-routes).
+    const role = await requireWorkspaceRole(['owner', 'admin', 'member']);
+    if (role instanceof NextResponse) return role;
+    const workspaceId = role.workspaceId;
 
     const body = putSchema.parse(await request.json());
 

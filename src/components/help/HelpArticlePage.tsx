@@ -15,6 +15,7 @@ import {
 import { Card, Button, Badge } from "@/components/shared";
 import { useHelpArticle, useArticleFeedback } from "@/hooks/use-help";
 import { useHelpStore } from "@/stores/useHelpStore";
+import { escapeHtml, sanitizeMarkdownHref } from "@/lib/security/html-escape";
 import type { HelpArticleDetailResponse, TocItem } from "@/types/help";
 
 // ─── ArticleBreadcrumb ──────────────────────────────────────
@@ -329,8 +330,14 @@ function renderTable(rows: string[]): string {
 }
 
 function inlineFormat(text: string): string {
+  // L6 (audit 2026-06-26): de renderer produceert HTML via
+  // dangerouslySetInnerHTML. Escape ALLE tekst aan de bron zodat rauwe
+  // markup (`<img onerror=…>`, `<script>`) nooit als HTML wordt uitgevoerd;
+  // de markdown-formattering hieronder injecteert daarna alleen bekende,
+  // veilige tags op de geëscapete tekst.
+  let out = escapeHtml(text);
   // Bold
-  let out = text.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>');
+  out = out.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>');
   // Italic
   out = out.replace(/\*(.+?)\*/g, "<em>$1</em>");
   // Inline code
@@ -338,19 +345,17 @@ function inlineFormat(text: string): string {
     /`([^`]+)`/g,
     '<code class="px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-mono">$1</code>'
   );
-  // Links
+  // Links — href door een protocol-allowlist (alleen https:/mailto:); een
+  // javascript:/data:-href degradeert naar platte tekst (geen anker).
   out = out.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" class="text-primary hover:text-primary-700 underline" target="_blank" rel="noopener noreferrer">$1</a>'
+    (_match, label: string, href: string) => {
+      const safe = sanitizeMarkdownHref(href);
+      if (!safe) return label;
+      return `<a href="${safe}" class="text-primary hover:text-primary-700 underline" target="_blank" rel="noopener noreferrer">${label}</a>`;
+    }
   );
   return out;
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
 
 function headingToId(title: string): string {

@@ -48,7 +48,14 @@ console.log('\n=== ad-encryption smoke ===\n');
 // Case 1: missing key
 delete process.env.TOKEN_ENCRYPTION_KEY;
 _resetKeyCacheForTesting();
-expectThrow('throws when TOKEN_ENCRYPTION_KEY missing', () => encryptToken('hi'), /not set/);
+// L9-convergentie (2026-07-13): de adapter faalt nu fail-closed met een
+// eigen message ("not configured — refusing to store ... in plaintext")
+// i.p.v. de oude "not set". Match beide zodat de assertie stabiel is.
+expectThrow(
+  'throws when TOKEN_ENCRYPTION_KEY missing',
+  () => encryptToken('hi'),
+  /not set|not configured/,
+);
 
 // Case 2: malformed key (wrong length)
 process.env.TOKEN_ENCRYPTION_KEY = Buffer.from('too-short').toString('base64');

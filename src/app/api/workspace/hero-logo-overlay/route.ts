@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { requireWorkspaceRole } from '@/lib/auth/require-role';
 import {
   resolveHeroLogoOverlayEnabled,
   setHeroLogoOverlayEnabled,
@@ -29,10 +30,10 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // L4 (audit 2026-06-26): workspace-config-mutatie is member+.
+    const role = await requireWorkspaceRole(['owner', 'admin', 'member']);
+    if (role instanceof NextResponse) return role;
+    const workspaceId = role.workspaceId;
     const { enabled } = putSchema.parse(await request.json());
     await setHeroLogoOverlayEnabled(workspaceId, enabled);
     return NextResponse.json({ enabled });
