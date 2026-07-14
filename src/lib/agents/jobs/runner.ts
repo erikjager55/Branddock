@@ -17,6 +17,11 @@ import { trackEvent } from '@/lib/analytics/posthog';
 import type { JobRunResult, RunPendingJobsResult, AgentJob } from './types';
 
 const DEFAULT_LIMIT = 20;
+// Max gelijktijdige rest-handlers per invocation (naast de agent-lane).
+// AI-jobs zijn I/O-gebonden dus parallel is goedkoop; de cap begrenst
+// geheugen/DB-connecties per lambda én het aantal gelijktijdige LLM-streams
+// (Anthropic-rate-limits) — verhogen pas op meting.
+const JOB_CONCURRENCY = 4;
 const MAX_BACKOFF_MS = 60 * 60 * 1000; // cap retry delay at 1 hour
 
 /** Rest-budget binnen één invocation (maxDuration 800s): voorbij dit punt
@@ -200,8 +205,14 @@ async function runJob(job: AgentJob): Promise<JobRunResult> {
  *  - for RETRY: nextAttemptAt is null or in the past
  *
  * AGENT_TASK-jobs (echte agent-runs, tot ~740s elk) krijgen een eigen
- * regime: maximaal één per invocation, als eerste zodat hij het volle
- * maxDuration-budget heeft. De rest draait erna tot het tijdbudget op is.
+ * regime: maximaal één gestárte run per invocation, in een eigen lane die
+ * CONCURRENT met de rest-pool draait (runner-parallel-batch, follow-up op
+ * #388) — vóór die follow-up wachtte de hele rest-batch op de agent-run en
+ * was het budget daarna meestal op. De rest draait in een kleine worker-pool
+ * (JOB_CONCURRENCY) tot het tijdbudget op is; workers pullen in
+ * batch-volgorde, dus prioriteit bepaalt de startvolgorde. Claims zijn
+ * atomair (claimJob/claimAgentTaskJob), dus parallelle workers of
+ * gelijktijdige (gekickte) invocations kunnen niet dubbel-verwerken.
  * Vercel Cron vuurt elke minuut een onafhankelijke invocation, dus wat
  * blijft liggen is binnen een minuut weer aan de beurt.
  */
@@ -252,18 +263,65 @@ export async function runPendingJobs(
   });
 
   const results: JobRunResult[] = [];
-  // Max 1 gestárte agent-run per invocation, maar itereer door gecapte
-  // (SKIPPED) heen: anders blokkeert workspace A's lopende run elke tick
-  // de due runs van álle andere workspaces (head-of-line-blocking).
-  for (const job of agentTasks) {
-    const result = await runJob(job);
-    results.push(result);
-    if (result.status !== 'SKIPPED') break;
-  }
-  for (const job of rest) {
-    if (Date.now() - invocationStartedAt > budgetMs) break;
-    results.push(await runJob(job));
-  }
+
+  // Review-W1 (runner-parallel-batch): runJob kán throwen (no-handler-write
+  // buiten de try/catch; terminale failure-write die zelf faalt). In de oude
+  // sequentiële loop brak dat alleen de loop af; onder Promise.all zou één
+  // throw de invocation vroeg laten 500'en terwijl tot 4 handlers + de
+  // agent-run nog in flight zijn (RUNNING-wedges tot de reaper ze pakt).
+  // Daarom: throw → synthetisch FAILED-result, de lanes leven door; de
+  // DB-rij blijft in dat geval RUNNING en is voor de reaper (≤900s).
+  const safeRunJob = async (job: AgentJob): Promise<JobRunResult> => {
+    try {
+      return await runJob(job);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[runPendingJobs] runJob wierp voor ${job.id} (${job.type}):`, message);
+      return { id: job.id, type: job.type, status: 'FAILED', attempts: job.attempts, error: message };
+    }
+  };
+
+  // Agent-lane: max 1 gestárte agent-run per invocation, maar itereer door
+  // gecapte (SKIPPED) heen — anders blokkeert workspace A's lopende run elke
+  // tick de due runs van álle andere workspaces. Geen budget-check: de
+  // agent-run is het hoofdgerecht van de invocation en mag tot de
+  // maxDuration-ceiling lopen.
+  const agentLane = (async () => {
+    for (const job of agentTasks) {
+      const result = await safeRunJob(job);
+      results.push(result);
+      if (result.status !== 'SKIPPED') break;
+    }
+  })();
+
+  // Rest-pool: kleine worker-pool i.p.v. één-voor-één (de #387-meting liet
+  // 3 min head-of-line-blocking zien; de #388-kick vangt alleen nieuwe
+  // dispatches — batch-genoten serialiseerden nog). Zelfde budget-check op
+  // dezelfde plek als de oude sequentiële loop: vóór het pakken van de
+  // volgende job. `results.push` is race-vrij (single-threaded tussen awaits).
+  //
+  // Impliciet contract, nu expliciet (review-M3): rest-jobs kunnen onderling
+  // én met een agent-run concurrent draaien — handlers moeten entiteit-
+  // gescoped/idempotent zijn (dat waren ze cross-invocation al).
+  //
+  // DB-pool-druk (review-W2): 4 workers + agent-lane > serverless pg-pool
+  // (max 3), maar Prisma houdt geen connectie vast tijdens AI-awaits — de
+  // daadwerkelijke DB-momenten zijn ms-schaal writes die prima op de pool
+  // queueën (acquire-timeout 10s). Worst case is een RETRY op een
+  // pool-timeout, geen dubbel-werk; JOB_CONCURRENCY verhogen pas op meting.
+  let cursor = 0;
+  const restPool = Promise.all(
+    Array.from({ length: Math.min(JOB_CONCURRENCY, rest.length) }, async () => {
+      while (cursor < rest.length) {
+        if (Date.now() - invocationStartedAt > budgetMs) break;
+        const job = rest[cursor];
+        cursor += 1;
+        results.push(await safeRunJob(job));
+      }
+    }),
+  );
+
+  await Promise.all([agentLane, restPool]);
 
   return { processed: results.length, results };
 }
