@@ -92,7 +92,8 @@ Grep `POST/PUT/PATCH-routes die `.json()` lezen zonder `safeParse`/`.parse(`' ga
 
 - `npx tsc --noEmit` 0 errors · `npm run lint` 0 errors (4 pre-existing warnings in HelpArticlePage, ongewijzigd).
 - `npm run smoke:security-residual` — **22/22 groen**: L6 escape (`<script>`/`<img onerror>`/quote) + href-allowlist (https/mailto toegestaan; javascript:/data:/http: geblokkeerd), L9 v1-round-trip + legacy-unversioned-decrypt (backward-compat, geen brick) + tamper-detectie, CSP-consolidatie (prod CSP+HSTS, dev geen CSP, Permissions-Policy consistent).
-- **Handmatig te bevestigen door Erik** (UI/DB-afhankelijk): viewer krijgt 403 op de twee L4-PUT-routes (smoke-plan stap 1); een bestaande ad-token-rij (unversioned) blijft decrypten na deploy (L9-risico — test met een échte rij vóór rollout, gotcha 2026-04-21).
+- **Handmatig te bevestigen door Erik** (UI-afhankelijk): viewer krijgt 403 op de twee L4-PUT-routes (smoke-plan stap 1).
+- **L9-rollout-gate GESLOTEN (2026-07-14)** — sinds vandaag bestaat er een échte ad-token-rij (BB-Meta-account, gekoppeld tijdens ads-watchdog Fase 0). Bewijs in drievoud: (1) **formaatcheck op de echte prod-rij** (Neon, alleen structuur — geen secret): geen `v1:`-prefix, base64-decodeert naar 230 bytes ≥ iv12+tag16+1 → routeert in de nieuwe adapter aantoonbaar naar het legacy-compat-pad; (2) **cross-versie-roundtrip met de échte oude writer**: blob geschreven door de main-versie van `encryptToken` (ads-worktree) decrypt **byte-identiek** via de nieuwe adapter onder dezelfde key; (3) nieuwe writes zijn `v1:` en roundtrippen. Post-merge-main herbevestigd: ad-encryption-smoke 13/13 + security-residual 23/23 + tsc 0. NB: sinds #399 is er een extra `decryptToken`-caller (`sync-ad-insights.ts`) — signatures ongewijzigd, dus gedekt door dezelfde adapter.
 
 # Notes
 
