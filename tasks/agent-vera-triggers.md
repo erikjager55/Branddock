@@ -183,4 +183,15 @@ Richtlijn was "bestaand notificatietype". Voor de **findings** geldt dat onverko
 
 ## Fase-0-logboek
 
-(hier meetdata + go/no-go-besluit vastleggen)
+- **2026-07-14 — Fase 0 gestart** (user-directive "kunnen we verder met een adr-aanvulling ... zodat we de vera-triggers kunnen starten"). ADR-aanvulling geschreven: `docs/adr/2026-07-05-agents-architectuur.md` §"Aanvulling 2026-07-14 — D7 verfijnd" (event-driven trede, floor-0cr, opt-in default uit, moeheid-invarianten, cap-melding-enum-lid beslist). Bouw blijft gegate op de go/no-go hieronder.
+- **2026-07-14 — historische event-frequentie (prod-Neon, GO-criterium 3)**:
+
+  | event | week | n | workspace |
+  |---|---|---|---|
+  | dam-upload (IMAGE) | 5-7 juli | 9 | BB-pilot (Erik Jager's Workspace) |
+  | dam-upload (IMAGE) | 13-14 juli | 36 | ⚠️ smoke-account (Claude Smoke 7) — telt NIET mee |
+  | deliverable → IN_REVIEW | laatste 8 weken | **0** | heel prod |
+
+  Voorlopige lezing: **dam-upload marginaal** (1 echte burst in 4 weken — precies op de "≥ ~1 burst/week"-drempel als de pilot aantrekt, eronder als het stil blijft); **content-review heeft vandaag géén voer** (0 events — hangt aan pilot-adoptie van de review-flow, user-taak #5). Observatiewindow: 2026-07-14 t/m 2026-07-28.
+- **Nog te meten (concierge, 2 weken)**: actie-rate ≥ 30% op handmatig gedeelde findings (criterium 1) + vision-false-positive-score door de pilot-user (criterium 2). Protocol: bij elk echt event handmatig een Vera-review draaien en de finding via de inbox delen; Erik scoort per finding.
+- Go/no-go-besluit: _(na de window invullen)_
