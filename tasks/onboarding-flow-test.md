@@ -118,4 +118,12 @@ Productie-readiness vereist evidence dat verse gebruikers het zonder begeleiding
 
 - **Testprotocol geschreven**: `docs/playbooks/onboarding-test-protocol.md` — 6 taken, score-rubric, debrief-vragen, verwerkings-format en een expliciet go/no-go-criterium voor betaalde acquisitie.
 - **Werving + observatie** (menswerk) staat als user-taak #8 op de takenlijst.
-- Restpunt vóór de sessies: de geautomatiseerde technische pre-check (Playwright signup→workspace→asset→persona→generatie) draaien zodra er een verse test-run gepland wordt — zodat testers alleen op UX struikelen, niet op techniek.
+
+## Voortgang 2026-07-14 (technische pre-check geleverd)
+
+- **Pre-check gebouwd + lokaal gevalideerd**: `e2e/tests/global/onboarding-precheck.spec.ts` loopt de 6 tester-taken op een VERS account af (uniek e-mailadres per run). Taken 1-4 (signup → workspace → merk-asset invullen+opslaan → persona aanmaken+benoemen) zijn **DB-only en worden hard geassert**; lokaal groen in 9,5s tegen de echte UI (tegen `branddock_test`). Elke taak logt een rubric-regel (✅/⚠️/❌/⛔) gespiegeld aan het observatie-protocol.
+- **Taken 5-6 zijn credit-gated**: de pre-check verifieert dat de content-generatie-**ingang** (campagne-wizard) rendert, maar de AI-generatie zelf + de on-brand-trace hangen aan de Anthropic-API. Die zijn met `⛔` gemarkeerd → **live bevestigen op productie mét tegoed** vóór de sessie (op 2026-07-13/14 zit het API-account zonder credits).
+- **Draaien**: `npm run test:onboarding-precheck` (lokaal, boot een eigen dev-server op 3001 tegen `branddock_test`) óf tegen productie:
+  `PLAYWRIGHT_BASE_URL=https://branddock-7y9n.vercel.app npx playwright test --config e2e/playwright.config.ts -g "Onboarding pre-check"`.
+- **Selector-noot** (voor onderhoud): de merk-asset-editor (Edit/Save + framework-textarea) en het persona-naam-veld hebben géén `data-testid` — de pre-check target die op rol/label. Een verse auto-persona opent al in edit-mode (save-knop i.p.v. edit-knop) — de spec is daar tolerant voor. Verse account = 11 lege canonieke assets / 0 personas / 0 campaigns.
+- **Restpunt (Erik)**: één live pre-check-run op prod zodra het Anthropic-tegoed is aangevuld, om taak 5-6 groen te bevestigen; daarna de tester-sessies inplannen (werving = user-taak).
