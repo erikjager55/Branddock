@@ -80,6 +80,20 @@
 
 ## 🤖 Agents — user-facing persona-agents op merk-DNA (initiatief 2026-07-05)
 
+### 🤖 Agents-uitbreiding (gepland 2026-07-14 — marktonderzoek-gedreven, user-akkoord)
+
+Op basis van `docs/reports/agents-marktonderzoek-en-uitbreidingsadvies-2026-07-14.md`; volledige flow doorlopen (feature-planner → technical-planner), alle gates vooraf gedraaid op prod-data.
+
+| Task | Wat | Status/gate | Effort |
+|---|---|---|---|
+| [`agent-reporter`](tasks/agent-reporter.md) | "Remi" — scheduled week-/maandrapport per merk (agency-first; 4-blokken-skelet op Dana's tools) | **ready** — Fase 1 = code-loze golden-report-validatie op BB; credits-beslispunt bij Erik | 2,5-4d |
+| [`agent-repurposer`](tasks/agent-repurposer.md) | Long-form → on-brand social-afgeleiden, elk met F-VAL-score (route A: Milo-use-case) | **open** — gate marginaal gehaald (3 BB-bronnen, deels smoke-content; hertoets bij start); let op: 0 MediumEnrichment-seeds op prod | 1-2d |
+| [`agent-seo-watchdog`](tasks/agent-seo-watchdog.md) | Scheduled GEO-onderhouds-scan → herschrijf-proposals via bestaande pipeline | **blocked/data-gated** — 0 geo-geanalyseerde pagina's op prod; opent zodra pilot GEO-content publiceert | 2,5-3,5d |
+| [`agent-vera-triggers`](tasks/agent-vera-triggers.md) | Event-triggered brand-review (DAM-upload + approval→IN_REVIEW) | tweede ring — Fase 0 = 2-wk concierge-validatie; ADR-aanvulling vereist | 6-9d na go |
+| [`agent-ads-watchdog`](tasks/agent-ads-watchdog.md) | Creative-gezondheid-waakhond op Meta (read-only discovery + metrics-sync; nooit budget) | tweede ring — Fase 0 = validatie-sprint (0 gekoppelde accounts vermoed); ADR vereist | 7-11d na go |
+| localization-agent | Transcreatie-agent — **bewust géén task-file**: dubbel gegate op het multi-market-epic | idea-doc + agent-consumability-eisen op het epic gezet | — |
+
+
 > ADR: [`2026-07-05-agents-architectuur`](docs/adr/2026-07-05-agents-architectuur.md). Onderbouwing: [`docs/reports/agents-diepte-analyse-en-plan-2026-07-05.md`](docs/reports/agents-diepte-analyse-en-plan-2026-07-05.md) (adversarieel geverifieerde marktanalyse Sintra/Jasper + brede scan + codebase-inventaris) + [`tasks/_drafts/idea-agents-feature.md`](tasks/_drafts/idea-agents-feature.md) (feature-discovery, verdict `ready-to-build`, gepromoot 2026-07-05).
 > **Kernframe**: Agents = user-facing productlaag — human-in-the-loop taak-agents met persona's, gegrond in het volledige merk-DNA, elke content-output F-VAL-gevalideerd (de combinatie die géén onderzochte concurrent biedt). Brandclaw = de latere autonomie-trap op dezelfde motor (`runAgentLoop`). User-besluiten 2026-07-05: pre-launch MVP, persona-agents, Data Analyst in MVP, vaste maandprijs (per-token later; merkcontext/F-VAL nooit meteren).
 
@@ -300,6 +314,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 **Trigger om op te pakken**: post-launch + `vercel-deployment` gemerged, óf pilot-vraag naar externe-app-koppeling.
 
 ---
+
 
 ### 🤖 Brand Assistant standalone-app (post-launch — besluit 2026-06-19)
 
