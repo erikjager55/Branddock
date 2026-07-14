@@ -81,6 +81,11 @@ const SPECS: Spec[] = [
     useCaseId: "weekly-report",
     message: "geen extra focus",
   },
+  {
+    agentId: "seo-watchdog",
+    useCaseId: "weekly-decay-scan",
+    message: "geen extra focus",
+  },
 ];
 
 interface RowResult {
