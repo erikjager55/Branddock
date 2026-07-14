@@ -147,9 +147,25 @@ runs-inbox (select op `scheduleId`) op prod; de cron-tick zelf blijft
 draaien (de enqueue-stap is in de route fail-soft gewrapt). Conform de
 gotcha 2026-07-13: push pas "gedaan" ná een verificatie-write.
 
-**Restpunten ná merge (deploy-checklist):** golden e2e (smoke-stap 6, één
-echte DAILY-schedule op prod ná deploy + Neon-push — vervult ook de
-Phase-C-BB-smoke) · browser-smoke schedule-UI/inbox-filter/notificatie-klik.
+**Restpunten ná merge (deploy-checklist):** ~~golden e2e~~ ✅ · browser-smoke
+schedule-UI/inbox-filter/notificatie-klik (deferred — de e2e "Agents UI"-suite
+was al groen op #119).
+
+## Deploy + golden e2e 2026-07-14 — ✅ LIVE OP PRODUCTIE
+
+- **Neon-push** geverifieerd tegen prod (`t | t | t | 3`): `AgentSchedule`,
+  `AgentRun.scheduleId`, `AgentMemory.agentId`, `NotificationType`+3 staan er.
+- **PR #119 gemerged** (merge-commit `8b6155be`) + prod-deploy `success`;
+  changelog-entry hernummerd naar **#391** (main had #390 al bezet met SEO 4b).
+- **Golden e2e geslaagd** (`scripts/dev/agents-golden-e2e-prod.ts`, smoke-stap
+  6): een DUE DAILY-schedule op de BB-pilot-workspace (`erik@betterbrands.nl` /
+  "Erik Jager's Workspace") werd binnen ~1 tick door de prod-cron opgepakt →
+  `AGENT_TASK`-job → `runAgent` → AgentRun `208c154f` **COMPLETED** ($0,097, 1
+  artefact); `scheduleId` gestempeld, `nextRunAt` opgeschoven naar morgen 08:00,
+  `AGENT_RUN_COMPLETED`-notificatie voor de owner. Test-schedule opgeruimd, de
+  run blijft als bewijs in de BB-inbox. **Vervult tegelijk de Phase-C-BB-smoke.**
+- ⚠️ **User-actie open**: Neon-wachtwoord roteren (stond in de chat) + de
+  Vercel-`DATABASE_URL` (prod+preview) bijwerken + redeploy + write-check.
 
 ## Finalize 2026-07-13 — review-loop + gates
 
