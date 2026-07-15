@@ -1,5 +1,4 @@
-// Feature deep-dive pages — één bestand voor alle 4 features via [slug].
-// SCREENSHOT-TODO: vervang placeholder-images in public/marketing/features/
+// Feature deep-dive pages — één bestand voor alle 4 features via [slug]. NL-first (Fase 2).
 
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -18,62 +17,62 @@ interface FeatureSpec {
 const FEATURES: Record<string, FeatureSpec> = {
   'brand-voice': {
     slug: 'brand-voice',
-    title: 'Brand Voice that truly fits',
-    tagline: 'Build your brand voice from sample texts — no generic prompts.',
+    title: 'Brand Voice die écht klopt',
+    tagline: 'Bouw je brand voice uit voorbeeldteksten — geen generieke prompts.',
     description:
-      'Branddock learns your brand voice from voiceguide input, sample texts or both. Every generation is validated against that baseline, not against "does it sound good in general".',
+      'Branddock leert je brand voice uit een voiceguide, voorbeeldteksten of allebei. Elke generatie wordt getoetst aan die basis — niet aan “klinkt het in het algemeen goed”.',
     bullets: [
-      'Voiceguide extraction from 3 sample texts in 5 minutes',
-      'Voice-similarity scoring per generated variant (W-1-full embedding)',
-      'STRICT mode rewrite for anti-AI tells on demand',
-      'Per content-type custom thresholds (blog vs LinkedIn vs email)',
+      'Voiceguide-extractie uit 3 voorbeeldteksten in 5 minuten',
+      'Voice-similariteitsscore per gegenereerde variant (W-1-full embedding)',
+      'STRICT-mode herschrijft anti-AI-tells op verzoek',
+      'Eigen drempels per contenttype (blog vs LinkedIn vs e-mail)',
     ],
-    screenshotPath: '/marketing/features/brand-voice.png', // TODO: vervang
+    screenshotPath: '/marketing/features/brand-voice.png',
   },
   'content-canvas': {
     slug: 'content-canvas',
-    title: 'Content Canvas — 25+ content types',
-    tagline: 'From blog post to landing page to LinkedIn ad — one canvas, all formats.',
+    title: 'Content Canvas — 25+ contenttypes',
+    tagline: 'Van blogpost tot landingspagina tot LinkedIn-ad — één canvas, alle formats.',
     description:
-      'Briefing in, on-brand content out, with automated quality gates at every step. Multivariate output, deterministic property checks, and a brand-fit score (F-VAL) on every variant — plus full web pages and SEO/GEO long-form with a visual page builder.',
+      'Briefing erin, on-brand content eruit, met automatische kwaliteitscontroles bij elke stap. Multivariate output, deterministische property-checks en een merk-check (F-VAL) op elke variant — plus volledige webpagina’s en SEO/GEO-longform met een visuele page-builder.',
     bullets: [
-      '25+ content types, from blog and social to ads, landing pages and SEO/GEO long-form',
-      'Multivariate output: multiple angles + 1 preferred variant per generation',
-      'Deterministic property checks per variant (placeholders, PII, banned phrases, claims)',
-      'Visual web-page builder with publishable pages on your own URL',
-      'Auto-iterate: when a score is below threshold, an automatic feedback-driven rewrite',
+      '25+ contenttypes, van blog en social tot ads, landingspagina’s en SEO/GEO-longform',
+      'Multivariate output: meerdere invalshoeken + 1 voorkeursvariant per generatie',
+      'Deterministische property-checks per variant (placeholders, PII, verboden zinnen, claims)',
+      'Visuele page-builder met publiceerbare pagina’s op je eigen URL',
+      'Auto-iteratie: bij een score onder de drempel een automatische, feedback-gedreven herschrijving',
     ],
     screenshotPath: '/marketing/features/content-canvas.png',
   },
   'brand-alignment': {
     slug: 'brand-alignment',
-    title: 'Brand Alignment Insights',
-    tagline: 'See why content scores the way it does.',
+    title: 'Merk-check & inzichten',
+    tagline: 'Zie waaróm content scoort zoals het scoort.',
     description:
-      'No black box: a per-generation breakdown of style-fit / brand-judge / rules-compliance. Findings are categorized into VOICE / TERMINOLOGY / CLAIMS / STYLE / BUSINESS / AI-TELL with severity and concrete suggestions.',
+      'Geen black box: per generatie een uitsplitsing van stijl-fit / merk-judge / regel-compliance. Bevindingen worden gecategoriseerd in VOICE / TERMINOLOGIE / CLAIMS / STIJL / BUSINESS / AI-TELL, met severity en concrete suggesties.',
     bullets: [
-      '3-pillar F-VAL scoring: style (35%) / judge (45%) / rules (20%)',
-      'BrandReviewFinding categorization with HIGH/MEDIUM/LOW severity',
-      'Compliance dimension: claim substantiation + sector-specific risk flags',
-      '30-day trend dashboard with pass rate per content type',
-      'Edit-distance signal for the regression-corpus filter',
+      '3-pijler F-VAL-score: stijl (35%) / judge (45%) / rules (20%)',
+      'Categorisering van bevindingen met HOOG/MIDDEN/LAAG severity',
+      'Compliance-dimensie: onderbouwing van claims + sectorspecifieke risicoflags',
+      '30-daags trend-dashboard met slagingspercentage per contenttype',
+      'Edit-distance-signaal voor het regressie-corpusfilter',
     ],
     screenshotPath: '/marketing/features/brand-alignment.png',
   },
   'agents': {
     slug: 'agents',
-    title: 'AI agents that know your brand',
-    tagline: 'Nine specialist agents — from research and strategy to weekly reports and 24/7 watchdogs.',
+    title: 'AI-agents die je merk kennen',
+    tagline: 'Negen specialisten — van onderzoek en strategie tot wekelijkse rapporten en 24/7-watchdogs.',
     description:
-      'Branddock agents run real work on top of your brand DNA: market research with sources, strategy foundations, content proposals, brand-fit reviews and data analysis. Every agent proposes — you approve. Nothing ships without you.',
+      'Branddock-agents doen echt werk bovenop je merk-DNA: marktonderzoek met bronnen, strategiefundamenten, contentvoorstellen, merk-checks en data-analyse. Elke agent stelt voor — jij keurt goed. Niets gaat live zonder jou.',
     bullets: [
-      'Research analyst: sourced market research (web + peer-reviewed) into your knowledge library',
-      'Strategist & content creator: strategy foundations and content proposals through the brand-validated pipeline',
-      'Brand guardian: independent brand-fit reviews (F-VAL) on any text',
-      'Reporting analyst: a client-ready weekly brand report, on schedule',
-      'SEO/GEO & ads watchdogs: published content decay and ad-fatigue signals with refresh proposals',
-      'Market & data analysts: competitor moves and your own production numbers',
-      'Human-in-the-loop by design: agents propose, you confirm',
+      'Research-analist: marktonderzoek met bronnen (web + peer-reviewed) in je kennisbibliotheek',
+      'Strateeg & contentmaker: strategiefundamenten en contentvoorstellen via de merk-gevalideerde pipeline',
+      'Merk-bewaker: onafhankelijke merk-checks (F-VAL) op elke tekst',
+      'Rapportage-analist: een klant-klaar wekelijks merkrapport, op schema',
+      'SEO/GEO- & ads-watchdogs: signalen over content-veroudering en ad-moeheid, met verversvoorstellen',
+      'Markt- & data-analisten: concurrentbewegingen en je eigen productiecijfers',
+      'Human-in-the-loop by design: agents stellen voor, jij bevestigt',
     ],
     screenshotPath: '/marketing/features/agents.png',
   },
@@ -90,7 +89,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const feature = FEATURES[slug];
-  if (!feature) return { title: 'Feature not found — Branddock' };
+  if (!feature) return { title: 'Feature niet gevonden — Branddock' };
   return {
     title: `${feature.title} — Branddock`,
     description: feature.tagline,
@@ -118,7 +117,7 @@ export default async function FeaturePage({
           {/* eslint-disable-next-line @next/next/no-img-element -- statische marketing-asset, geen next/image-optimalisatie nodig */}
           <img
             src={feature.screenshotPath}
-            alt={`${feature.title} — product screenshot`}
+            alt={`${feature.title} — productschermafbeelding`}
             className="w-full h-auto"
           />
         </div>
@@ -126,7 +125,7 @@ export default async function FeaturePage({
 
       <p className="text-gray-700 text-lg mb-8 leading-relaxed">{feature.description}</p>
 
-      <h2 className="text-gray-900 mb-4">What you get</h2>
+      <h2 className="text-gray-900 mb-4">Wat je krijgt</h2>
       <ul className="space-y-3 mb-12">
         {feature.bullets.map((b) => (
           <li key={b} className="flex items-start gap-3 text-gray-700">
@@ -141,13 +140,13 @@ export default async function FeaturePage({
           href={appHref(`/?utm_source=marketing-site&utm_medium=feature-${feature.slug}`)}
           className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
         >
-          Try Branddock
+          Branddock proberen
         </Link>
         <Link
           href="/marketing/pricing"
           className="inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
         >
-          View pricing
+          Bekijk prijzen
         </Link>
       </div>
     </div>
