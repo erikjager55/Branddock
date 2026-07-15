@@ -31,7 +31,14 @@ interface ScholarSearchResponse {
     abstract?: string | null;
     citationCount?: number;
     year?: number;
+    url?: string;
   }>;
+}
+
+/** A scholar paper with a resolvable source URL (used by source-oriented consumers). */
+export interface ScholarSourcePaper extends ScholarPaper {
+  /** Semantic Scholar landing-page URL for this paper. */
+  url: string;
 }
 
 // ─── Constants ──────────────────────────────────────────
@@ -66,8 +73,8 @@ function getAuthHeaders(): Record<string, string> {
 async function searchPapers(
   query: string,
   limit: number = 5,
-): Promise<Array<{ title: string; abstract: string; citationCount: number; year: number }>> {
-  const url = `${SCHOLAR_BASE_URL}/paper/search?query=${encodeURIComponent(query)}&limit=${limit}&fields=title,abstract,citationCount,year`;
+): Promise<Array<{ title: string; abstract: string; citationCount: number; year: number; url: string }>> {
+  const url = `${SCHOLAR_BASE_URL}/paper/search?query=${encodeURIComponent(query)}&limit=${limit}&fields=title,abstract,citationCount,year,url`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -100,6 +107,11 @@ async function searchPapers(
         abstract: paper.abstract!,
         citationCount: paper.citationCount ?? 0,
         year: paper.year ?? 0,
+        url:
+          paper.url ??
+          (paper.paperId
+            ? `https://www.semanticscholar.org/paper/${paper.paperId}`
+            : ''),
       }));
 
     console.info(
@@ -214,6 +226,51 @@ export async function fetchScholarContext(
       error,
     );
     return { contextText: '', meta: null };
+  }
+}
+
+/**
+ * Search Semantic Scholar and return the papers themselves (with a resolvable
+ * URL) instead of a formatted context string. Source-oriented counterpart to
+ * `fetchScholarContext`, for consumers that map each paper to a `Signal`
+ * (e.g. the trend-radar).
+ *
+ * Runs queries SEQUENTIALLY — the authenticated S2 tier allows ~1 rps, so
+ * parallel fan-out risks 429s. Reuses the same citation floor, title-dedup,
+ * citation-sort, and cap as the context helper. Papers without a URL are
+ * dropped (a source signal needs a real link). Never throws.
+ */
+export async function searchScholarSources(
+  queries: ScholarQuery[],
+): Promise<ScholarSourcePaper[]> {
+  if (queries.length === 0) return [];
+
+  try {
+    const allPapers: ScholarSourcePaper[] = [];
+    for (const { query, queryLayer } of queries) {
+      const papers = await searchPapers(query);
+      for (const p of papers) {
+        allPapers.push({ ...p, queryLayer });
+      }
+    }
+
+    const significant = allPapers.filter(
+      (p) => p.citationCount > MIN_CITATION_COUNT && p.url.length > 0,
+    );
+
+    const seen = new Set<string>();
+    const deduped = significant.filter((paper) => {
+      const key = paper.title.toLowerCase().trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    deduped.sort((a, b) => b.citationCount - a.citationCount);
+    return deduped.slice(0, MAX_TOTAL_PAPERS);
+  } catch (error) {
+    console.warn('[scholar] Source search failed, returning no papers:', error);
+    return [];
   }
 }
 

@@ -5,9 +5,9 @@ fase: post-launch
 priority: next
 effort: 1-2 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-07-15
-completed: -
+completed: 2026-07-15
 related-adr: - (geen schema/architectuur-wijziging; patroon #402)
 related-spec: docs/reports/research-stack-plan-2026-07-15.md
 worktree: branddock-research-stack-trend-radar

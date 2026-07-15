@@ -56,6 +56,17 @@ function getApiKey(): string | null {
   return null;
 }
 
+/** Optional per-query knobs for Exa neural search. */
+interface SearchExaOptions {
+  /** How many results to request (Exa caps internally). Default 5. */
+  numResults?: number;
+  /**
+   * ISO date (YYYY-MM-DD) lower bound on publication date — Exa's freshness
+   * filter. Used by the trend-radar to bias toward emerging discussions.
+   */
+  startPublishedDate?: string;
+}
+
 /**
  * Search Exa for results matching a query using neural search.
  * Returns filtered results with title, URL, and text snippet.
@@ -63,6 +74,7 @@ function getApiKey(): string | null {
 async function searchExa(
   query: string,
   queryLayer: ExaBlock['queryLayer'],
+  options?: SearchExaOptions,
 ): Promise<ExaBlock[]> {
   const apiKey = getApiKey();
   if (!apiKey) return [];
@@ -81,7 +93,10 @@ async function searchExa(
       body: JSON.stringify({
         query,
         type: 'neural',
-        numResults: 5,
+        numResults: options?.numResults ?? 5,
+        ...(options?.startPublishedDate
+          ? { startPublishedDate: options.startPublishedDate }
+          : {}),
         contents: {
           text: { maxCharacters: 500 },
         },
@@ -188,6 +203,48 @@ export async function fetchExaContext(
   } catch (error) {
     console.warn('[exa] Enrichment failed, proceeding without Exa context:', error);
     return { contextText: '', meta: null };
+  }
+}
+
+/**
+ * Search Exa and return the raw source blocks (title + URL + snippet) instead
+ * of a formatted context string. This is the source-oriented counterpart to
+ * `fetchExaContext`: consumers that need per-source URLs (e.g. the trend-radar,
+ * which maps each result to a `Signal`) use this; consumers that only need
+ * prompt context keep using `fetchExaContext`.
+ *
+ * Shares the exact same API-key path, timeout, and neural-search shape as the
+ * context helper — it is a thin projection, not a second client. Runs queries
+ * in parallel, deduplicates by URL, and caps the total. Never throws.
+ */
+export async function searchExaSources(
+  queries: ExaQuery[],
+  options?: SearchExaOptions & { maxResults?: number },
+): Promise<ExaBlock[]> {
+  if (queries.length === 0) return [];
+  if (!process.env.EXA_API_KEY) return [];
+
+  try {
+    const results = await Promise.allSettled(
+      queries.map(({ query, queryLayer }) => searchExa(query, queryLayer, options)),
+    );
+
+    const seen = new Set<string>();
+    const blocks: ExaBlock[] = [];
+    for (const result of results) {
+      if (result.status !== 'fulfilled') continue;
+      for (const block of result.value) {
+        const key = block.url.toLowerCase().trim();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        blocks.push(block);
+      }
+    }
+
+    return blocks.slice(0, options?.maxResults ?? MAX_TOTAL_RESULTS);
+  } catch (error) {
+    console.warn('[exa] Source search failed, returning no results:', error);
+    return [];
   }
 }
 
