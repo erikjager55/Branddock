@@ -30,7 +30,10 @@ export default function MarketingHomePage() {
     <div>
       <Hero />
       <FeatureTrio />
-      <CustomerQuote />
+      {/* CustomerQuote bewust verborgen tot er een ECHTE pilot-quote is
+          (mét naam/rol/bedrijf) — geen verzonnen social proof bij launch.
+          Component staat klaar in CustomerQuote() hieronder; render 'm terug
+          zodra de quote-tekst is ingevuld. */}
       <FinalCTA />
     </div>
   );
@@ -101,18 +104,18 @@ function FeatureTrio() {
   );
 }
 
+// Klaargezet maar bewust nog niet gerenderd — zie MarketingHomePage().
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function CustomerQuote() {
   return (
     <section className="max-w-6xl mx-auto px-6 py-16">
       <div className="max-w-2xl mx-auto text-center">
-        {/* COPY-TODO: vervang met definitieve pilot-customer quote */}
+        {/* COPY-TODO: vul een ECHTE quote in (naam · rol · bedrijf), render dan
+            <CustomerQuote /> terug in MarketingHomePage(). */}
         <blockquote className="text-xl md:text-2xl text-gray-700 leading-snug mb-4">
-          &ldquo;In two weeks Branddock gave us a brand voice baseline we&rsquo;d otherwise
-          have had to hire an external agency for. The AI content really feels like us.&rdquo;
+          &ldquo;[echte pilot-quote — één zin]&rdquo;
         </blockquote>
-        <div className="text-sm text-gray-500">
-          — Pilot customer placeholder · CMO at a B2B SaaS scale-up
-        </div>
+        <div className="text-sm text-gray-500">— [Naam] · [Rol] · [Bedrijf]</div>
       </div>
     </section>
   );
