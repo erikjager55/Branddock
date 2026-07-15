@@ -2,11 +2,30 @@
 
 import Link from 'next/link';
 import { appHref } from '../app-url';
+import Mosaic from '../Mosaic';
 
 export default function AboutPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-16">
-      <h1 className="text-gray-900 mb-6">Waarom Branddock bestaat</h1>
+      <div
+        className="relative overflow-hidden rounded-2xl p-8 md:p-12 mb-10"
+        style={{ background: 'var(--g-brand)' }}
+      >
+        <Mosaic
+          id="about"
+          cols={7}
+          rows={2}
+          className="pointer-events-none absolute inset-0 w-full h-full"
+          style={{ opacity: 0.2 }}
+        />
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element -- statische SVG-merkasset */}
+          <img src="/marketing/branddock-logo-white.svg" alt="Branddock" className="h-7 w-auto mb-5" />
+          <h1 className="mb-0" style={{ color: '#ffffff' }}>
+            Waarom Branddock bestaat
+          </h1>
+        </div>
+      </div>
 
       <div className="prose prose-gray max-w-none space-y-6 text-gray-700 leading-relaxed">
         <p>

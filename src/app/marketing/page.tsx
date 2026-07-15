@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { appHref } from './app-url';
 import HowItWorks from './HowItWorks';
+import Mosaic from './Mosaic';
 
 // Provider-neutrale demo-boeking (Morgen/Calendly/Cal.com). Zonder booking-URL:
 // val terug op de contactpagina i.p.v. een dood `#`.
@@ -65,8 +66,19 @@ export default function MarketingHomePage() {
 
 function Hero() {
   return (
-    <section className="mkt-hero-glow">
-      <div className="max-w-6xl mx-auto px-6 pt-20 md:pt-28 pb-10">
+    <section className="mkt-hero-glow relative overflow-hidden">
+      <Mosaic
+        id="hero"
+        cols={5}
+        rows={3}
+        className="pointer-events-none absolute -top-10 right-0 w-1/2 h-80 hidden sm:block"
+        style={{
+          opacity: 0.7,
+          WebkitMaskImage: 'radial-gradient(130% 110% at 100% 0%, #000 28%, transparent 70%)',
+          maskImage: 'radial-gradient(130% 110% at 100% 0%, #000 28%, transparent 70%)',
+        }}
+      />
+      <div className="max-w-6xl mx-auto px-6 pt-20 md:pt-28 pb-10 relative">
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 mb-6">
             <span className="mkt-accent">●</span> Eén platform dat je merk kent
@@ -186,6 +198,9 @@ const MODULES: { Icon: typeof Dna; title: string; desc: string }[] = [
   { Icon: Languages, title: 'Meertalig', desc: 'Multi-markt content voor internationale merken.' },
 ];
 
+// Merkgradients (brandbook v3) — gradient-beeldtiles per module i.p.v. vlakke chips.
+const TILE_GRADS = ['var(--g-brand)', 'var(--g-warm)', 'var(--g-cool)', 'var(--g-fresh)'];
+
 function PlatformBreadth() {
   return (
     <section id="platform" className="max-w-6xl mx-auto px-6 py-16 md:py-24 scroll-mt-20">
@@ -200,12 +215,15 @@ function PlatformBreadth() {
         </p>
       </div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {MODULES.map(({ Icon, title, desc }) => (
+        {MODULES.map(({ Icon, title, desc }, i) => (
           <div
             key={title}
             className="rounded-xl border border-gray-200 bg-white p-5 hover:border-gray-300 transition-colors"
           >
-            <div className="mkt-chip w-10 h-10 mb-3">
+            <div
+              className="w-10 h-10 mb-3 rounded-xl flex items-center justify-center text-white"
+              style={{ background: TILE_GRADS[i % TILE_GRADS.length] }}
+            >
               <Icon className="w-5 h-5" />
             </div>
             <h3 className="text-base font-semibold text-gray-900 mb-1">{title}</h3>
@@ -419,15 +437,26 @@ function FAQ() {
 
 function FinalCTA() {
   return (
-    <section className="bg-primary/5 border-y border-primary/20">
-      <div className="max-w-6xl mx-auto px-6 py-16 text-center">
-        <h2 className="text-gray-900 mb-4">Klaar om op merk te schalen?</h2>
-        <p className="text-gray-600 mb-8 max-w-xl mx-auto">
+    <section className="relative overflow-hidden" style={{ background: 'var(--g-brand)' }}>
+      <Mosaic
+        id="cta"
+        cols={7}
+        rows={2}
+        tint={0.18}
+        className="pointer-events-none absolute inset-0 w-full h-full"
+        style={{ opacity: 0.22 }}
+      />
+      <div className="max-w-6xl mx-auto px-6 py-20 text-center relative">
+        <h2 className="mb-4" style={{ color: '#ffffff' }}>
+          Klaar om op merk te schalen?
+        </h2>
+        <p className="mb-8 max-w-xl mx-auto" style={{ color: 'rgba(255,255,255,0.9)' }}>
           Probeer Branddock 28 dagen gratis. Geen creditcard, geen verplichtingen.
         </p>
         <Link
           href={appHref('/?utm_source=marketing-site&utm_medium=final-cta')}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white font-medium hover:opacity-90"
+          style={{ color: 'var(--brand-slate)' }}
         >
           Gratis proberen <ArrowRight className="w-4 h-4" />
         </Link>

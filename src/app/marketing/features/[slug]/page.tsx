@@ -3,6 +3,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { appHref } from '../../app-url';
+import Mosaic from '../../Mosaic';
 import type { Metadata } from 'next';
 
 interface FeatureSpec {
@@ -120,6 +121,17 @@ const FEATURES: Record<string, FeatureSpec> = {
   },
 };
 
+// Merkgradient per feature-kop (brandbook v3).
+const FEATURE_GRAD: Record<string, string> = {
+  'brand-voice': 'var(--g-brand)',
+  'content-canvas': 'var(--g-cool)',
+  'brand-alignment': 'var(--g-fresh)',
+  'agents': 'var(--g-warm)',
+  'personas': 'var(--g-cool)',
+  'trend-radar': 'var(--g-warm)',
+  'campaigns': 'var(--g-brand)',
+};
+
 export function generateStaticParams() {
   return Object.keys(FEATURES).map((slug) => ({ slug }));
 }
@@ -149,9 +161,31 @@ export default async function FeaturePage({
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-16">
-      <div className="mb-8">
-        <h1 className="text-gray-900 mb-3">{feature.title}</h1>
-        <p className="text-xl text-gray-600">{feature.tagline}</p>
+      <div
+        className="relative overflow-hidden rounded-2xl p-8 md:p-10 mb-10"
+        style={{ background: FEATURE_GRAD[feature.slug] ?? 'var(--g-brand)' }}
+      >
+        <Mosaic
+          id={`feat-${feature.slug}`}
+          cols={6}
+          rows={2}
+          className="pointer-events-none absolute inset-0 w-full h-full"
+          style={{ opacity: 0.2 }}
+        />
+        <div className="relative">
+          <div
+            className="text-xs font-semibold uppercase tracking-wide mb-2"
+            style={{ color: 'rgba(255,255,255,0.85)' }}
+          >
+            Platform
+          </div>
+          <h1 className="mb-3" style={{ color: '#ffffff' }}>
+            {feature.title}
+          </h1>
+          <p className="text-xl" style={{ color: 'rgba(255,255,255,0.9)' }}>
+            {feature.tagline}
+          </p>
+        </div>
       </div>
 
       {feature.screenshotPath ? (
