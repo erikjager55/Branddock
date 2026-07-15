@@ -5,9 +5,9 @@ fase: post-launch
 priority: next
 effort: 2-4 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-07-15
-completed: -
+completed: 2026-07-15
 related-adr: - (generatie-verrijking; F-VAL/GEO-scoring ongemoeid — geen ADR nodig, wél stop-and-ask bij scoring-wijzigingen)
 related-spec: docs/reports/research-stack-plan-2026-07-15.md
 worktree: branddock-research-stack-geo
