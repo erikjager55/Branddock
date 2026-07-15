@@ -102,7 +102,7 @@ Sentry SDK is al gewired in `next.config.ts`. Wat nog moet:
 4. Update env-vars:
    - `BETTER_AUTH_URL=https://app.branddock.com`
    - `NEXT_PUBLIC_MARKETING_URL=https://www.branddock.com`
-   - `NEXT_PUBLIC_CALENDLY_URL=<jouw Calendly schedule-link>` (voor /marketing/contact)
+   - `NEXT_PUBLIC_BOOKING_URL=<jouw booking-link: Morgen / Calendly / Cal.com>` (voor de "Book a demo"-knop op /marketing en /marketing/contact; provider-neutraal, opent in nieuw tabblad). Oude naam `NEXT_PUBLIC_CALENDLY_URL` blijft als fallback werken.
 5. Re-deploy om env-var changes toe te passen.
 
 ## Fase 7 — Marketing-site polish
@@ -127,7 +127,7 @@ Scaffold staat in `src/app/marketing/` met COPY-TODO markers door alle pagina's.
      - (Brandclaw is post-launch, screenshot optioneel)
 5. **Contact** (`src/app/marketing/contact/page.tsx`):
    - LinkedIn-URL vervangen
-   - Calendly-link via `NEXT_PUBLIC_CALENDLY_URL` env-var
+   - Booking-link via `NEXT_PUBLIC_BOOKING_URL` env-var (Morgen/Calendly/Cal.com)
 
 ## Fase 8 — Pilot-onboarding Better Brands
 
