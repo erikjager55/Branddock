@@ -3,6 +3,28 @@
 
 import Link from 'next/link';
 
+// Provider-neutrale demo-boeking (Morgen/Calendly/Cal.com — elke booking-URL).
+// Met een boekingslink: open die (nieuw tabblad). Zonder: val terug op de
+// contactpagina i.p.v. een dood `#`, zodat "Book a demo" altijd iets doet.
+function BookDemoButton() {
+  const bookingUrl =
+    process.env.NEXT_PUBLIC_BOOKING_URL ?? process.env.NEXT_PUBLIC_CALENDLY_URL ?? null;
+  const cls =
+    'inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50';
+  if (bookingUrl) {
+    return (
+      <a href={bookingUrl} target="_blank" rel="noopener noreferrer" className={cls}>
+        Book a demo
+      </a>
+    );
+  }
+  return (
+    <Link href="/marketing/contact" className={cls}>
+      Book a demo
+    </Link>
+  );
+}
+
 export default function MarketingHomePage() {
   return (
     <div>
@@ -34,14 +56,7 @@ function Hero() {
           >
             Start free trial
           </Link>
-          <a
-            href={process.env.NEXT_PUBLIC_CALENDLY_URL ?? '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
-          >
-            Book a demo
-          </a>
+          <BookDemoButton />
         </div>
         <div className="mt-6 text-xs text-gray-500">
           28 days free · No credit card required · Cancel anytime

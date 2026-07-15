@@ -1,11 +1,20 @@
-// Contact-page met e-mail + LinkedIn + Calendly-embed.
-// USER-INPUT-TODO: vervang e-mail + LinkedIn + Calendly-URL met definitieve.
+// Contact-page met e-mail + LinkedIn + demo-boeking.
+// USER-INPUT-TODO: vervang e-mail + LinkedIn + boekingslink met definitieve.
+//
+// Boeking is provider-neutraal: NEXT_PUBLIC_BOOKING_URL (Morgen, Calendly,
+// Cal.com — elke booking-URL). Bewust een LINK i.p.v. iframe-embed: de
+// productie-CSP staat alleen `frame-src 'self' https://js.stripe.com` toe,
+// dus een externe booking-iframe zou leeg renderen; bovendien weigeren veel
+// booking-tools embedding (X-Frame-Options). Een link opent de geoptimaliseerde
+// boekingspagina van de provider en werkt met elke provider zonder CSP-werk.
 
-import { Mail, Linkedin } from 'lucide-react';
+import { Mail, Linkedin, CalendarClock, ArrowUpRight } from 'lucide-react';
 
 const CONTACT_EMAIL = 'hello@branddock.com';
 const LINKEDIN_URL = 'https://www.linkedin.com/company/branddock'; // TODO: vervang
-const CALENDLY_URL = process.env.NEXT_PUBLIC_CALENDLY_URL ?? null;
+// Backwards-compat: oude env-naam blijft werken tot hij overal vervangen is.
+const BOOKING_URL =
+  process.env.NEXT_PUBLIC_BOOKING_URL ?? process.env.NEXT_PUBLIC_CALENDLY_URL ?? null;
 
 export default function ContactPage() {
   return (
@@ -43,26 +52,30 @@ export default function ContactPage() {
         </div>
       </div>
 
-      {CALENDLY_URL ? (
+      {BOOKING_URL ? (
         <div className="rounded-xl border border-gray-200 overflow-hidden">
-          <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <div className="bg-gray-50 px-6 py-5 border-b border-gray-200">
             <h2 className="font-semibold text-gray-900">Book a demo</h2>
             <p className="text-sm text-gray-600 mt-1">
               30 minutes, a live walkthrough of Branddock for your use case.
             </p>
           </div>
-          {/* Calendly iframe-embed — config via NEXT_PUBLIC_CALENDLY_URL env */}
-          <iframe
-            src={CALENDLY_URL}
-            className="w-full"
-            style={{ height: 650, border: 0 }}
-            title="Book a Branddock demo"
-            loading="lazy"
-          />
+          <div className="p-6">
+            <a
+              href={BOOKING_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
+            >
+              <CalendarClock className="w-4 h-4" />
+              Pick a time
+              <ArrowUpRight className="w-4 h-4" />
+            </a>
+          </div>
         </div>
       ) : (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          The demo embed is being configured. In the meantime, email us directly at{' '}
+          Demo booking is being set up. In the meantime, email us directly at{' '}
           <a href={`mailto:${CONTACT_EMAIL}`} className="underline font-medium">
             {CONTACT_EMAIL}
           </a>{' '}
