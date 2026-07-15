@@ -52,6 +52,9 @@ function MarketingNav() {
           <Link href="/marketing#platform" className="hover:text-gray-900">
             Platform
           </Link>
+          <Link href="/marketing/solutions/marketingteams" className="hover:text-gray-900">
+            Oplossingen
+          </Link>
           <Link href="/marketing/pricing" className="hover:text-gray-900">
             Prijzen
           </Link>
@@ -109,6 +112,21 @@ function MarketingFooter() {
                   AI-agents
                 </Link>
               </li>
+              <li>
+                <Link href="/marketing/features/personas" className="hover:text-gray-900">
+                  Persona’s
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/features/trend-radar" className="hover:text-gray-900">
+                  Trend Radar
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/features/campaigns" className="hover:text-gray-900">
+                  Campagnes
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -132,20 +150,17 @@ function MarketingFooter() {
             </ul>
           </div>
           <div>
-            <div className="font-semibold text-gray-900 mb-3">Zo werkt het</div>
+            <div className="font-semibold text-gray-900 mb-3">Oplossingen</div>
             <ul className="space-y-1.5 text-gray-600">
               <li>
-                <Link href="/marketing#platform" className="hover:text-gray-900">
-                  Het platform
+                <Link href="/marketing/solutions/marketingteams" className="hover:text-gray-900">
+                  Voor marketingteams
                 </Link>
               </li>
               <li>
-                <a
-                  href={appHref('/?utm_source=marketing-site&utm_medium=footer')}
-                  className="hover:text-gray-900"
-                >
-                  Gratis proberen
-                </a>
+                <Link href="/marketing/solutions/bureaus" className="hover:text-gray-900">
+                  Voor bureaus
+                </Link>
               </li>
             </ul>
           </div>
