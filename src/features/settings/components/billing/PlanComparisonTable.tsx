@@ -126,12 +126,22 @@ export function PlanComparisonTable() {
                         )}
                       </div>
                       <div>
-                        <span className="text-lg font-bold text-gray-900">
-                          &euro;{price}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          /{effectiveCycle === 'monthly' ? t('comparison.perMonthShort') : t('comparison.perYearShort')}
-                        </span>
+                        {config.isContactSales ? (
+                          // Enterprise heeft bewust geen publieke prijs
+                          // (plan-limits: contact sales) — "€0/mo" was een bug.
+                          <span className="text-lg font-bold text-gray-900">
+                            {t('comparison.contactSales')}
+                          </span>
+                        ) : (
+                          <>
+                            <span className="text-lg font-bold text-gray-900">
+                              &euro;{price}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              /{effectiveCycle === 'monthly' ? t('comparison.perMonthShort') : t('comparison.perYearShort')}
+                            </span>
+                          </>
+                        )}
                       </div>
                       {isCurrent && (
                         <Badge variant="success" size="sm">{t('common.current')}</Badge>

@@ -38,6 +38,7 @@ const ns = {
     yearly: 'Yearly',
     feature: 'Feature',
     popular: 'Popular',
+    contactSales: 'Custom',
     perMonthShort: 'mo',
     perYearShort: 'yr',
     free: 'Free',

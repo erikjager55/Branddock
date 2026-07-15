@@ -10427,6 +10427,11 @@ html {
   .focus\:ring-emerald-200:focus { --tw-ring-color: var(--color-emerald-200); }
   .focus\:border-emerald-300:focus { border-color: var(--color-emerald-300); }
 
+  /* Card padding="lg" (bugfix 2026-07-15): PADDING_MAP.lg -> p-7 zat in een
+   * TS-constante en is gepurged — kaarten op 10 pagina's (o.a. Billing)
+   * renderden zonder padding (tekst tegen de rand). */
+  .p-7 { padding: calc(var(--spacing) * 7); }
+
   /* Ad-accounts connect-UI (bugfix 2026-07-14): de Connect/Confirm-knoppen op
    * /settings/integrations/ad-accounts renderden onzichtbaar (witte tekst op
    * transparant) — bg-emerald-600/700 en border-emerald-500 ontbraken in de

@@ -38,6 +38,7 @@ const ns = {
     yearly: 'Jaarlijks',
     feature: 'Functie',
     popular: 'Populair',
+    contactSales: 'Op aanvraag',
     perMonthShort: 'mnd',
     perYearShort: 'jr',
     free: 'Gratis',
