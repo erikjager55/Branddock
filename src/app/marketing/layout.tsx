@@ -7,6 +7,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { appHref } from './app-url';
 import './marketing.css';
 
 export const metadata: Metadata = {
@@ -59,7 +60,7 @@ function MarketingNav() {
           </Link>
         </nav>
         <Link
-          href="/?utm_source=marketing-site&utm_medium=nav"
+          href={appHref("/?utm_source=marketing-site&utm_medium=nav")}
           className="inline-flex items-center px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 transition-opacity"
         >
           Start free

@@ -2,6 +2,7 @@
 // COPY-TODO: vervang met definitieve content vóór go-live.
 
 import Link from 'next/link';
+import { appHref } from '../app-url';
 
 export default function AboutPage() {
   return (
@@ -45,7 +46,7 @@ export default function AboutPage() {
 
       <div className="mt-12 pt-8 border-t border-gray-200">
         <Link
-          href="/?utm_source=marketing-site&utm_medium=about-cta"
+          href={appHref("/?utm_source=marketing-site&utm_medium=about-cta")}
           className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
         >
           Try Branddock

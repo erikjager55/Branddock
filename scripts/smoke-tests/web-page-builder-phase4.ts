@@ -192,9 +192,11 @@ function testHostRouter(): void {
   group('5. decideHostRoute — passthrough cases');
 
   const passthrough = [
-    { host: 'branddock.app', path: '/', why: 'apex root' },
+    // Apex deep paths passthrough; apex-root gaat naar /marketing (zie rewrites).
+    { host: 'branddock.app', path: '/marketing/pricing', why: 'apex marketing deep path' },
     { host: 'branddock.app', path: '/dashboard', why: 'apex deep path' },
-    { host: 'www.branddock.app', path: '/', why: 'www apex' },
+    { host: 'app.branddock.app', path: '/', why: 'app-host root (app-shell)' },
+    { host: 'app.branddock.app', path: '/canvas', why: 'app-host deep path' },
     { host: 'localhost:3000', path: '/canvas', why: 'localhost with port' },
     { host: 'lvh.me:3000', path: '/canvas', why: 'lvh.me root' },
     { host: 'ws.branddock.app', path: '/api/foo', why: 'api path on subdomain' },
@@ -205,6 +207,18 @@ function testHostRouter(): void {
   for (const { host, path, why } of passthrough) {
     const d = decideHostRoute(host, path);
     assert(`passthrough: ${why}`, d.passthrough === true && d.rewriteTo === undefined);
+  }
+
+  group('5b. decideHostRoute — apex root → /marketing');
+
+  const apexRoots = [
+    { host: 'branddock.app', path: '/', why: 'apex root → marketing' },
+    { host: 'www.branddock.app', path: '/', why: 'www apex root → marketing' },
+    { host: 'BRANDDOCK.APP', path: '/', why: 'apex root uppercase → marketing' },
+  ];
+  for (const { host, path, why } of apexRoots) {
+    const d = decideHostRoute(host, path);
+    assert(`${why}`, d.rewriteTo === '/marketing', `got ${d.rewriteTo}`);
   }
 
   group('6. decideHostRoute — subdomain rewrite');

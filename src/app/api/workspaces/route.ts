@@ -127,6 +127,17 @@ export async function POST(request: NextRequest) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "");
 
+    // Gereserveerde slugs: elke workspace krijgt <slug>.branddock.app als
+    // landingspagina-subdomein — deze zouden botsen met app/apex/infra-hosts
+    // (zie host-router.ts + custom-domain-branddock-app runbook).
+    const RESERVED_SLUGS = new Set(["app", "www", "api", "admin", "p", "static", "assets"]);
+    if (RESERVED_SLUGS.has(slug)) {
+      return NextResponse.json(
+        { error: "This workspace name is reserved — please choose another." },
+        { status: 409 }
+      );
+    }
+
     // Check slug uniqueness
     const existing = await prisma.workspace.findUnique({ where: { slug } });
     if (existing) {

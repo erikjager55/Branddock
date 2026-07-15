@@ -2,6 +2,7 @@
 // Placeholder copy gemarkeerd met {/* COPY-TODO */} — user vervangt vóór go-live.
 
 import Link from 'next/link';
+import { appHref } from './app-url';
 
 // Provider-neutrale demo-boeking (Morgen/Calendly/Cal.com — elke booking-URL).
 // Met een boekingslink: open die (nieuw tabblad). Zonder: val terug op de
@@ -30,7 +31,10 @@ export default function MarketingHomePage() {
     <div>
       <Hero />
       <FeatureTrio />
-      <CustomerQuote />
+      {/* CustomerQuote bewust verborgen tot er een ECHTE pilot-quote is
+          (mét naam/rol/bedrijf) — geen verzonnen social proof bij launch.
+          Component staat klaar in CustomerQuote() hieronder; render 'm terug
+          zodra de quote-tekst is ingevuld. */}
       <FinalCTA />
     </div>
   );
@@ -51,7 +55,7 @@ function Hero() {
         </p>
         <div className="flex flex-wrap gap-3">
           <Link
-            href="/?utm_source=marketing-site&utm_medium=hero"
+            href={appHref("/?utm_source=marketing-site&utm_medium=hero")}
             className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
           >
             Start free trial
@@ -101,18 +105,18 @@ function FeatureTrio() {
   );
 }
 
+// Klaargezet maar bewust nog niet gerenderd — zie MarketingHomePage().
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function CustomerQuote() {
   return (
     <section className="max-w-6xl mx-auto px-6 py-16">
       <div className="max-w-2xl mx-auto text-center">
-        {/* COPY-TODO: vervang met definitieve pilot-customer quote */}
+        {/* COPY-TODO: vul een ECHTE quote in (naam · rol · bedrijf), render dan
+            <CustomerQuote /> terug in MarketingHomePage(). */}
         <blockquote className="text-xl md:text-2xl text-gray-700 leading-snug mb-4">
-          &ldquo;In two weeks Branddock gave us a brand voice baseline we&rsquo;d otherwise
-          have had to hire an external agency for. The AI content really feels like us.&rdquo;
+          &ldquo;[echte pilot-quote — één zin]&rdquo;
         </blockquote>
-        <div className="text-sm text-gray-500">
-          — Pilot customer placeholder · CMO at a B2B SaaS scale-up
-        </div>
+        <div className="text-sm text-gray-500">— [Naam] · [Rol] · [Bedrijf]</div>
       </div>
     </section>
   );
@@ -127,7 +131,7 @@ function FinalCTA() {
           Try Branddock free for 28 days. No credit card. No commitments.
         </p>
         <Link
-          href="/?utm_source=marketing-site&utm_medium=final-cta"
+          href={appHref("/?utm_source=marketing-site&utm_medium=final-cta")}
           className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
         >
           Start free trial
