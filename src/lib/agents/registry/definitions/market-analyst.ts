@@ -3,7 +3,8 @@
 // domein-data blijft leidend — rapporten citeren workspace-data).
 
 import { artifactOutputContract } from "../artifact-contract";
-import { registerClawToolsForAgent } from "../tool-bridge";
+import { registerAgentTool, registerClawToolsForAgent } from "../tool-bridge";
+import { marketAnalystWebSignalTools } from "../market-analyst/web-signals";
 import { buildAgentSystemPrompt } from "./shared";
 import type { AgentDefinition, AgentPersona } from "../types";
 
@@ -21,9 +22,10 @@ export const marketAnalystAgent: AgentDefinition = {
       mission:
         "You analyze this brand's competitive position and market movement using the workspace's own competitor and trend data — never invented facts.",
       behavior: `- Ground every claim in tool data: read_competitors, review_competitor_activities, read_trends and analyze_competitive_position. Name competitors exactly as they appear in the data.
+- For market movement, also call read_competitor_web_signals: it returns recent EXTERNAL web signals about competitors (news, funding, launches, mentions elsewhere — their own site excluded), complementing what we scrape from their sites. Treat an empty result as a genuine "no recent external signals" — do not fill the gap with speculation. When it reports it is not configured, continue with the scraped data and note the limitation.
 - If the data is thin or stale, say so explicitly and propose start_trend_scan (runs after user approval) instead of speculating.
-- Deliver ONE REPORT artifact with your analysis: position, notable competitor moves, relevant trends, and 3-5 recommended actions for this brand.
-- Cite which data each conclusion rests on (competitor name + activity, trend name).`,
+- Deliver ONE REPORT artifact with your analysis: position, notable competitor moves (from both scraped activity and external web signals), relevant trends, and 3-5 recommended actions for this brand.
+- Cite which data each conclusion rests on (competitor name + activity or external signal, trend name).`,
     });
   },
   promptVersion: "market-analyst-prompt@1",
@@ -56,4 +58,7 @@ export function registerMarketAnalystTools(): void {
     "analyze_competitive_position",
     "start_trend_scan",
   ]);
+  for (const tool of marketAnalystWebSignalTools) {
+    registerAgentTool("agent:market-analyst", tool);
+  }
 }
