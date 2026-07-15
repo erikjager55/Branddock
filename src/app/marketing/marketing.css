@@ -1,8 +1,34 @@
 /* Marketing-site scoped styles — keep marketing surface visually distinct
    from the in-app shell zonder app-design-tokens te muteren. */
 
+/* Merk-font. Brandbook v3 schrijft Halyard voor (licentie-font). Tot die er is:
+   Hanken Grotesk, zelf-gehost (variabel, gewicht 400–800) als dichte open
+   vervanger. Wisselen naar Halyard = alleen dit @font-face vervangen. */
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/marketing/fonts/hanken-grotesk.woff2') format('woff2');
+}
+
 .marketing-root {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Merk-DNA (brandbook v3), bewust SCOPED op de marketing-site zodat de
+     app-UI ongemoeid blijft. De echte merkgroen is #07E5AB — dit overschrijft
+     de app-brede --primary (#1FD1B2) alleen binnen de marketing-root. */
+  --primary: #07E5AB;
+  --brand-mint: #07E5AB;
+  --brand-slate: #1F2937;
+  --brand-blue: #343CED;
+  --brand-peach: #FECFBD;
+  --brand-orange: #FF7F4D;
+  --brand-lime: #D8FD48;
+  --g-brand: linear-gradient(135deg, #343CED, #07E5AB);
+  --g-cool: linear-gradient(135deg, #343CED, #FECFBD);
+  --g-warm: linear-gradient(120deg, #FF7F4D, #D8FD48);
+  --g-fresh: linear-gradient(135deg, #07E5AB, #D8FD48);
+
+  font-family: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.6;
 }
 

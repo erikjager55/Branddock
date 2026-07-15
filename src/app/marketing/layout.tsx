@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   title: 'Branddock — AI-content die klinkt als jouw merk',
   description:
     'Branddock kent je complete merk-DNA en genereert on-brand content, campagnes en beeld. Eén platform voor in-house marketingteams.',
+  icons: { icon: '/marketing/branddock-icon.svg' },
   openGraph: {
     title: 'Branddock — AI-content die klinkt als jouw merk',
     description:
@@ -45,8 +46,9 @@ function MarketingNav() {
   return (
     <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/80 backdrop-blur">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-        <Link href="/marketing" className="font-semibold text-lg tracking-tight">
-          Branddock
+        <Link href="/marketing" className="flex items-center" aria-label="Branddock">
+          {/* eslint-disable-next-line @next/next/no-img-element -- statische SVG-merkasset */}
+          <img src="/marketing/branddock-logo.svg" alt="Branddock" className="h-6 w-auto" />
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm text-gray-600">
           <Link href="/marketing#platform" className="hover:text-gray-900">
@@ -175,8 +177,12 @@ function MarketingFooter() {
             </ul>
           </div>
         </div>
-        <div className="border-t border-gray-200 px-6 py-4 text-xs text-gray-500 max-w-6xl mx-auto">
-          © {new Date().getFullYear()} Branddock. Alle rechten voorbehouden.
+        <div className="border-t border-gray-200 px-6 py-4 max-w-6xl mx-auto flex items-center justify-between gap-4 flex-wrap">
+          {/* eslint-disable-next-line @next/next/no-img-element -- statische SVG-merkasset */}
+          <img src="/marketing/branddock-logo.svg" alt="Branddock" className="h-5 w-auto opacity-80" />
+          <div className="text-xs text-gray-500">
+            © {new Date().getFullYear()} Branddock. Alle rechten voorbehouden.
+          </div>
         </div>
       </footer>
 
