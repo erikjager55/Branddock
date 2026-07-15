@@ -17,6 +17,8 @@ export interface ExaBlock {
   snippet: string;
   /** Which query layer produced this block */
   queryLayer: 'analogy' | 'cultural' | 'trend';
+  /** ISO publication date when Exa reports one (empty otherwise). */
+  publishedDate?: string;
 }
 
 /** Complete result from the Exa enrichment step */
@@ -33,6 +35,7 @@ interface ExaSearchResponse {
     title?: string;
     url?: string;
     text?: string;
+    publishedDate?: string;
   }>;
 }
 
@@ -65,6 +68,11 @@ interface SearchExaOptions {
    * filter. Used by the trend-radar to bias toward emerging discussions.
    */
   startPublishedDate?: string;
+  /**
+   * Domains to exclude from results — e.g. a competitor's own site, so the
+   * market-analyst only sees what OTHERS say about them (external mentions).
+   */
+  excludeDomains?: string[];
 }
 
 /**
@@ -97,6 +105,9 @@ async function searchExa(
         ...(options?.startPublishedDate
           ? { startPublishedDate: options.startPublishedDate }
           : {}),
+        ...(options?.excludeDomains && options.excludeDomains.length > 0
+          ? { excludeDomains: options.excludeDomains }
+          : {}),
         contents: {
           text: { maxCharacters: 500 },
         },
@@ -118,6 +129,7 @@ async function searchExa(
         url: r.url!,
         snippet: truncate(r.text!.trim(), 400),
         queryLayer,
+        publishedDate: r.publishedDate?.trim() || undefined,
       }));
 
     console.info(`[exa] Query "${query}": ${blocks.length} results`);
