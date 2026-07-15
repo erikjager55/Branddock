@@ -5,7 +5,7 @@ fase: post-launch
 priority: later
 effort: "Fase 0: ~½ dag (validatie, geen code) · bouw na GO: 3-5 dagen"
 owner: claude-code
-status: open
+status: blocked
 created: 2026-07-15
 completed: -
 related-adr: docs/adr/2026-07-05-agents-architectuur.md (D4/D7 dekken curated agent + scheduled)
@@ -100,8 +100,28 @@ Zie idea-file (realtime, social-API's, sentiment-scores, backfill, AI-antwoord-m
 
 # Notes
 
-- **Fase-0-resultaten hier vastleggen** (metingen per merk, ruis-ratio, usersignaal,
-  GO/NO-GO + datum).
+## Fase-0-resultaat 2026-07-15 — **NO-GO** (status → blocked)
+
+Volledig rapport: [`docs/reports/brand-mention-monitor-fase0-2026-07-15.md`](../docs/reports/brand-mention-monitor-fase0-2026-07-15.md).
+
+Handmatige Exa-pulls (30d, naam + branche-anker + eigen-domein-uitsluiting) op 5 merken:
+
+| Merk | Segment | Rel/30d | Ruis |
+|---|---|---|---|
+| Better Brands | pilot NL-MKB | 1 | 90% |
+| Sterk Merk | NL-MKB | 1 | 90% |
+| Branding a better world | NL-MKB | 0 | 100% |
+| Tony's Chocolonely | NL bekend merk | 2 | 80% |
+| Picnic | NL scale-up | 6 | 40% |
+
+- **Gate (1)** ≥3 rel/maand: alleen Picnic (scale-up, géén doelsegment); MKB-max = 1/maand → FAIL voor de doelgroep.
+- **Gate (2)** ruis < 50%: 1/5 (alleen Picnic); NL-MKB 90-100% → FAIL.
+- **Gate (3)** usersignaal: moot — (1)+(2) falen al voor het doelsegment.
+
+**Besluit**: NO-GO voor Exa-only op NL-MKB. Geen productie-code. **Reopen** bij een bredere
+bron (social/news-API die kleine NL-merken dekt), scale-up-pilotklanten, of aantoonbaar
+gegroeide Exa-NL-dekking (herhaal de meting). De Marco-web-signals-tool (#406) blijft de
+enige Exa-mentions-surface (concurrenten, niet eigen merk).
 
 # Start-instructie voor de uitvoerende sessie
 
