@@ -89,7 +89,7 @@ const FEATURES: Record<string, FeatureSpec> = {
       'Pijnpunten, drijfveren en bezwaren per persona',
       'In elke generatie meegewogen — content die de juiste snaar raakt',
     ],
-    screenshotPath: null,
+    screenshotPath: '/marketing/features/personas.png',
   },
   'trend-radar': {
     slug: 'trend-radar',
@@ -103,7 +103,7 @@ const FEATURES: Record<string, FeatureSpec> = {
       'Gekoppeld aan je merk-DNA en persona’s',
       'Van radar naar campagne in één beweging',
     ],
-    screenshotPath: null,
+    screenshotPath: '/marketing/features/trend-radar.png',
   },
   'campaigns': {
     slug: 'campaigns',
@@ -117,7 +117,7 @@ const FEATURES: Record<string, FeatureSpec> = {
       'Kanaalplan én asset-plan uit één strategie',
       'On-brand van eerste idee tot laatste post',
     ],
-    screenshotPath: null,
+    screenshotPath: '/marketing/features/campaigns.png',
   },
 };
 
