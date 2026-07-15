@@ -295,10 +295,10 @@ function SolutionsSplit() {
               meetbare merkconsistentie voor je stakeholders.
             </p>
             <Link
-              href={appHref('/?utm_source=marketing-site&utm_medium=solutions-teams')}
+              href="/marketing/solutions/marketingteams"
               className="inline-flex items-center gap-2 text-sm font-medium mkt-accent"
             >
-              Gratis proberen <ArrowRight className="w-4 h-4" />
+              Bekijk voor marketingteams <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
           <div className="rounded-2xl border border-gray-200 bg-white p-8">
@@ -313,10 +313,10 @@ function SolutionsSplit() {
               aantoonbaar on-brand werk.
             </p>
             <Link
-              href="/marketing/contact"
+              href="/marketing/solutions/bureaus"
               className="inline-flex items-center gap-2 text-sm font-medium text-gray-700"
             >
-              Neem contact op <ArrowRight className="w-4 h-4" />
+              Bekijk voor bureaus <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>

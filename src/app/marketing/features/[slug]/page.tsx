@@ -76,6 +76,48 @@ const FEATURES: Record<string, FeatureSpec> = {
     ],
     screenshotPath: '/marketing/features/agents.png',
   },
+  'personas': {
+    slug: 'personas',
+    title: 'Persona’s die je doelgroep echt raken',
+    tagline: 'Onderbouwde doelgroep-persona’s — en een chat om mee te sparren.',
+    description:
+      'Bouw persona’s op basis van onderzoek, niet onderbuik. Elke persona voedt je merk-DNA en je content: toon, pijnpunten en drijfveren kloppen. Spar direct met een persona in de persona-chat.',
+    bullets: [
+      'Persona’s uit onderzoek, gekoppeld aan je merk-DNA',
+      'Persona-chat: test een boodschap direct tegen je doelgroep',
+      'Pijnpunten, drijfveren en bezwaren per persona',
+      'In elke generatie meegewogen — content die de juiste snaar raakt',
+    ],
+    screenshotPath: null,
+  },
+  'trend-radar': {
+    slug: 'trend-radar',
+    title: 'Trend Radar — kansen vóór je concurrent',
+    tagline: 'Een trendscan die signalen in je markt oppikt.',
+    description:
+      'Branddock scant je markt op opkomende thema’s, gesprekken en kansen — met bronnen. Van signaal naar contentkans, gekoppeld aan je merk-DNA en persona’s, zodat je meebeweegt zonder je merk te verliezen.',
+    bullets: [
+      'Trendscan met bronnen (web + wetenschappelijk)',
+      'Signalen vertaald naar concrete contentkansen',
+      'Gekoppeld aan je merk-DNA en persona’s',
+      'Van radar naar campagne in één beweging',
+    ],
+    screenshotPath: null,
+  },
+  'campaigns': {
+    slug: 'campaigns',
+    title: 'Campagnes — van strategie tot deliverables',
+    tagline: 'Bouw een campagnestrategie en zet ’m om in concrete content.',
+    description:
+      'De Campaign Strategy Builder maakt een strategisch blueprint — doel, boodschap, architectuur, kanalen en assets — en levert het warm over aan content-generatie. Alles op je merk-DNA, van strategie tot uitvoering.',
+    bullets: [
+      'Strategisch blueprint: doel, boodschap, architectuur, kanalen',
+      'Warm handover naar content-generatie per asset',
+      'Kanaalplan én asset-plan uit één strategie',
+      'On-brand van eerste idee tot laatste post',
+    ],
+    screenshotPath: null,
+  },
 };
 
 export function generateStaticParams() {
