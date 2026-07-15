@@ -185,7 +185,7 @@ export async function runDeepResearch(
     } catch (error) {
       if (isAbort(error) || signal.aborted) throw abortError();
       warnings.push(degradeMsg("search", error));
-      search = { sources: [], groundingTexts: [], exaContext: "", warnings: [] };
+      search = { sources: [], groundingTexts: [], exaContext: "", scholarContext: "", warnings: [] };
     }
     sendEvent({ type: "phase", phase: "search", label: PHASE_LABELS.search, status: "done" });
 
@@ -262,6 +262,7 @@ export async function runDeepResearch(
         sources: numbered,
         brandContext: brandBlock,
         exaContext: search.exaContext,
+        scholarContext: search.scholarContext,
         verificationNotes: verify.notes,
         signal,
       });

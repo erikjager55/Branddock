@@ -21,6 +21,7 @@ export interface SynthesizeInput {
   brandContext?: string;
   /** Aanvullende Exa-context-tekst (optioneel). */
   exaContext?: string;
+  scholarContext?: string;
   /** Fact-check-notities uit de verify-fase (optioneel). */
   verificationNotes?: string;
   signal: AbortSignal;
@@ -56,9 +57,15 @@ export async function runSynthesize(
 
   // Voeg Exa-context als pseudo-bron toe aan het einde van de prompt-context,
   // zonder hem als citeerbaar nummer aan te bieden (geen stabiele per-URL ref).
-  const extraContext = input.exaContext?.trim()
+  const exaExtra = input.exaContext?.trim()
     ? `\n\nSupplementary neural-search context (background only, do not cite by number):\n${input.exaContext.trim()}`
     : "";
+  // Peer-reviewed context (S2): zelfde pseudo-bron-regel als Exa — achtergrond,
+  // niet citeerbaar op nummer; papers dragen hun eigen titel/jaar in de tekst.
+  const scholarExtra = input.scholarContext?.trim()
+    ? `\n\nPeer-reviewed academic context (background only, do not cite by number):\n${input.scholarContext.trim()}`
+    : "";
+  const extraContext = exaExtra + scholarExtra;
 
   const prompt =
     buildSynthesizePrompt(input.topic, input.answers, input.sources, {
