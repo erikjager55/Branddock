@@ -290,6 +290,19 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 
 ---
 
+### 🔬 Research-stack-bundel (post-launch — gepland 2026-07-15)
+
+> Exa + S2 + Nova's deep-research doortrekken naar vier oppervlakken. Volledig uitvoeringsklaar
+> gepland voor een aparte (Sonnet 5-)sessie: [`docs/reports/research-stack-plan-2026-07-15.md`](docs/reports/research-stack-plan-2026-07-15.md).
+> Aanleiding: keys live + scholar-wiring gedicht (#402); drie onafhankelijke checks wezen dezelfde kandidaten aan.
+
+| Task | Wat | Status/gate | Effort |
+|---|---|---|---|
+| [`research-stack-trend-radar`](tasks/research-stack-trend-radar.md) | Exa + S2 als extra bronlagen in de trend-radar-researcher | open — geen gate (patroon #402) | 1-2d |
+| [`research-stack-marco-web-signals`](tasks/research-stack-marco-web-signals.md) | Curated tool: extern web-/nieuwsbeeld per concurrent (Exa) voor Marco | open — geen gate | 1-2d |
+| [`research-stack-geo-research-backed`](tasks/research-stack-geo-research-backed.md) | Research-backed `citeableStats` (Exa+S2) in de GEO-long-form-generatie | open — raakt de generatie-route: kleine additieve diff + A/B-datapunt verplicht | 2-4d |
+| [`brand-mention-monitor`](tasks/brand-mention-monitor.md) | 10e agent: merkvermeldingen-waakhond op Exa | **Fase-0-gated** (Exa-dekking voor NL-MKB-merken onbewezen; idea-doc + Red Team in `_drafts`) | ½d + 3-5d na GO |
+
 ### 🔌 MCP Integration Layer (post-launch — besluit 2026-06-19)
 
 > **Doel**: Branddock koppelbaar maken met andere applicaties via het Model Context Protocol, in **beide** richtingen. Geparkeerd tot na launch; hier vastgelegd als plan-skelet zodat feature-discovery later kan starten met context.
@@ -302,10 +315,11 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | **M2 — Remote server (read-only)** | Branddock = server | Multi-tenant, workspace-scoped API-key/OAuth 2.1, rate-limiting. Externe apps kunnen brand-DNA veilig lezen. | ~1w | **`vercel-deployment`** |
 | **M3 — Server write/generate** | Branddock = server | Tools die content-generatie triggeren (cost-control + extra testing; AI-pipeline + geld). | +enkele dagen | M2 |
 
-**Open beslissingen vóór feature-discovery**:
-- Welke "andere applicaties" als eerste doel (AI-assistenten / klant-apps / automatisering zoals Zapier-Make-n8n)? Bepaalt transport + auth-model.
-- Auth-model: workspace-scoped API-key (simpeler) vs OAuth 2.1 (standaard, meer werk).
-- Tool-surface server-richting: alleen lezen (veilig) vs ook genereren (cost-gevoelig).
+**Open beslissingen — ✅ BESLOTEN 2026-07-14 (user), uitvoering geparkeerd 2026-07-15**:
+- Doelgroep v1: **AI-assistenten** (Claude Desktop/web, Cursor, ChatGPT-connectors).
+- Auth-model: **OAuth 2.1 meteen** (protocol-standaard; beste Connect-UX in Claude-web).
+- Tool-surface v1: **read-only merk-DNA + F-VAL-review** (beide per pricing-ADR credit-vrij — geen metering-vraagstuk).
+- Status: bewust geparkeerd vóór de bouw begon; deze besluiten zijn het startpunt zodra het weer opgepakt wordt.
 
 **ADR's (te schrijven bij start)**:
 - ⏳ `mcp-vs-direct-integration` (al als deliverable in `mcp-external-data-enrichment-research`)
