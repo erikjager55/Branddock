@@ -3,6 +3,7 @@
 
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { appHref } from '../../app-url';
 import type { Metadata } from 'next';
 
 interface FeatureSpec {
@@ -137,7 +138,7 @@ export default async function FeaturePage({
 
       <div className="pt-8 border-t border-gray-200 flex flex-wrap gap-3">
         <Link
-          href={`/?utm_source=marketing-site&utm_medium=feature-${feature.slug}`}
+          href={appHref(`/?utm_source=marketing-site&utm_medium=feature-${feature.slug}`)}
           className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
         >
           Try Branddock
