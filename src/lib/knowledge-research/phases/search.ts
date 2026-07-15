@@ -14,6 +14,7 @@
 
 import { searchWithGrounding } from "@/lib/ai/gemini-client";
 import { fetchExaContext } from "@/lib/exa/exa-client";
+import { fetchScholarContext } from "@/lib/semantic-scholar/scholar-client";
 import { isPrivateHostname } from "@/lib/utils/ssrf";
 import type { DeepResearchEvent, SourceRef } from "../types";
 
@@ -35,6 +36,8 @@ export interface SearchOutput {
   groundingTexts: Array<{ query: string; text: string }>;
   /** Optionele Exa-context-tekst (leeg als geen key/resultaten). */
   exaContext: string;
+  /** Optionele Semantic-Scholar-context (peer-reviewed; leeg zonder key/hits). */
+  scholarContext: string;
   warnings: string[];
 }
 
@@ -182,5 +185,29 @@ export async function runSearch(input: SearchInput): Promise<SearchOutput> {
     }
   }
 
-  return { sources, groundingTexts, exaContext, warnings };
+  // ── Optioneel: Semantic Scholar als peer-reviewed context ──
+  // Zelfde degradatie-patroon als Exa: alleen met key, fouten → warning.
+  // Het "scholar"-brontype bestond al in het contract (types.ts) maar was
+  // nooit aangesloten — S2-key beschikbaar sinds 2026-07-15 (taak #22).
+  let scholarContext = "";
+  if (process.env.S2_API_KEY) {
+    try {
+      const scholarQueries = input.queries.slice(0, 2).map((q) => ({
+        query: q.slice(0, 95),
+        // 'effectiveness' als generieke research-laag; de client gebruikt de
+        // laag alleen als label in de geformatteerde context.
+        queryLayer: "effectiveness" as const,
+      }));
+      const scholar = await fetchScholarContext(scholarQueries);
+      scholarContext = scholar.contextText;
+    } catch (error) {
+      warnings.push(
+        `Scholar enrichment skipped: ${
+          error instanceof Error ? error.message : "unknown error"
+        }`,
+      );
+    }
+  }
+
+  return { sources, groundingTexts, exaContext, scholarContext, warnings };
 }

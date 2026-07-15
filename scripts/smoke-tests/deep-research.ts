@@ -133,6 +133,7 @@ function makeFakeSearchFn(opts?: {
         sources: [],
         groundingTexts: [{ query: "x overview", text: "Gegronde samenvatting ".repeat(20) }],
         exaContext: "",
+        scholarContext: "",
         warnings: ["Exa enrichment skipped: simulated exa/scholar failure"],
       };
     }
@@ -140,6 +141,7 @@ function makeFakeSearchFn(opts?: {
       sources: FAKE_SOURCES,
       groundingTexts: [{ query: "x overview", text: "Gegronde samenvatting." }],
       exaContext: "",
+      scholarContext: "",
       warnings: [],
     };
   };
