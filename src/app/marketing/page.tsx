@@ -1,12 +1,31 @@
-// Homepage — value-prop hero + 3-bullet features + customer-quote + CTA.
-// Placeholder copy gemarkeerd met {/* COPY-TODO */} — user vervangt vóór go-live.
+// Homepage v2 — NL-first, in-house marketingteams, volledige platform-breedte.
+// Zie website-verbeterplan v2. Bewust géén verzonnen klant-quote/logo's
+// (volgen na de pilot); vertrouwen via tech-credibility + het echte product.
 
 import Link from 'next/link';
+import Image from 'next/image';
+import {
+  Dna,
+  Palette,
+  Users,
+  Swords,
+  Radar,
+  PenLine,
+  Megaphone,
+  Images,
+  LayoutTemplate,
+  Bot,
+  BadgeCheck,
+  Languages,
+  ArrowRight,
+  ShieldCheck,
+  Cpu,
+} from 'lucide-react';
 import { appHref } from './app-url';
+import HowItWorks from './HowItWorks';
 
-// Provider-neutrale demo-boeking (Morgen/Calendly/Cal.com — elke booking-URL).
-// Met een boekingslink: open die (nieuw tabblad). Zonder: val terug op de
-// contactpagina i.p.v. een dood `#`, zodat "Book a demo" altijd iets doet.
+// Provider-neutrale demo-boeking (Morgen/Calendly/Cal.com). Zonder booking-URL:
+// val terug op de contactpagina i.p.v. een dood `#`.
 function BookDemoButton() {
   const bookingUrl =
     process.env.NEXT_PUBLIC_BOOKING_URL ?? process.env.NEXT_PUBLIC_CALENDLY_URL ?? null;
@@ -15,13 +34,13 @@ function BookDemoButton() {
   if (bookingUrl) {
     return (
       <a href={bookingUrl} target="_blank" rel="noopener noreferrer" className={cls}>
-        Book a demo
+        Boek een demo
       </a>
     );
   }
   return (
     <Link href="/marketing/contact" className={cls}>
-      Book a demo
+      Boek een demo
     </Link>
   );
 }
@@ -30,11 +49,15 @@ export default function MarketingHomePage() {
   return (
     <div>
       <Hero />
-      <FeatureTrio />
-      {/* CustomerQuote bewust verborgen tot er een ECHTE pilot-quote is
-          (mét naam/rol/bedrijf) — geen verzonnen social proof bij launch.
-          Component staat klaar in CustomerQuote() hieronder; render 'm terug
-          zodra de quote-tekst is ingevuld. */}
+      <TrustBar />
+      <Problem />
+      <HowSection />
+      <PlatformBreadth />
+      <ValuePillars />
+      <ProofStrip />
+      <SolutionsSplit />
+      <PricingTeaser />
+      <FAQ />
       <FinalCTA />
     </div>
   );
@@ -42,61 +65,187 @@ export default function MarketingHomePage() {
 
 function Hero() {
   return (
-    <section className="max-w-6xl mx-auto px-6 py-20 md:py-28">
-      <div className="max-w-3xl">
-        {/* COPY-TODO: vervang hero-headline + subheadline na pilot-feedback */}
-        <h1 className="text-gray-900 mb-6">
-          AI content that fits your brand. Not generic. Not an AI cliché.
-        </h1>
-        <p className="text-xl text-gray-600 mb-8 max-w-2xl">
-          Branddock combines brand strategy, audience research and AI content
-          generation in one platform. For B2B SaaS marketing teams that won&apos;t
-          trade quality for speed.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href={appHref("/?utm_source=marketing-site&utm_medium=hero")}
-            className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
-          >
-            Start free trial
-          </Link>
-          <BookDemoButton />
+    <section className="mkt-hero-glow">
+      <div className="max-w-6xl mx-auto px-6 pt-20 md:pt-28 pb-10">
+        <div className="max-w-3xl">
+          <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 mb-6">
+            <span className="mkt-accent">●</span> Eén platform dat je merk kent
+          </div>
+          <h1 className="text-gray-900 mb-6">Content die klinkt als jóúw merk. Op schaal.</h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl">
+            Branddock kent je complete merk-DNA — brand voice, stijl, persona’s, concurrenten en
+            trends — en zet het om in on-brand teksten, campagnes en beeld. Eén platform, gebouwd
+            voor in-house marketingteams.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href={appHref('/?utm_source=marketing-site&utm_medium=hero')}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
+            >
+              Gratis proberen <ArrowRight className="w-4 h-4" />
+            </Link>
+            <BookDemoButton />
+          </div>
+          <div className="mt-6 text-xs text-gray-500">
+            28 dagen gratis · Geen creditcard · Altijd opzegbaar
+          </div>
         </div>
-        <div className="mt-6 text-xs text-gray-500">
-          28 days free · No credit card required · Cancel anytime
+      </div>
+      <div className="max-w-5xl mx-auto px-6 pb-6">
+        <div className="mkt-frame">
+          <div className="mkt-frame__bar">
+            <i></i>
+            <i></i>
+            <i></i>
+          </div>
+          <Image
+            src="/marketing/features/content-canvas.png"
+            alt="Branddock Content Canvas — on-brand content genereren met een merk-fideliteitsscore"
+            width={2880}
+            height={1800}
+            className="w-full h-auto"
+            priority
+          />
         </div>
       </div>
     </section>
   );
 }
 
-function FeatureTrio() {
-  // COPY-TODO: vervang feature-bullets met definitieve value-props
-  const features = [
+function TrustBar() {
+  const items = [
+    'Draait op Claude, GPT & Gemini',
+    'EU-dataopslag',
+    'AVG-proof',
+    '28 dagen gratis',
+  ];
+  return (
+    <section className="border-y border-gray-200 bg-gray-50">
+      <div className="max-w-6xl mx-auto px-6 py-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-gray-500">
+        {items.map((t) => (
+          <span key={t} className="inline-flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 mkt-accent" /> {t}
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Problem() {
+  return (
+    <section className="max-w-6xl mx-auto px-6 py-16 md:py-20">
+      <div className="max-w-3xl">
+        <div className="text-sm font-semibold mkt-accent uppercase tracking-wide mb-3">
+          Het probleem
+        </div>
+        <h2 className="text-gray-900 mb-4">Generieke AI kent je merk niet</h2>
+        <p className="text-lg text-gray-600">
+          AI-tools schrijven snel, maar clichématig. Je vult telkens opnieuw de context aan,
+          herschrijft de output tot het eindelijk klinkt als jóú, en knoopt losse tools voor tekst,
+          beeld en campagnes aan elkaar. De tijdwinst verdampt in de rework.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function HowSection() {
+  return (
+    <section className="border-y border-gray-200 bg-gray-50">
+      <div className="max-w-6xl mx-auto px-6 py-16 md:py-20">
+        <div className="max-w-2xl mb-10">
+          <div className="text-sm font-semibold mkt-accent uppercase tracking-wide mb-3">
+            Hoe het werkt
+          </div>
+          <h2 className="text-gray-900 mb-3">
+            Van merk-DNA naar on-brand content — in vier stappen
+          </h2>
+          <p className="text-gray-600">
+            Leg je merk één keer vast. Branddock gebruikt het overal.
+          </p>
+        </div>
+        <HowItWorks />
+      </div>
+    </section>
+  );
+}
+
+const MODULES: { Icon: typeof Dna; title: string; desc: string }[] = [
+  { Icon: Dna, title: 'Merk-DNA', desc: '12 canonieke merk-assets als fundament onder alles.' },
+  { Icon: Palette, title: 'Brand voice & stijl', desc: 'De merkstem en visuele stijl, herbruikbaar in elke output.' },
+  { Icon: Users, title: 'Persona’s', desc: 'Doelgroep-persona’s, inclusief persona-chat om te sparren.' },
+  { Icon: Swords, title: 'Concurrent-analyse', desc: 'Concurrenten in beeld en meegewogen in je content.' },
+  { Icon: Radar, title: 'Trend Radar', desc: 'Trendscan die kansen en signalen in je markt oppikt.' },
+  { Icon: PenLine, title: 'Content Canvas', desc: 'On-brand tekst-generatie over alle kanalen.' },
+  { Icon: Megaphone, title: 'Campagne-strategie', desc: 'Van strategie-blueprint tot concrete deliverables.' },
+  { Icon: Images, title: 'Beeld & video', desc: 'On-brand visuals en video, direct in het platform.' },
+  { Icon: LayoutTemplate, title: 'Landingspagina’s', desc: 'Publiceren op je eigen subdomein.' },
+  { Icon: Bot, title: '9 AI-agents', desc: 'Een team dat de merk-loop voor je draait.' },
+  { Icon: BadgeCheck, title: 'Merk-check', desc: 'Bewaakt dat elke output op merk blijft.' },
+  { Icon: Languages, title: 'Meertalig', desc: 'Multi-markt content voor internationale merken.' },
+];
+
+function PlatformBreadth() {
+  return (
+    <section id="platform" className="max-w-6xl mx-auto px-6 py-16 md:py-24 scroll-mt-20">
+      <div className="max-w-2xl mb-10">
+        <div className="text-sm font-semibold mkt-accent uppercase tracking-wide mb-3">
+          Het platform
+        </div>
+        <h2 className="text-gray-900 mb-3">Geen losse tool — één merk-platform</h2>
+        <p className="text-gray-600">
+          Alles draait op hetzelfde merk-DNA-fundament: van onderzoek en persona’s tot content,
+          campagnes en beeld.
+        </p>
+      </div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {MODULES.map(({ Icon, title, desc }) => (
+          <div
+            key={title}
+            className="rounded-xl border border-gray-200 bg-white p-5 hover:border-gray-300 transition-colors"
+          >
+            <div className="mkt-chip w-10 h-10 mb-3">
+              <Icon className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">{title}</h3>
+            <p className="text-sm text-gray-600 leading-relaxed">{desc}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ValuePillars() {
+  const pillars: { Icon: typeof Dna; title: string; body: string }[] = [
     {
-      title: 'Brand Voice that truly fits',
-      body:
-        'Build your brand voice from sample texts or a voiceguide. Branddock learns from your material — not from the generic web.',
+      Icon: Dna,
+      title: 'Kent je complete merk',
+      body: 'Merk-DNA, brand voice, persona’s, concurrenten en trends — in elke generatie meegenomen.',
     },
     {
-      title: 'Content Canvas with 25+ types',
-      body:
-        'From blog post to LinkedIn ad to email sequence. With automated quality gates and F-VAL fidelity scoring per output.',
+      Icon: Cpu,
+      title: 'Doet het hele werk',
+      body: 'Van onderzoek tot content, campagnes, beeld en landingspagina’s. 9 agents doen mee.',
     },
     {
-      title: 'Brand Alignment Insights',
-      body:
-        'See which content scores, which falls below threshold and why. No black box: per-pillar breakdown + actionable findings.',
+      Icon: BadgeCheck,
+      title: 'Houdt het on-brand',
+      body: 'Een merk-check bewaakt de consistentie — gemiddeld +7 punten on-brand versus vanilla-AI.',
     },
   ];
   return (
-    <section className="bg-gray-50 border-y border-gray-200">
+    <section className="border-y border-gray-200 bg-gray-50">
       <div className="max-w-6xl mx-auto px-6 py-16">
         <div className="grid md:grid-cols-3 gap-8">
-          {features.map((f) => (
-            <div key={f.title}>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{f.title}</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">{f.body}</p>
+          {pillars.map(({ Icon, title, body }) => (
+            <div key={title}>
+              <div className="mkt-chip w-11 h-11 mb-4">
+                <Icon className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+              <p className="text-gray-600 text-sm leading-relaxed">{body}</p>
             </div>
           ))}
         </div>
@@ -105,18 +254,164 @@ function FeatureTrio() {
   );
 }
 
-// Klaargezet maar bewust nog niet gerenderd — zie MarketingHomePage().
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function CustomerQuote() {
+function ProofStrip() {
+  const stats = [
+    { big: '1', cap: 'platform in plaats van een lappendeken losse tools' },
+    { big: '+7', cap: 'punten on-brand vs. vanilla-AI (gemiddeld; +12 op de nieuwsbrief)' },
+    { big: '9', cap: 'AI-agents die de merk-loop draaien' },
+  ];
   return (
     <section className="max-w-6xl mx-auto px-6 py-16">
-      <div className="max-w-2xl mx-auto text-center">
-        {/* COPY-TODO: vul een ECHTE quote in (naam · rol · bedrijf), render dan
-            <CustomerQuote /> terug in MarketingHomePage(). */}
-        <blockquote className="text-xl md:text-2xl text-gray-700 leading-snug mb-4">
-          &ldquo;[echte pilot-quote — één zin]&rdquo;
-        </blockquote>
-        <div className="text-sm text-gray-500">— [Naam] · [Rol] · [Bedrijf]</div>
+      <div className="grid sm:grid-cols-3 gap-6">
+        {stats.map((s) => (
+          <div key={s.cap} className="rounded-xl border border-gray-200 bg-white p-6">
+            <div className="text-4xl font-bold mkt-accent tabular-nums">{s.big}</div>
+            <div className="text-sm text-gray-600 mt-2">{s.cap}</div>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-gray-400 mt-4 max-w-2xl">
+        Eerlijke pilotmeting — geen opgeblazen cijfers. De merk-check is één van de garanties in het
+        platform.
+      </p>
+    </section>
+  );
+}
+
+function SolutionsSplit() {
+  return (
+    <section className="border-t border-gray-200 bg-gray-50">
+      <div className="max-w-6xl mx-auto px-6 py-16">
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="rounded-2xl border-2 border-primary/30 bg-white p-8">
+            <div className="text-xs font-semibold mkt-accent uppercase tracking-wide mb-2">
+              Voor marketingteams
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">
+              Schaal je content zonder je merk te verwateren
+            </h3>
+            <p className="text-gray-600 text-sm mb-5">
+              Volume on-brand content over alle kanalen, uit één plek. Minder tools, minder rework,
+              meetbare merkconsistentie voor je stakeholders.
+            </p>
+            <Link
+              href={appHref('/?utm_source=marketing-site&utm_medium=solutions-teams')}
+              className="inline-flex items-center gap-2 text-sm font-medium mkt-accent"
+            >
+              Gratis proberen <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="rounded-2xl border border-gray-200 bg-white p-8">
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+              Voor bureaus
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">
+              Eén merk-DNA-workspace per klant
+            </h3>
+            <p className="text-gray-600 text-sm mb-5">
+              Beheer meerdere klantmerken naast elkaar, elk met een eigen merk-DNA — en lever
+              aantoonbaar on-brand werk.
+            </p>
+            <Link
+              href="/marketing/contact"
+              className="inline-flex items-center gap-2 text-sm font-medium text-gray-700"
+            >
+              Neem contact op <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PricingTeaser() {
+  const tiers: { name: string; price: string; line: string; featured?: boolean }[] = [
+    { name: 'Starter', price: '€39', line: '400 credits · voor kleine teams' },
+    { name: 'Growth', price: '€89', line: '1.200 credits · populairste keuze', featured: true },
+    { name: 'Agency', price: '€299', line: '4.000 credits · meerdere merken' },
+  ];
+  return (
+    <section className="max-w-6xl mx-auto px-6 py-16 md:py-20">
+      <div className="max-w-2xl mb-10">
+        <div className="text-sm font-semibold mkt-accent uppercase tracking-wide mb-3">Prijzen</div>
+        <h2 className="text-gray-900 mb-3">Begin gratis. Betaal alleen voor wat je maakt.</h2>
+        <p className="text-gray-600">
+          Credits meten alleen output — merk-context en de merk-check worden nooit gerekend. 28
+          dagen gratis, geen creditcard.
+        </p>
+      </div>
+      <div className="grid sm:grid-cols-3 gap-4">
+        {tiers.map((t) => (
+          <div
+            key={t.name}
+            className={`rounded-xl border bg-white p-6 ${
+              t.featured ? 'border-primary/40 shadow-sm' : 'border-gray-200'
+            }`}
+          >
+            <div className="text-sm font-semibold text-gray-900">{t.name}</div>
+            <div className="text-3xl font-bold text-gray-900 mt-2">
+              {t.price}
+              <span className="text-sm font-normal text-gray-400">/mnd</span>
+            </div>
+            <div className="text-sm text-gray-600 mt-2">{t.line}</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link
+          href="/marketing/pricing"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50"
+        >
+          Alle prijzen bekijken
+        </Link>
+        <Link
+          href={appHref('/?utm_source=marketing-site&utm_medium=pricing-teaser')}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90"
+        >
+          Gratis proberen
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function FAQ() {
+  const qa = [
+    {
+      q: 'Hoe weet Branddock hoe mijn merk klinkt?',
+      a: 'Je legt je merk-DNA één keer vast — brand voice, stijl, persona’s, producten en concurrenten. Dat fundament wordt in elke generatie meegenomen.',
+    },
+    {
+      q: 'Is dit weer een losse AI-schrijftool?',
+      a: 'Nee. Branddock bundelt onderzoek, content, campagnes, beeld en publicatie in één platform, allemaal op hetzelfde merk-DNA.',
+    },
+    {
+      q: 'Wat gebeurt er met mijn data?',
+      a: 'Je data staat in de EU en we werken AVG-proof. Je merk-DNA wordt niet gebruikt om modellen van derden te trainen.',
+    },
+    {
+      q: 'Kan ik gratis beginnen?',
+      a: 'Ja — 28 dagen gratis, zonder creditcard. Daarna betaal je alleen voor de output die je maakt.',
+    },
+  ];
+  return (
+    <section className="border-y border-gray-200 bg-gray-50">
+      <div className="max-w-3xl mx-auto px-6 py-16">
+        <h2 className="text-gray-900 mb-8">Veelgestelde vragen</h2>
+        <div className="divide-y divide-gray-200 border-t border-gray-200">
+          {qa.map((item) => (
+            <details key={item.q} className="group py-4">
+              <summary className="flex cursor-pointer items-center justify-between text-gray-900 font-medium list-none">
+                {item.q}
+                <span className="mkt-accent text-xl leading-none group-open:rotate-45 transition-transform">
+                  +
+                </span>
+              </summary>
+              <p className="text-gray-600 text-sm mt-3 leading-relaxed">{item.a}</p>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -126,15 +421,15 @@ function FinalCTA() {
   return (
     <section className="bg-primary/5 border-y border-primary/20">
       <div className="max-w-6xl mx-auto px-6 py-16 text-center">
-        <h2 className="text-gray-900 mb-4">Ready to get started?</h2>
+        <h2 className="text-gray-900 mb-4">Klaar om op merk te schalen?</h2>
         <p className="text-gray-600 mb-8 max-w-xl mx-auto">
-          Try Branddock free for 28 days. No credit card. No commitments.
+          Probeer Branddock 28 dagen gratis. Geen creditcard, geen verplichtingen.
         </p>
         <Link
-          href={appHref("/?utm_source=marketing-site&utm_medium=final-cta")}
-          className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
+          href={appHref('/?utm_source=marketing-site&utm_medium=final-cta')}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
         >
-          Start free trial
+          Gratis proberen <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
     </section>
