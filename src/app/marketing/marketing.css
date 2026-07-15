@@ -18,3 +18,51 @@
   font-weight: 600;
   letter-spacing: -0.01em;
 }
+
+/* Homepage v2 — scoped utilities. Kleuren via de CSS-var --primary zodat ze
+   NIET door de Tailwind 4 purge sneuvelen (zie gotchas: kleurklassen in
+   constanten verdwijnen). */
+.mkt-accent {
+  color: var(--primary);
+}
+
+.mkt-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+}
+
+.mkt-frame {
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 24px 50px -24px rgba(16, 24, 40, 0.28);
+}
+
+.mkt-frame__bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #eef0f2;
+  background: #f8fafc;
+}
+
+.mkt-frame__bar i {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #d1d5db;
+  display: inline-block;
+}
+
+.mkt-hero-glow {
+  background: radial-gradient(
+    60% 55% at 15% 0%,
+    color-mix(in srgb, var(--primary) 9%, transparent),
+    transparent 70%
+  );
+}

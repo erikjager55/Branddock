@@ -1,8 +1,8 @@
 // =============================================================
 // Marketing-site layout — wraps homepage / pricing / features /
-// about / contact. Hosted op /marketing/* paths binnen dezelfde
-// Next.js repo. Voor productie-deploy via www-subdomain: rewrites
-// in next.config.ts of Vercel route-config.
+// about / contact. Marketing draait op de apex (branddock.app),
+// de app op app.branddock.app (zie host-router + custom-domain runbook).
+// NL-first (website-verbeterplan v2).
 // =============================================================
 
 import type { Metadata } from 'next';
@@ -11,20 +11,23 @@ import { appHref } from './app-url';
 import './marketing.css';
 
 export const metadata: Metadata = {
-  title: 'Branddock — AI-powered brand strategy + content generation',
+  metadataBase: new URL('https://branddock.app'),
+  title: 'Branddock — AI-content die klinkt als jouw merk',
   description:
-    'Branddock combines brand strategy, audience research and AI content generation in one platform. For B2B SaaS marketing teams.',
+    'Branddock kent je complete merk-DNA en genereert on-brand content, campagnes en beeld. Eén platform voor in-house marketingteams.',
   openGraph: {
-    title: 'Branddock — Brand strategy + AI content',
-    description: 'AI content that fits your brand. Not generic. Not AI clichés.',
+    title: 'Branddock — AI-content die klinkt als jouw merk',
+    description:
+      'Eén platform dat je merk kent: merk-DNA, content, campagnes en beeld — on-brand.',
     type: 'website',
-    locale: 'en_US',
+    locale: 'nl_NL',
     siteName: 'Branddock',
+    url: 'https://branddock.app',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Branddock',
-    description: 'AI content that fits your brand',
+    description: 'AI-content die klinkt als jouw merk',
   },
 };
 
@@ -40,31 +43,39 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
 function MarketingNav() {
   return (
-    <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/80 backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/80 backdrop-blur">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
         <Link href="/marketing" className="font-semibold text-lg tracking-tight">
           Branddock
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm text-gray-600">
-          <Link href="/marketing/features/brand-voice" className="hover:text-gray-900">
-            Features
+          <Link href="/marketing#platform" className="hover:text-gray-900">
+            Platform
           </Link>
           <Link href="/marketing/pricing" className="hover:text-gray-900">
-            Pricing
+            Prijzen
           </Link>
           <Link href="/marketing/about" className="hover:text-gray-900">
-            About
+            Over ons
           </Link>
           <Link href="/marketing/contact" className="hover:text-gray-900">
             Contact
           </Link>
         </nav>
-        <Link
-          href={appHref("/?utm_source=marketing-site&utm_medium=nav")}
-          className="inline-flex items-center px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          Start free
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href={appHref('/?utm_source=marketing-site&utm_medium=nav-login')}
+            className="hidden sm:inline text-sm text-gray-600 hover:text-gray-900"
+          >
+            Inloggen
+          </Link>
+          <Link
+            href={appHref('/?utm_source=marketing-site&utm_medium=nav')}
+            className="inline-flex items-center px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            Gratis proberen
+          </Link>
+        </div>
       </div>
     </header>
   );
@@ -73,46 +84,88 @@ function MarketingNav() {
 function MarketingFooter() {
   return (
     <>
-    <footer className="border-t border-gray-200 bg-gray-50">
-      <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
-        <div>
-          <div className="font-semibold text-gray-900 mb-3">Product</div>
-          <ul className="space-y-1.5 text-gray-600">
-            <li><Link href="/marketing/features/brand-voice" className="hover:text-gray-900">Brand Voice</Link></li>
-            <li><Link href="/marketing/features/content-canvas" className="hover:text-gray-900">Content Canvas</Link></li>
-            <li><Link href="/marketing/features/brand-alignment" className="hover:text-gray-900">Brand Alignment</Link></li>
-            <li><Link href="/marketing/features/agents" className="hover:text-gray-900">AI Agents</Link></li>
-          </ul>
+      <footer className="border-t border-gray-200 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
+          <div>
+            <div className="font-semibold text-gray-900 mb-3">Platform</div>
+            <ul className="space-y-1.5 text-gray-600">
+              <li>
+                <Link href="/marketing/features/brand-voice" className="hover:text-gray-900">
+                  Merk-DNA &amp; brand voice
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/features/content-canvas" className="hover:text-gray-900">
+                  Content Canvas
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/features/brand-alignment" className="hover:text-gray-900">
+                  Merk-check
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/features/agents" className="hover:text-gray-900">
+                  AI-agents
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <div className="font-semibold text-gray-900 mb-3">Bedrijf</div>
+            <ul className="space-y-1.5 text-gray-600">
+              <li>
+                <Link href="/marketing/about" className="hover:text-gray-900">
+                  Over ons
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/pricing" className="hover:text-gray-900">
+                  Prijzen
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/contact" className="hover:text-gray-900">
+                  Contact
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <div className="font-semibold text-gray-900 mb-3">Zo werkt het</div>
+            <ul className="space-y-1.5 text-gray-600">
+              <li>
+                <Link href="/marketing#platform" className="hover:text-gray-900">
+                  Het platform
+                </Link>
+              </li>
+              <li>
+                <a
+                  href={appHref('/?utm_source=marketing-site&utm_medium=footer')}
+                  className="hover:text-gray-900"
+                >
+                  Gratis proberen
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <div className="font-semibold text-gray-900 mb-3">Contact</div>
+            <ul className="space-y-1.5 text-gray-600">
+              <li>
+                <a href="mailto:hello@branddock.com" className="hover:text-gray-900">
+                  hello@branddock.com
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
-        <div>
-          <div className="font-semibold text-gray-900 mb-3">Company</div>
-          <ul className="space-y-1.5 text-gray-600">
-            <li><Link href="/marketing/about" className="hover:text-gray-900">About</Link></li>
-            <li><Link href="/marketing/contact" className="hover:text-gray-900">Contact</Link></li>
-            <li><Link href="/marketing/pricing" className="hover:text-gray-900">Pricing</Link></li>
-          </ul>
+        <div className="border-t border-gray-200 px-6 py-4 text-xs text-gray-500 max-w-6xl mx-auto">
+          © {new Date().getFullYear()} Branddock. Alle rechten voorbehouden.
         </div>
-        <div>
-          <div className="font-semibold text-gray-900 mb-3">Support</div>
-          {/* Legal-pagina's (terms/privacy) bestaan nog niet — links bewust
-              verwijderd i.p.v. 404's; aanmaken = user-taak (juridische copy). */}
-          <ul className="space-y-1.5 text-gray-600">
-            <li><a href="mailto:hello@branddock.com" className="hover:text-gray-900">Questions? Email us</a></li>
-          </ul>
-        </div>
-        <div>
-          <div className="font-semibold text-gray-900 mb-3">Resources</div>
-          <ul className="space-y-1.5 text-gray-600">
-            <li><a href="mailto:hello@branddock.com" className="hover:text-gray-900">hello@branddock.com</a></li>
-          </ul>
-        </div>
-      </div>
-      <div className="border-t border-gray-200 px-6 py-4 text-xs text-gray-500 max-w-6xl mx-auto">
-        © {new Date().getFullYear()} Branddock. All rights reserved.
-      </div>
-    </footer>
+      </footer>
 
-      {/* Schema.org JSON-LD (SEO-acceptatie): Organization + WebSite + Product. */}
+      {/* Schema.org JSON-LD (SEO): Organization + WebSite + Product. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -122,18 +175,18 @@ function MarketingFooter() {
               {
                 '@type': 'Organization',
                 name: 'Branddock',
-                url: 'https://branddock-7y9n.vercel.app/marketing',
+                url: 'https://branddock.app',
               },
               {
                 '@type': 'WebSite',
                 name: 'Branddock',
-                url: 'https://branddock-7y9n.vercel.app/marketing',
+                url: 'https://branddock.app',
               },
               {
                 '@type': 'Product',
                 name: 'Branddock',
                 description:
-                  'Brand-validated AI content platform: brand DNA, AI agents and a brand-fit score on every piece of content.',
+                  'Eén merk-platform: merk-DNA, onderzoek, content, campagnes, beeld en AI-agents — met een merk-check op elke output.',
                 offers: [
                   { '@type': 'Offer', name: 'Starter', price: '39', priceCurrency: 'EUR' },
                   { '@type': 'Offer', name: 'Growth', price: '89', priceCurrency: 'EUR' },
