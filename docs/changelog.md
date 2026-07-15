@@ -2323,4 +2323,8 @@ F-VAL rules-audit van vandaag onthulde dat 5 van 15 workspaces (incl. LINFI) ver
 - Task: [tasks/done/brand-language-auto-detect.md](../tasks/done/brand-language-auto-detect.md)
 - ADR: [adr/2026-05-10-brand-language-auto-detect.md](adr/2026-05-10-brand-language-auto-detect.md)
 - Spec: -
-- Commit: `e5d2818` (initial implementation) + `021f262` (4-round hardening)
+- Commit: `e5d2818` (initial implementation) + `021f262` (4-round hardening)### 403. Marketing-site launch-polish — copy-fixes + 4 echte product-screenshots
+
+Taak #9-afhechting (Claude-deel). **Copy-fixes**: de trial-claim op de homepage zei 2× "14 days free" terwijl het product een 28-dagen no-card trial heeft (feitelijke fout, gecorrigeerd); de agents-feature-pagina zei "six specialist agents" — bijgewerkt naar negen mét de nieuwe rollen (weekly reports, SEO/GEO- en ads-watchdogs). **Screenshots**: de "Screenshot goes here"-placeholder vervangen door echte `<img>`-render + vier échte product-screenshots geschoten (`public/marketing/features/`: agents-catalogus met alle 9 persona's, Brand Voice met gevulde voice-DNA, Brandstyle met kalibratie-flow, en Content Canvas met een écht gegenereerde LinkedIn-post op F-VAL 79 incl. score-opbouw). Gemaakt via een herbruikbaar Playwright-script (`scripts/dev/marketing-screenshots.mjs`, lokale dev-server + seed-account, EN-locale + BB-workspace via cookies) — onderweg vier dev-omgevingslessen opgedaan (HMR breekt networkidle; Next dev weigert 127.0.0.1 als origin; Better Auth eist BETTER_AUTH_URL-poortmatch; UI-taal komt uit appearance_preference, niet localStorage). **Rest voor de user** (taak #9): pilot-quote (1 zin), Calendly-account + `NEXT_PUBLIC_CALENDLY_URL`, domein-keuze.
+
+

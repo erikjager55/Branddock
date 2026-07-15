@@ -62,18 +62,19 @@ const FEATURES: Record<string, FeatureSpec> = {
   'agents': {
     slug: 'agents',
     title: 'AI agents that know your brand',
-    tagline: 'Six specialist agents — research, strategy, content, brand review, market and data.',
+    tagline: 'Nine specialist agents — from research and strategy to weekly reports and 24/7 watchdogs.',
     description:
       'Branddock agents run real work on top of your brand DNA: market research with sources, strategy foundations, content proposals, brand-fit reviews and data analysis. Every agent proposes — you approve. Nothing ships without you.',
     bullets: [
-      'Research analyst: sourced market research into your knowledge library',
-      'Strategist: evidence-based strategy foundations, written straight into your campaigns',
-      'Content creator: proposals that generate through the same brand-validated pipeline',
+      'Research analyst: sourced market research (web + peer-reviewed) into your knowledge library',
+      'Strategist & content creator: strategy foundations and content proposals through the brand-validated pipeline',
       'Brand guardian: independent brand-fit reviews (F-VAL) on any text',
-      'Market & data analysts: competitor moves and your own content-production numbers',
+      'Reporting analyst: a client-ready weekly brand report, on schedule',
+      'SEO/GEO & ads watchdogs: published content decay and ad-fatigue signals with refresh proposals',
+      'Market & data analysts: competitor moves and your own production numbers',
       'Human-in-the-loop by design: agents propose, you confirm',
     ],
-    screenshotPath: null, // screenshot volgt (user-taak: echte product-screenshots)
+    screenshotPath: '/marketing/features/agents.png',
   },
 };
 
@@ -113,10 +114,12 @@ export default async function FeaturePage({
 
       {feature.screenshotPath ? (
         <div className="mb-10 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
-          {/* SCREENSHOT-TODO: voeg daadwerkelijke product-screenshots toe in public/marketing/features/ */}
-          <div className="aspect-video flex items-center justify-center text-gray-400 text-sm">
-            Screenshot goes here — {feature.screenshotPath}
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element -- statische marketing-asset, geen next/image-optimalisatie nodig */}
+          <img
+            src={feature.screenshotPath}
+            alt={`${feature.title} — product screenshot`}
+            className="w-full h-auto"
+          />
         </div>
       ) : null}
 

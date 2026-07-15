@@ -44,7 +44,7 @@ function Hero() {
           </a>
         </div>
         <div className="mt-6 text-xs text-gray-500">
-          14 days free · No credit card required · Cancel anytime
+          28 days free · No credit card required · Cancel anytime
         </div>
       </div>
     </section>
@@ -109,7 +109,7 @@ function FinalCTA() {
       <div className="max-w-6xl mx-auto px-6 py-16 text-center">
         <h2 className="text-gray-900 mb-4">Ready to get started?</h2>
         <p className="text-gray-600 mb-8 max-w-xl mx-auto">
-          Try Branddock free for 14 days. No credit card. No commitments.
+          Try Branddock free for 28 days. No credit card. No commitments.
         </p>
         <Link
           href="/?utm_source=marketing-site&utm_medium=final-cta"
