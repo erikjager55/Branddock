@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { appHref } from '../../app-url';
+import Mosaic from '../../Mosaic';
 import type { Metadata } from 'next';
 
 interface SolutionSpec {
@@ -86,9 +87,31 @@ export default async function SolutionPage({
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-16">
-      <div className="mb-10">
-        <h1 className="text-gray-900 mb-3">{solution.title}</h1>
-        <p className="text-xl text-gray-600">{solution.tagline}</p>
+      <div
+        className="relative overflow-hidden rounded-2xl p-8 md:p-10 mb-10"
+        style={{ background: solution.slug === 'bureaus' ? 'var(--g-warm)' : 'var(--g-brand)' }}
+      >
+        <Mosaic
+          id={`sol-${solution.slug}`}
+          cols={6}
+          rows={2}
+          className="pointer-events-none absolute inset-0 w-full h-full"
+          style={{ opacity: 0.2 }}
+        />
+        <div className="relative">
+          <div
+            className="text-xs font-semibold uppercase tracking-wide mb-2"
+            style={{ color: 'rgba(255,255,255,0.85)' }}
+          >
+            Oplossingen
+          </div>
+          <h1 className="mb-3" style={{ color: '#ffffff' }}>
+            {solution.title}
+          </h1>
+          <p className="text-xl" style={{ color: 'rgba(255,255,255,0.9)' }}>
+            {solution.tagline}
+          </p>
+        </div>
       </div>
 
       <p className="text-gray-700 text-lg mb-12 leading-relaxed max-w-2xl">{solution.intro}</p>
