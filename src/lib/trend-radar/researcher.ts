@@ -16,6 +16,7 @@ import { searchWithGrounding } from '@/lib/ai/gemini-client';
 import { getBrandContext } from '@/lib/ai/brand-context';
 import { generateDiverseQueries } from './query-generator';
 import { extractSignalsFromSources, type Signal } from './signal-extractor';
+import { gatherTrendEnrichmentSignals } from './external-sources';
 import { synthesizeTrends, type SanitizedTrend } from './trend-analyzer';
 import { calculatePartialScores, filterByQuality, QUALITY_THRESHOLD, type TrendScores } from './trend-scorer';
 import { judgeTrends } from './trend-judge';
@@ -325,6 +326,33 @@ export async function runTrendResearch(
     );
 
     state.signalsExtracted = signals.length;
+
+    // ── Optional enrichment: Exa + Semantic Scholar as extra source layers ──
+    // Key-gated + fail-soft (#402 pattern). Each external result maps directly
+    // to a Signal (no extra Gemini call), deduped against the grounding URLs, so
+    // it flows through synthesis/scoring/judge like any other signal. Added
+    // before the threshold check so external signals reduce raw-content fallback.
+    try {
+      const enrichment = await gatherTrendEnrichmentSignals({
+        queries: diverseQueries,
+        existingUrls: signals.map((s) => s.sourceUrl),
+      });
+      if (enrichment.signals.length > 0) {
+        signals.push(...enrichment.signals);
+        state.signalsExtracted = signals.length;
+        console.info(
+          `[TrendResearch] External enrichment: +${enrichment.exaCount} Exa, +${enrichment.scholarCount} Scholar signals`,
+        );
+      }
+      for (const w of enrichment.warnings) {
+        allErrors.push(w);
+        state.errors.push(w);
+      }
+    } catch (enrichError) {
+      const msg = `External enrichment crashed: ${enrichError instanceof Error ? enrichError.message : 'Unknown error'}`;
+      allErrors.push(msg);
+      state.errors.push(msg);
+    }
 
     // Minimum signal threshold: if too few structured signals, augment with raw content
     const MIN_SIGNALS_FOR_SYNTHESIS = 3;
