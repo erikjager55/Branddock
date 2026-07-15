@@ -23,6 +23,11 @@ import { flattenPageVariantToText } from "@/lib/landing-pages/flatten-variant";
 import { hasOwnVariantSchema } from "@/lib/landing-pages/page-type-schemas";
 import { LONG_FORM_SEO_TYPES } from "@/lib/ai/seo-pipeline.types";
 import { buildGeoKnowledgeContext } from "@/lib/landing-pages/geo-knowledge-context";
+import {
+  fetchResearchStatCandidates,
+  buildResearchStatsBlock,
+  type ResearchStatCandidate,
+} from "@/lib/landing-pages/research-stats";
 import type { LandingPageVariantContent } from "@/lib/landing-pages/variant-schema";
 import { runFidelityScoring } from "@/lib/brand-fidelity/fidelity-runner";
 import { detectAiTells } from "@/lib/brand-fidelity/ai-tell-detector";
@@ -229,11 +234,27 @@ export async function POST(
   // Long-form GEO: forceer knowledge → primary (volledige bron incl. referenties/URLs reikt
   // het model) + prepend expliciete "## CITEERBARE BRONNEN"-handles, zodat citeableStats een
   // echte bron krijgen i.p.v. genullde labels. Andere page-types houden het bestaande pad.
-  const additionalContextText = ctx.additionalContextItems?.length
-    ? LONG_FORM_SEO_TYPES.has(deliverable.contentType)
-      ? await buildGeoKnowledgeContext(ctx.additionalContextItems, workspaceId)
-      : (await serializeContextForPrompt(ctx.additionalContextItems, workspaceId)) || undefined
-    : undefined;
+  // Long-form GEO: fetch a package of real, sourced stat-candidates (Exa + S2)
+  // in parallel with the knowledge-context build, and append it as a labeled
+  // "## GEVERIFIEERD BRONMATERIAAL" block so citeableStats can rest on genuine
+  // current sources. Fail-soft + key-gated: no keys / no items → empty block →
+  // additionalContextText is byte-identical to before (golden-set safety).
+  const isLongFormGeo = LONG_FORM_SEO_TYPES.has(deliverable.contentType);
+  const [baseContextText, researchCandidates] = await Promise.all([
+    (async (): Promise<string | undefined> => {
+      if (!ctx.additionalContextItems?.length) return undefined;
+      return isLongFormGeo
+        ? await buildGeoKnowledgeContext(ctx.additionalContextItems, workspaceId)
+        : (await serializeContextForPrompt(ctx.additionalContextItems, workspaceId)) || undefined;
+    })(),
+    isLongFormGeo
+      ? fetchResearchStatCandidates(userPrompt)
+      : Promise.resolve<ResearchStatCandidate[]>([]),
+  ]);
+  const researchBlock = buildResearchStatsBlock(researchCandidates);
+  const additionalContextText = researchBlock
+    ? `${baseContextText ? `${baseContextText}\n` : ""}${researchBlock}`
+    : baseContextText;
 
   let results;
   try {
