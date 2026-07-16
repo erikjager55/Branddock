@@ -7,8 +7,15 @@
 // booking-tools embedding (X-Frame-Options). Een link opent de geoptimaliseerde
 // boekingspagina van de provider en werkt met elke provider zonder CSP-werk.
 
+import type { Metadata } from 'next';
 import { Mail, Linkedin, CalendarClock, ArrowUpRight } from 'lucide-react';
 import Mosaic from '../Mosaic';
+
+export const metadata: Metadata = {
+  title: 'Contact',
+  description:
+    'Vragen over Branddock of een demo boeken? We reageren binnen 1 werkdag.',
+};
 
 const CONTACT_EMAIL = 'hello@branddock.com';
 const LINKEDIN_URL = 'https://www.linkedin.com/company/branddock'; // TODO: vervang

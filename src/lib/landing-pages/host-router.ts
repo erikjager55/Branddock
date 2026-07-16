@@ -50,6 +50,14 @@ const EXEMPT_PATH_PREFIXES = [
 ];
 
 /**
+ * Is deze host de marketing-apex (branddock.app / www)? Gedeeld met de
+ * SEO-discovery routes zodat de marketing-sitemap alleen dáár serveert.
+ */
+export function isMarketingApexHost(host: string): boolean {
+  return MARKETING_APEX_HOSTS.has(stripPort(host).toLowerCase());
+}
+
+/**
  * Leidt de workspace-slug af uit een host: `<workspace>.branddock.app` →
  * `workspace`. Apex/www/localhost/onbekend → null (de app-shell, geen tenant).
  * Gedeeld met de SEO-discovery route-handlers zodat host-parsing één bron heeft.

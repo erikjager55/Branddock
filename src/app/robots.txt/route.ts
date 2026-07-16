@@ -5,7 +5,7 @@
  * exempt `/robots.txt` van de /p/-rewrite.
  */
 import { headers } from "next/headers";
-import { workspaceSlugFromHost } from "@/lib/landing-pages/host-router";
+import { workspaceSlugFromHost, isMarketingApexHost } from "@/lib/landing-pages/host-router";
 import { buildRobotsTxt, requestOrigin } from "@/lib/landing-pages/sitemap-host";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,10 @@ export async function GET(): Promise<Response> {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
   const workspaceSlug = workspaceSlugFromHost(host);
-  const sitemapUrl = workspaceSlug ? `${requestOrigin(h.get("x-forwarded-proto"), host)}/sitemap.xml` : null;
+  // Sitemap-verwijzing op workspace-subdomeinen (gepubliceerde pagina's) én op
+  // de marketing-apex (de statische marketing-sitemap).
+  const hasSitemap = Boolean(workspaceSlug) || isMarketingApexHost(host);
+  const sitemapUrl = hasSitemap ? `${requestOrigin(h.get("x-forwarded-proto"), host)}/sitemap.xml` : null;
 
   return new Response(buildRobotsTxt({ sitemapUrl }), {
     headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" },

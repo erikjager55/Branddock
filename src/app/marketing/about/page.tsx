@@ -1,8 +1,15 @@
 // About-page met founder-story + missie. NL-first (Fase 2).
 
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { appHref } from '../app-url';
 import Mosaic from '../Mosaic';
+
+export const metadata: Metadata = {
+  title: 'Over ons',
+  description:
+    'Waarom Branddock bestaat: AI-content die je merk echt vertegenwoordigt — gebouwd vanuit een gedegen merkstrategie-fundament.',
+};
 
 export default function AboutPage() {
   return (

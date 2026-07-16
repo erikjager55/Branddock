@@ -4,10 +4,17 @@
 // 28d no-card trial, top-up €0,10/credit. Bron: PLAN_CONFIGS + TOPUP_PACKS.
 // CTA's via appHref → absoluut naar de app-host na de domein-cutover.
 
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { appHref } from '../app-url';
 import Mosaic from '../Mosaic';
+
+export const metadata: Metadata = {
+  title: 'Prijzen',
+  description:
+    'Eenvoudige, transparante prijzen: Starter €39, Growth €89 of Agency €299 per maand. 28 dagen gratis, geen creditcard.',
+};
 
 interface Tier {
   id: string;
