@@ -179,12 +179,27 @@ function MarketingFooter() {
             </ul>
           </div>
           <div>
-            <div className="font-semibold text-gray-900 mb-3">Contact</div>
+            <div className="font-semibold text-gray-900 mb-3">Contact &amp; juridisch</div>
             <ul className="space-y-1.5 text-gray-600">
               <li>
                 <a href="mailto:hello@branddock.com" className="hover:text-gray-900">
                   hello@branddock.com
                 </a>
+              </li>
+              <li>
+                <Link href="/marketing/security" className="hover:text-gray-900">
+                  Security &amp; AVG
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/privacy" className="hover:text-gray-900">
+                  Privacyverklaring
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/terms" className="hover:text-gray-900">
+                  Algemene voorwaarden
+                </Link>
               </li>
             </ul>
           </div>

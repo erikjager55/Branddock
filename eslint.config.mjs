@@ -60,6 +60,9 @@ const eslintConfig = defineConfig([
     ignores: [
       "src/features/campaigns/components/canvas/medium/puck-config.tsx",
       "src/features/campaigns/components/canvas/medium/puck-templates/**",
+      // Marketing-site is bewust NL-first (website-verbeterplan v2, 2026-07-15);
+      // de NL-denylist geldt alleen voor de product-UI.
+      "src/app/marketing/**",
     ],
     rules: {
       "no-restricted-syntax": [
