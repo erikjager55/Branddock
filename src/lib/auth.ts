@@ -12,6 +12,7 @@ import { isCreditsEnabled } from "./stripe/feature-flags";
 import { checkAuthEmailRateLimit } from "./auth/auth-rate-limiter";
 import { redis } from "./redis";
 import { trySendTransactional } from "./email/transactional";
+import { canonicalizeEmailUrl } from "./email/base-url";
 import { renderPasswordResetEmail } from "./email/templates/password-reset";
 import { renderEmailVerificationEmail } from "./email/templates/email-verification";
 import type { SocialProviders } from "better-auth/social-providers";
@@ -231,10 +232,13 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {
+      // Canonicaliseer naar de app-host: Better Auth bouwt de url op de
+      // request-origin (host-inferentie), dus zonder dit krijgen gebruikers
+      // op een legacy-host (*.vercel.app) die host in hun mail.
       const { subject, html, text } = renderPasswordResetEmail({
         recipientEmail: user.email,
         userName: user.name ?? undefined,
-        resetUrl: url,
+        resetUrl: canonicalizeEmailUrl(url),
       });
       await trySendTransactional({
         to: user.email,
@@ -250,7 +254,7 @@ export const auth = betterAuth({
       const { subject, html, text } = renderEmailVerificationEmail({
         recipientEmail: user.email,
         userName: user.name ?? undefined,
-        verifyUrl: url,
+        verifyUrl: canonicalizeEmailUrl(url),
       });
       await trySendTransactional({
         to: user.email,

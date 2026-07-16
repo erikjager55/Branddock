@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
 import { trySendTransactional } from "@/lib/email/transactional";
+import { emailBaseUrl } from "@/lib/email/base-url";
 import { renderInviteEmail } from "@/lib/email/templates/invite";
 
 // POST /api/organization/invite — create an invitation
@@ -126,8 +127,8 @@ export async function POST(request: NextRequest) {
     // Send the invite email. We intentionally don't fail the request if
     // mail fails — the invitation record exists and the link can be
     // retrieved by the inviter from the UI.
-    const baseUrl = process.env.BETTER_AUTH_URL || "https://branddock.app";
-    const acceptUrl = `${baseUrl}/invite/accept?token=${encodeURIComponent(invitation.token)}`;
+    // emailBaseUrl → de app-host (app.branddock.app), niet de marketing-apex.
+    const acceptUrl = `${emailBaseUrl()}/invite/accept?token=${encodeURIComponent(invitation.token)}`;
     const inviterName = session.user.name || session.user.email || "A teammate";
     const { subject, html, text } = renderInviteEmail({
       recipientEmail: email,

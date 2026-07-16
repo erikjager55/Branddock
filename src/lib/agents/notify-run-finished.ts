@@ -22,6 +22,8 @@ import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { trySendTransactional } from '@/lib/email/transactional';
+import { emailBaseUrl } from '@/lib/email/base-url';
+import { renderLayout, renderCta } from '@/lib/email/templates/_layout';
 import { getWorkspaceUsers } from '@/lib/workspace/workspace-users';
 import { getAgentDefinition } from '@/lib/agents/registry';
 
@@ -104,8 +106,14 @@ export async function notifyAgentRunFinished(input: AgentRunNotificationInput): 
       select: { userId: true, emailEnabled: true },
     });
     const emailDisabled = new Set(prefs.filter((p) => !p.emailEnabled).map((p) => p.userId));
-    const base = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000';
-    const inboxUrl = `${base}/?section=agents-inbox&run=${encodeURIComponent(input.runId)}`;
+    // emailBaseUrl: BETTER_AUTH_URL is op prod bewust leeg (host-inferentie),
+    // dus de oude `?? localhost`-fallback gaf daar kapotte relatieve links
+    // ('' ?? x laat de lege string door).
+    const inboxUrl = `${emailBaseUrl()}/?section=agents-inbox&run=${encodeURIComponent(input.runId)}`;
+    const html = renderLayout({
+      title,
+      body: `<p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#334155;">${escapeHtml(description)}</p>${renderCta(inboxUrl, 'Open the Results Inbox')}`,
+    });
 
     await Promise.all(
       recipients
@@ -114,7 +122,7 @@ export async function notifyAgentRunFinished(input: AgentRunNotificationInput): 
           trySendTransactional({
             to: u.email,
             subject: title,
-            html: `<p>${escapeHtml(description)}</p><p><a href="${inboxUrl}">Open the Results Inbox</a></p>`,
+            html,
             text: `${description}\nOpen the Results Inbox: ${inboxUrl}`,
             tags: { type: 'agent-run-finished' },
           }),
