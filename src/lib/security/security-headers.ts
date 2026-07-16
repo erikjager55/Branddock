@@ -20,8 +20,12 @@
 export const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.typekit.net",
-  "font-src 'self' data: https://fonts.gstatic.com https://use.typekit.net https://p.typekit.net",
+  // rsms.me: @puckeditor/core/dist/index.css @import't het Inter-font daar.
+  // Zonder deze allow faalt de hele lazy CSS-chunk van de canvas op prod
+  // (ChunkLoadError → ErrorBoundary bij "Open in Canvas"; incident 2026-07-16).
+  // Dev heeft geen CSP, dus lokaal was dit onzichtbaar.
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.typekit.net https://rsms.me",
+  "font-src 'self' data: https://fonts.gstatic.com https://use.typekit.net https://p.typekit.net https://rsms.me",
   // Permissive img-src: user-supplied URLs + AI-provider-previews landen in <img>
   "img-src 'self' data: blob: https:",
   // Externe AI-calls lopen server-side; de browser praat alleen met eigen API + Stripe
