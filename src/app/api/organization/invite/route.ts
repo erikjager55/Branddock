@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
 import { trySendTransactional } from "@/lib/email/transactional";
 import { emailBaseUrl } from "@/lib/email/base-url";
+import { resolveEmailLocale } from "@/lib/email/email-locale";
 import { renderInviteEmail } from "@/lib/email/templates/invite";
 
 // POST /api/organization/invite — create an invitation
@@ -130,6 +131,13 @@ export async function POST(request: NextRequest) {
     // emailBaseUrl → de app-host (app.branddock.app), niet de marketing-apex.
     const acceptUrl = `${emailBaseUrl()}/invite/accept?token=${encodeURIComponent(invitation.token)}`;
     const inviterName = session.user.name || session.user.email || "A teammate";
+    // E-mailtaal: voorkeur van de ontvanger als die al een account heeft,
+    // anders die van de uitnodiger (zelfde team ≈ zelfde taal).
+    const recipientUser = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    const locale = await resolveEmailLocale(recipientUser?.id ?? session.user.id);
     const { subject, html, text } = renderInviteEmail({
       recipientEmail: email,
       inviterName,
@@ -137,6 +145,7 @@ export async function POST(request: NextRequest) {
       role: inviteRole,
       acceptUrl,
       expiresAt: invitation.expiresAt,
+      locale,
     });
     const sendResult = await trySendTransactional({
       to: email,

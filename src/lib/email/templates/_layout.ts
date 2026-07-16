@@ -80,8 +80,13 @@ export function escape(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
+const COPY_LINK_LABEL: Record<'en' | 'nl', string> = {
+  en: 'Or copy this link:',
+  nl: 'Of kopieer deze link:',
+};
+
 /** Render a mint pill-button CTA. Caller supplies href + label (both escaped here). */
-export function renderCta(href: string, label: string): string {
+export function renderCta(href: string, label: string, locale: 'en' | 'nl' = 'en'): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
   <tr>
     <td style="background:${BRAND_MINT};border-radius:8px;">
@@ -89,5 +94,5 @@ export function renderCta(href: string, label: string): string {
     </td>
   </tr>
 </table>
-<p style="margin:0 0 16px 0;font-size:13px;line-height:1.5;color:#64748b;">Or copy this link: <a href="${escape(href)}" style="color:#0d9f7e;word-break:break-all;">${escape(href)}</a></p>`;
+<p style="margin:0 0 16px 0;font-size:13px;line-height:1.5;color:#64748b;">${COPY_LINK_LABEL[locale]} <a href="${escape(href)}" style="color:#0d9f7e;word-break:break-all;">${escape(href)}</a></p>`;
 }
