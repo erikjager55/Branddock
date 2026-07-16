@@ -84,21 +84,21 @@ function Hero() {
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(105deg, rgba(31,41,55,0.82) 0%, rgba(31,41,55,0.42) 50%, rgba(52,60,237,0.18) 100%)',
+              'linear-gradient(105deg, rgba(31,41,55,0.84) 0%, rgba(52,60,237,0.40) 55%, rgba(7,229,171,0.34) 100%)',
           }}
         />
         <Mosaic
           id="hero"
           cols={6}
-          rows={3}
-          className="pointer-events-none absolute -top-8 right-0 w-1/2 h-72 hidden md:block"
+          rows={4}
+          className="pointer-events-none absolute inset-y-0 right-0 w-2/3 md:w-[55%]"
           style={{
-            opacity: 0.5,
-            WebkitMaskImage: 'radial-gradient(130% 110% at 100% 0%, #000 22%, transparent 66%)',
-            maskImage: 'radial-gradient(130% 110% at 100% 0%, #000 22%, transparent 66%)',
+            opacity: 0.62,
+            WebkitMaskImage: 'linear-gradient(to left, #000 40%, transparent 92%)',
+            maskImage: 'linear-gradient(to left, #000 40%, transparent 92%)',
           }}
         />
-        <div className="relative max-w-6xl mx-auto px-6 pt-24 md:pt-32 pb-40 md:pb-52">
+        <div className="relative max-w-6xl mx-auto px-6 pt-32 md:pt-36 pb-40 md:pb-52">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm mb-6">
               <span style={{ color: 'var(--brand-lime)' }}>●</span> Eén platform dat je merk kent
