@@ -9,7 +9,24 @@ import { z } from 'zod';
 import { generateImage } from '@/lib/ai/gemini-client';
 import { generateDalleImage } from '@/lib/ai/openai-client';
 import { runFalGeneration, generateFalImage, foldNegativeIntoPrompt } from '@/lib/integrations/fal/fal-client';
-import { getFalProviderById, getFalEndpoint } from '@/lib/integrations/fal/fal-providers';
+import { getFalProviderById } from '@/lib/integrations/fal/fal-providers';
+
+/**
+ * Stijl-intentie voor Recraft V3 uit de gebruikersprompt. Recraft levert
+ * zónder structured `style`-param altijd photoreal — óók bij "illustratie"-
+ * prompts (F42d; pilot-incident 2026-07-16). Andere modellen negeren dit veld.
+ */
+function detectRecraftStyle(
+  userPrompt: string,
+): 'digital_illustration' | 'vector_illustration' | 'icon' | undefined {
+  const p = userPrompt.toLowerCase();
+  if (/\bicoon\b|\bicon\b/.test(p)) return 'icon';
+  if (/vector/.test(p)) return 'vector_illustration';
+  if (/illustrat|tekening|getekend|cartoon|schets|sketch|drawing|drawn/.test(p)) {
+    return 'digital_illustration';
+  }
+  return undefined;
+}
 import { buildPromptWithContext } from '@/lib/ai/prompt-context-builder';
 import { resolveWorkspaceBrandContext } from '@/lib/consistent-models/workspace-context-resolver';
 import { LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
@@ -229,12 +246,18 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Resolve the actual fal.ai endpoint — some providers route through a
-      // nested path (e.g. fal-ai/recraft/v3/text-to-image) while keeping a
-      // shorter stable id (fal-ai/recraft-v3) in our DB.
-      const result = await generateFalImage(getFalEndpoint(falProvider), finalPrompt, {
+      // Geef het provider-ID door (niet het endpoint): generateFalImage
+      // resolvet het geneste endpoint zelf via de registry (F42) én heeft het
+      // ID nodig voor model-specifieke logica. Door hier voorheen het
+      // endpoint door te geven sloeg die logica nooit aan — waaronder het
+      // Recraft-stijlveld, waardoor "illustratie"-prompts als foto uitkwamen
+      // (Recraft default = photoreal zonder structured style, F42d).
+      const result = await generateFalImage(falProvider.id, finalPrompt, {
         imageSize: toFalImageSize(aspectRatio ?? '1:1'),
         numImages: 1,
+        // Stijl-intentie uit de gebruikersprompt (niet finalPrompt — de
+        // brand-context kan fotografie-richtlijnen bevatten).
+        recraftStyle: detectRecraftStyle(prompt),
       });
 
       if (!result.images?.[0]?.url) {
