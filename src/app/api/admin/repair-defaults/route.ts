@@ -15,16 +15,19 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireDeveloper } from '@/lib/developer-access';
 import { MEDIUM_ENRICHMENT_DEFAULTS } from '@/lib/seed-data/medium-enrichment';
+import { diagnoseAnchors, repairAnchors } from '@/lib/content-locale/repair-anchors';
 
 export async function GET() {
   const session = await requireDeveloper();
   if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const mediumEnrichment = await prisma.mediumEnrichment.count({
-    where: { workspaceId: null },
-  });
+  const [mediumEnrichment, contentLocaleAnchors] = await Promise.all([
+    prisma.mediumEnrichment.count({ where: { workspaceId: null } }),
+    diagnoseAnchors(),
+  ]);
   return NextResponse.json({
     mediumEnrichment: { inDb: mediumEnrichment, expected: MEDIUM_ENRICHMENT_DEFAULTS.length },
+    contentLocaleAnchors,
   });
 }
 
@@ -58,6 +61,19 @@ export async function POST() {
     }
   }
 
+  // Content-locale-ankers (ADR 2026-07-16): zelfde klasse als de MediumEnrichment-drift
+  // hierboven — defaults die alleen de seed zet en die op prod dus ontbreken. Maakt
+  // ontbrekende Brand + isDefault-profielen aan en trekt een divergerende
+  // Workspace.contentLanguage bij naar het profiel (profiel wint). Raakt nooit een
+  // bestaande profiel-locale.
+  const anchors = await repairAnchors();
+
   console.log(`[admin/repair-defaults] mediumEnrichment: created=${created} updated=${updated} by ${session.user.email}`);
-  return NextResponse.json({ mediumEnrichment: { created, updated } });
+  if (anchors.details.length > 0) {
+    console.log(`[admin/repair-defaults] contentLocaleAnchors: ${anchors.details.join(' | ')}`);
+  }
+  return NextResponse.json({
+    mediumEnrichment: { created, updated },
+    contentLocaleAnchors: anchors,
+  });
 }
