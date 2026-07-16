@@ -27,10 +27,11 @@ import Mosaic from './Mosaic';
 
 // Provider-neutrale demo-boeking (Morgen/Calendly/Cal.com). Zonder booking-URL:
 // val terug op de contactpagina i.p.v. een dood `#`.
-function BookDemoButton() {
+function BookDemoButton({ className }: { className?: string }) {
   const bookingUrl =
     process.env.NEXT_PUBLIC_BOOKING_URL ?? process.env.NEXT_PUBLIC_CALENDLY_URL ?? null;
   const cls =
+    className ??
     'inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50';
   if (bookingUrl) {
     return (
@@ -66,44 +67,71 @@ export default function MarketingHomePage() {
 
 function Hero() {
   return (
-    <section className="mkt-hero-glow relative overflow-hidden">
-      <Mosaic
-        id="hero"
-        cols={5}
-        rows={3}
-        className="pointer-events-none absolute -top-10 right-0 w-1/2 h-80 hidden sm:block"
-        style={{
-          opacity: 0.7,
-          WebkitMaskImage: 'radial-gradient(130% 110% at 100% 0%, #000 28%, transparent 70%)',
-          maskImage: 'radial-gradient(130% 110% at 100% 0%, #000 28%, transparent 70%)',
-        }}
-      />
-      <div className="max-w-6xl mx-auto px-6 pt-20 md:pt-28 pb-10 relative">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 mb-6">
-            <span className="mkt-accent">●</span> Eén platform dat je merk kent
-          </div>
-          <h1 className="text-gray-900 mb-6">Content die klinkt als jóúw merk. Op schaal.</h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl">
-            Branddock kent je complete merk-DNA — brand voice, stijl, persona’s, concurrenten en
-            trends — en zet het om in on-brand teksten, campagnes en beeld. Eén platform, gebouwd
-            voor in-house marketingteams.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href={appHref('/?utm_source=marketing-site&utm_medium=hero')}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
+    <>
+      <section className="relative overflow-hidden">
+        {/* Lucht-fotografie (fal.ai, merkkleuren) als sfeer-achtergrond. */}
+        <Image
+          src="/marketing/hero-sky.png"
+          alt=""
+          aria-hidden="true"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
+        {/* Merk-gradient-overlay: donker-slate links (leesbaarheid), sky rechts zichtbaar. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(105deg, rgba(31,41,55,0.82) 0%, rgba(31,41,55,0.42) 50%, rgba(52,60,237,0.18) 100%)',
+          }}
+        />
+        <Mosaic
+          id="hero"
+          cols={6}
+          rows={3}
+          className="pointer-events-none absolute -top-8 right-0 w-1/2 h-72 hidden md:block"
+          style={{
+            opacity: 0.5,
+            WebkitMaskImage: 'radial-gradient(130% 110% at 100% 0%, #000 22%, transparent 66%)',
+            maskImage: 'radial-gradient(130% 110% at 100% 0%, #000 22%, transparent 66%)',
+          }}
+        />
+        <div className="relative max-w-6xl mx-auto px-6 pt-24 md:pt-32 pb-40 md:pb-52">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm mb-6">
+              <span style={{ color: 'var(--brand-lime)' }}>●</span> Eén platform dat je merk kent
+            </div>
+            <h1
+              className="mb-6"
+              style={{ color: '#ffffff', textShadow: '0 1px 24px rgba(16,20,32,0.28)' }}
             >
-              Gratis proberen <ArrowRight className="w-4 h-4" />
-            </Link>
-            <BookDemoButton />
-          </div>
-          <div className="mt-6 text-xs text-gray-500">
-            28 dagen gratis · Geen creditcard · Altijd opzegbaar
+              Content die klinkt als jóúw merk. Op schaal.
+            </h1>
+            <p className="text-xl mb-8 max-w-2xl" style={{ color: 'rgba(255,255,255,0.9)' }}>
+              Branddock kent je complete merk-DNA — brand voice, stijl, persona’s, concurrenten en
+              trends — en zet het om in on-brand teksten, campagnes en beeld. Eén platform, gebouwd
+              voor in-house marketingteams.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href={appHref('/?utm_source=marketing-site&utm_medium=hero')}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white font-medium hover:opacity-90"
+                style={{ color: 'var(--brand-slate)' }}
+              >
+                Gratis proberen <ArrowRight className="w-4 h-4" />
+              </Link>
+              <BookDemoButton className="inline-flex items-center px-6 py-3 rounded-lg border border-white/40 text-white font-medium hover:bg-white/10" />
+            </div>
+            <div className="mt-6 text-xs" style={{ color: 'rgba(255,255,255,0.72)' }}>
+              28 dagen gratis · Geen creditcard · Altijd opzegbaar
+            </div>
           </div>
         </div>
-      </div>
-      <div className="max-w-5xl mx-auto px-6 pb-6">
+      </section>
+      {/* Zwevende productscreenshot — valt over de onderrand van de hero. */}
+      <div className="relative z-10 max-w-5xl mx-auto px-6 -mt-28 md:-mt-40">
         <div className="mkt-frame">
           <div className="mkt-frame__bar">
             <i></i>
@@ -116,11 +144,10 @@ function Hero() {
             width={2880}
             height={1800}
             className="w-full h-auto"
-            priority
           />
         </div>
       </div>
-    </section>
+    </>
   );
 }
 
