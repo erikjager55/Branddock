@@ -13,6 +13,7 @@ import { checkAuthEmailRateLimit } from "./auth/auth-rate-limiter";
 import { redis } from "./redis";
 import { trySendTransactional } from "./email/transactional";
 import { canonicalizeEmailUrl } from "./email/base-url";
+import { resolveEmailLocale } from "./email/email-locale";
 import { renderPasswordResetEmail } from "./email/templates/password-reset";
 import { renderEmailVerificationEmail } from "./email/templates/email-verification";
 import type { SocialProviders } from "better-auth/social-providers";
@@ -231,7 +232,7 @@ export const auth = betterAuth({
   trustedOrigins: buildTrustedOrigins(),
   emailAndPassword: {
     enabled: true,
-    sendResetPassword: async ({ user, url }) => {
+    sendResetPassword: async ({ user, url }, request) => {
       // Canonicaliseer naar de app-host: Better Auth bouwt de url op de
       // request-origin (host-inferentie), dus zonder dit krijgen gebruikers
       // op een legacy-host (*.vercel.app) die host in hun mail.
@@ -239,6 +240,7 @@ export const auth = betterAuth({
         recipientEmail: user.email,
         userName: user.name ?? undefined,
         resetUrl: canonicalizeEmailUrl(url),
+        locale: await resolveEmailLocale(user.id, request),
       });
       await trySendTransactional({
         to: user.email,
@@ -250,11 +252,13 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    sendVerificationEmail: async ({ user, url }) => {
+    sendVerificationEmail: async ({ user, url }, request) => {
+      // Nieuwe gebruikers hebben nog geen voorkeur-rij → Accept-Language-fallback.
       const { subject, html, text } = renderEmailVerificationEmail({
         recipientEmail: user.email,
         userName: user.name ?? undefined,
         verifyUrl: canonicalizeEmailUrl(url),
+        locale: await resolveEmailLocale(user.id, request),
       });
       await trySendTransactional({
         to: user.email,
