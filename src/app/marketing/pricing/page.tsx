@@ -7,6 +7,7 @@
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { appHref } from '../app-url';
+import Mosaic from '../Mosaic';
 
 interface Tier {
   id: string;
@@ -108,11 +109,29 @@ export default function PricingPage() {
   return (
     <div>
       <section className="max-w-6xl mx-auto px-6 py-16">
-        <div className="text-center mb-12 max-w-2xl mx-auto">
-          <h1 className="text-gray-900 mb-4">Eenvoudige, transparante prijzen</h1>
-          <p className="text-gray-600 text-lg">
-            Kies een plan dat bij je team past. Geen verborgen kosten, geen lange contracten.
-          </p>
+        <div
+          className="relative overflow-hidden rounded-2xl p-8 md:p-12 mb-12 text-center"
+          style={{ background: 'var(--g-brand)' }}
+        >
+          <Mosaic
+            id="pricing"
+            cols={8}
+            rows={2}
+            className="pointer-events-none absolute inset-0"
+            style={{
+              opacity: 0.4,
+              WebkitMaskImage: 'radial-gradient(120% 120% at 50% 0%, transparent 32%, #000 100%)',
+              maskImage: 'radial-gradient(120% 120% at 50% 0%, transparent 32%, #000 100%)',
+            }}
+          />
+          <div className="relative max-w-2xl mx-auto">
+            <h1 className="mb-4" style={{ color: '#ffffff' }}>
+              Eenvoudige, transparante prijzen
+            </h1>
+            <p className="text-lg" style={{ color: 'rgba(255,255,255,0.9)' }}>
+              Kies een plan dat bij je team past. Geen verborgen kosten, geen lange contracten.
+            </p>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
