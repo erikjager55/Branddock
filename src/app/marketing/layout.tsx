@@ -12,7 +12,12 @@ import './marketing.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://branddock.app'),
-  title: 'Branddock — AI-content die klinkt als jouw merk',
+  // template: sub-pagina's zetten alleen hun eigen naam ('Prijzen' →
+  // 'Prijzen — Branddock'); de homepage houdt de volledige default.
+  title: {
+    default: 'Branddock — AI-content die klinkt als jouw merk',
+    template: '%s — Branddock',
+  },
   description:
     'Branddock kent je complete merk-DNA en genereert on-brand content, campagnes en beeld. Eén platform voor in-house marketingteams.',
   icons: { icon: '/marketing/branddock-icon.svg' },
@@ -24,11 +29,13 @@ export const metadata: Metadata = {
     locale: 'nl_NL',
     siteName: 'Branddock',
     url: 'https://branddock.app',
+    images: [{ url: '/marketing/og-image.png', width: 1200, height: 630, alt: 'Branddock' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Branddock',
     description: 'AI-content die klinkt als jouw merk',
+    images: ['/marketing/og-image.png'],
   },
 };
 
