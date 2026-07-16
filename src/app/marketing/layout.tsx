@@ -53,7 +53,7 @@ function MarketingNav() {
           <img src="/marketing/branddock-logo.svg" alt="Branddock" className="h-6 w-auto" />
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm text-gray-600">
-          <Link href="/marketing#platform" className="hover:text-gray-900">
+          <Link href="/marketing/platform" className="hover:text-gray-900">
             Platform
           </Link>
           <Link href="/marketing/solutions/marketingteams" className="hover:text-gray-900">
@@ -97,6 +97,11 @@ function MarketingFooter() {
             <div className="font-semibold text-gray-900 mb-3">Platform</div>
             <ul className="space-y-1.5 text-gray-600">
               <li>
+                <Link href="/marketing/platform" className="hover:text-gray-900">
+                  Platform-overzicht
+                </Link>
+              </li>
+              <li>
                 <Link href="/marketing/features/brand-voice" className="hover:text-gray-900">
                   Merk-DNA &amp; brand voice
                 </Link>
@@ -109,6 +114,11 @@ function MarketingFooter() {
               <li>
                 <Link href="/marketing/features/brand-alignment" className="hover:text-gray-900">
                   Merk-check
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/resources/f-val" className="hover:text-gray-900">
+                  F-VAL uitgelegd
                 </Link>
               </li>
               <li>
