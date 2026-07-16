@@ -6,7 +6,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Palette, Scale, ListChecks } from 'lucide-react';
 import { appHref } from '../../app-url';
-import Mosaic from '../../Mosaic';
+import Mosaic, { MOSAIC_PROOF } from '../../Mosaic';
+import SplitHeader from '../../SplitHeader';
 
 export const metadata: Metadata = {
   title: 'F-VAL uitgelegd — de merk-fideliteitsscore van Branddock',
@@ -38,38 +39,14 @@ const PILLARS = [
 export default function FvalPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-16">
-      {/* Gradient+mozaïek-kop */}
-      <div
-        className="relative overflow-hidden rounded-2xl p-8 md:p-12 mb-12"
-        style={{ background: 'var(--g-fresh)' }}
-      >
-        <Mosaic
-          id="fval-hero"
-          cols={7}
-          rows={2}
-          className="pointer-events-none absolute inset-y-0 right-0 w-1/2"
-          style={{
-            opacity: 0.45,
-            WebkitMaskImage: 'linear-gradient(to left, #000 35%, transparent 92%)',
-            maskImage: 'linear-gradient(to left, #000 35%, transparent 92%)',
-          }}
-        />
-        <div className="relative max-w-2xl">
-          <div
-            className="text-xs font-semibold uppercase tracking-wide mb-2"
-            style={{ color: 'rgba(31,41,55,0.7)' }}
-          >
-            Uitgelegd
-          </div>
-          <h1 className="mb-3" style={{ color: 'var(--brand-slate)' }}>
-            F-VAL: de merk-fideliteitsscore
-          </h1>
-          <p className="text-xl" style={{ color: 'rgba(31,41,55,0.8)' }}>
-            Merk-fideliteit is normaal onzichtbaar en subjectief. F-VAL maakt het meetbaar: elke
-            output een score van 0–100 voor hoe goed hij bij jóúw merk past.
-          </p>
-        </div>
-      </div>
+      <SplitHeader
+        id="fval-hero"
+        family="proof"
+        eyebrow="Uitgelegd"
+        title="F-VAL: de merk-fideliteitsscore"
+        lead="Merk-fideliteit is normaal onzichtbaar en subjectief. F-VAL maakt het meetbaar: elke output een score van 0–100 voor hoe goed hij bij jóúw merk past."
+        className="mb-12"
+      />
 
       {/* Het probleem */}
       <div className="prose-like max-w-2xl space-y-5 text-gray-700 leading-relaxed mb-14">
@@ -95,11 +72,19 @@ export default function FvalPage() {
         {PILLARS.map(({ Icon, weight, title, body }) => (
           <div key={title} className="rounded-xl border border-gray-200 bg-white p-5">
             <div className="flex items-center justify-between mb-3">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white"
-                style={{ background: 'var(--g-brand)' }}
-              >
-                <Icon className="w-5 h-5" />
+              <div className="mkt-tile">
+                <Mosaic
+                  id={`fval-tile-${title}`}
+                  cols={2}
+                  rows={2}
+                  palette={MOSAIC_PROOF}
+                  className="absolute inset-0 w-full h-full"
+                />
+                <div className="mkt-tile__badge">
+                  <i>
+                    <Icon className="w-3.5 h-3.5" style={{ color: 'var(--brand-slate)' }} />
+                  </i>
+                </div>
               </div>
               <span className="text-2xl font-bold mkt-accent tabular-nums">{weight}</span>
             </div>

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { appHref } from '../app-url';
 import Mosaic from '../Mosaic';
+import SplitHeader from '../SplitHeader';
 
 export const metadata: Metadata = {
   title: 'Platform — Branddock',
@@ -41,6 +42,7 @@ interface Group {
   title: string;
   intro: string;
   grad: string;
+  gradPair: [string, string];
   modules: Module[];
 }
 
@@ -51,6 +53,7 @@ const GROUPS: Group[] = [
     title: 'Fundament — leg je merk vast',
     intro: 'Het complete merk in één workspace. Dit fundament gaat in élke generatie mee.',
     grad: 'var(--g-brand)',
+    gradPair: ['#343CED', '#07E5AB'],
     modules: [
       {
         Icon: Dna,
@@ -77,6 +80,7 @@ const GROUPS: Group[] = [
     title: 'Onderzoek — ken je markt',
     intro: 'Persona’s, concurrenten en trends: je merk-DNA staat niet op giswerk.',
     grad: 'var(--g-cool)',
+    gradPair: ['#343CED', '#FECFBD'],
     modules: [
       {
         Icon: Users,
@@ -103,6 +107,7 @@ const GROUPS: Group[] = [
     title: 'Genereren — maak on-brand',
     intro: 'Content, campagnes, beeld en landingspagina’s — allemaal in jouw merk-DNA.',
     grad: 'var(--g-warm)',
+    gradPair: ['#FF7F4D', '#D8FD48'],
     modules: [
       {
         Icon: PenLine,
@@ -134,6 +139,7 @@ const GROUPS: Group[] = [
     title: 'Bewaken — houd het op merk',
     intro: 'Agents doen het werk, de merk-check bewaakt dat alles on-brand blijft.',
     grad: 'var(--g-fresh)',
+    gradPair: ['#07E5AB', '#D8FD48'],
     modules: [
       {
         Icon: Bot,
@@ -154,38 +160,14 @@ const GROUPS: Group[] = [
 export default function PlatformPage() {
   return (
     <div className="max-w-6xl mx-auto px-6 py-16">
-      {/* Gradient+mozaïek-kop, consistent met de rest van de site */}
-      <div
-        className="relative overflow-hidden rounded-2xl p-8 md:p-12 mb-14"
-        style={{ background: 'var(--g-brand)' }}
-      >
-        <Mosaic
-          id="platform-hero"
-          cols={8}
-          rows={2}
-          className="pointer-events-none absolute inset-y-0 right-0 w-1/2"
-          style={{
-            opacity: 0.5,
-            WebkitMaskImage: 'linear-gradient(to left, #000 35%, transparent 92%)',
-            maskImage: 'linear-gradient(to left, #000 35%, transparent 92%)',
-          }}
-        />
-        <div className="relative max-w-2xl">
-          <div
-            className="text-xs font-semibold uppercase tracking-wide mb-2"
-            style={{ color: 'rgba(255,255,255,0.85)' }}
-          >
-            Platform
-          </div>
-          <h1 className="mb-3" style={{ color: '#ffffff' }}>
-            Eén merk-platform, van fundament tot bewaking
-          </h1>
-          <p className="text-xl" style={{ color: 'rgba(255,255,255,0.9)' }}>
-            Alles draait op hetzelfde merk-DNA: leg je merk één keer vast, onderzoek je markt,
-            genereer on-brand en laat agents het bewaken.
-          </p>
-        </div>
-      </div>
+      <SplitHeader
+        id="platform-hero"
+        family="product"
+        eyebrow="Platform"
+        title="Eén merk-platform, van fundament tot bewaking"
+        lead="Alles draait op hetzelfde merk-DNA: leg je merk één keer vast, onderzoek je markt, genereer on-brand en laat agents het bewaken."
+        className="mb-14"
+      />
 
       {/* Modules per stap van de merk-loop */}
       <div className="space-y-14">
@@ -205,11 +187,19 @@ export default function PlatformPage() {
               {group.modules.map(({ Icon, title, desc, href }) => {
                 const card = (
                   <>
-                    <div
-                      className="w-10 h-10 mb-3 rounded-xl flex items-center justify-center text-white"
-                      style={{ background: group.grad }}
-                    >
-                      <Icon className="w-5 h-5" />
+                    <div className="mkt-tile mb-3">
+                      <Mosaic
+                        id={`tile-${group.key}-${title}`}
+                        cols={2}
+                        rows={2}
+                        palette={[group.gradPair]}
+                        className="absolute inset-0 w-full h-full"
+                      />
+                      <div className="mkt-tile__badge">
+                        <i>
+                          <Icon className="w-3.5 h-3.5" style={{ color: 'var(--brand-slate)' }} />
+                        </i>
+                      </div>
                     </div>
                     <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-1.5">
                       {title}
