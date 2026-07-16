@@ -38,8 +38,15 @@ export function buildGeoDirective(opts: GeoDirectiveOpts = {}): string {
     opts.mode === 'polish'
       ? '\n- **Trade-off**: behoud de bestaande SEO-keywordstructuur, maar als citeerbaarheid en keyword-dichtheid botsen wint ALTIJD answer-first; forceer nooit keywords ten koste van een zelfstandig citeerbare zin.'
       : '';
+  // "vertaal niet" (tot 2026-07-16) sprak de gedeelde locale-directive letterlijk tegen:
+  // die eist juist dat anderstalig bronmateriaal VERTAALD wordt i.p.v. bewaard ("translate,
+  // don't mirror"). In de long-form-GEO-prompt landden beide regels naast elkaar, met deze
+  // als laatste — precies op de route waar de taalmenging gemeld werd (pillar-page).
+  // Bedoeld was "vertaal de pagina niet naar een andere taal"; gelezen werd "laat vreemde
+  // termen staan". Nu eenduidig, en consistent voor de callers die de gedeelde directive
+  // NIET hebben (geo-polish.ts) — daarom herformuleren i.p.v. schrappen.
   const localeRule = opts.locale
-    ? `\n- **Taal**: schrijf alle output in de content-locale (${opts.locale}); vertaal niet en wissel niet van taal.`
+    ? `\n- **Taal**: schrijf alle output in de content-locale (${opts.locale}); wissel niet van taal binnen de pagina. Anderstalig bronmateriaal vertaal je naar deze taal.`
     : '';
 
   return `# GEO-DIRECTIVE (citeerbaarheid voor AI-antwoordmachines)
