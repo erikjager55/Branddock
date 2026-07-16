@@ -214,9 +214,17 @@ async function syncOAuthTokensToWorkspace(account: {
  * Trusted origins voor CSRF/cookie-acceptatie. Zonder dit vertrouwt Better Auth
  * alleen de BETTER_AUTH_URL-origin → preview-deploys (*.vercel.app) + het www-
  * marketingdomein zouden falen op auth. Env-driven; wildcard alleen op preview.
+ *
+ * NB (2026-07-16): de canonieke app-host (NEXT_PUBLIC_APP_URL) MOET hier
+ * expliciet bij — BETTER_AUTH_URL is op prod bewust leeg (host-inferentie),
+ * en na de domein-cutover weigerde Better Auth logins op app.branddock.app
+ * met "Invalid origin" (403), terwijl de legacy *.vercel.app-host wél werkte.
+ * Gebruikers vielen daardoor stilletjes terug op oude bookmarks.
  */
 function buildTrustedOrigins(): string[] {
   const origins = new Set<string>();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (appUrl) origins.add(appUrl.replace(/\/$/, ""));
   const marketing = process.env.NEXT_PUBLIC_MARKETING_URL;
   if (marketing) origins.add(marketing.replace(/\/$/, ""));
   if (process.env.VERCEL_ENV === "preview" || process.env.NODE_ENV !== "production") {
