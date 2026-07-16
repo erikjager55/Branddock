@@ -35,6 +35,8 @@ export const metadata: Metadata = {
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="marketing-root min-h-screen flex flex-col bg-white text-gray-900">
+      {/* Merk-font Halyard via Adobe Fonts (Typekit); CSP staat use.typekit.net toe. */}
+      <link rel="stylesheet" href="https://use.typekit.net/idv8cqe.css" />
       <MarketingNav />
       <main className="flex-1">{children}</main>
       <MarketingFooter />

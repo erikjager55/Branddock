@@ -20,8 +20,8 @@
 export const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' data: https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.typekit.net",
+  "font-src 'self' data: https://fonts.gstatic.com https://use.typekit.net https://p.typekit.net",
   // Permissive img-src: user-supplied URLs + AI-provider-previews landen in <img>
   "img-src 'self' data: blob: https:",
   // Externe AI-calls lopen server-side; de browser praat alleen met eigen API + Stripe

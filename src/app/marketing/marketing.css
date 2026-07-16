@@ -1,9 +1,10 @@
 /* Marketing-site scoped styles — keep marketing surface visually distinct
    from the in-app shell zonder app-design-tokens te muteren. */
 
-/* Merk-font. Brandbook v3 schrijft Halyard voor (licentie-font). Tot die er is:
-   Hanken Grotesk, zelf-gehost (variabel, gewicht 400–800) als dichte open
-   vervanger. Wisselen naar Halyard = alleen dit @font-face vervangen. */
+/* Merk-font. Brandbook v3 schrijft Halyard voor — geladen via Adobe Fonts
+   (Typekit-<link> in layout.tsx: halyard-display voor koppen, halyard-text
+   voor body). Hanken Grotesk (zelf-gehost, variabel 400–800) blijft als
+   robuuste fallback als Typekit niet laadt. */
 @font-face {
   font-family: 'Hanken Grotesk';
   font-style: normal;
@@ -28,11 +29,12 @@
   --g-warm: linear-gradient(120deg, #FF7F4D, #D8FD48);
   --g-fresh: linear-gradient(135deg, #07E5AB, #D8FD48);
 
-  font-family: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'halyard-text', 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.6;
 }
 
 .marketing-root h1 {
+  font-family: 'halyard-display', 'Hanken Grotesk', sans-serif;
   font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -40,6 +42,7 @@
 }
 
 .marketing-root h2 {
+  font-family: 'halyard-display', 'Hanken Grotesk', sans-serif;
   font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 600;
   letter-spacing: -0.01em;
