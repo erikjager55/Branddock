@@ -6,9 +6,9 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Check } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import { appHref } from '../app-url';
-import Mosaic from '../Mosaic';
+import SplitHeader from '../SplitHeader';
 
 export const metadata: Metadata = {
   title: 'Prijzen',
@@ -116,30 +116,14 @@ export default function PricingPage() {
   return (
     <div>
       <section className="max-w-6xl mx-auto px-6 py-16">
-        <div
-          className="relative overflow-hidden rounded-2xl p-8 md:p-12 mb-12 text-center"
-          style={{ background: 'var(--g-brand)' }}
-        >
-          <Mosaic
-            id="pricing"
-            cols={8}
-            rows={2}
-            className="pointer-events-none absolute inset-0"
-            style={{
-              opacity: 0.4,
-              WebkitMaskImage: 'radial-gradient(120% 120% at 50% 0%, transparent 32%, #000 100%)',
-              maskImage: 'radial-gradient(120% 120% at 50% 0%, transparent 32%, #000 100%)',
-            }}
-          />
-          <div className="relative max-w-2xl mx-auto">
-            <h1 className="mb-4" style={{ color: '#ffffff' }}>
-              Eenvoudige, transparante prijzen
-            </h1>
-            <p className="text-lg" style={{ color: 'rgba(255,255,255,0.9)' }}>
-              Kies een plan dat bij je team past. Geen verborgen kosten, geen lange contracten.
-            </p>
-          </div>
-        </div>
+        <SplitHeader
+          id="pricing"
+          family="product"
+          eyebrow="Prijzen"
+          title="Eenvoudige, transparante prijzen"
+          lead="Kies een plan dat bij je team past. Geen verborgen kosten, geen lange contracten."
+          className="mb-12"
+        />
 
         <div className="grid md:grid-cols-3 gap-6">
           {TIERS.map((tier) => (
@@ -174,8 +158,11 @@ export default function PricingPage() {
           <h2 className="text-gray-900 mb-6 text-center">Veelgestelde vragen</h2>
           <div className="space-y-4">
             {FAQ_ITEMS.map((item) => (
-              <details key={item.q} className="bg-white rounded-lg border border-gray-200 p-4">
-                <summary className="font-medium text-gray-900 cursor-pointer">{item.q}</summary>
+              <details key={item.q} className="group bg-white rounded-lg border border-gray-200 p-4">
+                <summary className="flex cursor-pointer items-center justify-between gap-3 font-medium text-gray-900 list-none">
+                  {item.q}
+                  <ChevronDown className="w-5 h-5 mkt-accent shrink-0 transition-transform group-open:rotate-180" />
+                </summary>
                 <p className="mt-2 text-gray-600 text-sm leading-relaxed">{item.a}</p>
               </details>
             ))}
@@ -191,10 +178,11 @@ function TierCard({ tier }: { tier: Tier }) {
     <div
       className={`rounded-xl border p-6 flex flex-col ${
         tier.highlighted
-          ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+          ? 'border-primary bg-primary/5 ring-1 ring-primary/30 shadow-md'
           : 'border-gray-200 bg-white'
       }`}
     >
+      {tier.highlighted ? <div className="mkt-badge-popular mb-3 self-start">Populairste keuze</div> : null}
       <div className="mb-4">
         <h3 className="text-xl font-semibold text-gray-900">{tier.name}</h3>
         <p className="text-sm text-gray-600 mt-1">{tier.description}</p>

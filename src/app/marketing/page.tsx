@@ -18,12 +18,12 @@ import {
   BadgeCheck,
   Languages,
   ArrowRight,
-  ShieldCheck,
+  ChevronDown,
   Cpu,
 } from 'lucide-react';
 import { appHref } from './app-url';
 import HowItWorks from './HowItWorks';
-import Mosaic from './Mosaic';
+import Mosaic, { MOSAIC_PRODUCT } from './Mosaic';
 
 // Provider-neutrale demo-boeking (Morgen/Calendly/Cal.com). Zonder booking-URL:
 // val terug op de contactpagina i.p.v. een dood `#`.
@@ -51,7 +51,6 @@ export default function MarketingHomePage() {
   return (
     <div>
       <Hero />
-      <TrustBar />
       <Problem />
       <HowSection />
       <PlatformBreadth />
@@ -67,72 +66,42 @@ export default function MarketingHomePage() {
 
 function Hero() {
   return (
-    <>
-      <section className="relative overflow-hidden">
-        {/* Lucht-fotografie (fal.ai, merkkleuren) als sfeer-achtergrond. */}
-        <Image
-          src="/marketing/hero-sky.png"
-          alt=""
-          aria-hidden="true"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
-        {/* Merk-gradient-overlay: donker-slate links (leesbaarheid), sky rechts zichtbaar. */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'linear-gradient(105deg, rgba(31,41,55,0.84) 0%, rgba(52,60,237,0.40) 55%, rgba(7,229,171,0.34) 100%)',
-          }}
-        />
-        <Mosaic
-          id="hero"
-          cols={6}
-          rows={4}
-          className="pointer-events-none absolute inset-y-0 right-0 w-2/3 md:w-[55%]"
-          style={{
-            opacity: 0.62,
-            WebkitMaskImage: 'linear-gradient(to left, #000 40%, transparent 92%)',
-            maskImage: 'linear-gradient(to left, #000 40%, transparent 92%)',
-          }}
-        />
-        <div className="relative max-w-6xl mx-auto px-6 pt-32 md:pt-36 pb-40 md:pb-52">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm mb-6">
-              <span style={{ color: 'var(--brand-lime)' }}>●</span> Eén platform dat je merk kent
-            </div>
-            <h1
-              className="mb-6"
-              style={{ color: '#ffffff', textShadow: '0 1px 24px rgba(16,20,32,0.28)' }}
+    <section className="mkt-hero relative">
+      <div className="mkt-hero__ink">
+        <div className="max-w-lg">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm mb-6">
+            <span style={{ color: 'var(--brand-lime)' }}>●</span> Eén platform dat je merk kent
+          </div>
+          <h1 className="mb-6" style={{ color: '#ffffff' }}>
+            Content die klinkt als jóúw merk. Op schaal.
+          </h1>
+          <p className="text-xl mb-8" style={{ color: 'rgba(255,255,255,0.9)' }}>
+            Branddock kent je complete merk-DNA — brand voice, stijl, persona’s, concurrenten en
+            trends — en zet het om in on-brand teksten, campagnes en beeld. Eén platform, gebouwd
+            voor in-house marketingteams.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href={appHref('/?utm_source=marketing-site&utm_medium=hero')}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white font-medium hover:opacity-90"
+              style={{ color: 'var(--brand-slate)' }}
             >
-              Content die klinkt als jóúw merk. Op schaal.
-            </h1>
-            <p className="text-xl mb-8 max-w-2xl" style={{ color: 'rgba(255,255,255,0.9)' }}>
-              Branddock kent je complete merk-DNA — brand voice, stijl, persona’s, concurrenten en
-              trends — en zet het om in on-brand teksten, campagnes en beeld. Eén platform, gebouwd
-              voor in-house marketingteams.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href={appHref('/?utm_source=marketing-site&utm_medium=hero')}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white font-medium hover:opacity-90"
-                style={{ color: 'var(--brand-slate)' }}
-              >
-                Gratis proberen <ArrowRight className="w-4 h-4" />
-              </Link>
-              <BookDemoButton className="inline-flex items-center px-6 py-3 rounded-lg border border-white/40 text-white font-medium hover:bg-white/10" />
-            </div>
-            <div className="mt-6 text-xs" style={{ color: 'rgba(255,255,255,0.72)' }}>
-              28 dagen gratis · Geen creditcard · Altijd opzegbaar
-            </div>
+              Gratis proberen <ArrowRight className="w-4 h-4" />
+            </Link>
+            <BookDemoButton className="inline-flex items-center px-6 py-3 rounded-lg border border-white/40 text-white font-medium hover:bg-white/10" />
           </div>
         </div>
-      </section>
-      {/* Zwevende productscreenshot — valt over de onderrand van de hero. */}
-      <div className="relative z-10 max-w-5xl mx-auto px-6 -mt-28 md:-mt-40">
-        <div className="mkt-frame">
+      </div>
+      <div className="mkt-hero__mosaic">
+        <Mosaic
+          id="hero"
+          cols={7}
+          rows={5}
+          palette={MOSAIC_PRODUCT}
+          className="absolute inset-0 w-full h-full"
+          style={{ opacity: 0.92 }}
+        />
+        <div className="mkt-hero__shot mkt-frame">
           <div className="mkt-frame__bar">
             <i></i>
             <i></i>
@@ -144,28 +113,23 @@ function Hero() {
             width={2880}
             height={1800}
             className="w-full h-auto"
+            priority
           />
         </div>
       </div>
-    </>
-  );
-}
-
-function TrustBar() {
-  const items = [
-    'Draait op Claude, GPT & Gemini',
-    'EU-dataopslag',
-    'AVG-proof',
-    '28 dagen gratis',
-  ];
-  return (
-    <section className="border-y border-gray-200 bg-gray-50">
-      <div className="max-w-6xl mx-auto px-6 py-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-gray-500">
-        {items.map((t) => (
-          <span key={t} className="inline-flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 mkt-accent" /> {t}
-          </span>
-        ))}
+      <div className="mkt-hero__meta">
+        <div className="mkt-hero__meta-item">
+          <b>Werkt op</b>
+          <span>Claude · GPT · Gemini</span>
+        </div>
+        <div className="mkt-hero__meta-item">
+          <b>Data</b>
+          <span>EU-hosting · AVG-proof</span>
+        </div>
+        <div className="mkt-hero__meta-item">
+          <b>Start</b>
+          <span>28 dagen gratis · geen creditcard</span>
+        </div>
       </div>
     </section>
   );
@@ -225,9 +189,6 @@ const MODULES: { Icon: typeof Dna; title: string; desc: string }[] = [
   { Icon: Languages, title: 'Meertalig', desc: 'Multi-markt content voor internationale merken.' },
 ];
 
-// Merkgradients (brandbook v3) — gradient-beeldtiles per module i.p.v. vlakke chips.
-const TILE_GRADS = ['var(--g-brand)', 'var(--g-warm)', 'var(--g-cool)', 'var(--g-fresh)'];
-
 function PlatformBreadth() {
   return (
     <section id="platform" className="max-w-6xl mx-auto px-6 py-16 md:py-24 scroll-mt-20">
@@ -247,11 +208,19 @@ function PlatformBreadth() {
             key={title}
             className="rounded-xl border border-gray-200 bg-white p-5 hover:border-gray-300 transition-colors"
           >
-            <div
-              className="w-10 h-10 mb-3 rounded-xl flex items-center justify-center text-white"
-              style={{ background: TILE_GRADS[i % TILE_GRADS.length] }}
-            >
-              <Icon className="w-5 h-5" />
+            <div className="mkt-tile mb-3">
+              <Mosaic
+                id={`tile-${i}`}
+                cols={2}
+                rows={2}
+                palette={MOSAIC_PRODUCT}
+                className="absolute inset-0 w-full h-full"
+              />
+              <div className="mkt-tile__badge">
+                <i>
+                  <Icon className="w-3.5 h-3.5" style={{ color: 'var(--brand-slate)' }} />
+                </i>
+              </div>
             </div>
             <h3 className="text-base font-semibold text-gray-900 mb-1">{title}</h3>
             <p className="text-sm text-gray-600 leading-relaxed">{desc}</p>
@@ -307,9 +276,9 @@ function ProofStrip() {
   ];
   return (
     <section className="max-w-6xl mx-auto px-6 py-16">
-      <div className="grid sm:grid-cols-3 gap-6">
+      <div className="rounded-xl border border-gray-200 bg-white p-6 md:p-8 grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
         {stats.map((s) => (
-          <div key={s.cap} className="rounded-xl border border-gray-200 bg-white p-6">
+          <div key={s.cap} className="py-4 sm:py-0 first:pt-0 sm:px-6 first:sm:pl-0">
             <div className="text-4xl font-bold mkt-accent tabular-nums">{s.big}</div>
             <div className="text-sm text-gray-600 mt-2">{s.cap}</div>
           </div>
@@ -391,9 +360,12 @@ function PricingTeaser() {
           <div
             key={t.name}
             className={`rounded-xl border bg-white p-6 ${
-              t.featured ? 'border-primary/40 shadow-sm' : 'border-gray-200'
+              t.featured ? 'border-primary/40 shadow-md ring-1 ring-primary/20' : 'border-gray-200'
             }`}
           >
+            {t.featured ? (
+              <div className="mkt-badge-popular mb-3">Populairste keuze</div>
+            ) : null}
             <div className="text-sm font-semibold text-gray-900">{t.name}</div>
             <div className="text-3xl font-bold text-gray-900 mt-2">
               {t.price}
@@ -449,9 +421,7 @@ function FAQ() {
             <details key={item.q} className="group py-4">
               <summary className="flex cursor-pointer items-center justify-between text-gray-900 font-medium list-none">
                 {item.q}
-                <span className="mkt-accent text-xl leading-none group-open:rotate-45 transition-transform">
-                  +
-                </span>
+                <ChevronDown className="w-5 h-5 mkt-accent shrink-0 transition-transform group-open:rotate-180" />
               </summary>
               <p className="text-gray-600 text-sm mt-3 leading-relaxed">{item.a}</p>
             </details>

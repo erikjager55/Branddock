@@ -12,6 +12,8 @@ interface MosaicProps {
   style?: React.CSSProperties;
   /** 0–1; basis-tint achter de vormen */
   tint?: number;
+  /** Subset gradient-paren; overschrijft de standaard 6. Voor de kleur-familie-regel. */
+  palette?: [string, string][];
 }
 
 // Merkgradient-paren uit het brandbook.
@@ -22,6 +24,23 @@ const GRADS: [string, string][] = [
   ['#07E5AB', '#D8FD48'], // mint → lime
   ['#FECFBD', '#FF7F4D'], // peach → orange
   ['#5B6BEF', '#07E5AB'], // indigo → mint
+];
+
+// Kleur-familie-paletten (website-compositie-herziening H2): geeft elke
+// pagina-familie een herkenbare mozaïek-kleursfeer i.p.v. de willekeurige
+// volle set. Product = blauw/mint, Mensen = oranje/lime, Bewijs = mint/lime.
+export const MOSAIC_PRODUCT: [string, string][] = [
+  ['#343CED', '#07E5AB'],
+  ['#5B6BEF', '#07E5AB'],
+  ['#343CED', '#FECFBD'],
+];
+export const MOSAIC_PEOPLE: [string, string][] = [
+  ['#FF7F4D', '#D8FD48'],
+  ['#FECFBD', '#FF7F4D'],
+];
+export const MOSAIC_PROOF: [string, string][] = [
+  ['#07E5AB', '#D8FD48'],
+  ['#343CED', '#07E5AB'],
 ];
 
 const U = 100;
@@ -48,12 +67,21 @@ function shapePath(kind: number, gx: number, gy: number): string {
   }
 }
 
-export default function Mosaic({ id, cols = 8, rows = 3, className, style, tint = 0.14 }: MosaicProps) {
+export default function Mosaic({
+  id,
+  cols = 8,
+  rows = 3,
+  className,
+  style,
+  tint = 0.14,
+  palette,
+}: MosaicProps) {
+  const grads = palette && palette.length > 0 ? palette : GRADS;
   const cells: React.ReactNode[] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const h = hash(r, c);
-      const gi = h % GRADS.length;
+      const gi = h % grads.length;
       const kind = (h >> 3) % 7;
       const rot = (h >> 6) % 4;
       const gx = c * U;
@@ -92,7 +120,7 @@ export default function Mosaic({ id, cols = 8, rows = 3, className, style, tint 
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        {GRADS.map(([a, b], i) => (
+        {grads.map(([a, b], i) => (
           <linearGradient key={i} id={`${id}-g${i}`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor={a} />
             <stop offset="1" stopColor={b} />

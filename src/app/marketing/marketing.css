@@ -95,3 +95,190 @@
     transparent 70%
   );
 }
+
+/* Tweevlaks-paneel (compositie-herziening H1/H2): effen inktpaneel met tekst
+   + vol-mozaïek-paneel in de kleur-familie van de pagina, i.p.v. de eerdere
+   gradient-banner met een gemaskeerd mozaïek-hoekje. */
+.mkt-split {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+}
+
+.mkt-split--header {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.mkt-split__ink {
+  background: var(--brand-slate);
+  padding: 2.25rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.mkt-split__ink h1 {
+  color: #fff;
+  margin-bottom: 0;
+}
+
+.mkt-split__eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+  margin-bottom: 0.6rem;
+}
+
+.mkt-split__lead {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.86);
+  margin-top: 0.85rem;
+  margin-bottom: 0;
+  max-width: 32rem;
+}
+
+.mkt-split__mosaic {
+  position: relative;
+  min-height: 200px;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .mkt-split {
+    grid-template-columns: 1fr;
+  }
+  .mkt-split__mosaic {
+    min-height: 130px;
+  }
+  .mkt-split__ink {
+    padding: 2rem 1.5rem;
+  }
+}
+
+/* Homepage-hero — grotere, full-bleed variant van hetzelfde principe. */
+.mkt-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--brand-slate);
+}
+
+.mkt-hero__ink {
+  padding: 3.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.mkt-hero__mosaic {
+  position: relative;
+  min-height: 380px;
+  overflow: hidden;
+}
+
+.mkt-hero__shot {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 6%;
+  z-index: 2;
+}
+
+.mkt-hero__meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.mkt-hero__meta-item {
+  padding: 1.1rem 2rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mkt-hero__meta-item:last-child {
+  border-right: 0;
+}
+
+.mkt-hero__meta-item b {
+  display: block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.mkt-hero__meta-item span {
+  font-size: 0.9rem;
+  color: #fff;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .mkt-hero,
+  .mkt-hero__meta {
+    grid-template-columns: 1fr;
+  }
+  .mkt-hero__ink {
+    padding: 2.5rem 1.5rem 2rem;
+  }
+  .mkt-hero__mosaic {
+    min-height: 260px;
+    padding-bottom: 1.5rem;
+  }
+  .mkt-hero__meta-item {
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .mkt-hero__meta-item:last-child {
+    border-bottom: 0;
+  }
+}
+
+/* Growth-tier-badge (H3): statische pill i.p.v. alleen een subtiele rand,
+   zodat de aanbevolen keuze ook bij een vluchtige blik opvalt. */
+.mkt-badge-popular {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--primary);
+  padding: 0.3em 0.8em;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px -3px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+/* Mini-mozaïek icoon-tegel (H3): verbindt de icoon-taal in kaartgrids met het
+   mozaïek-motief, i.p.v. een effen gradient-vierkant. */
+.mkt-tile {
+  position: relative;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.mkt-tile__badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mkt-tile__badge i {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}

@@ -9,7 +9,7 @@
 
 import type { Metadata } from 'next';
 import { Mail, Linkedin, CalendarClock, ArrowUpRight } from 'lucide-react';
-import Mosaic from '../Mosaic';
+import SplitHeader from '../SplitHeader';
 
 export const metadata: Metadata = {
   title: 'Contact',
@@ -26,30 +26,13 @@ const BOOKING_URL =
 export default function ContactPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-16">
-      <div
-        className="relative overflow-hidden rounded-2xl p-8 md:p-10 mb-12"
-        style={{ background: 'var(--g-brand)' }}
-      >
-        <Mosaic
-          id="contact"
-          cols={6}
-          rows={2}
-          className="pointer-events-none absolute inset-y-0 right-0 w-1/2"
-          style={{
-            opacity: 0.5,
-            WebkitMaskImage: 'linear-gradient(to left, #000 35%, transparent 92%)',
-            maskImage: 'linear-gradient(to left, #000 35%, transparent 92%)',
-          }}
-        />
-        <div className="relative">
-          <h1 className="mb-3" style={{ color: '#ffffff' }}>
-            Neem contact op
-          </h1>
-          <p className="text-lg" style={{ color: 'rgba(255,255,255,0.9)' }}>
-            Vragen over Branddock? Op zoek naar een demo? We reageren binnen 1 werkdag.
-          </p>
-        </div>
-      </div>
+      <SplitHeader
+        id="contact"
+        family="people"
+        title="Neem contact op"
+        lead="Vragen over Branddock? Op zoek naar een demo? We reageren binnen 1 werkdag."
+        className="mb-12"
+      />
 
       <div className="grid md:grid-cols-2 gap-6 mb-12">
         <div className="rounded-lg border border-gray-200 p-6">
