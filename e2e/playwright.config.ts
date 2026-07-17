@@ -21,7 +21,10 @@ export default defineConfig({
   globalSetup: './global-setup.ts',
   globalTeardown: './global-teardown.ts',
   webServer: {
-    command: `DATABASE_URL="${E2E_DATABASE_URL}" BETTER_AUTH_SECRET="e2e-test-secret" BETTER_AUTH_URL="http://localhost:3001" npm run dev -- --port 3001`,
+    // AUTH_RATE_LIMIT_MAX: de hele suite logt in vanaf localhost (één IP);
+    // de brute-force-limiter (10/min) maakte specs met veel logins anders
+    // deterministisch rood mid-suite (gotcha 2026-07-17).
+    command: `DATABASE_URL="${E2E_DATABASE_URL}" BETTER_AUTH_SECRET="e2e-test-secret" BETTER_AUTH_URL="http://localhost:3001" AUTH_RATE_LIMIT_MAX="1000" npm run dev -- --port 3001`,
     port: 3001,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
