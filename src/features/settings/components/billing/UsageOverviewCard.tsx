@@ -10,6 +10,8 @@ import {
   Megaphone,
   Building2,
   HardDrive,
+  Briefcase,
+  TrendingUp,
 } from 'lucide-react';
 import { Card, Badge, ProgressBar } from '@/components/shared';
 import { useBillingPlan } from '@/hooks/use-billing';
@@ -68,6 +70,13 @@ export function UsageOverviewCard() {
 
   const rows: UsageRow[] = [
     {
+      key: 'WORKSPACES',
+      label: t('usage.labels.workspaces'),
+      icon: Briefcase,
+      used: usage?.workspaces?.used ?? 0,
+      limit: billing.limits.WORKSPACES,
+    },
+    {
       key: 'TEAM_MEMBERS',
       label: t('usage.labels.teamMembers'),
       icon: Users,
@@ -85,46 +94,49 @@ export function UsageOverviewCard() {
       key: 'PERSONAS',
       label: t('usage.labels.personas'),
       icon: Target,
-      used: 0, // Would need persona count from context
+      used: usage?.personas?.used ?? 0,
       limit: billing.limits.PERSONAS,
     },
     {
       key: 'CAMPAIGNS',
       label: t('usage.labels.campaigns'),
       icon: Megaphone,
-      used: 0,
+      used: usage?.campaigns?.used ?? 0,
       limit: billing.limits.CAMPAIGNS,
     },
     {
       key: 'BRAND_ASSETS',
       label: t('usage.labels.brandAssets'),
       icon: Building2,
-      used: 0,
+      used: usage?.brandAssets?.used ?? 0,
       limit: billing.limits.BRAND_ASSETS,
     },
     {
       key: 'PRODUCTS',
       label: t('usage.labels.products'),
       icon: Package,
-      used: 0,
+      used: usage?.products?.used ?? 0,
       limit: billing.limits.PRODUCTS,
+    },
+    {
+      key: 'MARKET_INSIGHTS',
+      label: t('usage.labels.marketInsights'),
+      icon: TrendingUp,
+      used: usage?.marketInsights?.used ?? 0,
+      limit: billing.limits.MARKET_INSIGHTS,
     },
     {
       key: 'KNOWLEDGE_RESOURCES',
       label: t('usage.labels.knowledge'),
       icon: BookOpen,
-      used: 0,
+      used: usage?.knowledgeResources?.used ?? 0,
       limit: billing.limits.KNOWLEDGE_RESOURCES,
     },
-    {
-      key: 'STORAGE_MB',
-      label: t('usage.labels.storage'),
-      icon: HardDrive,
-      used: usage?.storage?.usedGb ? Math.round(usage.storage.usedGb * 1024) : 0,
-      limit: billing.limits.STORAGE_MB,
-      unit: 'MB',
-    },
   ];
+
+  // Storage-tracking bestaat nog niet (geen model telt bytes/bestanden) — een
+  // "0 MB gebruikt"-balk zou 0% suggereren, wat misleidend is. Aparte rij i.p.v.
+  // de kaart-brede loading-array, zodat hij nooit een progressiebalk toont.
 
   return (
     <Card padding="lg">
@@ -173,6 +185,18 @@ export function UsageOverviewCard() {
               </div>
             );
           })}
+
+          {/* Storage-tracking bestaat nog niet — geen fake "0 MB / X MB"
+              (suggereert 0% gebruikt, wat misleidend is) totdat er echt geteld wordt. */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2">
+                <HardDrive className="h-3.5 w-3.5 text-gray-400" />
+                <span className="text-sm text-gray-700">{t('usage.labels.storage')}</span>
+              </div>
+              <span className="text-xs text-gray-400">{t('usage.comingSoon')}</span>
+            </div>
+          </div>
         </div>
       )}
     </Card>

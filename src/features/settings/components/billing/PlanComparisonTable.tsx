@@ -119,7 +119,7 @@ export function PlanComparisonTable() {
                         <span className="text-sm font-semibold text-gray-900">
                           {config.name}
                         </span>
-                        {tier === 'PRO' && (
+                        {tier === 'GROWTH' && (
                           <Badge variant="teal" size="sm" icon={Sparkles}>
                             {t('comparison.popular')}
                           </Badge>
@@ -241,7 +241,7 @@ export function PlanComparisonTable() {
                       </Button>
                     ) : (
                       <Button
-                        variant={tier === 'PRO' ? 'primary' : 'secondary'}
+                        variant={tier === 'GROWTH' ? 'primary' : 'secondary'}
                         size="sm"
                         fullWidth
                         onClick={() => handleUpgrade(tier)}

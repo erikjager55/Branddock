@@ -233,11 +233,25 @@ export interface StorageMeter {
   limitGb: number;
 }
 
+export interface CountMeter {
+  used: number;
+}
+
 export interface UsageData {
   seats: UsageMeter;
   aiGenerations: UsageMeter;
   researchStudies: UsageMeter;
   storage: StorageMeter;
+  // Real counts (getCurrentCount() — the same tally enforcePlanLimit() uses,
+  // so displayed usage can't drift from what's actually enforced). Limits
+  // come from billing.limits[feature] client-side, not from this response.
+  personas: CountMeter;
+  campaigns: CountMeter;
+  brandAssets: CountMeter;
+  products: CountMeter;
+  knowledgeResources: CountMeter;
+  workspaces: CountMeter;
+  marketInsights: CountMeter;
 }
 
 export interface UsageResponse {

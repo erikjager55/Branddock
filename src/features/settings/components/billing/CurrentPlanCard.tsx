@@ -9,7 +9,7 @@ import {
 import { Card, Button, ProgressBar } from '@/components/shared';
 import { PlanBadge } from '@/components/billing';
 import { useBillingPlan } from '@/hooks/use-billing';
-import { formatLimit } from '@/lib/constants/plan-limits';
+import { formatLimit, NEXT_TIER } from '@/lib/constants/plan-limits';
 
 export function CurrentPlanCard() {
   const { t } = useTranslation('settings-billing');
@@ -55,11 +55,11 @@ export function CurrentPlanCard() {
           </p>
         </div>
         <div className="flex gap-2">
-          {canUpgrade && (
+          {canUpgrade && NEXT_TIER[plan.tier] && (
             <Button
               variant="primary"
               size="sm"
-              onClick={() => billing.openCheckout(plan.tier === 'FREE' ? 'PRO' : 'AGENCY')}
+              onClick={() => billing.openCheckout(NEXT_TIER[plan.tier]!)}
             >
               {t('common.upgrade')}
             </Button>

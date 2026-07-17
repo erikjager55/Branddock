@@ -73,44 +73,12 @@ const ns = {
   planBadge: {
     beta: 'BETA',
   },
-  planName: {
-    FREE: 'Free',
-    PRO: 'Pro',
-    AGENCY: 'Agency',
-    ENTERPRISE: 'Enterprise',
-  },
-  planFeatures: {
-    FREE: {
-      '0': '1 workspace',
-      '1': '1 teamlid',
-      '2': '10K AI-tokens/maand',
-      '3': 'Basis Content Studio',
-    },
-    PRO: {
-      '0': '3 workspaces',
-      '1': '5 teamleden',
-      '2': '100K AI-tokens/maand',
-      '3': 'Volledige Content Studio',
-      '4': 'PDF-export',
-      '5': 'Dagelijkse alignment-scans',
-    },
-    AGENCY: {
-      '0': '10 workspaces',
-      '1': '25 teamleden',
-      '2': '500K AI-tokens/maand',
-      '3': 'Volledig + templates',
-      '4': 'PDF- + DOCX-export',
-      '5': 'Onbeperkte alignment-scans',
-    },
-    ENTERPRISE: {
-      '0': 'Onbeperkte workspaces',
-      '1': 'Onbeperkte teamleden',
-      '2': '2M AI-tokens/maand',
-      '3': 'Volledig + custom',
-      '4': 'Alle exportformaten',
-      '5': 'Dedicated support',
-    },
-  },
+  // planName/planFeatures zijn hier verwijderd — ze liepen stil uit de pas
+  // met PLAN_CONFIGS (src/lib/constants/plan-limits.ts) zodra die veranderde
+  // (bv. AGENCY toonde "10 workspaces"/"25 teamleden" i.p.v. de echte 15/10).
+  // t('planName.*', { defaultValue }) / t('planFeatures.*', { defaultValue })
+  // vallen al terug op de live PLAN_CONFIGS-waarden als er geen key bestaat —
+  // die fallback is nu wat altijd rendert, dus kan niet meer gaan afwijken.
   upgradeModal: {
     title: 'Kies je abonnement',
     subtitle: 'Kies het abonnement dat bij je past',
@@ -125,7 +93,7 @@ const ns = {
     free: 'Gratis',
     redirecting: 'Doorsturen...',
     upgrade: 'Upgraden',
-    trialNote: 'Alle abonnementen bevatten een gratis proefperiode van 14 dagen. Altijd opzegbaar.',
+    trialNote: 'Start met een gratis proefperiode van {{days}} dagen — {{credits}} credits inbegrepen, geen creditcard nodig.',
   },
   usageMeter: {
     title: 'AI Tokens',
