@@ -42,15 +42,32 @@ export interface BillingState {
 
 // ─── API fetchers ──────────────────────────────────────────
 
+// null = server confirmed unlimited (Infinity isn't representable in JSON);
+// undefined = no data from the server (e.g. response shape gap) — the caller
+// must fall back to the plain tier limit, NOT treat it as unlimited.
+interface OrgLimitOverrides {
+  WORKSPACES: number | null | undefined;
+  TEAM_MEMBERS: number | null | undefined;
+}
+
 async function fetchBillingPlan(): Promise<{
   tier: PlanTier;
   name: string;
   monthlyPriceEur: number;
   usage: BillingUsage;
+  orgLimits: OrgLimitOverrides;
 }> {
   const res = await fetch('/api/settings/billing');
   if (!res.ok) throw new Error('Failed to fetch billing');
   const data = await res.json();
+
+  // Credit Admin's per-org "-1 = unlimited" override (see getOrgFeatureLimit())
+  // sits on top of the plan tier and isn't reflected in PLAN_CONFIGS at all —
+  // merge it in regardless of which branch below runs.
+  const orgLimits: OrgLimitOverrides = {
+    WORKSPACES: data.orgLimits?.WORKSPACES,
+    TEAM_MEMBERS: data.orgLimits?.TEAM_MEMBERS,
+  };
 
   const sub = data.billing?.subscription;
   if (!sub) {
@@ -59,6 +76,7 @@ async function fetchBillingPlan(): Promise<{
       name: 'Free',
       monthlyPriceEur: 0,
       usage: { aiTokens: 0, aiTokensLimit: PLAN_CONFIGS.FREE.limits.AI_TOKENS, percentage: 0 },
+      orgLimits,
     };
   }
 
@@ -94,7 +112,15 @@ async function fetchBillingPlan(): Promise<{
     name: config.name,
     monthlyPriceEur: config.monthlyPriceEur,
     usage: { aiTokens, aiTokensLimit, percentage },
+    orgLimits,
   };
+}
+
+/** null → Infinity (confirmed unlimited), undefined → the plain tier limit (no override data). */
+function resolveOrgLimit(override: number | null | undefined, tierLimit: number): number {
+  if (override === null) return Infinity;
+  if (override === undefined) return tierLimit;
+  return override;
 }
 
 async function postCheckout(planTier: PlanTier, billingCycle: 'monthly' | 'yearly'): Promise<string> {
@@ -182,13 +208,24 @@ export function useBillingPlan(): BillingState {
   const tier = data?.tier ?? 'FREE';
   const config = PLAN_CONFIGS[tier];
 
+  // Merge in the Credit Admin org-level override on top of the tier limits —
+  // see resolveOrgLimit()/getOrgFeatureLimit(). Without this, an org granted
+  // "unlimited workspaces/seats" still shows (and enforces client-side) its
+  // plain tier limit, even though the server-side route guard already
+  // allows it — the button stays disabled at "1/1" forever.
+  const limits: PlanLimits = {
+    ...config.limits,
+    WORKSPACES: resolveOrgLimit(data?.orgLimits?.WORKSPACES, config.limits.WORKSPACES),
+    TEAM_MEMBERS: resolveOrgLimit(data?.orgLimits?.TEAM_MEMBERS, config.limits.TEAM_MEMBERS),
+  };
+
   return {
     plan: {
       tier,
       name: data?.name ?? config.name,
       monthlyPriceEur: data?.monthlyPriceEur ?? config.monthlyPriceEur,
     },
-    limits: config.limits,
+    limits,
     usage: data?.usage ?? { aiTokens: 0, aiTokensLimit: config.limits.AI_TOKENS, percentage: 0 },
     isFreeBeta: false,
     canUpgrade: tier !== 'ENTERPRISE',
