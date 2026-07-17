@@ -74,44 +74,12 @@ const ns = {
   planBadge: {
     beta: 'BETA',
   },
-  planName: {
-    FREE: 'Free',
-    PRO: 'Pro',
-    AGENCY: 'Agency',
-    ENTERPRISE: 'Enterprise',
-  },
-  planFeatures: {
-    FREE: {
-      '0': '1 workspace',
-      '1': '1 team member',
-      '2': '10K AI tokens/month',
-      '3': 'Basic Content Studio',
-    },
-    PRO: {
-      '0': '3 workspaces',
-      '1': '5 team members',
-      '2': '100K AI tokens/month',
-      '3': 'Full Content Studio',
-      '4': 'PDF export',
-      '5': 'Daily alignment scans',
-    },
-    AGENCY: {
-      '0': '10 workspaces',
-      '1': '25 team members',
-      '2': '500K AI tokens/month',
-      '3': 'Full + Templates',
-      '4': 'PDF + DOCX export',
-      '5': 'Unlimited alignment scans',
-    },
-    ENTERPRISE: {
-      '0': 'Unlimited workspaces',
-      '1': 'Unlimited team members',
-      '2': '2M AI tokens/month',
-      '3': 'Full + Custom',
-      '4': 'All export formats',
-      '5': 'Dedicated support',
-    },
-  },
+  // planName/planFeatures were deleted here — they went stale against
+  // PLAN_CONFIGS (src/lib/constants/plan-limits.ts) the moment it changed
+  // (e.g. AGENCY showed "10 workspaces"/"25 team members" vs the real 15/10).
+  // t('planName.*', { defaultValue }) / t('planFeatures.*', { defaultValue })
+  // already fall back to the live PLAN_CONFIGS values when no key exists —
+  // that fallback is now what always renders, so it can't drift again.
   upgradeModal: {
     title: 'Choose Your Plan',
     subtitle: 'Select the plan that fits your needs',
@@ -126,7 +94,7 @@ const ns = {
     free: 'Free',
     redirecting: 'Redirecting...',
     upgrade: 'Upgrade',
-    trialNote: 'All plans include a 14-day free trial. Cancel anytime.',
+    trialNote: 'Start with a {{days}}-day free trial — {{credits}} credits included, no card required.',
   },
   usageMeter: {
     title: 'AI Tokens',
