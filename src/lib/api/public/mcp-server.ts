@@ -1,7 +1,7 @@
 // =============================================================
 // Publieke Brand-API — MCP-server (Fase B, ADR 2026-07-17-public-brand-api).
 //
-// Bouwt per request een verse McpServer met de 7 publieke brand-tools,
+// Bouwt per request een verse McpServer met de 14 publieke brand-tools,
 // gebonden aan de workspace van de API-key (stateless serverless-patroon —
 // zie src/app/api/mcp/route.ts). Tweede-deur-principe: elke tool loopt door
 // exact dezelfde services als de UI en de REST-routes (/api/v1/*), dus
@@ -18,6 +18,10 @@ import { getBrandContext } from '@/lib/ai/brand-context';
 import { runFidelityForExternalContent } from '@/lib/brand-fidelity/external-content-runner';
 import { createAndGenerateDeliverable } from '@/lib/content/headless-create';
 import { rewriteOnBrand } from '@/lib/content/rewrite-on-brand';
+import { startCampaignStrategyGeneration, getStrategyStatus } from '@/lib/campaigns/headless-strategy';
+import { startSeoGeneration, getSeoStatus } from '@/lib/content/headless-seo';
+import { generateWebPage } from '@/lib/content/headless-webpage';
+import { generateVideoClip } from '@/lib/content/headless-video';
 import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 import { logApiCall } from '@/lib/api/public/usage';
 
@@ -244,6 +248,91 @@ function registerRewriteTool(server: McpServer, workspaceId: string): void {
   );
 }
 
+// ─── Campaign-strategy (async — Fase D4) ─────────────────────
+
+const strategyGenerateSchema = z.object({
+  briefing: z
+    .string()
+    .min(30, 'briefing needs at least 30 characters')
+    .describe('Vrije-tekst campagne-brief: aanleiding, doelgroep, kernboodschap, wensen (minimaal 30 tekens)'),
+  campaignGoalType: z
+    .string()
+    .min(1)
+    .describe('Goal-type-id uit de Branddock-catalogus, bijv. "BRAND_AWARENESS", "PRODUCT_LAUNCH" of "LEAD_GENERATION"'),
+  campaignTitle: z.string().max(120).optional().describe('Titel van de campagne (default: afgeleid van het goal-type)'),
+  personaIds: z
+    .array(z.string())
+    .optional()
+    .describe('Doelgroep-personas (ids via list_personas); zonder selectie worden alle workspace-personas gebruikt'),
+  productIds: z.array(z.string()).optional().describe('Relevante producten (ids via list_products)'),
+  competitorIds: z.array(z.string()).optional().describe('Relevante concurrenten (ids via list_competitors)'),
+  mode: z
+    .enum(['quick', 'full'])
+    .optional()
+    .describe('"quick" (default, snelste pad) of "full" (multi-model insights + concepts + creative debate — duurt langer)'),
+  createDeliverables: z
+    .boolean()
+    .optional()
+    .describe('true = maak ook de content-items uit het asset-plan aan in de campagne (opt-in; default false)'),
+  campaignId: z.string().optional().describe('Bestaande campagne zonder strategie; zonder wordt een nieuwe campagne gemaakt'),
+});
+
+function registerStrategyTools(server: McpServer, workspaceId: string): void {
+  server.registerTool(
+    'generate_campaign_strategy',
+    {
+      title: 'Generate campaign strategy',
+      description:
+        'Start de volledige Branddock campaign-strategy-chain als achtergrond-job: menselijk inzicht, ' +
+        'creatief concept, strategie, journey-fases en kanaal-/asset-plan — opgeslagen op een echte ' +
+        'campagne (direct zichtbaar in de UI). Draait ASYNC en duurt minuten: je krijgt direct een ' +
+        'campaignId + jobId terug; poll de voortgang met get_strategy_status. Kost credits bij succes.',
+      inputSchema: strategyGenerateSchema.shape,
+    },
+    async (args) =>
+      tracked(workspaceId, 'generate_campaign_strategy', async () => {
+        const result = await startCampaignStrategyGeneration({ workspaceId, ...args });
+        if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
+        return {
+          result: jsonResult({
+            campaignId: result.campaignId,
+            jobId: result.jobId,
+            status: 'queued',
+            deduped: result.deduped,
+            note: 'Generation runs in the background and takes several minutes. Poll get_strategy_status with this campaignId.',
+          }),
+        };
+      }),
+  );
+
+  server.registerTool(
+    'get_strategy_status',
+    {
+      title: 'Get strategy generation status',
+      description:
+        'Status van een gestarte campaign-strategy-generatie: queued/running/completed/failed, of het ' +
+        'blueprint al op de campagne staat (hasStrategy) en hoeveel deliverables er zijn aangemaakt. Gratis.',
+      inputSchema: {
+        campaignId: z.string().describe('De campaignId uit generate_campaign_strategy'),
+      },
+    },
+    async ({ campaignId }) =>
+      tracked(workspaceId, 'get_strategy_status', async () => {
+        const result = await getStrategyStatus(workspaceId, campaignId);
+        if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
+        return {
+          result: jsonResult({
+            campaignId: result.campaignId,
+            status: result.status,
+            error: result.error,
+            hasStrategy: result.hasStrategy,
+            deliverablesCreated: result.deliverablesCreated,
+          }),
+        };
+      }),
+  );
+}
+
 // ─── Discovery-reads ─────────────────────────────────────────
 
 function registerListTool(
@@ -338,7 +427,7 @@ function registerDiscoveryTools(server: McpServer, workspaceId: string): void {
 // ─── Public API ──────────────────────────────────────────────
 
 /**
- * Bouwt een verse McpServer met de 8 publieke brand-tools, gebonden aan de
+ * Bouwt een verse McpServer met de 14 publieke brand-tools, gebonden aan de
  * workspace van de aanroepende API-key. Eén server per request (stateless) —
  * de route sluit hem na afhandeling weer.
  */
@@ -347,6 +436,152 @@ export function createPublicMcpServer(workspaceId: string): McpServer {
   registerBrandTools(server, workspaceId);
   registerGenerateTool(server, workspaceId);
   registerRewriteTool(server, workspaceId);
+  registerStrategyTools(server, workspaceId);
+  registerSpecializedChainTools(server, workspaceId);
   registerDiscoveryTools(server, workspaceId);
   return server;
+}
+
+// ─── Gespecialiseerde chains: SEO (async), web-page, video (Fase D1-D3) ──────
+
+const chainContextSelection = z
+  .object({
+    personaIds: z.array(z.string()).optional(),
+    productIds: z.array(z.string()).optional(),
+    competitorIds: z.array(z.string()).optional(),
+    knowledgeResourceIds: z.array(z.string()).optional(),
+  })
+  .optional()
+  .describe('Workspace-gescopede kennis-selectie (ids via de list_*/search_knowledge-tools)');
+
+function registerSpecializedChainTools(server: McpServer, workspaceId: string): void {
+  server.registerTool(
+    'generate_long_form_seo',
+    {
+      title: 'Generate long-form SEO content (async)',
+      description:
+        'Start de 8-staps SEO/GEO-pipeline (keyword-research → outline → long-form artikel) als ' +
+        'async job. Duurt ±7-8 minuten; poll met get_seo_status. Kost 80 credits bij afronding. ' +
+        'Vereist een long-form/website-content-type (bijv. blog-post, pillar-page, landing-page).',
+      inputSchema: {
+        contentType: z.string().optional().describe('Long-form/website-type (default via deliverableId)'),
+        deliverableId: z.string().optional().describe('Bestaand deliverable; zonder wordt er een aangemaakt'),
+        title: z.string().max(120).optional(),
+        campaignId: z.string().optional(),
+        primaryKeyword: z.string().min(1).describe('Het primaire zoekwoord'),
+        funnelStage: z.enum(['awareness', 'consideration', 'decision']),
+        secondaryKeywordHints: z.array(z.string()).optional(),
+        contextSelection: chainContextSelection,
+      },
+    },
+    async ({ contentType, deliverableId, title, campaignId, primaryKeyword, funnelStage, secondaryKeywordHints, contextSelection }) =>
+      tracked(workspaceId, 'generate_long_form_seo', async () => {
+        const result = await startSeoGeneration({
+          workspaceId,
+          deliverableId,
+          contentType,
+          title,
+          campaignId,
+          contextSelection,
+          seoInput: { primaryKeyword, funnelStage, secondaryKeywordHints },
+        });
+        if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
+        return {
+          result: jsonResult({
+            deliverableId: result.deliverableId,
+            jobId: result.jobId,
+            status: 'queued',
+            note: 'Poll get_seo_status met deze jobId; 80 credits worden bij afronding geboekt.',
+          }),
+        };
+      }),
+  );
+
+  server.registerTool(
+    'get_seo_status',
+    {
+      title: 'Get SEO generation status',
+      description: 'Voortgang van een generate_long_form_seo-job (stap 0-8, labels, fouten). Gratis.',
+      inputSchema: { jobId: z.string().min(1) },
+    },
+    async ({ jobId }) =>
+      tracked(workspaceId, 'get_seo_status', async () => {
+        const status = await getSeoStatus(workspaceId, jobId);
+        if (!status) return { result: errorResult('Job not found in this workspace') };
+        return { result: jsonResult(status) };
+      }),
+  );
+
+  server.registerTool(
+    'generate_web_page',
+    {
+      title: 'Generate on-brand web page',
+      description:
+        'Genereert een complete on-brand webpagina (Puck-tree) uit een free-text prompt via de ' +
+        'per-type template-builder. Persisteert op het deliverable — direct zichtbaar en ' +
+        'publiceerbaar in Branddock. Types: landing-page, product-page, faq-page, comparison-page, ' +
+        'microsite. Kost 5 credits bij AI-vulling.',
+      inputSchema: {
+        prompt: z.string().min(5).describe('Free-text brief voor de pagina'),
+        contentType: z.string().optional().describe('Web-page-type (default landing-page)'),
+        deliverableId: z.string().optional(),
+        title: z.string().max(120).optional(),
+        campaignId: z.string().optional(),
+        contextSelection: chainContextSelection,
+      },
+    },
+    async ({ prompt, contentType, deliverableId, title, campaignId, contextSelection }) =>
+      tracked(workspaceId, 'generate_web_page', async () => {
+        const result = await generateWebPage({ workspaceId, prompt, contentType, deliverableId, title, campaignId, contextSelection });
+        if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
+        const tree = result.puckData as { content?: unknown[] };
+        return {
+          result: jsonResult({
+            deliverableId: result.deliverableId,
+            campaignId: result.campaignId,
+            source: result.source,
+            componentCount: Array.isArray(tree?.content) ? tree.content.length : null,
+            note: 'puckData is op het deliverable gepersisteerd — bekijk/bewerk/publiceer in Branddock.',
+          }),
+          credits: result.source === 'ai' ? GENERATE_CREDITS : 0,
+        };
+      }),
+  );
+
+  server.registerTool(
+    'generate_video',
+    {
+      title: 'Generate on-brand video clip',
+      description:
+        'Genereert een korte on-brand videoclip uit een script (brand-aware video-prompt → ' +
+        'fal-provider → opslag als geselecteerde video-component). Duurt 1-5 minuten binnen de ' +
+        'aanroep. Providers: kling-v3-pro, veo-3-1-fast, seedance-2-0, ltx-2-pro, kling-v3-std ' +
+        '(elk met eigen toegestane duur/aspect-ratio). Kost 20 credits.',
+      inputSchema: {
+        scriptText: z.string().min(1).max(5000),
+        provider: z.string().min(1).describe('fal-provider-id'),
+        duration: z.number().int().min(3).max(15).describe('Seconden — moet in de allowedDurations van de provider vallen'),
+        aspectRatio: z.string().describe('Bijv. "16:9" of "9:16" — provider-afhankelijk'),
+        deliverableId: z.string().optional(),
+        contentType: z.string().optional().describe('Default tiktok-script bij aanmaak'),
+        title: z.string().max(120).optional(),
+        campaignId: z.string().optional(),
+        sourceImageUrl: z.string().url().optional().describe('Remote https-URL voor image-to-video'),
+        motionPrompt: z.string().max(500).optional(),
+      },
+    },
+    async (args) =>
+      tracked(workspaceId, 'generate_video', async () => {
+        const result = await generateVideoClip({ workspaceId, ...args });
+        if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
+        return {
+          result: jsonResult({
+            deliverableId: result.deliverableId,
+            videoUrl: result.videoUrl,
+            provider: result.provider,
+          }),
+          credits: 20,
+        };
+      }),
+  );
 }

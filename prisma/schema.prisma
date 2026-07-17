@@ -5242,6 +5242,7 @@ enum AgentJobType {
   BRANDVOICE_ANALYZE_URL
   SEO_GENERATE
   RESERVATION_REAP // credit-reservering-reaper: stale RESERVED vrijgeven (Fase 2)
+  CAMPAIGN_STRATEGY_GENERATE // publieke Brand-API Fase D4: strategy-chain headless als async job
 }
 
 // Serverless-safe SEO-generatie: de 8-staps-pipeline draait als resumable job

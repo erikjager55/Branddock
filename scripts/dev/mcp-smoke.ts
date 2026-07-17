@@ -8,7 +8,7 @@
 //      SMOKE_BASE (default http://localhost:3005)
 //
 // Dekt: initialize-handshake via de officiële MCP-client, tools/list
-// (verwacht 8 tools), get_brand_context en list_personas. Bewust géén
+// (verwacht 14 tools), get_brand_context en list_personas. Bewust géén
 // score/generate — dat zijn echte AI-runs die de hoofdsessie apart smoked.
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -25,6 +25,12 @@ const EXPECTED_TOOLS = [
   'list_competitors',
   'search_knowledge',
   'rewrite_on_brand',
+  'generate_campaign_strategy',
+  'get_strategy_status',
+  'generate_long_form_seo',
+  'get_seo_status',
+  'generate_web_page',
+  'generate_video',
 ];
 
 function assert(cond: boolean, label: string): void {
@@ -84,7 +90,7 @@ async function main(): Promise<void> {
   console.log('\n2. tools/list');
   const { tools } = await client.listTools();
   const names = tools.map((t) => t.name).sort();
-  assert(tools.length === 8, `8 tools geregistreerd (${tools.length})`);
+  assert(tools.length === 14, `14 tools geregistreerd (${tools.length})`);
   assert(
     EXPECTED_TOOLS.every((t) => names.includes(t)),
     `alle verwachte tools aanwezig: ${names.join(', ')}`,
