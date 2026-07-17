@@ -30,8 +30,8 @@ Zie ADR `2026-07-17-public-brand-api`. Gefaseerde oplevering binnen deze task (a
 # Acceptatiecriteria
 
 - [x] Fase A (2026-07-17): routes 404 met flag uit ✓; 401 zonder/onbekende/ingetrokken key ✓; brand-context + score (F-VAL 80 via API) + generate (echte run, F-VAL 85, 8 componenten) ✓; 3 metadata-only usage-rijen ✓; key eenmalig zichtbaar + hash-only opslag ✓; tsc + lint groen — 17/17 smoke-checks (scripts/dev/public-api-smoke.ts)
-- [ ] Fase B: MCP-handshake + tools werkend met een echte MCP-client; OAuth-flow lokaal doorlopen
-- [ ] Fase C: rewrite zonder Deliverable-aanmaak, wel credits + usage-log
+- [x] Fase B (2026-07-17): MCP-server op /api/mcp (stateless WebStandard-transport, per-request McpServer) — handshake + 8 tools + get_brand_context (35k chars) + list_personas via echte MCP-SDK-client ✓; score via MCP F-VAL 80 ✓; generate-bedrading ✓; foutpad isError ✓ (scripts/dev/mcp-smoke.ts + mcp-ai-smoke.ts). OAuth → aparte fase (Better Auth mcp-plugin, WWW-Authenticate-discovery + evt. GET-stream her-evalueren bij connector-UX — zie codecomments)
+- [x] Fase C (2026-07-17): rewrite_on_brand (service + POST /api/v1/rewrite + MCP-tool #8) — echte run: on-brand herschrijving via anthropic/sonnet, ephemeral bewezen (deliverable-count 31→31), 1 credit in usage-log ✓; feature-key 'rewrite-on-brand' in registry (per-workspace model-config)
 - [ ] Fase D: alle vier chains extern aanroepbaar (SEO async met status-polling)
 - [ ] Fase E: Settings-tab + docs-pagina
 - [ ] Geen prompt-/chain-inhoud in enige API-response (moat-check)
