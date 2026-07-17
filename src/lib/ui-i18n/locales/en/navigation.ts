@@ -8,6 +8,7 @@ const navigation = {
     notifications: 'Notifications',
     appearance: 'Appearance',
     integrations: 'Integrations',
+    apiKeys: 'API & Connectors',
     brandRules: 'Brand Rules',
     validation: 'Validation',
   },

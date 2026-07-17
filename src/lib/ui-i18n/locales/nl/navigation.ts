@@ -8,6 +8,7 @@ const navigation = {
     notifications: 'Notificaties',
     appearance: 'Weergave',
     integrations: 'Integraties',
+    apiKeys: 'API & connectors',
     brandRules: 'Merkregels',
     validation: 'Validatie',
   },
