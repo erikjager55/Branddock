@@ -1,6 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { parseJsonBody } from "@/lib/api/parse-json-body";
+
+// L8 Zod-sweep (audit 2026-06-26, batch 2): de PATCH kopieerde allowlist-keys
+// met ongetypeerde waarden in prisma.update (string-`rating`, arbitraire JSON
+// in tags/isFeatured). Zelfde veld-caps als de create-schema in ../route.ts.
+const strArray = z.array(z.string().max(200)).max(100);
+const updateKnowledgeSchema = z.object({
+  title: z.string().min(1).max(500).optional(),
+  description: z.string().max(5000).optional(),
+  type: z.string().max(100).optional(),
+  author: z.string().max(300).optional(),
+  category: z.string().max(200).optional(),
+  tags: strArray.optional(),
+  difficulty: z.string().max(100).nullish(),
+  language: z.string().max(20).optional(),
+  url: z.string().max(2000).optional(),
+  thumbnail: z.string().max(2000).nullish(),
+  rating: z.number().min(0).max(5).optional(),
+  status: z.string().max(100).optional(),
+  aiSummary: z.string().max(20000).nullish(),
+  // De vier list-velden zijn Json?-kolommen: Prisma weigert daar een kale
+  // JS-null (vereist Prisma.DbNull) — dus geen .nullish() maar .optional(),
+  // anders adverteert het schema een null-contract dat runtime 500't.
+  aiKeyTakeaways: strArray.optional(),
+  relatedTrends: strArray.optional(),
+  relatedPersonas: strArray.optional(),
+  relatedAssets: strArray.optional(),
+  isFeatured: z.boolean().optional(),
+  isFavorite: z.boolean().optional(),
+  isArchived: z.boolean().optional(),
+});
 
 // PATCH /api/knowledge/:id — update resource fields
 /**
@@ -58,22 +90,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Resource not found" }, { status: 404 });
     }
 
-    const body = await request.json();
+    const parsed = await parseJsonBody(request, updateKnowledgeSchema);
+    if (!parsed.ok) return parsed.response;
 
-    // Allowed fields for update
-    const allowedFields = [
-      "title", "description", "type", "author", "category", "tags",
-      "difficulty", "language", "url", "thumbnail", "rating", "status",
-      "aiSummary", "aiKeyTakeaways", "relatedTrends", "relatedPersonas",
-      "relatedAssets", "isFeatured", "isFavorite", "isArchived",
-    ] as const;
-
-    const data: Record<string, unknown> = {};
-    for (const field of allowedFields) {
-      if (field in body) {
-        data[field] = body[field];
-      }
-    }
+    // Alleen meegestuurde velden updaten (null blijft betekenisvol als "leegmaken").
+    const data = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, value]) => value !== undefined),
+    );
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });

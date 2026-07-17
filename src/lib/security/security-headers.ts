@@ -32,8 +32,11 @@ export const CONTENT_SECURITY_POLICY = [
   "font-src 'self' data: https://fonts.gstatic.com https://use.typekit.net https://p.typekit.net https://rsms.me",
   // Permissive img-src: user-supplied URLs + AI-provider-previews landen in <img>
   "img-src 'self' data: blob: https:",
-  // Externe AI-calls lopen server-side; de browser praat alleen met eigen API + Stripe
-  "connect-src 'self' https://api.stripe.com",
+  // Externe AI-calls lopen server-side; de browser praat alleen met eigen API,
+  // Stripe en PostHog (posthog-js is npm-gebundeld → geen script-src-allow
+  // nodig, maar de ingest-calls gaan naar eu.i.posthog.com; zonder deze allow
+  // blokkeerde de eigen CSP alle analytics zodra NEXT_PUBLIC_POSTHOG_KEY staat).
+  "connect-src 'self' https://api.stripe.com https://eu.i.posthog.com",
   "frame-src 'self' https://js.stripe.com",
   "object-src 'none'",
   "base-uri 'self'",
@@ -61,9 +64,13 @@ const BASE_SECURITY_HEADERS: Record<string, string> = {
 };
 
 /**
- * De volledige set security-headers voor een omgeving. Prod voegt CSP + HSTS
- * toe; dev blijft bij de base-headers. Gebruikt door zowel de edge-middleware
- * (`src/proxy.ts`) als de statische `next.config.ts`-headers().
+ * De volledige set security-headers voor een omgeving (inclusief CSP).
+ * Prod voegt CSP + HSTS toe; dev blijft bij base-headers + minimale CSP.
+ * Sinds de nonce-stap (audit-rest 2026-07-17) is dit exclusief de bron voor
+ * de edge-middleware (`src/proxy.ts`) — de statische `next.config.ts`-laag
+ * gebruikt `buildStaticSecurityHeaders` (zónder CSP), omdat een tweede
+ * statische CSP de per-request nonce zou ondermijnen (browser enforce't de
+ * intersectie van beide policies).
  */
 export function buildSecurityHeaders(isProduction: boolean): Record<string, string> {
   if (!isProduction) {
@@ -78,3 +85,44 @@ export function buildSecurityHeaders(isProduction: boolean): Record<string, stri
     'Content-Security-Policy': CONTENT_SECURITY_POLICY,
   };
 }
+
+/**
+ * Security-headers zónder CSP — voor de statische `next.config.ts`-laag.
+ * De CSP komt per-request uit de middleware (nonce-ready); alle overige
+ * headers blijven dubbel gezet als vangnet voor responses die de middleware
+ * onverhoopt missen.
+ */
+export function buildStaticSecurityHeaders(isProduction: boolean): Record<string, string> {
+  if (!isProduction) {
+    return { ...BASE_SECURITY_HEADERS };
+  }
+  return {
+    ...BASE_SECURITY_HEADERS,
+    'Strict-Transport-Security': STRICT_TRANSPORT_SECURITY,
+  };
+}
+
+/**
+ * Report-Only nonce-CSP (stap 2 van de nonce-migratie, audit-rest 2026-07-17).
+ *
+ * Draait NAAST de enforce-policy en blokkeert niets: hij meet wat er zou
+ * breken zodra script-src naar `'nonce-…' 'strict-dynamic'` gaat (Next-inline
+ * bootstrap zonder nonce op statisch geprerenderde pagina's, eval-gebruikers,
+ * niet-strict-dynamic loaders). Bewust zónder 'unsafe-eval': juist die
+ * violations zijn de data voor de enforce-beslissing. De enforce-flip zelf is
+ * een aparte follow-up, gated op prod-Report-Only-data.
+ */
+export const CSP_REPORT_ENDPOINT = '/api/security/csp-report';
+
+export function buildReportOnlyCsp(nonce: string): string {
+  return [
+    `script-src 'nonce-${nonce}' 'strict-dynamic'`,
+    "object-src 'none'",
+    "base-uri 'self'",
+    `report-uri ${CSP_REPORT_ENDPOINT}`,
+    'report-to csp-endpoint',
+  ].join('; ');
+}
+
+/** Reporting-Endpoints-header die `report-to csp-endpoint` laat werken (Chrome). */
+export const REPORTING_ENDPOINTS_HEADER = `csp-endpoint="${CSP_REPORT_ENDPOINT}"`;

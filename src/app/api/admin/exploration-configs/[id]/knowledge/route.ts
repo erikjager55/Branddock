@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { parseJsonBody } from '@/lib/api/parse-json-body';
 import { requireDeveloper } from '@/lib/developer-access';
+
+// L8 Zod-sweep (audit 2026-06-26, batch 7): title/content/category gingen
+// ongetypeerd in prisma.create (presence-checks only).
+const createKnowledgeItemSchema = z.object({
+  title: z.string().min(1).max(500),
+  content: z.string().min(1).max(100_000),
+  category: z.string().max(200).nullish(),
+});
 
 // GET /api/admin/exploration-configs/[id]/knowledge — list knowledge items
 export async function GET(
@@ -57,11 +67,9 @@ export async function POST(
     });
     if (!config) return NextResponse.json({ error: 'Config not found' }, { status: 404 });
 
-    const { title, content, category } = await request.json();
-
-    if (!title || !content) {
-      return NextResponse.json({ error: 'Title and content are required' }, { status: 400 });
-    }
+    const parsed = await parseJsonBody(request, createKnowledgeItemSchema);
+    if (!parsed.ok) return parsed.response;
+    const { title, content, category } = parsed.data;
 
     const item = await prisma.explorationKnowledgeItem.create({
       data: { configId: id, title, content, category: category || null },

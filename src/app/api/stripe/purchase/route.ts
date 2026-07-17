@@ -11,11 +11,18 @@
 // =============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
+import { parseJsonBody } from '@/lib/api/parse-json-body';
 import { createPaymentIntent } from '@/lib/stripe/one-time';
-import type { PurchaseType } from '@/lib/stripe/one-time';
 
-const VALID_TYPES: PurchaseType[] = ['research_bundle', 'workshop'];
+// L8 Zod-sweep (audit 2026-06-26, batch 6): `description` was een vrije,
+// ongelimiteerde string die de Stripe-PaymentIntent in ging.
+const purchaseSchema = z.object({
+  type: z.enum(['research_bundle', 'workshop']),
+  itemId: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,21 +36,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { type, itemId, description } = body;
-
-    // Validate type
-    if (!type || !VALID_TYPES.includes(type)) {
-      return NextResponse.json(
-        { error: `Invalid type. Must be one of: ${VALID_TYPES.join(', ')}` },
-        { status: 400 },
-      );
-    }
-
-    // Validate itemId
-    if (!itemId || typeof itemId !== 'string') {
-      return NextResponse.json({ error: 'itemId is required' }, { status: 400 });
-    }
+    const parsed = await parseJsonBody(request, purchaseSchema);
+    if (!parsed.ok) return parsed.response;
+    const { type, itemId, description } = parsed.data;
 
     const result = await createPaymentIntent({
       workspaceId,
