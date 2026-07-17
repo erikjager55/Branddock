@@ -8,6 +8,17 @@ on:
       - 'src/lib/ai/chains/**'
       - 'src/lib/ai/canvas-orchestrator.ts'
       - 'tests/content-golden-sets/**'
+      # 2026-07-17 — het LP/web-page-prompt-pad ontbrak hier. `scripts/eval/lp-variant-golden`
+      # is juist gebouwd omdat de promptfoo-set een generieke markdown-prompt test en niet
+      # `buildLandingPageVariantPrompt` ("regressies in het productie-prompt-pad bleven
+      # daardoor onzichtbaar"), maar hij werd nooit ingehaakt — dus bleef dat pad in de
+      # praktijk onbewaakt. Bewezen: een PR die de LP-prompt wijzigde was volledig groen
+      # terwijl de golden-set 2 FAILs gaf (em-dash-priming, zie de directive-noot).
+      - 'src/lib/landing-pages/variant-generator.ts'
+      - 'src/lib/ai/locale-instruction.ts'
+      - 'src/lib/ai/prompts/geo-directives.ts'
+      - 'src/lib/studio/human-voice-directive.ts'
+      - 'scripts/eval/lp-variant-golden/**'
       - '.github/workflows/golden-sets.yml'
   workflow_dispatch:
     # Manual trigger voor adhoc baseline-meting
@@ -114,6 +125,16 @@ jobs:
 
       - name: Run position-swap calibration smoke
         run: npx tsx scripts/smoke-tests/position-swap-judge.ts
+
+      # Bewaakt het ECHTE productie-prompt-pad voor web-pages
+      # (`buildLandingPageVariantPrompt`) — de promptfoo-set hierboven test een
+      # generieke markdown-prompt en raakt dit pad niet. Default-modus is
+      # deterministisch en key-loos: geen API-kosten, geen flake, harde exit-code.
+      # (`--live` doet echte generatie; bewust niet in CI — dat is een adhoc-meting.)
+      - name: Run LP-variant golden-set (productie-prompt-pad)
+        env:
+          DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
+        run: npx tsx scripts/eval/lp-variant-golden/run.ts
 
       # Runs after the deterministic smokes so a sub-threshold golden-set
       # doesn't mask their signal; artifact upload + PR comment below have

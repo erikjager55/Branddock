@@ -29,6 +29,7 @@ import type { HumanVoiceMode } from "@prisma/client";
 import { anthropicClient } from "../ai/anthropic-client";
 import { LONG_FORM_SEO_TYPES } from "../ai/seo-pipeline.types";
 import { buildGeoDirective } from "../ai/prompts/geo-directives";
+import { buildLocaleInstruction } from "../ai/locale-instruction";
 import { buildHumanVoiceDirective } from "../studio/human-voice-directive";
 import type { BrandContextBlock } from "../ai/prompt-templates";
 import {
@@ -154,7 +155,11 @@ export interface BuiltPrompt {
 export function buildLandingPageVariantPrompt(
   params: LandingPageGenerationParams,
 ): BuiltPrompt {
-  const locale = params.locale ?? "nl-NL";
+  // Fallback op en-GB, gelijk aan localeForLanguage() in content-locale/default-profile.
+  // Stond op "nl-NL" terwijl Workspace.contentLanguage @default("en") is — een caller
+  // zonder locale kreeg dus stil Nederlands. De generate-route geeft de locale altijd
+  // mee (prod-gedrag ongewijzigd); alleen smoke-scripts raken deze default.
+  const locale = params.locale ?? "en-GB";
   const includeProblem = params.includeProblem ?? true;
   const includePricing = params.includePricing ?? false;
 
@@ -237,6 +242,22 @@ interface SystemPromptOpts {
  * oorspronkelijke inline-compositie — het LP-pad merkt niets.
  */
 function buildSharedStyleBlocks(opts: SystemPromptOpts): string {
+  // Taalmenging-melding 2026-07-16 (pilot-tester): een NL-zoekterm lekte in Engelse
+  // output ("The WooCommerce Bol.com koppeling that..."). Dit pad had als enige
+  // taalregel een bullet ("Locale en-US: alle content in deze taal") die
+  // code-switching niet verbiedt en niet eist dat anderstalig bronmateriaal vertaald
+  // wordt. De gedeelde directive doet beide en staat BOVENAAN de stijl-stack, zodat
+  // haar eigen "outranks any tone or style guidance below" letterlijk klopt.
+  // Verzoening met de schema-caps: de directive eist "translate the meaning" van
+  // anderstalig bronmateriaal. Bij een briefing met een lange call-to-action vertaalde
+  // het model die zin en propte 'm in ctaLabel (harde cap 48) → validatie-fail, ook na
+  // de recovery-retry. De vertaal-plicht mag de lengte-limieten niet overrulen; dit
+  // regeltje zegt dat expliciet. Direct ná het locale-blok zodat het de uitzondering
+  // is op de regel die er net boven staat.
+  const localeInstruction = buildLocaleInstruction(opts.locale);
+  const localeBlock = localeInstruction
+    ? `\n${localeInstruction}- Vertalen verandert NOOIT de lengte-limieten van het schema. Korte velden (ctaLabel, headline, subline) blijven binnen hun cap: vertaal de intentie beknopt, neem nooit een hele briefing-zin letterlijk over als label.\n`
+    : '';
   const toneBlock = opts.archetype
     ? `\n# BRAND-ARCHETYPE: ${opts.archetype}\nTone: ${ARCHETYPE_TONE_HINTS[opts.archetype]}\n`
     : '';
@@ -267,10 +288,15 @@ function buildSharedStyleBlocks(opts: SystemPromptOpts): string {
   // canvas-orchestrator.ts:320-327). Default aan (BASELINE); alleen expliciete
   // 'OFF' slaat over. NA het vocab/voice-blok geplaatst: de HVD verwijst naar
   // "de Brand Voice sectie hierboven" voor de wordsWeUse-uitzondering.
+  // Base-subtag i.p.v. een binaire en/nl-gok: `startsWith('en') ? 'en' : 'nl'` stuurde
+  // élke niet-Engelse workspace naar de NEDERLANDSE directive — een de-DE-workspace
+  // kreeg Nederlandse voice-regels. buildHumanVoiceDirective kent alleen 'nl' | 'en' en
+  // valt terug op Engels voor al het overige, dus het subtag doorgeven geeft de/fr/es/…
+  // de Engelse variant (neutrale fallback) en laat nl/en ongewijzigd.
   const hvdBlock =
     opts.humanVoiceMode === 'OFF'
       ? ''
-      : `\n${buildHumanVoiceDirective({ language: opts.locale.toLowerCase().startsWith('en') ? 'en' : 'nl' })}\n`;
+      : `\n${buildHumanVoiceDirective({ language: opts.locale.toLowerCase().split('-')[0] })}\n`;
   // Variant-axis block — forceert structureel andere invalshoek voor
   // batch-variants. Zonder dit produceert temperature-variatie alleen
   // bijna-identieke output omdat de rest van de prompt deterministische
@@ -292,7 +318,7 @@ function buildSharedStyleBlocks(opts: SystemPromptOpts): string {
   const knowledgeBlock = opts.additionalContextText?.trim()
     ? `\n${opts.additionalContextText.trim()}\n`
     : '';
-  return `${toneBlock}${depthBlock}${vocabBlock}${voiceBlock}${hvdBlock}${axisBlock}${knowledgeBlock}`;
+  return `${localeBlock}${toneBlock}${depthBlock}${vocabBlock}${voiceBlock}${hvdBlock}${axisBlock}${knowledgeBlock}`;
 }
 
 function buildSystemPrompt(opts: SystemPromptOpts): string {
