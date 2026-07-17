@@ -17,6 +17,9 @@ import {
 } from "@/lib/ad-tokens/encryption";
 import {
   buildSecurityHeaders,
+  buildStaticSecurityHeaders,
+  buildReportOnlyCsp,
+  CSP_REPORT_ENDPOINT,
   CONTENT_SECURITY_POLICY,
   DEV_CONTENT_SECURITY_POLICY,
 } from "@/lib/security/security-headers";
@@ -93,6 +96,20 @@ ok("dev CSP dekt base-uri + form-action", devHeaders["Content-Security-Policy"].
 ok("dev zet GEEN HSTS", devHeaders["Strict-Transport-Security"] === undefined);
 ok("Permissions-Policy consistent (interest-cohort in beide)", devHeaders["Permissions-Policy"].includes("interest-cohort=()"));
 ok("X-Frame-Options DENY in beide omgevingen", prodHeaders["X-Frame-Options"] === "DENY" && devHeaders["X-Frame-Options"] === "DENY");
+ok("enforce-CSP staat PostHog-ingest toe in connect-src", CONTENT_SECURITY_POLICY.includes("connect-src 'self' https://api.stripe.com https://eu.i.posthog.com"));
+
+// ── Nonce-migratie stap 1+2: statische laag zonder CSP + Report-Only-CSP ─
+const staticProd = buildStaticSecurityHeaders(true);
+const staticDev = buildStaticSecurityHeaders(false);
+ok("statische laag (next.config) zendt GEEN CSP meer", staticProd["Content-Security-Policy"] === undefined && staticDev["Content-Security-Policy"] === undefined);
+ok("statische laag behoudt HSTS in prod", (staticProd["Strict-Transport-Security"] ?? "").includes("max-age="));
+ok("statische laag behoudt de base-headers", staticProd["X-Frame-Options"] === "DENY" && staticDev["X-Content-Type-Options"] === "nosniff");
+
+const roCsp = buildReportOnlyCsp("test-nonce-abc");
+ok("Report-Only-CSP bevat de per-request nonce", roCsp.includes("'nonce-test-nonce-abc'"));
+ok("Report-Only-CSP gebruikt strict-dynamic", roCsp.includes("'strict-dynamic'"));
+ok("Report-Only-CSP rapporteert naar de collector-route", roCsp.includes(`report-uri ${CSP_REPORT_ENDPOINT}`));
+ok("Report-Only-CSP bevat bewust GEEN unsafe-inline/unsafe-eval (dat is de meting)", !roCsp.includes("unsafe-inline") && !roCsp.includes("unsafe-eval"));
 
 console.log(`\nsecurity-residual: ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

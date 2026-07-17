@@ -20,6 +20,7 @@ import { publishToLinkedIn } from '@/lib/integrations/linkedin/linkedin-client';
 import { refreshTokenIfNeeded, type StoredCredentials } from '@/lib/integrations/social-oauth/token-refresh';
 import { sendViaResend, contentToEmailHtml } from '@/lib/integrations/resend/resend-publish';
 import { createWordPressPost, uploadWordPressImage, contentToWordPressHtml } from '@/lib/integrations/wordpress/wordpress-client';
+import { buildChannelPayload, isPublishable } from '@/lib/studio/channel-payload';
 import { getContentReadiness } from '@/lib/learning-loop/content-readiness';
 import { emitLearningEvent } from '@/lib/learning-loop';
 
@@ -119,25 +120,43 @@ export async function POST(request: Request, { params }: RouteParams) {
     const settings = (channel.settings ?? {}) as Record<string, string>;
 
     // ─── Extract content from deliverable components ─────────
-    const textComponents = deliverable.components.filter((c) => c.generatedContent && c.variantGroup !== 'hero-image');
-    const heroComponent = deliverable.components.find((c) => c.variantGroup === 'hero-image' && c.imageUrl);
+    const { title, bodyText, cta, hashtags, metaDescription, fullText, heroImageUrl } =
+      buildChannelPayload(deliverable.components, deliverable.title);
 
-    const contentByGroup: Record<string, string> = {};
-    for (const comp of textComponents) {
-      if (comp.variantGroup && comp.generatedContent) {
-        contentByGroup[comp.variantGroup] = comp.generatedContent;
-      }
+    // ─── Leeg-guard: verstuur nooit een lege publicatie ──────
+    //
+    // Deze route distribueert EXTERN (LinkedIn, e-mail, WordPress) en bouwt zijn payload
+    // uitsluitend uit de component-keten. De structured/PUCK-types (landing-page/faq-page/
+    // product-page/microsite + de long-form GEO-types) bewaren hun copy in
+    // `settings.structuredVariant`; hun component-keten is STRUCTUREEL leeg (orchestrate
+    // gate't ze weg vóór de enige plek die tekst-componenten aanmaakt). Voor die types was
+    // `bodyText` dus altijd '' → een leeg artikel op de WordPress van de klant, een lege
+    // LinkedIn-post. Naar het publiek van de klant, onomkeerbaar.
+    //
+    // De QA-gate hierboven vangt dit NIET en kan dat niet: die oordeelt op een F-VAL-score
+    // (afgeleid van keten B) terwijl deze payload uit keten A komt — een groene gate is
+    // juist bewijs dát er goede content is, waarna we niets versturen. En hij is bewust
+    // failsafe-open (`no-version` → canPublish=true, letterlijk "never generated").
+    //
+    // Vangnet, geen fix: de structurele oplossing is dat deze route beide ketens leest via
+    // één accessor. Het vangnet blijft daarna staan — het valideert de payload zelf en
+    // overleeft dus elke toekomstige keten.
+    if (!isPublishable({ title, bodyText, cta, hashtags, metaDescription, fullText, heroImageUrl }, channel.provider)) {
+      console.warn('[publish-to-channel] geweigerd: lege payload', {
+        deliverableId,
+        contentType: deliverable.contentType,
+        provider: channel.provider,
+        selectedComponents: deliverable.components.length,
+      });
+      return NextResponse.json(
+        {
+          error: 'Nothing to publish — no text content was found on this deliverable.',
+          hint: 'Web-page and long-form types keep their copy in the page builder. Open the deliverable in the Canvas and pick a variant before publishing to a channel.',
+          contentType: deliverable.contentType,
+        },
+        { status: 422 },
+      );
     }
-
-    const title = contentByGroup.title ?? contentByGroup.headline ?? contentByGroup.subject ?? deliverable.title;
-    const bodyText = contentByGroup.body ?? contentByGroup.caption ?? contentByGroup['body-sections'] ?? contentByGroup.introduction ?? '';
-    const cta = contentByGroup.cta ?? contentByGroup['call-to-action'] ?? '';
-    const hashtags = contentByGroup.hashtags ?? '';
-    const metaDescription = contentByGroup['meta-description'] ?? '';
-    const heroImageUrl = heroComponent?.imageUrl ?? null;
-
-    // Full text for social posts
-    const fullText = [bodyText, hashtags].filter(Boolean).join('\n\n');
 
     // Create publish log (pending)
     const log = await prisma.publishLog.create({

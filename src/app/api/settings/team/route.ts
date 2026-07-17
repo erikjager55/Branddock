@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
+import { getOrgFeatureLimit } from "@/lib/stripe/enforcement";
 
 // GET /api/settings/team — team overview: name, memberCount, maxSeats, myRole
 export async function GET() {
@@ -30,7 +31,7 @@ export async function GET() {
 
     const org = await prisma.organization.findUnique({
       where: { id: activeOrgId },
-      select: { id: true, name: true, maxSeats: true },
+      select: { id: true, name: true },
     });
 
     if (!org) {
@@ -39,6 +40,13 @@ export async function GET() {
         { status: 404 }
       );
     }
+
+    // PLAN_LIMITS[workspace.planTier].TEAM_MEMBERS (+ -1 developer-unlimited
+    // override) — not the legacy Organization.maxSeats column, which is
+    // never updated after signup. JSON can't carry Infinity (becomes null),
+    // so cap unlimited at a large safe sentinel instead.
+    const maxSeatsRaw = await getOrgFeatureLimit(activeOrgId, "TEAM_MEMBERS");
+    const maxSeats = Number.isFinite(maxSeatsRaw) ? maxSeatsRaw : Number.MAX_SAFE_INTEGER;
 
     const myMembership = await prisma.organizationMember.findUnique({
       where: {
@@ -64,7 +72,7 @@ export async function GET() {
       team: {
         name: org.name,
         memberCount,
-        maxSeats: org.maxSeats,
+        maxSeats,
         myRole: myMembership.role,
         organizationId: org.id,
       },

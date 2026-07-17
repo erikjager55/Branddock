@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { parseJsonBody } from '@/lib/api/parse-json-body';
 import { requireDeveloper } from '@/lib/developer-access';
+
+// L8 Zod-sweep (audit 2026-06-26, batch 7): title/content/category gingen
+// ongetypeerd in prisma.update.
+const updateKnowledgeItemSchema = z.object({
+  title: z.string().min(1).max(500).optional(),
+  content: z.string().min(1).max(100_000).optional(),
+  category: z.string().max(200).nullish(),
+});
 
 // PUT /api/admin/exploration-configs/[id]/knowledge/[itemId] — update item
 export async function PUT(
@@ -30,7 +40,9 @@ export async function PUT(
     });
     if (!existing) return NextResponse.json({ error: 'Item not found' }, { status: 404 });
 
-    const { title, content, category } = await request.json();
+    const parsed = await parseJsonBody(request, updateKnowledgeItemSchema);
+    if (!parsed.ok) return parsed.response;
+    const { title, content, category } = parsed.data;
 
     const item = await prisma.explorationKnowledgeItem.update({
       where: { id: itemId },

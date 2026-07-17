@@ -311,6 +311,53 @@ async function main() {
     });
   }
 
+  // Admin + viewer (RBAC-403 e2e-smokes — additief, raakt bestaande users niet)
+  const adminUser = await prisma.user.create({
+    data: {
+      email: "david@branddock.com",
+      name: "David Park",
+      workspaceId: workspace.id,
+    },
+  });
+
+  const adminMembership = await prisma.organizationMember.create({
+    data: {
+      role: "admin",
+      userId: adminUser.id,
+      organizationId: organization.id,
+    },
+  });
+
+  await prisma.workspaceMemberAccess.create({
+    data: {
+      memberId: adminMembership.id,
+      workspaceId: workspace.id,
+    },
+  });
+
+  const viewerUser = await prisma.user.create({
+    data: {
+      email: "nina@branddock.com",
+      name: "Nina Visser",
+      workspaceId: workspace.id,
+    },
+  });
+
+  const viewerMembership = await prisma.organizationMember.create({
+    data: {
+      role: "viewer",
+      userId: viewerUser.id,
+      organizationId: organization.id,
+    },
+  });
+
+  await prisma.workspaceMemberAccess.create({
+    data: {
+      memberId: viewerMembership.id,
+      workspaceId: workspace.id,
+    },
+  });
+
   // Demo invitation (pending)
   await prisma.invitation.create({
     data: {
@@ -377,7 +424,7 @@ async function main() {
   // Better Auth Account records (credential provider voor emailAndPassword login)
   const seedPassword = await hashPassword("Password123!");
 
-  for (const seedUser of [user, teamMember, directUser]) {
+  for (const seedUser of [user, teamMember, adminUser, viewerUser, directUser]) {
     // Skip if account already exists (demo user preserved across seeds)
     const existing = await prisma.account.findFirst({
       where: { userId: seedUser.id, providerId: "credential" },

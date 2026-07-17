@@ -1,20 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decideHostRoute } from '@/lib/landing-pages/host-router';
-import { buildSecurityHeaders } from '@/lib/security/security-headers';
+import {
+  buildSecurityHeaders,
+  buildReportOnlyCsp,
+  REPORTING_ENDPOINTS_HEADER,
+} from '@/lib/security/security-headers';
 
 // ─── Security headers applied to ALL responses ───────────
-// Waarden komen uit de gedeelde bron (security-headers.ts) zodat ze niet
-// kunnen driften met de next.config.ts-laag (audit-MINOR #348).
+// Waarden komen uit de gedeelde bron (security-headers.ts). Sinds de
+// nonce-stap (audit-rest 2026-07-17) is de middleware de ENIGE laag die CSP
+// zendt — next.config.ts levert alleen nog de CSP-loze statische headers.
 const isProduction = process.env.NODE_ENV === 'production';
 
 const SECURITY_HEADERS = buildSecurityHeaders(isProduction);
 
+/**
+ * Zet de volledige header-set op een response, inclusief (prod-only) de
+ * Report-Only nonce-CSP. Elke return-tak van proxy() MOET hierdoor lopen,
+ * anders bestaan er responses zonder policy.
+ *
+ * Bewust nog géén nonce-propagatie via de request-headers (de officiële
+ * Next-stamping-route): een CSP-request-header met nonce kan pagina's naar
+ * dynamic rendering forceren — dat hoort bij de enforce-flip-follow-up, niet
+ * bij deze meet-fase. Report-Only blokkeert niets; Next-inline-scripts zonder
+ * nonce verschijnen als bekende ruis in de rapporten.
+ */
+function applySecurityHeaders(headers: Headers, nonce: string): void {
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    headers.set(key, value);
+  }
+  if (isProduction) {
+    headers.set('Content-Security-Policy-Report-Only', buildReportOnlyCsp(nonce));
+    headers.set('Reporting-Endpoints', REPORTING_ENDPOINTS_HEADER);
+  }
+}
+
 // ─── Auth route rate limiting (per IP, sliding window) ─────
 // Protects /api/auth/* from brute-force login attempts.
 // 10 requests per minute per IP address.
-
+//
+// Env-override AUTH_RATE_LIMIT_MAX bestaat voor de e2e-suite (gotcha
+// 2026-07-17); zelfde knop als Better Auth customRules + het per-email-bucket
+// (auth-rate-limiter.ts). Prod-gated: in productie geldt altijd de strikte
+// default — een verdwaalde env-var mag de verdediging niet stil verruimen.
+// Lokale duplicatie van de helper: dit is edge-middleware, imports minimaal.
 const AUTH_RATE_LIMIT_WINDOW_MS = 60_000;
-const AUTH_RATE_LIMIT_MAX = 10;
+const parsedAuthMax = Number(process.env.AUTH_RATE_LIMIT_MAX);
+const AUTH_RATE_LIMIT_MAX =
+  !isProduction && Number.isFinite(parsedAuthMax) && parsedAuthMax > 0
+    ? parsedAuthMax
+    : 10;
 const authRateLimitStore = new Map<string, number[]>();
 
 function checkAuthRateLimit(ip: string): boolean {
@@ -93,6 +128,9 @@ export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const host = request.headers.get('host') ?? '';
 
+  // Per-request nonce voor de Report-Only-CSP (prod-only gebruikt).
+  const nonce = btoa(crypto.randomUUID());
+
   // Web-page builder host-routing (ADR 2026-05-22-landing-page-builder-architectuur).
   // Runs first so <workspace>.branddock.app/<slug> rewrites to /p/<slug> before
   // any other logic. Security headers still applied to the rewritten response.
@@ -103,9 +141,7 @@ export function proxy(request: NextRequest) {
     rewriteUrl.pathname = rewritePath;
     rewriteUrl.search = rewriteSearch ? `?${rewriteSearch}` : '';
     const rewriteResponse = NextResponse.rewrite(rewriteUrl);
-    for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
-      rewriteResponse.headers.set(key, value);
-    }
+    applySecurityHeaders(rewriteResponse.headers, nonce);
     return rewriteResponse;
   }
 
@@ -113,9 +149,7 @@ export function proxy(request: NextRequest) {
   const response = NextResponse.next();
 
   // Apply security headers to all responses
-  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
-    response.headers.set(key, value);
-  }
+  applySecurityHeaders(response.headers, nonce);
 
   // Auth route rate limiting (brute-force protection)
   if (pathname.startsWith('/api/auth/') && request.method === 'POST') {
@@ -124,18 +158,12 @@ export function proxy(request: NextRequest) {
       || 'unknown';
 
     if (!checkAuthRateLimit(ip)) {
-      return NextResponse.json(
+      const limited = NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
-        {
-          status: 429,
-          headers: {
-            ...Object.fromEntries(
-              Object.entries(SECURITY_HEADERS).map(([k, v]) => [k, v]),
-            ),
-            'Retry-After': '60',
-          },
-        },
+        { status: 429, headers: { 'Retry-After': '60' } },
       );
+      applySecurityHeaders(limited.headers, nonce);
+      return limited;
     }
   }
 

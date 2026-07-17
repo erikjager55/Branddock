@@ -21,13 +21,16 @@ const ns = {
   },
   usage: {
     title: 'Usage Overview',
+    comingSoon: 'Coming soon',
     labels: {
+      workspaces: 'Workspaces',
       teamMembers: 'Team Members',
       aiTokens: 'AI Tokens',
       personas: 'Personas',
       campaigns: 'Campaigns',
       brandAssets: 'Brand Assets',
       products: 'Products',
+      marketInsights: 'Market Insights',
       knowledge: 'Knowledge',
       storage: 'Storage',
     },

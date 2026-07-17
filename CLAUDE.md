@@ -179,7 +179,7 @@ GEMINI_API_KEY=
 TOKEN_ENCRYPTION_KEY=<voor OAuth tokens — back up zorgvuldig>
 ```
 
-**Optioneel** (per-feature): `GOOGLE_CLIENT_ID/SECRET`, `MICROSOFT_CLIENT_ID/SECRET`, `APPLE_CLIENT_ID/SECRET`, `ELEVENLABS_API_KEY`, `FAL_KEY`, `RUNWAYML_API_SECRET`, `EXA_API_KEY`, `S2_API_KEY`, `ARENA_API_TOKEN`, `EMAILIT_API_KEY`, `UPSTASH_REDIS_REST_URL`, `POSTHOG_API_KEY`, `CRON_SECRET`, `WEBHOOK_TRIGGER_SECRET`, `DEVELOPER_EMAILS`, `APIFY_TOKEN` (competitor scraping-fallback, fail-fast at startup), `AGENTS_DEV_CADENCE` (=1 staat EVERY_MINUTE-agent-schedules toe buiten dev — alleen voor smokes).
+**Optioneel** (per-feature): `GOOGLE_CLIENT_ID/SECRET`, `MICROSOFT_CLIENT_ID/SECRET`, `APPLE_CLIENT_ID/SECRET`, `ELEVENLABS_API_KEY`, `FAL_KEY`, `RUNWAYML_API_SECRET`, `EXA_API_KEY`, `S2_API_KEY`, `ARENA_API_TOKEN`, `EMAILIT_API_KEY`, `UPSTASH_REDIS_REST_URL`, `POSTHOG_API_KEY`, `CRON_SECRET`, `WEBHOOK_TRIGGER_SECRET`, `DEVELOPER_EMAILS`, `APIFY_TOKEN` (competitor scraping-fallback, fail-fast at startup), `AGENTS_DEV_CADENCE` (=1 staat EVERY_MINUTE-agent-schedules toe buiten dev — alleen voor smokes), `AUTH_RATE_LIMIT_MAX` (test-knop: verruimt de 3 gestapelde auth-rate-limiters voor de e2e-suite; prod-gated — genegeerd bij NODE_ENV=production).
 
 ---
 

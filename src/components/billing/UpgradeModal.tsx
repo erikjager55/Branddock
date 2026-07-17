@@ -11,7 +11,7 @@ import React, { useState } from 'react';
 import { Check, Crown, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Button, Badge } from '@/components/shared';
-import { PLAN_CONFIGS, ALL_TIERS } from '@/lib/constants/plan-limits';
+import { PLAN_CONFIGS, ALL_TIERS, TRIAL_DAYS, TRIAL_CREDITS } from '@/lib/constants/plan-limits';
 import { cn } from '@/lib/constants/design-tokens';
 import type { PlanTier } from '@/types/billing';
 
@@ -104,7 +104,9 @@ export function UpgradeModal({
           {ALL_TIERS.map((tier) => {
             const config = PLAN_CONFIGS[tier];
             const isCurrent = tier === currentTier && !isFreeBeta;
-            const isRecommended = tier === 'PRO';
+            // GROWTH is the anchor/recommended tier (see TIER_HIGHLIGHTS above) —
+            // PRO is the legacy fixed-price tier, excluded from ALL_TIERS.
+            const isRecommended = tier === 'GROWTH';
             const monthlyPrice = config.monthlyPriceEur;
             const displayPrice = cycle === 'monthly'
               ? monthlyPrice
@@ -189,7 +191,7 @@ export function UpgradeModal({
         {/* Info footer */}
         <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
           <Crown className="h-3.5 w-3.5" />
-          <span>{t('upgradeModal.trialNote')}</span>
+          <span>{t('upgradeModal.trialNote', { days: TRIAL_DAYS, credits: TRIAL_CREDITS })}</span>
         </div>
       </div>
     </Modal>

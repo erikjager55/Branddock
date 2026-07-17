@@ -54,9 +54,6 @@ const settingsTeam = {
     emailPlaceholder: 'collega@bedrijf.nl',
     roleLabel: 'Rol',
     rolePlaceholder: 'Kies een rol...',
-    errorAlreadyInvited: 'Dit e-mailadres is al uitgenodigd.',
-    errorSeatLimit:
-      'Maximale aantal plekken bereikt. Upgrade je plan om meer leden uit te nodigen.',
     errorSendFailed: 'Uitnodiging versturen mislukt',
   },
   permissions: {

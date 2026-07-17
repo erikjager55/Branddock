@@ -4,13 +4,16 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInviteMember } from '@/hooks/use-settings';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useWorkspace } from '@/hooks/use-workspace';
 import { Modal, Input, Select, Button } from '@/components/shared';
 import { Mail } from 'lucide-react';
+import { ApiError, translateApiError } from '@/lib/api/api-error';
 
 export function InviteMemberModal() {
-  const { t } = useTranslation('settings-team');
+  const { t } = useTranslation(['settings-team', 'entitlement-errors']);
   const isOpen = useSettingsStore((s) => s.isInviteModalOpen);
   const setIsOpen = useSettingsStore((s) => s.setIsInviteModalOpen);
+  const { organizationId } = useWorkspace();
 
   const ROLE_OPTIONS = [
     { value: 'admin', label: t('roles.admin') },
@@ -35,24 +38,17 @@ export function InviteMemberModal() {
     e.preventDefault();
     setError(null);
 
-    if (!email.trim()) return;
+    if (!email.trim() || !organizationId) return;
 
     try {
       await inviteMember.mutateAsync({
         email: email.trim(),
         role: role ?? 'member',
+        organizationId,
       });
       handleClose();
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : t('invite.errorSendFailed');
-      if (message.toLowerCase().includes('duplicate') || message.toLowerCase().includes('already')) {
-        setError(t('invite.errorAlreadyInvited'));
-      } else if (message.toLowerCase().includes('seat') || message.toLowerCase().includes('limit')) {
-        setError(t('invite.errorSeatLimit'));
-      } else {
-        setError(message);
-      }
+      setError(err instanceof ApiError ? translateApiError(t, err) : t('invite.errorSendFailed'));
     }
   }
 

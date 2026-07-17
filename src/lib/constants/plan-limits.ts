@@ -224,6 +224,16 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
 
 export const ALL_TIERS: PlanTier[] = ['FREE', 'STARTER', 'GROWTH', 'AGENCY', 'ENTERPRISE'];
 
+// ─── NEXT_TIER — de eerstvolgende tier in de ladder, voor "Upgrade"-knoppen
+// die vanaf de huidige tier moeten upgraden i.p.v. altijd naar een vaste tier
+// te springen. PRO (legacy) heeft geen ladder-plek; ENTERPRISE is de top.
+export const NEXT_TIER: Partial<Record<PlanTier, PlanTier>> = {
+  FREE: 'STARTER',
+  STARTER: 'GROWTH',
+  GROWTH: 'AGENCY',
+  AGENCY: 'ENTERPRISE',
+};
+
 // ─── ALL_FEATURE_KEYS ───────────────────────────────────────
 
 export const ALL_FEATURE_KEYS: FeatureKey[] = [
