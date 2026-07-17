@@ -1,41 +1,55 @@
 // Pricing-page met 3-tier matrix + top-up-packs + FAQ. NL-first (Fase 2).
-// Prijzen = ADR 2026-07-07-pricing-credits-launch (credit-model, launch-
-// definitief): Starter €39/400cr · Growth €89/1.200cr · Agency €299/4.000cr,
-// 28d no-card trial, top-up €0,10/credit. Bron: PLAN_CONFIGS + TOPUP_PACKS.
+// Prijs/credits/workspace-/gebruikersaantallen komen rechtstreeks uit
+// PLAN_CONFIGS/TRIAL_DAYS/TRIAL_CREDITS (src/lib/constants/plan-limits.ts) —
+// de échte bron van waarheid die ook de in-app abonnement-vergelijking
+// drijft. Marketingtekst (beschrijving, feature-bullets) blijft pagina-lokaal;
+// alleen de getallen zijn gedeeld, zodat dit niet nog eens kan afwijken
+// (compositie-herziening facturatie, Fase 4 — was een losse, handmatige kopie).
 // CTA's via appHref → absoluut naar de app-host na de domein-cutover.
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Check } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import { appHref } from '../app-url';
-import Mosaic from '../Mosaic';
+import SplitHeader from '../SplitHeader';
+import { PLAN_CONFIGS, TOPUP_PACKS, TRIAL_DAYS, TRIAL_CREDITS } from '@/lib/constants/plan-limits';
 
 export const metadata: Metadata = {
   title: 'Prijzen',
-  description:
-    'Eenvoudige, transparante prijzen: Starter €39, Growth €89 of Agency €299 per maand. 28 dagen gratis, geen creditcard.',
+  description: `Eenvoudige, transparante prijzen: Starter €${PLAN_CONFIGS.STARTER.monthlyPriceEur}, Growth €${PLAN_CONFIGS.GROWTH.monthlyPriceEur} of Agency €${PLAN_CONFIGS.AGENCY.monthlyPriceEur} per maand. ${TRIAL_DAYS} dagen gratis, geen creditcard.`,
 };
 
-interface Tier {
-  id: string;
+const nl = new Intl.NumberFormat('nl-NL');
+
+function workspaceSeatLine(workspaces: number, seats: number): string {
+  const ws = workspaces === 1 ? 'workspace' : 'workspaces';
+  const gb = seats === 1 ? 'gebruiker' : 'gebruikers';
+  return `${nl.format(workspaces)} ${ws} · ${nl.format(seats)} ${gb}`;
+}
+
+interface TierCopy {
+  id: 'starter' | 'growth' | 'agency';
   name: string;
-  pricePerMonth: number;
   description: string;
-  features: string[];
+  /** Handgeschreven marketing-bullets — de credits- en workspace/gebruikers-regel
+   *  worden ervoor geplakt, afgeleid van PLAN_CONFIGS. */
+  proseFeatures: string[];
   ctaLabel: string;
   ctaHref: string;
   highlighted?: boolean;
 }
 
-const TIERS: Tier[] = [
+interface Tier extends TierCopy {
+  pricePerMonth: number;
+  features: string[];
+}
+
+const TIER_COPY: TierCopy[] = [
   {
     id: 'starter',
     name: 'Starter',
-    pricePerMonth: 39,
     description: 'Voor solo-founders en merken in de opstartfase',
-    features: [
-      '400 credits per maand',
-      '1 workspace · 1 gebruiker',
+    proseFeatures: [
       'Volledig merk-DNA + Brand Voice',
       'AI-content over 25+ contenttypes',
       'Merk-check (F-VAL) op elke output — gratis',
@@ -47,11 +61,8 @@ const TIERS: Tier[] = [
   {
     id: 'growth',
     name: 'Growth',
-    pricePerMonth: 89,
     description: 'De sweet spot voor groeiende marketingteams',
-    features: [
-      '1.200 credits per maand',
-      '3 workspaces · 5 gebruikers',
+    proseFeatures: [
       'Alles uit Starter',
       'AI-agents (onderzoek, strategie, content, data)',
       'Concurrentie-intelligentie & Trend Radar',
@@ -64,31 +75,36 @@ const TIERS: Tier[] = [
   {
     id: 'agency',
     name: 'Agency',
-    pricePerMonth: 299,
     description: 'Voor bureaus die meerdere merken beheren',
-    features: [
-      '4.000 credits per maand',
-      '10 workspaces · 20 gebruikers',
-      'Alles uit Growth',
-      'Multi-tenant klantbeheer',
-      'Persoonlijke onboarding',
-    ],
+    proseFeatures: ['Alles uit Growth', 'Multi-tenant klantbeheer', 'Persoonlijke onboarding'],
     ctaLabel: 'Gratis proberen',
     ctaHref: '/?utm_source=marketing-site&utm_medium=pricing-agency',
   },
 ];
 
-// Top-up-packs — zelfde bron als de in-app catalogus (TOPUP_PACKS).
-const TOPUPS = [
-  { credits: '500', price: '€50' },
-  { credits: '1.500', price: '€135 (10% korting)' },
-  { credits: '5.000', price: '€400 (20% korting)' },
-];
+const TIERS: Tier[] = TIER_COPY.map((copy) => {
+  const config = PLAN_CONFIGS[copy.id.toUpperCase() as 'STARTER' | 'GROWTH' | 'AGENCY'];
+  return {
+    ...copy,
+    pricePerMonth: config.monthlyPriceEur,
+    features: [
+      `${nl.format(config.monthlyCredits)} credits per maand`,
+      workspaceSeatLine(config.workspaces, config.seats),
+      ...copy.proseFeatures,
+    ],
+  };
+});
+
+// Top-up-packs — zelfde bron als de in-app catalogus.
+const TOPUPS = TOPUP_PACKS.map((p) => ({
+  credits: nl.format(p.credits),
+  price: p.discountPct > 0 ? `€${p.priceEur} (${p.discountPct}% korting)` : `€${p.priceEur}`,
+}));
 
 const FAQ_ITEMS = [
   {
     q: 'Krijg ik een proefperiode?',
-    a: '28 dagen gratis met 300 credits — geen creditcard. Na de proef blijft je merkdata veilig en zichtbaar; je kiest pas een plan als je wilt blijven genereren.',
+    a: `${TRIAL_DAYS} dagen gratis met ${nl.format(TRIAL_CREDITS)} credits — geen creditcard. Na de proef blijft je merkdata veilig en zichtbaar; je kiest pas een plan als je wilt blijven genereren.`,
   },
   {
     q: 'Hoe werken credits?',
@@ -116,30 +132,14 @@ export default function PricingPage() {
   return (
     <div>
       <section className="max-w-6xl mx-auto px-6 py-16">
-        <div
-          className="relative overflow-hidden rounded-2xl p-8 md:p-12 mb-12 text-center"
-          style={{ background: 'var(--g-brand)' }}
-        >
-          <Mosaic
-            id="pricing"
-            cols={8}
-            rows={2}
-            className="pointer-events-none absolute inset-0"
-            style={{
-              opacity: 0.4,
-              WebkitMaskImage: 'radial-gradient(120% 120% at 50% 0%, transparent 32%, #000 100%)',
-              maskImage: 'radial-gradient(120% 120% at 50% 0%, transparent 32%, #000 100%)',
-            }}
-          />
-          <div className="relative max-w-2xl mx-auto">
-            <h1 className="mb-4" style={{ color: '#ffffff' }}>
-              Eenvoudige, transparante prijzen
-            </h1>
-            <p className="text-lg" style={{ color: 'rgba(255,255,255,0.9)' }}>
-              Kies een plan dat bij je team past. Geen verborgen kosten, geen lange contracten.
-            </p>
-          </div>
-        </div>
+        <SplitHeader
+          id="pricing"
+          family="product"
+          eyebrow="Prijzen"
+          title="Eenvoudige, transparante prijzen"
+          lead="Kies een plan dat bij je team past. Geen verborgen kosten, geen lange contracten."
+          className="mb-12"
+        />
 
         <div className="grid md:grid-cols-3 gap-6">
           {TIERS.map((tier) => (
@@ -164,7 +164,7 @@ export default function PricingPage() {
         </div>
 
         <div className="mt-12 text-center text-sm text-gray-500">
-          Prijzen zijn excl. btw. 28 dagen gratis met 300 credits — geen creditcard.
+          Prijzen zijn excl. btw. {TRIAL_DAYS} dagen gratis met {nl.format(TRIAL_CREDITS)} credits — geen creditcard.
           Meer nodig dan Agency? <Link href="/marketing/contact" className="underline hover:text-gray-700">Praat met ons over Enterprise</Link>.
         </div>
       </section>
@@ -174,8 +174,11 @@ export default function PricingPage() {
           <h2 className="text-gray-900 mb-6 text-center">Veelgestelde vragen</h2>
           <div className="space-y-4">
             {FAQ_ITEMS.map((item) => (
-              <details key={item.q} className="bg-white rounded-lg border border-gray-200 p-4">
-                <summary className="font-medium text-gray-900 cursor-pointer">{item.q}</summary>
+              <details key={item.q} className="group bg-white rounded-lg border border-gray-200 p-4">
+                <summary className="flex cursor-pointer items-center justify-between gap-3 font-medium text-gray-900 list-none">
+                  {item.q}
+                  <ChevronDown className="w-5 h-5 mkt-accent shrink-0 transition-transform group-open:rotate-180" />
+                </summary>
                 <p className="mt-2 text-gray-600 text-sm leading-relaxed">{item.a}</p>
               </details>
             ))}
@@ -191,10 +194,11 @@ function TierCard({ tier }: { tier: Tier }) {
     <div
       className={`rounded-xl border p-6 flex flex-col ${
         tier.highlighted
-          ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+          ? 'border-primary bg-primary/5 ring-1 ring-primary/30 shadow-md'
           : 'border-gray-200 bg-white'
       }`}
     >
+      {tier.highlighted ? <div className="mkt-badge-popular mb-3 self-start">Populairste keuze</div> : null}
       <div className="mb-4">
         <h3 className="text-xl font-semibold text-gray-900">{tier.name}</h3>
         <p className="text-sm text-gray-600 mt-1">{tier.description}</p>

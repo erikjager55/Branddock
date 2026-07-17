@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
+import { getOrgFeatureLimit } from "@/lib/stripe/enforcement";
 
 // =============================================================
 // GET /api/settings/billing
@@ -18,7 +19,10 @@ export async function GET() {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const [subscription, defaultPaymentMethod] = await Promise.all([
+    const activeOrgId = (session.session as Record<string, unknown>)
+      .activeOrganizationId as string | undefined;
+
+    const [subscription, defaultPaymentMethod, orgWorkspacesLimit, orgTeamMembersLimit] = await Promise.all([
       prisma.subscription.findUnique({
         where: { workspaceId },
         include: { plan: true },
@@ -26,6 +30,8 @@ export async function GET() {
       prisma.paymentMethod.findFirst({
         where: { workspaceId, isDefault: true },
       }),
+      activeOrgId ? getOrgFeatureLimit(activeOrgId, "WORKSPACES") : Promise.resolve(Infinity),
+      activeOrgId ? getOrgFeatureLimit(activeOrgId, "TEAM_MEMBERS") : Promise.resolve(Infinity),
     ]);
 
     const billing: Record<string, unknown> = {
@@ -58,7 +64,16 @@ export async function GET() {
         : null,
     };
 
-    return NextResponse.json({ billing });
+    // Organization-scoped effective limits (respects the Credit Admin -1
+    // "developer-granted unlimited" override on top of the plan tier — see
+    // getOrgFeatureLimit()). null over JSON means unlimited (Infinity isn't
+    // representable in JSON).
+    const orgLimits = {
+      WORKSPACES: Number.isFinite(orgWorkspacesLimit) ? orgWorkspacesLimit : null,
+      TEAM_MEMBERS: Number.isFinite(orgTeamMembersLimit) ? orgTeamMembersLimit : null,
+    };
+
+    return NextResponse.json({ billing, orgLimits });
   } catch (error) {
     console.error("[GET /api/settings/billing]", error);
     return NextResponse.json(

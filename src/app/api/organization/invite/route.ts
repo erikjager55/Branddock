@@ -5,6 +5,7 @@ import { trySendTransactional } from "@/lib/email/transactional";
 import { emailBaseUrl } from "@/lib/email/base-url";
 import { resolveEmailLocale } from "@/lib/email/email-locale";
 import { renderInviteEmail } from "@/lib/email/templates/invite";
+import { enforceOrgPlanLimit } from "@/lib/stripe/enforcement";
 
 // POST /api/organization/invite — create an invitation
 export async function POST(request: NextRequest) {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     if (!membership || !["owner", "admin"].includes(membership.role)) {
       return NextResponse.json(
-        { error: "Only owners and admins can invite members" },
+        { error: "Only owners and admins can invite members", code: "NOT_OWNER_OR_ADMIN" },
         { status: 403 }
       );
     }
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     if (inviteRole === "owner") {
       if (membership.role !== "owner") {
         return NextResponse.json(
-          { error: "Only an owner can invite another owner" },
+          { error: "Only an owner can invite another owner", code: "ONLY_OWNER_CAN_INVITE_OWNER" },
           { status: 403 }
         );
       }
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
 
       if (existingMember) {
         return NextResponse.json(
-          { error: "User is already a member of this organization" },
+          { error: "User is already a member of this organization", code: "ALREADY_MEMBER" },
           { status: 409 }
         );
       }
@@ -94,26 +95,20 @@ export async function POST(request: NextRequest) {
 
     if (existingInvite) {
       return NextResponse.json(
-        { error: "A pending invitation already exists for this email" },
+        { error: "A pending invitation already exists for this email", code: "INVITE_ALREADY_PENDING" },
         { status: 409 }
       );
     }
-
-    // Check seat limit
-    const memberCount = await prisma.organizationMember.count({
-      where: { organizationId },
-    });
 
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
     });
 
-    if (org && memberCount >= org.maxSeats) {
-      return NextResponse.json(
-        { error: `Seat limit reached (${org.maxSeats})` },
-        { status: 403 }
-      );
-    }
+    // Plan-limit check: PLAN_LIMITS[workspace.planTier].TEAM_MEMBERS across
+    // the org's workspaces (+ the -1 developer-unlimited override) — not the
+    // legacy Organization.maxSeats column.
+    const limited = await enforceOrgPlanLimit(organizationId, "TEAM_MEMBERS");
+    if (limited) return limited;
 
     const invitation = await prisma.invitation.create({
       data: {
@@ -157,7 +152,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        ...invitation,
+        invitation,
         emailSent: sendResult.ok,
         emailError: sendResult.ok ? undefined : sendResult.error,
       },

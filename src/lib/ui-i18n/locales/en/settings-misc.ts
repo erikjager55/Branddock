@@ -106,6 +106,7 @@ const ns = {
     active: 'Active',
     cannotDeleteLast: 'Cannot delete the last workspace',
     deleteTooltip: 'Delete {{name}}',
+    limitReached: 'Workspace limit reached ({{current}}/{{limit}}) — upgrade your plan to add more.',
   },
   brandRules: {
     heading: 'Brand Rules',

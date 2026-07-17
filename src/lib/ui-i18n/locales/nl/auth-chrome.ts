@@ -8,6 +8,7 @@ const ns = {
     add: 'Toevoegen',
     newWorkspace: 'Nieuwe workspace',
     createFailed: 'Kon workspace niet aanmaken',
+    newWorkspaceLimitReached: 'Workspace-limiet bereikt ({{current}}/{{limit}}) — upgrade je abonnement voor meer.',
   },
   socialProviders: {
     google: 'Doorgaan met Google',

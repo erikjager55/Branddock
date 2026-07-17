@@ -1,9 +1,11 @@
 // =============================================================
 // /api/admin/credit-orgs — superuser-beheer van credits per organisatie.
 //
-// GET  → alle organisaties + saldo + unlimited-vlag (voor het admin-paneel).
-// POST → { organizationId, action: 'grant', credits }        → credits toekennen
-//        { organizationId, action: 'setUnlimited', value }   → comp aan/uit
+// GET  → alle organisaties + saldo + unlimited-vlaggen (voor het admin-paneel).
+// POST → { organizationId, action: 'grant', credits }                 → credits toekennen
+//        { organizationId, action: 'setUnlimited', value }            → credits-comp aan/uit
+//        { organizationId, action: 'setUnlimitedWorkspaces', value }  → maxWorkspaces = -1 (onbeperkt) of 1
+//        { organizationId, action: 'setUnlimitedSeats', value }       → maxSeats = -1 (onbeperkt) of 1
 //
 // Auth: uitsluitend DEVELOPER_EMAILS (requireDeveloper) — dit is een platform-
 // beheer-tool, geen tenant-feature. Werkt bewust óók met credits-uit, zodat
@@ -28,6 +30,19 @@ const bodySchema = z.discriminatedUnion('action', [
     organizationId: z.string().min(1),
     value: z.boolean(),
   }),
+  // Organization.maxWorkspaces/maxSeats sentinel: -1 = developer-granted
+  // unlimited, any other value falls back to the normal PLAN_LIMITS[tier]
+  // check (see src/lib/stripe/enforcement.ts). Mirrors setUnlimited above.
+  z.object({
+    action: z.literal('setUnlimitedWorkspaces'),
+    organizationId: z.string().min(1),
+    value: z.boolean(),
+  }),
+  z.object({
+    action: z.literal('setUnlimitedSeats'),
+    organizationId: z.string().min(1),
+    value: z.boolean(),
+  }),
 ]);
 
 export async function GET() {
@@ -40,9 +55,16 @@ export async function GET() {
       name: true,
       slug: true,
       unlimitedCredits: true,
+      maxWorkspaces: true,
+      maxSeats: true,
       trialEndsAt: true,
       creditBalance: { select: { balance: true, reserved: true } },
       workspaces: { select: { name: true }, take: 5 },
+      members: {
+        select: { role: true, user: { select: { email: true } } },
+        orderBy: { joinedAt: 'asc' },
+        take: 10,
+      },
       _count: { select: { members: true } },
     },
     orderBy: { createdAt: 'asc' },
@@ -55,11 +77,14 @@ export async function GET() {
       name: o.name,
       slug: o.slug,
       unlimited: o.unlimitedCredits,
+      unlimitedWorkspaces: o.maxWorkspaces === -1,
+      unlimitedSeats: o.maxSeats === -1,
       balance: o.creditBalance?.balance ?? 0,
       reserved: o.creditBalance?.reserved ?? 0,
       trialEndsAt: o.trialEndsAt,
       members: o._count.members,
       workspaces: o.workspaces.map((w) => w.name),
+      ownerEmail: o.members.find((m) => m.role === 'owner')?.user.email ?? o.members[0]?.user.email ?? null,
     })),
   });
 }
@@ -94,6 +119,22 @@ export async function POST(request: Request) {
     invalidateOrgUnlimited(body.organizationId);
     const balance = await getBalance(body.organizationId);
     return NextResponse.json({ ok: true, unlimited: body.value, balance: balance.balance });
+  }
+
+  if (body.action === 'setUnlimitedWorkspaces') {
+    await prisma.organization.update({
+      where: { id: body.organizationId },
+      data: { maxWorkspaces: body.value ? -1 : 1 },
+    });
+    return NextResponse.json({ ok: true, unlimitedWorkspaces: body.value });
+  }
+
+  if (body.action === 'setUnlimitedSeats') {
+    await prisma.organization.update({
+      where: { id: body.organizationId },
+      data: { maxSeats: body.value ? -1 : 1 },
+    });
+    return NextResponse.json({ ok: true, unlimitedSeats: body.value });
   }
 
   // action === 'grant' — audit-trail via reason (wie kende toe)

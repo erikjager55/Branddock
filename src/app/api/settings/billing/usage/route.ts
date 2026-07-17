@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
 import { getUsageThisMonth } from "@/lib/stripe/usage-tracker";
+import { getCurrentCount } from "@/lib/stripe/enforcement";
 
 // =============================================================
 // GET /api/settings/billing/usage
-// Returns usage data: seats, AI generations, research studies, storage.
-// Seats/research/AI-generations zijn echte counts (AI = AiUsageRecord deze maand);
-// storage-tracking is nog niet geïmplementeerd (toont 0).
+// Returns usage data: seats, AI generations, research studies, storage, and
+// real per-feature counts (personas/campagnes/etc.) via getCurrentCount() —
+// the same tally enforcePlanLimit() uses server-side, so the usage bars can
+// never drift from what's actually enforced. Storage-tracking is nog niet
+// geïmplementeerd (toont 0, UI laat "binnenkort" zien i.p.v. een fake %).
 // =============================================================
 export async function GET() {
   try {
@@ -31,7 +34,19 @@ export async function GET() {
       return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
     }
 
-    const [subscription, memberCount, studyCount, aiUsage] = await Promise.all([
+    const [
+      subscription,
+      memberCount,
+      studyCount,
+      aiUsage,
+      personas,
+      campaigns,
+      brandAssets,
+      products,
+      knowledgeResources,
+      workspaces,
+      marketInsights,
+    ] = await Promise.all([
       prisma.subscription.findUnique({
         where: { workspaceId },
         include: { plan: true },
@@ -43,6 +58,13 @@ export async function GET() {
         where: { workspaceId },
       }),
       getUsageThisMonth(workspaceId),
+      getCurrentCount(workspaceId, "PERSONAS"),
+      getCurrentCount(workspaceId, "CAMPAIGNS"),
+      getCurrentCount(workspaceId, "BRAND_ASSETS"),
+      getCurrentCount(workspaceId, "PRODUCTS"),
+      getCurrentCount(workspaceId, "KNOWLEDGE_RESOURCES"),
+      getCurrentCount(workspaceId, "WORKSPACES"),
+      getCurrentCount(workspaceId, "MARKET_INSIGHTS"),
     ]);
 
     const plan = subscription?.plan;
@@ -65,6 +87,13 @@ export async function GET() {
         usedGb: 0,
         limitGb: plan?.maxStorageGb ?? 5,
       },
+      personas: { used: personas },
+      campaigns: { used: campaigns },
+      brandAssets: { used: brandAssets },
+      products: { used: products },
+      knowledgeResources: { used: knowledgeResources },
+      workspaces: { used: workspaces },
+      marketInsights: { used: marketInsights },
     };
 
     return NextResponse.json({

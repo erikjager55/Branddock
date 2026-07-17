@@ -24,7 +24,11 @@ export const CONTENT_SECURITY_POLICY = [
   // Zonder deze allow faalt de hele lazy CSS-chunk van de canvas op prod
   // (ChunkLoadError → ErrorBoundary bij "Open in Canvas"; incident 2026-07-16).
   // Dev heeft geen CSP, dus lokaal was dit onzichtbaar.
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.typekit.net https://rsms.me",
+  // p.typekit.net: use.typekit.net/<kit>.css laadt hier zelf een tweede
+  // stylesheet met de @font-face-regels vandaan. Zonder deze allow blijft
+  // Halyard blokkeren en valt de site stil terug op Hanken Grotesk —
+  // onopgemerkt tot productie-screenshot-verificatie (2026-07-16).
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.typekit.net https://p.typekit.net https://rsms.me",
   "font-src 'self' data: https://fonts.gstatic.com https://use.typekit.net https://p.typekit.net https://rsms.me",
   // Permissive img-src: user-supplied URLs + AI-provider-previews landen in <img>
   "img-src 'self' data: blob: https:",

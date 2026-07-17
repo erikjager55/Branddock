@@ -6,6 +6,7 @@ import { invalidateBrandContext } from "@/lib/ai/brand-context";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { localeForLanguage, syncDefaultLocaleProfile } from "@/lib/content-locale/default-profile";
+import { enforceOrgPlanLimit, getOrgPlanTier } from "@/lib/stripe/enforcement";
 
 // Content-taal-opties (ISO-639-1) — gedeeld door POST (create-form) + PATCH.
 const VALID_LANGUAGES = new Set(["en", "nl", "de", "fr", "es", "pt", "it"]);
@@ -59,12 +60,12 @@ export async function POST(request: NextRequest) {
 
     if (!activeOrgId) {
       return NextResponse.json(
-        { error: "No active organization" },
+        { error: "No active organization", code: "NO_ACTIVE_ORG" },
         { status: 400 }
       );
     }
 
-    // Check org type and role
+    // Check membership and role
     const membership = await prisma.organizationMember.findUnique({
       where: {
         userId_organizationId: {
@@ -72,40 +73,24 @@ export async function POST(request: NextRequest) {
           organizationId: activeOrgId,
         },
       },
-      include: { organization: true },
     });
 
     if (!membership) {
-      return NextResponse.json({ error: "Not a member" }, { status: 403 });
-    }
-
-    if (membership.organization.type !== "AGENCY") {
-      return NextResponse.json(
-        { error: "Only agencies can create multiple workspaces" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Not a member", code: "NOT_MEMBER" }, { status: 403 });
     }
 
     if (!["owner", "admin"].includes(membership.role)) {
       return NextResponse.json(
-        { error: "Only owners and admins can create workspaces" },
+        { error: "Only owners and admins can create workspaces", code: "NOT_OWNER_OR_ADMIN" },
         { status: 403 }
       );
     }
 
-    // Check workspace limit
-    const workspaceCount = await prisma.workspace.count({
-      where: { organizationId: activeOrgId },
-    });
-
-    if (workspaceCount >= membership.organization.maxWorkspaces) {
-      return NextResponse.json(
-        {
-          error: `Workspace limit reached (${membership.organization.maxWorkspaces})`,
-        },
-        { status: 403 }
-      );
-    }
+    // Plan-limit check: reads PLAN_LIMITS[workspace.planTier].WORKSPACES
+    // across the org's existing workspaces (+ the -1 developer-unlimited
+    // override) — not the legacy Organization.type/maxWorkspaces gate.
+    const limited = await enforceOrgPlanLimit(activeOrgId, "WORKSPACES");
+    if (limited) return limited;
 
     const body = await request.json();
     const { name, contentLanguage: rawContentLanguage } = body;
@@ -133,7 +118,7 @@ export async function POST(request: NextRequest) {
     const RESERVED_SLUGS = new Set(["app", "www", "api", "admin", "p", "static", "assets"]);
     if (RESERVED_SLUGS.has(slug)) {
       return NextResponse.json(
-        { error: "This workspace name is reserved — please choose another." },
+        { error: "This workspace name is reserved — please choose another.", code: "WORKSPACE_NAME_RESERVED" },
         { status: 409 }
       );
     }
@@ -142,10 +127,16 @@ export async function POST(request: NextRequest) {
     const existing = await prisma.workspace.findUnique({ where: { slug } });
     if (existing) {
       return NextResponse.json(
-        { error: "A workspace with this name already exists" },
+        { error: "A workspace with this name already exists", code: "WORKSPACE_NAME_TAKEN" },
         { status: 409 }
       );
     }
+
+    // A new workspace inherits the org's highest existing tier — otherwise it
+    // defaults to FREE and the (already-correct) per-workspace plan-limit
+    // checks for personas/campaigns/etc. would wrongly apply FREE limits
+    // under a paid org.
+    const inheritedTier = await getOrgPlanTier(activeOrgId);
 
     // Create workspace + 11 canonical brand assets + research methods atomically
     const workspace = await prisma.$transaction(async (tx) => {
@@ -155,6 +146,7 @@ export async function POST(request: NextRequest) {
           slug,
           organizationId: activeOrgId,
           contentLanguage,
+          planTier: inheritedTier,
         },
       });
 
