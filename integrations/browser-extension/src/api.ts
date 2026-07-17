@@ -10,7 +10,7 @@
 // =============================================================
 
 export interface BranddockConfig {
-  /** Bijv. https://app.branddock.com — zonder trailing slash (wordt genormaliseerd). */
+  /** Bijv. https://branddock.app — zonder trailing slash (wordt genormaliseerd). */
   baseUrl: string;
   /** Workspace-API-key, formaat bd_live_… */
   apiKey: string;

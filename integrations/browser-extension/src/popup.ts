@@ -67,7 +67,7 @@ function renderStatus(): void {
     statusEl.textContent = `Geconfigureerd voor ${host}`;
     statusEl.className = 'status ok';
   } else {
-    statusEl.textContent = 'Nog niet geconfigureerd — open Instellingen en vul Base URL + API-key in.';
+    statusEl.textContent = 'Nog niet geconfigureerd — open Instellingen en plak je API-key.';
     statusEl.className = 'status warn';
   }
 }
