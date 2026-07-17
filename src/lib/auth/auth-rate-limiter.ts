@@ -18,6 +18,16 @@ import { checkGenericRateLimit } from '@/lib/ai/rate-limiter';
  * per-email-bucket.
  */
 export function authRateLimitMax(defaultMax: number): number {
+  // Prod-gate (review 2026-07-17): een verdwaalde env-var op productie mag de
+  // brute-force-verdediging nooit stil verruimen — buiten prod-only.
+  if (process.env.NODE_ENV === "production") {
+    if (process.env.AUTH_RATE_LIMIT_MAX) {
+      console.warn(
+        "[auth-rate-limiter] AUTH_RATE_LIMIT_MAX genegeerd in productie — strikte default blijft gelden",
+      );
+    }
+    return defaultMax;
+  }
   const parsed = Number(process.env.AUTH_RATE_LIMIT_MAX);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : defaultMax;
 }

@@ -41,12 +41,15 @@ function applySecurityHeaders(headers: Headers, nonce: string): void {
 //
 // Env-override AUTH_RATE_LIMIT_MAX bestaat voor de e2e-suite (gotcha
 // 2026-07-17); zelfde knop als Better Auth customRules + het per-email-bucket
-// (auth-rate-limiter.ts). Default blijft 10; prod zet de var niet. Lokale
-// duplicatie van de helper: dit is edge-middleware, imports minimaal houden.
+// (auth-rate-limiter.ts). Prod-gated: in productie geldt altijd de strikte
+// default — een verdwaalde env-var mag de verdediging niet stil verruimen.
+// Lokale duplicatie van de helper: dit is edge-middleware, imports minimaal.
 const AUTH_RATE_LIMIT_WINDOW_MS = 60_000;
 const parsedAuthMax = Number(process.env.AUTH_RATE_LIMIT_MAX);
 const AUTH_RATE_LIMIT_MAX =
-  Number.isFinite(parsedAuthMax) && parsedAuthMax > 0 ? parsedAuthMax : 10;
+  !isProduction && Number.isFinite(parsedAuthMax) && parsedAuthMax > 0
+    ? parsedAuthMax
+    : 10;
 const authRateLimitStore = new Map<string, number[]>();
 
 function checkAuthRateLimit(ip: string): boolean {

@@ -22,10 +22,13 @@ const updateKnowledgeSchema = z.object({
   rating: z.number().min(0).max(5).optional(),
   status: z.string().max(100).optional(),
   aiSummary: z.string().max(20000).nullish(),
-  aiKeyTakeaways: strArray.nullish(),
-  relatedTrends: strArray.nullish(),
-  relatedPersonas: strArray.nullish(),
-  relatedAssets: strArray.nullish(),
+  // De vier list-velden zijn Json?-kolommen: Prisma weigert daar een kale
+  // JS-null (vereist Prisma.DbNull) — dus geen .nullish() maar .optional(),
+  // anders adverteert het schema een null-contract dat runtime 500't.
+  aiKeyTakeaways: strArray.optional(),
+  relatedTrends: strArray.optional(),
+  relatedPersonas: strArray.optional(),
+  relatedAssets: strArray.optional(),
   isFeatured: z.boolean().optional(),
   isFavorite: z.boolean().optional(),
   isArchived: z.boolean().optional(),

@@ -111,13 +111,23 @@ Grep `POST/PUT/PATCH-routes die `.json()` lezen zonder `safeParse`/`.parse(`' ga
 
 - **Zod batch 5-7 (MIDDEL) ✅** — 15 extra routes: `stripe/checkout` + `purchase`, `ad-publish/meta` (types op variantIndex/budget — string-variantIndex 500'de in Prisma), `organization/invite` (+ e-mail-format) + `invite/accept`, `media/[id]` PATCH + `media/collections/[id]` PATCH + `media/import-url` (Prisma-enum `category` 500'de ná de download), `brand-assets` POST + `[id]/regenerate`, `admin/exploration-configs` knowledge POST/PUT, `versions` POST (enum `changeType`), `campaigns/[id]/master-message` PATCH, `workspaces` POST/PATCH/DELETE. **Batch 8 (LAAG) bewust overgeslagen — definitief**: alle lock-/enkel-veld-routes hebben adequate `typeof`-guards; een schema voegt daar niets toe. **De Zod-sweep is hiermee afgerond.**
 - **Bijvangst-IDOR #2 ✅**: `campaigns/[id]/master-message` PATCH update'te op kaal `id` zonder workspace-check — elke ingelogde user kon elke campaign cross-workspace overschrijven. Nu 404 buiten de eigen workspace (zelfde klasse als de research-plans-PATCH-fix).
-- **Bijvangst seat-limit-bug ✅**: `maxSeats = -1` (unlimited-conventie; Int-kolom kan Infinity niet opslaan, pilot-orgs staan op -1) blokkeerde élke invite (`memberCount >= -1` altijd waar) in beide invite-routes. Nu `maxSeats < 0` = unlimited. Bewezen: invite op de -1-org gaf 403 → 201 na fix.
+- **Bijvangst seat-limit-bug — ontdekt, daarna SUPERSEDED door mains billing-werk**: `maxSeats = -1` blokkeerde élke invite (`memberCount >= -1` altijd waar). Onze `maxSeats < 0`-guard bleek bij de main-merge achterhaald: het billing-entitlements-plan (#180–#186, zelfde dag, andere sessie) verving de legacy maxSeats-check al door `enforceOrgPlanLimit()` (plan-tier-based + `-1`-developer-override) en **verwijderde `settings/team/invite` volledig**. Merge-resolutie: mains plan-limit-logica + ons Zod-schema behouden; onze seat-guard gedropt; de route-verwijdering gevolgd. Het onderliggende probleem is dus op main structureel opgelost.
 - **e2e vs auth-rate-limiters ✅ — structureel opgelost**: er bleken DRIE gestapelde lagen (proxy 10/min/IP · Better Auth customRules 10/15min/IP — de échte dader · per-email-bucket 10/15min); alle drie hangen nu aan één test-knop `AUTH_RATE_LIMIT_MAX` (default overal strikt; Playwright-webServer zet 1000). ⚠️ Raakt `src/lib/auth.ts` — de "niet aanraken"-regel hierboven ging over de invite-member-logica, niet het rateLimit-blok; alleen de max-waarden zijn env-overridable gemaakt. Plus twee test-side-fixes in `permissions.spec.ts`: expliciete `organization/set-active` na login (kale API-login heeft geen activeOrganizationId) en Origin-headers op auth-POSTs (Better Auth CSRF; ná sign-out ook op de volgende sign-in enforce'd). **`permissions.spec.ts` + `rbac-403.spec.ts` samen: 23/23 groen** — de spec stond vóór deze pass structureel 7/18 rood.
 - **Verificatie ronde 3**: tsc 0 · lint 0 errors · `smoke:security-residual` 31/31 + `smoke:ad-encryption` 13/13 · curl-steekproef alle nieuwe schema's (invalid → 400 + flatten; token-als-getal → 400 waar eerst 500; import-url-category → 400 vóór download; geldige invite → 201).
 
+# Reviewronde (2026-07-17) — 2×2 subagents, task-finalize-conventie
+
+Ronde 1 (2 onafhankelijke reviewers over de volledige diff): **0 CRITICAL**, 5 unieke WARNINGs, ~12 MINORs. Afhandeling:
+- **W: branch conflicteerde met mains billing-werk (#180–#186)** → origin/main ingemerged; 3 conflicten opgelost (invite → mains `enforceOrgPlanLimit` + ons Zod-schema; checkout → ons schema met mains STARTER/GROWTH-tierset; `settings/team/invite` → mains verwijdering gevolgd).
+- **W: `AUTH_RATE_LIMIT_MAX` zonder prod-guard** → gefixt: prod-gated in alle 3 lagen (genegeerd + warn bij NODE_ENV=production).
+- **W: `.nullish()` op Json?-kolommen (knowledge/[id])** → gefixt: `.optional()` — een schema-valide `null` zou anders alsnog in Prisma 500'en.
+- **W: collector bufferde body vóór de size-check** → gefixt: Content-Length-precheck.
+- **W (geaccepteerd, follow-up)**: de in-memory fallback van `checkGenericRateLimit` evict nooit keys — op prod draait Redis (Upstash, met expire), dus alleen een lokaal/dev-artefact; meenemen als mini-item bij een volgende limiter-aanpassing.
+- MINORs: bewust niet auto-gefixt (conventie); genoteerd in de PR-comment. CLAUDE.md-envlijst wél bijgewerkt (`AUTH_RATE_LIMIT_MAX`).
+
 # Resterend na deze pass
 
-1. **Nonce-CSP enforce-flip** — gated op prod-Report-Only-data (zie MINOR-checklist). Dit is het enige inhoudelijke rest-item; daarna kan de task definitief dicht.
+1. **Nonce-CSP enforce-flip** — gated op prod-Report-Only-data (zie MINOR-checklist). Bij die flip ook `eu-assets.i.posthog.com` overwegen (posthog-js lazy-features; reviewer-MINOR). Dit is het enige inhoudelijke rest-item; daarna kan de task definitief dicht.
 
 # Notes
 

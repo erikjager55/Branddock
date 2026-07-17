@@ -39,6 +39,13 @@ export async function POST(request: NextRequest) {
   );
   if (!limit.allowed) return noContent();
 
+  // Content-Length-precheck: drop oversized bodies vóór het inlezen (de
+  // length-check hieronder vangt pas ná volledige buffering).
+  const declaredLength = Number(request.headers.get('content-length'));
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_REPORT_BYTES) {
+    return noContent();
+  }
+
   const raw = await request.text().catch(() => '');
   if (!raw || raw.length > MAX_REPORT_BYTES) return noContent();
 
