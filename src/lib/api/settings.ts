@@ -35,6 +35,7 @@ import type {
   AppearanceResponse,
   UpdateAppearanceRequest,
 } from "@/types/settings";
+import { throwApiError } from "./api-error";
 
 const BASE = "/api/settings";
 
@@ -165,12 +166,14 @@ export async function fetchTeamMembers(): Promise<TeamMembersResponse> {
 export async function inviteMember(
   data: InviteMemberRequest
 ): Promise<InviteMemberResponse> {
-  const res = await fetch(`${BASE}/team/invite`, {
+  // /api/organization/invite (not /api/settings/team/invite) — the latter
+  // never sent an email, silently. See src/lib/api/api-error.ts.
+  const res = await fetch("/api/organization/invite", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Failed to invite member");
+  if (!res.ok) await throwApiError(res);
   return res.json();
 }
 

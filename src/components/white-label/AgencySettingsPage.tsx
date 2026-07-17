@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useWhiteLabel } from '../../contexts';
 import { Button } from '../ui/button';
@@ -8,15 +8,15 @@ import { Textarea } from '../ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Switch } from '../ui/switch';
-import { Badge } from '../ui/badge';
 import {
-  Palette, Globe, Mail, Phone, MapPin, Link as LinkIcon,
-  Building2, Save, Upload, Eye, Settings2, Briefcase, Trash2, Loader2, Plus
+  Palette, Globe, Mail, Phone, MapPin,
+  Building2, Save, Upload, Settings2, Briefcase
 } from 'lucide-react';
 import { PageHeader } from '../shared/PageHeader';
 import { PageContainer } from '../shared/PageContainer';
 import { useUIState } from '../../contexts/UIStateContext';
 import { AgencySettings } from '../../types/white-label';
+import { WorkspacesTab } from '@/features/settings/components/workspaces/WorkspacesTab';
 
 export function AgencySettingsPage() {
   const { t } = useTranslation('white-label');
@@ -360,214 +360,5 @@ export function AgencySettingsPage() {
           </TabsContent>
         </Tabs>
     </PageContainer>
-  );
-}
-
-// ─── Workspaces Management Tab ──────────────────────────────
-
-interface WorkspaceItem {
-  id: string;
-  name: string;
-  slug: string;
-  createdAt: string;
-}
-
-function WorkspacesTab() {
-  const { t } = useTranslation('white-label');
-  const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadWorkspaces = useCallback(async () => {
-    try {
-      const res = await fetch('/api/workspaces', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        setWorkspaces(data.workspaces ?? []);
-        setActiveWorkspaceId(data.activeWorkspaceId ?? null);
-      }
-    } catch {
-      // silently fail
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadWorkspaces();
-  }, [loadWorkspaces]);
-
-  const handleDelete = async (ws: WorkspaceItem) => {
-    if (!window.confirm(t('workspaces.deleteConfirm', { name: ws.name }))) {
-      return;
-    }
-
-    setDeletingId(ws.id);
-    setError(null);
-
-    try {
-      const res = await fetch('/api/workspaces', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workspaceId: ws.id }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? t('workspaces.errorDelete'));
-        return;
-      }
-
-      // If we deleted the active workspace, reload page to switch
-      if (ws.id === activeWorkspaceId) {
-        window.location.reload();
-        return;
-      }
-
-      await loadWorkspaces();
-    } catch {
-      setError(t('workspaces.errorDelete'));
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newName.trim()) return;
-
-    setIsCreating(true);
-    setError(null);
-
-    try {
-      const res = await fetch('/api/workspaces', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName.trim() }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? t('workspaces.errorCreate'));
-        return;
-      }
-
-      setNewName('');
-      setShowCreate(false);
-      await loadWorkspaces();
-    } catch {
-      setError(t('workspaces.errorCreate'));
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>{t('workspaces.title')}</CardTitle>
-              <CardDescription>
-                {t('workspaces.count', { count: workspaces.length })}
-              </CardDescription>
-            </div>
-            <Button
-              onClick={() => setShowCreate(!showCreate)}
-              variant="outline"
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              {t('workspaces.new')}
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-3">
-          {error && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
-              {error}
-            </div>
-          )}
-
-          {showCreate && (
-            <form onSubmit={handleCreate} className="flex items-end gap-3 pb-4 border-b border-gray-200">
-              <div className="flex-1 space-y-1">
-                <Label htmlFor="ws-name">{t('workspaces.nameLabel')}</Label>
-                <Input
-                  id="ws-name"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder={t('workspaces.namePlaceholder')}
-                  autoFocus
-                />
-              </div>
-              <Button type="submit" disabled={isCreating || !newName.trim()} className="gap-2">
-                {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
-                {t('workspaces.create')}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => { setShowCreate(false); setNewName(''); }}>
-                {t('workspaces.cancel')}
-              </Button>
-            </form>
-          )}
-
-          {workspaces.map((ws) => (
-            <div
-              key={ws.id}
-              className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-50 text-teal-600">
-                  <Briefcase className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{ws.name}</span>
-                    {ws.id === activeWorkspaceId && (
-                      <Badge variant="default" className="text-[10px] px-1.5 py-0">
-                        {t('workspaces.active')}
-                      </Badge>
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-500">{ws.slug}</span>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-400 hover:text-red-600"
-                disabled={deletingId === ws.id || workspaces.length <= 1}
-                onClick={() => handleDelete(ws)}
-                title={workspaces.length <= 1 ? t('workspaces.cannotDeleteLast') : t('workspaces.deleteTooltip', { name: ws.name })}
-              >
-                {deletingId === ws.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    </div>
   );
 }
