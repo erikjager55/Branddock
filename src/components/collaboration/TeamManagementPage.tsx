@@ -31,6 +31,8 @@ import { PageHeader } from '../shared/PageHeader';
 import { PageContainer } from '../shared/PageContainer';
 import { useUIState } from '../../contexts/UIStateContext';
 import { useWorkspace } from '../../hooks/use-workspace';
+import { useInviteMember } from '@/hooks/use-settings';
+import { ApiError, translateApiError } from '@/lib/api/api-error';
 
 type TeamRole = 'owner' | 'admin' | 'member' | 'viewer';
 
@@ -56,9 +58,10 @@ interface ApiInvitation {
 }
 
 export function TeamManagementPage() {
-  const { t } = useTranslation('team');
+  const { t } = useTranslation(['team', 'entitlement-errors']);
   const { setActiveSection } = useUIState();
   const { organizationId } = useWorkspace();
+  const inviteMember = useInviteMember();
   const [members, setMembers] = useState<ApiMember[]>([]);
   const [invitations, setInvitations] = useState<ApiInvitation[]>([]);
   const [myRole, setMyRole] = useState<string>('viewer');
@@ -67,7 +70,7 @@ export function TeamManagementPage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<TeamRole>('member');
   const [isLoading, setIsLoading] = useState(true);
-  const [isInviting, setIsInviting] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const canManage = ['owner', 'admin'].includes(myRole);
@@ -109,34 +112,20 @@ export function TeamManagementPage() {
 
   const handleInvite = async () => {
     if (!inviteEmail || !organizationId) return;
-    setIsInviting(true);
+    setInviteError(null);
 
     try {
-      const res = await fetch('/api/organization/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: inviteEmail,
-          role: inviteRole,
-          organizationId,
-        }),
+      await inviteMember.mutateAsync({
+        email: inviteEmail,
+        role: inviteRole,
+        organizationId,
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        alert(data.error ?? t('errors.invite'));
-        return;
-      }
-
       setInviteEmail('');
       setInviteRole('member');
       setShowInviteForm(false);
       loadMembers(); // Refresh to show new invitation
     } catch (err) {
-      console.error('Invite failed:', err);
-      alert(t('errors.invite'));
-    } finally {
-      setIsInviting(false);
+      setInviteError(err instanceof ApiError ? translateApiError(t, err) : t('errors.invite'));
     }
   };
 
@@ -351,9 +340,13 @@ export function TeamManagementPage() {
                 </div>
               </div>
 
+              {inviteError && (
+                <p className="text-sm text-destructive">{inviteError}</p>
+              )}
+
               <div className="flex gap-2">
-                <Button onClick={handleInvite} disabled={isInviting || !inviteEmail} className="gap-2">
-                  {isInviting ? (
+                <Button onClick={handleInvite} disabled={inviteMember.isPending || !inviteEmail} className="gap-2">
+                  {inviteMember.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Mail className="h-4 w-4" />

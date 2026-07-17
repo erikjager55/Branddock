@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     if (!activeOrgId) {
       return NextResponse.json(
-        { error: "No active organization" },
+        { error: "No active organization", code: "NO_ACTIVE_ORG" },
         { status: 400 }
       );
     }
@@ -76,12 +76,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!membership) {
-      return NextResponse.json({ error: "Not a member" }, { status: 403 });
+      return NextResponse.json({ error: "Not a member", code: "NOT_MEMBER" }, { status: 403 });
     }
 
     if (!["owner", "admin"].includes(membership.role)) {
       return NextResponse.json(
-        { error: "Only owners and admins can create workspaces" },
+        { error: "Only owners and admins can create workspaces", code: "NOT_OWNER_OR_ADMIN" },
         { status: 403 }
       );
     }
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     const RESERVED_SLUGS = new Set(["app", "www", "api", "admin", "p", "static", "assets"]);
     if (RESERVED_SLUGS.has(slug)) {
       return NextResponse.json(
-        { error: "This workspace name is reserved — please choose another." },
+        { error: "This workspace name is reserved — please choose another.", code: "WORKSPACE_NAME_RESERVED" },
         { status: 409 }
       );
     }
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     const existing = await prisma.workspace.findUnique({ where: { slug } });
     if (existing) {
       return NextResponse.json(
-        { error: "A workspace with this name already exists" },
+        { error: "A workspace with this name already exists", code: "WORKSPACE_NAME_TAKEN" },
         { status: 409 }
       );
     }

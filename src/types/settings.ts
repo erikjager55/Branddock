@@ -122,6 +122,7 @@ export interface TeamMembersResponse {
 export interface InviteMemberRequest {
   email: string;
   role?: string;
+  organizationId: string;
 }
 
 export interface InviteMemberResponse {
