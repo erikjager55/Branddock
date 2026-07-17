@@ -2,6 +2,15 @@
 
 Lessons learned from past mistakes. Read this at the start of every session.
 
+## 2026-07-17: e2e-suite deelt één IP → de auth-brute-force-limiter (10 sign-ins/min) maakt specs met veel logins deterministisch rood mid-suite
+**What went wrong**: Bij het bouwen van de RBAC-403-e2e-smoke faalde de bestaande `permissions.spec.ts` (7/18) — makkelijk te lezen als "mijn seed-wijziging brak de suite". Een baseline-run op de ongewijzigde seed gaf een **identieke faalset**: pre-existing. Werkelijke oorzaak: élke test logt in via `page.request.post('/api/auth/sign-in/email')` in een `beforeEach`, allemaal vanaf localhost = één IP, en `src/proxy.ts` capt auth-POSTs op 10/min/IP. Vanaf de ~11e login in het venster krijgt de sign-in stil een 429, de test merkt dat niet (login-response wordt niet gecheckt) en de eerstvolgende API-call faalt dan met een sessieloze 401 waar 403 verwacht werd. Misleidend: de eerste ~10 tests van dezelfde run zijn gewoon groen, en retries verergeren het (elke retry = extra login).
+**Rule**:
+- Bij e2e-failures op auth-achtige statussen (401 waar 403/200 hoort) mid-suite: verdenk de auth-rate-limiter vóór je eigen diff. Diagnose-volgorde: (1) baseline-run op ongewijzigde staat — identieke faalset = pre-existing (gotcha 2026-07-07); (2) tel de sign-ins per minuut in de run.
+- Ontwerp e2e-specs met **één login per rol** (één test met meerdere asserts, of een gedeelde context), niet één login per assert. De nieuwe `rbac-403.spec.ts` doet 4 logins totaal; check de login-teller bij het toevoegen van tests.
+- Check bij API-login-helpers de sign-in-response (`expect(res.ok())`) — een stil gefaalde login verplaatst de fout naar een verwarrende plek verderop.
+- Structurele fix (open): test-env-uitzondering op de limiter óf suite-brede one-login-per-role-refactor — nodig zodra de volledige suite lokaal/CI groen moet.
+**Prior art**: 2026-07-07 CI-e2e-gate ("check eerst of main óók rood is — pre-existing ≠ jouw regressie"; gestapelde test-side oorzaken). Gevonden tijdens security-residual-hardening tweede pass.
+
 ## 2026-07-14: Vercel "sensitive" env-vars komen LEEG uit `vercel env pull` — lege string, geen error
 **What went wrong**: Gate-queries en debug-sessies gingen ervan uit dat `vercel env pull` de prod-env compleet oplevert. Vars die als *sensitive* zijn gemarkeerd (DATABASE_URL, META_APP_SECRET, CRON_SECRET, TOKEN_ENCRYPTION_KEY, …) komen echter als lege waarde terug — zonder foutmelding. Kostte een debug-cyclus (script leek te draaien maar had geen bruikbare waarde) en bij de Meta-setup ging een App Secret via een plak-verwisseling de verkeerde env-var in → rotatie nodig.
 **Rule**:
