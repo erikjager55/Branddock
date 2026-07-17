@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
-import { buildSecurityHeaders } from "./src/lib/security/security-headers";
+import { buildStaticSecurityHeaders } from "./src/lib/security/security-headers";
 
 // next/image staat alleen expliciete hostnames toe. De storage-code serveert
 // R2-objecten vanaf R2_PUBLIC_URL (volledige CDN-base-URL, r2-storage.ts) — pak
@@ -17,11 +17,13 @@ const r2PublicDomain = (() => {
 const isProd = process.env.NODE_ENV === 'production';
 
 // ─── Security headers (applied to every route) ─────────────
-// Waarden komen uit de gedeelde bron (src/lib/security/security-headers.ts),
-// dezelfde die de edge-middleware (src/proxy.ts) gebruikt — één bron-of-truth
-// tegen drift (audit-MINOR #348). De full CSP + HSTS zijn prod-only; dev
-// ships zonder CSP zodat Next HMR/eval blijft werken.
-const securityHeaders = Object.entries(buildSecurityHeaders(isProd)).map(([key, value]) => ({
+// Waarden komen uit de gedeelde bron (src/lib/security/security-headers.ts).
+// Sinds de nonce-stap (audit-rest 2026-07-17) zendt deze statische laag
+// bewust GEEN CSP meer: de CSP komt per-request uit de edge-middleware
+// (src/proxy.ts), anders zou een tweede statische policy de nonce ondermijnen
+// (de browser enforce't de intersectie). De overige headers blijven hier als
+// vangnet dubbel gezet.
+const securityHeaders = Object.entries(buildStaticSecurityHeaders(isProd)).map(([key, value]) => ({
   key,
   value,
 }));
