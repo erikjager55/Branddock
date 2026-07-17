@@ -5,9 +5,9 @@ fase: launch
 priority: now
 effort: 4-6 uur
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-07-16
-completed:
+completed: 2026-07-17
 related-adr: docs/adr/2026-07-16-content-locale-source-of-truth.md
 related-spec: -
 worktree: branddock-content-locale-anchor
@@ -34,8 +34,8 @@ tijdens hetzelfde onderzoek bovenkwam.
    voiceguide > contentLanguage; `PATCH /api/workspaces` laat contentLanguage het profiel
    overschrijven. Gevolg op prod: de **pilotklant-workspace** heeft `contentLanguage='en'`
    maar profiel + voiceguide `nl-NL`. De generatie draait Nederlands, de **settings-UI
-   toont "English"**, en één keer opslaan flipt het profiel stil naar `en-GB` — waarna de
-   pilotklant Engels genereert. Geen error, geen waarschuwing.
+   toont "English"** — de UI liegt over wat het product doet. (Géén één-klik-flip: de
+   UI-guard voorkomt een PATCH zonder echte dropdown-wijziging; zie Notes.)
 
 # Voorstel
 
