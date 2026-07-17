@@ -5,9 +5,9 @@ fase: launch
 priority: now
 effort: 4-6 uur
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-07-16
-completed:
+completed: 2026-07-17
 related-adr: -
 related-spec: -
 worktree: branddock-lp-locale-directive
