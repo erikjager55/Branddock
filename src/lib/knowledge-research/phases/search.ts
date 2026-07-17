@@ -15,7 +15,7 @@
 import { searchWithGrounding } from "@/lib/ai/gemini-client";
 import { fetchExaContext } from "@/lib/exa/exa-client";
 import { fetchScholarContext } from "@/lib/semantic-scholar/scholar-client";
-import { isPrivateHostname } from "@/lib/utils/ssrf";
+import { assertSafeUrl } from "@/lib/utils/ssrf";
 import type { DeepResearchEvent, SourceRef } from "../types";
 
 const MAX_DOMAIN_DUPLICATES = 2;
@@ -59,6 +59,13 @@ function domainOf(url: string): string {
 async function resolveRedirectUrl(url: string, signal: AbortSignal): Promise<string> {
   if (signal.aborted || !url.includes("grounding-api-redirect")) return url;
   try {
+    // SSRF-async-upgrade (audit-rest, 2026-07-17): assertSafeUrl resolve't
+    // álle DNS-records (sluit private targets + DNS-rebind uit) — de oude
+    // sync isPrivateHostname zag alleen IP-literals. Bewust géén safeFetch
+    // hier: die volgt de redirect-keten zelf, terwijl deze functie juist de
+    // Location-header wil aflezen zonder te volgen (de latere scrape-fase
+    // fetcht de bestemming wél via safeFetch).
+    await assertSafeUrl(url);
     // GET + redirect:manual: een 302 heeft geen body (de body wordt niet gelezen),
     // dus net zo goedkoop als HEAD maar bewezen werkend op de grounding-endpoint.
     const res = await fetch(url, {
@@ -72,9 +79,10 @@ async function resolveRedirectUrl(url: string, signal: AbortSignal): Promise<str
     if (location && /^https?:\/\//i.test(location)) {
       // SSRF-defense-in-depth: sla geen private/interne bestemming op.
       try {
-        if (!isPrivateHostname(new URL(location).hostname)) return location;
+        await assertSafeUrl(location);
+        return location;
       } catch {
-        // Onparseerbare location → val terug op de redirect-URL.
+        // Onveilige of onparseerbare location → val terug op de redirect-URL.
       }
     }
   } catch {
