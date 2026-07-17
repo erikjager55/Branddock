@@ -21,13 +21,16 @@ const ns = {
   },
   usage: {
     title: 'Verbruiksoverzicht',
+    comingSoon: 'Binnenkort',
     labels: {
+      workspaces: 'Workspaces',
       teamMembers: 'Teamleden',
       aiTokens: 'AI Tokens',
       personas: 'Personas',
       campaigns: 'Campagnes',
       brandAssets: 'Merkassets',
       products: 'Producten',
+      marketInsights: 'Marktinzichten',
       knowledge: 'Kennis',
       storage: 'Opslag',
     },

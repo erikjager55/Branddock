@@ -41,12 +41,7 @@ export const test = base.extend<AuthFixtures>({
   },
 
   viewerPage: async ({ page }, use) => {
-    // Uses member account (closest to viewer available in seed)
-    await loginViaApi(
-      page,
-      TEST_USERS.member.email,
-      TEST_USERS.member.password,
-    );
+    await loginViaApi(page, TEST_USERS.viewer.email, TEST_USERS.viewer.password);
     await use(page);
   },
 });

@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { MediaCategory } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { parseJsonBody } from "@/lib/api/parse-json-body";
 import { getCached, setCache, invalidateCache } from "@/lib/api/cache";
 import { cacheKeys, CACHE_TTL } from "@/lib/api/cache-keys";
 import { getStorageProvider } from "@/lib/storage";
+
+// L8 Zod-sweep (audit 2026-06-26, batch 5): `name` was untyped (een non-string
+// 500'de op .toLowerCase), `category` is een Prisma-enum (ongeldige waarde
+// 500'de in de update) en aiTags/attribution gingen ongetypeerd de DB in.
+const updateMediaAssetSchema = z.object({
+  name: z.string().min(1).max(300).optional(),
+  category: z.enum(Object.values(MediaCategory) as [string, ...string[]]).optional(),
+  aiDescription: z.string().max(10000).nullish(),
+  aiTags: z.array(z.string().max(200)).max(100).optional(),
+  attribution: z.string().max(1000).nullish(),
+  tagIds: z.array(z.string().min(1).max(100)).max(200).optional(),
+});
 
 const MEDIA_ASSET_INCLUDE = {
   tags: { include: { mediaTag: true } },
@@ -88,7 +103,9 @@ export async function PATCH(
       );
     }
 
-    const body = await request.json();
+    const parsed = await parseJsonBody(request, updateMediaAssetSchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     const allowedFields: Record<string, unknown> = {};
     if (body.name !== undefined) {
@@ -113,13 +130,11 @@ export async function PATCH(
     if (body.attribution !== undefined) allowedFields.attribution = body.attribution;
 
     // Handle tag linking if tagIds provided
-    const hasTagUpdate = body.tagIds !== undefined && Array.isArray(body.tagIds);
+    const hasTagUpdate = body.tagIds !== undefined;
     let tagIds: string[] = [];
 
     if (hasTagUpdate) {
-      tagIds = [...new Set<string>(
-        body.tagIds.filter((t: unknown): t is string => typeof t === "string")
-      )];
+      tagIds = [...new Set<string>(body.tagIds ?? [])];
 
       // Verify all tags belong to this workspace
       if (tagIds.length > 0) {

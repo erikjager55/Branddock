@@ -1,16 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Briefcase, Trash2, Loader2, Plus } from 'lucide-react';
-
-interface WorkspaceItem {
-  id: string;
-  name: string;
-  slug: string;
-  createdAt: string;
-  contentLanguage: string;
-}
+import { Briefcase, Trash2, Loader2, Plus, ArrowUpRight } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ProgressBar } from '@/components/shared';
+import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useWorkspaceEntitlements, useCreateWorkspace } from '@/hooks/use-workspace-entitlements';
+import { deleteWorkspace, updateWorkspaceContentLanguage } from '@/lib/api/workspaces';
+import { ApiError, translateApiError } from '@/lib/api/api-error';
+import { formatLimit } from '@/lib/constants/plan-limits';
 
 // Content-taal-opties — endoniemen (getoond in eigen taal, niet vertaald).
 // Los van de Display-language (per gebruiker, in Settings → Appearance).
@@ -25,38 +24,22 @@ const CONTENT_LANGUAGES: { code: string; label: string }[] = [
 ];
 
 export function WorkspacesTab() {
-  const { t } = useTranslation('settings-misc');
-  const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { t } = useTranslation(['settings-misc', 'entitlement-errors']);
+  const queryClient = useQueryClient();
+  const setActiveTab = useSettingsStore((s) => s.setActiveTab);
+  const { workspaces, activeWorkspaceId, current, limit, isUnlimited, atLimit, isLoading } =
+    useWorkspaceEntitlements();
+  const createWorkspace = useCreateWorkspace();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newLang, setNewLang] = useState('en');
-  const [isCreating, setIsCreating] = useState(false);
   const [savingLangId, setSavingLangId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadWorkspaces = useCallback(async () => {
-    try {
-      const res = await fetch('/api/workspaces', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        setWorkspaces(data.workspaces ?? []);
-        setActiveWorkspaceId(data.activeWorkspaceId ?? null);
-      }
-    } catch {
-      // silently fail
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const refetchWorkspaces = () => queryClient.invalidateQueries({ queryKey: ['workspaces', 'list'] });
 
-  useEffect(() => {
-    loadWorkspaces();
-  }, [loadWorkspaces]);
-
-  const handleDelete = async (ws: WorkspaceItem) => {
+  const handleDelete = async (ws: { id: string; name: string }) => {
     if (!window.confirm(t('workspaces.deleteConfirm', { name: ws.name }))) {
       return;
     }
@@ -65,26 +48,14 @@ export function WorkspacesTab() {
     setError(null);
 
     try {
-      const res = await fetch('/api/workspaces', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workspaceId: ws.id }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? t('workspaces.deleteFailed'));
-        return;
-      }
-
+      await deleteWorkspace(ws.id);
       if (ws.id === activeWorkspaceId) {
         window.location.reload();
         return;
       }
-
-      await loadWorkspaces();
-    } catch {
-      setError(t('workspaces.deleteFailed'));
+      await refetchWorkspaces();
+    } catch (err) {
+      setError(err instanceof ApiError ? translateApiError(t, err) : t('workspaces.deleteFailed'));
     } finally {
       setDeletingId(null);
     }
@@ -94,53 +65,31 @@ export function WorkspacesTab() {
     e.preventDefault();
     if (!newName.trim()) return;
 
-    setIsCreating(true);
     setError(null);
 
     try {
-      const res = await fetch('/api/workspaces', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName.trim(), contentLanguage: newLang }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? t('workspaces.createFailed'));
-        return;
-      }
-
+      await createWorkspace.mutateAsync({ name: newName.trim(), contentLanguage: newLang });
       setNewName('');
       setNewLang('en');
       setShowCreate(false);
-      await loadWorkspaces();
-    } catch {
-      setError(t('workspaces.createFailed'));
-    } finally {
-      setIsCreating(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? translateApiError(t, err) : t('workspaces.createFailed'));
     }
   };
 
-  const handleLanguageChange = async (ws: WorkspaceItem, contentLanguage: string) => {
+  const handleLanguageChange = async (ws: { id: string; contentLanguage: string }, contentLanguage: string) => {
     if (contentLanguage === ws.contentLanguage) return;
     setSavingLangId(ws.id);
     setError(null);
-    // Optimistic — herstel via reload bij fout.
-    setWorkspaces((prev) => prev.map((w) => (w.id === ws.id ? { ...w, contentLanguage } : w)));
     try {
-      const res = await fetch('/api/workspaces', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workspaceId: ws.id, contentLanguage }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? t('workspaces.updateFailed', { defaultValue: 'Could not update the workspace' }));
-        await loadWorkspaces();
-      }
-    } catch {
-      setError(t('workspaces.updateFailed', { defaultValue: 'Could not update the workspace' }));
-      await loadWorkspaces();
+      await updateWorkspaceContentLanguage(ws.id, contentLanguage);
+      await refetchWorkspaces();
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? translateApiError(t, err)
+          : t('workspaces.updateFailed', { defaultValue: 'Could not update the workspace' }),
+      );
     } finally {
       setSavingLangId(null);
     }
@@ -153,6 +102,9 @@ export function WorkspacesTab() {
       </div>
     );
   }
+
+  const limitPct = !isUnlimited && limit > 0 ? Math.min(100, Math.round((current / limit) * 100)) : 0;
+  const limitColor = limitPct > 80 ? ('red' as const) : limitPct >= 50 ? ('amber' as const) : ('teal' as const);
 
   return (
     <div className="p-6 max-w-3xl space-y-6">
@@ -175,17 +127,38 @@ export function WorkspacesTab() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-500">
-          {t('workspaces.workspaceCount', { count: workspaces.length })}
-        </span>
-        <button
-          onClick={() => setShowCreate(!showCreate)}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          {t('workspaces.newWorkspace')}
-        </button>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-500">
+            {isUnlimited
+              ? t('workspaces.workspaceCount', { count: current })
+              : `${current} / ${formatLimit(limit)}`}
+          </span>
+          <button
+            onClick={() => setShowCreate(!showCreate)}
+            disabled={atLimit}
+            title={atLimit ? t('workspaces.limitReached', { current, limit: formatLimit(limit) }) : undefined}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+          >
+            <Plus className="h-4 w-4" />
+            {t('workspaces.newWorkspace')}
+          </button>
+        </div>
+        {!isUnlimited && (
+          <div className="flex items-center gap-3">
+            <ProgressBar value={limitPct} color={limitColor} size="sm" className="flex-1" />
+            {atLimit && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('billing')}
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium flex-shrink-0"
+              >
+                {t('upgradeCta', { ns: 'entitlement-errors' })}
+                <ArrowUpRight className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {showCreate && (
@@ -221,10 +194,10 @@ export function WorkspacesTab() {
           </div>
           <button
             type="submit"
-            disabled={isCreating || !newName.trim()}
+            disabled={createWorkspace.isPending || !newName.trim()}
             className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
           >
-            {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
+            {createWorkspace.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             {t('workspaces.create')}
           </button>
           <button

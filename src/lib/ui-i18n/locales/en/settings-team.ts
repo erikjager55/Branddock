@@ -54,9 +54,6 @@ const settingsTeam = {
     emailPlaceholder: 'colleague@company.com',
     roleLabel: 'Role',
     rolePlaceholder: 'Select a role...',
-    errorAlreadyInvited: 'This email has already been invited.',
-    errorSeatLimit:
-      'Seat limit reached. Upgrade your plan to invite more members.',
     errorSendFailed: 'Failed to send invitation',
   },
   permissions: {

@@ -8,8 +8,32 @@
 
 import { checkGenericRateLimit } from '@/lib/ai/rate-limiter';
 
+/**
+ * Test-env-uitzondering (gotcha 2026-07-17): de e2e-suite logt in vanaf één
+ * IP en met een handvol vaste e-mails — de strikte auth-limieten maakten
+ * specs met veel logins deterministisch rood mid-suite. Een expliciete
+ * `AUTH_RATE_LIMIT_MAX` (gezet door de Playwright-webServer) verruimt de
+ * max; zonder env-var geldt overal de strikte default. Gedeeld door alle
+ * drie de lagen: proxy-middleware, Better Auth customRules en dit
+ * per-email-bucket.
+ */
+export function authRateLimitMax(defaultMax: number): number {
+  // Prod-gate (review 2026-07-17): een verdwaalde env-var op productie mag de
+  // brute-force-verdediging nooit stil verruimen — buiten prod-only.
+  if (process.env.NODE_ENV === "production") {
+    if (process.env.AUTH_RATE_LIMIT_MAX) {
+      console.warn(
+        "[auth-rate-limiter] AUTH_RATE_LIMIT_MAX genegeerd in productie — strikte default blijft gelden",
+      );
+    }
+    return defaultMax;
+  }
+  const parsed = Number(process.env.AUTH_RATE_LIMIT_MAX);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : defaultMax;
+}
+
 const EMAIL_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const EMAIL_MAX = 10;
+const EMAIL_MAX = authRateLimitMax(10);
 
 /**
  * Check per-email rate limit for sign-in / sign-up attempts.

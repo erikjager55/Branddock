@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { withAiRateLimit } from '@/lib/ai/middleware';
+import { parseJsonBody } from '@/lib/api/parse-json-body';
+import { buildFoundationBodySchema } from '@/lib/campaigns/strategy-request-schemas';
 import { buildStrategyFoundation } from '@/lib/campaigns/strategy-chain';
 import type { BuildFoundationBody, PipelineStep } from '@/lib/campaigns/strategy-blueprint.types';
 
@@ -22,10 +24,11 @@ export async function POST(request: NextRequest) {
     const rateLimit = await withAiRateLimit(workspaceId);
     if (rateLimit instanceof Response) return rateLimit;
 
-    const body: BuildFoundationBody = await request.json();
-    if (!body.wizardContext?.campaignName) {
-      return NextResponse.json({ error: 'wizardContext.campaignName is required' }, { status: 400 });
-    }
+    // L8 Zod-sweep (audit 2026-06-26, batch 3): wizardContext/pipelineConfig
+    // gingen als vrije JSON de AI-pipeline in met alleen een campaignName-check.
+    const parsed = await parseJsonBody(request, buildFoundationBodySchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data as unknown as BuildFoundationBody;
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
