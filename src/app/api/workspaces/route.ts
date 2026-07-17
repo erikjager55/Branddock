@@ -213,7 +213,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { workspaceId, contentLanguage } = body;
+    const { workspaceId, contentLanguage, name } = body;
 
     if (!workspaceId || typeof workspaceId !== "string") {
       return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
@@ -251,6 +251,13 @@ export async function PATCH(request: NextRequest) {
       }
       updateData.contentLanguage = contentLanguage;
     }
+    if (typeof name === "string") {
+      const trimmed = name.trim();
+      if (trimmed.length < 1 || trimmed.length > 60) {
+        return NextResponse.json({ error: "Name must be 1-60 characters" }, { status: 400 });
+      }
+      updateData.name = trimmed;
+    }
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
@@ -266,6 +273,10 @@ export async function PATCH(request: NextRequest) {
     // brand-context-cache (anders serveert getBrandContext tot 5 min de oude taal).
     if (typeof contentLanguage === "string") {
       await syncDefaultLocaleProfile(workspaceId, localeForLanguage(contentLanguage));
+      invalidateBrandContext(workspaceId);
+      invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+    } else if (typeof name === "string") {
+      // Naam zit in de brand-context en dashboard-payloads — zelfde 5-min-staleness.
       invalidateBrandContext(workspaceId);
       invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
     }

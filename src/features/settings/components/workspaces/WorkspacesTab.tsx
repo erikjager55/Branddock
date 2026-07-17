@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Briefcase, Trash2, Loader2, Plus, ArrowUpRight } from 'lucide-react';
+import { Briefcase, Trash2, Loader2, Plus, ArrowUpRight, Pencil, Check, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ProgressBar } from '@/components/shared';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useWorkspaceEntitlements, useCreateWorkspace } from '@/hooks/use-workspace-entitlements';
-import { deleteWorkspace, updateWorkspaceContentLanguage } from '@/lib/api/workspaces';
+import { deleteWorkspace, updateWorkspaceContentLanguage, updateWorkspaceName } from '@/lib/api/workspaces';
 import { ApiError, translateApiError } from '@/lib/api/api-error';
 import { formatLimit } from '@/lib/constants/plan-limits';
 
@@ -35,9 +35,41 @@ export function WorkspacesTab() {
   const [newName, setNewName] = useState('');
   const [newLang, setNewLang] = useState('en');
   const [savingLangId, setSavingLangId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [savingRename, setSavingRename] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refetchWorkspaces = () => queryClient.invalidateQueries({ queryKey: ['workspaces', 'list'] });
+
+  const startRename = (ws: { id: string; name: string }) => {
+    setRenamingId(ws.id);
+    setRenameValue(ws.name);
+    setError(null);
+  };
+
+  const handleRename = async (ws: { id: string; name: string }) => {
+    const trimmed = renameValue.trim();
+    if (!trimmed || trimmed === ws.name) {
+      setRenamingId(null);
+      return;
+    }
+    setSavingRename(true);
+    setError(null);
+    try {
+      await updateWorkspaceName(ws.id, trimmed);
+      await refetchWorkspaces();
+      setRenamingId(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? translateApiError(t, err)
+          : t('workspaces.renameFailed', { defaultValue: 'Could not rename the workspace' }),
+      );
+    } finally {
+      setSavingRename(false);
+    }
+  };
 
   const handleDelete = async (ws: { id: string; name: string }) => {
     if (!window.confirm(t('workspaces.deleteConfirm', { name: ws.name }))) {
@@ -221,14 +253,57 @@ export function WorkspacesTab() {
                 <Briefcase className="h-4 w-4" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm">{ws.name}</span>
-                  {ws.id === activeWorkspaceId && (
-                    <span className="inline-flex items-center rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
-                      {t('workspaces.active')}
-                    </span>
-                  )}
-                </div>
+                {renamingId === ws.id ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRename(ws);
+                        if (e.key === 'Escape') setRenamingId(null);
+                      }}
+                      autoFocus
+                      maxLength={60}
+                      disabled={savingRename}
+                      aria-label={t('workspaces.renameLabel', { defaultValue: 'Workspace name' })}
+                      className="rounded-lg border border-gray-300 px-2 py-1 text-sm font-medium focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none disabled:opacity-50"
+                    />
+                    <button
+                      onClick={() => handleRename(ws)}
+                      disabled={savingRename || !renameValue.trim()}
+                      title={t('workspaces.renameSave', { defaultValue: 'Save name' })}
+                      className="rounded-lg p-1.5 text-teal-600 hover:bg-teal-50 disabled:opacity-40 transition-colors"
+                    >
+                      {savingRename ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                    </button>
+                    <button
+                      onClick={() => setRenamingId(null)}
+                      disabled={savingRename}
+                      title={t('workspaces.cancel')}
+                      className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">{ws.name}</span>
+                    <button
+                      onClick={() => startRename(ws)}
+                      title={t('workspaces.renameTooltip', { defaultValue: 'Rename workspace' })}
+                      data-testid={`workspace-rename-${ws.id}`}
+                      className="rounded p-1 text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    {ws.id === activeWorkspaceId && (
+                      <span className="inline-flex items-center rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
+                        {t('workspaces.active')}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <span className="text-xs text-gray-500">{ws.slug}</span>
               </div>
             </div>
