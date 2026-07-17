@@ -5,9 +5,9 @@ fase: launch
 priority: now
 effort: 4-6 uur
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-07-16
-completed:
+completed: 2026-07-17
 related-adr: -
 related-spec: -
 worktree: branddock-canvas-variant-confirm-export
@@ -56,15 +56,15 @@ Bijkomende, echte defecten die tijdens de diagnose bovenkwamen:
 
 # Voorstel
 
-1. Keuze **eerst** persisteren (fail-soft, niet-blokkerend), dan verrijken. De bestaande
-   eind-PATCH overschrijft 'm met de verrijkte variant + puckData. Veilig omdat
-   `PATCH /api/studio/[id]` settings shallow-merget.
-2. Export-tekstopbouw naar een pure helper (`src/lib/campaigns/export-deliverable-text.ts`)
-   die beide ketens kent: componenten → gekozen variant → eerlijke melding. Pure functie
-   omdat een App-Router-route-file geen extra symbolen mag exporteren, en de
-   keten-dispatch anders niet testbaar is. Hergebruikt `flattenPageVariantToText`
-   (dispatcht op shape, dekt ook `geoArticle`).
-3. `Confirm & Continue` gebruikt `activeVariantIndex`, met `[0]` als fallback.
+1. **`Step4Timeline.allText` leert de tweede keten kennen**: component-tekst → anders de
+   gekozen `structuredVariant` via `flattenPageVariantToText` (dispatcht op shape, dekt
+   ook `geoArticle`), fail-soft. Dit is de fix voor de melding.
+2. Eén geklemde `safeVariantIndex` voor élke lezer van de actieve variant, zodat UI en
+   Confirm-knop nooit uiteenlopen.
+3. Vroege persist van de keuze, **alleen op het LP-pad** (waar het beeldwerk-venster
+   bestaat) en **geawait** (de studio-PATCH is read-modify-write zonder lock).
+4. `canvas/export/route.ts` idem via een pure, testbare helper
+   (`export-deliverable-text.ts`) — latente bug, route momenteel onbereikbaar.
 
 # Acceptatiecriteria
 
@@ -111,8 +111,12 @@ rommelige settings (null/array/string).
 
 # Risico's
 
-- De vroege PATCH is een extra write per variantkeuze. Verwaarloosbaar; fail-soft en
-  niet-blokkerend (`void` + `.catch`), dus hij kan de keuze-flow nooit ophouden.
+- De vroege PATCH is een extra, geawaite write per LP-variantkeuze (~50ms vóór een blok
+  dat minuten duurt). Fail-soft: faalt hij, dan blijft de eind-PATCH de bron.
+- `Step4Timeline` en `export-deliverable-text` doen nu allebei "component-tekst, anders
+  structured flatten". Bewuste, kleine duplicatie: de helper is server-shaped (neemt een
+  deliverable), de component heeft store-state. Divergeren ze ooit, dan is dít de plek om
+  ze samen te trekken.
 - De "kies eerst een variant"-melding is Engels, conform de rest van deze route
   ("No generated content yet"). i18n van export-strings is een bredere sweep.
 
