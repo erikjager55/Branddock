@@ -18,9 +18,12 @@ import { TEST_USERS, TEST_ORG, TEST_WORKSPACE } from '../../fixtures/test-data';
  */
 
 async function login(page: Page, who: { email: string; password: string }) {
-  await page.request.post('/api/auth/sign-in/email', {
+  const signIn = await page.request.post('/api/auth/sign-in/email', {
     data: { email: who.email, password: who.password },
   });
+  // Gotcha 2026-07-17: een stil gefaalde login (429/403) verplaatst de fout
+  // naar een verwarrende plek verderop — assert de sign-in zelf.
+  expect(signIn.ok(), `sign-in als ${who.email} moet slagen`).toBe(true);
   const switched = await page.request.post('/api/workspace/switch', {
     data: { workspaceId: TEST_WORKSPACE.id },
   });

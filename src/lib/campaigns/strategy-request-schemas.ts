@@ -10,6 +10,14 @@ import { z } from "zod";
  * permissief (`passthrough`) waar de engine bewust vrije JSON verwacht
  * (briefing, gesynthetiseerde lagen) — het doel is shape-afbakening,
  * niet het herontwerpen van het engine-contract.
+ *
+ * Bewuste keuze (review 2026-07-17, geaccepteerd): deze schema's zijn
+ * WIJDER dan de *Body-interfaces (strategicIntent als capped string i.p.v.
+ * de StrategicIntent-union; elaborate-velden optional waar de interface ze
+ * required typeert) omdat de routes vóór de sweep níets valideerden —
+ * strakker maken = gedragswijziging. Daarom casten de routes
+ * `parsed.data as unknown as XxxBody`; een `satisfies z.ZodType<XxxBody>`
+ * kan pas als de contracten bewust worden aangescherpt (eigen task).
  */
 
 const idArray = z.array(z.string().min(1).max(100)).max(100);

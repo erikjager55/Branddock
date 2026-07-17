@@ -14,6 +14,11 @@ import { checkGenericRateLimit } from '@/lib/ai/rate-limiter';
 
 const MAX_REPORT_BYTES = 32_768;
 const REPORTS_PER_MINUTE_PER_IP = 20;
+// Globale cap naast de per-IP-limiet: x-forwarded-for is spoofbaar op een
+// unauthenticated endpoint — met geroteerde XFF-waarden zou de per-IP-limiet
+// omzeild worden én (Redis-loos) de in-memory store per verzonnen IP groeien.
+// De globale bucket begrenst de totale verwerking ongeacht het aantal "IP's".
+const REPORTS_PER_MINUTE_GLOBAL = 200;
 
 /** Eerste aanwezige key uit een unknown object, anders null. */
 function pick(obj: unknown, ...keys: string[]): unknown {
@@ -27,6 +32,13 @@ function pick(obj: unknown, ...keys: string[]): unknown {
 
 export async function POST(request: NextRequest) {
   const noContent = () => new NextResponse(null, { status: 204 });
+
+  const globalLimit = await checkGenericRateLimit(
+    'csp-report:global',
+    REPORTS_PER_MINUTE_GLOBAL,
+    60_000,
+  );
+  if (!globalLimit.allowed) return noContent();
 
   const ip =
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||

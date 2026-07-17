@@ -122,8 +122,13 @@ Ronde 1 (2 onafhankelijke reviewers over de volledige diff): **0 CRITICAL**, 5 u
 - **W: `AUTH_RATE_LIMIT_MAX` zonder prod-guard** → gefixt: prod-gated in alle 3 lagen (genegeerd + warn bij NODE_ENV=production).
 - **W: `.nullish()` op Json?-kolommen (knowledge/[id])** → gefixt: `.optional()` — een schema-valide `null` zou anders alsnog in Prisma 500'en.
 - **W: collector bufferde body vóór de size-check** → gefixt: Content-Length-precheck.
-- **W (geaccepteerd, follow-up)**: de in-memory fallback van `checkGenericRateLimit` evict nooit keys — op prod draait Redis (Upstash, met expire), dus alleen een lokaal/dev-artefact; meenemen als mini-item bij een volgende limiter-aanpassing.
+- **W (geaccepteerd, follow-up)**: de in-memory fallback van `checkGenericRateLimit` evict nooit keys — op prod draait Redis (Upstash, met expire), dus alleen een lokaal/dev-artefact; meenemen als mini-item bij een volgende limiter-aanpassing. **Ronde 2-aanvulling**: de XFF-spoof-hoek (per-IP-key uit spoofbare header op het unauthenticated collector-endpoint) hoort bij hetzelfde item; als mitigatie is een globale 200/min-bucket vóór de per-IP-check toegevoegd — begrenst de totale verwerking én de map-groei ongeacht geroteerde XFF-waarden.
 - MINORs: bewust niet auto-gefixt (conventie); genoteerd in de PR-comment. CLAUDE.md-envlijst wél bijgewerkt (`AUTH_RATE_LIMIT_MAX`).
+
+Ronde 2 (2 verse reviewers op de gemergde staat): **0 CRITICAL**, 3 unieke WARNINGs — beide reviewers oordeelden "ready-to-merge na adresseren of expliciet accepteren". Afhandeling:
+- **W: rbac-403 `login()` asserteerde de sign-in niet** (tegen de eigen gotcha-regel) → gefixt.
+- **W: XFF-hoek collector** → globale rate-limit-bucket toegevoegd (zie boven).
+- **W (expliciet geaccepteerd): `parsed.data as unknown as XxxBody`-casts (7 routes)** — de schema's zijn bewust wíjder dan de interfaces (strategicIntent/useCase als capped string i.p.v. enum-union; elaborate-velden optional) omdat de routes vóór de sweep niets valideerden: `satisfies z.ZodType<XxxBody>` afdwingen = contracten aanscherpen = gedragswijziging. Rationale gedocumenteerd in `strategy-request-schemas.ts`; aanscherpen kan als eigen mini-task zodra de wizard-callers erop gecontroleerd zijn.
 
 # Resterend na deze pass
 
