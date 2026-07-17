@@ -79,7 +79,7 @@ const MIXED_BRIEF_PROMPT = [
 console.log('\n1. De directive landt in de prompt');
 {
   const { system } = buildLandingPageVariantPrompt(params({ locale: 'en-US' }));
-  check('OUTPUT LANGUAGE-header aanwezig', system.includes('OUTPUT LANGUAGE — CRITICAL'));
+  check('OUTPUT LANGUAGE-header aanwezig', system.includes('OUTPUT LANGUAGE (CRITICAL)'));
   check('noemt English', system.includes('**English (English)**'));
   check('verbiedt mengen', system.includes('Do NOT mix languages'));
   check('eist vertaling van anderstalige bron', system.includes('translate the meaning into English'));
@@ -91,7 +91,7 @@ console.log('\n2. De directive staat BOVEN de stijl-stack (outranks moet kloppen
   const { system } = buildLandingPageVariantPrompt(
     params({ locale: 'en-US', archetype: 'SAGE', humanVoiceMode: 'BASELINE' }),
   );
-  const iLocale = system.indexOf('OUTPUT LANGUAGE — CRITICAL');
+  const iLocale = system.indexOf('OUTPUT LANGUAGE (CRITICAL)');
   const iTone = system.indexOf('BRAND-ARCHETYPE');
   check('locale-blok vóór archetype/tone-blok', iLocale >= 0 && iTone >= 0 && iLocale < iTone,
     `locale@${iLocale} tone@${iTone}`);
@@ -101,7 +101,7 @@ console.log('\n3. Alle 5 web-page-prompts dragen de directive');
 {
   for (const contentType of ['landing-page', 'faq-page', 'product-page', 'microsite', 'pillar-page']) {
     const { system } = buildLandingPageVariantPrompt(params({ locale: 'en-US', contentType }));
-    check(`${contentType}`, system.includes('OUTPUT LANGUAGE — CRITICAL'));
+    check(`${contentType}`, system.includes('OUTPUT LANGUAGE (CRITICAL)'));
   }
 }
 

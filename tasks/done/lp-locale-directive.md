@@ -79,19 +79,22 @@ De bestaande bullet-8-regels blijven staan als (consistente) herhaling — minim
       asserteerde de oude `nl-NL`-default en werd rood van de flip; nu geport.
 - [x] GEO-directive spreekt de gedeelde directive niet meer tegen (zie Notes)
 - [x] ctaLabel-overflow gemitigeerd + gemeten (3/3 schoon, 0 harde fails) — zie Risico's
-- [ ] Golden-sets herijkt (de prompt verandert bewust — zie Risico's)
+- [x] **LP-golden-set groen (12/0)** — en ingehaakt in CI, want hij draaide daar nooit
 
 # Bestanden die ik aanraak
 
 - `src/lib/landing-pages/variant-generator.ts` — locale-directive + 2 bijvangsten
 - `src/lib/ai/prompts/geo-directives.ts` — "vertaal niet" → eenduidig (zie Notes)
+- `src/lib/ai/locale-instruction.ts` — em-dash-vrij gemaakt (zie Risico's; stond eerst in
+  "NIET aanraken" — de golden-set bewees dat dat onhoudbaar was)
+- `.github/workflows/golden-sets.yml` — LP-prompt-pad in het `paths`-filter + de
+  LP-golden-set als CI-stap (hij bestond, maar draaide nergens)
 - `scripts/dev/lp-locale-mixing-smoke.ts` — nieuw: reproductie-smoke (voor/na)
 - `scripts/smoke-tests/web-page-builder-phase8-variant-generator.ts` — assertie geport
   naar de nieuwe `en-GB`-default
 
 # Bestanden die ik NIET aanraak
 
-- `src/lib/ai/locale-instruction.ts` — de directive zelf is correct, alleen niet geadopteerd
 - `src/lib/ai/brand-context.ts` — de precedentie-keten (regel 1022) klopt al
 - `src/lib/auth.ts` / `src/app/api/workspaces/route.ts` — het ontbrekende Brand-anker is
   een **aparte** bug (`content-locale-anchor`), veroorzaakt deze melding NIET
@@ -121,10 +124,23 @@ pas gefixt na een echte run van de getroffen flow. tsc-groen bewijst hier niets.
   fails** (1 run had een initial-hiccup die de retry opving — het vangnet werkt).
   ⚠️ n=3 blijft klein; als dit in de praktijk terugkomt is de volgende stap de
   retry-feedback op validatie-errors verstevigen, niet nóg een promptregel.
-- **Golden-sets schuiven.** `variant-generator.ts` staat vol met noten als "prompt blijft
-  byte-identiek" en "golden-set safety". De directive erin bedraden verandert de prompt
-  *bewust* → de LP-golden-sets moeten herijkt. Dit is de bedoeling, geen bijwerking,
-  maar het moet expliciet gebeuren en niet stiekem.
+- ~~**Golden-sets schuiven.**~~ **AFGEHANDELD 2026-07-17 — en het was een échte regressie,
+  geen test die achterliep.** De LP-golden-set (`scripts/eval/lp-variant-golden`) gaf
+  **10 PASS / 2 FAIL** op deze branch: `instructietekst primet geen em-dashes (OFF-prompt)`.
+  `buildLocaleInstruction` bevatte twee em-dashes (`## OUTPUT LANGUAGE — CRITICAL` en
+  `"authenticity" — translate them`). Dat is geen cosmetiek: instructietekst primet output,
+  en dit pad mat **92% em-dash-lijm in LP-deliverables tegen 25% op het orchestrator-pad** —
+  precies waarom de Human Voice Directive em-dashes verbiedt. Bij `humanVoiceMode: 'OFF'`
+  staat er niets meer tegenover.
+
+  **Niet de assertie versoepeld** (dat zou een lat verlagen die op meetdata staat), maar de
+  em-dashes uit de gedeelde directive gehaald → haakjes + puntkomma. Semantisch identiek,
+  en het verwijdert priming op álle 5 paden die de directive gebruiken — strikt een
+  verbetering. Resultaat: LP-golden-set **12/0**; `locale-enforcement` (andere caller)
+  **32/0**, dus geen regressie op de rest; de echte generatie-run blijft **26/26**.
+
+  De promptfoo-sets (`tests/content-golden-sets/**`) raakt dit niet: die hebben eigen
+  *inline* prompts en referencen de productiecode niet.
 - **Prompt-lengte** groeit met ~6 regels per call. Verwaarloosbaar t.o.v. de context-stack.
 - **Default-flip `nl-NL` → `en-GB`** raakt alleen callers die géén locale doorgeven: twee
   smoke-scripts. De route geeft 'm altijd mee, dus prod-gedrag is ongewijzigd.

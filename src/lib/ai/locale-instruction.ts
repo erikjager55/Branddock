@@ -110,17 +110,25 @@ export function resolveLocaleLabel(language: string | undefined | null): LocaleL
  *  - Override mixed-language brand-foundation input (translate, don't mirror)
  *  - Block code-switching mid-output
  *  - Survive AI tendency to default to English on technical/marketing terms
+ *
+ * EM-DASH-VRIJ, bewust (2026-07-17). Instructietekst primet output: het LP-pad mat
+ * 92% em-dash-lijm in deliverables tegen 25% op het orchestrator-pad, en dáárom
+ * verbiedt de Human Voice Directive em-dashes. Een taalregel die zélf em-dashes
+ * bevat ondermijnt dat verbod — en bij `humanVoiceMode: 'OFF'` staat er niets meer
+ * tegenover. De LP-golden-set (`scripts/eval/lp-variant-golden`) bewaakt dit met
+ * `!prompt.system.includes('—')` op de OFF-prompt. Houd deze functie em-dash-vrij;
+ * gebruik haakjes of een puntkomma.
  */
 export function buildLocaleInstruction(language: string | undefined | null): string {
   const locale = resolveLocaleLabel(language);
   if (!locale) return '';
 
   return [
-    `## OUTPUT LANGUAGE — CRITICAL`,
+    `## OUTPUT LANGUAGE (CRITICAL)`,
     `All generated content MUST be in **${locale.label}** only.`,
     `- Do NOT mix languages. Single-language output is required end-to-end.`,
     `- If source material in this prompt (brand context, persona descriptions, prior content, user instructions) is in another language, translate the meaning into ${locale.shortName} before responding.`,
-    `- Do not preserve foreign-language phrases for "authenticity" — translate them.`,
+    `- Do not preserve foreign-language phrases for "authenticity"; translate them.`,
     `- This rule outranks any tone or style guidance below.`,
     ``,
   ].join('\n');
