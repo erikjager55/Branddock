@@ -4,6 +4,8 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
+import { flattenPageVariantToText } from '@/lib/landing-pages/flatten-variant';
+import type { PageVariantContent } from '@/lib/landing-pages/page-type-schemas';
 import { useClawStore } from '@/stores/useClawStore';
 import { campaignKeys, contentLibraryKeys } from '../../../hooks';
 import { resolvePreviewComponent } from '../previews/preview-map';
@@ -63,6 +65,9 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
   const contentType = useCanvasStore((s) => s.contentType);
   const campaignId = useCanvasStore((s) => s.campaignId);
   const publishedVia = useCanvasStore((s) => s.publishedVia);
+  // Naar boven gehaald: `allText` heeft 'm nodig als fallback voor de structured/PUCK-
+  // types (zie de noot daar). Werd hieronder al gelezen voor puckSignals.
+  const structuredVariant = useCanvasStore((s) => s.structuredVariant);
   const [showSendCampaign, setShowSendCampaign] = useState(false);
 
   // Email deliverable → unlock the Send Campaign flow once approved.
@@ -97,12 +102,37 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
     return content;
   }, [variantGroups, selections]);
 
+  // Melding 2026-07-16 (pilot-tester): "de output copy en export html geeft niks terug.
+  // leeg bestand". `previewContent` komt uitsluitend uit `variantGroups` — de
+  // component-keten. Structured/PUCK-types (landing-page, faq-page, product-page,
+  // microsite + de long-form GEO-types) vullen die Map nooit; hun copy zit in de gekozen
+  // variant. Voor die types was `allText` dus leeg → clipboard leeg en
+  // handleDownload('html') schreef letterlijk `<body></body>`.
+  // Zelfde familie als de twee-publish-ketens-gotcha (2026-06-24): een tweede keten
+  // schrijft naar andere state en de eerste weet er niet van. Dezelfde les gold hier al
+  // voor de checklist (`puckSignals`, 2026-06-10) — `allText` was toen overgeslagen.
   const allText = useMemo(() => {
-    return Object.values(previewContent)
+    const componentText = Object.values(previewContent)
       .filter((v) => v.type === 'text' && v.content)
       .map((v) => v.content)
       .join('\n\n');
-  }, [previewContent]);
+    if (componentText.trim().length > 0) return componentText;
+    if (!structuredVariant) return '';
+    // De store houdt dit bewust op `unknown` (generatie-snapshot uit
+    // settings.structuredVariant). flattenPageVariantToText itereert rechtstreeks over
+    // arrays (tldr/sections/citeableStats/qa) en gooit op een half-complete opgeslagen
+    // variant — vandaar de cast mét try/catch i.p.v. een blind vertrouwen op de vorm
+    // (gotcha 2026-03-24: een opgeslagen AI-payload garandeert zijn schema niet). Een
+    // export-knop mag hier niet op stukvallen.
+    try {
+      return flattenPageVariantToText(structuredVariant as PageVariantContent);
+    } catch (err) {
+      console.warn('[canvas-export] flatten van structuredVariant faalde', {
+        message: err instanceof Error ? err.message : String(err),
+      });
+      return '';
+    }
+  }, [previewContent, structuredVariant]);
 
   // 2026-05-20 — contentType (already destructured above) used as a
   // fallback for preview-map + checklist resolution when MediumEnrichment
@@ -143,7 +173,6 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
   // contextStack (nog) geen puckData draagt. Disjunctief toegepast per
   // check — bestaand gedrag voor niet-Puck types blijft identiek.
   const isPuckType = isPuckRenderable(contentType, contentTypeInputs);
-  const structuredVariant = useCanvasStore((s) => s.structuredVariant);
   const puckSignals = useMemo(() => {
     if (!isPuckType) return null;
     const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');

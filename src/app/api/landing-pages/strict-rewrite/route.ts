@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { anthropicClient } from '@/lib/ai/anthropic-client';
 import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
+import { parseJsonBody } from '@/lib/api/parse-json-body';
 import { withAi } from '@/lib/ai/middleware';
 import { evaluatePageQuality } from '@/lib/landing-pages/page-quality';
 import type { PuckLikeData } from '@/lib/landing-pages/puck-data-flatten';
@@ -29,6 +31,21 @@ interface RequestBody {
   brandName?: string | null;
 }
 
+// L8 Zod-sweep (audit 2026-06-26, batch 4): puckData ging als vrije JSON de
+// AI-rewrite in met alleen presence-checks; instruction-minimum (3 tekens na
+// trim) blijft gelijk aan de oude handmatige guard.
+const strictRewriteSchema = z.object({
+  puckData: z
+    .object({
+      root: z.unknown().optional(),
+      content: z.array(z.unknown()).max(500),
+    })
+    .passthrough(),
+  instruction: z.string().trim().min(3).max(5000),
+  brandVoiceTone: z.string().max(2000).nullish(),
+  brandName: z.string().max(500).nullish(),
+});
+
 const SYSTEM_PROMPT = `You are a brand-aware copywriter executing a user-supplied rewrite instruction on a published landing-page (JSON Puck data-tree).
 
 Apply the user's instruction to every text field in the tree. Keep the underlying meaning intact unless the instruction explicitly asks otherwise (e.g. "rewrite for a different audience"). Never invent new components. Never change component types or ids.
@@ -44,19 +61,9 @@ export async function POST(request: NextRequest) {
   const auth = await withAi(request, { skipBrandContext: true });
   if (auth instanceof Response) return auth;
 
-  let body: RequestBody;
-  try {
-    body = (await request.json()) as RequestBody;
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
-  if (!body.puckData || !Array.isArray(body.puckData.content)) {
-    return NextResponse.json({ error: 'puckData required' }, { status: 400 });
-  }
-  if (!body.instruction || body.instruction.trim().length < 3) {
-    return NextResponse.json({ error: 'instruction must be at least 3 characters' }, { status: 400 });
-  }
+  const parsed = await parseJsonBody(request, strictRewriteSchema);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data as unknown as RequestBody;
 
   const minimal = JSON.stringify({ content: body.puckData.content });
   const userPrompt = [

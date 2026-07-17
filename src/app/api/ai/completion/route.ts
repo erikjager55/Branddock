@@ -20,7 +20,9 @@
 // =============================================================
 
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { withAi } from '@/lib/ai/middleware';
+import { parseJsonBody } from '@/lib/api/parse-json-body';
 import { openaiClient } from '@/lib/ai/openai-client';
 import { createStreamingResponse } from '@/lib/ai/streaming';
 import { buildSystemMessage } from '@/lib/ai/prompt-templates';
@@ -37,12 +39,26 @@ interface CompletionRequest {
   includeBrandContext?: boolean;
 }
 
-function isValidRequest(body: unknown): body is CompletionRequest {
-  if (!body || typeof body !== 'object') return false;
-  const b = body as Record<string, unknown>;
-  if (!Array.isArray(b.messages) || b.messages.length === 0) return false;
-  return true;
-}
+// L8 Zod-sweep (audit 2026-06-26, batch 4): messages gingen zonder per-message
+// shape-check door naar OpenAI (alleen een top-level array-guard). Content mag
+// per OpenAI-contract een string óf parts-array zijn; onbekende use-cases
+// blijven op 'CHAT' terugvallen (gedrag ongewijzigd, dus geen enum hier).
+const completionRequestSchema = z.object({
+  messages: z
+    .array(
+      z
+        .object({
+          role: z.enum(['system', 'user', 'assistant', 'developer', 'tool', 'function']),
+          content: z.union([z.string().max(200_000), z.array(z.unknown()).max(100)]).nullish(),
+        })
+        .passthrough(),
+    )
+    .min(1)
+    .max(200),
+  useCase: z.string().max(50).optional(),
+  stream: z.boolean().optional(),
+  includeBrandContext: z.boolean().optional(),
+});
 
 const VALID_USE_CASES = new Set<string>(['ANALYSIS', 'CREATIVE', 'CHAT', 'STRUCTURED']);
 
@@ -54,22 +70,9 @@ export const maxDuration = 300;
 
 export async function POST(request: Request) {
   // 1. Parse body
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: 'Invalid JSON body' },
-      { status: 400 },
-    );
-  }
-
-  if (!isValidRequest(body)) {
-    return NextResponse.json(
-      { error: 'Invalid request. Required: messages (non-empty array).' },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonBody(request, completionRequestSchema);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data as unknown as CompletionRequest;
 
   const useCase: AiUseCase =
     body.useCase && VALID_USE_CASES.has(body.useCase) ? body.useCase : 'CHAT';

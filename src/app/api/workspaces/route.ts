@@ -1,15 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
+import { parseJsonBody } from "@/lib/api/parse-json-body";
 import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from "@/lib/constants/canonical-brand-assets";
 import { invalidateBrandContext } from "@/lib/ai/brand-context";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
-import { localeForLanguage, syncDefaultLocaleProfile } from "@/lib/content-locale/default-profile";
+import { ensureBrandWithDefaultProfile, localeForLanguage, syncDefaultLocaleProfile } from "@/lib/content-locale/default-profile";
 import { enforceOrgPlanLimit, getOrgPlanTier } from "@/lib/stripe/enforcement";
 
 // Content-taal-opties (ISO-639-1) — gedeeld door POST (create-form) + PATCH.
 const VALID_LANGUAGES = new Set(["en", "nl", "de", "fr", "es", "pt", "it"]);
+
+// L8 Zod-sweep (audit 2026-06-26, batch 7): `name` was untyped (non-string
+// 500'de op .toLowerCase). De taal-fallback/allowlist-semantiek blijft in de
+// routes zelf. NB de parse gebeurt bewust NÁ de rol-checks zodat 403 vóór
+// 400 blijft gaan (de RBAC-e2e-asserts leunen daarop).
+const createWorkspaceSchema = z.object({
+  name: z.string().min(1).max(200),
+  contentLanguage: z.string().max(10).optional(),
+});
+const patchWorkspaceSchema = z.object({
+  workspaceId: z.string().min(1).max(100),
+  contentLanguage: z.string().max(10).optional(),
+  // Rename (PR #187) — trim/1-60-semantiek blijft in de route (nette melding).
+  name: z.string().max(200).optional(),
+});
+const deleteWorkspaceSchema = z.object({
+  workspaceId: z.string().min(1).max(100),
+});
 
 // GET /api/workspaces — list workspaces for the active organization
 export async function GET() {
@@ -92,19 +112,13 @@ export async function POST(request: NextRequest) {
     const limited = await enforceOrgPlanLimit(activeOrgId, "WORKSPACES");
     if (limited) return limited;
 
-    const body = await request.json();
-    const { name, contentLanguage: rawContentLanguage } = body;
+    const parsed = await parseJsonBody(request, createWorkspaceSchema);
+    if (!parsed.ok) return parsed.response;
+    const { name, contentLanguage: rawContentLanguage } = parsed.data;
     const contentLanguage =
-      typeof rawContentLanguage === "string" && VALID_LANGUAGES.has(rawContentLanguage)
+      rawContentLanguage !== undefined && VALID_LANGUAGES.has(rawContentLanguage)
         ? rawContentLanguage
         : "en";
-
-    if (!name) {
-      return NextResponse.json(
-        { error: "name is required" },
-        { status: 400 }
-      );
-    }
 
     // Generate slug from name
     const slug = name
@@ -150,17 +164,10 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Content-locale foundation — Brand + default-profiel (forward-compatible;
-      // getBrandContext-default-pad blijft op Workspace.contentLanguage draaien).
-      const brand = await tx.brand.create({ data: { workspaceId: ws.id } });
-      await tx.brandLocaleProfile.create({
-        data: {
-          brandId: brand.id,
-          workspaceId: ws.id,
-          locale: localeForLanguage(contentLanguage),
-          isDefault: true,
-        },
-      });
+      // Content-locale anker (ADR 2026-07-16) — via de gedeelde helper, dezelfde die
+      // provisionNewUser gebruikt. Was hier inline, waardoor het sign-up-pad 'm miste en
+      // 3 van de 4 prod-workspaces zonder anker stonden. Eén helper, alle creatiepaden.
+      await ensureBrandWithDefaultProfile(tx, ws.id, localeForLanguage(contentLanguage));
 
       // Create 11 canonical brand assets with active research methods
       for (const asset of CANONICAL_BRAND_ASSETS) {
@@ -212,12 +219,9 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "No active organization" }, { status: 400 });
     }
 
-    const body = await request.json();
-    const { workspaceId, contentLanguage, name } = body;
-
-    if (!workspaceId || typeof workspaceId !== "string") {
-      return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
-    }
+    const parsed = await parseJsonBody(request, patchWorkspaceSchema);
+    if (!parsed.ok) return parsed.response;
+    const { workspaceId, contentLanguage, name } = parsed.data;
 
     // Verify membership and role
     const membership = await prisma.organizationMember.findUnique({
@@ -306,15 +310,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { workspaceId } = body;
-
-    if (!workspaceId || typeof workspaceId !== "string") {
-      return NextResponse.json(
-        { error: "workspaceId is required" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, deleteWorkspaceSchema);
+    if (!parsed.ok) return parsed.response;
+    const { workspaceId } = parsed.data;
 
     // Verify membership and owner role
     const membership = await prisma.organizationMember.findUnique({

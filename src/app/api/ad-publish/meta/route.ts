@@ -25,7 +25,9 @@
 // =============================================================
 
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { getServerSession, resolveWorkspaceId } from '@/lib/auth-server';
+import { parseJsonBody } from '@/lib/api/parse-json-body';
 import { prisma } from '@/lib/prisma';
 import { decryptToken, encryptToken } from '@/lib/ad-tokens/encryption';
 import { invalidateCache } from '@/lib/api/cache';
@@ -43,17 +45,21 @@ import {
 
 const INLINE_REFRESH_WINDOW_MS = 5 * 60 * 1000;
 
-interface PublishBody {
-  deliverableId?: string;
-  variantIndex?: number;
-  connectedAccountId?: string;
-  pageId?: string;
-  campaignName?: string;
-  objective?: CampaignObjective;
-  dailyBudgetCents?: number;
-  targeting?: Record<string, unknown>;
-  landingPageUrl?: string;
-}
+// L8 Zod-sweep (audit 2026-06-26, batch 6): de required-loop checkte alleen
+// presence, geen types — een string-`variantIndex` 500'de in Prisma en een
+// niet-numeriek budget ging rauw de Meta-call in. `objective` blijft een
+// capped string (de Meta-lib/API valideert de enum-semantiek zelf).
+const publishBodySchema = z.object({
+  deliverableId: z.string().min(1).max(100),
+  variantIndex: z.number().int().min(0).max(50),
+  connectedAccountId: z.string().min(1).max(100),
+  pageId: z.string().min(1).max(100),
+  campaignName: z.string().min(1).max(300),
+  objective: z.string().min(1).max(100),
+  dailyBudgetCents: z.number().int().positive().max(10_000_000),
+  targeting: z.record(z.string(), z.unknown()),
+  landingPageUrl: z.string().min(1).max(2000),
+});
 
 interface ComponentRow {
   componentType: string;
@@ -102,40 +108,24 @@ export async function POST(request: Request) {
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) return NextResponse.json({ error: 'No workspace resolved' }, { status: 401 });
 
-    const body = (await request.json().catch(() => null)) as PublishBody | null;
-    if (!body) return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-
-    const required: Array<keyof PublishBody> = [
-      'deliverableId',
-      'variantIndex',
-      'connectedAccountId',
-      'pageId',
-      'campaignName',
-      'objective',
-      'dailyBudgetCents',
-      'targeting',
-      'landingPageUrl',
-    ];
-    for (const k of required) {
-      if (body[k] === undefined || body[k] === null) {
-        return NextResponse.json({ error: `${k} is required` }, { status: 400 });
-      }
-    }
+    const parsed = await parseJsonBody(request, publishBodySchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     // Load deliverable + components + connected account in parallel,
     // verifying workspace ownership of both.
     const [deliverable, account] = await Promise.all([
       prisma.deliverable.findFirst({
-        where: { id: body.deliverableId!, campaign: { workspaceId } },
+        where: { id: body.deliverableId, campaign: { workspaceId } },
         include: {
           components: {
-            where: { variantIndex: body.variantIndex! },
+            where: { variantIndex: body.variantIndex },
             select: { componentType: true, generatedContent: true, imageUrl: true },
           },
         },
       }),
       prisma.connectedAdAccount.findFirst({
-        where: { id: body.connectedAccountId!, workspaceId, platform: 'meta' },
+        where: { id: body.connectedAccountId, workspaceId, platform: 'meta' },
       }),
     ]);
 
@@ -153,7 +143,7 @@ export async function POST(request: Request) {
     }
 
     // Build + validate creative spec from components
-    const buildResult = buildCreativeSpec(deliverable.components, body.landingPageUrl!);
+    const buildResult = buildCreativeSpec(deliverable.components, body.landingPageUrl);
     if (!buildResult.ok) {
       return NextResponse.json(
         { error: 'creative_incomplete', detail: buildResult.reason },
@@ -222,11 +212,11 @@ export async function POST(request: Request) {
       const result = await publishFacebookAd({
         externalAccountId: account.externalAccountId,
         accessToken,
-        pageId: body.pageId!,
-        campaignName: body.campaignName!,
-        objective: body.objective!,
-        dailyBudgetCents: body.dailyBudgetCents!,
-        targeting: body.targeting!,
+        pageId: body.pageId,
+        campaignName: body.campaignName,
+        objective: body.objective as CampaignObjective,
+        dailyBudgetCents: body.dailyBudgetCents,
+        targeting: body.targeting,
         creative: buildResult.spec,
       });
 

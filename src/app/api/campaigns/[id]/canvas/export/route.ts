@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { z } from 'zod';
+import { buildDeliverableExportText } from '@/lib/campaigns/export-deliverable-text';
 
 const exportSchema = z.object({
   deliverableIds: z.array(z.string().min(1)).min(1).max(100),
@@ -44,33 +45,11 @@ export async function POST(
       },
     });
 
-    const exportItems = deliverables.map((d) => {
-      const textParts: string[] = [];
-      textParts.push(`# ${d.title}`);
-      textParts.push(`Type: ${d.contentType}`);
-      textParts.push(`Status: ${d.status}`);
-      textParts.push(`Approval: ${d.approvalStatus ?? 'DRAFT'}`);
-      textParts.push('');
-
-      if (d.components.length > 0) {
-        for (const comp of d.components) {
-          if (comp.generatedContent) {
-            textParts.push(`## ${comp.componentType} (${comp.groupType})`);
-            textParts.push(comp.generatedContent);
-            textParts.push('');
-          }
-        }
-      } else {
-        textParts.push('(No generated content yet)');
-        textParts.push('');
-      }
-
-      return {
-        id: d.id,
-        title: d.title,
-        text: textParts.join('\n'),
-      };
-    });
+    const exportItems = deliverables.map((d) => ({
+      id: d.id,
+      title: d.title,
+      text: buildDeliverableExportText(d),
+    }));
 
     return NextResponse.json({ items: exportItems });
   } catch (error) {

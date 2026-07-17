@@ -6,17 +6,23 @@
 // =============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { requireWorkspaceRole } from '@/lib/auth/require-role';
+import { parseJsonBody } from '@/lib/api/parse-json-body';
 import { isBillingEnabled } from '@/lib/stripe/feature-flags';
 import { createCheckoutSession } from '@/lib/stripe/checkout';
 import type { PlanTier } from '@/types/billing';
 
-// STARTER/GROWTH added: getPriceIdForTier() and mapPriceToTier() already
-// handle them (credit-model, ADR 2026-07-07) — this allowlist was the one
-// place left over from the legacy PRO/AGENCY/ENTERPRISE tier set, silently
-// rejecting every "Upgrade to Starter/Growth" click from the UI.
-const VALID_TIERS: PlanTier[] = ['PRO', 'STARTER', 'GROWTH', 'AGENCY', 'ENTERPRISE'];
-const VALID_CYCLES = ['monthly', 'yearly'] as const;
+// L8 Zod-sweep (audit 2026-06-26, batch 6): de enum-guards bestonden al, maar
+// malformed JSON gooide vóór de guards een ongevangen exception (500).
+// Tier-set volgt main (#181): STARTER/GROWTH horen in de allowlist —
+// getPriceIdForTier()/mapPriceToTier() ondersteunen ze al (credit-model,
+// ADR 2026-07-07); de oude PRO/AGENCY/ENTERPRISE-set weigerde elke
+// "Upgrade to Starter/Growth"-klik stil.
+const checkoutSchema = z.object({
+  planTier: z.enum(['PRO', 'STARTER', 'GROWTH', 'AGENCY', 'ENTERPRISE']),
+  billingCycle: z.enum(['monthly', 'yearly']).default('monthly'),
+});
 
 export async function POST(request: NextRequest) {
   // H4 + review: owner/admin of the WORKSPACE's org (was any member/viewer +
@@ -33,32 +39,16 @@ export async function POST(request: NextRequest) {
 
   const { workspaceId } = ctx;
 
-  const body = await request.json();
-  const { planTier, billingCycle = 'monthly' } = body as {
-    planTier?: string;
-    billingCycle?: string;
-  };
-
-  if (!planTier || !VALID_TIERS.includes(planTier as PlanTier)) {
-    return NextResponse.json(
-      { error: `Invalid planTier. Must be one of: ${VALID_TIERS.join(', ')}.` },
-      { status: 400 }
-    );
-  }
-
-  if (!VALID_CYCLES.includes(billingCycle as typeof VALID_CYCLES[number])) {
-    return NextResponse.json(
-      { error: 'Invalid billingCycle. Must be monthly or yearly.' },
-      { status: 400 }
-    );
-  }
+  const parsed = await parseJsonBody(request, checkoutSchema);
+  if (!parsed.ok) return parsed.response;
+  const { planTier, billingCycle } = parsed.data;
 
   try {
     const baseUrl = request.nextUrl.origin;
     const result = await createCheckoutSession({
       workspaceId,
       planTier: planTier as PlanTier,
-      billingCycle: billingCycle as 'monthly' | 'yearly',
+      billingCycle,
       baseUrl,
     });
 
