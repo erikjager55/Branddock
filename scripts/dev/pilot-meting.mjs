@@ -13,6 +13,9 @@
 const BASE = process.env.PILOT_BASE_URL ?? 'http://localhost:3000';
 const EMAIL = process.env.PILOT_EMAIL;
 const PASSWORD = process.env.PILOT_PASSWORD;
+// PILOT_WORKSPACE_ID (exact, heeft voorrang) — naam-lookup kan meerdere
+// workspaces raken; de prod-pilot-workspace is cmr4znouo000204ic257g3gcn.
+const WORKSPACE_ID = process.env.PILOT_WORKSPACE_ID;
 const WORKSPACE = process.env.PILOT_WORKSPACE ?? 'Better Brands';
 const WEEKS = Number(process.env.PILOT_WEEKS ?? 4);
 
@@ -48,10 +51,20 @@ if (!cookie) {
 }
 
 // ── 2. Metrics ophalen ──────────────────────────────────────────────────────
-const qs = `workspaceName=${encodeURIComponent(WORKSPACE)}&weeks=${WEEKS}`;
+const qs = WORKSPACE_ID
+  ? `workspaceId=${encodeURIComponent(WORKSPACE_ID)}&weeks=${WEEKS}`
+  : `workspaceName=${encodeURIComponent(WORKSPACE)}&weeks=${WEEKS}`;
 const metricsRes = await fetch(`${BASE}/api/admin/pilot-metrics?${qs}`, { headers: { cookie } });
 if (metricsRes.status === 403) {
   console.error(`403 — '${EMAIL}' staat niet in DEVELOPER_EMAILS van ${BASE}.`);
+  process.exit(1);
+}
+if (metricsRes.status === 409) {
+  const conflict = await metricsRes.json();
+  console.error('Meerdere workspaces matchen deze naam — kies er één via PILOT_WORKSPACE_ID:');
+  for (const c of conflict.candidates ?? []) {
+    console.error(`  ${c.id}  "${c.name}"  (aangemaakt ${c.createdAt?.slice(0, 10)})`);
+  }
   process.exit(1);
 }
 if (!metricsRes.ok) {

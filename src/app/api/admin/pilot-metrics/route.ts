@@ -113,8 +113,23 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'workspaceId of workspaceName is verplicht' }, { status: 400 });
   }
 
-  const workspace = await prisma.workspace.findFirst({ where, select: { id: true, name: true } });
-  if (!workspace) return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
+  // Naam-lookup kan meerdere workspaces raken (bewezen 2026-07-17: lege
+  // "better brands"-dubbelganger maskeerde de echte pilot-workspace). Bij >1
+  // match: kandidaten teruggeven i.p.v. stil de eerste meten.
+  const matches = await prisma.workspace.findMany({
+    where,
+    select: { id: true, name: true, createdAt: true },
+    orderBy: { createdAt: 'asc' },
+    take: 10,
+  });
+  if (matches.length === 0) return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
+  if (matches.length > 1) {
+    return NextResponse.json(
+      { error: 'Meerdere workspaces matchen deze naam — kies er één op workspaceId', candidates: matches },
+      { status: 409 },
+    );
+  }
+  const workspace = matches[0];
 
   const currentMonday = mondayOf(new Date());
   const buckets = Array.from({ length: weeks }, (_, i) => {

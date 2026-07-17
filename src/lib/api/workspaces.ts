@@ -61,3 +61,16 @@ export async function updateWorkspaceContentLanguage(
   if (!res.ok) await throwApiError(res);
   return res.json();
 }
+
+export async function updateWorkspaceName(
+  workspaceId: string,
+  name: string,
+): Promise<WorkspaceItem> {
+  const res = await fetch('/api/workspaces', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workspaceId, name }),
+  });
+  if (!res.ok) await throwApiError(res);
+  return res.json();
+}
