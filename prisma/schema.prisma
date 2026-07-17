@@ -332,8 +332,9 @@ model Workspace {
   connectedAdAccounts ConnectedAdAccount[]
 
   // Publieke Brand-API (ADR 2026-07-17-public-brand-api)
-  apiKeys     ApiKey[]
-  apiCallLogs ApiCallLog[]
+  apiKeys          ApiKey[]
+  apiCallLogs      ApiCallLog[]
+  webhookEndpoints WebhookEndpoint[]
 
   @@index([organizationId])
 }
@@ -6709,4 +6710,35 @@ model ApiCallLog {
 
   @@index([workspaceId, createdAt])
   @@index([workspaceId, tool, createdAt])
+}
+
+/// Outbound webhook-endpoint (P3.3) — per workspace, event-gefilterd.
+/// Delivery is fail-soft en zonder retries in v1; na 25 opeenvolgende
+/// failures wordt het endpoint automatisch gedeactiveerd.
+model WebhookEndpoint {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /// Bestemmings-URL — https verplicht, SSRF-gevalideerd bij aanmaak
+  /// (zie validateWebhookUrl in src/lib/api/public/webhooks.ts).
+  url String
+
+  /// sha256-hmac-secret (plain opgeslagen; alleen owner/admin kan hem lezen —
+  /// het is een shared secret voor signature-verificatie, geen wachtwoord).
+  secret String
+
+  /// Event-types waarop dit endpoint geabonneerd is (WEBHOOK_EVENT_TYPES).
+  events String[]
+
+  active Boolean @default(true)
+
+  createdAt          DateTime  @default(now())
+  lastDeliveryAt     DateTime?
+  /// HTTP-status van de laatste poging; 0 = geen response (timeout/netwerk).
+  lastDeliveryStatus Int?
+  /// Opeenvolgende mislukte deliveries; reset naar 0 bij succes.
+  failureCount       Int       @default(0)
+
+  @@index([workspaceId])
 }

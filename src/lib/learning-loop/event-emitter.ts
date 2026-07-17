@@ -11,6 +11,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { dispatchWebhookEvent } from "@/lib/api/public/webhooks";
 
 import type { LearningEventPayload } from "@/types/learning-loop";
 
@@ -47,6 +48,13 @@ export async function emitLearningEvent(
         timestamp: timestamp ?? new Date(),
       },
     });
+    // P3.3 outbound webhooks — hier (en niet op de call-sites) omdat élk
+    // content.published-/fidelity.scored-pad door deze emitter loopt
+    // (4 publish-routes, 2 fidelity-scorers); nieuwe call-sites zijn zo
+    // automatisch gedekt. Fire-and-forget ná de geslaagde DB-write; de
+    // dispatcher is zelf fail-soft en throwt nooit — een webhook mag dit
+    // hot path (publish/scoring) nooit blokkeren of laten falen.
+    forwardToWebhooks(workspaceId, payload);
   } catch (err) {
     // Observability failure — log, do not throw.
     // Event-emit must not break the user action.
@@ -82,6 +90,7 @@ export async function emitLearningEvents(
 
   try {
     await prisma.learningEvent.createMany({ data: records });
+    for (const e of events) forwardToWebhooks(e.workspaceId, e.payload);
   } catch (err) {
     console.error("[LearningEvent] batch emit failed:", {
       count: events.length,
@@ -93,6 +102,41 @@ export async function emitLearningEvents(
 // ─────────────────────────────────────────────────────────────────────────
 // Internals
 // ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * P3.3: vertaal een LearningEvent naar outbound-webhook-dispatches.
+ * Metadata-only (ids/scores/types — nooit content, nooit `reason`-teksten):
+ * de ontvanger haalt details op via de publieke API met het entityId.
+ * `fidelity.below_threshold` is een afgeleid event (fidelity.scored met
+ * thresholdMet=false) zodat n8n-flows direct op "onder de drempel" kunnen
+ * triggeren zonder zelf te filteren.
+ */
+function forwardToWebhooks(
+  workspaceId: string,
+  payload: LearningEventPayload,
+): void {
+  if (payload.type === "content.published") {
+    const { entityType, entityId } = inferEntity(payload);
+    void dispatchWebhookEvent(workspaceId, "content.published", {
+      entityType,
+      entityId,
+    });
+    return;
+  }
+  if (payload.type === "fidelity.scored") {
+    const { entityType, entityId } = inferEntity(payload);
+    const data = {
+      entityType,
+      entityId,
+      compositeScore: payload.data.compositeScore,
+      thresholdMet: payload.data.thresholdMet,
+    };
+    void dispatchWebhookEvent(workspaceId, "fidelity.scored", data);
+    if (!payload.data.thresholdMet) {
+      void dispatchWebhookEvent(workspaceId, "fidelity.below_threshold", data);
+    }
+  }
+}
 
 interface EntityRef {
   entityType: string;

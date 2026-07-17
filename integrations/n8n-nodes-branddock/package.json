@@ -1,0 +1,47 @@
+{
+  "name": "n8n-nodes-branddock",
+  "version": "0.1.0",
+  "description": "n8n community nodes for the Branddock public Brand API — on-brand content generation, F-VAL brand-fidelity scoring, campaign strategy, and webhook triggers.",
+  "keywords": [
+    "n8n-community-node-package",
+    "branddock",
+    "brand",
+    "brand-fidelity",
+    "content",
+    "marketing",
+    "ai"
+  ],
+  "license": "MIT",
+  "homepage": "https://branddock.app",
+  "author": {
+    "name": "Branddock"
+  },
+  "engines": {
+    "node": ">=18.10"
+  },
+  "main": "index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/BranddockApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Branddock/Branddock.node.js",
+      "dist/nodes/BranddockTrigger/BranddockTrigger.node.js"
+    ]
+  },
+  "devDependencies": {
+    "n8n-workflow": "^1.70.0",
+    "typescript": "^5.6.0"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}
