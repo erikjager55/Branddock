@@ -24,6 +24,7 @@ import {
 import { appHref } from './app-url';
 import HowItWorks from './HowItWorks';
 import Mosaic, { MOSAIC_PRODUCT } from './Mosaic';
+import { PLAN_CONFIGS } from '@/lib/constants/plan-limits';
 
 // Provider-neutrale demo-boeking (Morgen/Calendly/Cal.com). Zonder booking-URL:
 // val terug op de contactpagina i.p.v. een dood `#`.
@@ -339,12 +340,23 @@ function SolutionsSplit() {
   );
 }
 
+const TEASER_LINE_SUFFIX: Record<'STARTER' | 'GROWTH' | 'AGENCY', string> = {
+  STARTER: 'voor kleine teams',
+  GROWTH: 'populairste keuze',
+  AGENCY: 'meerdere merken',
+};
+
 function PricingTeaser() {
-  const tiers: { name: string; price: string; line: string; featured?: boolean }[] = [
-    { name: 'Starter', price: '€39', line: '400 credits · voor kleine teams' },
-    { name: 'Growth', price: '€89', line: '1.200 credits · populairste keuze', featured: true },
-    { name: 'Agency', price: '€299', line: '4.000 credits · meerdere merken' },
-  ];
+  const nl = new Intl.NumberFormat('nl-NL');
+  const tiers = (['STARTER', 'GROWTH', 'AGENCY'] as const).map((key) => {
+    const config = PLAN_CONFIGS[key];
+    return {
+      name: config.name,
+      price: `€${config.monthlyPriceEur}`,
+      line: `${nl.format(config.monthlyCredits)} credits · ${TEASER_LINE_SUFFIX[key]}`,
+      featured: key === 'GROWTH',
+    };
+  });
   return (
     <section className="max-w-6xl mx-auto px-6 py-16 md:py-20">
       <div className="max-w-2xl mb-10">
