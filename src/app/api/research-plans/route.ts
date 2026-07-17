@@ -104,19 +104,50 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// L8 Zod-sweep (audit 2026-06-26, batch 2): de PATCH spreadde `...updates`
+// rauw in prisma.update én miste de workspace-scope — elke ingelogde user
+// kon elk plan by-id muteren. Velden gespiegeld aan UpdateResearchPlanBody.
+const updateResearchPlanSchema = z.object({
+  id: z.string().min(1).max(100),
+  method: z.string().min(1).max(200).optional(),
+  entryMode: z.string().max(50).optional(),
+  status: z.string().max(50).optional(),
+  unlockedMethods: z.array(z.string().max(200)).max(100).optional(),
+  unlockedAssets: z.array(z.string().max(200)).max(100).optional(),
+  rationale: z.record(z.string().max(200), z.string().max(10000)).optional(),
+  configuration: z.record(z.string(), z.unknown()).optional(),
+});
+
 // PATCH /api/research-plans  { id, ...updates }
 export async function PATCH(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { id, ...updates } = body;
+    const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
+    }
 
-    if (!id) {
-      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    const parsed = updateResearchPlanSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request body", details: parsed.error.flatten() },
+        { status: 400 },
+      );
+    }
+    const { id, configuration, ...updates } = parsed.data;
+
+    const existing = await prisma.researchPlan.findFirst({ where: { id, workspaceId } });
+    if (!existing) {
+      return NextResponse.json({ error: "Research plan not found" }, { status: 404 });
     }
 
     const plan = await prisma.researchPlan.update({
       where: { id },
-      data: updates,
+      data: {
+        ...updates,
+        configuration: (configuration ?? undefined) as
+          | import("@prisma/client").Prisma.InputJsonValue
+          | undefined,
+      },
     });
 
     return NextResponse.json(plan);

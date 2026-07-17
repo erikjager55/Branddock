@@ -1,10 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { parseJsonBody } from '@/lib/api/parse-json-body';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 
 type RouteParams = { params: Promise<{ id: string }> };
+
+// L8 Zod-sweep (audit 2026-06-26, batch 2): de PATCH kopieerde allowlist-keys
+// met ongetypeerde waarden in prisma.update — de enum-velden zijn Prisma-enums
+// (ongeldige waarde 500'de). Zelfde caps als trend-radar/manual.
+const strArray = z.array(z.string().max(500)).max(100);
+const updateTrendSchema = z.object({
+  title: z.string().min(1).max(500).optional(),
+  description: z.string().max(10000).nullish(),
+  category: z
+    .enum(['CONSUMER_BEHAVIOR', 'TECHNOLOGY', 'MARKET_DYNAMICS', 'COMPETITIVE', 'REGULATORY'])
+    .optional(),
+  scope: z.enum(['MICRO', 'MESO', 'MACRO']).optional(),
+  impactLevel: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']).optional(),
+  timeframe: z.enum(['SHORT_TERM', 'MEDIUM_TERM', 'LONG_TERM']).optional(),
+  relevanceScore: z.number().min(0).max(100).optional(),
+  direction: z.string().max(50).nullish(),
+  industries: strArray.optional(),
+  tags: strArray.optional(),
+  howToUse: z.array(z.string().max(2000)).max(100).optional(),
+  sourceUrl: z.string().max(2000).nullish(),
+  imageUrl: z.string().max(2000).nullish(),
+});
 
 /**
  * GET /api/trend-radar/[id] — Get trend detail
@@ -52,7 +76,9 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
-    const body = await req.json();
+
+    const parsed = await parseJsonBody(req, updateTrendSchema);
+    if (!parsed.ok) return parsed.response;
 
     // Verify ownership
     const existing = await prisma.detectedTrend.findFirst({
@@ -66,16 +92,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Trend is locked' }, { status: 423 });
     }
 
-    const allowedFields = [
-      'title', 'description', 'category', 'scope', 'impactLevel',
-      'timeframe', 'relevanceScore', 'direction', 'industries',
-      'tags', 'howToUse', 'sourceUrl', 'imageUrl',
-    ];
-
-    const data: Record<string, unknown> = {};
-    for (const key of allowedFields) {
-      if (key in body) data[key] = body[key];
-    }
+    // Alleen meegestuurde velden updaten (null blijft betekenisvol als "leegmaken").
+    const data = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, value]) => value !== undefined),
+    );
 
     const trend = await prisma.detectedTrend.update({
       where: { id },
