@@ -77,6 +77,12 @@ export type CreateAndGenerateResult =
       title: string;
       /** null wanneer generate=false of de score niet uit de events kwam. */
       fidelityScore: number | null;
+      /**
+       * De gegenereerde tekst: de geselecteerde — of eerste — pure
+       * tekst-component (geen image/video) na de drain. null bij
+       * generate=false, een generatie-fout of een type zonder tekst-component.
+       */
+      contentText: string | null;
       /** Fail-soft: het item bestaat ook als de generatie faalde — via de Canvas alsnog te genereren. */
       generationError: string | null;
     }
@@ -221,6 +227,20 @@ export async function drainDeliverableGeneration(
 }
 
 /**
+ * Geselecteerde — of eerste — pure tekst-component van een deliverable
+ * (image-/video-componenten dragen generatedContent als prompt en tellen
+ * bewust niet mee). Gedeeld door de generate-response en get_deliverable_content.
+ */
+async function fetchSelectedContentText(deliverableId: string): Promise<string | null> {
+  const component = await prisma.deliverableComponent.findFirst({
+    where: { deliverableId, generatedContent: { not: null }, imageUrl: null, videoUrl: null },
+    orderBy: [{ isSelected: 'desc' }, { order: 'asc' }],
+    select: { generatedContent: true },
+  });
+  return component?.generatedContent ?? null;
+}
+
+/**
  * Maakt een content-item aan en genereert de content in één aanroep — de
  * headless variant van Quick Content + Canvas-Generate. Gestructureerde
  * fouten i.p.v. throws zodat elke afnemer (chat-tool, API, agent) ze kan
@@ -293,6 +313,7 @@ export async function createAndGenerateDeliverable(
         campaignId,
         title: deliverable.title,
         fidelityScore: null,
+        contentText: null,
         generationError: null,
       };
     }
@@ -324,6 +345,7 @@ export async function createAndGenerateDeliverable(
       campaignId,
       title: deliverable.title,
       fidelityScore,
+      contentText: error === null ? await fetchSelectedContentText(deliverable.id) : null,
       generationError: error,
     };
   } catch (err) {

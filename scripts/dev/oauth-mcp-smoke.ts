@@ -18,7 +18,7 @@
 // Dekt: (a) beide well-known-discovery-routes, (b) 401 + WWW-Authenticate op
 // /api/mcp zonder auth, (c) de volledige connector-flow — dynamic client
 // registration → authorize met PKCE → /oauth/login in een echte browser →
-// code op de lokale callback → token-exchange → tools/list (14 tools) +
+// code op de lokale callback → token-exchange → tools/list (17 tools) +
 // list_personas met het Bearer-token, (d) ApiCallLog-rij met authVia 'oauth'.
 // Ruimt de aangemaakte oauth-client + token-rijen op via Prisma.
 
@@ -34,7 +34,7 @@ const BASE = process.env.SMOKE_BASE ?? 'http://localhost:3005';
 const EMAIL = process.env.SMOKE_EMAIL ?? 'erik@branddock.com';
 const PASSWORD = process.env.SMOKE_PASSWORD ?? 'Password123!';
 
-const EXPECTED_TOOL_COUNT = 14;
+const EXPECTED_TOOL_COUNT = 17;
 
 function assert(cond: boolean, label: string): void {
   if (cond) {

@@ -9,12 +9,19 @@
 // Weigeren POST naar Better Auth's /api/auth/oauth2/consent met
 // { accept, consent_code }; de response bevat de redirectURI (mét code of
 // met error=access_denied) waarheen we de browser navigeren.
+//
+// "Merken zijn taal"-batch: optionele merk-vergrendeling. Het vinkje +
+// merk-select POSTen ná een geslaagde consent naar /api/oauth/consent-lock
+// (OauthConsent.lockedWorkspaceId); zonder vinkje wordt een eventueel oud
+// slot expliciet gewist. NB claude.ai stuurt de authorize doorgaans mét
+// prompt=consent en komt dus langs dit scherm; een auto-consent-flow
+// zónder prompt passeert het en kent geen slot (gedocumenteerde beperking).
 // =============================================================
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { ShieldCheck, Check, X, Loader2, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Check, X, Loader2, AlertCircle, Lock } from 'lucide-react';
 
 /** Leesbare omschrijving per OAuth/OIDC-scope op het consent-scherm. */
 const SCOPE_DESCRIPTIONS: Record<string, string> = {
@@ -29,6 +36,12 @@ interface ClientInfo {
   icon: string | null;
 }
 
+interface BrandOption {
+  workspaceId: string;
+  name: string;
+  organizationName: string;
+}
+
 function OAuthConsentForm() {
   const params = useSearchParams();
   const consentCode = params.get('consent_code');
@@ -40,6 +53,13 @@ function OAuthConsentForm() {
   const [loadingClient, setLoadingClient] = useState(Boolean(clientId));
   const [submitting, setSubmitting] = useState<'accept' | 'deny' | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Merk-vergrendeling: memberships van de ingelogde user + selectie.
+  const [brands, setBrands] = useState<BrandOption[]>([]);
+  const [lockEnabled, setLockEnabled] = useState(false);
+  const [selectedBrand, setSelectedBrand] = useState('');
+  // Consent is al gegeven maar het slot faalde — bied "doorgaan zonder slot".
+  const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
 
   const invalidRequest = !consentCode || !clientId;
 
@@ -62,6 +82,43 @@ function OAuthConsentForm() {
     };
   }, [clientId]);
 
+  useEffect(() => {
+    if (invalidRequest) return;
+    let cancelled = false;
+    fetch('/api/oauth/my-brands')
+      .then(async (res) => (res.ok ? ((await res.json()) as { brands?: BrandOption[] }) : null))
+      .then((body) => {
+        if (cancelled || !body?.brands) return;
+        setBrands(body.brands);
+        if (body.brands.length > 0) setSelectedBrand(body.brands[0].workspaceId);
+      })
+      .catch(() => {
+        // Merk-lijst is nice-to-have — zonder blijft de checkbox verborgen.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [invalidRequest]);
+
+  /**
+   * Slot zetten (of expliciet wissen) ná een geslaagde consent. Wissen is
+   * fail-soft; zetten niet — een stil ontbrekend slot zou onopgemerkt
+   * toegang tot álle merken geven.
+   */
+  const applyBrandLock = async (): Promise<boolean> => {
+    const workspaceId = lockEnabled && selectedBrand ? selectedBrand : null;
+    try {
+      const res = await fetch('/api/oauth/consent-lock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, workspaceId }),
+      });
+      return workspaceId === null ? true : res.ok;
+    } catch {
+      return workspaceId === null;
+    }
+  };
+
   const respond = async (accept: boolean) => {
     setSubmitting(accept ? 'accept' : 'deny');
     setError(null);
@@ -76,6 +133,18 @@ function OAuthConsentForm() {
         setError(data.message || 'The authorization request is invalid or expired. Close this window and try connecting again.');
         setSubmitting(null);
         return;
+      }
+      if (accept) {
+        const locked = await applyBrandLock();
+        if (!locked) {
+          setPendingRedirect(data.redirectURI);
+          setError(
+            'Access was authorized, but locking the connection to the selected brand failed. ' +
+              'You can continue without the lock, or close this window and reconnect.',
+          );
+          setSubmitting(null);
+          return;
+        }
       }
       window.location.replace(data.redirectURI);
     } catch {
@@ -139,6 +208,44 @@ function OAuthConsentForm() {
                 ))}
               </ul>
 
+              {brands.length > 0 && (
+                <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      data-testid="oauth-consent-lock-checkbox"
+                      type="checkbox"
+                      checked={lockEnabled}
+                      onChange={(e) => setLockEnabled(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 accent-[color:var(--primary)]"
+                    />
+                    <span className="text-sm text-gray-700">
+                      <span className="font-medium flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5 text-gray-500" />
+                        Lock this connection to one brand
+                      </span>
+                      <span className="text-gray-500">
+                        Without a lock, the connection follows your active organization in Branddock
+                        and can switch between your brands.
+                      </span>
+                    </span>
+                  </label>
+                  {lockEnabled && (
+                    <select
+                      data-testid="oauth-consent-lock-brand"
+                      value={selectedBrand}
+                      onChange={(e) => setSelectedBrand(e.target.value)}
+                      className="mt-3 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                    >
+                      {brands.map((brand) => (
+                        <option key={brand.workspaceId} value={brand.workspaceId}>
+                          {brand.name} — {brand.organizationName}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+
               {error && (
                 <div
                   data-testid="oauth-consent-error"
@@ -147,6 +254,17 @@ function OAuthConsentForm() {
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   {error}
                 </div>
+              )}
+
+              {pendingRedirect && (
+                <button
+                  data-testid="oauth-consent-continue"
+                  type="button"
+                  onClick={() => window.location.replace(pendingRedirect)}
+                  className="mb-4 w-full border border-gray-300 text-gray-700 hover:bg-gray-50 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Continue without brand lock
+                </button>
               )}
 
               <div className="flex gap-3">

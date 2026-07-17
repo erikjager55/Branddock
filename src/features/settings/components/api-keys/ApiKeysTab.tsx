@@ -38,18 +38,21 @@ interface CreatedKey {
   key: string;
 }
 
-/** De 14 publieke MCP-tools — namen + één-regel-omschrijving (bron: src/lib/api/public/mcp-server.ts). */
+/** De 17 publieke MCP-tools — namen + één-regel-omschrijving (bron: src/lib/api/public/mcp-server.ts). */
 const MCP_TOOLS: { name: string; desc: string }[] = [
   { name: 'get_brand_context', desc: 'Full brand context of this workspace: assets, voice, personas, products, competitors. Free.' },
   { name: 'score_against_brand', desc: 'Score any text with the F-VAL brand-fidelity engine (0-100 + findings). Free.' },
-  { name: 'generate_on_brand', desc: 'Generate an on-brand content item via the full Branddock pipeline. Costs credits.' },
+  { name: 'generate_on_brand', desc: 'Generate an on-brand content item via the full Branddock pipeline — returns the text. Costs credits.' },
   { name: 'rewrite_on_brand', desc: 'Rewrite text or draft a reply in the brand voice — nothing is stored. 1 credit.' },
+  { name: 'generate_image', desc: 'Generate an on-brand image, saved to the Media Library. 2 credits.' },
   { name: 'generate_campaign_strategy', desc: 'Start the full campaign-strategy chain as a background job on a real campaign.' },
   { name: 'get_strategy_status', desc: 'Poll the progress of a campaign-strategy generation. Free.' },
   { name: 'generate_long_form_seo', desc: 'Start the 8-step SEO/GEO pipeline (keyword research to long-form article). 80 credits.' },
   { name: 'get_seo_status', desc: 'Poll the progress of a long-form SEO job. Free.' },
   { name: 'generate_web_page', desc: 'Generate a complete on-brand web page from a free-text prompt. 5 credits.' },
   { name: 'generate_video', desc: 'Generate a short on-brand video clip from a script. 20 credits.' },
+  { name: 'get_deliverable_content', desc: 'Full content of a deliverable: text, image/video URLs, F-VAL score. Free.' },
+  { name: 'list_brands', desc: 'All brands this connection can use — id, name, org, current default. Free.' },
   { name: 'list_personas', desc: 'All personas of this workspace — ids for context selection. Free.' },
   { name: 'list_products', desc: 'All products of this workspace — ids for context selection. Free.' },
   { name: 'list_competitors', desc: 'All competitors of this workspace — ids for context selection. Free.' },
@@ -205,7 +208,7 @@ function KeyRow({ item, revokingId, onRevoke, t }: { item: ApiKeyItem; revokingI
   );
 }
 
-/** Koppel-instructies: Claude/ChatGPT-connector in 3 stappen + de 14 MCP-tools. */
+/** Koppel-instructies: Claude/ChatGPT-connector in 3 stappen + de 17 MCP-tools. */
 function ConnectPanel({ t }: { t: TFunction }) {
   // window is niet beschikbaar tijdens prerender — lazy initializer, geen effect.
   const [origin] = useState(() => (typeof window === 'undefined' ? '' : window.location.origin));

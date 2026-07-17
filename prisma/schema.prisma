@@ -3488,8 +3488,20 @@ model OauthConsent {
 
   scopes       String
   consentGiven Boolean
-  createdAt    DateTime
-  updatedAt    DateTime
+
+  /// "Merken zijn taal"-batch (2026-07-18): consent-vergrendeling op één merk.
+  /// Gezet via /oauth/consent (checkbox) → POST /api/oauth/consent-lock. Wanneer
+  /// gevuld is elke MCP-aanroep via deze koppeling hard aan dit workspace-id
+  /// gebonden: brand-param buiten het slot → tool-error, list_brands toont alleen
+  /// dit merk. NULL = koppeling volgt de actieve organisatie van de gebruiker.
+  /// Bewust géén FK (precedent: ContentVersion.editorUserId) — een verwijderde
+  /// workspace maakt het slot dood en de token-resolutie weigert dan netjes.
+  /// ⚠️ SCHEMA-DELTA (additief, nullable): vóór deploy handmatig `prisma db push`
+  /// naar Neon — zie memory "Neon schema push on deploy".
+  lockedWorkspaceId String?
+
+  createdAt DateTime
+  updatedAt DateTime
 
   @@index([clientId])
   @@index([userId])

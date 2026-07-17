@@ -13,9 +13,9 @@
 // Duale auth (OAuth-connect-fase):
 //  1. workspace-API-key (Authorization: Bearer bd_live_…) — het bestaande pad;
 //  2. anders een OAuth-Bearer-token uit de connector-flow (claude.ai/ChatGPT
-//     via de Better Auth mcp-plugin) — workspace-resolutie is dan de eerste
-//     workspace van de eerste org van de token-user (v1-keuze, zie
-//     requireOAuthToken in src/lib/api/public/auth.ts).
+//     via de Better Auth mcp-plugin) — het default-merk volgt de actieve
+//     organisatie van de gebruiker (consent-slot > recentste sessie-org >
+//     oudste membership; zie resolveOAuthWorkspace in brand-resolver.ts).
 // Elke 401 draagt verplicht `WWW-Authenticate: Bearer resource_metadata=…`:
 // dát is het signaal waarmee een connector de OAuth-discovery + flow start
 // (RFC 9728) — zonder die header blijft "URL plakken" dood.
@@ -60,13 +60,24 @@ function unauthorized(request: Request): NextResponse {
   );
 }
 
-/** Duale auth: eerst het bd_live-key-pad, anders het OAuth-token-pad. */
+/**
+ * Duale auth: eerst het bd_live-key-pad, anders het OAuth-token-pad. Het
+ * OAuth-pad draagt userId (rol-/membership-checks in de tools) en een
+ * eventueel consent-slot mee — zie brand-resolver.ts.
+ */
 async function resolveMcpAuth(request: Request): Promise<PublicMcpContext | null> {
   const keyAuth = await requireApiKey(request);
   if (keyAuth) return { workspaceId: keyAuth.workspaceId, authVia: 'api_key' };
 
   const oauthAuth = await requireOAuthToken(request);
-  if (oauthAuth) return { workspaceId: oauthAuth.workspaceId, authVia: 'oauth' };
+  if (oauthAuth) {
+    return {
+      workspaceId: oauthAuth.workspaceId,
+      authVia: 'oauth',
+      userId: oauthAuth.userId,
+      ...(oauthAuth.lockedWorkspaceId ? { lockedWorkspaceId: oauthAuth.lockedWorkspaceId } : {}),
+    };
+  }
 
   return null;
 }

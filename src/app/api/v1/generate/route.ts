@@ -117,6 +117,9 @@ export async function POST(request: Request) {
       title: result.title,
       generated,
       fidelityScore: result.fidelityScore,
+      // De gegenereerde tekst zelf ("merken zijn taal"-batch) — geen tweede
+      // roundtrip naar /api/v1/deliverable nodig voor het happy path.
+      contentText: result.contentText,
       generationError: result.generationError,
     });
   } catch (error) {
