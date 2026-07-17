@@ -107,11 +107,17 @@ Grep `POST/PUT/PATCH-routes die `.json()` lezen zonder `safeParse`/`.parse(`' ga
 - **SSRF-harness** 6/6: grounding-host + publieke bestemming passeren `assertSafeUrl`; localhost/private-IP/AWS-IMDS/file-scheme geweigerd. Grep: geen `isPrivateHostname`-caller buiten `image-scraper.ts` (bewust besluit).
 - ⚠️ **Pre-existing, niet van deze pass**: `permissions.spec.ts` faalt lokaal 7/18 mid-suite — baseline-run op ongewijzigde seed gaf een **identieke faalset**. Oorzaak: de auth-brute-force-limiter (10 sign-ins/min/IP) gedeeld door de hele suite vanaf localhost → sessieloze 401's; plus een 400 op workspace-create. Zie gotchas.md 2026-07-17. CI raakt dit niet (e2e-gate grept alleen critical-flow).
 
+# Derde ronde (2026-07-17, zelfde dag — "ga door")
+
+- **Zod batch 5-7 (MIDDEL) ✅** — 15 extra routes: `stripe/checkout` + `purchase`, `ad-publish/meta` (types op variantIndex/budget — string-variantIndex 500'de in Prisma), `organization/invite` (+ e-mail-format) + `invite/accept`, `media/[id]` PATCH + `media/collections/[id]` PATCH + `media/import-url` (Prisma-enum `category` 500'de ná de download), `brand-assets` POST + `[id]/regenerate`, `admin/exploration-configs` knowledge POST/PUT, `versions` POST (enum `changeType`), `campaigns/[id]/master-message` PATCH, `workspaces` POST/PATCH/DELETE. **Batch 8 (LAAG) bewust overgeslagen — definitief**: alle lock-/enkel-veld-routes hebben adequate `typeof`-guards; een schema voegt daar niets toe. **De Zod-sweep is hiermee afgerond.**
+- **Bijvangst-IDOR #2 ✅**: `campaigns/[id]/master-message` PATCH update'te op kaal `id` zonder workspace-check — elke ingelogde user kon elke campaign cross-workspace overschrijven. Nu 404 buiten de eigen workspace (zelfde klasse als de research-plans-PATCH-fix).
+- **Bijvangst seat-limit-bug ✅**: `maxSeats = -1` (unlimited-conventie; Int-kolom kan Infinity niet opslaan, pilot-orgs staan op -1) blokkeerde élke invite (`memberCount >= -1` altijd waar) in beide invite-routes. Nu `maxSeats < 0` = unlimited. Bewezen: invite op de -1-org gaf 403 → 201 na fix.
+- **e2e vs auth-rate-limiters ✅ — structureel opgelost**: er bleken DRIE gestapelde lagen (proxy 10/min/IP · Better Auth customRules 10/15min/IP — de échte dader · per-email-bucket 10/15min); alle drie hangen nu aan één test-knop `AUTH_RATE_LIMIT_MAX` (default overal strikt; Playwright-webServer zet 1000). ⚠️ Raakt `src/lib/auth.ts` — de "niet aanraken"-regel hierboven ging over de invite-member-logica, niet het rateLimit-blok; alleen de max-waarden zijn env-overridable gemaakt. Plus twee test-side-fixes in `permissions.spec.ts`: expliciete `organization/set-active` na login (kale API-login heeft geen activeOrganizationId) en Origin-headers op auth-POSTs (Better Auth CSRF; ná sign-out ook op de volgende sign-in enforce'd). **`permissions.spec.ts` + `rbac-403.spec.ts` samen: 23/23 groen** — de spec stond vóór deze pass structureel 7/18 rood.
+- **Verificatie ronde 3**: tsc 0 · lint 0 errors · `smoke:security-residual` 31/31 + `smoke:ad-encryption` 13/13 · curl-steekproef alle nieuwe schema's (invalid → 400 + flatten; token-als-getal → 400 waar eerst 500; import-url-category → 400 vóór download; geldige invite → 201).
+
 # Resterend na deze pass
 
-1. **Zod MIDDEL/LAAG-batches** (§Zod-inventaris batch 5-8) — laag risico, per module-batch.
-2. **Nonce-CSP enforce-flip** — gated op prod-Report-Only-data (zie MINOR-checklist).
-3. **e2e-suite vs auth-rate-limiter** — structurele keuze nodig (test-env-uitzondering óf suite-brede one-login-per-role) als de volledige suite ooit lokaal/CI groen moet.
+1. **Nonce-CSP enforce-flip** — gated op prod-Report-Only-data (zie MINOR-checklist). Dit is het enige inhoudelijke rest-item; daarna kan de task definitief dicht.
 
 # Notes
 
