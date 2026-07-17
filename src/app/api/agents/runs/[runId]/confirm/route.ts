@@ -20,7 +20,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
 import { requireWorkspaceRole } from "@/lib/auth/require-role";
 import { getToolByName } from "@/lib/claw/tools/registry";
-import { orchestrateContentGeneration } from "@/lib/ai/canvas-orchestrator";
+import { drainDeliverableGeneration } from "@/lib/content/headless-create";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { chargeAfter } from "@/lib/billing/credits/meter-generation";
@@ -255,7 +255,7 @@ export async function POST(
         : null;
 
     if (deliverableId) {
-      generation = await withGenerationDeadline(runDeliverableGeneration(deliverableId, workspaceId), deliverableId);
+      generation = await withGenerationDeadline(drainDeliverableGeneration(deliverableId, workspaceId), deliverableId);
       const title =
         typeof (result as Record<string, unknown>).deliverableTitle === "string"
           ? ((result as Record<string, unknown>).deliverableTitle as string)
@@ -420,49 +420,6 @@ async function settleRunStatus(runId: string, workspaceId: string): Promise<stri
     data: { status: "COMPLETED" },
   });
   return updated.status;
-}
-
-/**
- * Draait de canvas-pipeline voor een zojuist aangemaakt deliverable en
- * vangt de F-VAL-score uit de events (patroon: bulk-generate consumer).
- * Fail-soft: een generatie-fout maakt de confirm niet ongedaan — het
- * deliverable bestaat en is via de Canvas alsnog te genereren.
- */
-async function runDeliverableGeneration(
-  deliverableId: string,
-  workspaceId: string,
-): Promise<{ fidelityScore: number | null; error: string | null }> {
-  let fidelityScore: number | null = null;
-  let generationError: string | null = null;
-  try {
-    const generator = orchestrateContentGeneration(deliverableId, workspaceId);
-    for await (const event of generator) {
-      if (event.event === "fidelity_score_complete") {
-        const data = (event.data ?? {}) as Record<string, unknown>;
-        if (typeof data.compositeScore === "number") {
-          fidelityScore = data.compositeScore;
-        }
-      } else if (event.event === "error") {
-        const data = (event.data ?? {}) as Record<string, unknown>;
-        generationError =
-          typeof data.message === "string" ? data.message : "Content generation failed";
-        break;
-      }
-    }
-    if (!generationError) {
-      await prisma.deliverable.update({
-        where: { id: deliverableId },
-        data: { status: "IN_PROGRESS" },
-      });
-    }
-  } catch (err) {
-    generationError = err instanceof Error ? err.message : "Content generation failed";
-    console.warn("[agents confirm] deliverable generation failed", {
-      deliverableId,
-      message: generationError,
-    });
-  }
-  return { fidelityScore, error: generationError };
 }
 
 async function emitAgentOutputAccepted(args: {
