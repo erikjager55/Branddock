@@ -157,7 +157,13 @@ group("Prompt-builder — locale");
   const en = buildLandingPageVariantPrompt({ ...BASE_PARAMS, locale: "en-US" });
   assert("locale nl-NL in user-prompt", nl.user.includes("nl-NL"));
   assert("locale en-US in user-prompt", en.user.includes("en-US"));
-  assert("default locale = nl-NL", buildLandingPageVariantPrompt(BASE_PARAMS).user.includes("nl-NL"));
+  // Default is en-GB sinds 2026-07-16 (was nl-NL — hardcoded Nederlands terwijl
+  // Workspace.contentLanguage @default("en") is; zie lp-locale-directive). Assert op de
+  // directive i.p.v. op de rauwe locale-string: dat test de intentie (welke taal krijgt
+  // het model opgedragen) i.p.v. een implementatiedetail.
+  const def = buildLandingPageVariantPrompt(BASE_PARAMS);
+  assert("default locale = en-GB", def.user.includes("en-GB"));
+  assert("default → Engelse output-directive", def.system.includes("**English (English)**"));
 }
 
 group("Prompt-builder — graceful met missing context");

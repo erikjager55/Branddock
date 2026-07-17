@@ -7,7 +7,7 @@ import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from "@/lib/cons
 import { invalidateBrandContext } from "@/lib/ai/brand-context";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
-import { localeForLanguage, syncDefaultLocaleProfile } from "@/lib/content-locale/default-profile";
+import { ensureBrandWithDefaultProfile, localeForLanguage, syncDefaultLocaleProfile } from "@/lib/content-locale/default-profile";
 import { enforceOrgPlanLimit, getOrgPlanTier } from "@/lib/stripe/enforcement";
 
 // Content-taal-opties (ISO-639-1) — gedeeld door POST (create-form) + PATCH.
@@ -162,17 +162,10 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Content-locale foundation — Brand + default-profiel (forward-compatible;
-      // getBrandContext-default-pad blijft op Workspace.contentLanguage draaien).
-      const brand = await tx.brand.create({ data: { workspaceId: ws.id } });
-      await tx.brandLocaleProfile.create({
-        data: {
-          brandId: brand.id,
-          workspaceId: ws.id,
-          locale: localeForLanguage(contentLanguage),
-          isDefault: true,
-        },
-      });
+      // Content-locale anker (ADR 2026-07-16) — via de gedeelde helper, dezelfde die
+      // provisionNewUser gebruikt. Was hier inline, waardoor het sign-up-pad 'm miste en
+      // 3 van de 4 prod-workspaces zonder anker stonden. Eén helper, alle creatiepaden.
+      await ensureBrandWithDefaultProfile(tx, ws.id, localeForLanguage(contentLanguage));
 
       // Create 11 canonical brand assets with active research methods
       for (const asset of CANONICAL_BRAND_ASSETS) {
