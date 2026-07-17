@@ -125,7 +125,8 @@ export async function POST(request: NextRequest) {
         where: { organizationId: activeOrgId },
       });
 
-      if (memberCount >= org.maxSeats) {
+      // maxSeats < 0 = unlimited (zie organization/invite — pilot-orgs op -1).
+      if (org.maxSeats >= 0 && memberCount >= org.maxSeats) {
         return NextResponse.json(
           { error: `Seat limit reached (${org.maxSeats})` },
           { status: 403 }

@@ -30,15 +30,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { email, role, organizationId } = body;
-
-    if (!email || !organizationId) {
-      return NextResponse.json(
-        { error: "email and organizationId are required" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, inviteSchema);
+    if (!parsed.ok) return parsed.response;
+    const { email, role, organizationId } = parsed.data;
 
     const inviteRole = role ?? "member";
 
@@ -124,7 +118,10 @@ export async function POST(request: NextRequest) {
       where: { id: organizationId },
     });
 
-    if (org && memberCount >= org.maxSeats) {
+    // maxSeats < 0 = unlimited (Int-kolom kan de Infinity-conventie uit
+    // plan-limits niet opslaan; pilot-orgs staan op -1). Zonder deze guard
+    // is `memberCount >= -1` altijd waar → élke invite 403'de op zo'n org.
+    if (org && org.maxSeats >= 0 && memberCount >= org.maxSeats) {
       return NextResponse.json(
         { error: `Seat limit reached (${org.maxSeats})` },
         { status: 403 }
