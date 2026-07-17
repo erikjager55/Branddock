@@ -6,6 +6,7 @@ import { createAuthMiddleware, APIError } from "better-auth/api";
 import { prisma } from "./prisma";
 import { ac, owner, admin, member, viewer } from "./auth-permissions";
 import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from "./constants/canonical-brand-assets";
+import { ensureBrandWithDefaultProfile, resolveInitialLocale } from "./content-locale/default-profile";
 import { TRIAL_CREDITS, TRIAL_DAYS } from "./constants/plan-limits";
 import { grantCredits } from "./billing/credits/ledger";
 import { isCreditsEnabled } from "./stripe/feature-flags";
@@ -85,6 +86,18 @@ async function provisionNewUser(userId: string, userName: string) {
 
     const workspace = org.workspaces[0];
     if (!workspace) return null;
+
+    // Content-locale anker (ADR 2026-07-16). Dit pad maakte tot 2026-07-16 géén Brand +
+    // default-profiel aan, terwijl POST /api/workspaces dat wél deed — 3 van de 4
+    // prod-workspaces stonden daardoor zonder anker en `resolveTargetProfile` gaf `null`.
+    // Bij sign-up is er nog geen voiceguide, dus de precedentie valt terug op
+    // Workspace.contentLanguage (@default("en")) → en-GB. Binnen dezelfde transactie:
+    // een workspace zonder anker mag niet bestaan.
+    await ensureBrandWithDefaultProfile(
+      tx,
+      workspace.id,
+      resolveInitialLocale(null, workspace.contentLanguage),
+    );
 
     // Create 11 canonical brand assets with active research methods
     for (const asset of CANONICAL_BRAND_ASSETS) {
