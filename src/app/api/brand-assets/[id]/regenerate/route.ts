@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
@@ -45,8 +46,19 @@ export async function POST(
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
     }
 
-    const body = await request.json().catch(() => ({}));
-    const instructions = (body as Record<string, unknown>).instructions as string | undefined;
+    // L8 Zod-sweep (audit 2026-06-26, batch 7): instructions was een ongecapte
+    // cast die rauw het AI-system-prompt in ging.
+    const body: unknown = await request.json().catch(() => ({}));
+    const instructionsParsed = z
+      .object({ instructions: z.string().max(5000).optional() })
+      .safeParse(body ?? {});
+    if (!instructionsParsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request body", details: instructionsParsed.error.flatten() },
+        { status: 400 },
+      );
+    }
+    const instructions = instructionsParsed.data.instructions;
 
     const systemPrompt = `You are a brand strategist helping define brand assets for "${asset.workspace.name}". Generate clear, professional content for the brand asset "${asset.name}" (category: ${asset.category}).${instructions ? `\n\nAdditional instructions: ${instructions}` : ""}`;
 

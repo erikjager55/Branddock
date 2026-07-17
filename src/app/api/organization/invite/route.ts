@@ -1,10 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
+import { parseJsonBody } from "@/lib/api/parse-json-body";
 import { trySendTransactional } from "@/lib/email/transactional";
 import { emailBaseUrl } from "@/lib/email/base-url";
 import { resolveEmailLocale } from "@/lib/email/email-locale";
 import { renderInviteEmail } from "@/lib/email/templates/invite";
+
+// L8 Zod-sweep (audit 2026-06-26, batch 6): `email` was elke willekeurige
+// string (ging de Invitation-rij + het invite-mailtje in). `role` blijft hier
+// bewust een capped string: de M1-logica hieronder onderscheidt 403
+// (admin-invites-owner) van 400 (onbekende rol) — een enum-schema zou die
+// semantiek platslaan naar 400.
+const inviteSchema = z.object({
+  email: z
+    .string()
+    .max(320)
+    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Invalid email address"),
+  organizationId: z.string().min(1).max(100),
+  role: z.string().max(50).optional(),
+});
 
 // POST /api/organization/invite — create an invitation
 export async function POST(request: NextRequest) {

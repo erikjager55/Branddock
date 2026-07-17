@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { MediaCategory } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { parseJsonBody } from "@/lib/api/parse-json-body";
 import { getStorageProvider } from "@/lib/storage";
+
+// L8 Zod-sweep (audit 2026-06-26, batch 5): `name` was untyped (non-string
+// 500'de op .trim) en `category` is een Prisma-enum — een ongeldige waarde
+// 500'de pas NA de download + storage-upload (verspilde fetch + orphan-file).
+const importUrlSchema = z.object({
+  url: z.string().min(1).max(2000),
+  name: z.string().max(300).optional(),
+  category: z.enum(Object.values(MediaCategory) as [string, ...string[]]).optional(),
+});
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { assertSafeUrl, safeFetch } from "@/lib/utils/ssrf";
@@ -34,15 +46,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { url, name, category } = body;
-
-    if (!url || typeof url !== "string") {
-      return NextResponse.json(
-        { error: "URL is required" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, importUrlSchema);
+    if (!parsed.ok) return parsed.response;
+    const { url, name, category } = parsed.data;
 
     // Validate URL format
     let parsedUrl: URL;
@@ -168,7 +174,7 @@ export async function POST(request: NextRequest) {
         width: uploadResult.width || null,
         height: uploadResult.height || null,
         mediaType,
-        category: category || "OTHER",
+        category: (category ?? "OTHER") as MediaCategory,
         source: "URL_IMPORT",
         sourceUrl: url,
         thumbnailUrl: uploadResult.thumbnailUrl || null,

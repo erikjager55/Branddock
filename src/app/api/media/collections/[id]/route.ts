@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { parseJsonBody } from "@/lib/api/parse-json-body";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { generateMediaSlug } from "@/features/media-library/utils/media-utils";
+
+// L8 Zod-sweep (audit 2026-06-26, batch 5): description/coverImageUrl/color
+// waren untyped — een object-waarde passeerde de `|| null`-guards en 500'de
+// in prisma.update. De naam-/slug-/parent-semantiek blijft in de route
+// (trim-400, slug-409, circular-parent-check).
+const updateCollectionSchema = z.object({
+  name: z.string().max(300).optional(),
+  description: z.string().max(2000).nullish(),
+  coverImageUrl: z.string().max(2000).nullish(),
+  color: z.string().max(50).nullish(),
+  parentId: z.string().min(1).max(100).nullish(),
+});
 
 /** GET /api/media/collections/[id] — collection detail with assets */
 export async function GET(
@@ -99,8 +113,9 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body = await request.json();
-    const { name, description, coverImageUrl, color, parentId } = body;
+    const parsed = await parseJsonBody(request, updateCollectionSchema);
+    if (!parsed.ok) return parsed.response;
+    const { name, description, coverImageUrl, color, parentId } = parsed.data;
 
     const existing = await prisma.mediaCollection.findFirst({
       where: { id, workspaceId },
@@ -116,7 +131,7 @@ export async function PATCH(
     const data: Record<string, unknown> = {};
 
     if (name !== undefined) {
-      const trimmed = typeof name === "string" ? name.trim() : "";
+      const trimmed = name.trim();
       if (trimmed.length === 0) {
         return NextResponse.json(
           { error: "Collection name cannot be empty" },
@@ -167,7 +182,7 @@ export async function PATCH(
         }
 
         // Check for circular parent reference
-        let currentId: string | null = parentId;
+        let currentId: string | null = parentId ?? null;
         const visited = new Set<string>([id]);
         while (currentId) {
           if (visited.has(currentId)) {
@@ -177,10 +192,11 @@ export async function PATCH(
             );
           }
           visited.add(currentId);
-          const parent = await prisma.mediaCollection.findUnique({
-            where: { id: currentId },
-            select: { parentId: true },
-          });
+          const parent: { parentId: string | null } | null =
+            await prisma.mediaCollection.findUnique({
+              where: { id: currentId },
+              select: { parentId: true },
+            });
           currentId = parent?.parentId ?? null;
         }
 

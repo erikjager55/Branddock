@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { VersionChangeType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
+import { parseJsonBody } from '@/lib/api/parse-json-body';
 import { createVersion } from '@/lib/versioning';
 import { buildPersonaSnapshot, buildBrandAssetSnapshot, buildStrategySnapshot, buildProductSnapshot } from '@/lib/snapshot-builders';
-import type { VersionedResourceType, VersionChangeType } from '@prisma/client';
+import type { VersionedResourceType } from '@prisma/client';
+
+// L8 Zod-sweep (audit 2026-06-26, batch 7): `changeType` is een Prisma-enum
+// (ongeldige waarde 500'de in de create); changeNote/label waren ongecapte
+// vrije strings. De 4 resourceTypes spiegelen de switch hieronder.
+const createVersionSchema = z.object({
+  resourceType: z.enum(['PERSONA', 'BRAND_ASSET', 'STRATEGY', 'PRODUCT']),
+  resourceId: z.string().min(1).max(100),
+  changeType: z.enum(Object.values(VersionChangeType) as [string, ...string[]]).optional(),
+  changeNote: z.string().max(2000).optional(),
+  label: z.string().max(300).optional(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -53,18 +67,10 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession();
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await request.json();
-    const { resourceType, resourceId, changeType, changeNote, label } = body as {
-      resourceType: VersionedResourceType;
-      resourceId: string;
-      changeType: VersionChangeType;
-      changeNote?: string;
-      label?: string;
-    };
-
-    if (!resourceType || !resourceId) {
-      return NextResponse.json({ error: 'resourceType and resourceId required' }, { status: 400 });
-    }
+    const parsed = await parseJsonBody(request, createVersionSchema);
+    if (!parsed.ok) return parsed.response;
+    const { resourceType, resourceId, changeNote, label } = parsed.data;
+    const changeType = parsed.data.changeType as VersionChangeType | undefined;
 
     // Build snapshot from current state
     let snapshot: Record<string, unknown>;
