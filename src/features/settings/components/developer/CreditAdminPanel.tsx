@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Coins, Infinity as InfinityIcon, Loader2, Plus, Building2, Users } from 'lucide-react';
-import { Card, Badge, Button } from '@/components/shared';
+import { Card, Badge, Button, SearchInput } from '@/components/shared';
 import { useCreditAdminOrgs, useCreditAdminAction, type AdminOrg } from '@/hooks/use-credit-admin';
 
 /**
@@ -12,6 +12,18 @@ import { useCreditAdminOrgs, useCreditAdminAction, type AdminOrg } from '@/hooks
  */
 export function CreditAdminPanel() {
   const { data: orgs, isLoading, isError } = useCreditAdminOrgs(true);
+  const [query, setQuery] = useState('');
+
+  const filteredOrgs = useMemo(() => {
+    if (!orgs) return orgs;
+    const q = query.trim().toLowerCase();
+    if (!q) return orgs;
+    return orgs.filter((org) =>
+      [org.name, org.slug, org.ownerEmail ?? '', ...org.workspaces].some((field) =>
+        field.toLowerCase().includes(q),
+      ),
+    );
+  }, [orgs, query]);
 
   return (
     <div className="max-w-4xl space-y-6 p-6">
@@ -39,11 +51,22 @@ export function CreditAdminPanel() {
       )}
 
       {orgs && (
-        <div className="space-y-3">
-          {orgs.map((org) => (
-            <OrgRow key={org.id} org={org} />
-          ))}
-        </div>
+        <>
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Search by name, workspace or owner email…"
+            data-testid="credit-admin-search"
+          />
+          <p className="text-xs text-gray-400">
+            {filteredOrgs?.length ?? 0} of {orgs.length} organizations
+          </p>
+          <div className="space-y-3">
+            {filteredOrgs?.map((org) => (
+              <OrgRow key={org.id} org={org} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
@@ -76,6 +99,7 @@ function OrgRow({ org }: { org: AdminOrg }) {
             )}
           </div>
           <p className="mt-0.5 truncate text-xs text-gray-500">
+            {org.ownerEmail && <>{org.ownerEmail} &middot; </>}
             {org.members} {org.members === 1 ? 'member' : 'members'}
             {org.workspaces.length > 0 && <> &middot; {org.workspaces.join(', ')}</>}
           </p>
