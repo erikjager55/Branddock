@@ -20,6 +20,7 @@ export interface AdminOrg {
   trialEndsAt: string | null;
   members: number;
   workspaces: string[];
+  ownerEmail: string | null;
 }
 
 async function fetchOrgs(): Promise<AdminOrg[]> {

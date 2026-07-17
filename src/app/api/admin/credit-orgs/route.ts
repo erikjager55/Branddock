@@ -60,6 +60,11 @@ export async function GET() {
       trialEndsAt: true,
       creditBalance: { select: { balance: true, reserved: true } },
       workspaces: { select: { name: true }, take: 5 },
+      members: {
+        select: { role: true, user: { select: { email: true } } },
+        orderBy: { joinedAt: 'asc' },
+        take: 10,
+      },
       _count: { select: { members: true } },
     },
     orderBy: { createdAt: 'asc' },
@@ -79,6 +84,7 @@ export async function GET() {
       trialEndsAt: o.trialEndsAt,
       members: o._count.members,
       workspaces: o.workspaces.map((w) => w.name),
+      ownerEmail: o.members.find((m) => m.role === 'owner')?.user.email ?? o.members[0]?.user.email ?? null,
     })),
   });
 }
