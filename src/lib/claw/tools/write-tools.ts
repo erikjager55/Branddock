@@ -10,6 +10,7 @@ import {
 } from '@/lib/landing-pages/puck-text-fields';
 import { preserveHeroOnSettings } from '@/features/campaigns/components/canvas/medium/hero-visual-preserve';
 import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
+import { createAndGenerateDeliverable } from '@/lib/content/headless-create';
 import type { ClawToolDefinition, MutationProposal } from '../claw.types';
 
 // Helper: invalidate dashboard cache (always safe to call)
@@ -734,7 +735,7 @@ export const writeTools: ClawToolDefinition[] = [
     description:
       'Create a NEW content deliverable (e.g. linkedin-post, blog-post, email-campaign) inside an existing campaign. Use ONLY when the user explicitly asks to make a new content piece ("maak een LinkedIn-post", "create a blog about X", "schrijf een email-campagne"). NEVER use when pageContext.entityType === "deliverable" — that means the user is already in the Canvas of an existing deliverable; use `update_deliverable_brief` / `update_deliverable_content_inputs` / `update_deliverable_visual_brief` to fill THAT deliverable instead. Phrases like "vul de velden", "geef suggesties voor de brief", "fill the form" on an existing canvas mean EDIT THE CURRENT deliverable, not create new ones. After creation the user is auto-navigated to the Content Canvas. Pass `contentType` as a kebab-case slug from the deliverable-types catalog. Include briefing details in `brief` so Canvas opens with context pre-filled.',
     inputSchema: z.object({
-      campaignId: z.string().describe('Campaign ID this deliverable belongs to. Required — create_campaign first if no campaign exists.'),
+      campaignId: z.string().optional().describe('Campaign ID this deliverable belongs to. OMIT for quick-create — the item then lands in the default "Quick Content" campaign (auto-created). Only pass when the user named a specific campaign.'),
       contentType: z.string().describe('Content type slug, kebab-case (e.g. "linkedin-post", "blog-post", "email-campaign", "video-script")'),
       title: z.string().optional().describe('Optional title — defaults to the content type label'),
       brief: z.object({
@@ -742,32 +743,74 @@ export const writeTools: ClawToolDefinition[] = [
         keyMessage: z.string().optional().describe('Core message to land'),
         toneDirection: z.string().optional().describe('Tone hint (e.g. "punchy and direct")'),
         callToAction: z.string().optional().describe('Desired CTA'),
-      }).optional().describe('Briefing fields to pre-fill in the Canvas Step 1'),
+      }).optional().describe('Briefing fields. With generate=true at least objective or keyMessage is required.'),
+      generate: z.boolean().optional().describe('true = generate the content immediately after the user confirms (takes 1-3 min; user lands in the Canvas with a finished on-brand draft). false/omitted = create empty, Canvas generates later.'),
+      contextSelection: z.object({
+        personaIds: z.array(z.string()).optional().describe('Persona IDs to target (find via read_personas)'),
+        productIds: z.array(z.string()).optional().describe('Product IDs the content is about (find via read_products)'),
+        competitorIds: z.array(z.string()).optional().describe('Competitor IDs to reference (find via read_competitors)'),
+        knowledgeResourceIds: z.array(z.string()).optional().describe('Knowledge Library resource IDs to ground the content in (find via read_knowledge)'),
+      }).optional().describe('Knowledge-context selection — same semantics as the Canvas Step 1 picker; the generation uses exactly these sources on top of the brand context.'),
       sourceDeliverableId: z.string().optional().describe('When repurposing existing content: the deliverable this new piece is derived from (must be in the same workspace). Sets the derived-from relation for traceability.'),
     }),
     requiresConfirmation: true,
     category: 'write',
     buildProposal: async (params, ctx) => {
       const p = params as {
-        campaignId: string;
+        campaignId?: string;
         contentType: string;
         title?: string;
         brief?: Record<string, string | undefined>;
+        generate?: boolean;
+        contextSelection?: {
+          personaIds?: string[];
+          productIds?: string[];
+          competitorIds?: string[];
+          knowledgeResourceIds?: string[];
+        };
         sourceDeliverableId?: string;
       };
       // Workspace-gescoped: buildProposal is via de agents-tool-bridge ook
       // met model-gecontroleerde ids bereikbaar — geen cross-tenant titels.
-      const campaign = await prisma.campaign.findFirst({
-        where: { id: p.campaignId, workspaceId: ctx.workspaceId },
-        select: { title: true },
-      });
+      const campaign = p.campaignId
+        ? await prisma.campaign.findFirst({
+            where: { id: p.campaignId, workspaceId: ctx.workspaceId },
+            select: { title: true },
+          })
+        : null;
       const title = p.title ?? p.contentType;
       const changes: MutationProposal['changes'] = [
         { field: 'contentType', label: 'Type', currentValue: null, proposedValue: p.contentType },
         { field: 'title', label: 'Title', currentValue: null, proposedValue: title },
       ];
-      if (campaign?.title) {
-        changes.push({ field: 'campaign', label: 'Campaign', currentValue: null, proposedValue: campaign.title });
+      changes.push({
+        field: 'campaign',
+        label: 'Campaign',
+        currentValue: null,
+        proposedValue: campaign?.title ?? 'Quick Content (default)',
+      });
+      if (p.generate) {
+        changes.push({ field: 'generate', label: 'Generate now', currentValue: null, proposedValue: 'yes — on-brand draft ready after confirm (1-3 min)' });
+      }
+      const sel = p.contextSelection;
+      if (sel && (sel.personaIds?.length || sel.productIds?.length || sel.competitorIds?.length || sel.knowledgeResourceIds?.length)) {
+        // Toon de geselecteerde context met namen — de confirm-card is het
+        // moment waarop de user de selectie controleert (kennis-toggles-pariteit).
+        const [personas, products, competitors, knowledge] = await Promise.all([
+          sel.personaIds?.length ? prisma.persona.findMany({ where: { id: { in: sel.personaIds }, workspaceId: ctx.workspaceId }, select: { name: true } }) : [],
+          sel.productIds?.length ? prisma.product.findMany({ where: { id: { in: sel.productIds }, workspaceId: ctx.workspaceId }, select: { name: true } }) : [],
+          sel.competitorIds?.length ? prisma.competitor.findMany({ where: { id: { in: sel.competitorIds }, workspaceId: ctx.workspaceId }, select: { name: true } }) : [],
+          sel.knowledgeResourceIds?.length ? prisma.knowledgeResource.findMany({ where: { id: { in: sel.knowledgeResourceIds }, workspaceId: ctx.workspaceId }, select: { title: true } }) : [],
+        ]);
+        const parts = [
+          ...personas.map((x) => x.name),
+          ...products.map((x) => x.name),
+          ...competitors.map((x) => x.name),
+          ...knowledge.map((x) => x.title),
+        ];
+        if (parts.length > 0) {
+          changes.push({ field: 'context', label: 'Context', currentValue: null, proposedValue: parts.join(', ') });
+        }
       }
       if (p.sourceDeliverableId) {
         // Fail-fast in de proposal-fase: een onbestaande of cross-workspace
@@ -793,76 +836,54 @@ export const writeTools: ClawToolDefinition[] = [
     },
     execute: async (params, ctx) => {
       const p = params as {
-        campaignId: string;
+        campaignId?: string;
         contentType: string;
         title?: string;
         brief?: { objective?: string; keyMessage?: string; toneDirection?: string; callToAction?: string };
+        generate?: boolean;
+        contextSelection?: {
+          personaIds?: string[];
+          productIds?: string[];
+          competitorIds?: string[];
+          knowledgeResourceIds?: string[];
+        };
         sourceDeliverableId?: string;
       };
 
-      // Verify campaign ownership — Claw operates per-workspace so cross-
-      // workspace deliverable creation would be a privilege escalation.
-      const campaign = await prisma.campaign.findFirst({
-        where: { id: p.campaignId, workspaceId: ctx.workspaceId },
-        select: { id: true, title: true, isLocked: true },
+      // Alle logica (workspace-scoping, default-campagne, contextSelection →
+      // settings, optionele generatie, cache-invalidatie) leeft in de headless
+      // service — één implementatie voor chat, agents en de latere API (P3.0a).
+      const result = await createAndGenerateDeliverable({
+        workspaceId: ctx.workspaceId,
+        campaignId: p.campaignId,
+        contentType: p.contentType,
+        title: p.title,
+        brief: p.brief ?? {},
+        contextSelection: p.contextSelection,
+        sourceDeliverableId: p.sourceDeliverableId,
+        generate: p.generate === true,
       });
-      if (!campaign) {
-        throw new Error('Campaign not found in this workspace');
-      }
-      if (campaign.isLocked) {
-        throw new Error(`Campaign "${campaign.title}" is locked. Unlock it first.`);
+      if (!result.ok) {
+        throw new Error(result.error);
       }
 
-      // Bron-validatie op execute-tijd (defense-in-depth naast buildProposal):
-      // de relatie wordt alleen gezet als de bron aantoonbaar van deze
-      // workspace is.
-      if (p.sourceDeliverableId) {
-        const source = await prisma.deliverable.findFirst({
-          where: { id: p.sourceDeliverableId, campaign: { workspaceId: ctx.workspaceId } },
-          select: { id: true },
-        });
-        if (!source) {
-          throw new Error('Source deliverable not found in this workspace');
-        }
-      }
-
-      const title = (p.title ?? p.contentType).trim() || p.contentType;
-      const briefSettings: Record<string, string> = {};
-      if (p.brief?.objective) briefSettings.objective = p.brief.objective;
-      if (p.brief?.keyMessage) briefSettings.keyMessage = p.brief.keyMessage;
-      if (p.brief?.toneDirection) briefSettings.toneDirection = p.brief.toneDirection;
-      if (p.brief?.callToAction) briefSettings.callToAction = p.brief.callToAction;
-
-      const settings: Record<string, unknown> = {};
-      if (Object.keys(briefSettings).length > 0) {
-        settings.brief = briefSettings;
-      }
-
-      const deliverable = await prisma.deliverable.create({
-        data: {
-          title,
-          contentType: p.contentType,
-          campaignId: p.campaignId,
-          status: 'NOT_STARTED',
-          progress: 0,
-          approvalStatus: 'DRAFT',
-          ...(p.sourceDeliverableId ? { derivedFromId: p.sourceDeliverableId } : {}),
-          ...(Object.keys(settings).length > 0 ? { settings } : {}),
-        },
-        select: { id: true, title: true, contentType: true },
-      });
-
-      invalidateCache(cacheKeys.prefixes.campaigns(ctx.workspaceId));
-      invalidateDashboard(ctx.workspaceId);
+      const generated = p.generate === true && result.generationError === null;
       return {
         success: true,
-        deliverableId: deliverable.id,
-        deliverableTitle: deliverable.title,
-        campaignId: p.campaignId,
+        deliverableId: result.deliverableId,
+        deliverableTitle: result.title,
+        campaignId: result.campaignId,
+        // Vlag voor consumers die anders zélf zouden genereren (agents-confirm-
+        // route) — voorkomt dubbele generatie.
+        generated,
+        fidelityScore: result.fidelityScore,
+        ...(result.generationError ? { generationError: result.generationError } : {}),
         // clientAction tells MutationConfirmCard to auto-navigate after the
         // user confirms — no "View →" toast click needed for content creation.
         clientAction: 'navigate_to_canvas',
-        message: `Created ${deliverable.contentType} "${deliverable.title}" — opening Canvas`,
+        message: generated
+          ? `Generated ${p.contentType} "${result.title}" (F-VAL ${result.fidelityScore ?? '—'}) — opening Canvas`
+          : `Created ${p.contentType} "${result.title}" — opening Canvas`,
       };
     },
   },

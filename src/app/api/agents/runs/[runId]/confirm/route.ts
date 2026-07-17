@@ -255,7 +255,17 @@ export async function POST(
         : null;
 
     if (deliverableId) {
-      generation = await withGenerationDeadline(drainDeliverableGeneration(deliverableId, workspaceId), deliverableId);
+      // Een execute die zélf al genereerde (create_deliverable met generate:true,
+      // P3.0b) niet nogmaals draaien — dubbele generatie = dubbele credits.
+      const resultRecord = result as Record<string, unknown>;
+      const alreadyGenerated = resultRecord.generated === true;
+      generation = alreadyGenerated
+        ? {
+            fidelityScore:
+              typeof resultRecord.fidelityScore === "number" ? resultRecord.fidelityScore : null,
+            error: null,
+          }
+        : await withGenerationDeadline(drainDeliverableGeneration(deliverableId, workspaceId), deliverableId);
       const title =
         typeof (result as Record<string, unknown>).deliverableTitle === "string"
           ? ((result as Record<string, unknown>).deliverableTitle as string)

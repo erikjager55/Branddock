@@ -54,6 +54,8 @@ export interface CreateAndGenerateInput {
   brief: HeadlessBrief;
   contentTypeInputs?: ContentTypeInputs;
   contextSelection?: ContextSelection;
+  /** Herbestemmen: bron-deliverable (zelfde workspace) — zet de derived-from-relatie. */
+  sourceDeliverableId?: string;
   /** false = alleen aanmaken (Canvas genereert later); default true. */
   generate?: boolean;
 }
@@ -63,7 +65,8 @@ export type HeadlessErrorCode =
   | 'CONTENT_TYPE_UNKNOWN'
   | 'CAMPAIGN_NOT_FOUND'
   | 'CAMPAIGN_LOCKED'
-  | 'CONTEXT_IDS_INVALID';
+  | 'CONTEXT_IDS_INVALID'
+  | 'SOURCE_NOT_FOUND';
 
 export type CreateAndGenerateResult =
   | {
@@ -226,7 +229,9 @@ export async function createAndGenerateDeliverable(
   input: CreateAndGenerateInput,
 ): Promise<CreateAndGenerateResult> {
   try {
-    if (!input.brief.objective?.trim() && !input.brief.keyMessage?.trim()) {
+    // Brief-gate spiegelt de orchestrator-pre-gate en geldt dus alleen bij
+    // genereren; een create-only (Canvas vult later) mag briefloos — UI-pariteit.
+    if (input.generate !== false && !input.brief.objective?.trim() && !input.brief.keyMessage?.trim()) {
       throw new HeadlessError('BRIEF_INCOMPLETE', 'Brief needs at least an objective or a key message');
     }
     if (!getDeliverableTypeById(input.contentType)) {
@@ -235,6 +240,14 @@ export async function createAndGenerateDeliverable(
 
     const campaignId = await ensureCampaign(input.workspaceId, input.campaignId);
     const resolved = await resolveContextSelection(input.workspaceId, input.contextSelection);
+
+    if (input.sourceDeliverableId) {
+      const source = await prisma.deliverable.findFirst({
+        where: { id: input.sourceDeliverableId, campaign: { workspaceId: input.workspaceId } },
+        select: { id: true },
+      });
+      if (!source) throw new HeadlessError('SOURCE_NOT_FOUND', 'Source deliverable not found in this workspace');
+    }
 
     const brief: Record<string, string> = {};
     if (input.brief.objective?.trim()) brief.objective = input.brief.objective.trim();
@@ -263,6 +276,7 @@ export async function createAndGenerateDeliverable(
         status: 'NOT_STARTED',
         progress: 0,
         approvalStatus: 'DRAFT',
+        ...(input.sourceDeliverableId ? { derivedFromId: input.sourceDeliverableId } : {}),
         settings,
       },
       select: { id: true, title: true },

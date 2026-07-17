@@ -6,6 +6,11 @@ import { requireWorkspaceRole } from '@/lib/auth/require-role';
 import { getToolByName } from '@/lib/claw/tools/registry';
 import type { ClawMessage, ClawToolResult } from '@/lib/claw/claw.types';
 
+// create_deliverable met generate:true draait de volledige canvas-pipeline
+// binnen deze request (1-3 min) — zonder verhoogde maxDuration kapt de
+// serverless-runtime de generatie af halverwege.
+export const maxDuration = 300;
+
 const confirmSchema = z.object({
   conversationId: z.string(),
   toolCallId: z.string(),
