@@ -2,6 +2,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { appHref } from '../app-url';
 import SplitHeader from '../SplitHeader';
 
@@ -45,10 +46,23 @@ export default function AboutPage() {
         </p>
 
         <h2 className="text-gray-900 mt-12">Team</h2>
-        <p>
-          Erik Jager — oprichter, voorheen bij BetterBrands. Branddock is ontstaan uit interne
-          tooling die we voor klanten bouwden.
-        </p>
+        <div className="not-prose flex items-start gap-5 rounded-2xl border border-gray-200 bg-white p-6">
+          <Image
+            src="/marketing/team/erik-jager.jpg"
+            alt="Erik Jager, oprichter van Branddock"
+            width={112}
+            height={112}
+            className="rounded-full object-cover shrink-0"
+          />
+          <div>
+            <div className="font-semibold text-gray-900">Erik Jager</div>
+            <div className="text-sm mkt-accent font-medium mb-2">Oprichter</div>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Voorheen bij BetterBrands. Branddock is ontstaan uit interne tooling die we voor
+              klanten bouwden.
+            </p>
+          </div>
+        </div>
         <p className="text-sm text-gray-500">Branddock is een product van BetterBrands B.V.</p>
       </div>
 

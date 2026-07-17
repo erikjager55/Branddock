@@ -15,6 +15,10 @@ interface SolutionSpec {
   intro: string;
   pains: string[];
   gains: string[];
+  screenshotPath?: string;
+  screenshotAlt?: string;
+  /** Smalle UI-detail-screenshot (bv. een dropdown) i.p.v. een volle app-schermafbeelding. */
+  screenshotInset?: boolean;
 }
 
 const SOLUTIONS: Record<string, SolutionSpec> = {
@@ -24,6 +28,8 @@ const SOLUTIONS: Record<string, SolutionSpec> = {
     tagline: 'Schaal je content zonder je merk te verwateren.',
     intro:
       'Jij bent verantwoordelijk voor volume én merk. Branddock geeft je één platform dat je merk kent en het hele werk doet — van onderzoek tot content, campagnes en beeld — zodat je sneller publiceert zonder de eindeloze rework.',
+    screenshotPath: '/marketing/features/brand-alignment.png',
+    screenshotAlt: 'Branddock merk-check — een meetbare on-brand-score per generatie',
     pains: [
       'AI-output klinkt generiek en moet je telkens “humaniseren”',
       'Merkrichtlijnen leven in een PDF die niemand opent',
@@ -55,6 +61,9 @@ const SOLUTIONS: Record<string, SolutionSpec> = {
       'Een merk-check als objectief on-brand-bewijs richting de klant',
       'Snellere levering met minder rework — beter voor je marge',
     ],
+    screenshotPath: '/marketing/solutions/bureaus-workspaces.png',
+    screenshotAlt: 'Branddock workspace-switcher — meerdere klantmerken naast elkaar beheren',
+    screenshotInset: true,
   },
 };
 
@@ -96,7 +105,29 @@ export default async function SolutionPage({
         className="mb-10"
       />
 
-      <p className="text-gray-700 text-lg mb-12 leading-relaxed max-w-2xl">{solution.intro}</p>
+      <p className="text-gray-700 text-lg mb-8 leading-relaxed max-w-2xl">{solution.intro}</p>
+
+      {solution.screenshotPath ? (
+        solution.screenshotInset ? (
+          <div className="mb-12 rounded-xl border border-gray-200 bg-gray-50 p-8 flex justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element -- statische marketing-asset, geen next/image-optimalisatie nodig */}
+            <img
+              src={solution.screenshotPath}
+              alt={solution.screenshotAlt ?? `${solution.title} — productschermafbeelding`}
+              className="w-full max-w-xs h-auto rounded-lg border border-gray-200 shadow-sm"
+            />
+          </div>
+        ) : (
+          <div className="mb-12 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+            {/* eslint-disable-next-line @next/next/no-img-element -- statische marketing-asset, geen next/image-optimalisatie nodig */}
+            <img
+              src={solution.screenshotPath}
+              alt={solution.screenshotAlt ?? `${solution.title} — productschermafbeelding`}
+              className="w-full h-auto"
+            />
+          </div>
+        )
+      ) : null}
 
       <div className="grid md:grid-cols-2 gap-8 mb-12">
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-6">
