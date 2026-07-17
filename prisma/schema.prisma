@@ -502,6 +502,11 @@ model User {
   connectedAdAccounts  ConnectedAdAccount[] @relation("ConnectedAdAccountConnector")
   publishedAdCampaigns AdCampaign[]         @relation("AdCampaignPublisher")
 
+  // OAuth-connect (Better Auth MCP/OIDC-provider) — publieke MCP-server
+  oauthApplications OauthApplication[] @relation("UserOauthApplications")
+  oauthAccessTokens OauthAccessToken[] @relation("UserOauthAccessTokens")
+  oauthConsents     OauthConsent[]     @relation("UserOauthConsents")
+
   @@index([workspaceId])
 }
 
@@ -3411,6 +3416,95 @@ model Verification {
   updatedAt DateTime @updatedAt
 
   @@map("verification")
+}
+
+// ─── Better Auth MCP/OIDC-provider (OAuth-connect voor de publieke MCP-server) ─
+//
+// Veld-shape 1-op-1 overgenomen uit better-auth's plugin-schema
+// (node_modules/better-auth/dist/plugins/oidc-provider/schema.mjs, gedeeld door
+// de mcp-plugin): required/optional-vlaggen, unique-constraints, references en
+// indexes zijn exact gevolgd — de prisma-adapter querieert deze modellen op
+// veldnaam. De Prisma-modelnaam MOET `Oauth…` zijn (niet `OAuth…`): de adapter
+// zoekt het client-property `oauthApplication` op, en Prisma lowercased alleen
+// de éérste letter van de modelnaam (OAuthApplication → oAuthApplication ≠ match).
+// NB: access/refresh-tokens staan plain in de DB (better-auth-default; het zijn
+// random opaque strings, geen provider-secrets — de token-encryption-extension
+// dekt bewust alleen Account/ConnectedAccount/WorkspaceIntegration).
+
+/// Dynamisch geregistreerde OAuth-client (bijv. de claude.ai/ChatGPT-connector)
+/// via POST /api/auth/mcp/register.
+model OauthApplication {
+  id           String   @id @default(cuid())
+  name         String
+  icon         String?
+  metadata     String?
+  clientId     String   @unique
+  clientSecret String?
+  redirectUrls String // komma-gescheiden lijst — plugin-formaat, geen array
+  type         String // "web" (confidential) | "public" (PKCE-only)
+  disabled     Boolean? @default(false)
+
+  userId String?
+  user   User?   @relation("UserOauthApplications", fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime
+  updatedAt DateTime
+
+  accessTokens OauthAccessToken[]
+  consents     OauthConsent[]
+
+  @@index([userId])
+}
+
+/// Uitgegeven access/refresh-token-paar voor een OAuth-client.
+model OauthAccessToken {
+  id                    String   @id @default(cuid())
+  accessToken           String   @unique
+  refreshToken          String   @unique
+  accessTokenExpiresAt  DateTime
+  refreshTokenExpiresAt DateTime
+
+  clientId    String
+  application OauthApplication @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId      String?
+  user        User?            @relation("UserOauthAccessTokens", fields: [userId], references: [id], onDelete: Cascade)
+
+  scopes    String // space-gescheiden, bijv. "openid profile email offline_access"
+  createdAt DateTime
+  updatedAt DateTime
+
+  @@index([clientId])
+  @@index([userId])
+}
+
+/// Vastgelegde gebruikers-toestemming per client (alleen bij prompt=consent).
+model OauthConsent {
+  id String @id @default(cuid())
+
+  clientId    String
+  application OauthApplication @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId      String
+  user        User             @relation("UserOauthConsents", fields: [userId], references: [id], onDelete: Cascade)
+
+  scopes       String
+  consentGiven Boolean
+
+  /// "Merken zijn taal"-batch (2026-07-18): consent-vergrendeling op één merk.
+  /// Gezet via /oauth/consent (checkbox) → POST /api/oauth/consent-lock. Wanneer
+  /// gevuld is elke MCP-aanroep via deze koppeling hard aan dit workspace-id
+  /// gebonden: brand-param buiten het slot → tool-error, list_brands toont alleen
+  /// dit merk. NULL = koppeling volgt de actieve organisatie van de gebruiker.
+  /// Bewust géén FK (precedent: ContentVersion.editorUserId) — een verwijderde
+  /// workspace maakt het slot dood en de token-resolutie weigert dan netjes.
+  /// ⚠️ SCHEMA-DELTA (additief, nullable): vóór deploy handmatig `prisma db push`
+  /// naar Neon — zie memory "Neon schema push on deploy".
+  lockedWorkspaceId String?
+
+  createdAt DateTime
+  updatedAt DateTime
+
+  @@index([clientId])
+  @@index([userId])
 }
 
 // ─── S9: Help & Support Enums ─────────────────────────────────

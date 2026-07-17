@@ -8,8 +8,10 @@
 //      SMOKE_BASE (default http://localhost:3005)
 //
 // Dekt: initialize-handshake via de officiële MCP-client, tools/list
-// (verwacht 14 tools), get_brand_context en list_personas. Bewust géén
+// (verwacht 17 tools), get_brand_context en list_personas. Bewust géén
 // score/generate — dat zijn echte AI-runs die de hoofdsessie apart smoked.
+// De "merken zijn taal"-batch (brand-param, rollen, lock, deliverable-read,
+// image) heeft een eigen in-process smoke: scripts/dev/brands-batch-smoke.ts.
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -31,6 +33,9 @@ const EXPECTED_TOOLS = [
   'get_seo_status',
   'generate_web_page',
   'generate_video',
+  'list_brands',
+  'get_deliverable_content',
+  'generate_image',
 ];
 
 function assert(cond: boolean, label: string): void {
@@ -90,7 +95,13 @@ async function main(): Promise<void> {
   console.log('\n2. tools/list');
   const { tools } = await client.listTools();
   const names = tools.map((t) => t.name).sort();
-  assert(tools.length === 14, `14 tools geregistreerd (${tools.length})`);
+  assert(tools.length === 17, `17 tools geregistreerd (${tools.length})`);
+  // Connectors-Directory-vereiste: elke tool draagt annotations met een
+  // expliciete readOnlyHint (read-tools true, generatie-tools false).
+  assert(
+    tools.every((t) => typeof t.annotations?.readOnlyHint === 'boolean'),
+    'alle tools hebben annotations.readOnlyHint',
+  );
   assert(
     EXPECTED_TOOLS.every((t) => names.includes(t)),
     `alle verwachte tools aanwezig: ${names.join(', ')}`,

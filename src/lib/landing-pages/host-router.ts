@@ -38,6 +38,9 @@ const APEX_SUFFIXES = ['.branddock.app', '.lvh.me'];
 // `/sitemap.xml`, `/robots.txt`, `/llms.txt` zijn per-workspace SEO/GEO-discovery
 // route-handlers (GEO Fase 1a) die de Host-header zelf lezen — middleware mag ze
 // NIET naar /p/ herschrijven, anders worden ze als slug behandeld → 404.
+// `/.well-known` + `/oauth/` horen bij de OAuth-connect-flow van de publieke
+// MCP-server (RFC 8414/9728-discovery + login/consent-pagina's) — nooit als
+// workspace-slug behandelen, ook niet op een <workspace>.branddock.app-host.
 const EXEMPT_PATH_PREFIXES = [
   '/api',
   '/_next',
@@ -47,6 +50,8 @@ const EXEMPT_PATH_PREFIXES = [
   '/sitemap.xml',
   '/robots.txt',
   '/llms.txt',
+  '/.well-known',
+  '/oauth/',
 ];
 
 /**

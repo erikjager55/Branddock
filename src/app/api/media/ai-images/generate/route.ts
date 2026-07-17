@@ -11,22 +11,9 @@ import { generateDalleImage } from '@/lib/ai/openai-client';
 import { runFalGeneration, generateFalImage, foldNegativeIntoPrompt } from '@/lib/integrations/fal/fal-client';
 import { getFalProviderById } from '@/lib/integrations/fal/fal-providers';
 
-/**
- * Stijl-intentie voor Recraft V3 uit de gebruikersprompt. Recraft levert
- * zónder structured `style`-param altijd photoreal — óók bij "illustratie"-
- * prompts (F42d; pilot-incident 2026-07-16). Andere modellen negeren dit veld.
- */
-function detectRecraftStyle(
-  userPrompt: string,
-): 'digital_illustration' | 'vector_illustration' | 'icon' | undefined {
-  const p = userPrompt.toLowerCase();
-  if (/\bicoon\b|\bicon\b/.test(p)) return 'icon';
-  if (/vector/.test(p)) return 'vector_illustration';
-  if (/illustrat|tekening|getekend|cartoon|schets|sketch|drawing|drawn/.test(p)) {
-    return 'digital_illustration';
-  }
-  return undefined;
-}
+// detectRecraftStyle + toFalImageSize zijn gedeeld met de headless service
+// ("merken zijn taal"-batch) — één implementatie in headless-image.ts.
+import { detectRecraftStyle, toFalImageSize } from '@/lib/content/headless-image';
 import { buildPromptWithContext } from '@/lib/ai/prompt-context-builder';
 import { resolveWorkspaceBrandContext } from '@/lib/consistent-models/workspace-context-resolver';
 import { LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
@@ -74,18 +61,6 @@ const LEGACY_PROVIDER_ALIASES: Record<string, string> = {
   RECRAFT: 'fal-ai/recraft-v3',
   IDEOGRAM: 'fal-ai/ideogram-v3',
 };
-
-// Map aspect ratio string to fal.ai image_size preset
-function toFalImageSize(ar: string): string {
-  const map: Record<string, string> = {
-    '1:1': 'square_hd',
-    '16:9': 'landscape_16_9',
-    '9:16': 'portrait_16_9',
-    '3:4': 'portrait_4_3',
-    '4:3': 'landscape_4_3',
-  };
-  return map[ar] ?? 'square_hd';
-}
 
 /** POST /api/media/ai-images/generate — Generate an image via multiple providers */
 export async function POST(request: NextRequest) {

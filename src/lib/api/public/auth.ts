@@ -9,6 +9,8 @@
 
 import { createHash, randomBytes } from 'crypto';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
+import { resolveOAuthWorkspace } from '@/lib/api/public/brand-resolver';
 
 const KEY_PATTERN = /^Bearer\s+(bd_live_[a-f0-9]{48})$/i;
 
@@ -49,4 +51,38 @@ export async function requireApiKey(request: Request): Promise<ApiKeyContext | n
     .update({ where: { id: record.id }, data: { lastUsedAt: new Date() } })
     .catch(() => {});
   return { workspaceId: record.workspaceId, apiKeyId: record.id };
+}
+
+export interface OAuthMcpContext {
+  workspaceId: string;
+  userId: string;
+  /** Gevuld wanneer de consent-koppeling op één merk vergrendeld is. */
+  lockedWorkspaceId?: string;
+}
+
+/**
+ * Resolvet een OAuth-Bearer-token (uitgegeven via de Better Auth mcp-plugin,
+ * connector-flow claude.ai/ChatGPT) naar een workspace-context.
+ *
+ * Het token is user-gebonden (niet workspace-gebonden zoals een bd_live-key);
+ * het default-merk "volgt je actieve organisatie in Branddock": consent-slot >
+ * recentste sessie-org > oudste membership — zie resolveOAuthWorkspace in
+ * brand-resolver.ts. Null bij ontbrekend/verlopen token, gebruiker zonder
+ * workspace, of een consent-slot waar de user geen toegang meer toe heeft —
+ * caller antwoordt 401.
+ */
+export async function requireOAuthToken(request: Request): Promise<OAuthMcpContext | null> {
+  // getMcpSession valideert het Bearer-token tegen OauthAccessToken (incl.
+  // expiry) en gooit niet — null betekent: geen geldig OAuth-token.
+  const token = await auth.api.getMcpSession({ headers: request.headers });
+  if (!token?.userId) return null;
+
+  const resolved = await resolveOAuthWorkspace(token.userId, token.clientId);
+  if (!resolved) return null;
+
+  return {
+    workspaceId: resolved.workspaceId,
+    userId: token.userId,
+    ...(resolved.lockedWorkspaceId ? { lockedWorkspaceId: resolved.lockedWorkspaceId } : {}),
+  };
 }

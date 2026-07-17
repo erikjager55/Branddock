@@ -1,18 +1,26 @@
 // =============================================================
-// Publieke Brand-API — MCP-server (Fase B, ADR 2026-07-17-public-brand-api).
+// Publieke Brand-API — MCP-server (Fase B + "merken zijn taal"-batch,
+// ADR 2026-07-17-public-brand-api).
 //
-// Bouwt per request een verse McpServer met de 14 publieke brand-tools,
-// gebonden aan de workspace van de API-key (stateless serverless-patroon —
-// zie src/app/api/mcp/route.ts). Tweede-deur-principe: elke tool loopt door
-// exact dezelfde services als de UI en de REST-routes (/api/v1/*), dus
-// resultaten zijn 1-op-1 vergelijkbaar en writes zijn direct zichtbaar in
-// de content-library. Elke tool-aanroep logt metadata-only naar ApiCallLog
-// (fail-soft — logging laat een geslaagde aanroep nooit falen).
+// Bouwt per request een verse McpServer met de 17 publieke brand-tools,
+// gebonden aan de auth-context (stateless serverless-patroon — zie
+// src/app/api/mcp/route.ts). Tweede-deur-principe: elke tool loopt door
+// exact dezelfde services als de UI en de REST-routes (/api/v1/*).
+//
+// "Merken zijn taal": elke tool accepteert een optioneel `brand`-param
+// (workspace-id of merknaam) — resolutie + membership-validatie in
+// brand-resolver.ts. OAuth-callers met viewer-rol zijn read-only
+// (write-tools geven een nette error); het API-key-pad is machine-toegang
+// en blijft merk-vergrendeld. Elke tool-aanroep logt metadata-only naar
+// ApiCallLog onder het efféctieve merk (fail-soft — logging laat een
+// geslaagde aanroep nooit falen). Tool-annotations (readOnlyHint e.d.)
+// volgen de Anthropic-Connectors-Directory-vereisten; er zit bewust niets
+// destructiefs in de set.
 // =============================================================
 
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type { CallToolResult, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { prisma } from '@/lib/prisma';
 import { getBrandContext } from '@/lib/ai/brand-context';
 import { runFidelityForExternalContent } from '@/lib/brand-fidelity/external-content-runner';
@@ -22,13 +30,44 @@ import { startCampaignStrategyGeneration, getStrategyStatus } from '@/lib/campai
 import { startSeoGeneration, getSeoStatus } from '@/lib/content/headless-seo';
 import { generateWebPage } from '@/lib/content/headless-webpage';
 import { generateVideoClip } from '@/lib/content/headless-video';
+import { getDeliverableContent } from '@/lib/content/deliverable-content';
+import { generateBrandImage, DEFAULT_IMAGE_PROVIDER } from '@/lib/content/headless-image';
 import { chargeAfter } from '@/lib/billing/credits/meter-generation';
-import { logApiCall } from '@/lib/api/public/usage';
+import { enforceCreditsForAction } from '@/lib/stripe/enforcement';
+import { logApiCall, type ApiCallMeta } from '@/lib/api/public/usage';
+import {
+  listBrandsForContext,
+  resolveBrandParam,
+  requireWriteAccess,
+} from '@/lib/api/public/brand-resolver';
+
+/**
+ * Auth-context van de aanroepende request: default-merk + via welk auth-pad
+ * ('api_key' = bd_live-key, 'oauth' = connector-Bearer-token via de Better
+ * Auth mcp-plugin). Het OAuth-pad draagt de token-user mee (membership- en
+ * rol-checks) en een eventueel consent-slot; authVia stroomt 1-op-1 door
+ * naar de usage-log. Structureel compatibel met BrandAccessContext.
+ */
+export interface PublicMcpContext {
+  workspaceId: string;
+  authVia: ApiCallMeta['authVia'];
+  /** OAuth-pad: de token-user; key-pad: undefined (machine-toegang). */
+  userId?: string;
+  /** OAuth-pad: consent-vergrendeling op één merk (undefined = geen slot). */
+  lockedWorkspaceId?: string;
+}
 
 /** Discovery-reads zijn bewust gecapt — agents hebben een shortlist nodig, geen dump. */
 const MAX_ROWS = 50;
 /** Vlakke 'short'-afboeking per gegenereerd item — zelfde tarief als /api/v1/generate. */
 const GENERATE_CREDITS = 5;
+/** 'image'-afboeking per beeld — zelfde tarief als de Media Library (credit-costs.ts). */
+const IMAGE_CREDITS = 2;
+
+/** Connectors-Directory-annotations: read/score/status/list-tools. */
+const READ_TOOL: ToolAnnotations = { readOnlyHint: true };
+/** Connectors-Directory-annotations: generatie-tools — muteren wel, vernietigen niets. */
+const WRITE_TOOL: ToolAnnotations = { readOnlyHint: false, destructiveHint: false };
 
 // ─── Result-helpers ──────────────────────────────────────────
 
@@ -45,54 +84,82 @@ interface ToolRun {
   credits?: number;
 }
 
+/** Optioneel merk-param op elke tool — resolutie/validatie in brand-resolver.ts. */
+const brandParam = {
+  brand: z
+    .string()
+    .optional()
+    .describe(
+      'Optioneel: ander merk dan het standaard-merk — workspace-id of exacte merknaam ' +
+        '(case-insensitive; zie list_brands). OAuth: alleen merken waar je lid van bent; ' +
+        'API-keys zijn merk-vergrendeld en accepteren alleen het eigen merk.',
+    ),
+};
+
 /**
- * Draait een tool-handler met latency-meting + metadata-only usage-log.
+ * Draait een tool-handler met merk-resolutie, rol-gate (write-tools),
+ * latency-meting en metadata-only usage-log onder het effectieve merk.
  * Throws worden een nette tool-error (isError) zodat de MCP-client een
  * leesbare fout krijgt i.p.v. een protocol-level crash.
  */
-async function tracked(
-  workspaceId: string,
+async function runTool(
+  ctx: PublicMcpContext,
   tool: string,
-  fn: () => Promise<ToolRun>,
+  access: 'read' | 'write',
+  brand: string | undefined,
+  fn: (workspaceId: string) => Promise<ToolRun>,
 ): Promise<CallToolResult> {
   const startedAt = Date.now();
-  try {
-    const { result, credits } = await fn();
-    await logApiCall({
+  const log = (workspaceId: string, success: boolean, credits?: number) =>
+    logApiCall({
       workspaceId,
       tool,
-      authVia: 'api_key',
-      success: result.isError !== true,
+      authVia: ctx.authVia,
+      success,
       latencyMs: Date.now() - startedAt,
       credits,
     });
+
+  const resolved = await resolveBrandParam(ctx, brand);
+  if (!resolved.ok) {
+    // Merk-resolutie faalde — log onder het default-merk van de caller.
+    await log(ctx.workspaceId, false);
+    return errorResult(resolved.error);
+  }
+  if (access === 'write') {
+    const write = await requireWriteAccess(ctx, resolved.workspaceId);
+    if (!write.ok) {
+      await log(resolved.workspaceId, false);
+      return errorResult(write.error);
+    }
+  }
+
+  try {
+    const { result, credits } = await fn(resolved.workspaceId);
+    await log(resolved.workspaceId, result.isError !== true, credits);
     return result;
   } catch (err) {
-    await logApiCall({
-      workspaceId,
-      tool,
-      authVia: 'api_key',
-      success: false,
-      latencyMs: Date.now() - startedAt,
-    });
+    await log(resolved.workspaceId, false);
     return errorResult(err instanceof Error ? err.message : 'Tool execution failed');
   }
 }
 
 // ─── Brand-tools (context + score) ───────────────────────────
 
-function registerBrandTools(server: McpServer, workspaceId: string): void {
+function registerBrandTools(server: McpServer, ctx: PublicMcpContext): void {
   server.registerTool(
     'get_brand_context',
     {
       title: 'Get brand context',
       description:
-        'De volledige merkcontext van deze workspace: brand assets, voice, personas, producten, ' +
+        'De volledige merkcontext van een merk: brand assets, voice, personas, producten, ' +
         'concurrenten en positionering — dezelfde gelaagde context-stack die Branddock in elke ' +
         'AI-call injecteert. Gebruik dit als systemcontext om zelf on-brand te schrijven. Gratis.',
+      inputSchema: { ...brandParam },
+      annotations: { title: 'Get brand context', ...READ_TOOL },
     },
-    async () =>
-      tracked(workspaceId, 'get_brand_context', async () => ({
+    async ({ brand }) =>
+      runTool(ctx, 'get_brand_context', 'read', brand, async (workspaceId) => ({
         result: jsonResult(await getBrandContext(workspaceId)),
       })),
   );
@@ -110,10 +177,12 @@ function registerBrandTools(server: McpServer, workspaceId: string): void {
           .string()
           .min(50, 'content needs at least 50 characters for a meaningful score')
           .describe('De te beoordelen tekst (platte tekst, minimaal 50 tekens)'),
+        ...brandParam,
       },
+      annotations: { title: 'Score content against brand', ...READ_TOOL },
     },
-    async ({ content }) =>
-      tracked(workspaceId, 'score_against_brand', async () => {
+    async ({ content, brand }) =>
+      runTool(ctx, 'score_against_brand', 'read', brand, async (workspaceId) => {
         const review = await runFidelityForExternalContent({
           workspaceId,
           contentText: content,
@@ -199,13 +268,14 @@ async function runGenerate(workspaceId: string, args: GenerateArgs): Promise<Too
       title: result.title,
       generated,
       fidelityScore: result.fidelityScore,
+      contentText: result.contentText,
       generationError: result.generationError,
     }),
     credits: generated ? GENERATE_CREDITS : 0,
   };
 }
 
-function registerGenerateTool(server: McpServer, workspaceId: string): void {
+function registerGenerateTool(server: McpServer, ctx: PublicMcpContext): void {
   server.registerTool(
     'generate_on_brand',
     {
@@ -213,16 +283,19 @@ function registerGenerateTool(server: McpServer, workspaceId: string): void {
       description:
         'Genereert een on-brand content-item via de volledige Branddock-pipeline: maakt een echt ' +
         'Deliverable aan (direct zichtbaar in de content-library), genereert de content met de ' +
-        'complete merkcontext en scoort het resultaat met F-VAL. Kost credits bij generatie.',
-      inputSchema: generateSchema.shape,
+        'complete merkcontext, scoort het resultaat met F-VAL en geeft de gegenereerde tekst ' +
+        '(contentText) direct terug. Kost credits bij generatie.',
+      inputSchema: { ...generateSchema.shape, ...brandParam },
+      annotations: { title: 'Generate on-brand content', ...WRITE_TOOL },
     },
-    async (args) => tracked(workspaceId, 'generate_on_brand', () => runGenerate(workspaceId, args)),
+    async ({ brand, ...args }) =>
+      runTool(ctx, 'generate_on_brand', 'write', brand, (workspaceId) => runGenerate(workspaceId, args)),
   );
 }
 
 // ─── rewrite_on_brand (ephemeral — Fase C) ───────────────────
 
-function registerRewriteTool(server: McpServer, workspaceId: string): void {
+function registerRewriteTool(server: McpServer, ctx: PublicMcpContext): void {
   server.registerTool(
     'rewrite_on_brand',
     {
@@ -237,10 +310,12 @@ function registerRewriteTool(server: McpServer, workspaceId: string): void {
         instruction: z.string().optional().describe('Vrije sturing, bijv. "korter", "formeler", "benadruk duurzaamheid"'),
         personaIds: z.array(z.string()).optional().describe('Doelgroep-personas (ids via list_personas)'),
         productIds: z.array(z.string()).optional().describe('Relevante producten (ids via list_products)'),
+        ...brandParam,
       },
+      annotations: { title: 'Rewrite or reply on brand', ...WRITE_TOOL },
     },
-    async (args) =>
-      tracked(workspaceId, 'rewrite_on_brand', async () => {
+    async ({ brand, ...args }) =>
+      runTool(ctx, 'rewrite_on_brand', 'write', brand, async (workspaceId) => {
         const result = await rewriteOnBrand({ workspaceId, ...args });
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         return { result: jsonResult({ text: result.text, model: result.model }), credits: 1 };
@@ -277,7 +352,7 @@ const strategyGenerateSchema = z.object({
   campaignId: z.string().optional().describe('Bestaande campagne zonder strategie; zonder wordt een nieuwe campagne gemaakt'),
 });
 
-function registerStrategyTools(server: McpServer, workspaceId: string): void {
+function registerStrategyTools(server: McpServer, ctx: PublicMcpContext): void {
   server.registerTool(
     'generate_campaign_strategy',
     {
@@ -287,10 +362,11 @@ function registerStrategyTools(server: McpServer, workspaceId: string): void {
         'creatief concept, strategie, journey-fases en kanaal-/asset-plan — opgeslagen op een echte ' +
         'campagne (direct zichtbaar in de UI). Draait ASYNC en duurt minuten: je krijgt direct een ' +
         'campaignId + jobId terug; poll de voortgang met get_strategy_status. Kost credits bij succes.',
-      inputSchema: strategyGenerateSchema.shape,
+      inputSchema: { ...strategyGenerateSchema.shape, ...brandParam },
+      annotations: { title: 'Generate campaign strategy', ...WRITE_TOOL },
     },
-    async (args) =>
-      tracked(workspaceId, 'generate_campaign_strategy', async () => {
+    async ({ brand, ...args }) =>
+      runTool(ctx, 'generate_campaign_strategy', 'write', brand, async (workspaceId) => {
         const result = await startCampaignStrategyGeneration({ workspaceId, ...args });
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         return {
@@ -314,10 +390,12 @@ function registerStrategyTools(server: McpServer, workspaceId: string): void {
         'blueprint al op de campagne staat (hasStrategy) en hoeveel deliverables er zijn aangemaakt. Gratis.',
       inputSchema: {
         campaignId: z.string().describe('De campaignId uit generate_campaign_strategy'),
+        ...brandParam,
       },
+      annotations: { title: 'Get strategy generation status', ...READ_TOOL },
     },
-    async ({ campaignId }) =>
-      tracked(workspaceId, 'get_strategy_status', async () => {
+    async ({ campaignId, brand }) =>
+      runTool(ctx, 'get_strategy_status', 'read', brand, async (workspaceId) => {
         const result = await getStrategyStatus(workspaceId, campaignId);
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         return {
@@ -337,25 +415,35 @@ function registerStrategyTools(server: McpServer, workspaceId: string): void {
 
 function registerListTool(
   server: McpServer,
-  workspaceId: string,
+  ctx: PublicMcpContext,
   name: string,
+  title: string,
   description: string,
   fetcher: (wsId: string) => Promise<unknown[]>,
 ): void {
-  server.registerTool(name, { description }, async () =>
-    tracked(workspaceId, name, async () => {
-      const items = await fetcher(workspaceId);
-      return { result: jsonResult({ count: items.length, items }) };
-    }),
+  server.registerTool(
+    name,
+    {
+      title,
+      description,
+      inputSchema: { ...brandParam },
+      annotations: { title, ...READ_TOOL },
+    },
+    async ({ brand }) =>
+      runTool(ctx, name, 'read', brand, async (workspaceId) => {
+        const items = await fetcher(workspaceId);
+        return { result: jsonResult({ count: items.length, items }) };
+      }),
   );
 }
 
-function registerDiscoveryTools(server: McpServer, workspaceId: string): void {
+function registerDiscoveryTools(server: McpServer, ctx: PublicMcpContext): void {
   registerListTool(
     server,
-    workspaceId,
+    ctx,
     'list_personas',
-    `Alle personas van deze workspace (id, naam, tagline, beroep; max ${MAX_ROWS}). Gebruik de ids in contextSelection.personaIds van generate_on_brand.`,
+    'List personas',
+    `Alle personas van een merk (id, naam, tagline, beroep; max ${MAX_ROWS}). Gebruik de ids in contextSelection.personaIds van generate_on_brand.`,
     (wsId) =>
       prisma.persona.findMany({
         where: { workspaceId: wsId },
@@ -367,9 +455,10 @@ function registerDiscoveryTools(server: McpServer, workspaceId: string): void {
 
   registerListTool(
     server,
-    workspaceId,
+    ctx,
     'list_products',
-    `Alle producten van deze workspace (id, naam, categorie, status; max ${MAX_ROWS}). Gebruik de ids in contextSelection.productIds van generate_on_brand.`,
+    'List products',
+    `Alle producten van een merk (id, naam, categorie, status; max ${MAX_ROWS}). Gebruik de ids in contextSelection.productIds van generate_on_brand.`,
     (wsId) =>
       prisma.product.findMany({
         where: { workspaceId: wsId },
@@ -381,9 +470,10 @@ function registerDiscoveryTools(server: McpServer, workspaceId: string): void {
 
   registerListTool(
     server,
-    workspaceId,
+    ctx,
     'list_competitors',
-    `Alle concurrenten van deze workspace (id, naam, tagline, website; max ${MAX_ROWS}). Gebruik de ids in contextSelection.competitorIds van generate_on_brand.`,
+    'List competitors',
+    `Alle concurrenten van een merk (id, naam, tagline, website; max ${MAX_ROWS}). Gebruik de ids in contextSelection.competitorIds van generate_on_brand.`,
     (wsId) =>
       prisma.competitor.findMany({
         where: { workspaceId: wsId },
@@ -398,17 +488,19 @@ function registerDiscoveryTools(server: McpServer, workspaceId: string): void {
     {
       title: 'Search knowledge resources',
       description:
-        `Zoekt kennisbronnen van deze workspace op titel (id, titel, type, categorie; max ${MAX_ROWS}). ` +
+        `Zoekt kennisbronnen van een merk op titel (id, titel, type, categorie; max ${MAX_ROWS}). ` +
         'Gebruik de ids in contextSelection.knowledgeResourceIds van generate_on_brand.',
       inputSchema: {
         query: z
           .string()
           .optional()
           .describe('Zoekterm — case-insensitive match op de titel; leeg = recentste items'),
+        ...brandParam,
       },
+      annotations: { title: 'Search knowledge resources', ...READ_TOOL },
     },
-    async ({ query }) =>
-      tracked(workspaceId, 'search_knowledge', async () => {
+    async ({ query, brand }) =>
+      runTool(ctx, 'search_knowledge', 'read', brand, async (workspaceId) => {
         const items = await prisma.knowledgeResource.findMany({
           where: {
             workspaceId,
@@ -424,21 +516,134 @@ function registerDiscoveryTools(server: McpServer, workspaceId: string): void {
   );
 }
 
+// ─── list_brands ("merken zijn taal") ────────────────────────
+
+function registerBrandDirectoryTool(server: McpServer, ctx: PublicMcpContext): void {
+  server.registerTool(
+    'list_brands',
+    {
+      title: 'List brands',
+      description:
+        'Alle merken (workspaces) die deze koppeling kan gebruiken: workspace-id, merknaam, ' +
+        'organisatie, jouw rol en welk merk nu het default is. OAuth: alle merken waar je lid ' +
+        'van bent — of alleen het vergrendelde merk bij een consent-slot; API-key: alleen het ' +
+        'key-merk. Gebruik het workspace-id of de naam als `brand`-parameter op elke andere tool. Gratis.',
+      annotations: { title: 'List brands', ...READ_TOOL },
+    },
+    async () =>
+      runTool(ctx, 'list_brands', 'read', undefined, async () => {
+        const brands = await listBrandsForContext(ctx);
+        return { result: jsonResult({ count: brands.length, brands }) };
+      }),
+  );
+}
+
+// ─── get_deliverable_content ─────────────────────────────────
+
+function registerDeliverableContentTool(server: McpServer, ctx: PublicMcpContext): void {
+  server.registerTool(
+    'get_deliverable_content',
+    {
+      title: 'Get deliverable content',
+      description:
+        'De volledige inhoud van een content-item: titel, content-type, status, recentste ' +
+        'F-VAL-score en alle componenten (tekst, image-URL, video-URL, variant-/selectie-info) ' +
+        'gesorteerd op volgorde. Gebruik het deliverableId uit generate_on_brand of de content-library. Gratis.',
+      inputSchema: {
+        id: z.string().min(1).describe('Het deliverable-id'),
+        ...brandParam,
+      },
+      annotations: { title: 'Get deliverable content', ...READ_TOOL },
+    },
+    async ({ id, brand }) =>
+      runTool(ctx, 'get_deliverable_content', 'read', brand, async (workspaceId) => {
+        const result = await getDeliverableContent(workspaceId, id);
+        if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
+        return { result: jsonResult(result.deliverable) };
+      }),
+  );
+}
+
+// ─── generate_image ──────────────────────────────────────────
+
+function registerImageTool(server: McpServer, ctx: PublicMcpContext): void {
+  server.registerTool(
+    'generate_image',
+    {
+      title: 'Generate on-brand image',
+      description:
+        'Genereert een on-brand beeld en slaat het op in de Media Library van het merk ' +
+        `(fal.ai FLUX/Recraft/Ideogram, Google Imagen of DALL-E; default ${DEFAULT_IMAGE_PROVIDER}). ` +
+        'Merk-richtlijnen (fotografie-richting, design-taal, persoonlijkheid) gaan default mee in de ' +
+        'prompt. Retourneert de opgeslagen beeld-URL. Kost 2 credits.',
+      inputSchema: {
+        prompt: z.string().min(1).max(1000).describe('Wat er op het beeld moet staan'),
+        name: z.string().min(1).max(200).optional().describe('Naam in de Media Library (default: afgeleid van de prompt)'),
+        provider: z
+          .string()
+          .min(1)
+          .optional()
+          .describe(`"fal-ai/…", "IMAGEN" of "DALLE" (default ${DEFAULT_IMAGE_PROVIDER})`),
+        aspectRatio: z
+          .enum(['1:1', '16:9', '9:16', '3:4', '4:3'])
+          .optional()
+          .describe('Beeldverhouding (default 1:1; DALL-E gebruikt size)'),
+        size: z.enum(['1024x1024', '1792x1024', '1024x1792']).optional().describe('Alleen DALL-E'),
+        quality: z.enum(['standard', 'hd']).optional().describe('Alleen DALL-E'),
+        style: z.enum(['vivid', 'natural']).optional().describe('Alleen DALL-E'),
+        applyBrandGuidelines: z
+          .boolean()
+          .optional()
+          .describe('false = pure prompt zonder merk-richtlijnen (default true)'),
+        ...brandParam,
+      },
+      annotations: { title: 'Generate on-brand image', ...WRITE_TOOL },
+    },
+    async ({ brand, ...args }) =>
+      runTool(ctx, 'generate_image', 'write', brand, async (workspaceId) => {
+        // Zelfde pre-flight als de Media-Library-route (Gate B): 402-blok bij
+        // ontoereikend saldo — hier vertaald naar een nette tool-error.
+        const blocked = await enforceCreditsForAction(workspaceId, 'image', 1);
+        if (blocked) {
+          const body = (await blocked.json().catch(() => null)) as { error?: string } | null;
+          return { result: errorResult(body?.error ?? 'Insufficient credits for image generation') };
+        }
+
+        const result = await generateBrandImage({
+          workspaceId,
+          ...args,
+          ...(ctx.userId ? { createdByUserId: ctx.userId } : {}),
+        });
+        if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
+        return {
+          result: jsonResult({
+            image: result.image,
+            note: 'Opgeslagen in de Media Library van dit merk.',
+          }),
+          credits: IMAGE_CREDITS,
+        };
+      }),
+  );
+}
+
 // ─── Public API ──────────────────────────────────────────────
 
 /**
- * Bouwt een verse McpServer met de 14 publieke brand-tools, gebonden aan de
- * workspace van de aanroepende API-key. Eén server per request (stateless) —
- * de route sluit hem na afhandeling weer.
+ * Bouwt een verse McpServer met de 17 publieke brand-tools, gebonden aan de
+ * auth-context (bd_live-key óf OAuth-token — zie PublicMcpContext). Eén
+ * server per request (stateless) — de route sluit hem na afhandeling weer.
  */
-export function createPublicMcpServer(workspaceId: string): McpServer {
-  const server = new McpServer({ name: 'branddock-brand-api', version: '1.0.0' });
-  registerBrandTools(server, workspaceId);
-  registerGenerateTool(server, workspaceId);
-  registerRewriteTool(server, workspaceId);
-  registerStrategyTools(server, workspaceId);
-  registerSpecializedChainTools(server, workspaceId);
-  registerDiscoveryTools(server, workspaceId);
+export function createPublicMcpServer(ctx: PublicMcpContext): McpServer {
+  const server = new McpServer({ name: 'branddock-brand-api', version: '1.1.0' });
+  registerBrandTools(server, ctx);
+  registerGenerateTool(server, ctx);
+  registerRewriteTool(server, ctx);
+  registerStrategyTools(server, ctx);
+  registerSpecializedChainTools(server, ctx);
+  registerDiscoveryTools(server, ctx);
+  registerBrandDirectoryTool(server, ctx);
+  registerDeliverableContentTool(server, ctx);
+  registerImageTool(server, ctx);
   return server;
 }
 
@@ -454,7 +659,7 @@ const chainContextSelection = z
   .optional()
   .describe('Workspace-gescopede kennis-selectie (ids via de list_*/search_knowledge-tools)');
 
-function registerSpecializedChainTools(server: McpServer, workspaceId: string): void {
+function registerSpecializedChainTools(server: McpServer, ctx: PublicMcpContext): void {
   server.registerTool(
     'generate_long_form_seo',
     {
@@ -472,10 +677,12 @@ function registerSpecializedChainTools(server: McpServer, workspaceId: string): 
         funnelStage: z.enum(['awareness', 'consideration', 'decision']),
         secondaryKeywordHints: z.array(z.string()).optional(),
         contextSelection: chainContextSelection,
+        ...brandParam,
       },
+      annotations: { title: 'Generate long-form SEO content (async)', ...WRITE_TOOL },
     },
-    async ({ contentType, deliverableId, title, campaignId, primaryKeyword, funnelStage, secondaryKeywordHints, contextSelection }) =>
-      tracked(workspaceId, 'generate_long_form_seo', async () => {
+    async ({ brand, contentType, deliverableId, title, campaignId, primaryKeyword, funnelStage, secondaryKeywordHints, contextSelection }) =>
+      runTool(ctx, 'generate_long_form_seo', 'write', brand, async (workspaceId) => {
         const result = await startSeoGeneration({
           workspaceId,
           deliverableId,
@@ -502,10 +709,11 @@ function registerSpecializedChainTools(server: McpServer, workspaceId: string): 
     {
       title: 'Get SEO generation status',
       description: 'Voortgang van een generate_long_form_seo-job (stap 0-8, labels, fouten). Gratis.',
-      inputSchema: { jobId: z.string().min(1) },
+      inputSchema: { jobId: z.string().min(1), ...brandParam },
+      annotations: { title: 'Get SEO generation status', ...READ_TOOL },
     },
-    async ({ jobId }) =>
-      tracked(workspaceId, 'get_seo_status', async () => {
+    async ({ jobId, brand }) =>
+      runTool(ctx, 'get_seo_status', 'read', brand, async (workspaceId) => {
         const status = await getSeoStatus(workspaceId, jobId);
         if (!status) return { result: errorResult('Job not found in this workspace') };
         return { result: jsonResult(status) };
@@ -528,10 +736,12 @@ function registerSpecializedChainTools(server: McpServer, workspaceId: string): 
         title: z.string().max(120).optional(),
         campaignId: z.string().optional(),
         contextSelection: chainContextSelection,
+        ...brandParam,
       },
+      annotations: { title: 'Generate on-brand web page', ...WRITE_TOOL },
     },
-    async ({ prompt, contentType, deliverableId, title, campaignId, contextSelection }) =>
-      tracked(workspaceId, 'generate_web_page', async () => {
+    async ({ brand, prompt, contentType, deliverableId, title, campaignId, contextSelection }) =>
+      runTool(ctx, 'generate_web_page', 'write', brand, async (workspaceId) => {
         const result = await generateWebPage({ workspaceId, prompt, contentType, deliverableId, title, campaignId, contextSelection });
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         const tree = result.puckData as { content?: unknown[] };
@@ -568,10 +778,12 @@ function registerSpecializedChainTools(server: McpServer, workspaceId: string): 
         campaignId: z.string().optional(),
         sourceImageUrl: z.string().url().optional().describe('Remote https-URL voor image-to-video'),
         motionPrompt: z.string().max(500).optional(),
+        ...brandParam,
       },
+      annotations: { title: 'Generate on-brand video clip', ...WRITE_TOOL },
     },
-    async (args) =>
-      tracked(workspaceId, 'generate_video', async () => {
+    async ({ brand, ...args }) =>
+      runTool(ctx, 'generate_video', 'write', brand, async (workspaceId) => {
         const result = await generateVideoClip({ workspaceId, ...args });
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         return {

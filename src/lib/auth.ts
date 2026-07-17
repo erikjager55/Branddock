@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
-import { organization } from "better-auth/plugins";
+import { organization, mcp } from "better-auth/plugins";
 import { createAuthMiddleware, APIError } from "better-auth/api";
 import { prisma } from "./prisma";
 import { ac, owner, admin, member, viewer } from "./auth-permissions";
@@ -250,6 +250,18 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  /**
+   * Expliciete baseURL — vereist voor de MCP/OAuth-discovery: de mcp-plugin
+   * gebruikt `options.baseURL` letterlijk als OIDC-`issuer` en gooit een 500
+   * (→ discovery serveert `null`) wanneer die geen string is. Dev leest dit
+   * de facto al uit BETTER_AUTH_URL (zelfde bron als Better Auth's eigen
+   * fallback — gedrag ongewijzigd); op prod is BETTER_AUTH_URL bewust leeg
+   * (host-inferentie sinds de domein-cutover) en pinnen we op de canonieke
+   * app-host. NB: dit fixeert op prod ook redirect-/callback-URL's op de
+   * app-host i.p.v. de request-host — gewenste canonicalisatie, maar wel een
+   * gedragswijziging voor legacy *.vercel.app-bookmarks (zie task-rapport).
+   */
+  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || undefined,
   trustedOrigins: buildTrustedOrigins(),
   emailAndPassword: {
     enabled: true,
@@ -390,6 +402,34 @@ export const auth = betterAuth({
             inviterId: "invitedById",
           },
         },
+      },
+    }),
+    /**
+     * MCP OAuth-provider (OAuth-connect-fase publieke MCP-server).
+     * Branddock wordt hiermee zelf authorization-server voor claude.ai/ChatGPT-
+     * connectors: dynamic client registration (/api/auth/mcp/register),
+     * authorize (/api/auth/mcp/authorize), token (/api/auth/mcp/token) en
+     * getMcpSession voor Bearer-validatie in /api/mcp.
+     */
+    mcp({
+      // Niet-ingelogd op authorize → 302 naar deze SPA-pagina, mét de
+      // volledige authorize-query zodat de pagina na login terug kan.
+      loginPage: "/oauth/login",
+      oidcConfig: {
+        // OIDCOptions verplicht loginPage ook hier; de plugin overschrijft dit
+        // sowieso met de buitenste loginPage — zelfde waarde, geen effect.
+        loginPage: "/oauth/login",
+        // Alleen gebruikt bij prompt=consent (zonder prompt doet de plugin
+        // auto-consent met directe code-redirect — bewuste v1-keuze: de
+        // connector-flow van claude.ai stuurt geen prompt, en de gebruiker
+        // heeft zojuist expliciet ingelogd op onze eigen login-pagina).
+        consentPage: "/oauth/consent",
+        // OAuth 2.1: PKCE verplicht. Connectors registreren zich als public
+        // client (token_endpoint_auth_method=none) — zonder PKCE zou een
+        // gelekte authorization-code direct inwisselbaar zijn.
+        requirePKCE: true,
+        // Expiry-defaults van de plugin bewust aangehouden (access 1u,
+        // refresh 7d, code 10min — OIDC-spec-aanbevelingen).
       },
     }),
     nextCookies(), // Must be last in plugins array
