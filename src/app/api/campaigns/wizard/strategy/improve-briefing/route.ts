@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { withAiRateLimit } from '@/lib/ai/middleware';
+import { parseJsonBody } from '@/lib/api/parse-json-body';
+import { improveBriefingBodySchema } from '@/lib/campaigns/strategy-request-schemas';
 import { improveBriefing } from '@/lib/campaigns/strategy-chain';
 import type { ImproveBriefingBody } from '@/lib/campaigns/strategy-blueprint.types';
 
@@ -21,18 +23,11 @@ export async function POST(request: NextRequest) {
     const rateLimit = await withAiRateLimit(workspaceId);
     if (rateLimit instanceof Response) return rateLimit;
 
-    let body: ImproveBriefingBody;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-    }
-    if (!body.wizardContext?.campaignName) {
-      return NextResponse.json({ error: 'wizardContext.campaignName is required' }, { status: 400 });
-    }
-    if (!body.validation) {
-      return NextResponse.json({ error: 'validation is required' }, { status: 400 });
-    }
+    // L8 Zod-sweep (audit 2026-06-26, batch 3): wizardContext + validation
+    // gingen als vrije JSON de AI-pipeline in met alleen presence-checks.
+    const parsed = await parseJsonBody(request, improveBriefingBodySchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data as unknown as ImproveBriefingBody;
 
     // Build tracking when draft campaignId is supplied — falls back to
     // workspace-level tracking otherwise. improveBriefing itself stays on its

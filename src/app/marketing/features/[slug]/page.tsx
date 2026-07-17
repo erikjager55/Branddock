@@ -3,7 +3,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { appHref } from '../../app-url';
-import Mosaic from '../../Mosaic';
+import SplitHeader, { type SplitHeaderFamily } from '../../SplitHeader';
 import type { Metadata } from 'next';
 
 interface FeatureSpec {
@@ -121,15 +121,16 @@ const FEATURES: Record<string, FeatureSpec> = {
   },
 };
 
-// Merkgradient per feature-kop (brandbook v3).
-const FEATURE_GRAD: Record<string, string> = {
-  'brand-voice': 'var(--g-brand)',
-  'content-canvas': 'var(--g-cool)',
-  'brand-alignment': 'var(--g-fresh)',
-  'agents': 'var(--g-warm)',
-  'personas': 'var(--g-cool)',
-  'trend-radar': 'var(--g-warm)',
-  'campaigns': 'var(--g-brand)',
+// Kleur-familie per feature (compositie-herziening H2): brand-alignment is
+// het merk-check-"bewijs", de rest is de productfamilie (blauw/mint).
+const FEATURE_FAMILY: Record<string, SplitHeaderFamily> = {
+  'brand-voice': 'product',
+  'content-canvas': 'product',
+  'brand-alignment': 'proof',
+  agents: 'product',
+  personas: 'product',
+  'trend-radar': 'product',
+  campaigns: 'product',
 };
 
 export function generateStaticParams() {
@@ -161,32 +162,14 @@ export default async function FeaturePage({
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-16">
-      <div
-        className="relative overflow-hidden rounded-2xl p-8 md:p-10 mb-10"
-        style={{ background: FEATURE_GRAD[feature.slug] ?? 'var(--g-brand)' }}
-      >
-        <Mosaic
-          id={`feat-${feature.slug}`}
-          cols={6}
-          rows={2}
-          className="pointer-events-none absolute inset-0 w-full h-full"
-          style={{ opacity: 0.2 }}
-        />
-        <div className="relative">
-          <div
-            className="text-xs font-semibold uppercase tracking-wide mb-2"
-            style={{ color: 'rgba(255,255,255,0.85)' }}
-          >
-            Platform
-          </div>
-          <h1 className="mb-3" style={{ color: '#ffffff' }}>
-            {feature.title}
-          </h1>
-          <p className="text-xl" style={{ color: 'rgba(255,255,255,0.9)' }}>
-            {feature.tagline}
-          </p>
-        </div>
-      </div>
+      <SplitHeader
+        id={`feat-${feature.slug}`}
+        family={FEATURE_FAMILY[feature.slug] ?? 'product'}
+        eyebrow="Platform"
+        title={feature.title}
+        lead={feature.tagline}
+        className="mb-10"
+      />
 
       {feature.screenshotPath ? (
         <div className="mb-10 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">

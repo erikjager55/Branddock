@@ -1,14 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
+import { parseJsonBody } from "@/lib/api/parse-json-body";
 import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from "@/lib/constants/canonical-brand-assets";
 import { invalidateBrandContext } from "@/lib/ai/brand-context";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { ensureBrandWithDefaultProfile, localeForLanguage, syncDefaultLocaleProfile } from "@/lib/content-locale/default-profile";
+import { enforceOrgPlanLimit, getOrgPlanTier } from "@/lib/stripe/enforcement";
 
 // Content-taal-opties (ISO-639-1) — gedeeld door POST (create-form) + PATCH.
 const VALID_LANGUAGES = new Set(["en", "nl", "de", "fr", "es", "pt", "it"]);
+
+// L8 Zod-sweep (audit 2026-06-26, batch 7): `name` was untyped (non-string
+// 500'de op .toLowerCase). De taal-fallback/allowlist-semantiek blijft in de
+// routes zelf. NB de parse gebeurt bewust NÁ de rol-checks zodat 403 vóór
+// 400 blijft gaan (de RBAC-e2e-asserts leunen daarop).
+const createWorkspaceSchema = z.object({
+  name: z.string().min(1).max(200),
+  contentLanguage: z.string().max(10).optional(),
+});
+const patchWorkspaceSchema = z.object({
+  workspaceId: z.string().min(1).max(100),
+  contentLanguage: z.string().max(10).optional(),
+});
+const deleteWorkspaceSchema = z.object({
+  workspaceId: z.string().min(1).max(100),
+});
 
 // GET /api/workspaces — list workspaces for the active organization
 export async function GET() {
@@ -59,12 +78,12 @@ export async function POST(request: NextRequest) {
 
     if (!activeOrgId) {
       return NextResponse.json(
-        { error: "No active organization" },
+        { error: "No active organization", code: "NO_ACTIVE_ORG" },
         { status: 400 }
       );
     }
 
-    // Check org type and role
+    // Check membership and role
     const membership = await prisma.organizationMember.findUnique({
       where: {
         userId_organizationId: {
@@ -72,54 +91,32 @@ export async function POST(request: NextRequest) {
           organizationId: activeOrgId,
         },
       },
-      include: { organization: true },
     });
 
     if (!membership) {
-      return NextResponse.json({ error: "Not a member" }, { status: 403 });
-    }
-
-    if (membership.organization.type !== "AGENCY") {
-      return NextResponse.json(
-        { error: "Only agencies can create multiple workspaces" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Not a member", code: "NOT_MEMBER" }, { status: 403 });
     }
 
     if (!["owner", "admin"].includes(membership.role)) {
       return NextResponse.json(
-        { error: "Only owners and admins can create workspaces" },
+        { error: "Only owners and admins can create workspaces", code: "NOT_OWNER_OR_ADMIN" },
         { status: 403 }
       );
     }
 
-    // Check workspace limit
-    const workspaceCount = await prisma.workspace.count({
-      where: { organizationId: activeOrgId },
-    });
+    // Plan-limit check: reads PLAN_LIMITS[workspace.planTier].WORKSPACES
+    // across the org's existing workspaces (+ the -1 developer-unlimited
+    // override) — not the legacy Organization.type/maxWorkspaces gate.
+    const limited = await enforceOrgPlanLimit(activeOrgId, "WORKSPACES");
+    if (limited) return limited;
 
-    if (workspaceCount >= membership.organization.maxWorkspaces) {
-      return NextResponse.json(
-        {
-          error: `Workspace limit reached (${membership.organization.maxWorkspaces})`,
-        },
-        { status: 403 }
-      );
-    }
-
-    const body = await request.json();
-    const { name, contentLanguage: rawContentLanguage } = body;
+    const parsed = await parseJsonBody(request, createWorkspaceSchema);
+    if (!parsed.ok) return parsed.response;
+    const { name, contentLanguage: rawContentLanguage } = parsed.data;
     const contentLanguage =
-      typeof rawContentLanguage === "string" && VALID_LANGUAGES.has(rawContentLanguage)
+      rawContentLanguage !== undefined && VALID_LANGUAGES.has(rawContentLanguage)
         ? rawContentLanguage
         : "en";
-
-    if (!name) {
-      return NextResponse.json(
-        { error: "name is required" },
-        { status: 400 }
-      );
-    }
 
     // Generate slug from name
     const slug = name
@@ -133,7 +130,7 @@ export async function POST(request: NextRequest) {
     const RESERVED_SLUGS = new Set(["app", "www", "api", "admin", "p", "static", "assets"]);
     if (RESERVED_SLUGS.has(slug)) {
       return NextResponse.json(
-        { error: "This workspace name is reserved — please choose another." },
+        { error: "This workspace name is reserved — please choose another.", code: "WORKSPACE_NAME_RESERVED" },
         { status: 409 }
       );
     }
@@ -142,10 +139,16 @@ export async function POST(request: NextRequest) {
     const existing = await prisma.workspace.findUnique({ where: { slug } });
     if (existing) {
       return NextResponse.json(
-        { error: "A workspace with this name already exists" },
+        { error: "A workspace with this name already exists", code: "WORKSPACE_NAME_TAKEN" },
         { status: 409 }
       );
     }
+
+    // A new workspace inherits the org's highest existing tier — otherwise it
+    // defaults to FREE and the (already-correct) per-workspace plan-limit
+    // checks for personas/campaigns/etc. would wrongly apply FREE limits
+    // under a paid org.
+    const inheritedTier = await getOrgPlanTier(activeOrgId);
 
     // Create workspace + 11 canonical brand assets + research methods atomically
     const workspace = await prisma.$transaction(async (tx) => {
@@ -155,6 +158,7 @@ export async function POST(request: NextRequest) {
           slug,
           organizationId: activeOrgId,
           contentLanguage,
+          planTier: inheritedTier,
         },
       });
 
@@ -213,12 +217,9 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "No active organization" }, { status: 400 });
     }
 
-    const body = await request.json();
-    const { workspaceId, contentLanguage } = body;
-
-    if (!workspaceId || typeof workspaceId !== "string") {
-      return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
-    }
+    const parsed = await parseJsonBody(request, patchWorkspaceSchema);
+    if (!parsed.ok) return parsed.response;
+    const { workspaceId, contentLanguage } = parsed.data;
 
     // Verify membership and role
     const membership = await prisma.organizationMember.findUnique({
@@ -296,15 +297,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { workspaceId } = body;
-
-    if (!workspaceId || typeof workspaceId !== "string") {
-      return NextResponse.json(
-        { error: "workspaceId is required" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, deleteWorkspaceSchema);
+    if (!parsed.ok) return parsed.response;
+    const { workspaceId } = parsed.data;
 
     // Verify membership and owner role
     const membership = await prisma.organizationMember.findUnique({

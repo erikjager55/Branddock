@@ -1,7 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { parseJsonBody } from "@/lib/api/parse-json-body";
 import type { TrendWithMeta, TrendListResponse } from "@/types/trend";
+
+// L8 Zod-sweep (audit 2026-06-26, batch 2): de POST zette ~11 rest-velden
+// 1-op-1 in prisma.trend.create; sources/keyInsights/relevantIndustries/tags
+// waren ongevalideerde JSON. Zelfde caps als het knowledge-schema (batch 1).
+const strArray = z.array(z.string().max(500)).max(100);
+const createTrendSchema = z.object({
+  title: z.string().min(1).max(500),
+  description: z.string().max(10000).optional(),
+  category: z.string().max(100).optional(),
+  impact: z.string().max(50).optional(),
+  timeframe: z.string().max(50).optional(),
+  direction: z.string().max(50).nullish(),
+  level: z.string().max(50).nullish(),
+  relevance: z.number().int().min(0).max(100).nullish(),
+  relevantIndustries: strArray.optional(),
+  keyInsights: z.string().max(20000).nullish(),
+  sources: strArray.nullish(),
+  tags: strArray.optional(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -65,12 +86,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { title, ...rest } = body;
-
-    if (!title) {
-      return NextResponse.json({ error: "title is required" }, { status: 400 });
-    }
+    const parsed = await parseJsonBody(request, createTrendSchema);
+    if (!parsed.ok) return parsed.response;
+    const { title, ...rest } = parsed.data;
 
     const trend = await prisma.trend.create({
       data: {

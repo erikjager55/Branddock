@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { AssetCategory as PrismaAssetCategory } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { parseJsonBody } from "@/lib/api/parse-json-body";
 import type {
   BrandAssetWithMeta,
   BrandAssetListResponse,
   AssetCategory,
   AssetStatus,
 } from "@/types/brand-asset";
+
+// L8 Zod-sweep (audit 2026-06-26, batch 7): `name` was untyped (non-string
+// 500'de op .toLowerCase) en `category` is een Prisma-enum (ongeldige waarde
+// 500'de in de create).
+const createBrandAssetSchema = z.object({
+  name: z.string().min(1).max(300),
+  category: z.enum(Object.values(PrismaAssetCategory) as [string, ...string[]]),
+  description: z.string().max(5000).optional(),
+});
 import { computeValidationPercentage } from "@/lib/validation-percentage";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
@@ -138,15 +150,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { name, category, description } = body;
-
-    if (!name || !category) {
-      return NextResponse.json(
-        { error: "name and category are required" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, createBrandAssetSchema);
+    if (!parsed.ok) return parsed.response;
+    const { name, category, description } = parsed.data;
 
     // Generate slug from name
     const slug = name
@@ -170,7 +176,7 @@ export async function POST(request: NextRequest) {
         name,
         slug,
         description: description ?? "",
-        category,
+        category: category as PrismaAssetCategory,
         status: "DRAFT",
         workspaceId,
       },

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { parseJsonBody } from "@/lib/api/parse-json-body";
 import { withAiRateLimit } from "@/lib/ai/middleware";
 import { openaiClient } from "@/lib/ai/openai-client";
 import {
@@ -27,6 +29,25 @@ Possible moods: happy, neutral, frustrated, excited
 Choose the mood that best reflects the emotional tone of your response.
 Do NOT include any text outside the JSON object.`;
 
+// L8 Zod-sweep (audit 2026-06-26, batch 4): message + conversationHistory
+// gingen met alleen presence-checks de AI-call in (history-items ongeshaped).
+const personaChatSchema = z.object({
+  personaId: z.string().min(1).max(100),
+  message: z.string().min(1).max(20000),
+  chatMode: z.string().max(50).optional(),
+  conversationHistory: z
+    .array(
+      z
+        .object({
+          role: z.string().max(20),
+          content: z.string().max(20000),
+        })
+        .passthrough(),
+    )
+    .max(200)
+    .optional(),
+});
+
 // POST /api/personas/chat
 export async function POST(request: NextRequest) {
   try {
@@ -38,15 +59,9 @@ export async function POST(request: NextRequest) {
     const rateLimit = await withAiRateLimit(workspaceId);
     if (rateLimit instanceof Response) return rateLimit;
 
-    const body = await request.json();
-    const { personaId, message, chatMode, conversationHistory } = body;
-
-    if (!personaId || !message) {
-      return NextResponse.json(
-        { error: "personaId and message are required" },
-        { status: 400 },
-      );
-    }
+    const parsed = await parseJsonBody(request, personaChatSchema);
+    if (!parsed.ok) return parsed.response;
+    const { personaId, message, chatMode, conversationHistory } = parsed.data;
 
     // Load persona from DB
     const persona = await prisma.persona.findFirst({

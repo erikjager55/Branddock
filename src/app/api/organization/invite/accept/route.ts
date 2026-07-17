@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
+import { parseJsonBody } from "@/lib/api/parse-json-body";
+
+// L8 Zod-sweep (audit 2026-06-26, batch 6): een niet-string `token` (getal/
+// object) 500'de in prisma.findUnique; malformed JSON idem.
+const acceptSchema = z.object({
+  token: z.string().min(1).max(500),
+});
 
 // POST /api/organization/invite/accept — accept an invitation
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { token } = body;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: "token is required" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, acceptSchema);
+    if (!parsed.ok) return parsed.response;
+    const { token } = parsed.data;
 
     const invitation = await prisma.invitation.findUnique({
       where: { token },

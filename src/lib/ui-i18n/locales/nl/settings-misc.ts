@@ -103,6 +103,7 @@ const ns = {
     active: 'Actief',
     cannotDeleteLast: 'Je kunt de laatste workspace niet verwijderen',
     deleteTooltip: '{{name}} verwijderen',
+    limitReached: 'Workspace-limiet bereikt ({{current}}/{{limit}}) — upgrade je abonnement voor meer.',
   },
   brandRules: {
     heading: 'Brand rules',

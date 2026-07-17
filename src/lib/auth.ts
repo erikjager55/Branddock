@@ -10,7 +10,7 @@ import { ensureBrandWithDefaultProfile, resolveInitialLocale } from "./content-l
 import { TRIAL_CREDITS, TRIAL_DAYS } from "./constants/plan-limits";
 import { grantCredits } from "./billing/credits/ledger";
 import { isCreditsEnabled } from "./stripe/feature-flags";
-import { checkAuthEmailRateLimit } from "./auth/auth-rate-limiter";
+import { checkAuthEmailRateLimit, authRateLimitMax } from "./auth/auth-rate-limiter";
 import { redis } from "./redis";
 import { trySendTransactional } from "./email/transactional";
 import { canonicalizeEmailUrl } from "./email/base-url";
@@ -321,9 +321,14 @@ export const auth = betterAuth({
     enabled: true,
     storage: redis ? ("secondary-storage" as const) : undefined,
     customRules: {
-      "/sign-in/email": { window: 900, max: 10 },
-      "/sign-up/email": { window: 900, max: 5 },
-      "/sign-in/social": { window: 900, max: 10 },
+      // AUTH_RATE_LIMIT_MAX: e2e-uitzondering (gotcha 2026-07-17) — de hele
+      // suite logt in vanaf één IP en blies de 10-per-15-min-limiet mid-suite
+      // op (429 → sessieloze 401's). Default blijft strikt; alleen een
+      // expliciete env-waarde (Playwright-webServer) verruimt. Bewust niet op
+      // forget-/reset-password: die raakt de suite niet.
+      "/sign-in/email": { window: 900, max: authRateLimitMax(10) },
+      "/sign-up/email": { window: 900, max: authRateLimitMax(5) },
+      "/sign-in/social": { window: 900, max: authRateLimitMax(10) },
       "/forget-password": { window: 900, max: 5 },
       "/reset-password": { window: 900, max: 5 },
     },

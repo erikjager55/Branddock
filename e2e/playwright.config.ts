@@ -21,7 +21,14 @@ export default defineConfig({
   globalSetup: './global-setup.ts',
   globalTeardown: './global-teardown.ts',
   webServer: {
-    command: `DATABASE_URL="${E2E_DATABASE_URL}" BETTER_AUTH_SECRET="e2e-test-secret" BETTER_AUTH_URL="http://localhost:3001" npm run dev -- --port 3001`,
+    // AUTH_RATE_LIMIT_MAX: de hele suite logt in vanaf localhost (één IP);
+    // de brute-force-limiter (10/min) maakte specs met veel logins anders
+    // deterministisch rood mid-suite (gotcha 2026-07-17).
+    // NEXT_PUBLIC_BILLING_ENABLED=false: shell-env wint van .env.local — met
+    // billing aan legt enforceOrgPlanLimit (#180) FREE-limieten op de seed-org
+    // en 402'en invite/workspace-create-tests; billing-enforcement hoort in
+    // een eigen suite, niet impliciet door de lokale env-staat.
+    command: `DATABASE_URL="${E2E_DATABASE_URL}" BETTER_AUTH_SECRET="e2e-test-secret" BETTER_AUTH_URL="http://localhost:3001" AUTH_RATE_LIMIT_MAX="1000" NEXT_PUBLIC_BILLING_ENABLED="false" npm run dev -- --port 3001`,
     port: 3001,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

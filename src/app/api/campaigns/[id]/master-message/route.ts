@@ -1,8 +1,19 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { parseJsonBody } from '@/lib/api/parse-json-body';
 import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+
+// L8 Zod-sweep (audit 2026-06-26, batch 7): de 4 velden waren presence-only
+// (objecten passeerden en landden als JSON in de campaign).
+const masterMessageSchema = z.object({
+  coreClaim: z.string().min(1).max(2000),
+  proofPoint: z.string().min(1).max(2000),
+  emotionalHook: z.string().min(1).max(2000),
+  primaryCta: z.string().min(1).max(500),
+});
 
 export async function GET(
   request: Request,
@@ -35,19 +46,22 @@ export async function PATCH(
     if (!workspaceId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { id } = await params;
 
-    const body = await request.json();
-    const { coreClaim, proofPoint, emotionalHook, primaryCta } = body;
+    const parsed = await parseJsonBody(request, masterMessageSchema);
+    if (!parsed.ok) return parsed.response;
+    const masterMessage = parsed.data;
 
-    // Validate required fields
-    if (!coreClaim || !proofPoint || !emotionalHook || !primaryCta) {
-      return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
-    }
-
-    const masterMessage = { coreClaim, proofPoint, emotionalHook, primaryCta };
+    // Workspace-scope (zelfde gat als research-plans PATCH): de update draaide
+    // op kaal `id` — elke ingelogde user kon elke campaign cross-workspace
+    // overschrijven.
+    const existing = await prisma.campaign.findFirst({
+      where: { id, workspaceId },
+      select: { id: true },
+    });
+    if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     await prisma.campaign.update({
       where: { id },
-      data: { masterMessage: JSON.parse(JSON.stringify(masterMessage)) },
+      data: { masterMessage },
     });
 
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
