@@ -8,6 +8,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { appHref } from './app-url';
+import { PLAN_CONFIGS } from '@/lib/constants/plan-limits';
 import './marketing.css';
 
 export const metadata: Metadata = {
@@ -15,16 +16,16 @@ export const metadata: Metadata = {
   // template: sub-pagina's zetten alleen hun eigen naam ('Prijzen' →
   // 'Prijzen — Branddock'); de homepage houdt de volledige default.
   title: {
-    default: 'Branddock — AI-content die klinkt als jouw merk',
+    default: 'Branddock — Een AI-marketingteam dat je merk écht kent',
     template: '%s — Branddock',
   },
   description:
-    'Branddock kent je complete merk-DNA en genereert on-brand content, campagnes en beeld. Eén platform voor in-house marketingteams.',
+    'Negen AI-agents onderzoeken, adviseren en maken op jouw merk-DNA — met een meetbare merk-check (F-VAL) op elke uiting. Werkt in Branddock, in Claude en ChatGPT.',
   icons: { icon: '/marketing/branddock-icon.svg' },
   openGraph: {
-    title: 'Branddock — AI-content die klinkt als jouw merk',
+    title: 'Branddock — Een AI-marketingteam dat je merk écht kent',
     description:
-      'Eén platform dat je merk kent: merk-DNA, content, campagnes en beeld — on-brand.',
+      'AI-agents op jouw merk-DNA, met een meetbare merk-check (F-VAL) op elke uiting. Werkt in Branddock, in Claude en ChatGPT.',
     type: 'website',
     locale: 'nl_NL',
     siteName: 'Branddock',
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Branddock',
-    description: 'AI-content die klinkt als jouw merk',
+    description: 'Een AI-marketingteam dat je merk écht kent',
     images: ['/marketing/og-image.png'],
   },
 };
@@ -65,6 +66,9 @@ function MarketingNav() {
           </Link>
           <Link href="/marketing/solutions/marketingteams" className="hover:text-gray-900">
             Oplossingen
+          </Link>
+          <Link href="/marketing/guardrails" className="hover:text-gray-900">
+            Voor AI-agents
           </Link>
           <Link href="/marketing/pricing" className="hover:text-gray-900">
             Prijzen
@@ -148,6 +152,11 @@ function MarketingFooter() {
                   Campagnes
                 </Link>
               </li>
+              <li>
+                <Link href="/marketing/guardrails" className="hover:text-gray-900">
+                  Voor AI-agents
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -161,6 +170,11 @@ function MarketingFooter() {
               <li>
                 <Link href="/marketing/pricing" className="hover:text-gray-900">
                   Prijzen
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/changelog" className="hover:text-gray-900">
+                  Changelog
                 </Link>
               </li>
               <li>
@@ -226,12 +240,15 @@ function MarketingFooter() {
                 '@type': 'Product',
                 name: 'Branddock',
                 description:
-                  'Eén merk-platform: merk-DNA, onderzoek, content, campagnes, beeld en AI-agents — met een merk-check op elke output.',
-                offers: [
-                  { '@type': 'Offer', name: 'Starter', price: '39', priceCurrency: 'EUR' },
-                  { '@type': 'Offer', name: 'Growth', price: '89', priceCurrency: 'EUR' },
-                  { '@type': 'Offer', name: 'Agency', price: '299', priceCurrency: 'EUR' },
-                ],
+                  'Een AI-marketingteam op jouw merk-DNA: onderzoek, content, campagnes en beeld — met een merk-check (F-VAL) op elke output.',
+                // Prijzen uit PLAN_CONFIGS — zelfde bron als de pricing-pagina,
+                // zodat de JSON-LD nooit meer kan driften (P4.2).
+                offers: (['STARTER', 'GROWTH', 'AGENCY'] as const).map((tier) => ({
+                  '@type': 'Offer',
+                  name: PLAN_CONFIGS[tier].name,
+                  price: String(PLAN_CONFIGS[tier].monthlyPriceEur),
+                  priceCurrency: 'EUR',
+                })),
               },
             ],
           }),

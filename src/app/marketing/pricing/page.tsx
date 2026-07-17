@@ -9,10 +9,13 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronDown, ShieldCheck } from 'lucide-react';
 import { appHref } from '../app-url';
 import SplitHeader from '../SplitHeader';
 import { PLAN_CONFIGS, TOPUP_PACKS, TRIAL_DAYS, TRIAL_CREDITS } from '@/lib/constants/plan-limits';
+import { creditExampleLine, creditExampleLineCompact } from '@/lib/constants/credit-examples';
+import { CREDIT_COSTS, isZeroCostAction } from '@/lib/billing/credits/credit-costs';
+import type { CreditAction } from '@/types/billing';
 
 export const metadata: Metadata = {
   title: 'Prijzen',
@@ -42,6 +45,8 @@ interface TierCopy {
 interface Tier extends TierCopy {
   pricePerMonth: number;
   features: string[];
+  /** "Wat je hiervoor maakt"-regel, berekend uit monthlyCredits + CREDIT_COSTS (P4.1). */
+  exampleLine: string;
 }
 
 const TIER_COPY: TierCopy[] = [
@@ -87,6 +92,7 @@ const TIERS: Tier[] = TIER_COPY.map((copy) => {
   return {
     ...copy,
     pricePerMonth: config.monthlyPriceEur,
+    exampleLine: creditExampleLine(config.monthlyCredits),
     features: [
       `${nl.format(config.monthlyCredits)} credits per maand`,
       workspaceSeatLine(config.workspaces, config.seats),
@@ -99,6 +105,48 @@ const TIERS: Tier[] = TIER_COPY.map((copy) => {
 const TOPUPS = TOPUP_PACKS.map((p) => ({
   credits: nl.format(p.credits),
   price: p.discountPct > 0 ? `€${p.priceEur} (${p.discountPct}% korting)` : `€${p.priceEur}`,
+  example: creditExampleLineCompact(p.credits),
+}));
+
+// ─── "Je betaalt voor wat je maakt" (P4.2) ───────────────────
+// Gratis-laag: afgeleid van ZERO_COST_ACTIONS — het filter garandeert dat we
+// nooit iets als gratis adverteren dat dat niet (meer) is.
+const FREE_LAYER = [
+  {
+    action: 'brand-context',
+    label: 'Merkcontext',
+    sub: 'Je volledige merk-DNA gaat gratis mee in elke generatie — hoe rijk je merk ook is.',
+  },
+  {
+    action: 'f-val',
+    label: 'Merk-check (F-VAL)',
+    sub: 'Elke output gescoord tegen je merk, inclusief herscoring na aanpassingen.',
+  },
+  {
+    action: 'brand-assistant',
+    label: 'Brand Assistant-chat',
+    sub: 'Onbeperkt sparren met een assistent die je merk kent.',
+  },
+  {
+    action: 'setup',
+    label: 'Setup & merkanalyse',
+    sub: 'Website-scan, brandstyle-analyse en merk-exploratie bij het inrichten.',
+  },
+].filter((item) => isZeroCostAction(item.action));
+
+// Betaalde acties: labels bij de CREDIT_COSTS-registry — getallen komen
+// rechtstreeks uit de registry, nooit uit deze pagina.
+const PAID_ACTION_LABELS: Record<CreditAction, string> = {
+  short: 'Kort content-item (social post, e-mail, ad)',
+  'long-form': 'Long-form artikel (volledige SEO/GEO-pipeline)',
+  image: 'Beeld',
+  'video-clip': 'Videoclip',
+  'agent-deliverable': 'Agent-deliverable (uitgewerkt concept in je inbox)',
+};
+
+const PAID_ACTIONS = (Object.keys(CREDIT_COSTS) as CreditAction[]).map((action) => ({
+  label: PAID_ACTION_LABELS[action],
+  credits: CREDIT_COSTS[action],
 }));
 
 const FAQ_ITEMS = [
@@ -108,7 +156,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Hoe werken credits?',
-    a: 'Credits tellen alleen wat we voor je genereren (output): een kort stuk ≈ 5, longform ≈ 80, een afbeelding 2, een videoclip 20. Je merkcontext en elke merk-check (F-VAL) zijn altijd gratis — dat is juist het punt van Branddock.',
+    a: `Credits tellen alleen wat we voor je genereren (output): een kort stuk ≈ ${CREDIT_COSTS.short}, longform ≈ ${CREDIT_COSTS['long-form']}, een afbeelding ${CREDIT_COSTS.image}, een videoclip ${CREDIT_COSTS['video-clip']}. Ter indicatie: met Starter (${nl.format(PLAN_CONFIGS.STARTER.monthlyCredits)} credits) maak je ${creditExampleLine(PLAN_CONFIGS.STARTER.monthlyCredits)}. Je merkcontext en elke merk-check (F-VAL) zijn altijd gratis — dat is juist het punt van Branddock.`,
   },
   {
     q: 'Wat als mijn credits op zijn?',
@@ -147,6 +195,56 @@ export default function PricingPage() {
           ))}
         </div>
 
+        {/* "Je betaalt voor wat je maakt" — gratis-laag vs betaalde acties (P4.2) */}
+        <div className="mt-16">
+          <div className="max-w-2xl mb-8">
+            <h2 className="text-gray-900 mb-2">
+              Wij rekenen niets voor het kennen en bewaken van je merk
+            </h2>
+            <p className="text-gray-600">
+              Credits meten alleen output. Alles wat je merk vastlegt, voedt en bewaakt is gratis —
+              op elk plan, hoe intensief je het ook gebruikt.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="rounded-2xl p-8" style={{ background: 'var(--brand-slate)' }}>
+              <div className="flex items-center gap-2 mb-5">
+                <ShieldCheck className="w-5 h-5" style={{ color: 'var(--brand-mint)' }} />
+                <h3 className="text-lg font-semibold text-white">Altijd gratis</h3>
+              </div>
+              <ul className="space-y-4">
+                {FREE_LAYER.map((item) => (
+                  <li key={item.action}>
+                    <div className="text-sm font-semibold text-white">{item.label}</div>
+                    <div className="text-sm" style={{ color: 'rgba(255,255,255,0.72)' }}>
+                      {item.sub}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-gray-200 bg-white p-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-5">
+                Credits betaal je alleen als je iets maakt
+              </h3>
+              <ul className="divide-y divide-gray-100">
+                {PAID_ACTIONS.map((item) => (
+                  <li key={item.label} className="flex items-baseline justify-between gap-4 py-2.5">
+                    <span className="text-sm text-gray-700">{item.label}</span>
+                    <span className="text-sm font-semibold text-gray-900 tabular-nums whitespace-nowrap">
+                      {item.credits === 1 ? '1 credit' : `${item.credits} credits`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-gray-400 mt-4">
+                Indicatieve schatting vooraf — de werkelijke afboeking meet alleen de daadwerkelijk
+                gegenereerde output.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Top-up-packs */}
         <div className="mt-12 max-w-2xl mx-auto">
           <h2 className="text-gray-900 text-center mb-2">Meer nodig? Top up wanneer je wilt.</h2>
@@ -158,6 +256,7 @@ export default function PricingPage() {
               <div key={t.credits} className="rounded-lg border border-gray-200 bg-white p-4 text-center">
                 <div className="text-lg font-semibold text-gray-900">{t.credits} credits</div>
                 <div className="text-sm text-gray-600">{t.price}</div>
+                <div className="text-xs text-gray-400 mt-1">{t.example}</div>
               </div>
             ))}
           </div>
@@ -206,6 +305,8 @@ function TierCard({ tier }: { tier: Tier }) {
       <div className="mb-6">
         <span className="text-4xl font-bold text-gray-900">€{tier.pricePerMonth}</span>
         <span className="text-gray-500">/maand</span>
+        {/* "Wat je hiervoor maakt" — berekend uit monthlyCredits + CREDIT_COSTS (P4.1) */}
+        <p className="text-sm text-gray-600 mt-2">{tier.exampleLine}</p>
       </div>
       <ul className="space-y-2 mb-8 flex-1">
         {tier.features.map((f) => (
