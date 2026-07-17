@@ -5,6 +5,7 @@ import { trySendTransactional } from "@/lib/email/transactional";
 import { emailBaseUrl } from "@/lib/email/base-url";
 import { resolveEmailLocale } from "@/lib/email/email-locale";
 import { renderInviteEmail } from "@/lib/email/templates/invite";
+import { enforceOrgPlanLimit } from "@/lib/stripe/enforcement";
 
 // POST /api/organization/invite — create an invitation
 export async function POST(request: NextRequest) {
@@ -99,21 +100,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check seat limit
-    const memberCount = await prisma.organizationMember.count({
-      where: { organizationId },
-    });
-
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
     });
 
-    if (org && memberCount >= org.maxSeats) {
-      return NextResponse.json(
-        { error: `Seat limit reached (${org.maxSeats})` },
-        { status: 403 }
-      );
-    }
+    // Plan-limit check: PLAN_LIMITS[workspace.planTier].TEAM_MEMBERS across
+    // the org's workspaces (+ the -1 developer-unlimited override) — not the
+    // legacy Organization.maxSeats column.
+    const limited = await enforceOrgPlanLimit(organizationId, "TEAM_MEMBERS");
+    if (limited) return limited;
 
     const invitation = await prisma.invitation.create({
       data: {
