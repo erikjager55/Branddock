@@ -104,6 +104,14 @@ export function LandingPageGenerateBlock({
   // Welke variant getoond wordt in de FidelityScoreBar (klik op A/B-toggle).
   // Los van de gekozen variant — laat de user per-variant scores vergelijken.
   const [activeVariantIndex, setActiveVariantIndex] = useState(0);
+  // Eén geklemde index voor élke lezer van de actieve variant. `activeVariantIndex`
+  // wordt nooit gereset, dus na een regenerate met minder varianten (4 → 2, terwijl de
+  // gebruiker index 3 previewde) wijst hij buiten bereik. De variant-kaart klemde met
+  // Math.min, de Confirm-knop viel terug op [0] — dan toont de UI variant B en bevestigt
+  // de knop variant A: precies de stille mismatch die deze task wegneemt. Eén bron.
+  const safeVariantIndex = variantOptions?.length
+    ? Math.min(activeVariantIndex, variantOptions.length - 1)
+    : 0;
   // P3a — hoeveel varianten de regenereer-knop genereert (eerste auto-run = 2).
   const [selectedCount, setSelectedCount] = useState<number>(2);
   // P3b — per-variant creative-angle-labels (uit de generatie); null bij axis-fallback.
@@ -485,6 +493,31 @@ export function LandingPageGenerateBlock({
     setIsChoosing(true);
     setError(null);
     try {
+      // Vangnet bij het LP-pad: daar staat tussen deze klik en de definitieve PATCH tot
+      // ~4,5 min beeldwerk (hero-gen 2× 75s race + feature-gen 120s abort). Wie
+      // tussentijds doorklikt of het venster verlaat, verliest zijn keuze — de
+      // deliverable houdt dan structuredVariantOptions zonder structuredVariant.
+      // De keuze is een goedkoop feit en hoort niet te wachten op optioneel
+      // verrijkingswerk. Alleen voor LP-varianten: bij geo/faq/product/microsite wordt
+      // het beeldblok hieronder overgeslagen (isLandingPageVariant is false zodra
+      // `geoArticle in variant`), dus dan is er geen venster om te dichten.
+      //
+      // AWAIT, geen fire-and-forget: PATCH /api/studio/[id] is read-modify-write zonder
+      // lock (findUnique → merge → update). Twee overlappende requests kunnen elkaars
+      // merge-base missen en puckData wegschrijven. Serieel = geen interleave.
+      // Fail-soft: dit is een vangnet, niet het contract — de PATCH onderaan is de bron.
+      if (isLandingPageVariant(variant)) {
+        try {
+          await fetch(`/api/studio/${deliverableId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings: { structuredVariant: variant } }),
+          });
+        } catch {
+          // Bewust stil.
+        }
+      }
+
       let chosen: PageVariantContent = variant;
       // W1: het hele beeld-blok hieronder (hero-injectie, brandImages-fill,
       // hero-AI-gen, feature-AI-gen) is LP-shaped. Eigen-schema-variants
@@ -658,7 +691,7 @@ export function LandingPageGenerateBlock({
 
   const handleAutoIterateVariant = useCallback(async () => {
     if (!variantOptions) return;
-    const original = variantOptions[activeVariantIndex];
+    const original = variantOptions[safeVariantIndex];
     // W1: auto-iterate is LP-only (server geeft 422 voor eigen-schema-typen);
     // de knop is voor die typen verborgen — dit is de belt-and-braces-guard.
     if (!original || !isLandingPageVariant(original)) return;
@@ -725,7 +758,7 @@ export function LandingPageGenerateBlock({
     } finally {
       setIsAutoIterating(false);
     }
-  }, [variantOptions, activeVariantIndex, deliverableId, t]);
+  }, [variantOptions, safeVariantIndex, deliverableId, t]);
 
   const applyProposal = useCallback(() => {
     if (!pendingProposal || !variantOptions) return;
@@ -752,6 +785,7 @@ export function LandingPageGenerateBlock({
     setAutoIterateError(null);
     setPendingProposal(null);
   }, []);
+
 
   // P3b — display-label per variant: het creative-angle-label wanneer aanwezig,
   // anders de generieke conservatief/creatief-fallback.
@@ -974,7 +1008,7 @@ export function LandingPageGenerateBlock({
             eigen-schema-variants krijgen preview + keuze; tekst bewerken
             gebeurt voor die typen in Step 3 (Puck-editor). */}
         {(() => {
-          const i = Math.min(activeVariantIndex, variantOptions.length - 1);
+          const i = safeVariantIndex;
           const v = variantOptions[i];
           if (!v) return null;
           if (!isLandingPageVariant(v)) {
@@ -1103,10 +1137,15 @@ export function LandingPageGenerateBlock({
           <button
             type="button"
             onClick={() => {
-              const first = variantOptions[0];
-              if (first) void handleChooseVariant(first);
+              // Melding 2026-07-16: dit pakte hardcoded variantOptions[0] en negeerde
+              // activeVariantIndex — wie variant B previewde en op deze (prominentste)
+              // knop klikte, bevestigde stil variant A. De knop hoort te bevestigen wat
+              // de gebruiker ziet. Fallback op [0] voor het geval de index ooit buiten
+              // bereik raakt (regenerate met minder varianten).
+              const active = variantOptions[safeVariantIndex];
+              if (active) void handleChooseVariant(active);
             }}
-            disabled={isChoosing || !variantOptions?.[0]}
+            disabled={isChoosing || !variantOptions?.length}
             className={`ml-auto inline-flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-medium ${STUDIO.generateButton} disabled:opacity-50`}
           >
             {isChoosing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
