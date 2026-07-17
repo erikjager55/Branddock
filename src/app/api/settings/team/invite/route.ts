@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
+import { enforceOrgPlanLimit } from "@/lib/stripe/enforcement";
 
 const inviteSchema = z.object({
   email: z.string().email(),
@@ -114,24 +115,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check seat limit
-    const org = await prisma.organization.findUnique({
-      where: { id: activeOrgId },
-      select: { maxSeats: true },
-    });
-
-    if (org) {
-      const memberCount = await prisma.organizationMember.count({
-        where: { organizationId: activeOrgId },
-      });
-
-      if (memberCount >= org.maxSeats) {
-        return NextResponse.json(
-          { error: `Seat limit reached (${org.maxSeats})` },
-          { status: 403 }
-        );
-      }
-    }
+    // Plan-limit check: PLAN_LIMITS[workspace.planTier].TEAM_MEMBERS across
+    // the org's workspaces (+ the -1 developer-unlimited override) — not the
+    // legacy Organization.maxSeats column.
+    const limited = await enforceOrgPlanLimit(activeOrgId, "TEAM_MEMBERS");
+    if (limited) return limited;
 
     // Create invitation with 7-day expiry
     const invitation = await prisma.invitation.create({

@@ -246,9 +246,34 @@ export async function enforcePlanLimit(
 ): Promise<NextResponse | null> {
   const check = await checkPlanLimit(workspaceId, feature);
   if (check.allowed) return null;
+  return buildLimitResponse(check);
+}
+
+// ─── Org-scoped limits (WORKSPACES / TEAM_MEMBERS) ──────────
+//
+// These two features have no single workspaceId at the point of enforcement
+// (workspace creation has no workspace yet; invites only ever have an
+// organizationId), so they're checked against the organization's sibling
+// workspaces instead of one workspace's planTier. See plan
+// cheeky-swinging-bunny.md ("Organization.type stopt als runtime-gate").
+
+/** Shared 402 body-builder so enforcePlanLimit() and enforceOrgPlanLimit() can never drift. */
+function buildLimitResponse(check: {
+  feature: FeatureKey;
+  current: number;
+  limit: number;
+  tier: PlanTier;
+}): NextResponse {
+  const code =
+    check.feature === 'WORKSPACES'
+      ? 'WORKSPACE_LIMIT_REACHED'
+      : check.feature === 'TEAM_MEMBERS'
+        ? 'SEAT_LIMIT_REACHED'
+        : 'PLAN_LIMIT_REACHED';
   return NextResponse.json(
     {
-      error: `Plan limit reached: ${check.current}/${check.limit} ${feature} on the ${check.tier} plan. Upgrade to add more.`,
+      error: `Plan limit reached: ${check.current}/${check.limit} ${check.feature} on the ${check.tier} plan. Upgrade to add more.`,
+      code,
       feature: check.feature,
       current: check.current,
       limit: check.limit,
@@ -257,6 +282,84 @@ export async function enforcePlanLimit(
     },
     { status: 402 },
   );
+}
+
+/**
+ * Organization.maxWorkspaces/maxSeats sentinel: `-1` means a developer
+ * granted unlimited via the admin panel (Settings → Developer → Credit
+ * Admin); any other value — including the Prisma schema defaults 1/3 that
+ * every existing org already has — is ignored. These columns are no longer a
+ * general ceiling, only this one escape hatch; the real limit always comes
+ * from PLAN_LIMITS[workspace.planTier].
+ */
+function applyOrgOverride(planLimit: number, orgOverrideColumn: number): number {
+  return orgOverrideColumn === -1 ? Infinity : planLimit;
+}
+
+/**
+ * Highest tier among an organization's existing workspaces. Used to stamp a
+ * sensible planTier on a brand-new workspace at creation time — without this,
+ * a new workspace defaults to FREE and the already-correct enforcePlanLimit()
+ * checks for PERSONAS/CAMPAIGNS/etc. on it would silently apply FREE limits
+ * even under a paid org.
+ */
+export async function getOrgPlanTier(organizationId: string): Promise<PlanTier> {
+  if (!isBillingEnabled()) return 'ENTERPRISE';
+  const workspaces = await prisma.workspace.findMany({
+    where: { organizationId },
+    select: { planTier: true },
+  });
+  if (workspaces.length === 0) return 'FREE';
+  const RANK: Record<PlanTier, number> = { FREE: 0, PRO: 1, STARTER: 1, GROWTH: 2, AGENCY: 3, ENTERPRISE: 4 };
+  return workspaces.reduce<PlanTier>(
+    (best, w) => (RANK[w.planTier as PlanTier] > RANK[best] ? (w.planTier as PlanTier) : best),
+    'FREE',
+  );
+}
+
+/**
+ * Organization-scoped effective limit for WORKSPACES/TEAM_MEMBERS: the max
+ * PLAN_LIMITS[tier][feature] across every sibling workspace (in case
+ * workspaces in one org somehow ended up on different tiers), then the
+ * developer-override sentinel on top.
+ */
+export async function getOrgFeatureLimit(
+  organizationId: string,
+  feature: 'WORKSPACES' | 'TEAM_MEMBERS',
+): Promise<number> {
+  if (!isBillingEnabled()) return Infinity;
+  const [workspaces, org] = await Promise.all([
+    prisma.workspace.findMany({ where: { organizationId }, select: { planTier: true } }),
+    prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { maxWorkspaces: true, maxSeats: true },
+    }),
+  ]);
+  const planLimit =
+    workspaces.length === 0
+      ? PLAN_LIMITS.FREE[feature]
+      : Math.max(...workspaces.map((w) => PLAN_LIMITS[w.planTier as PlanTier][feature]));
+  const overrideColumn = feature === 'WORKSPACES' ? (org?.maxWorkspaces ?? 1) : (org?.maxSeats ?? 1);
+  return applyOrgOverride(planLimit, overrideColumn);
+}
+
+/**
+ * Route-boundary guard for org-scoped features (WORKSPACES/TEAM_MEMBERS) —
+ * organization-scoped mirror of enforcePlanLimit(). Same 402 shape.
+ */
+export async function enforceOrgPlanLimit(
+  organizationId: string,
+  feature: 'WORKSPACES' | 'TEAM_MEMBERS',
+): Promise<NextResponse | null> {
+  if (!isBillingEnabled()) return null;
+  const limit = await getOrgFeatureLimit(organizationId, feature);
+  const current =
+    feature === 'WORKSPACES'
+      ? await prisma.workspace.count({ where: { organizationId } })
+      : await prisma.organizationMember.count({ where: { organizationId, isActive: true } });
+  if (current < limit) return null;
+  const tier = await getOrgPlanTier(organizationId);
+  return buildLimitResponse({ feature, current, limit, tier });
 }
 
 // ─── Credit-balance guard (ADR 2026-07-07-pricing-credits-launch) ──

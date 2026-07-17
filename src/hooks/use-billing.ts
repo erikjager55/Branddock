@@ -9,6 +9,7 @@
 // =============================================================
 
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { isBillingEnabled } from '@/lib/stripe/feature-flags';
 import { PLAN_CONFIGS, INFINITY_LIMITS, formatLimit } from '@/lib/constants/plan-limits';
 import type { PlanTier, PlanLimits } from '@/types/billing';
@@ -62,7 +63,11 @@ async function fetchBillingPlan(): Promise<{
   }
 
   const slug = (sub.planSlug ?? 'free').toUpperCase() as PlanTier;
-  const tier: PlanTier = ['FREE', 'PRO', 'AGENCY', 'ENTERPRISE'].includes(slug)
+  // Mirrors mapPriceToTier() in subscription-sync.ts — that whitelist was
+  // already fixed to include STARTER/GROWTH (credit-model, ADR 2026-07-07);
+  // this client-side copy had the same bug (paying Starter/Growth customers
+  // silently shown as FREE) and was missed in that earlier fix.
+  const tier: PlanTier = ['FREE', 'PRO', 'STARTER', 'GROWTH', 'AGENCY', 'ENTERPRISE'].includes(slug)
     ? slug
     : 'FREE';
   const config = PLAN_CONFIGS[tier];
@@ -153,12 +158,18 @@ export function useBillingPlan(): BillingState {
     onSuccess: (url) => {
       window.location.href = url;
     },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Checkout failed');
+    },
   });
 
   const portalMutation = useMutation({
     mutationFn: () => postPortal(),
     onSuccess: (url) => {
       window.location.href = url;
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Could not open billing portal');
     },
   });
 
@@ -183,10 +194,14 @@ export function useBillingPlan(): BillingState {
     canUpgrade: tier !== 'ENTERPRISE',
     isLoading,
     openCheckout: async (planTier: PlanTier, billingCycle: 'monthly' | 'yearly' = 'monthly') => {
-      checkoutMutation.mutate({ planTier, billingCycle });
+      // mutateAsync (not fire-and-forget mutate) so a failure — e.g. a
+      // rejected planTier — actually surfaces instead of the spinner just
+      // silently stopping. onError above already shows the toast; catch
+      // here only to avoid an unhandled-rejection console warning.
+      await checkoutMutation.mutateAsync({ planTier, billingCycle }).catch(() => {});
     },
     openPortal: async () => {
-      portalMutation.mutate();
+      await portalMutation.mutateAsync().catch(() => {});
     },
     formatLimit,
   };

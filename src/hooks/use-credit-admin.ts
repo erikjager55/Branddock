@@ -13,6 +13,8 @@ export interface AdminOrg {
   name: string;
   slug: string;
   unlimited: boolean;
+  unlimitedWorkspaces: boolean;
+  unlimitedSeats: boolean;
   balance: number;
   reserved: number;
   trialEndsAt: string | null;
@@ -29,7 +31,9 @@ async function fetchOrgs(): Promise<AdminOrg[]> {
 
 async function postAction(body:
   | { action: 'grant'; organizationId: string; credits: number }
-  | { action: 'setUnlimited'; organizationId: string; value: boolean },
+  | { action: 'setUnlimited'; organizationId: string; value: boolean }
+  | { action: 'setUnlimitedWorkspaces'; organizationId: string; value: boolean }
+  | { action: 'setUnlimitedSeats'; organizationId: string; value: boolean },
 ): Promise<void> {
   const res = await fetch('/api/admin/credit-orgs', {
     method: 'POST',

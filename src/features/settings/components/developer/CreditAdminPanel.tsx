@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Coins, Infinity as InfinityIcon, Loader2, Plus } from 'lucide-react';
+import { Coins, Infinity as InfinityIcon, Loader2, Plus, Building2, Users } from 'lucide-react';
 import { Card, Badge, Button } from '@/components/shared';
 import { useCreditAdminOrgs, useCreditAdminAction, type AdminOrg } from '@/hooks/use-credit-admin';
 
@@ -66,7 +66,13 @@ function OrgRow({ org }: { org: AdminOrg }) {
           <div className="flex items-center gap-2">
             <h3 className="truncate text-sm font-semibold text-gray-900">{org.name}</h3>
             {org.unlimited && (
-              <Badge variant="teal" size="sm" icon={InfinityIcon}>Unlimited</Badge>
+              <Badge variant="teal" size="sm" icon={InfinityIcon}>Unlimited credits</Badge>
+            )}
+            {org.unlimitedWorkspaces && (
+              <Badge variant="teal" size="sm" icon={Building2}>Unlimited workspaces</Badge>
+            )}
+            {org.unlimitedSeats && (
+              <Badge variant="teal" size="sm" icon={Users}>Unlimited seats</Badge>
             )}
           </div>
           <p className="mt-0.5 truncate text-xs text-gray-500">
@@ -108,7 +114,39 @@ function OrgRow({ org }: { org: AdminOrg }) {
             onClick={() => action.mutate({ action: 'setUnlimited', organizationId: org.id, value: !org.unlimited })}
           >
             <InfinityIcon className="h-3.5 w-3.5" />
-            {org.unlimited ? 'Disable unlimited' : 'Make unlimited'}
+            {org.unlimited ? 'Disable unlimited credits' : 'Unlimited credits'}
+          </Button>
+
+          <Button
+            variant={org.unlimitedWorkspaces ? 'secondary' : 'primary'}
+            size="sm"
+            disabled={action.isPending}
+            onClick={() =>
+              action.mutate({
+                action: 'setUnlimitedWorkspaces',
+                organizationId: org.id,
+                value: !org.unlimitedWorkspaces,
+              })
+            }
+          >
+            <Building2 className="h-3.5 w-3.5" />
+            {org.unlimitedWorkspaces ? 'Disable unlimited workspaces' : 'Unlimited workspaces'}
+          </Button>
+
+          <Button
+            variant={org.unlimitedSeats ? 'secondary' : 'primary'}
+            size="sm"
+            disabled={action.isPending}
+            onClick={() =>
+              action.mutate({
+                action: 'setUnlimitedSeats',
+                organizationId: org.id,
+                value: !org.unlimitedSeats,
+              })
+            }
+          >
+            <Users className="h-3.5 w-3.5" />
+            {org.unlimitedSeats ? 'Disable unlimited seats' : 'Unlimited seats'}
           </Button>
         </div>
       </div>
