@@ -10,6 +10,7 @@ const ns = {
     add: 'Add',
     newWorkspace: 'New workspace',
     createFailed: 'Failed to create workspace',
+    newWorkspaceLimitReached: 'Workspace limit reached ({{current}}/{{limit}}) — upgrade your plan to add more.',
   },
   socialProviders: {
     google: 'Continue with Google',

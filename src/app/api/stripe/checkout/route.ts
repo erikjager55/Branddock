@@ -15,8 +15,12 @@ import type { PlanTier } from '@/types/billing';
 
 // L8 Zod-sweep (audit 2026-06-26, batch 6): de enum-guards bestonden al, maar
 // malformed JSON gooide vóór de guards een ongevangen exception (500).
+// Tier-set volgt main (#181): STARTER/GROWTH horen in de allowlist —
+// getPriceIdForTier()/mapPriceToTier() ondersteunen ze al (credit-model,
+// ADR 2026-07-07); de oude PRO/AGENCY/ENTERPRISE-set weigerde elke
+// "Upgrade to Starter/Growth"-klik stil.
 const checkoutSchema = z.object({
-  planTier: z.enum(['PRO', 'AGENCY', 'ENTERPRISE']),
+  planTier: z.enum(['PRO', 'STARTER', 'GROWTH', 'AGENCY', 'ENTERPRISE']),
   billingCycle: z.enum(['monthly', 'yearly']).default('monthly'),
 });
 

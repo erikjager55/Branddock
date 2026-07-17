@@ -9,6 +9,8 @@ import {
   WORKSPACE_SWITCH_CHANNEL,
   type WorkspaceSwitchMessage,
 } from '@/components/shared/WorkspaceSwitchGuard';
+import { useWorkspaceEntitlements, useCreateWorkspace } from '@/hooks/use-workspace-entitlements';
+import { ApiError, translateApiError } from '@/lib/api/api-error';
 
 /**
  * Meld andere open tabs dat de workspace-cookie is gewijzigd, zodat de
@@ -36,81 +38,45 @@ interface OrgData {
   metadata?: string | null;
 }
 
-interface WorkspaceData {
-  id: string;
-  name: string;
-  slug: string;
-}
-
 export function OrganizationSwitcher() {
-  const { t } = useTranslation('auth-chrome');
+  const { t } = useTranslation(['auth-chrome', 'entitlement-errors']);
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [orgs, setOrgs] = useState<OrgData[]>([]);
-  const [workspaces, setWorkspaces] = useState<WorkspaceData[]>([]);
-  const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
   const [showNewWorkspace, setShowNewWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const activeOrgId = (session?.session as Record<string, unknown> | undefined)
     ?.activeOrganizationId as string | undefined;
 
   const activeOrg = orgs.find((o) => o.id === activeOrgId);
-  const isAgency = activeOrg?.metadata ? (() => {
-    try {
-      return JSON.parse(activeOrg.metadata as string)?.type === 'AGENCY';
-    } catch { return false; }
-  })() : false;
 
-  // Determine org type from the Organization model
-  // The org type is stored in the DB, not in metadata. We'll fetch it separately.
-  const [orgTypes, setOrgTypes] = useState<Record<string, string>>({});
+  const { workspaces, activeWorkspaceId, atLimit, current, limit, isLoading: isLoadingWorkspaces } =
+    useWorkspaceEntitlements();
+  const activeWorkspace = workspaces.find((ws) => ws.id === activeWorkspaceId) ?? workspaces[0] ?? null;
+  const createWorkspace = useCreateWorkspace();
+  const isLoading = isLoadingOrgs || isLoadingWorkspaces;
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
+  const loadOrgs = useCallback(async () => {
+    setIsLoadingOrgs(true);
     try {
       const result = await authClient.organization.list();
-      const orgList = (result.data ?? []) as OrgData[];
-      setOrgs(orgList);
-
-      // Fetch org types
-      if (orgList.length > 0) {
-        const typesRes = await fetch('/api/organization/members');
-        // We actually need org type info — let's fetch workspaces which gives us data
-      }
-
-      // Fetch workspaces for active org
-      if (activeOrgId) {
-        const wsRes = await fetch('/api/workspaces', { cache: 'no-store' });
-        if (wsRes.ok) {
-          const wsData = await wsRes.json();
-          const wsList = wsData.workspaces ?? [];
-          setWorkspaces(wsList);
-
-          // Set active workspace based on server-resolved workspace ID (from cookie)
-          if (wsList.length > 0) {
-            const activeWs = wsData.activeWorkspaceId
-              ? wsList.find((ws: WorkspaceData) => ws.id === wsData.activeWorkspaceId)
-              : null;
-            setActiveWorkspace(activeWs ?? wsList[0]);
-          }
-        }
-      }
+      setOrgs((result.data ?? []) as OrgData[]);
     } catch (err) {
-      console.warn('[OrganizationSwitcher] Failed to load data:', err);
+      console.warn('[OrganizationSwitcher] Failed to load organizations:', err);
     } finally {
-      setIsLoading(false);
+      setIsLoadingOrgs(false);
     }
-  }, [activeOrgId]);
+  }, []);
 
   useEffect(() => {
     if (session) {
-      loadData();
+      loadOrgs();
     }
-  }, [session, loadData]);
+  }, [session, loadOrgs]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -142,7 +108,7 @@ export function OrganizationSwitcher() {
     }
   };
 
-  const handleSwitchWorkspace = async (workspace: WorkspaceData) => {
+  const handleSwitchWorkspace = async (workspace: { id: string; name: string }) => {
     try {
       const res = await fetch('/api/workspace/switch', {
         method: 'POST',
@@ -151,7 +117,6 @@ export function OrganizationSwitcher() {
       });
 
       if (res.ok) {
-        setActiveWorkspace(workspace);
         setIsOpen(false);
         broadcastWorkspaceSwitch(workspace.id, workspace.name);
         // Clear client-side localStorage to prevent stale data from previous workspace
@@ -168,30 +133,16 @@ export function OrganizationSwitcher() {
 
   const handleCreateWorkspace = async () => {
     if (!newWorkspaceName.trim()) return;
-    setIsCreating(true);
+    setCreateError(null);
 
     try {
-      const res = await fetch('/api/workspaces', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newWorkspaceName.trim() }),
-      });
-
-      if (res.ok) {
-        const workspace = await res.json();
-        setWorkspaces((prev) => [...prev, workspace]);
-        setNewWorkspaceName('');
-        setShowNewWorkspace(false);
-        // Switch to the new workspace
-        await handleSwitchWorkspace(workspace);
-      } else {
-        const err = await res.json();
-        alert(err.error ?? t('orgSwitcher.createFailed'));
-      }
+      const workspace = await createWorkspace.mutateAsync({ name: newWorkspaceName.trim() });
+      setNewWorkspaceName('');
+      setShowNewWorkspace(false);
+      // Switch to the new workspace
+      await handleSwitchWorkspace(workspace);
     } catch (err) {
-      console.error('Failed to create workspace:', err);
-    } finally {
-      setIsCreating(false);
+      setCreateError(err instanceof ApiError ? translateApiError(t, err) : t('orgSwitcher.createFailed'));
     }
   };
 
@@ -282,34 +233,44 @@ export function OrganizationSwitcher() {
                 </button>
               ))}
 
-              {/* New Workspace button (agencies with owner/admin role) */}
+              {/* New Workspace: proactively disabled at the plan limit — no
+                  more clicking through to a raw English 403 after the fact. */}
               {workspaces.length >= 1 && (
                 <>
                   {showNewWorkspace ? (
-                    <div className="px-3 py-2 flex items-center gap-2">
-                      <input
-                        data-testid="new-workspace-input"
-                        type="text"
-                        value={newWorkspaceName}
-                        onChange={(e) => setNewWorkspaceName(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleCreateWorkspace()}
-                        placeholder={t('orgSwitcher.newWorkspacePlaceholder')}
-                        className="flex-1 text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        autoFocus
-                      />
-                      <button
-                        onClick={handleCreateWorkspace}
-                        disabled={isCreating || !newWorkspaceName.trim()}
-                        className="text-sm text-primary hover:text-primary-700 font-medium disabled:opacity-50"
-                      >
-                        {isCreating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('orgSwitcher.add')}
-                      </button>
+                    <div className="px-3 py-2 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <input
+                          data-testid="new-workspace-input"
+                          type="text"
+                          value={newWorkspaceName}
+                          onChange={(e) => setNewWorkspaceName(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleCreateWorkspace()}
+                          placeholder={t('orgSwitcher.newWorkspacePlaceholder')}
+                          className="flex-1 text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                          autoFocus
+                        />
+                        <button
+                          onClick={handleCreateWorkspace}
+                          disabled={createWorkspace.isPending || !newWorkspaceName.trim()}
+                          className="text-sm text-primary hover:text-primary-700 font-medium disabled:opacity-50"
+                        >
+                          {createWorkspace.isPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            t('orgSwitcher.add')
+                          )}
+                        </button>
+                      </div>
+                      {createError && <p className="text-xs text-red-600">{createError}</p>}
                     </div>
                   ) : (
                     <button
                       data-testid="new-workspace-button"
                       onClick={() => setShowNewWorkspace(true)}
-                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors text-left text-sm text-primary"
+                      disabled={atLimit}
+                      title={atLimit ? t('orgSwitcher.newWorkspaceLimitReached', { current, limit }) : undefined}
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors text-left text-sm text-primary disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
                     >
                       <Plus className="h-4 w-4" />
                       <span>{t('orgSwitcher.newWorkspace')}</span>
