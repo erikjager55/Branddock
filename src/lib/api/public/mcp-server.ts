@@ -23,7 +23,17 @@ import { startSeoGeneration, getSeoStatus } from '@/lib/content/headless-seo';
 import { generateWebPage } from '@/lib/content/headless-webpage';
 import { generateVideoClip } from '@/lib/content/headless-video';
 import { chargeAfter } from '@/lib/billing/credits/meter-generation';
-import { logApiCall } from '@/lib/api/public/usage';
+import { logApiCall, type ApiCallMeta } from '@/lib/api/public/usage';
+
+/**
+ * Auth-context van de aanroepende request: workspace-binding + via welk
+ * auth-pad ('api_key' = bd_live-key, 'oauth' = connector-Bearer-token via de
+ * Better Auth mcp-plugin). authVia stroomt 1-op-1 door naar de usage-log.
+ */
+export interface PublicMcpContext {
+  workspaceId: string;
+  authVia: ApiCallMeta['authVia'];
+}
 
 /** Discovery-reads zijn bewust gecapt — agents hebben een shortlist nodig, geen dump. */
 const MAX_ROWS = 50;
@@ -51,7 +61,7 @@ interface ToolRun {
  * leesbare fout krijgt i.p.v. een protocol-level crash.
  */
 async function tracked(
-  workspaceId: string,
+  ctx: PublicMcpContext,
   tool: string,
   fn: () => Promise<ToolRun>,
 ): Promise<CallToolResult> {
@@ -59,9 +69,9 @@ async function tracked(
   try {
     const { result, credits } = await fn();
     await logApiCall({
-      workspaceId,
+      workspaceId: ctx.workspaceId,
       tool,
-      authVia: 'api_key',
+      authVia: ctx.authVia,
       success: result.isError !== true,
       latencyMs: Date.now() - startedAt,
       credits,
@@ -69,9 +79,9 @@ async function tracked(
     return result;
   } catch (err) {
     await logApiCall({
-      workspaceId,
+      workspaceId: ctx.workspaceId,
       tool,
-      authVia: 'api_key',
+      authVia: ctx.authVia,
       success: false,
       latencyMs: Date.now() - startedAt,
     });
@@ -81,7 +91,8 @@ async function tracked(
 
 // ─── Brand-tools (context + score) ───────────────────────────
 
-function registerBrandTools(server: McpServer, workspaceId: string): void {
+function registerBrandTools(server: McpServer, ctx: PublicMcpContext): void {
+  const { workspaceId } = ctx;
   server.registerTool(
     'get_brand_context',
     {
@@ -92,7 +103,7 @@ function registerBrandTools(server: McpServer, workspaceId: string): void {
         'AI-call injecteert. Gebruik dit als systemcontext om zelf on-brand te schrijven. Gratis.',
     },
     async () =>
-      tracked(workspaceId, 'get_brand_context', async () => ({
+      tracked(ctx, 'get_brand_context', async () => ({
         result: jsonResult(await getBrandContext(workspaceId)),
       })),
   );
@@ -113,7 +124,7 @@ function registerBrandTools(server: McpServer, workspaceId: string): void {
       },
     },
     async ({ content }) =>
-      tracked(workspaceId, 'score_against_brand', async () => {
+      tracked(ctx, 'score_against_brand', async () => {
         const review = await runFidelityForExternalContent({
           workspaceId,
           contentText: content,
@@ -205,7 +216,7 @@ async function runGenerate(workspaceId: string, args: GenerateArgs): Promise<Too
   };
 }
 
-function registerGenerateTool(server: McpServer, workspaceId: string): void {
+function registerGenerateTool(server: McpServer, ctx: PublicMcpContext): void {
   server.registerTool(
     'generate_on_brand',
     {
@@ -216,13 +227,14 @@ function registerGenerateTool(server: McpServer, workspaceId: string): void {
         'complete merkcontext en scoort het resultaat met F-VAL. Kost credits bij generatie.',
       inputSchema: generateSchema.shape,
     },
-    async (args) => tracked(workspaceId, 'generate_on_brand', () => runGenerate(workspaceId, args)),
+    async (args) => tracked(ctx, 'generate_on_brand', () => runGenerate(ctx.workspaceId, args)),
   );
 }
 
 // ─── rewrite_on_brand (ephemeral — Fase C) ───────────────────
 
-function registerRewriteTool(server: McpServer, workspaceId: string): void {
+function registerRewriteTool(server: McpServer, ctx: PublicMcpContext): void {
+  const { workspaceId } = ctx;
   server.registerTool(
     'rewrite_on_brand',
     {
@@ -240,7 +252,7 @@ function registerRewriteTool(server: McpServer, workspaceId: string): void {
       },
     },
     async (args) =>
-      tracked(workspaceId, 'rewrite_on_brand', async () => {
+      tracked(ctx, 'rewrite_on_brand', async () => {
         const result = await rewriteOnBrand({ workspaceId, ...args });
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         return { result: jsonResult({ text: result.text, model: result.model }), credits: 1 };
@@ -277,7 +289,8 @@ const strategyGenerateSchema = z.object({
   campaignId: z.string().optional().describe('Bestaande campagne zonder strategie; zonder wordt een nieuwe campagne gemaakt'),
 });
 
-function registerStrategyTools(server: McpServer, workspaceId: string): void {
+function registerStrategyTools(server: McpServer, ctx: PublicMcpContext): void {
+  const { workspaceId } = ctx;
   server.registerTool(
     'generate_campaign_strategy',
     {
@@ -290,7 +303,7 @@ function registerStrategyTools(server: McpServer, workspaceId: string): void {
       inputSchema: strategyGenerateSchema.shape,
     },
     async (args) =>
-      tracked(workspaceId, 'generate_campaign_strategy', async () => {
+      tracked(ctx, 'generate_campaign_strategy', async () => {
         const result = await startCampaignStrategyGeneration({ workspaceId, ...args });
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         return {
@@ -317,7 +330,7 @@ function registerStrategyTools(server: McpServer, workspaceId: string): void {
       },
     },
     async ({ campaignId }) =>
-      tracked(workspaceId, 'get_strategy_status', async () => {
+      tracked(ctx, 'get_strategy_status', async () => {
         const result = await getStrategyStatus(workspaceId, campaignId);
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         return {
@@ -337,23 +350,24 @@ function registerStrategyTools(server: McpServer, workspaceId: string): void {
 
 function registerListTool(
   server: McpServer,
-  workspaceId: string,
+  ctx: PublicMcpContext,
   name: string,
   description: string,
   fetcher: (wsId: string) => Promise<unknown[]>,
 ): void {
   server.registerTool(name, { description }, async () =>
-    tracked(workspaceId, name, async () => {
-      const items = await fetcher(workspaceId);
+    tracked(ctx, name, async () => {
+      const items = await fetcher(ctx.workspaceId);
       return { result: jsonResult({ count: items.length, items }) };
     }),
   );
 }
 
-function registerDiscoveryTools(server: McpServer, workspaceId: string): void {
+function registerDiscoveryTools(server: McpServer, ctx: PublicMcpContext): void {
+  const { workspaceId } = ctx;
   registerListTool(
     server,
-    workspaceId,
+    ctx,
     'list_personas',
     `Alle personas van deze workspace (id, naam, tagline, beroep; max ${MAX_ROWS}). Gebruik de ids in contextSelection.personaIds van generate_on_brand.`,
     (wsId) =>
@@ -367,7 +381,7 @@ function registerDiscoveryTools(server: McpServer, workspaceId: string): void {
 
   registerListTool(
     server,
-    workspaceId,
+    ctx,
     'list_products',
     `Alle producten van deze workspace (id, naam, categorie, status; max ${MAX_ROWS}). Gebruik de ids in contextSelection.productIds van generate_on_brand.`,
     (wsId) =>
@@ -381,7 +395,7 @@ function registerDiscoveryTools(server: McpServer, workspaceId: string): void {
 
   registerListTool(
     server,
-    workspaceId,
+    ctx,
     'list_competitors',
     `Alle concurrenten van deze workspace (id, naam, tagline, website; max ${MAX_ROWS}). Gebruik de ids in contextSelection.competitorIds van generate_on_brand.`,
     (wsId) =>
@@ -408,7 +422,7 @@ function registerDiscoveryTools(server: McpServer, workspaceId: string): void {
       },
     },
     async ({ query }) =>
-      tracked(workspaceId, 'search_knowledge', async () => {
+      tracked(ctx, 'search_knowledge', async () => {
         const items = await prisma.knowledgeResource.findMany({
           where: {
             workspaceId,
@@ -428,17 +442,18 @@ function registerDiscoveryTools(server: McpServer, workspaceId: string): void {
 
 /**
  * Bouwt een verse McpServer met de 14 publieke brand-tools, gebonden aan de
- * workspace van de aanroepende API-key. Eén server per request (stateless) —
- * de route sluit hem na afhandeling weer.
+ * workspace uit de auth-context (bd_live-key óf OAuth-token — zie
+ * PublicMcpContext). Eén server per request (stateless) — de route sluit hem
+ * na afhandeling weer.
  */
-export function createPublicMcpServer(workspaceId: string): McpServer {
+export function createPublicMcpServer(ctx: PublicMcpContext): McpServer {
   const server = new McpServer({ name: 'branddock-brand-api', version: '1.0.0' });
-  registerBrandTools(server, workspaceId);
-  registerGenerateTool(server, workspaceId);
-  registerRewriteTool(server, workspaceId);
-  registerStrategyTools(server, workspaceId);
-  registerSpecializedChainTools(server, workspaceId);
-  registerDiscoveryTools(server, workspaceId);
+  registerBrandTools(server, ctx);
+  registerGenerateTool(server, ctx);
+  registerRewriteTool(server, ctx);
+  registerStrategyTools(server, ctx);
+  registerSpecializedChainTools(server, ctx);
+  registerDiscoveryTools(server, ctx);
   return server;
 }
 
@@ -454,7 +469,8 @@ const chainContextSelection = z
   .optional()
   .describe('Workspace-gescopede kennis-selectie (ids via de list_*/search_knowledge-tools)');
 
-function registerSpecializedChainTools(server: McpServer, workspaceId: string): void {
+function registerSpecializedChainTools(server: McpServer, ctx: PublicMcpContext): void {
+  const { workspaceId } = ctx;
   server.registerTool(
     'generate_long_form_seo',
     {
@@ -475,7 +491,7 @@ function registerSpecializedChainTools(server: McpServer, workspaceId: string): 
       },
     },
     async ({ contentType, deliverableId, title, campaignId, primaryKeyword, funnelStage, secondaryKeywordHints, contextSelection }) =>
-      tracked(workspaceId, 'generate_long_form_seo', async () => {
+      tracked(ctx, 'generate_long_form_seo', async () => {
         const result = await startSeoGeneration({
           workspaceId,
           deliverableId,
@@ -505,7 +521,7 @@ function registerSpecializedChainTools(server: McpServer, workspaceId: string): 
       inputSchema: { jobId: z.string().min(1) },
     },
     async ({ jobId }) =>
-      tracked(workspaceId, 'get_seo_status', async () => {
+      tracked(ctx, 'get_seo_status', async () => {
         const status = await getSeoStatus(workspaceId, jobId);
         if (!status) return { result: errorResult('Job not found in this workspace') };
         return { result: jsonResult(status) };
@@ -531,7 +547,7 @@ function registerSpecializedChainTools(server: McpServer, workspaceId: string): 
       },
     },
     async ({ prompt, contentType, deliverableId, title, campaignId, contextSelection }) =>
-      tracked(workspaceId, 'generate_web_page', async () => {
+      tracked(ctx, 'generate_web_page', async () => {
         const result = await generateWebPage({ workspaceId, prompt, contentType, deliverableId, title, campaignId, contextSelection });
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         const tree = result.puckData as { content?: unknown[] };
@@ -571,7 +587,7 @@ function registerSpecializedChainTools(server: McpServer, workspaceId: string): 
       },
     },
     async (args) =>
-      tracked(workspaceId, 'generate_video', async () => {
+      tracked(ctx, 'generate_video', async () => {
         const result = await generateVideoClip({ workspaceId, ...args });
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         return {

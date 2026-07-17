@@ -10,28 +10,74 @@
 // sessie-state betekent ook: GET (server→client-notificaties) en DELETE
 // (sessie-beëindiging) bestaan hier niet → 405.
 //
-// Auth: workspace-API-key (Authorization: Bearer bd_live_…). OAuth voor de
-// connector-flow van claude.ai/ChatGPT komt in een latere fase via de
-// Better Auth MCP-plugin (node_modules/better-auth/dist/plugins/mcp) —
-// Branddock wordt dan OAuth-provider naast dit key-pad, zie ADR §Decision 3.
+// Duale auth (OAuth-connect-fase):
+//  1. workspace-API-key (Authorization: Bearer bd_live_…) — het bestaande pad;
+//  2. anders een OAuth-Bearer-token uit de connector-flow (claude.ai/ChatGPT
+//     via de Better Auth mcp-plugin) — workspace-resolutie is dan de eerste
+//     workspace van de eerste org van de token-user (v1-keuze, zie
+//     requireOAuthToken in src/lib/api/public/auth.ts).
+// Elke 401 draagt verplicht `WWW-Authenticate: Bearer resource_metadata=…`:
+// dát is het signaal waarmee een connector de OAuth-discovery + flow start
+// (RFC 9728) — zonder die header blijft "URL plakken" dood.
 // =============================================================
 
 import { NextResponse } from 'next/server';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { isPublicApiEnabled, requireApiKey } from '@/lib/api/public/auth';
-import { createPublicMcpServer } from '@/lib/api/public/mcp-server';
+import {
+  isPublicApiEnabled,
+  requireApiKey,
+  requireOAuthToken,
+} from '@/lib/api/public/auth';
+import { createPublicMcpServer, type PublicMcpContext } from '@/lib/api/public/mcp-server';
 
 // generate_on_brand draait de volledige canvas-pipeline binnen de request —
 // zelfde budget als /api/v1/generate.
 export const maxDuration = 300;
 
+/**
+ * 401 in het JSON-RPC-formaat dat Better Auth's eigen withMcpAuth hanteert,
+ * mét de resource_metadata-pointer. Expose-header zodat browser-based MCP-
+ * clients de WWW-Authenticate ook door CORS heen kunnen lezen.
+ */
+function unauthorized(request: Request): NextResponse {
+  // request.url draagt op Vercel de forwarded host — zelfde origin als waar de
+  // connector zonet op POSTte, dus de metadata-URL wijst altijd naar onszelf.
+  const origin = new URL(request.url).origin;
+  const wwwAuthenticate = `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource"`;
+  return NextResponse.json(
+    {
+      jsonrpc: '2.0',
+      error: { code: -32000, message: 'Unauthorized: authentication required' },
+      id: null,
+    },
+    {
+      status: 401,
+      headers: {
+        'WWW-Authenticate': wwwAuthenticate,
+        'Access-Control-Expose-Headers': 'WWW-Authenticate',
+      },
+    },
+  );
+}
+
+/** Duale auth: eerst het bd_live-key-pad, anders het OAuth-token-pad. */
+async function resolveMcpAuth(request: Request): Promise<PublicMcpContext | null> {
+  const keyAuth = await requireApiKey(request);
+  if (keyAuth) return { workspaceId: keyAuth.workspaceId, authVia: 'api_key' };
+
+  const oauthAuth = await requireOAuthToken(request);
+  if (oauthAuth) return { workspaceId: oauthAuth.workspaceId, authVia: 'oauth' };
+
+  return null;
+}
+
 export async function POST(request: Request) {
   if (!isPublicApiEnabled()) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const auth = await requireApiKey(request);
-  if (!auth) return NextResponse.json({ error: 'Invalid or missing API key' }, { status: 401 });
+  const authCtx = await resolveMcpAuth(request);
+  if (!authCtx) return unauthorized(request);
 
-  const server = createPublicMcpServer(auth.workspaceId);
+  const server = createPublicMcpServer(authCtx);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,

@@ -9,6 +9,7 @@
 
 import { createHash, randomBytes } from 'crypto';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
 
 const KEY_PATTERN = /^Bearer\s+(bd_live_[a-f0-9]{48})$/i;
 
@@ -49,4 +50,44 @@ export async function requireApiKey(request: Request): Promise<ApiKeyContext | n
     .update({ where: { id: record.id }, data: { lastUsedAt: new Date() } })
     .catch(() => {});
   return { workspaceId: record.workspaceId, apiKeyId: record.id };
+}
+
+export interface OAuthMcpContext {
+  workspaceId: string;
+  userId: string;
+}
+
+/**
+ * Resolvet een OAuth-Bearer-token (uitgegeven via de Better Auth mcp-plugin,
+ * connector-flow claude.ai/ChatGPT) naar een workspace-context.
+ *
+ * Workspace-resolutie is een bewuste, gedocumenteerde v1-keuze: het token is
+ * user-gebonden (niet workspace-gebonden zoals een bd_live-key), dus we pakken
+ * deterministisch de eerste actieve org-membership van de gebruiker (oudste
+ * eerst — `joinedAt` is het door de organization-plugin gemapte createdAt) en
+ * dáárvan de oudste workspace. Een workspace-picker in de consent-stap is een
+ * latere fase. Null bij ontbrekend/verlopen token of gebruiker zonder
+ * workspace — caller antwoordt 401.
+ */
+export async function requireOAuthToken(request: Request): Promise<OAuthMcpContext | null> {
+  // getMcpSession valideert het Bearer-token tegen OauthAccessToken (incl.
+  // expiry) en gooit niet — null betekent: geen geldig OAuth-token.
+  const token = await auth.api.getMcpSession({ headers: request.headers });
+  if (!token?.userId) return null;
+
+  const membership = await prisma.organizationMember.findFirst({
+    where: { userId: token.userId, isActive: true },
+    orderBy: { joinedAt: 'asc' },
+    select: {
+      organization: {
+        select: {
+          workspaces: { select: { id: true }, orderBy: { createdAt: 'asc' }, take: 1 },
+        },
+      },
+    },
+  });
+  const workspaceId = membership?.organization.workspaces[0]?.id;
+  if (!workspaceId) return null;
+
+  return { workspaceId, userId: token.userId };
 }
