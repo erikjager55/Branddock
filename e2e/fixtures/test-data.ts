@@ -15,6 +15,16 @@ export const TEST_USERS = {
     password: 'Password123!',
     name: 'Sarah Chen',
   },
+  admin: {
+    email: 'david@branddock.com',
+    password: 'Password123!',
+    name: 'David Park',
+  },
+  viewer: {
+    email: 'nina@branddock.com',
+    password: 'Password123!',
+    name: 'Nina Visser',
+  },
   directOwner: {
     email: 'john@techcorp.com',
     password: 'Password123!',
