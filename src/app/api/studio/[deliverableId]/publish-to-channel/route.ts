@@ -20,6 +20,7 @@ import { publishToLinkedIn } from '@/lib/integrations/linkedin/linkedin-client';
 import { refreshTokenIfNeeded, type StoredCredentials } from '@/lib/integrations/social-oauth/token-refresh';
 import { sendViaResend, contentToEmailHtml } from '@/lib/integrations/resend/resend-publish';
 import { createWordPressPost, uploadWordPressImage, contentToWordPressHtml } from '@/lib/integrations/wordpress/wordpress-client';
+import { createPostizPost } from '@/lib/integrations/postiz/postiz-client';
 import { buildChannelPayload, isPublishable } from '@/lib/studio/channel-payload';
 import { getContentReadiness } from '@/lib/learning-loop/content-readiness';
 import { emitLearningEvent } from '@/lib/learning-loop';
@@ -245,6 +246,25 @@ export async function POST(request: Request, { params }: RouteParams) {
           });
           externalId = String(result.id);
           externalUrl = result.link;
+          break;
+        }
+
+        case 'postiz': {
+          // P3.5 — warme handover naar de scheduler van de klant: Branddock
+          // valideert/genereert, Postiz plant en post. Credentials op het
+          // kanaal: { apiKey, integrationId, baseUrl? }.
+          const apiKey = credentials.apiKey;
+          const integrationId = credentials.integrationId;
+          if (!apiKey || !integrationId) throw new Error('Postiz apiKey or integrationId not configured');
+          const result = await createPostizPost(
+            { apiKey, baseUrl: typeof credentials.baseUrl === 'string' ? credentials.baseUrl : undefined },
+            {
+              integrationId,
+              content: fullText,
+              scheduledAt: scheduledFor ? new Date(scheduledFor).toISOString() : undefined,
+            },
+          );
+          externalId = result.externalId;
           break;
         }
 

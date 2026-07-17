@@ -64,6 +64,7 @@ export type AiFeatureKey =
   | 'content-generate'
   | 'content-quality'
   | 'content-improve'
+  | 'rewrite-on-brand'
   | 'trend-synthesis'
   | 'deep-research-clarify'
   | 'deep-research-synthesis'
@@ -99,6 +100,15 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     label: 'Persona Chat',
     description: 'Conversational AI when chatting with personas',
     category: 'chat-analysis',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-5-20250929',
+    supportedProviders: ['anthropic', 'openai', 'google'],
+  },
+  {
+    key: 'rewrite-on-brand',
+    label: 'Rewrite on brand',
+    description: 'Ephemeral on-brand rewrite/reply (public API, MCP, browser-extensie)',
+    category: 'campaign-content',
     defaultProvider: 'anthropic',
     defaultModel: 'claude-sonnet-4-5-20250929',
     supportedProviders: ['anthropic', 'openai', 'google'],

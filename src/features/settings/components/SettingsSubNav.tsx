@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain, Plug, Bug, Lightbulb, MessageSquarePlus, FileText, FileCode, Image as ImageIcon, ShieldCheck, IdCard, Coins } from 'lucide-react';
+import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain, Plug, Bug, Lightbulb, MessageSquarePlus, FileText, FileCode, Image as ImageIcon, ShieldCheck, IdCard, Coins, KeyRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useSettingsStore, type SettingsTab } from '@/stores/useSettingsStore';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'notifications', tKey: 'settings.notifications', icon: Bell },
   { id: 'appearance', tKey: 'settings.appearance', icon: Palette },
   { id: 'integrations', tKey: 'settings.integrations', icon: Plug },
+  { id: 'api-keys', tKey: 'settings.apiKeys', icon: KeyRound },
   { id: 'brand-rules', tKey: 'settings.brandRules', icon: FileText },
   { id: 'validation', tKey: 'settings.validation', icon: ShieldCheck },
 ];

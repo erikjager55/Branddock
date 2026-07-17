@@ -331,6 +331,11 @@ model Workspace {
   // Fase B — Ad publishing
   connectedAdAccounts ConnectedAdAccount[]
 
+  // Publieke Brand-API (ADR 2026-07-17-public-brand-api)
+  apiKeys          ApiKey[]
+  apiCallLogs      ApiCallLog[]
+  webhookEndpoints WebhookEndpoint[]
+
   @@index([organizationId])
 }
 
@@ -1127,12 +1132,12 @@ model CampaignKnowledgeAsset {
 }
 
 model Deliverable {
-  id          String            @id @default(cuid())
-  title       String
-  contentType String // Blog Post, Landing Page, etc.
-  status      DeliverableStatus @default(NOT_STARTED)
-  progress    Float             @default(0)
-  assignedTo  String?
+  id                String             @id @default(cuid())
+  title             String
+  contentType       String // Blog Post, Landing Page, etc.
+  status            DeliverableStatus  @default(NOT_STARTED)
+  progress          Float              @default(0)
+  assignedTo        String?
   seoGenerationJobs SeoGenerationJob[]
 
   // Content Studio velden
@@ -1794,6 +1799,7 @@ model BrandStyleguide {
   // nullable additive). Renderer leest deze velden voor brand-specifieke
   // button/spacing/elevation/motion-styling i.p.v. archetype-defaults.
   /**
+   * /**
    * /** ScrapedButtonStyle[] — primary/secondary/ghost button-samples.
    */
   buttonProfile     Json?
@@ -3701,14 +3707,14 @@ model CreditTransaction {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   workspaceId    String? // welk merk verbruikte (attributie); null bij grant/topup
 
-  amount         Int                   // positief = grant/topup, negatief = deduct
+  amount         Int // positief = grant/topup, negatief = deduct
   type           CreditTransactionType
   reason         String
   feature        String?
   action         String? // bv 'long-form', 'image'
   outputTokens   Int? // werkelijke output-tokens bij een deduct
   balanceAfter   Int
-  idempotencyKey String? @unique // voorkomt dubbel-boeken bij re-dispatch
+  idempotencyKey String?               @unique // voorkomt dubbel-boeken bij re-dispatch
   metadata       Json?
 
   createdAt DateTime @default(now())
@@ -3728,7 +3734,7 @@ model CreditReservation {
   status           CreditReservationStatus @default(RESERVED)
   action           String?
   feature          String?
-  idempotencyKey   String? @unique
+  idempotencyKey   String?                 @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3911,9 +3917,9 @@ model Invoice {
 
   // Fase 5b — BTW-laag (Stripe Tax berekent; wij persisteren het resultaat).
   // `amount` blijft het TOTAAL (incl. BTW) — bestaand contract van de UI.
-  taxAmount         Float?  // BTW-bedrag in euro's
-  taxRate           Float?  // effectief tarief (0.21 = 21%)
-  netAmount         Float?  // exclusief BTW
+  taxAmount         Float? // BTW-bedrag in euro's
+  taxRate           Float? // effectief tarief (0.21 = 21%)
+  netAmount         Float? // exclusief BTW
   reverseCharge     Boolean @default(false) // EU-B2B "btw verlegd"
   customerVatNumber String? // uit Checkout tax_id_collection (VIES-gevalideerd door Stripe)
   sellerVatNumber   String? // uit config (SELLER_VAT_NUMBER) op factuurmoment
@@ -5237,6 +5243,7 @@ enum AgentJobType {
   BRANDVOICE_ANALYZE_URL
   SEO_GENERATE
   RESERVATION_REAP // credit-reservering-reaper: stale RESERVED vrijgeven (Fase 2)
+  CAMPAIGN_STRATEGY_GENERATE // publieke Brand-API Fase D4: strategy-chain headless als async job
 }
 
 // Serverless-safe SEO-generatie: de 8-staps-pipeline draait als resumable job
@@ -5253,7 +5260,7 @@ model SeoGenerationJob {
   optimizationGoals String[] // OptimizationGoal[]
   contentType       String
   contextStack      Json // geserialiseerde CanvasContextStack — zodat de job de generator kan draaien
-  voiceDirective    String   @db.Text
+  voiceDirective    String    @db.Text
   state             Json? // SeoPipelineState-checkpoint (reserve voor toekomstige per-stap-resume)
   errors            String[]
   startedAt         DateTime  @default(now())
@@ -5430,21 +5437,21 @@ model AgentSchedule {
   useCaseId String?
 
   /// Run-input zoals de run-API hem kent: { message?, ...rest }.
-  input Json?
+  input            Json?
   /// Content-sources-selectie, al gesanitized bij create (contextSelectionSchema).
   /// Persisted (anders dan op AgentRun): scheduled runs worden headless herbouwd.
   contextSelection Json?
 
   /// 'EVERY_MINUTE' (dev-only) | 'DAILY' | 'WEEKLY' | 'MONTHLY' — plain TEXT.
-  cadence   String
+  cadence    String
   /// "HH:MM" 24h, wall-clock in `timezone`.
-  timeOfDay String @default("08:00")
+  timeOfDay  String @default("08:00")
   /// ISO-weekdag 1-7 (ma-zo) — alleen WEEKLY.
-  dayOfWeek Int?
+  dayOfWeek  Int?
   /// 1-28 (geen maand-einde-ambiguïteit) — alleen MONTHLY.
   dayOfMonth Int?
   /// IANA-timezone voor de wall-clock-interpretatie.
-  timezone String @default("Europe/Amsterdam")
+  timezone   String @default("Europe/Amsterdam")
 
   enabled   Boolean   @default(true)
   nextRunAt DateTime
@@ -6205,6 +6212,7 @@ model FidelityConfig {
    * /**
    * /**
    * /**
+   * /**
    * /** Pijler 1 — style scoring op bestaande BrandPersonality data
    */
   styleWeight Float @default(0.35)
@@ -6219,6 +6227,7 @@ model FidelityConfig {
 
   // ─── Pijler 2 rubric weights (6 dimensies, sum 1.0) ───
   /**
+   * /**
    * /**
    * /**
    * /**
@@ -6237,6 +6246,7 @@ model FidelityConfig {
 
   // ─── Per content-type opt-outs ───
   /**
+   * /**
    * /**
    * /**
    * /**
@@ -6275,6 +6285,7 @@ model BrandVoiceguide {
 
   // ─── Voice DNA ──────────────────────────────
   /**
+   * /**
    * /**
    * Vrije-tekst beschrijving van de merkstem. Migreert uit BrandPersonality.brandVoiceDescription.
    */
@@ -6315,6 +6326,7 @@ model BrandVoiceguide {
   // ─── References ─────────────────────────────
   /**
    * /**
+   * /**
    * Gecureerde writing-samples (5-10 typisch). Bron voor centroid-embedding.
    * Migreert van BrandPersonality.writingSample (1×) naar array.
    */
@@ -6322,6 +6334,7 @@ model BrandVoiceguide {
 
   // ─── Vocabulary ─────────────────────────────
   /**
+   * /**
    * /**
    * Single-word level — woorden die het merk gebruikt.
    */
@@ -6334,6 +6347,7 @@ model BrandVoiceguide {
   // ─── Channel-Tones ──────────────────────────
   /**
    * /**
+   * /**
    * Per-kanaal tone-overrides bovenop globale toneDimensions.
    * Shape: { website: { formalCasual, ... }, socialMedia: {...}, email: {...}, ads: {...}, video: {...} }
    */
@@ -6341,6 +6355,7 @@ model BrandVoiceguide {
 
   // ─── Anti-Patterns ──────────────────────────
   /**
+   * /**
    * /**
    * Multi-word phrases die het merk vermijdt (uitbreiding op wordsWeAvoid).
    */
@@ -6355,6 +6370,7 @@ model BrandVoiceguide {
   // ─── Embedding centroid (Pijler 1 fidelity) ─────
   /**
    * /**
+   * /**
    * OpenAI text-embedding-3-small van geconcateneerde writingSamples. Beheerd via raw SQL.
    */
   centroidEmbedding  Unsupported("vector(1536)")?
@@ -6362,6 +6378,7 @@ model BrandVoiceguide {
 
   // ─── Locale (ADR-3 — per-brand routing voor heuristiek-pakketten) ─────
   /**
+   * /**
    * IETF BCP 47 locale-tag: `nl-NL` / `nl-BE` / `en-GB` / `de-DE` (v1).
    * Per-merk override. `resolveLocaleForBrand(workspaceId, requestedLocale?)`:
    * expliciet gevraagde locale → deze `contentLocale` → `Workspace.contentLanguage`
@@ -6393,6 +6410,7 @@ model BrandVoiceguide {
 
   // ─── Metadata ────────────────────────────────
   /**
+   * /**
    * /**
    * "manual" | "extracted" (van BrandPersonality migratie) | "analyzer" (door tekst-scanner)
    */
@@ -6642,4 +6660,85 @@ enum SslStatus {
   PROVISIONING
   ACTIVE
   FAILED
+}
+
+// ─── Publieke Brand-API (ADR 2026-07-17-public-brand-api) ────────────────────
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /// Vrije naam ("n8n productie") voor het Settings-beheer.
+  name String
+
+  /// sha256-hex van de volledige key — de key zelf wordt nooit opgeslagen,
+  /// alleen bij aanmaak eenmalig teruggegeven.
+  keyHash String @unique
+
+  /// Niet-geheime prefix (bd_live_ab12…) voor herkenning in de UI.
+  keyPrefix String
+
+  createdByUserId String?
+  createdAt       DateTime  @default(now())
+  lastUsedAt      DateTime?
+  revokedAt       DateTime?
+
+  @@index([workspaceId])
+}
+
+/// Metadata-only gebruikslog van de publieke API/MCP — nooit inhoud
+/// (ADR-principe: "inhoud opslaan is opt-in, gedrag meten is metadata").
+model ApiCallLog {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /// Toolnaam/endpoint (get_brand_context, score_against_brand, generate_on_brand, …).
+  tool String
+
+  /// 'api_key' | 'oauth' — auth-vorm van de aanroep.
+  authVia String
+
+  success   Boolean
+  latencyMs Int
+
+  /// Credits die deze aanroep kostte (0 voor reads/score — zero-cost by design).
+  credits Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, tool, createdAt])
+}
+
+/// Outbound webhook-endpoint (P3.3) — per workspace, event-gefilterd.
+/// Delivery is fail-soft en zonder retries in v1; na 25 opeenvolgende
+/// failures wordt het endpoint automatisch gedeactiveerd.
+model WebhookEndpoint {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /// Bestemmings-URL — https verplicht, SSRF-gevalideerd bij aanmaak
+  /// (zie validateWebhookUrl in src/lib/api/public/webhooks.ts).
+  url String
+
+  /// sha256-hmac-secret (plain opgeslagen; alleen owner/admin kan hem lezen —
+  /// het is een shared secret voor signature-verificatie, geen wachtwoord).
+  secret String
+
+  /// Event-types waarop dit endpoint geabonneerd is (WEBHOOK_EVENT_TYPES).
+  events String[]
+
+  active Boolean @default(true)
+
+  createdAt          DateTime  @default(now())
+  lastDeliveryAt     DateTime?
+  /// HTTP-status van de laatste poging; 0 = geen response (timeout/netwerk).
+  lastDeliveryStatus Int?
+  /// Opeenvolgende mislukte deliveries; reset naar 0 bij succes.
+  failureCount       Int       @default(0)
+
+  @@index([workspaceId])
 }

@@ -11,6 +11,7 @@ import { WorkspacesTab } from './workspaces/WorkspacesTab';
 import { AppearanceTab } from './appearance/AppearanceTab';
 import { BillingTab } from './billing/BillingTab';
 import { IntegrationsTab } from './integrations/IntegrationsTab';
+import { ApiKeysTab } from './api-keys/ApiKeysTab';
 import { RulesTab } from './brand-voice/RulesTab';
 import { ValidationTab } from './validation/ValidationTab';
 import { AdministratorTab } from './administrator/AdministratorTab';
@@ -74,6 +75,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
         return <AppearanceTab />;
       case 'integrations':
         return <IntegrationsTab />;
+      case 'api-keys':
+        return <ApiKeysTab />;
       case 'brand-rules':
         return <RulesTab />;
       case 'validation':

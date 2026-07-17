@@ -22,6 +22,7 @@ import { orchestrateContentGeneration } from '@/lib/ai/canvas-orchestrator';
 import { serializeContextForPrompt } from '@/lib/ai/context/fetcher';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { dispatchWebhookEvent } from '@/lib/api/public/webhooks';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 
 const DEFAULT_CAMPAIGN_SLUG = 'quick-content';
@@ -304,6 +305,18 @@ export async function createAndGenerateDeliverable(
       ...(additionalContextText ? { additionalContextText } : {}),
       ...(Object.keys(contentTypeInputs).length > 0 ? { contentTypeInputs } : {}),
     });
+
+    // P3.3 outbound webhook — alleen bij een geslaagde generatie, fire-and-
+    // forget (dispatcher is fail-soft) en metadata-only: ids/type/score, geen
+    // content-tekst. De ontvanger haalt de inhoud op via de publieke API.
+    if (error === null) {
+      void dispatchWebhookEvent(input.workspaceId, 'deliverable.generated', {
+        deliverableId: deliverable.id,
+        campaignId,
+        contentType: input.contentType,
+        fidelityScore,
+      });
+    }
 
     return {
       ok: true,

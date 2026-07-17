@@ -27,6 +27,10 @@ const eslintConfig = defineConfig([
     // Research / experiment exports (DTS Ede design-system UI-kit, etc.).
     // Third-party-style code that is NOT part of the productie-bundle.
     "docs/experiments/**",
+    // Standalone npm-packages (eigen package.json/tsconfig, geen deel van
+    // de Next-build) — n8n-community-node (P3.3). Deps (n8n-workflow) zijn
+    // hier niet geïnstalleerd, dus root-eslint/tsc moeten deze map negeren.
+    "integrations/**",
   ]),
   // Downgrade noisy rules to warnings (fix incrementally).
   {

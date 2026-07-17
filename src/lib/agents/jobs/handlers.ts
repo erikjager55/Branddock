@@ -8,6 +8,8 @@
 //   SEO_GENERATE → chargeAfter in src/lib/ai/seo-generation-job.ts ('long-form').
 //   AGENT_TASK → chargeAfter in src/lib/agents/registry/run-agent.ts (billable
 //   agents, op COMPLETED — zie het blok onderaan dit bestand).
+//   CAMPAIGN_STRATEGY_GENERATE → chargeAfter in
+//   src/lib/campaigns/strategy-generation-job.ts ('long-form', publieke Brand-API D4).
 // Nieuwe job-types: bepaal expliciet floor-gedekt vs output-kostend en leg de
 // keuze hiér vast (audit-grep Fase 2d, gecompleteerd 2026-07-12).
 // =============================================================
@@ -191,6 +193,14 @@ registerHandler('SEO_GENERATE', async (job) => {
   return { jobId };
 });
 
+// Publieke Brand-API Fase D4 — campaign-strategy-chain headless als async job
+// (ADR 2026-07-17-public-brand-api). Payload-validatie + ketenlogica in de
+// eigen module; lazy import houdt de cron-cold-start licht.
+registerHandler('CAMPAIGN_STRATEGY_GENERATE', async (job) => {
+  const { runCampaignStrategyGenerationJob } = await import('@/lib/campaigns/strategy-generation-job');
+  return runCampaignStrategyGenerationJob(job);
+});
+
 // ─── Credit-billing (ADR 2026-07-07) — floor-vs-credit per job-type ──────────
 // Beslissing (ADR: recurring achtergrond-AI + merk-DNA-setup = floor-gedekt = 0 cr;
 // alleen user-facing content-output kost credits):
@@ -199,7 +209,9 @@ registerHandler('SEO_GENERATE', async (job) => {
 //     (Fase 2: draait catalogus-agents via run-agent) — de afboek-haak zit in
 //     run-agent's chargeAfter (alleen def.billable-agents, op COMPLETED,
 //     idempotent per run; proposals charged pas bij de confirm-route). Geen
-//     haak in de handler zelf.
+//     haak in de handler zelf. CAMPAIGN_STRATEGY_GENERATE (Fase D4, publieke
+//     Brand-API) — vlakke 'long-form'-afboeking in
+//     `runCampaignStrategyGenerationJob` zelf (op succes, idempotent per job).
 //   • FLOOR-GEDEKT (0 cr, GÉÉN haak): ALIGNMENT_SCAN, TREND_RESEARCH, DAM_AUTO_TAG,
 //     BUG_REPORT_ANALYZE, CHAT_FEEDBACK_ANALYZE (recurring achtergrond-analyse) +
 //     WEBSITE_SCAN, BRANDVOICE_ANALYZE_URL, BRANDSTYLE_ANALYZE_URL/PDF (merk-DNA-

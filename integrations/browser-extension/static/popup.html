@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <title>Branddock Everywhere</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <h1>Branddock Everywhere</h1>
+    <button id="open-options" class="link" type="button">Instellingen</button>
+  </header>
+
+  <p id="status" class="status"></p>
+
+  <label for="audience-note">Doelgroep-notitie <span class="hint">(gaat mee met elke opdracht)</span></label>
+  <input id="audience-note" type="text" placeholder="bijv. facilitair managers bij middelgrote kantoren">
+
+  <label for="content">Tekst</label>
+  <textarea id="content" rows="6" placeholder="Plak hier de tekst die je wilt herschrijven, beantwoorden of scoren."></textarea>
+
+  <label for="instruction">Extra instructie <span class="hint">(optioneel)</span></label>
+  <input id="instruction" type="text" placeholder="bijv. korter en formeler">
+
+  <div class="actions">
+    <button id="btn-rewrite" class="primary" type="button">Herschrijf on-brand</button>
+    <button id="btn-reply" type="button">Schrijf antwoord</button>
+    <button id="btn-score" type="button">Brand-score</button>
+  </div>
+
+  <p id="feedback" class="feedback" hidden></p>
+
+  <section id="result-section" hidden>
+    <h2 id="result-title"></h2>
+    <pre id="result-text"></pre>
+    <button id="btn-copy" type="button">Kopieer</button>
+  </section>
+
+  <script src="popup.js"></script>
+</body>
+</html>
