@@ -7,6 +7,8 @@ export const MARKETING_SITEMAP_PATHS: string[] = [
   '', // homepage (apex-root)
   'marketing/platform',
   'marketing/pricing',
+  'marketing/guardrails',
+  'marketing/changelog',
   'marketing/about',
   'marketing/contact',
   'marketing/resources/f-val',

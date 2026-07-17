@@ -22,31 +22,11 @@ import {
   Cpu,
 } from 'lucide-react';
 import { appHref } from './app-url';
+import BookDemoButton from './BookDemoButton';
 import HowItWorks from './HowItWorks';
 import Mosaic, { MOSAIC_PRODUCT } from './Mosaic';
 import { PLAN_CONFIGS } from '@/lib/constants/plan-limits';
-
-// Provider-neutrale demo-boeking (Morgen/Calendly/Cal.com). Zonder booking-URL:
-// val terug op de contactpagina i.p.v. een dood `#`.
-function BookDemoButton({ className }: { className?: string }) {
-  const bookingUrl =
-    process.env.NEXT_PUBLIC_BOOKING_URL ?? process.env.NEXT_PUBLIC_CALENDLY_URL ?? null;
-  const cls =
-    className ??
-    'inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50';
-  if (bookingUrl) {
-    return (
-      <a href={bookingUrl} target="_blank" rel="noopener noreferrer" className={cls}>
-        Boek een demo
-      </a>
-    );
-  }
-  return (
-    <Link href="/marketing/contact" className={cls}>
-      Boek een demo
-    </Link>
-  );
-}
+import { creditExampleLineCompact } from '@/lib/constants/credit-examples';
 
 export default function MarketingHomePage() {
   return (
@@ -71,15 +51,15 @@ function Hero() {
       <div className="mkt-hero__ink">
         <div className="max-w-lg">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm mb-6">
-            <span style={{ color: 'var(--brand-lime)' }}>●</span> Eén platform dat je merk kent
+            <span style={{ color: 'var(--brand-lime)' }}>●</span> Jouw AI-marketingteam
           </div>
           <h1 className="mb-6" style={{ color: '#ffffff' }}>
-            Content die klinkt als jóúw merk. Op schaal.
+            Een AI-marketingteam dat je merk écht kent.
           </h1>
           <p className="text-xl mb-8" style={{ color: 'rgba(255,255,255,0.9)' }}>
-            Branddock kent je complete merk-DNA — brand voice, stijl, persona’s, concurrenten en
-            trends — en zet het om in on-brand teksten, campagnes en beeld. Eén platform, gebouwd
-            voor in-house marketingteams.
+            Negen AI-agents doen het werk — onderzoek, strategie, content, merkbewaking — op jouw
+            merk-DNA, en elke uiting krijgt een meetbare merk-check (F-VAL). Werkt in Branddock, in
+            Claude en ChatGPT, en overal waar je schrijft. Jij keurt goed.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
@@ -120,7 +100,7 @@ function Hero() {
       </div>
       <div className="mkt-hero__meta">
         <div className="mkt-hero__meta-item">
-          <b>Werkt op</b>
+          <b>Modellen</b>
           <span>Claude · GPT · Gemini</span>
         </div>
         <div className="mkt-hero__meta-item">
@@ -145,9 +125,9 @@ function Problem() {
         </div>
         <h2 className="text-gray-900 mb-4">Generieke AI kent je merk niet</h2>
         <p className="text-lg text-gray-600">
-          AI-tools schrijven snel, maar clichématig. Je vult telkens opnieuw de context aan,
-          herschrijft de output tot het eindelijk klinkt als jóú, en knoopt losse tools voor tekst,
-          beeld en campagnes aan elkaar. De tijdwinst verdampt in de rework.
+          AI-tools en -agents schrijven snel, maar clichématig. Je vult telkens opnieuw de context
+          aan, herschrijft de output tot het eindelijk klinkt als jóú, en knoopt losse tools voor
+          tekst, beeld en campagnes aan elkaar. De tijdwinst verdampt in de rework.
         </p>
       </div>
     </section>
@@ -185,8 +165,8 @@ const MODULES: { Icon: typeof Dna; title: string; desc: string }[] = [
   { Icon: Megaphone, title: 'Campagne-strategie', desc: 'Van strategie-blueprint tot concrete deliverables.' },
   { Icon: Images, title: 'Beeld & video', desc: 'On-brand visuals en video, direct in het platform.' },
   { Icon: LayoutTemplate, title: 'Landingspagina’s', desc: 'Publiceren op je eigen subdomein.' },
-  { Icon: Bot, title: '9 AI-agents', desc: 'Een team dat de merk-loop voor je draait.' },
-  { Icon: BadgeCheck, title: 'Merk-check', desc: 'Bewaakt dat elke output op merk blijft.' },
+  { Icon: Bot, title: '9 AI-agents', desc: 'Collega’s met rollen — ze stellen voor, jij keurt goed.' },
+  { Icon: BadgeCheck, title: 'Merk-check', desc: 'F-VAL-score bewaakt dat elke output op merk blijft.' },
   { Icon: Languages, title: 'Meertalig', desc: 'Multi-markt content voor internationale merken.' },
 ];
 
@@ -197,10 +177,10 @@ function PlatformBreadth() {
         <div className="text-sm font-semibold mkt-accent uppercase tracking-wide mb-3">
           Het platform
         </div>
-        <h2 className="text-gray-900 mb-3">Geen losse tool — één merk-platform</h2>
+        <h2 className="text-gray-900 mb-3">Je AI-team werkt op één merk-platform</h2>
         <p className="text-gray-600">
-          Alles draait op hetzelfde merk-DNA-fundament: van onderzoek en persona’s tot content,
-          campagnes en beeld.
+          Alles draait op hetzelfde merk-DNA-fundament: je agents onderzoeken, adviseren en maken —
+          van persona’s en trends tot content, campagnes en beeld. Jij keurt goed.
         </p>
       </div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -235,19 +215,19 @@ function PlatformBreadth() {
 function ValuePillars() {
   const pillars: { Icon: typeof Dna; title: string; body: string }[] = [
     {
-      Icon: Dna,
-      title: 'Kent je complete merk',
-      body: 'Merk-DNA, brand voice, persona’s, concurrenten en trends — in elke generatie meegenomen.',
+      Icon: Cpu,
+      title: 'Een team, geen tool',
+      body: 'Negen agents met eigen rollen — onderzoek, strategie, content, merkbewaking, rapportage. Ze signaleren, adviseren en leveren concepten in je inbox.',
     },
     {
-      Icon: Cpu,
-      title: 'Doet het hele werk',
-      body: 'Van onderzoek tot content, campagnes, beeld en landingspagina’s. 9 agents doen mee.',
+      Icon: Dna,
+      title: 'Draait op jouw merk-DNA',
+      body: 'Brand voice, persona’s, producten, concurrenten en trends — elke collega werkt met dezelfde merkcontext, in Branddock én daarbuiten.',
     },
     {
       Icon: BadgeCheck,
-      title: 'Houdt het on-brand',
-      body: 'Een merk-check bewaakt de consistentie — gemiddeld +7 punten on-brand versus vanilla-AI.',
+      title: 'Bewijsbaar on-brand — jij keurt goed',
+      body: 'Elke uiting krijgt een F-VAL-merkscore — gemiddeld +7 punten on-brand versus vanilla-AI. Niets gaat live zonder jou.',
     },
   ];
   return (
@@ -271,15 +251,18 @@ function ValuePillars() {
 
 function ProofStrip() {
   const stats = [
-    { big: '1', cap: 'platform in plaats van een lappendeken losse tools' },
+    { big: '9', cap: 'AI-agents met eigen rollen — van onderzoek tot merkbewaking' },
     { big: '+7', cap: 'punten on-brand vs. vanilla-AI (gemiddeld; +12 op de nieuwsbrief)' },
-    { big: '9', cap: 'AI-agents die de merk-loop draaien' },
+    { big: '17', cap: 'agent-tools via de MCP-connector — je team werkt ook in Claude en ChatGPT' },
   ];
   return (
     <section className="max-w-6xl mx-auto px-6 py-16">
-      <div className="rounded-xl border border-gray-200 bg-white p-6 md:p-8 grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
+      {/* md:-varianten i.p.v. sm: — de sm:grid/divide-utilities ontbreken in de
+          gecompileerde index.css (Tailwind 4 purge-gotcha), waardoor de strip
+          altijd stapelde. */}
+      <div className="rounded-xl border border-gray-200 bg-white p-6 md:p-8 grid gap-6 md:grid-cols-3">
         {stats.map((s) => (
-          <div key={s.cap} className="py-4 sm:py-0 first:pt-0 sm:px-6 first:sm:pl-0">
+          <div key={s.cap}>
             <div className="text-4xl font-bold mkt-accent tabular-nums">{s.big}</div>
             <div className="text-sm text-gray-600 mt-2">{s.cap}</div>
           </div>
@@ -354,6 +337,7 @@ function PricingTeaser() {
       name: config.name,
       price: `€${config.monthlyPriceEur}`,
       line: `${nl.format(config.monthlyCredits)} credits · ${TEASER_LINE_SUFFIX[key]}`,
+      example: creditExampleLineCompact(config.monthlyCredits),
       featured: key === 'GROWTH',
     };
   });
@@ -367,7 +351,8 @@ function PricingTeaser() {
           dagen gratis, geen creditcard.
         </p>
       </div>
-      <div className="grid sm:grid-cols-3 gap-4">
+      {/* md: i.p.v. sm: — sm:grid-cols-3 ontbreekt in de gecompileerde CSS. */}
+      <div className="grid md:grid-cols-3 gap-4">
         {tiers.map((t) => (
           <div
             key={t.name}
@@ -384,6 +369,7 @@ function PricingTeaser() {
               <span className="text-sm font-normal text-gray-400">/mnd</span>
             </div>
             <div className="text-sm text-gray-600 mt-2">{t.line}</div>
+            <div className="text-xs text-gray-500 mt-1">{t.example}</div>
           </div>
         ))}
       </div>
@@ -413,7 +399,11 @@ function FAQ() {
     },
     {
       q: 'Is dit weer een losse AI-schrijftool?',
-      a: 'Nee. Branddock bundelt onderzoek, content, campagnes, beeld en publicatie in één platform, allemaal op hetzelfde merk-DNA.',
+      a: 'Nee. Branddock bundelt onderzoek, content, campagnes, beeld en publicatie in één platform, allemaal op hetzelfde merk-DNA — met een team van AI-agents dat voorstelt en jou laat goedkeuren.',
+    },
+    {
+      q: 'Werkt Branddock ook in Claude of ChatGPT?',
+      a: 'Ja. Koppel Branddock als connector (branddock.app/api/mcp), log in met je Branddock-account en je agent kent je merk: context, merk-check en on-brand generatie. Er is ook een browser-extensie (beta) voor overal waar je schrijft.',
     },
     {
       q: 'Wat gebeurt er met mijn data?',
@@ -457,10 +447,11 @@ function FinalCTA() {
       />
       <div className="max-w-6xl mx-auto px-6 py-20 text-center relative">
         <h2 className="mb-4" style={{ color: '#ffffff' }}>
-          Klaar om op merk te schalen?
+          Klaar om je marketingteam uit te breiden?
         </h2>
         <p className="mb-8 max-w-xl mx-auto" style={{ color: 'rgba(255,255,255,0.9)' }}>
-          Probeer Branddock 28 dagen gratis. Geen creditcard, geen verplichtingen.
+          Probeer Branddock 28 dagen gratis. Geen creditcard, geen verplichtingen — je agents staan
+          direct voor je klaar.
         </p>
         <Link
           href={appHref('/?utm_source=marketing-site&utm_medium=final-cta')}
