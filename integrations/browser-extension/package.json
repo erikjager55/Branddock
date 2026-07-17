@@ -1,0 +1,18 @@
+{
+  "name": "branddock-everywhere-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Branddock Everywhere — Chrome/Edge MV3-extensie: herschrijf, beantwoord en scoor tekst on-brand via de publieke Branddock-API.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && node build.mjs",
+    "verify": "node verify.mjs",
+    "test": "node build.mjs && node --test \"test/*.test.mjs\""
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.2.2",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.8.0"
+  }
+}

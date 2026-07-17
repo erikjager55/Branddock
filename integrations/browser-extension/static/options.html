@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <title>Branddock Everywhere — Instellingen</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <h1>Branddock Everywhere — Instellingen</h1>
+    <p class="intro">
+      Koppel de extensie aan je Branddock-workspace. Maak een API-key aan in
+      Branddock onder <strong>Settings → API &amp; Connectors</strong>.
+    </p>
+
+    <label for="base-url">Base URL</label>
+    <input id="base-url" type="text" placeholder="https://app.branddock.com">
+    <p class="hint">De URL van je Branddock-installatie, zonder pad erachter.</p>
+
+    <label for="api-key">API-key</label>
+    <input id="api-key" type="password" placeholder="bd_live_…" autocomplete="off">
+    <label class="checkbox"><input id="show-key" type="checkbox"> Toon key</label>
+
+    <div class="actions">
+      <button id="btn-save" class="primary" type="button">Opslaan</button>
+      <button id="btn-test" type="button">Test verbinding</button>
+    </div>
+
+    <p id="status" class="status" hidden></p>
+
+    <p class="note">
+      De doelgroep-notitie (vrije tekst die met elke herschrijf-opdracht meegaat)
+      stel je in via de popup van de extensie.
+    </p>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>
