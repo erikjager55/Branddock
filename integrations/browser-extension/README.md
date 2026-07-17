@@ -31,7 +31,7 @@ npm test          # unit-tests van de API-wrapper (gemockte fetch, geen netwerk)
 
 1. Maak in Branddock een API-key aan: **Settings → API & Connectors** (formaat `bd_live_…`; de key is alleen bij aanmaak zichtbaar).
 2. Open de extensie-opties (rechtsklik op het extensie-icoon → Opties, of via de link "Instellingen" in de popup).
-3. Vul de **Base URL** in (default `https://app.branddock.com`; voor lokaal testen bijv. `http://localhost:3000`) en plak de **API-key**.
+3. Plak de **API-key** en klik **Opslaan & testen** — meer is niet nodig (Base URL staat standaard op `https://branddock.app`; een eigen domein of `http://localhost:3000` stel je in onder "Geavanceerd").
 4. Klik **Test verbinding** — de extensie valideert de key via `GET /api/v1/brand-context` (200 = geldig, 401 = key fout, 404 = URL fout of publieke API uitgeschakeld via `PUBLIC_API_ENABLED`).
 
 ## Gebruik

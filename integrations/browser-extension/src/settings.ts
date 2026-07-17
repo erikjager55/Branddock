@@ -3,7 +3,7 @@
 // =============================================================
 
 export interface ExtensionSettings {
-  /** Basis-URL van de Branddock-installatie, bijv. https://app.branddock.com */
+  /** Basis-URL van de Branddock-installatie, bijv. https://branddock.app */
   baseUrl: string;
   /** Workspace-API-key (bd_live_…) uit Branddock Settings → API & Connectors. */
   apiKey: string;
@@ -12,7 +12,7 @@ export interface ExtensionSettings {
 }
 
 export const DEFAULT_SETTINGS: ExtensionSettings = {
-  baseUrl: 'https://app.branddock.com',
+  baseUrl: 'https://branddock.app',
   apiKey: '',
   audienceNote: '',
 };

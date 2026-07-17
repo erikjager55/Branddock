@@ -17,7 +17,6 @@ const baseUrlInput = byId<HTMLInputElement>('base-url');
 const apiKeyInput = byId<HTMLInputElement>('api-key');
 const showKeyToggle = byId<HTMLInputElement>('show-key');
 const saveBtn = byId<HTMLButtonElement>('btn-save');
-const testBtn = byId<HTMLButtonElement>('btn-test');
 const statusEl = byId<HTMLParagraphElement>('status');
 
 void init();
@@ -30,8 +29,7 @@ async function init(): Promise<void> {
   showKeyToggle.addEventListener('change', () => {
     apiKeyInput.type = showKeyToggle.checked ? 'text' : 'password';
   });
-  saveBtn.addEventListener('click', () => void save());
-  testBtn.addEventListener('click', () => void test());
+  saveBtn.addEventListener('click', () => void saveAndTest());
 }
 
 function currentValues(): { baseUrl: string; apiKey: string } {
@@ -47,32 +45,29 @@ function showStatus(message: string, kind: 'ok' | 'error' | 'busy'): void {
   statusEl.className = `status ${kind}`;
 }
 
-async function save(): Promise<void> {
+// Eén actie: opslaan en direct de verbinding bewijzen — de gebruiker hoeft
+// nergens over na te denken behalve de key (Base URL default = branddock.app).
+async function saveAndTest(): Promise<void> {
   const { baseUrl, apiKey } = currentValues();
   await saveSettings({ baseUrl, apiKey });
-  if (apiKey && !apiKey.startsWith('bd_live_')) {
-    showStatus('Opgeslagen — let op: de key heeft niet het verwachte bd_live_-formaat.', 'error');
-  } else {
-    showStatus('Instellingen opgeslagen.', 'ok');
-  }
-}
-
-async function test(): Promise<void> {
-  const { baseUrl, apiKey } = currentValues();
   if (!apiKey) {
-    showStatus('Vul eerst een API-key in.', 'error');
+    showStatus('Opgeslagen — plak nog je API-key om te koppelen.', 'error');
     return;
   }
-  testBtn.disabled = true;
-  showStatus('Verbinding testen…', 'busy');
+  if (!apiKey.startsWith('bd_live_')) {
+    showStatus('Opgeslagen — let op: de key heeft niet het verwachte bd_live_-formaat.', 'error');
+    return;
+  }
+  saveBtn.disabled = true;
+  showStatus('Opgeslagen — verbinding testen…', 'busy');
   try {
     const result = await testConnection({ baseUrl, apiKey });
     if (result.ok) {
-      showStatus(`Verbinding geslaagd — gekoppeld aan workspace ${result.workspaceId}.`, 'ok');
+      showStatus(`Klaar! Gekoppeld aan workspace ${result.workspaceId}.`, 'ok');
     } else {
       showStatus(result.message, 'error');
     }
   } finally {
-    testBtn.disabled = false;
+    saveBtn.disabled = false;
   }
 }
