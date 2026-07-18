@@ -77,3 +77,8 @@ Deliveries are signed with `x-branddock-signature: sha256=<hex>` — an HMAC-SHA
 ## Compatibility
 
 Requires n8n with community-node support (Node.js >= 18.10). Built against the `n8n-workflow` node API (`n8nNodesApiVersion` 1).
+
+
+## Build-noot (pre-publish)
+
+Gebruik `npm install --ignore-scripts` op Node 24+ — de transitive native dependency `isolated-vm` van `n8n-workflow` compileert daar niet, en is voor de build niet nodig (n8n levert `n8n-workflow` runtime als peer). Daarna `npm run build`.

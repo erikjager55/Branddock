@@ -89,3 +89,44 @@ button.primary:hover:not(:disabled) { background: var(--primary-dark); }
 details.advanced { margin-top: 1.25rem; }
 details.advanced summary { cursor: pointer; color: #555; font-size: 0.9rem; }
 details.advanced[open] summary { margin-bottom: 0.5rem; }
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+
+.tab {
+  border: 1px solid transparent;
+  border-bottom: 0;
+  background: none;
+  border-radius: 6px 6px 0 0;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.tab:hover:not(:disabled) { background: #f6faf9; }
+
+.tab.active {
+  border-color: var(--line);
+  background: #ffffff;
+  color: var(--ink);
+  font-weight: 600;
+  margin-bottom: -1px;
+  padding-bottom: 9px;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: var(--primary);
+  color: #04343a;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.panel-intro { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
