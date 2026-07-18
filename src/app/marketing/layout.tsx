@@ -198,6 +198,24 @@ function MarketingFooter() {
                 </Link>
               </li>
             </ul>
+            <div className="font-semibold text-gray-900 mt-6 mb-3">Vergelijk</div>
+            <ul className="space-y-1.5 text-gray-600">
+              <li>
+                <Link href="/marketing/vergelijk/jasper" className="hover:text-gray-900">
+                  vs. AI-schrijftools (Jasper)
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/vergelijk/chatgpt" className="hover:text-gray-900">
+                  vs. losse ChatGPT
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/vergelijk/social-schedulers" className="hover:text-gray-900">
+                  vs. social-schedulers
+                </Link>
+              </li>
+            </ul>
           </div>
           <div>
             <div className="font-semibold text-gray-900 mb-3">Contact</div>
