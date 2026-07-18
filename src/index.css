@@ -10447,3 +10447,98 @@ html {
     .hover\:text-gray-700:hover { color: var(--color-gray-700); }
   }
 }
+
+/* ---------------------------------------------------------------
+ * Responsive-varianten sweep (2026-07-18) — patcht ontbrekende
+ * sm:/md:/lg:/xl:-utilities in de gecompileerde Tailwind 4-output
+ * (zie gotchas.md 2026-04-19 + recurrence 2026-07-18). Gevonden via
+ * scan van src/app/marketing + src/features + src/components.
+ *
+ * LET OP cascade-volgorde: binnen een @layer wint bij gelijke
+ * specificiteit de laatst-gedeclareerde regel. Een geappende
+ * sm:-regel zou daardoor een eerder-gecompileerde md:/lg:-regel op
+ * hetzelfde element overrulen (bijv. "sm:grid-cols-2 lg:grid-cols-3").
+ * Daarom staan hieronder per geraakte familie ALLE responsive leden
+ * in oplopende breakpoint-volgorde — reeds bestaande regels zijn
+ * bewust herhaald (gemarkeerd "herhaald").
+ * ------------------------------------------------------------ */
+@layer utilities {
+  /* Basis-utilities die de responsive fixes nodig hebben en óók
+     ongeprefixt in de gecompileerde output ontbraken:
+     - grid-cols-12/col-span-12: 12-koloms layout BrandVoiceguidePage
+       (lg:col-span-9/3) + MediaCardList-rijen
+     - order-1/order-2: HowItWorks mobiel (frame boven tekst) i.c.m.
+       md:order-1/2 */
+  .grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .col-span-12 { grid-column: span 12 / span 12; }
+  .order-1 { order: 1; }
+  .order-2 { order: 2; }
+
+  /* sm: (width >= 40rem / 640px) */
+  @media (width >= 40rem) {
+    .sm\:block { display: block; }
+    .sm\:col-span-2 { grid-column: span 2 / span 2; }
+    .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sm\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .sm\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .sm\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .sm\:grid-cols-10 { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+    .sm\:items-center { align-items: center; }
+    .sm\:w-\[480px\] { width: 480px; }
+    .sm\:w-auto { width: auto; }
+  }
+
+  /* md: (width >= 48rem / 768px) */
+  @media (width >= 48rem) {
+    .md\:col-span-2 { grid-column: span 2 / span 2; } /* herhaald */
+    .md\:col-span-3 { grid-column: span 3 / span 3; } /* herhaald */
+    .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* herhaald */
+    .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } /* herhaald */
+    .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } /* herhaald */
+    .md\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); } /* herhaald */
+    .md\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); } /* herhaald */
+    .md\:items-start { align-items: flex-start; } /* herhaald */
+    .md\:h-20 { height: calc(var(--spacing) * 20); }
+    .md\:h-72 { height: calc(var(--spacing) * 72); }
+    .md\:order-1 { order: 1; }
+    .md\:order-2 { order: 2; }
+    .md\:p-6 { padding: calc(var(--spacing) * 6); }
+    .md\:p-8 { padding: calc(var(--spacing) * 8); }
+    .md\:py-20 { padding-block: calc(var(--spacing) * 20); }
+    .md\:py-24 { padding-block: calc(var(--spacing) * 24); }
+    .md\:sticky { position: sticky; }
+    .md\:top-6 { top: calc(var(--spacing) * 6); }
+    .md\:text-3xl {
+      font-size: var(--text-3xl);
+      line-height: var(--tw-leading, var(--text-3xl--line-height));
+    }
+    .md\:text-4xl {
+      font-size: var(--text-4xl);
+      line-height: var(--tw-leading, var(--text-4xl--line-height));
+    }
+    .md\:w-20 { width: calc(var(--spacing) * 20); }
+    .md\:w-72 { width: calc(var(--spacing) * 72); }
+  }
+
+  /* lg: (width >= 64rem / 1024px) */
+  @media (width >= 64rem) {
+    .lg\:col-span-1 { grid-column: span 1 / span 1; } /* herhaald */
+    .lg\:col-span-2 { grid-column: span 2 / span 2; } /* herhaald */
+    .lg\:col-span-3 { grid-column: span 3 / span 3; }
+    .lg\:col-span-9 { grid-column: span 9 / span 9; }
+    .lg\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* herhaald */
+    .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } /* herhaald */
+    .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } /* herhaald */
+    .lg\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .lg\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .lg\:inline { display: inline; }
+    .lg\:w-1\/2 { width: 50%; } /* herhaald */
+  }
+
+  /* xl: (width >= 80rem / 1280px) */
+  @media (width >= 80rem) {
+    .xl\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .xl\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); } /* herhaald */
+    .xl\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); } /* herhaald */
+  }
+}

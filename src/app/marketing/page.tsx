@@ -257,9 +257,9 @@ function ProofStrip() {
   ];
   return (
     <section className="max-w-6xl mx-auto px-6 py-16">
-      {/* md:-varianten i.p.v. sm: — de sm:grid/divide-utilities ontbreken in de
-          gecompileerde index.css (Tailwind 4 purge-gotcha), waardoor de strip
-          altijd stapelde. */}
+      {/* md:-varianten — bewust behouden na de purge-sweep van 2026-07-18
+          (sm:-utilities bestaan inmiddels weer in index.css, maar dit
+          breakpoint is de geldende layout-intentie). */}
       <div className="rounded-xl border border-gray-200 bg-white p-6 md:p-8 grid gap-6 md:grid-cols-3">
         {stats.map((s) => (
           <div key={s.cap}>
@@ -351,7 +351,8 @@ function PricingTeaser() {
           dagen gratis, geen creditcard.
         </p>
       </div>
-      {/* md: i.p.v. sm: — sm:grid-cols-3 ontbreekt in de gecompileerde CSS. */}
+      {/* md: bewust behouden na de purge-sweep van 2026-07-18 (sm:grid-cols-3
+          bestaat inmiddels weer, maar md: is de geldende layout-intentie). */}
       <div className="grid md:grid-cols-3 gap-4">
         {tiers.map((t) => (
           <div
