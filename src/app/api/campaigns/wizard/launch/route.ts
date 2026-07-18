@@ -6,6 +6,8 @@ import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { createDeliverablesFromBlueprint } from "@/lib/campaigns/strategy-chain";
 import type { AssetPlanDeliverable } from "@/lib/campaigns/strategy-blueprint.types";
+import { chargeAfter } from "@/lib/billing/credits/meter-generation";
+import { CREDIT_COSTS } from "@/lib/billing/credits/credit-costs";
 import { z } from "zod";
 
 export const maxDuration = 120;
@@ -254,6 +256,28 @@ export async function POST(request: NextRequest) {
     // Invalidate server-side cache
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
+    // Kalibratie 2026-07-18: een chain-blueprint via de wizard lanceren kost
+    // hetzelfde als dezelfde chain via de publieke API (strategy-generation-job)
+    // — één prijs voor hetzelfde werk. Itereren in de wizard blijft gratis; de
+    // charge valt pas bij launch, idempotent per campagne (retry boekt niet
+    // dubbel). QUICK/CONTENT-launches zonder blueprint blijven 0. Post-hoc:
+    // chargeAfter is fail-soft — een charge-fout mag de launch niet laten falen.
+    const chainBlueprintLaunched = Boolean(
+      (blueprintPhases && blueprintPhases.length > 0) ||
+        (assetPlanDeliverables && assetPlanDeliverables.length > 0),
+    );
+    if (chainBlueprintLaunched) {
+      await chargeAfter(
+        {
+          workspaceId,
+          action: "long-form",
+          feature: "campaign-strategy-generate",
+          idempotencyKey: `strategy-charge:launch:${campaign.id}`,
+        },
+        { actualCredits: CREDIT_COSTS["long-form"] },
+      );
+    }
 
     const deliverableCount = deliverables?.length ?? 0;
 
