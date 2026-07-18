@@ -32,7 +32,20 @@ const nextConfig: NextConfig = {
   // Korte connector-URL: https://branddock.app/mcp is de publieke vorm;
   // /api/mcp blijft werken (bestaande koppelingen + interne consistentie).
   async rewrites() {
-    return [{ source: '/mcp', destination: '/api/mcp' }];
+    return [
+      { source: '/mcp', destination: '/api/mcp' },
+      // RFC 9728 §3.1: clients mogen het resource-pad achter de well-known-URL
+      // plakken (…/oauth-protected-resource/mcp); serveer dezelfde metadata —
+      // de root-metadata dekt de hele origin (resource = https://branddock.app).
+      {
+        source: '/.well-known/oauth-protected-resource/:path+',
+        destination: '/.well-known/oauth-protected-resource',
+      },
+      {
+        source: '/.well-known/oauth-authorization-server/:path+',
+        destination: '/.well-known/oauth-authorization-server',
+      },
+    ];
   },
   images: {
     formats: ['image/avif', 'image/webp'],
