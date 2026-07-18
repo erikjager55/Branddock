@@ -212,7 +212,7 @@ function KeyRow({ item, revokingId, onRevoke, t }: { item: ApiKeyItem; revokingI
 function ConnectPanel({ t }: { t: TFunction }) {
   // window is niet beschikbaar tijdens prerender — lazy initializer, geen effect.
   const [origin] = useState(() => (typeof window === 'undefined' ? '' : window.location.origin));
-  const mcpUrl = `${origin}/api/mcp`;
+  const mcpUrl = `${origin}/mcp`;
 
   return (
     <div className="rounded-lg border border-gray-200 p-4 space-y-4">

@@ -27,7 +27,7 @@ const ENTRIES: ChangelogEntry[] = [
   {
     date: '18 juli 2026',
     title: 'Branddock in Claude en ChatGPT',
-    body: 'Koppel Branddock als connector via branddock.app/api/mcp: log in met je Branddock-account en je agent kent je merk. 17 tools voor merkcontext, F-VAL-validatie en on-brand generatie — gegenereerd werk landt gescoord in je library.',
+    body: 'Koppel Branddock als connector via branddock.app/mcp: log in met je Branddock-account en je agent kent je merk. 17 tools voor merkcontext, F-VAL-validatie en on-brand generatie — gegenereerd werk landt gescoord in je library.',
     tag: 'Koppelingen',
   },
   {

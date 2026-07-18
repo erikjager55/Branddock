@@ -29,6 +29,11 @@ const securityHeaders = Object.entries(buildStaticSecurityHeaders(isProd)).map((
 }));
 
 const nextConfig: NextConfig = {
+  // Korte connector-URL: https://branddock.app/mcp is de publieke vorm;
+  // /api/mcp blijft werken (bestaande koppelingen + interne consistentie).
+  async rewrites() {
+    return [{ source: '/mcp', destination: '/api/mcp' }];
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
