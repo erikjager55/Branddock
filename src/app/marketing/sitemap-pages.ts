@@ -21,4 +21,7 @@ export const MARKETING_SITEMAP_PATHS: string[] = [
   'marketing/features/campaigns',
   'marketing/solutions/marketingteams',
   'marketing/solutions/bureaus',
+  'marketing/vergelijk/jasper',
+  'marketing/vergelijk/chatgpt',
+  'marketing/vergelijk/social-schedulers',
 ];
