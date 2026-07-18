@@ -1,6 +1,6 @@
 # bc1-loop-pilot — Brandclaw BC-1: Loop-pilot-agent (wekelijkse content-loop)
 
-- **Status**: in-progress
+- **Status**: done
 - **Datum**: 2026-07-18
 - **Bron**: `docs/reports/p36-brandclaw-herijking-2026-07-17.md` (BC-1) · go van Erik 2026-07-18 ("ga door met brandclaw bc-1-go")
 - **Worktree**: branddock-loop-pilot

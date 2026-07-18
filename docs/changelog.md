@@ -37,6 +37,30 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 419. API-restjes: webhook-beheer-UI + deliverable.generated op alle generatie-paden
+
+De laatste twee restjes uit de P3-lijn. (1) Outbound webhooks zijn nu zelf te beheren in Settings → API & Connectors: endpoints aanmaken (URL + event-selectie), signing-secret eenmalig zichtbaar (whsec_, HMAC-SHA256-uitleg erbij), delivery-status en auto-disable-badge per rij, verwijderen met confirm — zelfde patroon als de API-keys-lijst. (2) `deliverable.generated` vuurde alleen op het generieke content-pad; nu ook op webpage (headless service én UI-route), video (headless) en SEO (job-completion, idempotent via de COMPLETED-guard) — altijd fire-and-forget en metadata-only. Bewijs: emit-smoke 5/5 met echte webpage-generatie + lokale ontvanger (payload-shape + metadata-only-assert), webhooks-UI-browser-smoke 9/9 (secret-once, prefix na reload, delete). PR #207.
+
+- Task: [tasks/done/api-restjes.md](../tasks/done/api-restjes.md)
+
+### 418. Credit-kalibratie: wizard-launch van een strategie-blueprint metert 80cr
+
+De API-job boekte 80cr voor de volledige campaign-strategy-chain; de UI-wizard boekte 0 voor hetzelfde werk. Nu één prijs: `POST /wizard/launch` boekt `long-form` (80) uitsluitend wanneer er een chain-blueprint gelanceerd wordt — itereren in de wizard blijft gratis, QUICK/CONTENT-launches zonder blueprint blijven 0, idempotent per campagne, post-hoc fail-soft. Sectie-regenerate blijft op beide paden bewust ongemeterd (parity). Smoke 8/8 met boekbare org (gotcha: de vlag heet `NEXT_PUBLIC_CREDITS_ENABLED`; `isOrgUnlimited` cachet 60s). PR #206.
+
+- Task: [tasks/done/strategy-ui-metering.md](../tasks/done/strategy-ui-metering.md)
+
+### 417. Brandclaw BC-1: Loop-pilot-agent Bo — wekelijkse content-loop met mens-goedkeuring
+
+Eerste Brandclaw-increment (P3.6-herijking): agent Bo leest wekelijks de eigen merksignalen (productie-tempo, F-VAL-trend, persona-dekking, campagne-stand via Dana's query-tools onder eigen namespace) en zet maximaal drie content-kansen (pilot: linkedin-post/blog-post) als propose-only `create_deliverable`-voorstellen in de agents-inbox. Generatie + F-VAL draaien pas ná approve via het bestaande confirm-pad; publiceren blijft handmatig (BC-2). Geen schema-wijziging, 0-credit run. Smoke 16/16 met twee echte runs (rapport + 3 voorstellen binnen scope → confirm → echte generatie, $0,24/run). Activatie = WEEKLY-schedule aanmaken in de Agents-UI. PR #205.
+
+- Task: [tasks/done/bc1-loop-pilot.md](../tasks/done/bc1-loop-pilot.md) · herijkingsnoot in [tasks/agents-brandclaw-convergentie.md](../tasks/agents-brandclaw-convergentie.md)
+
+### 416. Korte connector-URL branddock.app/mcp + RFC 9728-discovery-varianten
+
+`https://branddock.app/mcp` is de publieke connector-URL (rewrite naar /api/mcp + host-router-exemption; het oude pad blijft werken voor bestaande koppelingen en de extensie) — alle getoonde URL's (guardrails, homepage, changelog, Settings, playbook) op de korte vorm. Plus RFC 9728 §3.1-pad-varianten op de well-known-discovery (…/oauth-protected-resource/mcp → root-metadata) voor clients die het resource-pad in de discovery-URL invoegen. Icoon-rootcause gevonden: het "tip"-icoon in claude.ai is het oude favicon van de vorige domein-eigenaar in Google's favicon-cache (claude.ai's bron) — fix = Search-Console-re-crawl, niet code. PR's #203/#204.
+
+- Task: `-` (kleine opvolg-PR's op de connector-arc, #413)
+
 ### 415. Merkbranding compleet: site-favicon, connector-icoon, extensie-logo + extensie-OAuth met merkkeuze
 
 branddock.app serveerde geen enkel site-icoon (404 op favicon/icon/apple-icon) — browsertabs én de claude.ai-connector toonden generieke iconen. Het officiële beeldmerk staat nu op de Next-conventieplekken (site-breed) én in de MCP-Implementation-info (icons + websiteUrl, SDK-schema). Leerpunt: Turbopack's ICO-decoder eist RGBA — een dekkende screenshot-PNG is RGB en breekt de prod-build (lokaal onzichtbaar: next dev decodeert niet); opgelost met afgeronde hoeken (transparante hoekpixels → RGBA) en de prod-build als lokale gate. Daarnaast extensie v0.2.0: "Inloggen met Branddock" (dynamic client registration, PKCE via chrome.identity, silent refresh) naast de key-modus, met merk-dropdown ("Volg Branddock" default) die de brand-parameter meestuurt — 45/45 unit-tests. n8n-package publish-klaar na drie pre-publish-fouten (@types/node, NodeConnectionTypes-imports; isolated-vm/Node-24-caveat in README) + publicatie-playbook (`docs/playbooks/publicatie-pakket.md`). PR's #200/#201.
