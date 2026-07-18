@@ -404,7 +404,7 @@ function FAQ() {
     },
     {
       q: 'Werkt Branddock ook in Claude of ChatGPT?',
-      a: 'Ja. Koppel Branddock als connector (branddock.app/api/mcp), log in met je Branddock-account en je agent kent je merk: context, merk-check en on-brand generatie. Er is ook een browser-extensie (beta) voor overal waar je schrijft.',
+      a: 'Ja. Koppel Branddock als connector (branddock.app/mcp), log in met je Branddock-account en je agent kent je merk: context, merk-check en on-brand generatie. Er is ook een browser-extensie (beta) voor overal waar je schrijft.',
     },
     {
       q: 'Wat gebeurt er met mijn data?',

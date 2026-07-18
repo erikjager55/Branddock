@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 // De 17 MCP-tools, gegroepeerd op wat ze voor de agent doen. Namen zijn de
-// echte tool-namen van de connector (branddock.app/api/mcp).
+// echte tool-namen van de connector (branddock.app/mcp).
 const TOOL_GROUPS: {
   Icon: typeof ShieldCheck;
   title: string;
@@ -64,7 +64,7 @@ const CONNECT_STEPS: { step: string; title: string; body: string }[] = [
   {
     step: '1',
     title: 'Plak de connector-URL',
-    body: 'Voeg in Claude of ChatGPT een connector toe met https://branddock.app/api/mcp.',
+    body: 'Voeg in Claude of ChatGPT een connector toe met https://branddock.app/mcp.',
   },
   {
     step: '2',

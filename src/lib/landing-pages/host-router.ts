@@ -52,6 +52,7 @@ const EXEMPT_PATH_PREFIXES = [
   '/llms.txt',
   '/.well-known',
   '/oauth/',
+  '/mcp',
 ];
 
 /**

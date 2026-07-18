@@ -32,7 +32,7 @@ Voorwerk ✅: MV3-package compleet mét officiële beeldmerk-iconen (16/48/128).
 
 ## 3. ClawHub + MCP-directories (±30 min)
 
-Teksten liggen klaar in het P3.4-doc (§1 ClawHub-listing, §2 generieke directory-listing). Endpoint: `https://branddock.app/api/mcp` (OAuth). Volgorde: ClawHub-account → skill publiceren → 2 directory-submissions naar keuze (kies actuele directories op moment van publicatie). Rij in het experimenten-log per listing.
+Teksten liggen klaar in het P3.4-doc (§1 ClawHub-listing, §2 generieke directory-listing). Endpoint: `https://branddock.app/mcp` (OAuth). Volgorde: ClawHub-account → skill publiceren → 2 directory-submissions naar keuze (kies actuele directories op moment van publicatie). Rij in het experimenten-log per listing.
 
 ## 4. Anthropic Connectors Directory — GEPARKEERD (post-launch)
 
