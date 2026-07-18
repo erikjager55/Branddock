@@ -79,7 +79,8 @@ export type AiFeatureKey =
   | 'agent-data-analyst'
   | 'agent-reporter'
   | 'agent-seo-watchdog'
-  | 'agent-ads-watchdog';
+  | 'agent-ads-watchdog'
+  | 'agent-loop-pilot';
 
 export type AiProvider = 'anthropic' | 'openai' | 'google';
 
@@ -408,6 +409,15 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     key: 'agent-ads-watchdog',
     label: 'Agent — Ads Watchdog',
     description: 'Creative-fatigue scan and refresh-proposal agent for connected ad accounts',
+    category: 'agents',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
+    supportedProviders: ['anthropic'],
+  },
+  {
+    key: 'agent-loop-pilot',
+    label: 'Agent — Loop-pilot',
+    description: 'Weekly content-loop agent: reads brand signals and proposes next content for approval (Brandclaw BC-1)',
     category: 'agents',
     defaultProvider: 'anthropic',
     defaultModel: 'claude-sonnet-4-6',

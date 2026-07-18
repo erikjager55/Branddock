@@ -73,6 +73,15 @@ Per sub-task bij afsplitsing. Epic-niveau minimum: na item 1 draait de bestaande
 - Dependencies: `agents-foundation` + `agents-motor-wiring` + `agents-ui-inbox` done; `agents-scheduling` done (autonomie-trap 2 moet bewezen draaien vóór trap 3); pilot-metrics + kosten-data beschikbaar; ADR-herziening no-autonomy (deel van 2026-05-08) voor item 3.
 - ADR-verwachting: items 2 en 3 vereisen elk een nieuwe ADR (motor-nieuwbouw resp. autonomie-model); item 1 kan binnen de bestaande agents-architectuur-ADR mits de observations-migratie-keuze daar als aanvulling wordt genoteerd.
 
+## Herijking 2026-07-18 — BC-fasering (P3.6) + BC-1-go
+
+> Bron: `docs/reports/p36-brandclaw-herijking-2026-07-17.md` · Eriks go 2026-07-18 ("ga door met brandclaw bc-1-go"). Het rapport vervangt dit epic niet; het herijkt de volgorde: Brandclaw is na de P3-lijn (headless services + webhooks + agents + F-VAL headless) geen bouwproject meer maar een orkestratie-project.
+
+- **BC-1 — Draadloze loop met mens-goedkeuring**: ✅ gestart als eigen task `tasks/bc1-loop-pilot.md` (Loop-pilot-agent "Bo" op de bestaande registry + AgentSchedule; propose-only, alles door de confirm-flow). BC-1 raakt de go/no-go-gate hierboven níét: geen autonomie-herziening, geen writes zonder approval — het is autonomie-trap 2 (scheduled) op de bestaande motor.
+- **BC-2 — Goedgekeurd = gepubliceerd** (na P3.5-kanaal + credentials): accept van een loop-proposal triggert de publish-keten; autonomie-tier per workspace `suggest` | `auto_publish_approved`. Valt onder item 3-territorium → eigen task + ADR bij start.
+- **BC-3 — Bounded autonomy**: blijft achter de bestaande gate hierboven; go-criteria uit het P3.6-rapport (BC-2 ≥4 wk incident-vrij bij ≥2 workspaces, F-VAL-drempels gekalibreerd, metering gevalideerd, kill-switch getest) vullen de drie gate-datapunten concreet in.
+- Eerste pilot-scope BC-1 (rapport, open punt 3): wekelijks, alleen Better Brands, alleen linkedin-post + blog-post.
+
 ## Reconciliatie 2026-07-06 — Phase C-items + LATER-roadmap hier belegd
 
 > User-directive 2026-07-06. Volledige mapping: `tasks/done/strategy-analyst-stub.md` (reconciliatie-blok).
