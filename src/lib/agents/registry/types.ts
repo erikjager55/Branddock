@@ -30,6 +30,7 @@ export type AgentId =
   | "reporter"
   | "seo-watchdog"
   | "ads-watchdog"
+  | "loop-pilot"
   | "echo-test";
 
 /** Persona-framing (user-besluit 2026-07-05): benoemde agents, professioneel. */
