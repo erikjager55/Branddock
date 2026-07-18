@@ -24,6 +24,7 @@ import {
   createAndGenerateDeliverable,
   type ContextSelection,
 } from '@/lib/content/headless-create';
+import { dispatchWebhookEvent } from '@/lib/api/public/webhooks';
 
 export const WEBPAGE_SYSTEM_PROMPT = `You are a brand-aware copywriter helping a marketer build a landing page from a free-text prompt.
 
@@ -168,6 +169,15 @@ export async function generateWebPage(input: GenerateWebPageInput): Promise<Gene
       { count: 1 },
     ).catch(() => {});
   }
+
+  // P3.3 outbound webhook — fire-and-forget, metadata-only (zelfde contract
+  // als headless-create; webpagina's hebben geen F-VAL-score).
+  void dispatchWebhookEvent(input.workspaceId, 'deliverable.generated', {
+    deliverableId,
+    campaignId,
+    contentType,
+    fidelityScore: null,
+  });
 
   return { ok: true, deliverableId, campaignId, source, puckData };
 }

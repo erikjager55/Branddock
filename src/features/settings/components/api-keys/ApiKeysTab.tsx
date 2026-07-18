@@ -14,6 +14,7 @@ import {
   Plug,
   Plus,
 } from 'lucide-react';
+import { WebhooksPanel } from './WebhooksPanel';
 
 // =============================================================
 // Settings → API & Connectors — beheer van publieke-API-keys +
@@ -396,6 +397,8 @@ export function ApiKeysTab() {
       )}
 
       <ConnectPanel t={t} />
+
+      <WebhooksPanel />
     </div>
   );
 }

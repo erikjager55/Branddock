@@ -21,6 +21,7 @@ import type {
   SeoStepEvent,
   SeoPipelineState,
 } from './seo-pipeline.types';
+import { dispatchWebhookEvent } from '@/lib/api/public/webhooks';
 
 // Veilig onder de 800s worker-ceiling (vercel.json run-jobs): re-enqueue rond 10
 // min zodat zelfs een trage stap ná de check nog binnen de ceiling afrondt.
@@ -158,5 +159,18 @@ export async function runSeoGenerationJob(jobId: string): Promise<void> {
   await prisma.seoGenerationJob.update({
     where: { id: jobId },
     data: { status: 'COMPLETED', stepLabel: 'Complete', currentStep: 8, completedAt: new Date() },
+  });
+
+  // P3.3 outbound webhook — fire-and-forget, metadata-only. Eénmalig per job:
+  // een re-dispatch van een COMPLETED job stopt al bij de guard bovenaan.
+  const deliverable = await prisma.deliverable.findUnique({
+    where: { id: job.deliverableId },
+    select: { campaignId: true, contentType: true },
+  });
+  void dispatchWebhookEvent(job.workspaceId, 'deliverable.generated', {
+    deliverableId: job.deliverableId,
+    campaignId: deliverable?.campaignId ?? null,
+    contentType: deliverable?.contentType ?? 'seo-long-form',
+    fidelityScore: null,
   });
 }

@@ -20,6 +20,7 @@ import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { createAndGenerateDeliverable } from '@/lib/content/headless-create';
+import { dispatchWebhookEvent } from '@/lib/api/public/webhooks';
 
 export interface GenerateVideoInput {
   workspaceId: string;
@@ -57,11 +58,11 @@ export type GenerateVideoResult =
 
 async function resolveOrCreateDeliverable(
   input: GenerateVideoInput,
-): Promise<{ id: string; contentType: string } | { error: 'DELIVERABLE_NOT_FOUND' | 'CREATE_FAILED'; message: string }> {
+): Promise<{ id: string; contentType: string; campaignId: string } | { error: 'DELIVERABLE_NOT_FOUND' | 'CREATE_FAILED'; message: string }> {
   if (input.deliverableId) {
     const row = await prisma.deliverable.findFirst({
       where: { id: input.deliverableId, campaign: { workspaceId: input.workspaceId } },
-      select: { id: true, contentType: true },
+      select: { id: true, contentType: true, campaignId: true },
     });
     if (!row) return { error: 'DELIVERABLE_NOT_FOUND', message: 'Deliverable not found in this workspace' };
     return row;
@@ -76,7 +77,7 @@ async function resolveOrCreateDeliverable(
     generate: false,
   });
   if (!created.ok) return { error: 'CREATE_FAILED', message: `${created.code}: ${created.error}` };
-  return { id: created.deliverableId, contentType };
+  return { id: created.deliverableId, contentType, campaignId: created.campaignId };
 }
 
 /**
@@ -190,6 +191,15 @@ export async function generateVideoClip(input: GenerateVideoInput): Promise<Gene
       { workspaceId: input.workspaceId, action: 'video-clip', feature: 'api-video-generate' },
       { count: 1 },
     ).catch(() => {});
+
+    // P3.3 outbound webhook — fire-and-forget, metadata-only (geen video-URL;
+    // de ontvanger haalt de inhoud op via get_deliverable_content).
+    void dispatchWebhookEvent(input.workspaceId, 'deliverable.generated', {
+      deliverableId: target.id,
+      campaignId: target.campaignId,
+      contentType: target.contentType,
+      fidelityScore: null,
+    });
 
     return { ok: true, deliverableId: target.id, videoUrl: uploadResult.url, prompt: videoPrompt, provider: provider.label };
   } catch (err) {

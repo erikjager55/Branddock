@@ -1,6 +1,6 @@
 # strategy-ui-metering — kalibratie: wizard-launch metert de strategy-chain
 
-- **Status**: in-progress
+- **Status**: done
 - **Datum**: 2026-07-18
 - **Aanleiding**: openstaand kalibratiepunt sinds de publieke API (P3-lijn): de API-job (`strategy-generation-job.ts`) boekt 80cr (`long-form`) voor de volledige campaign-strategy-chain, de UI-wizard boekte 0 voor hetzelfde werk. Eriks opdracht 2026-07-18: "de strategy-chain-ui calibratie moet nog uitgevoerd worden".
 - **Worktree**: branddock-strategy-ui-metering

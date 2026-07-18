@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 import { enforceNotLocked } from '@/lib/stripe/enforcement';
 import { generatePuckPageCore } from '@/lib/content/headless-webpage';
+import { dispatchWebhookEvent } from '@/lib/api/public/webhooks';
 
 /**
  * POST /api/landing-pages/generate-page
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
 
   const deliverable = await prisma.deliverable.findUnique({
     where: { id: body.deliverableId },
-    select: { id: true, contentType: true, campaign: { select: { workspaceId: true } } },
+    select: { id: true, contentType: true, campaign: { select: { id: true, workspaceId: true } } },
   });
   if (!deliverable) {
     return NextResponse.json({ error: 'Deliverable not found' }, { status: 404 });
@@ -83,6 +84,16 @@ export async function POST(request: NextRequest) {
   if (source === 'ai') {
     await chargeAfter({ workspaceId, action: 'short', feature: 'landing-page-generate' }, { count: 1 }).catch(() => {});
   }
+
+  // P3.3 outbound webhook — fire-and-forget, metadata-only. NB: de client
+  // persisteert de puckData hierna zelf (bestaand UI-contract); een ontvanger
+  // die direct get_deliverable_content doet kan de pagina dus nét missen.
+  void dispatchWebhookEvent(workspaceId, 'deliverable.generated', {
+    deliverableId: deliverable.id,
+    campaignId: deliverable.campaign.id,
+    contentType: deliverable.contentType,
+    fidelityScore: null,
+  });
 
   return NextResponse.json({ puckData, source });
 }
