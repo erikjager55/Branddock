@@ -634,7 +634,15 @@ function registerImageTool(server: McpServer, ctx: PublicMcpContext): void {
  * server per request (stateless) — de route sluit hem na afhandeling weer.
  */
 export function createPublicMcpServer(ctx: PublicMcpContext): McpServer {
-  const server = new McpServer({ name: 'branddock-brand-api', version: '1.1.0' });
+  const server = new McpServer({
+    name: 'branddock-brand-api',
+    title: 'Branddock',
+    version: '1.1.1',
+    // Connector-branding: clients (o.a. claude.ai) tonen anders een generiek
+    // icoon. Het beeldmerk wordt site-breed geserveerd via src/app/icon.png.
+    websiteUrl: 'https://branddock.app',
+    icons: [{ src: 'https://branddock.app/icon.png', mimeType: 'image/png', sizes: ['512x512'] }],
+  });
   registerBrandTools(server, ctx);
   registerGenerateTool(server, ctx);
   registerRewriteTool(server, ctx);
