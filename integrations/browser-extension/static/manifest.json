@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Branddock Everywhere",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Herschrijf, beantwoord en beoordeel tekst on-brand met je Branddock-workspace — overal in de browser.",
   "permissions": [
     "contextMenus",
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "identity"
   ],
   "host_permissions": [
     "<all_urls>"

@@ -7,7 +7,7 @@ import type {
 	IWebhookFunctions,
 	IWebhookResponseData,
 } from 'n8n-workflow';
-import { NodeConnectionType } from 'n8n-workflow';
+import { NodeConnectionTypes } from 'n8n-workflow';
 
 /**
  * Verifies the `x-branddock-signature: sha256=<hmac-hex>` header against the
@@ -39,7 +39,7 @@ export class BranddockTrigger implements INodeType {
 			name: 'Branddock Trigger',
 		},
 		inputs: [],
-		outputs: [NodeConnectionType.Main],
+		outputs: [NodeConnectionTypes.Main],
 		webhooks: [
 			{
 				name: 'default',

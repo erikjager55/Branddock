@@ -33,7 +33,8 @@ check(manifest.manifest_version === 3, 'manifest_version is 3');
 check(typeof manifest.name === 'string' && manifest.name.length > 0, 'name aanwezig');
 check(/^\d+\.\d+\.\d+$/.test(manifest.version ?? ''), 'version is x.y.z');
 
-for (const permission of ['contextMenus', 'storage', 'activeTab', 'scripting']) {
+// identity is nodig voor de OAuth-login (chrome.identity.launchWebAuthFlow).
+for (const permission of ['contextMenus', 'storage', 'activeTab', 'scripting', 'identity']) {
   check(manifest.permissions?.includes(permission), `permission: ${permission}`);
 }
 check(manifest.host_permissions?.includes('<all_urls>'), 'host_permissions: <all_urls>');
@@ -64,6 +65,13 @@ for (const [page, script] of [
   const html = readFileSync(path.join(dist, page), 'utf8');
   check(html.includes(`src="${script}"`), `${page} laadt ${script}`);
 }
+
+// UI-ankers van de OAuth/merk-dropdown-release (0.2.0).
+const popupHtml = readFileSync(path.join(dist, 'popup.html'), 'utf8');
+check(popupHtml.includes('id="brand-select"'), 'popup.html bevat de merk-dropdown');
+const optionsHtml = readFileSync(path.join(dist, 'options.html'), 'utf8');
+check(optionsHtml.includes('id="tab-oauth"'), 'options.html bevat de auth-modus-tabs');
+check(optionsHtml.includes('id="tab-key"'), 'options.html bevat de API-key-tab');
 
 if (problems.length > 0) {
   console.error(`\n${problems.length} probleem(en) gevonden.`);

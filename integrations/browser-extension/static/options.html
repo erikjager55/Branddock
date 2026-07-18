@@ -9,29 +9,65 @@
   <main>
     <h1>Branddock Everywhere — Instellingen</h1>
 
-
-
     <p class="intro">
-      Plak je API-key en klaar. Je maakt er een aan in Branddock onder
-      <strong>Settings → API &amp; Connectors</strong> (de key is daar maar
-      één keer zichtbaar).
+      Verbind de extensie met Branddock: log in met je account (aanbevolen)
+      of gebruik een workspace-API-key.
     </p>
 
-    <label for="api-key">API-key</label>
-    <input id="api-key" type="password" placeholder="bd_live_…" autocomplete="off">
-    <label class="checkbox"><input id="show-key" type="checkbox"> Toon key</label>
-
-    <div class="actions">
-      <button id="btn-save" class="primary" type="button">Opslaan &amp; testen</button>
+    <div class="tabs" role="tablist" aria-label="Auth-modus">
+      <button id="tab-oauth" class="tab" role="tab" aria-selected="false" type="button">
+        Inloggen met Branddock <span class="badge">aanbevolen</span>
+      </button>
+      <button id="tab-key" class="tab" role="tab" aria-selected="false" type="button">API-key</button>
     </div>
 
-    <p id="status" class="status" hidden></p>
+    <section id="panel-oauth" class="panel" role="tabpanel" hidden>
+      <p class="panel-intro">
+        Log in met je Branddock-account. Daarna kies je in de popup van de
+        extensie per opdracht het merk — of laat je Branddock je actieve
+        organisatie volgen.
+      </p>
+      <p id="oauth-status" class="status" hidden></p>
+      <div class="actions">
+        <button id="btn-login" class="primary" type="button">Inloggen met Branddock</button>
+        <button id="btn-test-oauth" type="button" hidden>Test verbinding</button>
+        <button id="btn-logout" type="button" hidden>Uitloggen</button>
+      </div>
+      <p class="hint">
+        Bij het inloggen opent een apart browservenster voor de beveiligde
+        login (OAuth met PKCE). Tokens blijven lokaal op dit apparaat en
+        syncen niet mee.
+      </p>
+    </section>
+
+    <section id="panel-key" class="panel" role="tabpanel" hidden>
+      <p class="panel-intro">
+        Plak je API-key en klaar. Je maakt er een aan in Branddock onder
+        <strong>Settings → API &amp; Connectors</strong> (de key is daar maar
+        één keer zichtbaar). API-keys zijn merk-vergrendeld: alle acties
+        landen op de workspace van de key — handig voor automation.
+      </p>
+
+      <label for="api-key">API-key</label>
+      <input id="api-key" type="password" placeholder="bd_live_…" autocomplete="off">
+      <label class="checkbox"><input id="show-key" type="checkbox"> Toon key</label>
+
+      <div class="actions">
+        <button id="btn-save" class="primary" type="button">Opslaan &amp; testen</button>
+      </div>
+
+      <p id="key-status" class="status" hidden></p>
+    </section>
 
     <details class="advanced">
       <summary>Geavanceerd — eigen domein</summary>
       <label for="base-url">Base URL</label>
       <input id="base-url" type="text" placeholder="https://branddock.app">
-      <p class="hint">Alleen aanpassen bij een eigen Branddock-installatie; standaard is https://branddock.app.</p>
+      <p class="hint">
+        Alleen aanpassen bij een eigen Branddock-installatie; standaard is
+        https://branddock.app. Na het wijzigen van de Base URL moet je
+        opnieuw inloggen (tokens zijn aan het oude adres gebonden).
+      </p>
     </details>
 
     <p class="note">

@@ -1,7 +1,7 @@
 {
   "name": "n8n-nodes-branddock",
   "version": "0.1.0",
-  "description": "n8n community nodes for the Branddock public Brand API — on-brand content generation, F-VAL brand-fidelity scoring, campaign strategy, and webhook triggers.",
+  "description": "n8n community nodes for the Branddock public Brand API \u2014 on-brand content generation, F-VAL brand-fidelity scoring, campaign strategy, and webhook triggers.",
   "keywords": [
     "n8n-community-node-package",
     "branddock",
@@ -39,7 +39,8 @@
   },
   "devDependencies": {
     "n8n-workflow": "^1.70.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
   },
   "peerDependencies": {
     "n8n-workflow": "*"

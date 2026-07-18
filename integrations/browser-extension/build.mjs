@@ -1,8 +1,8 @@
 // =============================================================
 // Build-script: bundelt de vier entrypoints met esbuild naar dist/ en
 // kopieert de statische bestanden (manifest, html, css). Bouwt daarnaast
-// src/api.ts als ESM naar .test-build/ zodat `node --test` de kern-wrapper
-// zonder chrome-context kan testen.
+// de chrome-vrije modules (api, oauth, mcp) als ESM naar .test-build/
+// zodat `node --test` ze zonder chrome-context kan testen.
 // =============================================================
 
 import * as esbuild from 'esbuild';
@@ -32,10 +32,14 @@ await esbuild.build({
 
 cpSync(path.join(root, 'static'), dist, { recursive: true });
 
-// Testartefact: de chrome-vrije API-wrapper als ESM voor node --test.
+// Testartefacten: de chrome-vrije modules als ESM voor node --test.
+// Elk artefact is een zelfstandige bundle (oauth/mcp nemen hun api-imports
+// mee); tests importeren error-klassen daarom uit dezelfde bundle als de
+// geteste functie zodat instanceof-checks kloppen.
 await esbuild.build({
-  entryPoints: [path.join(root, 'src', 'api.ts')],
-  outfile: path.join(root, '.test-build', 'api.mjs'),
+  entryPoints: ['api', 'oauth', 'mcp'].map((name) => path.join(root, 'src', `${name}.ts`)),
+  outdir: path.join(root, '.test-build'),
+  outExtension: { '.js': '.mjs' },
   bundle: true,
   format: 'esm',
   platform: 'neutral',
@@ -44,4 +48,4 @@ await esbuild.build({
   logLevel: 'silent',
 });
 
-console.log('Build klaar: dist/ (extensie) + .test-build/api.mjs (tests)');
+console.log('Build klaar: dist/ (extensie) + .test-build/*.mjs (tests)');

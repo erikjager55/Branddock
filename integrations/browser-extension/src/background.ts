@@ -1,14 +1,17 @@
 // =============================================================
-// Service-worker (MV3): context-menu op tekstselectie → /api/v1/rewrite →
-// resultaat naar het injectie-overlay in het content-script.
+// Service-worker (MV3): context-menu op tekstselectie → herschrijven via
+// de client-facade (OAuth/MCP of API-key/REST) → resultaat naar het
+// injectie-overlay in het content-script.
 //
 // Flow per klik: content-script injecteren (idempotent) → selectie + editable-
 // status capturen → loading-overlay → API-call → resultaat- of fout-overlay.
 // De in-flight fetch houdt de service-worker wakker; de server-limiet is 120s.
+// De gekozen merk-dropdown-waarde (popup) gaat automatisch mee: de facade
+// leest de merk-keuze uit chrome.storage.local.
 // =============================================================
 
-import { rewrite, buildInstruction, BranddockApiError, MIN_REWRITE_CHARS } from './api';
-import { getSettings, isConfigured } from './settings';
+import { BranddockApiError, MIN_REWRITE_CHARS } from './api';
+import { getClientState, notReadyMessage, performRewrite } from './client';
 import type { ContentMessage, CaptureResponse } from './messages';
 
 const MENU_REWRITE = 'branddock-rewrite';
@@ -78,12 +81,9 @@ async function handleSelection(
     return;
   }
 
-  const settings = await getSettings();
-  if (!isConfigured(settings)) {
-    await sendToTab(tabId, {
-      type: 'branddock:error',
-      message: 'Branddock is nog niet geconfigureerd. Vul Base URL en API-key in bij de extensie-opties.',
-    });
+  const state = await getClientState();
+  if (!state.ready) {
+    await sendToTab(tabId, { type: 'branddock:error', message: notReadyMessage(state) });
     chrome.runtime.openOptionsPage();
     return;
   }
@@ -94,10 +94,7 @@ async function handleSelection(
   });
 
   try {
-    const result = await rewrite(
-      { baseUrl: settings.baseUrl, apiKey: settings.apiKey },
-      { content: text, intent, instruction: buildInstruction(settings.audienceNote, '') },
-    );
+    const result = await performRewrite({ content: text, intent });
     await sendToTab(tabId, {
       type: 'branddock:result',
       title: intent === 'reply' ? 'Voorgesteld antwoord' : 'Herschreven tekst',
