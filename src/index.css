@@ -10471,6 +10471,12 @@ html {
        md:order-1/2 */
   .grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
   .col-span-12 { grid-column: span 12 / span 12; }
+  /* Restgap-sweep 2026-07-18: niet-responsive col-span-basisklassen (17
+     usages app-UI) ontbraken ook; hier VOOR de responsive blokken zodat
+     md:/lg:-varianten blijven winnen (cascade-volgorde-les, zie gotchas). */
+  .col-span-1 { grid-column: span 1 / span 1; }
+  .col-span-2 { grid-column: span 2 / span 2; }
+  .col-span-4 { grid-column: span 4 / span 4; }
   .order-1 { order: 1; }
   .order-2 { order: 2; }
 

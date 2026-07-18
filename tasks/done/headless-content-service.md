@@ -5,9 +5,9 @@ fase: launch
 priority: next
 effort: 1-2 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-07-17
-completed: -
+completed: 2026-07-17
 related-adr: - (kernprincipes vastgelegd in docs/reports/postiz-verbeterplan-2026-07-17.md §P3.0/P3.1)
 related-spec: docs/reports/postiz-verbeterplan-2026-07-17.md
 worktree: branddock-headless-content-service (aan te maken bij start)
