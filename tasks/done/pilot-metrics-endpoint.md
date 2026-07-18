@@ -5,9 +5,9 @@ fase: launch
 priority: now
 effort: 4-6 uur
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-07-17
-completed: -
+completed: 2026-07-17
 related-adr: -
 related-spec: docs/playbooks/pilot-succes-definitie.md (in worktree agent-a0c326236bcdb7788, nog niet op main)
 worktree: branddock-pilot-metrics

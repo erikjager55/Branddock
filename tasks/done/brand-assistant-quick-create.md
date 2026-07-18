@@ -5,9 +5,9 @@ fase: launch
 priority: next
 effort: 2-3 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-07-17
-completed: -
+completed: 2026-07-17
 related-adr: -
 related-spec: docs/reports/postiz-verbeterplan-2026-07-17.md
 worktree: branddock-assistant-quick-create (aan te maken bij start)

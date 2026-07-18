@@ -5,9 +5,9 @@ fase: post-launch
 priority: next
 effort: 3-4 weken
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-07-17
-completed: -
+completed: 2026-07-18
 related-adr: docs/adr/2026-07-17-public-brand-api.md
 related-spec: docs/reports/postiz-verbeterplan-2026-07-17.md (worktree agent-a0c326236bcdb7788)
 worktree: branddock-public-brand-api
