@@ -302,7 +302,7 @@ const FOR_WHO: {
     eyebrow: 'Automatiseerders',
     title: 'Bouw je merk in je eigen workflows',
     body: 'Publieke API, webhooks met HMAC-signing en MCP voor n8n en andere tools — van generatie tot merk-check, machine-to-machine.',
-    href: '/marketing/voor-ai-agents',
+    href: '/marketing/voor-ai-agents#api',
     cta: 'Bekijk de API & tools',
   },
 ];
