@@ -52,16 +52,52 @@ export default function MarketingHomePage() {
 function Problem() {
   return (
     <section className="max-w-6xl mx-auto px-6 py-16 md:py-20">
-      <div className="max-w-3xl">
-        <div className="text-sm font-semibold mkt-accent uppercase tracking-wide mb-3">
-          Het probleem
+      {/* UX-16: rechterhelft gevuld met een feitelijk bewijsbeeld — twee
+          scores naast elkaar, cijfers conform de eerlijke pilotmeting
+          (+7 gemiddeld; geen verzonnen extremen). */}
+      <div className="grid md:grid-cols-2 gap-10 items-center">
+        <div>
+          <div className="text-sm font-semibold mkt-accent uppercase tracking-wide mb-3">
+            Het probleem
+          </div>
+          <h2 className="text-gray-900 mb-4">Generieke AI kent je merk niet</h2>
+          <p className="text-lg text-gray-600">
+            AI-tools en -agents schrijven snel, maar clichématig. Je vult telkens opnieuw de context
+            aan, herschrijft de output tot het eindelijk klinkt als jóú, en knoopt losse tools voor
+            tekst, beeld en campagnes aan elkaar. De tijdwinst verdampt in de rework.
+          </p>
         </div>
-        <h2 className="text-gray-900 mb-4">Generieke AI kent je merk niet</h2>
-        <p className="text-lg text-gray-600">
-          AI-tools en -agents schrijven snel, maar clichématig. Je vult telkens opnieuw de context
-          aan, herschrijft de output tot het eindelijk klinkt als jóú, en knoopt losse tools voor
-          tekst, beeld en campagnes aan elkaar. De tijdwinst verdampt in de rework.
-        </p>
+        <div className="grid grid-cols-2 gap-4" aria-hidden>
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+            <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">
+              Vanilla-AI
+            </div>
+            <div className="space-y-2 mb-4">
+              <div className="h-2 rounded bg-gray-200 w-full" />
+              <div className="h-2 rounded bg-gray-200 w-5/6" />
+              <div className="h-2 rounded bg-gray-200 w-4/6" />
+            </div>
+            <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600">
+              Merk-check: 72
+            </span>
+          </div>
+          <div className="rounded-xl border-2 border-primary/30 bg-white p-5">
+            <div className="text-xs font-semibold uppercase tracking-wide mkt-accent mb-3">
+              Met merk-DNA
+            </div>
+            <div className="space-y-2 mb-4">
+              <div className="h-2 rounded w-full" style={{ background: 'rgba(7,229,171,0.35)' }} />
+              <div className="h-2 rounded w-5/6" style={{ background: 'rgba(7,229,171,0.35)' }} />
+              <div className="h-2 rounded w-4/6" style={{ background: 'rgba(7,229,171,0.35)' }} />
+            </div>
+            <span
+              className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+              style={{ background: 'rgba(7,229,171,0.12)', color: 'var(--link-ink)' }}
+            >
+              Merk-check: 79 · boven drempel
+            </span>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -285,12 +321,18 @@ function ForWho() {
             hetzelfde merk-DNA.
           </p>
         </div>
+        {/* UX-13: hele kaart klikbaar, één linkstijl (mkt-accent, na UX-01
+            leesbaar); featured alleen op marketingteams — de primaire
+            doelgroep uit het wig-besluit. */}
         <div className="grid md:grid-cols-2 gap-6">
           {FOR_WHO.map(({ Icon, eyebrow, title, body, href, cta, featured }) => (
-            <div
+            <Link
               key={eyebrow}
-              className={`rounded-2xl bg-white p-8 ${
-                featured ? 'border-2 border-primary/30' : 'border border-gray-200'
+              href={href}
+              className={`block rounded-2xl bg-white p-8 transition-all hover:shadow-md ${
+                featured
+                  ? 'border-2 border-primary/30 hover:border-primary/50'
+                  : 'border border-gray-200 hover:border-gray-300'
               }`}
             >
               <div className="mkt-chip w-11 h-11 mb-4">
@@ -305,15 +347,10 @@ function ForWho() {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>
               <p className="text-gray-600 text-sm mb-5">{body}</p>
-              <Link
-                href={href}
-                className={`inline-flex items-center gap-2 text-sm font-medium ${
-                  featured ? 'mkt-accent' : 'text-gray-700'
-                }`}
-              >
+              <span className="inline-flex items-center gap-2 text-sm font-medium mkt-accent">
                 {cta} <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
+              </span>
+            </Link>
           ))}
         </div>
       </div>
