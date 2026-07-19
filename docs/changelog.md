@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 421. Marketing-header: aankondigingsbalk, wig vooraan, dropdowns + mobiel menu
+
+Derde Postiz-patroon op Eriks verzoek. (1) Aankondigingsbalk boven de nav — cadans-surface met config-blokje (nieuw bericht = nieuw id), dismissbaar via localStorage (useSyncExternalStore, geen setState-in-effect); startbericht: de Claude/ChatGPT-connector. (2) Nav-herstructurering: "Voor AI-agents" naar positie 1 met accent-dot; Platform en Oplossingen worden dropdowns (8 feature-pagina's resp. 2 solution-LP's + 3 vergelijk-pagina's — breedte-bewijs zonder klik); Nieuws (changelog) in de nav; Over ons/Contact naar de footer (stonden daar al). (3) CTA "Gratis proberen" → "Start gratis" met drempelverlager-microcopy. (4) Mobiel hamburger-menu — daarvoor had mobiel helemaal géén navigatie (omissie-fix). Bijvangst: `md:hidden` was door de Tailwind-4-purge afwezig in index.css → appended in het md-blok. Playwright-geverifieerd: dropdowns, dismiss-persistentie na reload, hamburger alleen op mobiel. PR #209.
+
+- Task: `-` (header-iteratie op het wig-besluit, vervolg op #420)
+
 ### 420. Homepage: hero-modus-switch (platform ↔ AI-agent) + "Voor wie is Branddock?"-sectie
 
 Twee Postiz-patronen overgenomen op verzoek van Erik (Postiz zit inmiddels Stripe-geverifieerd op ~$173K MRR na exact deze agent-herpositionering). (1) De hero heeft een toggle "In het platform" / "In je AI-agent": platform-modus is het bestaande teamverhaal; agent-modus wisselt H1 ("Geef Claude en ChatGPT je merk-DNA."), subcopy, CTA's (koppel-stappen → guardrails) én de visual — een gestileerde chat-mock (geen derde-partij-screenshot) met tool-chips en F-VAL-badge, plus de connector-URL branddock.app/mcp. (2) SolutionsSplit is uitgebreid naar "Voor wie is Branddock?" met vier doelgroep-kaarten: marketingteams, bureaus, agentic (MCP) en automatiseerders (API/webhooks/n8n). Claims-grens bewaakt: geen autopilot-taal, "jij keurt goed" in beide modi. Playwright-screenshots desktop + mobiel gecheckt. PR #208.
