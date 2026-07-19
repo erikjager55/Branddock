@@ -153,7 +153,7 @@ export default function FvalPage() {
       <div className="pt-8 border-t border-gray-200 flex flex-wrap gap-3">
         <Link
           href={appHref('/?utm_source=marketing-site&utm_medium=fval-explainer')}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg mkt-btn-primary font-medium"
         >
           Probeer het op je eigen merk <ArrowRight className="w-4 h-4" />
         </Link>

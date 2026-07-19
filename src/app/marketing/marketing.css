@@ -29,6 +29,15 @@
   --g-warm: linear-gradient(120deg, #FF7F4D, #D8FD48);
   --g-fresh: linear-gradient(135deg, #07E5AB, #D8FD48);
 
+  /* UX-01 contrast-tokens (WCAG-audit 2026-07-19): wit-op-mint was 1.64:1.
+     Mint blijft dé actiekleur, maar de inkt erop is slate (8.95:1 AAA).
+     Voor mint-achtige tekst op wit is --link-ink de donkergroene afgeleide
+     (5.48:1 AA); pure mint als tekstkleur mag alleen op donkere vlakken. */
+  --btn-primary-bg: #07E5AB;
+  --btn-primary-bg-hover: #06CE9A;
+  --btn-primary-ink: #1F2937;
+  --link-ink: #047857;
+
   font-family: 'halyard-text', 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.6;
 }
@@ -52,7 +61,24 @@
    NIET door de Tailwind 4 purge sneuvelen (zie gotchas: kleurklassen in
    constanten verdwijnen). */
 .mkt-accent {
-  color: var(--primary);
+  /* UX-01: leesbare groen-inkt op licht (was pure mint, 1.64:1). */
+  color: var(--link-ink);
+}
+
+/* Op donkere vlakken mag het accent wél pure mint zijn (8.95:1 op slate). */
+.mkt-accent--ondark {
+  color: var(--brand-mint);
+}
+
+/* UX-01: primaire knop — mint vlak met slate-inkt (8.95:1 AAA). */
+.mkt-btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-ink);
+  transition: background-color 0.15s ease;
+}
+
+.mkt-btn-primary:hover {
+  background: var(--btn-primary-bg-hover);
 }
 
 .mkt-chip {
@@ -61,7 +87,7 @@
   justify-content: center;
   border-radius: 12px;
   background: color-mix(in srgb, var(--primary) 12%, transparent);
-  color: var(--primary);
+  color: var(--link-ink);
 }
 
 .mkt-frame {
@@ -246,7 +272,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--btn-primary-ink);
   background: var(--primary);
   padding: 0.3em 0.8em;
   border-radius: 999px;

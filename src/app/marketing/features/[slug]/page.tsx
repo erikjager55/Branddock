@@ -197,7 +197,7 @@ export default async function FeaturePage({
       <div className="pt-8 border-t border-gray-200 flex flex-wrap gap-3">
         <Link
           href={appHref(`/?utm_source=marketing-site&utm_medium=feature-${feature.slug}`)}
-          className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
+          className="inline-flex items-center px-6 py-3 rounded-lg mkt-btn-primary font-medium"
         >
           Branddock proberen
         </Link>

@@ -69,7 +69,7 @@ export default function AboutPage() {
       <div className="mt-12 pt-8 border-t border-gray-200">
         <Link
           href={appHref('/?utm_source=marketing-site&utm_medium=about-cta')}
-          className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
+          className="inline-flex items-center px-6 py-3 rounded-lg mkt-btn-primary font-medium"
         >
           Branddock proberen
         </Link>

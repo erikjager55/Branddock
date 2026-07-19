@@ -201,7 +201,7 @@ export default function GuardrailsPage() {
       <div className="pt-8 border-t border-gray-200 flex flex-wrap gap-3">
         <Link
           href={appHref('/?utm_source=marketing-site&utm_medium=guardrails')}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg mkt-btn-primary font-medium"
         >
           Start je trial en koppel je agent <ArrowRight className="w-4 h-4" />
         </Link>

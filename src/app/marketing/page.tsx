@@ -360,7 +360,7 @@ function PricingTeaser() {
         </Link>
         <Link
           href={appHref('/?utm_source=marketing-site&utm_medium=pricing-teaser')}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg mkt-btn-primary text-sm font-medium"
         >
           Gratis proberen
         </Link>
@@ -422,6 +422,13 @@ function FinalCTA() {
         tint={0.18}
         className="pointer-events-none absolute inset-0 w-full h-full"
         style={{ opacity: 0.22 }}
+      />
+      {/* UX-01: donkere overlay — witte tekst haalde geen 4.5:1 op het
+          mint-uiteinde van de gradient. */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: 'rgba(15, 23, 42, 0.45)' }}
+        aria-hidden
       />
       <div className="max-w-6xl mx-auto px-6 py-20 text-center relative">
         <h2 className="mb-4" style={{ color: '#ffffff' }}>

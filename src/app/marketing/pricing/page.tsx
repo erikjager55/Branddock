@@ -320,7 +320,7 @@ function TierCard({ tier }: { tier: Tier }) {
         href={appHref(tier.ctaHref)}
         className={`inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-medium text-sm transition-colors ${
           tier.highlighted
-            ? 'bg-primary text-white hover:opacity-90'
+            ? 'mkt-btn-primary'
             : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
         }`}
       >

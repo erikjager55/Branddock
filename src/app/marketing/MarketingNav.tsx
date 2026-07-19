@@ -165,7 +165,7 @@ function NavBar() {
           <Link
             href={appHref('/?utm_source=marketing-site&utm_medium=nav')}
             title="28 dagen gratis · geen creditcard"
-            className="inline-flex items-center px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 transition-opacity"
+            className="inline-flex items-center px-4 py-2 rounded-lg mkt-btn-primary text-sm font-medium"
           >
             Start gratis
           </Link>
@@ -297,7 +297,7 @@ function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
       <div className="px-6 pt-3">
         <Link
           href={appHref('/?utm_source=marketing-site&utm_medium=nav')}
-          className="inline-flex w-full items-center justify-center px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90"
+          className="inline-flex w-full items-center justify-center px-4 py-2.5 rounded-lg mkt-btn-primary text-sm font-medium"
         >
           Start gratis
         </Link>

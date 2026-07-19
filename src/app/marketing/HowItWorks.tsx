@@ -66,7 +66,7 @@ export default function HowItWorks() {
             onClick={() => setActive(i)}
             className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               i === active
-                ? 'bg-primary text-white'
+                ? 'mkt-btn-primary'
                 : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
             }`}
           >
