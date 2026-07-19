@@ -45,7 +45,6 @@ interface Group {
   title: string;
   intro: string;
   grad: string;
-  gradPair: [string, string];
   /** UX-15: compacte productshot naast de stap-intro. */
   shot: { img: string; alt: string };
   modules: Module[];
@@ -59,7 +58,6 @@ const GROUPS: Group[] = [
     title: 'Fundament — leg je merk vast',
     intro: 'Het complete merk in één workspace. Dit fundament gaat in élke generatie mee.',
     grad: 'var(--g-brand)',
-    gradPair: ['#343CED', '#07E5AB'],
     modules: [
       {
         Icon: Dna,
@@ -87,7 +85,6 @@ const GROUPS: Group[] = [
     title: 'Onderzoek — ken je markt',
     intro: 'Persona’s, concurrenten en trends: je merk-DNA staat niet op giswerk.',
     grad: 'var(--g-cool)',
-    gradPair: ['#07E5AB', '#343CED'],
     modules: [
       {
         Icon: Users,
@@ -115,7 +112,6 @@ const GROUPS: Group[] = [
     title: 'Genereren — maak on-brand',
     intro: 'Content, campagnes, beeld en landingspagina’s — allemaal in jouw merk-DNA.',
     grad: 'var(--g-warm)',
-    gradPair: ['#FF7F4D', '#D8FD48'],
     modules: [
       {
         Icon: PenLine,
@@ -148,7 +144,6 @@ const GROUPS: Group[] = [
     title: 'Bewaken — houd het op merk',
     intro: 'Agents doen het werk, de merk-check bewaakt dat alles on-brand blijft.',
     grad: 'var(--g-fresh)',
-    gradPair: ['#07E5AB', '#D8FD48'],
     modules: [
       {
         Icon: Bot,
@@ -183,7 +178,7 @@ export default function PlatformPage() {
         {GROUPS.map((group) => (
           <section key={group.key}>
             {/* UX-15: intro + compacte productshot naast elkaar. */}
-            <div className="flex flex-wrap gap-8 items-start mb-6">
+            <div className="flex flex-wrap gap-8 items-center mb-6">
               <div className="flex-1" style={{ minWidth: '18rem' }}>
                 <div className="flex items-baseline gap-3 mb-2">
                   <span
@@ -215,7 +210,7 @@ export default function PlatformPage() {
                         id={`tile-${group.key}-${title}`}
                         cols={2}
                         rows={2}
-                        palette={[group.gradPair]}
+                        palette={[['#343CED', '#07E5AB']]}
                         className="absolute inset-0 w-full h-full"
                       />
                       <div className="mkt-tile__badge">

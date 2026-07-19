@@ -11,7 +11,7 @@ export const MARKETING_SITEMAP_PATHS: string[] = [
   'marketing/changelog',
   'marketing/security',
   'marketing/privacy',
-  'marketing/terms',
+  'marketing/voorwaarden',
   'marketing/about',
   'marketing/contact',
   'marketing/resources/f-val',

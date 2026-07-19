@@ -211,7 +211,7 @@ function MarketingFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/marketing/terms" className="hover:text-gray-900">
+                <Link href="/marketing/voorwaarden" className="hover:text-gray-900">
                   Algemene voorwaarden
                 </Link>
               </li>
