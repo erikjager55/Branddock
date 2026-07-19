@@ -171,12 +171,38 @@ function MarketingFooter() {
             </ul>
           </div>
           <div>
-            <div className="font-semibold text-gray-900 mb-3">Contact</div>
+            <div className="font-semibold text-gray-900 mb-3">Contact &amp; juridisch</div>
             <ul className="space-y-1.5 text-gray-600">
               <li>
                 <a href="mailto:hello@branddock.com" className="hover:text-gray-900">
                   hello@branddock.com
                 </a>
+              </li>
+              <li>
+                <a
+                  href="https://www.linkedin.com/company/branddock"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-gray-900"
+                >
+                  LinkedIn
+                </a>
+              </li>
+              {/* UX-05: juridische basis — pagina's zijn CONCEPT (review Erik, PR #161). */}
+              <li>
+                <Link href="/marketing/security" className="hover:text-gray-900">
+                  Security &amp; AVG
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/privacy" className="hover:text-gray-900">
+                  Privacyverklaring
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketing/terms" className="hover:text-gray-900">
+                  Algemene voorwaarden
+                </Link>
               </li>
             </ul>
           </div>
@@ -185,7 +211,9 @@ function MarketingFooter() {
           {/* eslint-disable-next-line @next/next/no-img-element -- statische SVG-merkasset */}
           <img src="/marketing/branddock-logo.svg" alt="Branddock" className="h-5 w-auto opacity-80" />
           <div className="text-xs text-gray-500">
-            © {new Date().getFullYear()} Branddock. Alle rechten voorbehouden.
+            {/* TODO(Erik): KvK-nummer aanvullen zodra aangeleverd (UX-05/UX-20). */}
+            © {new Date().getFullYear()} Branddock · een product van BetterBrands B.V. · Alle
+            rechten voorbehouden.
           </div>
         </div>
       </footer>

@@ -85,7 +85,7 @@ function AnnouncementBar() {
       </Link>
       <button
         type="button"
-        // eslint-disable-next-line no-restricted-syntax -- marketing-site is NL-first (geen product-UI)
+         
         aria-label="Aankondiging sluiten"
         onClick={dismissAnnouncement}
         className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 hover:bg-white/10"
@@ -171,7 +171,7 @@ function NavBar() {
           </Link>
           <button
             type="button"
-            // eslint-disable-next-line no-restricted-syntax -- marketing-site is NL-first (geen product-UI)
+             
             aria-label={mobileOpen ? 'Menu sluiten' : 'Menu openen'}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen(!mobileOpen)}

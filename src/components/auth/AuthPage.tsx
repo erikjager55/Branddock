@@ -19,7 +19,7 @@ export function AuthPage() {
   // URL-lezing ná mount — hydration-veilig (SSR kent de query niet).
   React.useEffect(() => {
     if (new URLSearchParams(window.location.search).get('view') === 'register') {
-      // eslint-disable-next-line no-restricted-syntax -- eenmalige mount-sync vanuit de URL, geen cascade
+       
       setActiveView('register');
     }
   }, []);

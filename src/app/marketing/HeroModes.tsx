@@ -88,7 +88,12 @@ export default function HeroModes() {
         </div>
         <div className="mkt-hero__meta-item">
           <b>Data</b>
-          <span>EU-hosting · AVG-proof</span>
+          {/* UX-05: de AVG-claim klikt door naar de onderbouwing. */}
+          <span>
+            <Link href="/marketing/security" className="hover:underline">
+              EU-hosting · AVG-proof
+            </Link>
+          </span>
         </div>
         <div className="mkt-hero__meta-item">
           <b>Start</b>
