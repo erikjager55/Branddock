@@ -7,6 +7,9 @@ import { ArrowRight, Check } from 'lucide-react';
 import { appHref } from './app-url';
 import BookDemoButton from './BookDemoButton';
 import Mosaic, { MOSAIC_PRODUCT } from './Mosaic';
+// UX-04: statische import → Next genereert een blur-placeholder, zodat het
+// hero-paneel nooit seconden leeg-wit staat terwijl de grote PNG laadt.
+import contentCanvasShot from '../../../public/marketing/features/content-canvas.png';
 
 // Hero met modus-switch (Postiz-patroon, besluit Erik 2026-07-19): één toggle
 // die het hele hero-verhaal wisselt tussen "in het platform" (het AI-team in
@@ -65,10 +68,10 @@ export default function HeroModes() {
           </div>
           {mode === 'platform' ? (
             <Image
-              src="/marketing/features/content-canvas.png"
+              src={contentCanvasShot}
               alt="Branddock Content Canvas — on-brand content genereren met een merk-fideliteitsscore"
-              width={2880}
-              height={1800}
+              placeholder="blur"
+              sizes="(max-width: 768px) 100vw, 46vw"
               className="w-full h-auto"
               priority
             />
