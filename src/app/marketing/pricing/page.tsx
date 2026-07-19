@@ -9,7 +9,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Check, ChevronDown, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, ShieldCheck } from 'lucide-react';
 import { appHref } from '../app-url';
 import SplitHeader from '../SplitHeader';
 import { PLAN_CONFIGS, TOPUP_PACKS, TRIAL_DAYS, TRIAL_CREDITS } from '@/lib/constants/plan-limits';
@@ -18,6 +18,7 @@ import { CREDIT_COSTS, isZeroCostAction } from '@/lib/billing/credits/credit-cos
 import type { CreditAction } from '@/types/billing';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/marketing/pricing' },
   title: 'Prijzen',
   description: `Eenvoudige, transparante prijzen: Starter €${PLAN_CONFIGS.STARTER.monthlyPriceEur}, Growth €${PLAN_CONFIGS.GROWTH.monthlyPriceEur} of Agency €${PLAN_CONFIGS.AGENCY.monthlyPriceEur} per maand. ${TRIAL_DAYS} dagen gratis, geen creditcard.`,
 };
@@ -186,13 +187,49 @@ export default function PricingPage() {
           eyebrow="Prijzen"
           title="Eenvoudige, transparante prijzen"
           lead="Kies een plan dat bij je team past. Geen verborgen kosten, geen lange contracten."
-          className="mb-12"
+          className="mb-8"
         />
+
+        {/* UX-09: de belangrijkste geruststelling boven de cards i.p.v. als
+            grijze voetnoot eronder. */}
+        <div className="mb-8 flex justify-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700">
+            <ShieldCheck className="w-4 h-4" style={{ color: 'var(--link-ink)' }} />
+            Elk plan start met {TRIAL_DAYS} dagen gratis · {nl.format(TRIAL_CREDITS)} credits · geen
+            creditcard
+          </span>
+        </div>
 
         <div className="grid md:grid-cols-3 gap-6">
           {TIERS.map((tier) => (
             <TierCard key={tier.id} tier={tier} />
           ))}
+        </div>
+
+        {/* UX-09: na-trial-werking expliciet bij de cards (feitelijk: geen
+            creditcard → trial loopt automatisch af, data blijft zichtbaar). */}
+        <p className="mt-4 text-center text-sm text-gray-500">
+          De trial loopt automatisch af — geen creditcard, dus geen verrassing. Je merkdata blijft
+          veilig en zichtbaar; je kiest pas een plan als je wilt blijven genereren.
+        </p>
+
+        {/* UX-09: Enterprise met een duidelijke bestemming i.p.v. een losse
+            tekstlink in de voetnoot.
+            TODO(Erik): jaarfacturering-toggle met korting — bewust niet
+            gebouwd zonder prijsbesluit (UX-09 punt 4). */}
+        <div className="mt-8 max-w-2xl mx-auto rounded-xl border border-gray-200 bg-white p-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="text-sm font-semibold text-gray-900">Enterprise</div>
+            <p className="text-sm text-gray-600 mt-0.5">
+              Meer workspaces, eigen afspraken of security-reviews? We denken graag mee.
+            </p>
+          </div>
+          <Link
+            href="/marketing/contact"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50"
+          >
+            Praat met ons <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
 
         {/* "Je betaalt voor wat je maakt" — gratis-laag vs betaalde acties (P4.2) */}
@@ -263,8 +300,7 @@ export default function PricingPage() {
         </div>
 
         <div className="mt-12 text-center text-sm text-gray-500">
-          Prijzen zijn excl. btw. {TRIAL_DAYS} dagen gratis met {nl.format(TRIAL_CREDITS)} credits — geen creditcard.
-          Meer nodig dan Agency? <Link href="/marketing/contact" className="underline hover:text-gray-700">Praat met ons over Enterprise</Link>.
+          Prijzen zijn excl. btw.
         </div>
       </section>
 

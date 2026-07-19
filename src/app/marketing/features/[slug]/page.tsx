@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { appHref } from '../../app-url';
 import SplitHeader, { type SplitHeaderFamily } from '../../SplitHeader';
 import type { Metadata } from 'next';
+import TrialNote from '../../TrialNote';
 
 interface FeatureSpec {
   slug: string;
@@ -144,9 +145,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const feature = FEATURES[slug];
-  if (!feature) return { title: 'Feature niet gevonden — Branddock' };
+  if (!feature) return { title: 'Feature niet gevonden' };
   return {
-    title: `${feature.title} — Branddock`,
+    alternates: { canonical: `/marketing/features/${slug}` },
+    title: feature.title,
     description: feature.tagline,
   };
 }
@@ -207,6 +209,7 @@ export default async function FeaturePage({
         >
           Bekijk prijzen
         </Link>
+        <TrialNote />
       </div>
     </div>
   );

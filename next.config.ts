@@ -29,6 +29,19 @@ const securityHeaders = Object.entries(buildStaticSecurityHeaders(isProd)).map((
 }));
 
 const nextConfig: NextConfig = {
+  // UX-12: /marketing en / serveerden identieke content op de apex (duplicate
+  // content). Alleen op het publieke domein redirecten — op previews/localhost
+  // en de app-host is /marketing juist de enige route naar de marketing-site.
+  async redirects() {
+    return [
+      {
+        source: '/marketing',
+        has: [{ type: 'host' as const, value: 'branddock.app' }],
+        destination: '/',
+        permanent: true,
+      },
+    ];
+  },
   // Korte connector-URL: https://branddock.app/mcp is de publieke vorm;
   // /api/mcp blijft werken (bestaande koppelingen + interne consistentie).
   async rewrites() {

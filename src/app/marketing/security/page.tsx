@@ -11,6 +11,7 @@ import { ShieldCheck, Lock, Server, Eye, FileCheck, ArrowRight } from 'lucide-re
 import { appHref } from '../app-url';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/marketing/security' },
   title: 'Security & AVG',
   description:
     'Hoe Branddock met je data omgaat: EU-hosting, versleuteling, AVG-uitgangspunten en een transparante lijst van sub-verwerkers.',

@@ -17,13 +17,17 @@ interface MosaicProps {
 }
 
 // Merkgradient-paren uit het brandbook.
+// UX-10 kleurmapping (audit 2026-07-19): uitsluitend palet-kleuren — het
+// eerdere indigo #5B6BEF was off-palette, en blauw→peach-blends renderen
+// violet (ook off-palette). Regel: blauw mengt alleen met mint; peach alleen
+// met oranje (warm). Familie-mapping: product = blauw/mint · mensen
+// (oplossingen/about) = oranje/peach/lime · bewijs (guardrails/f-val) =
+// mint/lime.
 const GRADS: [string, string][] = [
-  ['#343CED', '#FECFBD'], // blue → peach
   ['#FF7F4D', '#D8FD48'], // orange → lime
   ['#343CED', '#07E5AB'], // blue → mint
   ['#07E5AB', '#D8FD48'], // mint → lime
   ['#FECFBD', '#FF7F4D'], // peach → orange
-  ['#5B6BEF', '#07E5AB'], // indigo → mint
 ];
 
 // Kleur-familie-paletten (website-compositie-herziening H2): geeft elke
@@ -31,8 +35,8 @@ const GRADS: [string, string][] = [
 // volle set. Product = blauw/mint, Mensen = oranje/lime, Bewijs = mint/lime.
 export const MOSAIC_PRODUCT: [string, string][] = [
   ['#343CED', '#07E5AB'],
-  ['#5B6BEF', '#07E5AB'],
-  ['#343CED', '#FECFBD'],
+  ['#07E5AB', '#D8FD48'],
+  ['#343CED', '#07E5AB'],
 ];
 export const MOSAIC_PEOPLE: [string, string][] = [
   ['#FF7F4D', '#D8FD48'],

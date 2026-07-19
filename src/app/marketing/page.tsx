@@ -29,6 +29,9 @@ import Mosaic, { MOSAIC_PRODUCT } from './Mosaic';
 import { PLAN_CONFIGS } from '@/lib/constants/plan-limits';
 import { creditExampleLineCompact } from '@/lib/constants/credit-examples';
 
+// UX-12: '/' is de publieke homepage-URL (apex rewrite); /marketing 308't ernaar.
+export const metadata = { alternates: { canonical: '/' } };
+
 export default function MarketingHomePage() {
   return (
     <div>
@@ -85,18 +88,21 @@ function HowSection() {
   );
 }
 
-const MODULES: { Icon: typeof Dna; title: string; desc: string }[] = [
+// UX-08: kaarten mét detailpagina zijn klikbaar (href + pijl, zoals op de
+// platform-pagina); kaarten zonder eigen pagina blijven bewust statisch
+// zonder pijl — consistent onderscheid.
+const MODULES: { Icon: typeof Dna; title: string; desc: string; href?: string }[] = [
   { Icon: Dna, title: 'Merk-DNA', desc: '12 canonieke merk-assets als fundament onder alles.' },
-  { Icon: Palette, title: 'Brand voice & stijl', desc: 'De merkstem en visuele stijl, herbruikbaar in elke output.' },
-  { Icon: Users, title: 'Persona’s', desc: 'Doelgroep-persona’s, inclusief persona-chat om te sparren.' },
+  { Icon: Palette, title: 'Brand voice & stijl', desc: 'De merkstem en visuele stijl, herbruikbaar in elke output.', href: '/marketing/features/brand-voice' },
+  { Icon: Users, title: 'Persona’s', desc: 'Doelgroep-persona’s, inclusief persona-chat om te sparren.', href: '/marketing/features/personas' },
   { Icon: Swords, title: 'Concurrent-analyse', desc: 'Concurrenten in beeld en meegewogen in je content.' },
-  { Icon: Radar, title: 'Trend Radar', desc: 'Trendscan die kansen en signalen in je markt oppikt.' },
-  { Icon: PenLine, title: 'Content Canvas', desc: 'On-brand tekst-generatie over alle kanalen.' },
-  { Icon: Megaphone, title: 'Campagne-strategie', desc: 'Van strategie-blueprint tot concrete deliverables.' },
+  { Icon: Radar, title: 'Trend Radar', desc: 'Trendscan die kansen en signalen in je markt oppikt.', href: '/marketing/features/trend-radar' },
+  { Icon: PenLine, title: 'Content Canvas', desc: 'On-brand tekst-generatie over alle kanalen.', href: '/marketing/features/content-canvas' },
+  { Icon: Megaphone, title: 'Campagne-strategie', desc: 'Van strategie-blueprint tot concrete deliverables.', href: '/marketing/features/campaigns' },
   { Icon: Images, title: 'Beeld & video', desc: 'On-brand visuals en video, direct in het platform.' },
   { Icon: LayoutTemplate, title: 'Landingspagina’s', desc: 'Publiceren op je eigen subdomein.' },
-  { Icon: Bot, title: '9 AI-agents', desc: 'Collega’s met rollen — ze stellen voor, jij keurt goed.' },
-  { Icon: BadgeCheck, title: 'Merk-check', desc: 'F-VAL-score bewaakt dat elke output op merk blijft.' },
+  { Icon: Bot, title: '9 AI-agents', desc: 'Collega’s met rollen — ze stellen voor, jij keurt goed.', href: '/marketing/features/agents' },
+  { Icon: BadgeCheck, title: 'Merk-check', desc: 'F-VAL-score bewaakt dat elke output op merk blijft.', href: '/marketing/features/brand-alignment' },
   { Icon: Languages, title: 'Meertalig', desc: 'Multi-markt content voor internationale merken.' },
 ];
 
@@ -114,29 +120,44 @@ function PlatformBreadth() {
         </p>
       </div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {MODULES.map(({ Icon, title, desc }, i) => (
-          <div
-            key={title}
-            className="rounded-xl border border-gray-200 bg-white p-5 hover:border-gray-300 transition-colors"
-          >
-            <div className="mkt-tile mb-3">
-              <Mosaic
-                id={`tile-${i}`}
-                cols={2}
-                rows={2}
-                palette={MOSAIC_PRODUCT}
-                className="absolute inset-0 w-full h-full"
-              />
-              <div className="mkt-tile__badge">
-                <i>
-                  <Icon className="w-3.5 h-3.5" style={{ color: 'var(--brand-slate)' }} />
-                </i>
+        {MODULES.map(({ Icon, title, desc, href }, i) => {
+          const card = (
+            <>
+              <div className="mkt-tile mb-3">
+                <Mosaic
+                  id={`tile-${i}`}
+                  cols={2}
+                  rows={2}
+                  palette={MOSAIC_PRODUCT}
+                  className="absolute inset-0 w-full h-full"
+                />
+                <div className="mkt-tile__badge">
+                  <i>
+                    <Icon className="w-3.5 h-3.5" style={{ color: 'var(--brand-slate)' }} />
+                  </i>
+                </div>
               </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-1.5">
+                {title}
+                {href ? <ArrowRight className="w-3.5 h-3.5 text-gray-400" /> : null}
+              </h3>
+              <p className="text-sm text-gray-600 leading-relaxed">{desc}</p>
+            </>
+          );
+          return href ? (
+            <Link
+              key={title}
+              href={href}
+              className="rounded-xl border border-gray-200 bg-white p-5 hover:border-gray-300 hover:shadow-md transition-all block"
+            >
+              {card}
+            </Link>
+          ) : (
+            <div key={title} className="rounded-xl border border-gray-200 bg-white p-5">
+              {card}
             </div>
-            <h3 className="text-base font-semibold text-gray-900 mb-1">{title}</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">{desc}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

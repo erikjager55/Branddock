@@ -13,6 +13,7 @@ import { ArrowRight, Check } from 'lucide-react';
 import { appHref } from '../../app-url';
 import SplitHeader from '../../SplitHeader';
 import type { Metadata } from 'next';
+import TrialNote from '../../TrialNote';
 
 interface CompareSpec {
   slug: string;
@@ -200,7 +201,11 @@ export async function generateMetadata({
   const { slug } = await params;
   const spec = COMPARISONS[slug];
   if (!spec) return { title: 'Vergelijking niet gevonden' };
-  return { title: spec.metaTitle, description: spec.metaDescription };
+  return {
+    title: spec.metaTitle,
+    description: spec.metaDescription,
+    alternates: { canonical: `/marketing/vergelijk/${slug}` },
+  };
 }
 
 /** Vergelijkings-LP: SplitHeader + wanneer-zij/wanneer-Branddock + verschil-sectie + CTA. */
@@ -305,6 +310,7 @@ export default async function ComparePage({
         >
           Koppel je agent — gratis lezen &amp; valideren
         </Link>
+        <TrialNote />
       </div>
     </div>
   );

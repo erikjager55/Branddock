@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/marketing/privacy' },
   title: 'Privacyverklaring',
   description: 'Hoe Branddock omgaat met persoonsgegevens.',
 };

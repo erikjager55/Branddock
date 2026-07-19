@@ -7,8 +7,10 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { appHref } from '../app-url';
 import SplitHeader from '../SplitHeader';
+import TrialNote from '../TrialNote';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/marketing/changelog' },
   title: 'Changelog',
   description:
     'Wat er nieuw is in Branddock — nieuwe features, koppelingen en verbeteringen, in gewone taal.',
@@ -119,6 +121,7 @@ export default function ChangelogPage() {
         >
           Bekijk het platform
         </Link>
+        <TrialNote />
       </div>
     </div>
   );

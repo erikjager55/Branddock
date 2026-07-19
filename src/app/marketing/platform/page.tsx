@@ -22,9 +22,11 @@ import {
 import { appHref } from '../app-url';
 import Mosaic from '../Mosaic';
 import SplitHeader from '../SplitHeader';
+import TrialNote from '../TrialNote';
 
 export const metadata: Metadata = {
-  title: 'Platform — Branddock',
+  alternates: { canonical: '/marketing/platform' },
+  title: 'Platform',
   description:
     'Eén merk-platform: merk-DNA, onderzoek, content, campagnes, beeld en AI-agents — met een merk-check op elke output.',
 };
@@ -80,7 +82,7 @@ const GROUPS: Group[] = [
     title: 'Onderzoek — ken je markt',
     intro: 'Persona’s, concurrenten en trends: je merk-DNA staat niet op giswerk.',
     grad: 'var(--g-cool)',
-    gradPair: ['#343CED', '#FECFBD'],
+    gradPair: ['#07E5AB', '#343CED'],
     modules: [
       {
         Icon: Users,
@@ -241,6 +243,7 @@ export default function PlatformPage() {
         >
           Bekijk prijzen
         </Link>
+        <TrialNote />
       </div>
     </div>
   );
