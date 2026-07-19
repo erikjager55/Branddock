@@ -294,7 +294,7 @@ const FOR_WHO: {
     eyebrow: 'Agentic',
     title: 'Werk vanuit Claude, ChatGPT of je eigen agent',
     body: 'Koppel Branddock als MCP-connector en je AI kent je merk: volledige merkcontext, on-brand genereren en een F-VAL-merk-check op elke uiting.',
-    href: '/marketing/guardrails',
+    href: '/marketing/voor-ai-agents',
     cta: 'Bekijk de koppel-stappen',
   },
   {
@@ -302,7 +302,7 @@ const FOR_WHO: {
     eyebrow: 'Automatiseerders',
     title: 'Bouw je merk in je eigen workflows',
     body: 'Publieke API, webhooks met HMAC-signing en MCP voor n8n en andere tools — van generatie tot merk-check, machine-to-machine.',
-    href: '/marketing/guardrails',
+    href: '/marketing/voor-ai-agents',
     cta: 'Bekijk de API & tools',
   },
 ];

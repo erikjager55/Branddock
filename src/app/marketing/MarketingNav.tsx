@@ -16,7 +16,7 @@ import { appHref } from './app-url';
 const ANNOUNCEMENT = {
   id: 'mcp-connector-2026-07',
   label: 'Nieuw: koppel je merk aan Claude & ChatGPT',
-  href: '/marketing/guardrails',
+  href: '/marketing/voor-ai-agents',
   cta: 'Bekijk hoe',
 };
 
@@ -124,7 +124,7 @@ function NavBar() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-sm text-gray-600">
-          <Link href="/marketing/guardrails" className="inline-flex items-center gap-1.5 hover:text-gray-900">
+          <Link href="/marketing/voor-ai-agents" className="inline-flex items-center gap-1.5 hover:text-gray-900">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden />
             Voor AI-agents
           </Link>
@@ -270,7 +270,7 @@ function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
 
   return (
     <nav className="md:hidden border-t border-gray-200 bg-white pb-4 max-h-[75vh] overflow-y-auto">
-      <Link href="/marketing/guardrails" onClick={onNavigate} className={`${item} inline-flex items-center gap-1.5 font-medium`}>
+      <Link href="/marketing/voor-ai-agents" onClick={onNavigate} className={`${item} inline-flex items-center gap-1.5 font-medium`}>
         <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden />
         Voor AI-agents
       </Link>

@@ -30,21 +30,28 @@ export default function HeroModes() {
             <span style={{ color: 'var(--brand-lime)' }}>●</span> Jouw AI-marketingteam
           </div>
 
-          <div
-            role="group"
-            aria-label="Kies hoe je met Branddock werkt"
-            className="inline-flex items-center rounded-full border border-white/25 bg-white/10 p-1 backdrop-blur-sm mb-6"
-          >
-            <ModeButton
-              active={mode === 'platform'}
-              onClick={() => setMode('platform')}
-              label="In het platform"
-            />
-            <ModeButton
-              active={mode === 'agent'}
-              onClick={() => setMode('agent')}
-              label="In je AI-agent"
-            />
+          {/* UX-19: micro-label + grotere hit-area — de toggle is het
+              signatuur-element en mag niet gemist worden. */}
+          <div className="mb-6">
+            <p className="text-xs font-medium mb-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              Waar werk je?
+            </p>
+            <div
+              role="group"
+              aria-label="Kies hoe je met Branddock werkt"
+              className="inline-flex items-center rounded-full border border-white/25 bg-white/10 p-1 backdrop-blur-sm"
+            >
+              <ModeButton
+                active={mode === 'platform'}
+                onClick={() => setMode('platform')}
+                label="In het platform"
+              />
+              <ModeButton
+                active={mode === 'agent'}
+                onClick={() => setMode('agent')}
+                label="In je AI-agent"
+              />
+            </div>
           </div>
 
           {mode === 'platform' ? <PlatformInk /> : <AgentInk />}
@@ -110,7 +117,7 @@ function ModeButton({ active, onClick, label }: { active: boolean; onClick: () =
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+      className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${
         active ? 'bg-white' : 'text-white hover:bg-white/10'
       }`}
       style={active ? { color: 'var(--brand-slate)' } : undefined}
@@ -165,7 +172,7 @@ function AgentInk() {
           Gratis proberen <ArrowRight className="w-4 h-4" />
         </Link>
         <Link
-          href="/marketing/guardrails"
+          href="/marketing/voor-ai-agents"
           className="inline-flex items-center px-6 py-3 rounded-lg border border-white/40 text-white font-medium hover:bg-white/10"
         >
           Bekijk de koppel-stappen

@@ -40,6 +40,12 @@ const nextConfig: NextConfig = {
         destination: '/',
         permanent: true,
       },
+      // UX-19: route matcht nu het nav-label "Voor AI-agents".
+      {
+        source: '/marketing/guardrails',
+        destination: '/marketing/voor-ai-agents',
+        permanent: true,
+      },
     ];
   },
   // Korte connector-URL: https://branddock.app/mcp is de publieke vorm;

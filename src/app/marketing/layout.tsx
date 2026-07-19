@@ -112,7 +112,7 @@ function MarketingFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/marketing/guardrails" className="hover:text-gray-900">
+                <Link href="/marketing/voor-ai-agents" className="hover:text-gray-900">
                   Voor AI-agents
                 </Link>
               </li>
