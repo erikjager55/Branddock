@@ -18,6 +18,7 @@ import { CREDIT_COSTS, isZeroCostAction } from '@/lib/billing/credits/credit-cos
 import type { CreditAction } from '@/types/billing';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/marketing/pricing' },
   title: 'Prijzen',
   description: `Eenvoudige, transparante prijzen: Starter €${PLAN_CONFIGS.STARTER.monthlyPriceEur}, Growth €${PLAN_CONFIGS.GROWTH.monthlyPriceEur} of Agency €${PLAN_CONFIGS.AGENCY.monthlyPriceEur} per maand. ${TRIAL_DAYS} dagen gratis, geen creditcard.`,
 };

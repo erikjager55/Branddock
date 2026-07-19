@@ -13,6 +13,7 @@ import SplitHeader from '../SplitHeader';
 import TrialNote from '../TrialNote';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/marketing/contact' },
   title: 'Contact',
   description:
     'Vragen over Branddock of een demo boeken? We reageren binnen 1 werkdag.',

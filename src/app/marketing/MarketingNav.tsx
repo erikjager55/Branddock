@@ -116,7 +116,9 @@ function NavBar() {
   return (
     <header ref={navRef} className="sticky top-0 z-20 border-b border-gray-200 bg-white/80 backdrop-blur">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-        <Link href="/marketing" className="flex items-center" aria-label="Branddock">
+        {/* UX-12: logo naar de canonieke '/' (op de apex = de homepage; op
+            previews/localhost redirect /marketing dáár niet, zie next.config). */}
+        <Link href="/" className="flex items-center" aria-label="Branddock">
           {/* eslint-disable-next-line @next/next/no-img-element -- statische SVG-merkasset */}
           <img src="/marketing/branddock-logo.svg" alt="Branddock" className="h-6 w-auto" />
         </Link>

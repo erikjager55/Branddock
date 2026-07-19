@@ -79,9 +79,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const solution = SOLUTIONS[slug];
-  if (!solution) return { title: 'Oplossing niet gevonden — Branddock' };
+  if (!solution) return { title: 'Oplossing niet gevonden' };
   return {
-    title: `${solution.title} — Branddock`,
+    alternates: { canonical: `/marketing/solutions/${slug}` },
+    title: solution.title,
     description: solution.tagline,
   };
 }

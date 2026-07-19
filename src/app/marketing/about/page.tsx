@@ -8,6 +8,7 @@ import SplitHeader from '../SplitHeader';
 import TrialNote from '../TrialNote';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/marketing/about' },
   title: 'Over ons',
   description:
     'Waarom Branddock bestaat: AI-content die je merk echt vertegenwoordigt — gebouwd vanuit een gedegen merkstrategie-fundament.',

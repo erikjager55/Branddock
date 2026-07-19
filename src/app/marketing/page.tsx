@@ -29,6 +29,9 @@ import Mosaic, { MOSAIC_PRODUCT } from './Mosaic';
 import { PLAN_CONFIGS } from '@/lib/constants/plan-limits';
 import { creditExampleLineCompact } from '@/lib/constants/credit-examples';
 
+// UX-12: '/' is de publieke homepage-URL (apex rewrite); /marketing 308't ernaar.
+export const metadata = { alternates: { canonical: '/' } };
+
 export default function MarketingHomePage() {
   return (
     <div>

@@ -145,9 +145,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const feature = FEATURES[slug];
-  if (!feature) return { title: 'Feature niet gevonden — Branddock' };
+  if (!feature) return { title: 'Feature niet gevonden' };
   return {
-    title: `${feature.title} — Branddock`,
+    alternates: { canonical: `/marketing/features/${slug}` },
+    title: feature.title,
     description: feature.tagline,
   };
 }

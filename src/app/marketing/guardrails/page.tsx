@@ -12,6 +12,7 @@ import SplitHeader from '../SplitHeader';
 import TrialNote from '../TrialNote';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/marketing/guardrails' },
   title: 'Brand guardrails voor AI-agents',
   description:
     'Koppel Branddock aan Claude, ChatGPT of je eigen agent-stack: merkcontext en F-VAL-validatie als guardrails, met 17 tools via de MCP-connector. Lezen en valideren is gratis.',

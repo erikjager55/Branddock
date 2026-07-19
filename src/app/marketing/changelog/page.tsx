@@ -10,6 +10,7 @@ import SplitHeader from '../SplitHeader';
 import TrialNote from '../TrialNote';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/marketing/changelog' },
   title: 'Changelog',
   description:
     'Wat er nieuw is in Branddock — nieuwe features, koppelingen en verbeteringen, in gewone taal.',

@@ -201,7 +201,11 @@ export async function generateMetadata({
   const { slug } = await params;
   const spec = COMPARISONS[slug];
   if (!spec) return { title: 'Vergelijking niet gevonden' };
-  return { title: spec.metaTitle, description: spec.metaDescription };
+  return {
+    title: spec.metaTitle,
+    description: spec.metaDescription,
+    alternates: { canonical: `/marketing/vergelijk/${slug}` },
+  };
 }
 
 /** Vergelijkings-LP: SplitHeader + wanneer-zij/wanneer-Branddock + verschil-sectie + CTA. */

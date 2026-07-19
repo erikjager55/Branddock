@@ -11,6 +11,7 @@ import SplitHeader from '../../SplitHeader';
 import TrialNote from '../../TrialNote';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/marketing/resources/f-val' },
   title: 'F-VAL uitgelegd — de merk-fideliteitsscore van Branddock',
   description:
     'F-VAL geeft elke AI-output een 0–100-score voor merk-fideliteit: stijl (35%), merk-judge (45%) en regels (20%). Onder de norm wordt automatisch herschreven.',

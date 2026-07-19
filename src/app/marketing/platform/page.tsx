@@ -25,7 +25,8 @@ import SplitHeader from '../SplitHeader';
 import TrialNote from '../TrialNote';
 
 export const metadata: Metadata = {
-  title: 'Platform — Branddock',
+  alternates: { canonical: '/marketing/platform' },
+  title: 'Platform',
   description:
     'Eén merk-platform: merk-DNA, onderzoek, content, campagnes, beeld en AI-agents — met een merk-check op elke output.',
 };
