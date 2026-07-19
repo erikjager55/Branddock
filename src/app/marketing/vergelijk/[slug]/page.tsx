@@ -247,7 +247,7 @@ export default async function ComparePage({
           <ul className="space-y-3">
             {spec.them.points.map((point) => (
               <li key={point} className="flex items-start gap-3 text-sm text-gray-600 leading-relaxed">
-                <Check className="w-4 h-4 mt-0.5 shrink-0 text-gray-400" />
+                <Check className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
                 <span>{point}</span>
               </li>
             ))}
@@ -286,7 +286,7 @@ export default async function ComparePage({
           </div>
         ))}
       </div>
-      <p className="text-xs text-gray-400 mb-14 max-w-2xl">
+      <p className="text-xs text-gray-500 mb-14 max-w-2xl">
         Hoeveel scheelt het? In onze pilotmeting gemiddeld +7 punten on-brand vs. vanilla-AI bij
         een eerlijke, volledige briefing (en +12 op de nieuwsbrief); het verschil is het grootst
         bij magere briefings. Meer over de meting:{' '}

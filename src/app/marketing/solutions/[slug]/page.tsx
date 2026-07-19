@@ -137,7 +137,7 @@ export default async function SolutionPage({
           <ul className="space-y-3">
             {solution.pains.map((p) => (
               <li key={p} className="flex items-start gap-3 text-sm text-gray-600">
-                <span className="text-gray-400 mt-0.5 shrink-0">—</span>
+                <span className="text-gray-500 mt-0.5 shrink-0">—</span>
                 <span>{p}</span>
               </li>
             ))}

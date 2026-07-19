@@ -69,7 +69,7 @@ function Problem() {
         </div>
         <div className="grid grid-cols-2 gap-4" aria-hidden>
           <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-            <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
               Vanilla-AI
             </div>
             <div className="space-y-2 mb-4">
@@ -175,7 +175,7 @@ function PlatformBreadth() {
               </div>
               <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-1.5">
                 {title}
-                {href ? <ArrowRight className="w-3.5 h-3.5 text-gray-400" /> : null}
+                {href ? <ArrowRight className="w-3.5 h-3.5 text-gray-500" /> : null}
               </h3>
               <p className="text-sm text-gray-600 leading-relaxed">{desc}</p>
             </>
@@ -255,7 +255,7 @@ function ProofStrip() {
           </div>
         ))}
       </div>
-      <p className="text-xs text-gray-400 mt-4 max-w-2xl">
+      <p className="text-sm text-gray-600 mt-4 max-w-2xl">
         Eerlijke pilotmeting — geen opgeblazen cijfers. De merk-check is één van de garanties in het
         platform.
       </p>
@@ -340,7 +340,7 @@ function ForWho() {
               </div>
               <div
                 className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
-                  featured ? 'mkt-accent' : 'text-gray-400'
+                  featured ? 'mkt-accent' : 'text-gray-500'
                 }`}
               >
                 {eyebrow}
@@ -402,7 +402,7 @@ function PricingTeaser() {
             <div className="text-sm font-semibold text-gray-900">{t.name}</div>
             <div className="text-3xl font-bold text-gray-900 mt-2">
               {t.price}
-              <span className="text-sm font-normal text-gray-400">/mnd</span>
+              <span className="text-sm font-normal text-gray-500">/mnd</span>
             </div>
             <div className="text-sm text-gray-600 mt-2">{t.line}</div>
             <div className="text-xs text-gray-500 mt-1">{t.example}</div>

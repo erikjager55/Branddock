@@ -145,7 +145,7 @@ export default function FvalPage() {
           </div>
         </div>
       </div>
-      <p className="text-xs text-gray-400 mb-14 max-w-2xl">
+      <p className="text-xs text-gray-500 mb-14 max-w-2xl">
         Geen opgeblazen cijfers: het verschil is het grootst bij magere briefings (waar vanilla-AI
         niets over je merk weet) en bescheidener bij uitgebreide briefings. Dat vertellen we er
         gewoon bij.

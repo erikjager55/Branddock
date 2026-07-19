@@ -274,7 +274,7 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <p className="text-xs text-gray-400 mt-4">
+              <p className="text-xs text-gray-500 mt-4">
                 Indicatieve schatting vooraf — de werkelijke afboeking meet alleen de daadwerkelijk
                 gegenereerde output.
               </p>
@@ -293,7 +293,7 @@ export default function PricingPage() {
               <div key={t.credits} className="rounded-lg border border-gray-200 bg-white p-4 text-center">
                 <div className="text-lg font-semibold text-gray-900">{t.credits} credits</div>
                 <div className="text-sm text-gray-600">{t.price}</div>
-                <div className="text-xs text-gray-400 mt-1">{t.example}</div>
+                <div className="text-xs text-gray-500 mt-1">{t.example}</div>
               </div>
             ))}
           </div>

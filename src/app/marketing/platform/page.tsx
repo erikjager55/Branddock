@@ -226,7 +226,7 @@ export default function PlatformPage() {
                     </div>
                     <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-1.5">
                       {title}
-                      {href ? <ArrowRight className="w-3.5 h-3.5 text-gray-400" /> : null}
+                      {href ? <ArrowRight className="w-3.5 h-3.5 text-gray-500" /> : null}
                     </h3>
                     <p className="text-sm text-gray-600 leading-relaxed">{desc}</p>
                   </>

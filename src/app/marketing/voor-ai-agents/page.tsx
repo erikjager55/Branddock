@@ -190,7 +190,7 @@ export default function GuardrailsPage() {
           </div>
         </div>
       </div>
-      <p className="text-xs text-gray-400 mb-14 max-w-2xl">
+      <p className="text-xs text-gray-500 mb-14 max-w-2xl">
         Het verschil is het grootst bij magere briefings (waar een agent niets over je merk weet)
         en bescheidener bij uitgebreide briefings. Meer over de meting:{' '}
         <Link href="/marketing/resources/f-val" className="underline hover:text-gray-600">

@@ -144,7 +144,7 @@ export default function SecurityPage() {
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-gray-400 mb-14 max-w-2xl">
+      <p className="text-xs text-gray-500 mb-14 max-w-2xl">
         Laatst bijgewerkt: juli 2026. Wijzigingen in deze lijst kondigen we aan via e-mail aan
         workspace-owners.
       </p>
