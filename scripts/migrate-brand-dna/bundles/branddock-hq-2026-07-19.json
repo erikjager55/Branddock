@@ -1,0 +1,1667 @@
+{
+  "meta": {
+    "version": 1,
+    "sourceWorkspaceId": "cmrrh308e00002ems3zcn6n34",
+    "sourceWorkspaceName": "Branddock HQ",
+    "sourceSlug": "branddock-hq",
+    "note": "Merk-DNA-export (alleen brand foundation; geen content/telemetrie/historie)."
+  },
+  "records": {
+    "brandAsset": [
+      {
+        "id": "cmrrh308m00032emss222fwnp",
+        "name": "Purpose Statement",
+        "slug": "purpose-statement",
+        "description": "The reason your organization exists beyond profit",
+        "category": "PURPOSE",
+        "status": "READY",
+        "coveragePercentage": 90,
+        "validatedCount": 1,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": true,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "PURPOSE_WHEEL",
+        "frameworkData": {
+          "mechanism": "Eén merk-DNA-fundament (assets, voice, stijl, persona's, producten, concurrenten) dat in elke AI-generatie wordt geïnjecteerd, plus een meetbare merk-check (F-VAL) op elke uiting — in Branddock, in Claude en ChatGPT, en in eigen workflows.",
+          "statement": "Elk merk verdient een stem die overal als zichzelf klinkt — óók als AI het werk doet.",
+          "impactType": "Enable Potential",
+          "pressureTest": "Als deze purpose waar is, weigeren we features die snelheid boven merkzekerheid stellen.\nElke productbeslissing wordt getoetst aan: maakt dit het merk sterker of alleen de output sneller?\nWe claimen nooit autonomie die we niet kunnen bewijzen — de mens keurt goed.",
+          "impactDescription": "AI maakt marketing sneller, maar vervlakt merken: alles gaat hetzelfde klinken. Wij zorgen dat organisaties de snelheid van AI kunnen benutten zónder hun merk te verliezen — omdat het merk zelf het fundament onder elke uiting is."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.686Z",
+        "updatedAt": "2026-07-19T07:26:53.697Z"
+      },
+      {
+        "id": "cmrrh308n00042ems1tx9pop6",
+        "name": "Golden Circle",
+        "slug": "golden-circle",
+        "description": "Simon Sinek's WHY → HOW → WHAT framework",
+        "category": "FOUNDATION",
+        "status": "READY",
+        "coveragePercentage": 90,
+        "validatedCount": 1,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": true,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "GOLDEN_CIRCLE",
+        "frameworkData": {
+          "how": {
+            "details": "Gelaagde merkcontext in elke generatie, een F-VAL-merkscore op elk resultaat, en een team van AI-agents dat voorstelt terwijl de mens goedkeurt.",
+            "statement": "Door één merk-DNA onder elke AI-uiting te leggen en elke uiting meetbaar te toetsen"
+          },
+          "why": {
+            "details": "Generieke AI kent je merk niet. Wie AI inzet zonder merkfundament, wint tijd en verliest onderscheid. Dat vinden wij de verkeerde ruil.",
+            "statement": "Wij geloven dat AI marketing versnelt, maar merken vervlakt — tenzij het merk het fundament is"
+          },
+          "what": {
+            "details": "Onderzoek, strategie, content, beeld en merkbewaking op één merk-DNA — werkend in Branddock, in Claude en ChatGPT via de MCP-connector, en in eigen workflows via API en webhooks.",
+            "statement": "Een AI-marketingteamplatform dat je merk écht kent"
+          }
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.687Z",
+        "updatedAt": "2026-07-19T07:26:53.698Z"
+      },
+      {
+        "id": "cmrrh308p00052ems3vaas73y",
+        "name": "Brand Essence",
+        "slug": "brand-essence",
+        "description": "The heart and soul of your brand",
+        "category": "CORE",
+        "status": "READY",
+        "coveragePercentage": 90,
+        "validatedCount": 1,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": true,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_ESSENCE",
+        "frameworkData": {
+          "attributes": [
+            "Bewijsbaar",
+            "Merk-eerst",
+            "Nuchter",
+            "Integraal",
+            "Mens-in-de-loop"
+          ],
+          "proofPoints": [
+            "11 canonieke merk-assets als fundament onder elke generatie",
+            "F-VAL-merkscore (0-100) op elke uiting, met concrete bevindingen",
+            "9 AI-agents met rollen — signaleren, adviseren, voorstellen; de mens keurt goed",
+            "MCP-connector: je merk werkt in Claude, ChatGPT en n8n (branddock.app/mcp)",
+            "Eerlijke pilotmeting: gemiddeld +7 punten on-brand versus vanilla-AI"
+          ],
+          "discriminator": "Alleen Branddock combineert een volledig merk-DNA-fundament met een meetbare merk-check op elke uiting — waar die uiting ook ontstaat: in het platform, in Claude of ChatGPT, of in een eigen workflow.",
+          "audienceInsight": "Marketingteams in het MKB en bureaus willen de snelheid van AI, maar zijn bang dat hun merk (of dat van hun klant) verwatert tot gemiddelde AI-taal. Ze zoeken geen zoveelste schrijftool, maar zekerheid.",
+          "emotionalBenefit": "Rust: je kunt AI omarmen zonder de angst dat je merk verwatert. Je hoeft niet elke output te herschrijven — je keurt goed wat al klopt.",
+          "essenceNarrative": "Branddock reduceert de kern van merkvoering in het AI-tijdperk tot één belofte: alles wat er namens jouw merk ontstaat, is aantoonbaar van jouw merk. Niet als gevoel, maar als meetbare score.",
+          "essenceStatement": "Bewijsbaar on-brand",
+          "validationScores": {
+            "unique": 4,
+            "enduring": 4,
+            "scalable": 4,
+            "authentic": 4,
+            "intangible": 3,
+            "meaningful": 5
+          },
+          "functionalBenefit": "Volume on-brand content over alle kanalen uit één merkfundament — met een F-VAL-merkscore die per uiting laat zien hoe on-brand hij is, en agents die het werk voorbereiden.",
+          "selfExpressiveBenefit": "Wie Branddock gebruikt laat zien: wij nemen ons merk serieus, óók nu AI het werk versnelt. Modern én zorgvuldig."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.689Z",
+        "updatedAt": "2026-07-19T07:26:53.699Z"
+      },
+      {
+        "id": "cmrrh308q00062ems0pgne7f8",
+        "name": "Brand Promise",
+        "slug": "brand-promise",
+        "description": "Core commitment to your customers",
+        "category": "STRATEGY",
+        "status": "READY",
+        "coveragePercentage": 90,
+        "validatedCount": 1,
+        "artifactCount": 0,
+        "content": "Doelgroep: Nederlandse MKB-marketingteams en bureaus die AI willen inzetten zonder merkverwatering — en dat willen kunnen aantonen.",
+        "aiValidated": true,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_PROMISE",
+        "frameworkData": {
+          "proofPoints": [
+            "F-VAL-merkscore met drie pijlers (stijl, beoordeling, regels) op elke uiting",
+            "Eerlijke pilotmeting: +7 punten on-brand gemiddeld, +12 op nieuwsbrieven",
+            "MCP-connector met 17 merk-tools voor Claude/ChatGPT/n8n",
+            "9 AI-agents die voorstellen — de mens keurt goed",
+            "EU-hosting, AVG-proof, merkdata traint geen modellen van derden"
+          ],
+          "differentiator": "De merk-check: geen enkel alternatief maakt on-brand meetbaar per uiting, over platform én externe AI-tools heen.",
+          "emotionalValue": "Vertrouwen dat AI-tempo niet ten koste gaat van je merk.",
+          "targetAudience": "Nederlandse marketingteams in het MKB (5-50 marketeers) en bureaus die meerdere klantmerken voeren.",
+          "functionalValue": "On-brand onderzoek, strategie, content en beeld uit één merkfundament, met een F-VAL-score per uiting.",
+          "promiseOneLiner": "Een AI-marketingteam dat je merk écht kent — en dat kan bewijzen.",
+          "coreCustomerNeed": "AI-schaal benutten zonder merkverwatering — en dat kunnen aantonen richting directie of klant.",
+          "promiseStatement": "Een AI-marketingteam dat je merk écht kent — en dat kan bewijzen. Elke uiting die via Branddock ontstaat draagt jouw merk-DNA en krijgt een meetbare merk-check; niets gaat live zonder jouw goedkeuring.",
+          "onlynessStatement": "Alleen Branddock geeft elke AI-uiting een meetbare merk-check op je eigen merk-DNA — waar die uiting ook ontstaat: in het platform, in Claude of ChatGPT, of in je eigen workflow.",
+          "measurableOutcomes": [
+            "Meetbaar hogere merkconsistentie per kanaal (F-VAL-trend per week)",
+            "Meer content per fte zonder extra reviewdruk",
+            "Aantoonbaar on-brand rapportage richting directie of klant"
+          ],
+          "selfExpressiveValue": "Een organisatie die AI professioneel inzet: snel én merkvast."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.690Z",
+        "updatedAt": "2026-07-19T07:26:53.700Z"
+      },
+      {
+        "id": "cmrrh308r00072emstkvbo57m",
+        "name": "Mission & Vision",
+        "slug": "mission-statement",
+        "description": "What you do today and where you're headed",
+        "category": "STRATEGY",
+        "status": "READY",
+        "coveragePercentage": 90,
+        "validatedCount": 1,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": true,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "MISSION_STATEMENT",
+        "frameworkData": {
+          "forWhom": "Nederlandse marketingteams in het MKB en bureaus met meerdere klantmerken — en iedereen die vanuit Claude, ChatGPT of eigen workflows merkwerk doet.",
+          "whatWeDo": "Wij bundelen merkfundament, AI-generatie en merkbewaking in één platform: onderzoek, strategie, content, beeld en publicatie op hetzelfde merk-DNA.",
+          "howWeDoIt": "Gelaagde merkcontext in elke AI-call, een F-VAL-merkscore op elke uiting, AI-agents die voorstellen, en open koppelingen (MCP, API, webhooks) zodat het merk overal meereist.",
+          "impactGoal": "AI-marketing die merken versterkt in plaats van vervlakt — te beginnen in Nederland.",
+          "timeHorizon": "5 jaar",
+          "boldAspiration": "De standaard worden voor merkbewaking in AI-workflows: waar AI namens een merk spreekt, toetst Branddock.",
+          "missionOneLiner": "AI-tempo, merkvast.",
+          "valuesAlignment": "Bewijs boven belofte: we meten onze eigen claims (eerlijke pilotcijfers) zoals we merkconsistentie voor klanten meten.",
+          "visionStatement": "Het merkfundament onder elke AI-workflow.",
+          "missionStatement": "Organisaties on-brand laten groeien in het AI-tijdperk: wij leggen één merk-DNA-fundament onder al hun AI-werk en maken elke uiting meetbaar on-brand.",
+          "successIndicators": [
+            "Elke pilotklant publiceert wekelijks via Branddock",
+            "F-VAL-scores per klant structureel boven de merkdrempel",
+            "Connector actief in Claude/ChatGPT bij het merendeel van de workspaces",
+            "Van pilot naar betalende NL-MKB-klantenbasis in 2026"
+          ],
+          "desiredFutureState": "Merken durven AI volledig te benutten omdat merkzekerheid is ingebouwd — 'is dit on-brand?' is geen gevoel meer maar een score.",
+          "stakeholderBenefit": "Marketeers krijgen tempo zonder rework; directies krijgen meetbare merkconsistentie; bureaus leveren aantoonbaar on-brand klantwerk.",
+          "missionVisionTension": "Vandaag bedienen we pilots hands-on; de visie vraagt dat merkbewaking geruisloos in elke AI-workflow zit. De brug: open koppelingen (MCP/API) in plaats van een gesloten platform."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.691Z",
+        "updatedAt": "2026-07-19T07:26:53.701Z"
+      },
+      {
+        "id": "cmrrh308s00082emsoiz6v9jd",
+        "name": "Brand Archetype",
+        "slug": "brand-archetype",
+        "description": "Universal behavior patterns",
+        "category": "PERSONALITY",
+        "status": "READY",
+        "coveragePercentage": 90,
+        "validatedCount": 1,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": true,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_ARCHETYPE",
+        "frameworkData": {
+          "coreDesire": "Waarheid en bewijs: precies begrijpen wat een merk is, en bewaken dat elke uiting daaraan trouw blijft.",
+          "primaryArchetype": "sage",
+          "archetypeInAction": "We publiceren eerlijke pilotcijfers (+7, niet '10x'), tonen per uiting wáárom een score is wat hij is, en claimen nergens autonomie zonder mens-goedkeuring. De Sage bewijst; met een vleug Creator: we bouwen het gereedschap zelf.",
+          "brandVoiceDescription": "Nuchter, deskundig en concreet. We onderbouwen met cijfers en voorbeelden, vermijden hype, en zeggen eerlijk wat iets niet kan. Nederlands-direct, nooit belerend."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.692Z",
+        "updatedAt": "2026-07-19T07:26:53.702Z"
+      },
+      {
+        "id": "cmrrh308s00092emsv3kctxrq",
+        "name": "Transformative Goals",
+        "slug": "transformative-goals",
+        "description": "Ambitious goals for lasting impact",
+        "category": "STRATEGY",
+        "status": "READY",
+        "coveragePercentage": 90,
+        "validatedCount": 1,
+        "artifactCount": 0,
+        "content": "Transformatieve doelen (2026-2028):\n\n1. **Pilot → betalende basis (2026):** van de eerste pilotmerken naar een betalende Nederlandse MKB-klantenbasis, met wekelijkse publicatie-cadans per klant als bewijs van waarde.\n\n2. **Het merk reist overal mee (2026-2027):** de MCP-connector, browser-extensie en API maken Branddock het merkfundament in Claude, ChatGPT, n8n en eigen workflows — het platform is niet de grens.\n\n3. **Brandclaw — begrensde autonomie (2027-2028):** de content-loop groeit in bewezen stappen van voorstellen-met-goedkeuring (BC-1, live) naar goedgekeurd-is-gepubliceerd (BC-2) naar begrensde autonomie met budget, F-VAL-drempels en kill-switch (BC-3). Pas als elk niveau incident-vrij draait, claimt de marketing het volgende.",
+        "aiValidated": true,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "TRANSFORMATIVE_GOALS",
+        "frameworkData": {},
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.692Z",
+        "updatedAt": "2026-07-19T07:26:53.702Z"
+      },
+      {
+        "id": "cmrrh308t000a2emshaudsccu",
+        "name": "Brand Personality",
+        "slug": "brand-personality",
+        "description": "Human characteristics of your brand",
+        "category": "PERSONALITY",
+        "status": "READY",
+        "coveragePercentage": 90,
+        "validatedCount": 1,
+        "artifactCount": 0,
+        "content": "Merkpersoonlijkheid — vijf trekken:\n\n1. **Nuchter** — wij zijn het tegengif tegen AI-hype: eerlijke cijfers, bescheiden claims, concrete voorbeelden.\n2. **Deskundig** — merkstrategie is ons vak; frameworks, F-VAL en agents zijn gereedschap, geen magie.\n3. **Transparant** — open over wat werkt en wat nog niet; publieke changelog; eerlijke vergelijkingspagina's.\n4. **Nederlands-direct** — helder, zonder omhaal, professioneel maar menselijk.\n5. **Waakzaam** — wij bewaken het merk als een goede collega: kritisch op elke uiting, nooit op de persoon.\n\nIn de praktijk: 'jij keurt goed' staat in elke belofte; 'autopilot' komt in onze taal niet voor tot het bewezen waar is.",
+        "aiValidated": true,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_PERSONALITY",
+        "frameworkData": {},
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.693Z",
+        "updatedAt": "2026-07-19T07:26:53.703Z"
+      },
+      {
+        "id": "cmrrh308t000b2emsf76equbk",
+        "name": "Brand Story",
+        "slug": "brand-story",
+        "description": "Your brand's past, present and future",
+        "category": "NARRATIVE",
+        "status": "READY",
+        "coveragePercentage": 90,
+        "validatedCount": 1,
+        "artifactCount": 0,
+        "content": "Branddock is geboren in de bureau-praktijk van Better Brands. Daar zagen we van dichtbij wat AI met merken doet: teams produceerden ineens tien keer zoveel content — en alles begon hetzelfde te klinken. Generieke AI kent je merk niet. Elke prompt begon opnieuw, elke output moest herschreven, en niemand kon aantonen of het resultaat nog wel 'des merks' was.\n\nWe bouwden eerst gereedschap voor onszelf: één plek waar het volledige merk-DNA leeft — assets, stem, stijl, persona's, producten, concurrenten — en dat fundament automatisch onder elke AI-generatie schuift. Daarna kwam de vraag die alles veranderde: kun je on-brand ook méten? Zo ontstond F-VAL, de merk-check die elke uiting een score en concrete bevindingen geeft.\n\nInmiddels is Branddock een AI-marketingteam: negen agents die onderzoeken, adviseren, signaleren en voorstellen — terwijl de mens goedkeurt. En omdat merkwerk niet in één tool gebeurt, reist het merk mee: via de MCP-connector werkt je merk-DNA in Claude en ChatGPT, via de API en webhooks in elke workflow.\n\nDe overtuiging is dezelfde als op dag één: AI mag het werk versnellen, maar het merk bepaalt hoe het klinkt. En dat moet je kunnen bewijzen.",
+        "aiValidated": true,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_STORY",
+        "frameworkData": {},
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.693Z",
+        "updatedAt": "2026-07-19T07:26:53.704Z"
+      },
+      {
+        "id": "cmrrh308v000d2emsg634yxi6",
+        "name": "Social Relevancy",
+        "slug": "social-relevancy",
+        "description": "Your brand's societal and environmental impact",
+        "category": "ESG",
+        "status": "READY",
+        "coveragePercentage": 90,
+        "validatedCount": 1,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": true,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "ESG",
+        "frameworkData": {
+          "mens": {
+            "statements": [
+              {
+                "text": "Ons product vermindert werkdruk en beslismoeheid bij marketeers.",
+                "score": 4,
+                "target": "Werkdruk-effect meten in klantonderzoek",
+                "evidence": "Agents bereiden werk voor; F-VAL vervangt eindeloze review-rondes door één duidelijke score met bevindingen.",
+                "timeline": "2027"
+              },
+              {
+                "text": "De mens houdt zeggenschap over wat er namens een merk naar buiten gaat.",
+                "score": 5,
+                "target": "Kill-switch en budgetgrenzen standaard bij elke autonomie-trap",
+                "evidence": "Goedkeurings-flow is verplicht in elke agent-keten; autonomie groeit alleen in bewezen, begrensde stappen.",
+                "timeline": "doorlopend"
+              }
+            ],
+            "pillarReflection": "Onze grootste maatschappelijke bijdrage is dat AI-marketing menselijk toezicht houdt — by design, niet als optie."
+          },
+          "milieu": {
+            "statements": [
+              {
+                "text": "We kiezen bewust voor een compacte, efficiënte infrastructuur.",
+                "score": 3,
+                "target": "Inzicht in CO2-voetafdruk per workspace",
+                "evidence": "Serverless-first (geen idle servers), EU-datacenters, remote-first team zonder kantoorpand.",
+                "timeline": "2027"
+              }
+            ],
+            "pillarReflection": "Als digitaal platform is onze directe voetafdruk beperkt; onze keuzes zitten in efficiënte infrastructuur en het vermijden van onnodige AI-calls (caching, zero-cost-acties)."
+          },
+          "proofPoints": [
+            "EU-hosting en AVG-proof verwerking; merkdata traint geen modellen van derden",
+            "Eerlijke pilotcijfers gepubliceerd (+7 gemiddeld — geen '10x'-claims)",
+            "Publieke changelog en transparante prijzen",
+            "Mens-goedkeuring verplicht in elke agent-keten"
+          ],
+          "maatschappij": {
+            "statements": [
+              {
+                "text": "We maken merkcommunicatie eerlijker en herkenbaarder in plaats van uniformer.",
+                "score": 4,
+                "target": "Publieke F-VAL-benchmark over anonieme workspaces",
+                "evidence": "De merk-check beloont eigenheid boven generieke AI-taal; vergelijkingspagina's zijn eerlijk over alternatieven.",
+                "timeline": "2027"
+              }
+            ],
+            "pillarReflection": "Een markt vol AI-content wordt leefbaarder als merken herkenbaar blijven — daar werken wij direct aan."
+          },
+          "sdgAlignment": [
+            8,
+            9
+          ],
+          "activismLevel": "Ingetogen",
+          "certifications": [],
+          "impactNarrative": "AI-marketing groeit sneller dan het toezicht erop. Branddock bouwt de bewakingslaag: merken die via ons publiceren doen dat met een meetbare merk-check, met menselijke goedkeuring en met data die in de EU blijft. Onze eigen claims houden we aan dezelfde meetlat als die van onze klanten.",
+          "impactStatement": "Wij houden merkcommunicatie eerlijk en menselijk in het AI-tijdperk: meetbaar on-brand, AVG-proof en zonder loze claims.",
+          "keyStakeholders": [
+            "MKB-marketingteams",
+            "Bureaus",
+            "Pilotklanten",
+            "Medewerkers"
+          ],
+          "annualCommitment": "Eind 2026 publiceren we onze eerste eerlijke impactnotitie: pilotresultaten, F-VAL-effect en wat nog niet lukte.",
+          "activationChannels": [
+            "Platform",
+            "Changelog/Nieuws",
+            "LinkedIn",
+            "Pilotrapportages"
+          ],
+          "authenticityScores": {
+            "consistency": 4,
+            "walkTheTalk": 4,
+            "transparency": 4,
+            "measurability": 3,
+            "stakeholderTrust": 3,
+            "longTermCommitment": 4
+          },
+          "communicationPrinciples": [
+            "Cijfers eerst, bijvoeglijke naamwoorden daarna",
+            "Benoem beperkingen vóór successen",
+            "Claim geen autonomie die niet bewezen is",
+            "Vergelijk eerlijk — ook als het alternatief ergens beter is"
+          ],
+          "antiGreenwashingStatement": "We zijn een jong bedrijf: onze impactmeting is in opbouw en we hebben nog geen externe certificeringen. We rapporteren eerlijk over wat we wél en nog niet meten."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.695Z",
+        "updatedAt": "2026-07-19T07:26:53.705Z"
+      },
+      {
+        "id": "cmrrh308u000c2ems02kki1bk",
+        "name": "Core Values",
+        "slug": "core-values",
+        "description": "Fundamental beliefs that guide your brand",
+        "category": "CULTURE",
+        "status": "READY",
+        "coveragePercentage": 90,
+        "validatedCount": 1,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": true,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRANDHOUSE_VALUES",
+        "frameworkData": {
+          "ownValue": {
+            "name": "Nuchter Nederlands",
+            "description": "Direct, concreet en zonder hype — in ons product, onze marketing en onze cijfers. We schrijven zoals Nederlandse marketeers denken."
+          },
+          "anchorValue1": {
+            "name": "Bewijs boven belofte",
+            "description": "We claimen alleen wat we kunnen meten — van F-VAL-scores tot onze eigen pilotcijfers. Eerlijke bescheiden cijfers verslaan opgeblazen beloftes."
+          },
+          "anchorValue2": {
+            "name": "Merk-eerst",
+            "description": "Elke feature begint bij het merkfundament, niet bij de output. Snelheid die het merk verwatert is geen feature."
+          },
+          "valueTension": "Het AI-tempo van de markt versus de zorgvuldigheid van merkbewaking: wij kiezen bewust voor bewezen stappen, ook als de markt sneller roept.",
+          "aspirationValue1": {
+            "name": "Toegankelijk vakwerk",
+            "description": "Professionele merkstrategie en merkbewaking horen niet alleen bij enterprises met bureaus — het MKB verdient hetzelfde fundament."
+          },
+          "aspirationValue2": {
+            "name": "Autonomie met toezicht",
+            "description": "Agents mogen steeds meer, in bewezen stappen — maar de mens keurt goed. Autonomie is verdiend vertrouwen, geen marketingclaim."
+          }
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.694Z",
+        "updatedAt": "2026-07-19T07:26:53.705Z"
+      }
+    ],
+    "brandAssetVersion": [],
+    "brandAssetResearchMethod": [],
+    "brand": [
+      {
+        "id": "cmrrh308i00012emssldqjqne",
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.682Z",
+        "updatedAt": "2026-07-19T07:26:53.682Z"
+      }
+    ],
+    "brandLocaleProfile": [
+      {
+        "id": "cmrrh308l00022ems0edewu94",
+        "brandId": "cmrrh308i00012emssldqjqne",
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "locale": "nl-NL",
+        "isDefault": true,
+        "voiceOverrides": null,
+        "localizedAssets": null,
+        "createdAt": "2026-07-19T07:26:53.685Z",
+        "updatedAt": "2026-07-19T07:26:53.685Z"
+      }
+    ],
+    "brandVoiceguide": [
+      {
+        "id": "cmrrh3097000e2emsm9blvj4h",
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "voiceDescription": "Branddock klinkt als een nuchtere Nederlandse vakgenoot: deskundig zonder jargon, direct zonder botheid, en altijd concreet. We onderbouwen met cijfers en voorbeelden, benoemen eerlijk wat iets niet kan, en vermijden elke vorm van AI-hype. De lezer is een drukke professional — we respecteren diens tijd met korte zinnen en een duidelijke kern.",
+        "toneDimensions": {
+          "formalCasual": 55,
+          "seriousFunny": 30,
+          "respectfulIrreverent": 20,
+          "matterOfFactEnthusiastic": 40
+        },
+        "contentGuidelines": [
+          "Leid met het resultaat of de kern — de lezer beslist in de eerste zin of hij doorleest",
+          "Elke claim krijgt een cijfer of concreet voorbeeld; geen cijfer = geen claim",
+          "Benoem de mens-in-de-loop ('jij keurt goed') bij elke agent- of automatiseringsbelofte",
+          "Schrijf vanuit het merk van de klant, niet vanuit onze technologie"
+        ],
+        "writingGuidelines": [
+          "Korte zinnen, actieve vorm, Nederlands-direct",
+          "Technische termen (F-VAL, MCP, merk-DNA) bij eerste gebruik in één bijzin uitleggen",
+          "Geen uitroeptekens, geen superlatieven, geen emoji's",
+          "Getallen als cijfers (9 agents, +7 punten), bedragen met €"
+        ],
+        "vocabularyDo": [
+          "merk-DNA",
+          "on-brand",
+          "merk-check",
+          "bewijsbaar",
+          "jij keurt goed",
+          "meetbaar",
+          "fundament",
+          "nuchter"
+        ],
+        "vocabularyDont": [
+          "autopilot",
+          "revolutionair",
+          "game-changer",
+          "magisch",
+          "10x",
+          "moeiteloos",
+          "AI-powered (als bijvoeglijk naamwoord zonder inhoud)"
+        ],
+        "voiceSample": "Generieke AI kent je merk niet. Branddock legt je volledige merk-DNA onder elke uiting en geeft elk resultaat een meetbare merk-check: de F-VAL-score. Negen agents bereiden het werk voor — onderzoek, content, bewaking — en jij keurt goed. In een eerlijke pilotmeting scoorde content via Branddock gemiddeld +7 punten on-brand ten opzichte van vanilla-AI. Geen magie, wel bewijs.",
+        "writingSamples": [],
+        "wordsWeUse": [
+          "merkvast",
+          "agents",
+          "voorstellen",
+          "goedkeuren",
+          "merkcontext",
+          "cadans"
+        ],
+        "wordsWeAvoid": [
+          "synergy",
+          "unlock",
+          "leverage",
+          "empoweren",
+          "disruptie"
+        ],
+        "channelTones": null,
+        "antiPatterns": [
+          "Hype-taal of superlatieven zonder onderbouwing",
+          "Autonomie claimen waar mens-goedkeuring in de flow zit",
+          "Engelse buzzwords waar een gewoon Nederlands woord bestaat",
+          "Angst als verkoopargument ('je merk gaat kapot zonder ons')"
+        ],
+        "examplePhrases": [
+          {
+            "text": "Elke uiting krijgt een meetbare merk-check — jij keurt goed.",
+            "type": "do"
+          },
+          {
+            "text": "Eerlijke pilotmeting: +7 punten on-brand versus vanilla-AI.",
+            "type": "do"
+          },
+          {
+            "text": "Koppel je merk aan Claude en ChatGPT via branddock.app/mcp.",
+            "type": "do"
+          },
+          {
+            "text": "Revolutionaire AI-magie die je marketing 10x't!",
+            "type": "dont"
+          },
+          {
+            "text": "Zet je marketing op autopilot en kijk nooit meer om.",
+            "type": "dont"
+          }
+        ],
+        "centroidComputedAt": null,
+        "contentLocale": "nl-NL",
+        "voiceDnaSavedForAi": true,
+        "vocabularySavedForAi": true,
+        "channelTonesSavedForAi": true,
+        "antiPatternsSavedForAi": true,
+        "guidelinesSavedForAi": true,
+        "examplePhrasesSavedForAi": true,
+        "referencesSavedForAi": false,
+        "source": "manual",
+        "publishedAt": null,
+        "createdAt": "2026-07-19T07:26:53.707Z",
+        "updatedAt": "2026-07-19T07:26:53.707Z",
+        "createdById": "demo-user-erik-001"
+      }
+    ],
+    "brandVoice": [],
+    "brandStyleguide": [
+      {
+        "id": "cmrrh309g000f2ems6ubd0awj",
+        "status": "COMPLETE",
+        "sourceType": "URL",
+        "sourceUrl": "https://branddock.app",
+        "sourceFileName": null,
+        "analysisJobId": null,
+        "analysisStatus": "COMPLETE",
+        "errorMessage": null,
+        "detectedFrameworks": [],
+        "layoutStyle": "COMMERCIAL",
+        "layoutStyleInferred": false,
+        "buttonProfile": null,
+        "spacingProfile": null,
+        "elevationProfile": null,
+        "radiusProfile": null,
+        "motionProfile": null,
+        "typographyProfile": null,
+        "buttonProfileOverride": false,
+        "spacingProfileOverride": false,
+        "elevationProfileOverride": false,
+        "radiusProfileOverride": false,
+        "motionProfileOverride": false,
+        "typographyProfileOverride": false,
+        "designPhilosophy": "Nuchter en levendig tegelijk: een strak, licht basisraster (wit, veel ruimte, slate-tekst) met het merkgroen als enige vaste accentkleur, verlevendigd door geometrische mozaïeken, merk-gradients en lucht-fotografie uit het brandbook.",
+        "fixtureSamples": null,
+        "archetype": null,
+        "archetypeConfidence": null,
+        "archetypeReasoning": null,
+        "logoGuidelines": [
+          "Primair logo op lichte achtergronden; witte variant op slate of gradients",
+          "Beeldmerk-only onder 32px of als avatar/favicon",
+          "Vrije ruimte rondom minimaal de hoogte van de B"
+        ],
+        "logoDonts": [
+          "Niet uitrekken, roteren of van kleur veranderen",
+          "Geen schaduwen of effecten toevoegen",
+          "Niet op drukke fotografie zonder contrastvlak plaatsen"
+        ],
+        "logoSavedForAi": true,
+        "colorDonts": [
+          "Merkgroen niet als grote achtergrondvlakken — het is een accent- en actiekleur",
+          "Accentkleuren (peach/oranje/lime) nooit combineren zonder neutrale scheiding",
+          "Geen tekst in accentkleuren op wit (contrast)"
+        ],
+        "colorsSavedForAi": true,
+        "semanticColors": null,
+        "primaryFontName": "Halyard (Adobe Fonts)",
+        "primaryFontUrl": "https://fonts.adobe.com/fonts/halyard",
+        "additionalFonts": [
+          "Hanken Grotesk (open-source fallback, zelf-gehost)"
+        ],
+        "typeScale": [
+          {
+            "name": "Hero-kop",
+            "size": "56px",
+            "level": "H1",
+            "weight": "700",
+            "lineHeight": "60px",
+            "letterSpacing": "-0.02em"
+          },
+          {
+            "name": "Sectiekop",
+            "size": "36px",
+            "level": "H2",
+            "weight": "700",
+            "lineHeight": "42px",
+            "letterSpacing": "-0.01em"
+          },
+          {
+            "name": "Kaartkop",
+            "size": "20px",
+            "level": "H3",
+            "weight": "600",
+            "lineHeight": "28px",
+            "letterSpacing": "0"
+          },
+          {
+            "name": "Body",
+            "size": "16px",
+            "level": "Body",
+            "weight": "400",
+            "lineHeight": "26px",
+            "letterSpacing": "0"
+          },
+          {
+            "name": "Meta/eyebrow",
+            "size": "12px",
+            "level": "Caption",
+            "weight": "600",
+            "lineHeight": "16px",
+            "letterSpacing": "0.06em"
+          }
+        ],
+        "typographySavedForAi": true,
+        "photographyStyle": {
+          "mood": "Open, optimistisch, kalm — ruimte om te denken",
+          "style": "Lucht-fotografie: wolkenluchten en open hemels als rustgevend, optimistisch basismateriaal",
+          "composition": "Veel lucht, lage horizon, merk-gradient-overlay voor consistentie"
+        },
+        "photographyGuidelines": [
+          "Luchten en open ruimtes boven kantoor-stockfotografie",
+          "Altijd de merk-gradient-overlay toepassen voor kleurconsistentie",
+          "Mensen alleen in authentieke werkcontext, nooit geposeerd"
+        ],
+        "illustrationGuidelines": [
+          "Geometrisch mozaïek (cirkels, sterren, halve rondingen) in merkkleuren als signatuur-patroon",
+          "Gradients uitsluitend uit merkkleur-paren (groen→blauw, peach→oranje)",
+          "Plat en geometrisch; geen 3D, geen schaduwen"
+        ],
+        "imageryDonts": [
+          "Geen generieke AI-gegenereerde mensen of robots-met-laptops",
+          "Geen stockbeelden met geforceerde poses",
+          "Geen mix van illustratiestijlen binnen één uiting"
+        ],
+        "imagerySavedForAi": true,
+        "brandImages": null,
+        "graphicElements": null,
+        "graphicElementsDonts": [],
+        "patternsTextures": null,
+        "iconographyStyle": null,
+        "iconographyDonts": [],
+        "gradientsEffects": null,
+        "layoutPrinciples": null,
+        "designLanguageSavedForAi": false,
+        "visualLanguage": null,
+        "visualLanguageSavedForAi": false,
+        "spacingScale": null,
+        "cornerRadii": null,
+        "shadowSystem": null,
+        "semanticTokens": null,
+        "colorPairings": null,
+        "observedColorPairs": null,
+        "published": true,
+        "publishedAt": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "createdById": "demo-user-erik-001",
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.716Z",
+        "updatedAt": "2026-07-19T07:26:53.716Z"
+      }
+    ],
+    "styleguideColor": [
+      {
+        "id": "cmrrh309l000j2emso0djr80e",
+        "name": "Merkgroen (mint)",
+        "hex": "#07E5AB",
+        "rgb": "rgb(7, 229, 171)",
+        "hsl": "hsl(164, 94%, 46%)",
+        "cmyk": null,
+        "category": "PRIMARY",
+        "tags": [
+          "brand",
+          "primary",
+          "CTA"
+        ],
+        "notes": null,
+        "contrastWhite": "Fail",
+        "contrastBlack": "AA",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 0,
+        "styleguideId": "cmrrh309g000f2ems6ubd0awj"
+      },
+      {
+        "id": "cmrrh309l000k2ems0jb9e2ve",
+        "name": "Slate",
+        "hex": "#1F2937",
+        "rgb": "rgb(31, 41, 55)",
+        "hsl": "hsl(215, 28%, 17%)",
+        "cmyk": null,
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "hero-achtergrond"
+        ],
+        "notes": null,
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 1,
+        "styleguideId": "cmrrh309g000f2ems6ubd0awj"
+      },
+      {
+        "id": "cmrrh309m000l2ems1h727poq",
+        "name": "Blauw",
+        "hex": "#343CED",
+        "rgb": "rgb(52, 60, 237)",
+        "hsl": "hsl(237, 84%, 57%)",
+        "cmyk": null,
+        "category": "SECONDARY",
+        "tags": [
+          "gradient",
+          "accent"
+        ],
+        "notes": null,
+        "contrastWhite": "AA",
+        "contrastBlack": "Fail",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 2,
+        "styleguideId": "cmrrh309g000f2ems6ubd0awj"
+      },
+      {
+        "id": "cmrrh309n000m2emsf8nto0ct",
+        "name": "Peach",
+        "hex": "#FECFBD",
+        "rgb": "rgb(254, 207, 189)",
+        "hsl": "hsl(17, 97%, 87%)",
+        "cmyk": null,
+        "category": "ACCENT",
+        "tags": [
+          "mozaïek",
+          "zacht"
+        ],
+        "notes": null,
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 3,
+        "styleguideId": "cmrrh309g000f2ems6ubd0awj"
+      },
+      {
+        "id": "cmrrh309n000n2emstu3169gf",
+        "name": "Oranje",
+        "hex": "#FF7F4D",
+        "rgb": "rgb(255, 127, 77)",
+        "hsl": "hsl(17, 100%, 65%)",
+        "cmyk": null,
+        "category": "ACCENT",
+        "tags": [
+          "mozaïek",
+          "warm"
+        ],
+        "notes": null,
+        "contrastWhite": "Fail",
+        "contrastBlack": "AA",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 4,
+        "styleguideId": "cmrrh309g000f2ems6ubd0awj"
+      },
+      {
+        "id": "cmrrh309o000o2ems203izpni",
+        "name": "Lime",
+        "hex": "#D8FD48",
+        "rgb": "rgb(216, 253, 72)",
+        "hsl": "hsl(72, 98%, 64%)",
+        "cmyk": null,
+        "category": "ACCENT",
+        "tags": [
+          "mozaïek",
+          "signaal-dot"
+        ],
+        "notes": null,
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 5,
+        "styleguideId": "cmrrh309g000f2ems6ubd0awj"
+      },
+      {
+        "id": "cmrrh309o000p2emssuys3trf",
+        "name": "Wit",
+        "hex": "#FFFFFF",
+        "rgb": "rgb(255, 255, 255)",
+        "hsl": "hsl(0, 0%, 100%)",
+        "cmyk": null,
+        "category": "BACKGROUND",
+        "tags": [
+          "basis",
+          "ruimte"
+        ],
+        "notes": null,
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 6,
+        "styleguideId": "cmrrh309g000f2ems6ubd0awj"
+      }
+    ],
+    "styleguideFont": [],
+    "styleguideLogo": [
+      {
+        "id": "cmrrh309i000g2emsrv19e9si",
+        "variant": "PRIMARY",
+        "fileUrl": "https://branddock.app/marketing/branddock-logo.svg",
+        "fileName": "branddock-logo.svg",
+        "fileType": "svg",
+        "fileSize": null,
+        "width": null,
+        "height": null,
+        "description": "Primair logo — groen campsite-B-beeldmerk + wordmark, voor lichte achtergronden",
+        "sortOrder": 0,
+        "uploadedById": null,
+        "styleguideId": "cmrrh309g000f2ems6ubd0awj",
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.716Z",
+        "updatedAt": "2026-07-19T07:26:53.716Z"
+      },
+      {
+        "id": "cmrrh309i000h2emsc339yf7z",
+        "variant": "LIGHT",
+        "fileUrl": "https://branddock.app/marketing/branddock-logo-white.svg",
+        "fileName": "branddock-logo-white.svg",
+        "fileType": "svg",
+        "fileSize": null,
+        "width": null,
+        "height": null,
+        "description": "Witte variant voor donkere (slate/gradient) achtergronden",
+        "sortOrder": 1,
+        "uploadedById": null,
+        "styleguideId": "cmrrh309g000f2ems6ubd0awj",
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.716Z",
+        "updatedAt": "2026-07-19T07:26:53.716Z"
+      },
+      {
+        "id": "cmrrh309i000i2ems72l0r1hp",
+        "variant": "ICON",
+        "fileUrl": "https://branddock.app/marketing/branddock-icon.svg",
+        "fileName": "branddock-icon.svg",
+        "fileType": "svg",
+        "fileSize": null,
+        "width": null,
+        "height": null,
+        "description": "Beeldmerk-only (campsite-B) — favicons, avatars en kleine formaten",
+        "sortOrder": 2,
+        "uploadedById": null,
+        "styleguideId": "cmrrh309g000f2ems6ubd0awj",
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.716Z",
+        "updatedAt": "2026-07-19T07:26:53.716Z"
+      }
+    ],
+    "styleguideComponent": [],
+    "fidelityConfig": [],
+    "brandRule": [],
+    "workspaceContentTypeThreshold": [],
+    "persona": [
+      {
+        "id": "cmrrh309p000q2emspy3l6iz7",
+        "name": "Merel de Vries",
+        "tagline": "Marketing Manager MKB — wil AI-tempo zonder merkverwatering",
+        "avatarUrl": null,
+        "avatarSource": "NONE",
+        "age": "34",
+        "gender": "Vrouw",
+        "location": "Utrecht",
+        "occupation": "Marketing Manager (MKB, 50-200 medewerkers)",
+        "education": "HBO Communicatie",
+        "income": "€55.000-€70.000",
+        "familyStatus": "Samenwonend, 1 kind",
+        "personalityType": "Pragmatische doener met kwaliteitsbewaking",
+        "coreValues": [
+          "Kwaliteit",
+          "Efficiëntie",
+          "Eerlijkheid"
+        ],
+        "interests": [
+          "Marketing-automation",
+          "Merkstrategie",
+          "AI-tools",
+          "Vakwebinars"
+        ],
+        "goals": [
+          "Meer content leveren zonder extra headcount",
+          "Merkconsistentie aantoonbaar maken richting directie",
+          "AI inzetten zonder dat alles hetzelfde gaat klinken"
+        ],
+        "motivations": [
+          "Trots op een herkenbaar merk",
+          "Grip houden terwijl het tempo omhoog gaat",
+          "Serieus genomen worden aan de directietafel (met cijfers)"
+        ],
+        "frustrations": [
+          "AI-output klinkt generiek en moet altijd herschreven",
+          "Elke tool opnieuw merkcontext voeren",
+          "Review-cycli vreten de tijdwinst van AI weer op",
+          "Geen bewijs kunnen leveren dat content on-brand is"
+        ],
+        "behaviors": [
+          "Werkt dagelijks met ChatGPT/Claude naast de vaste toolstack",
+          "Beslist op demo's en peer-reviews, niet op advertenties",
+          "Leest vakcontent op LinkedIn tijdens forenzen"
+        ],
+        "strategicImplications": "Merel is de kernkoper: overtuig haar met de merk-check als bewijs richting directie en met tijdwinst zonder rework. Demo = nieuwsbrief-vergelijking Branddock vs. vanilla-AI.",
+        "preferredChannels": [
+          "LinkedIn",
+          "E-mailnieuwsbrieven",
+          "Google-zoekopdrachten",
+          "Vakwebinars"
+        ],
+        "techStack": null,
+        "quote": "Ik wil AI gebruiken, maar niet klinken als iedereen.",
+        "bio": "Merel runt marketing met een klein team en een grote kalender. Ze omarmde AI vroeg, maar werd er ook door teleurgesteld: sneller, maar vlakker. Ze zoekt geen nieuwe schrijftool — ze zoekt zekerheid dat het tempo haar merk niet sloopt.",
+        "buyingTriggers": null,
+        "decisionCriteria": null,
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdById": "demo-user-erik-001",
+        "localeProfileId": null,
+        "createdAt": "2026-07-19T07:26:53.725Z",
+        "updatedAt": "2026-07-19T07:26:53.725Z"
+      },
+      {
+        "id": "cmrrh309r000r2ems5zk67pnm",
+        "name": "Bas Hendriks",
+        "tagline": "Bureau-eigenaar — voert acht klantmerken en moet ze allemaal bewaken",
+        "avatarUrl": null,
+        "avatarSource": "NONE",
+        "age": "42",
+        "gender": "Man",
+        "location": "Eindhoven",
+        "occupation": "Eigenaar marketingbureau (8 fte)",
+        "education": "WO Bedrijfskunde",
+        "income": "€90.000+",
+        "familyStatus": "Getrouwd, 2 kinderen",
+        "personalityType": "Ondernemende kwaliteitsbewaker",
+        "coreValues": [
+          "Klantvertrouwen",
+          "Vakmanschap",
+          "Rendement per fte"
+        ],
+        "interests": [
+          "Bureau-groei",
+          "AI in klantwerk",
+          "Positionering",
+          "Pricing"
+        ],
+        "goals": [
+          "Meer klantwerk per fte zonder kwaliteitsverlies",
+          "Aantoonbaar on-brand werk leveren per klantmerk",
+          "Junioren senior-kwaliteit laten leveren met het merkfundament als vangrail"
+        ],
+        "motivations": [
+          "Klanten die blijven omdat het werk klopt",
+          "Marge verbeteren met AI zonder het eerlijke verhaal te verliezen"
+        ],
+        "frustrations": [
+          "Merkkennis van klanten zit in hoofden en verspreide documenten",
+          "Klanten vragen kritisch of het bureau 'gewoon ChatGPT' gebruikt",
+          "Elke wissel van medewerker kost merk-inwerkweken"
+        ],
+        "behaviors": [
+          "Voert meerdere klant-workspaces naast elkaar",
+          "Deelt resultaten met klanten in rapportages",
+          "Test tools eerst op één klant voordat het bureau-breed gaat"
+        ],
+        "strategicImplications": "Bas is de multi-workspace-koper (Agency-tier): één merk-DNA-workspace per klant, F-VAL-rapportage als klantbewijs, en klant-meekijk-toegang via eigen login.",
+        "preferredChannels": [
+          "LinkedIn",
+          "Bureau-netwerken",
+          "Referenties van vakgenoten"
+        ],
+        "techStack": null,
+        "quote": "Als ik AI inzet, moet ik kunnen laten zien dat het het merk van de klant is — niet ChatGPT.",
+        "bio": "Bas bouwde zijn bureau op degelijk merkwerk. AI verhoogt zijn marge, maar hij weigert het eerlijke verhaal kwijt te raken: klanten betalen voor húń merk. Hij zoekt infrastructuur die merkkennis vastlegt en bewijsbaar maakt.",
+        "buyingTriggers": null,
+        "decisionCriteria": null,
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdById": "demo-user-erik-001",
+        "localeProfileId": null,
+        "createdAt": "2026-07-19T07:26:53.727Z",
+        "updatedAt": "2026-07-19T07:26:53.727Z"
+      },
+      {
+        "id": "cmrrh309s000s2ems8qi6n2zh",
+        "name": "Jesse Kramer",
+        "tagline": "Founder — doet marketing er solo bij, het liefst vanuit Claude",
+        "avatarUrl": null,
+        "avatarSource": "NONE",
+        "age": "29",
+        "gender": "Non-binair",
+        "location": "Amsterdam",
+        "occupation": "Founder B2B-SaaS (6 medewerkers, geen marketingteam)",
+        "education": "WO Informatica",
+        "income": "Wisselend (startup)",
+        "familyStatus": "Alleenstaand",
+        "personalityType": "Bouwer die marketing als systeem ziet",
+        "coreValues": [
+          "Autonomie",
+          "Efficiëntie",
+          "Authenticiteit"
+        ],
+        "interests": [
+          "AI-agents",
+          "MCP/automation",
+          "n8n",
+          "Product-led growth"
+        ],
+        "goals": [
+          "Professionele marketing zonder marketingteam",
+          "Alles vanuit de eigen AI-workflow (Claude, n8n) kunnen doen",
+          "Consistent klinken terwijl de agent het schrijfwerk doet"
+        ],
+        "motivations": [
+          "Tijd voor product houden",
+          "Een merk dat groter oogt dan het team is"
+        ],
+        "frustrations": [
+          "Geen tijd én geen merkbewaker",
+          "Agent-output wisselt per dag van toon",
+          "Marketingtools voelen als een tweede baan"
+        ],
+        "behaviors": [
+          "Leeft in Claude/ChatGPT en automatiseert alles wat kan",
+          "Koppelt tools via MCP en n8n in plaats van dashboards te openen",
+          "Publiceert in bursts wanneer er even tijd is"
+        ],
+        "strategicImplications": "Jesse is de agentic-first-gebruiker: de MCP-connector ís het product. Onboarding moet volledig via de connector kunnen; het platform is de plek waar hij goedkeurt en het merk beheert.",
+        "preferredChannels": [
+          "X/Twitter",
+          "LinkedIn",
+          "Founder-communities",
+          "GitHub/technische blogs"
+        ],
+        "techStack": null,
+        "quote": "Mijn agent schrijft alles — ik wil dat het als mijn bedrijf klinkt.",
+        "bio": "Jesse bouwt een SaaS en doet marketing ertussendoor, vrijwel volledig vanuit Claude. De vraag is nooit óf AI het werk doet, maar of het resultaat het merk waard is. Branddock is voor Jesse de merk-laag onder een bestaande agent-workflow.",
+        "buyingTriggers": null,
+        "decisionCriteria": null,
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdById": "demo-user-erik-001",
+        "localeProfileId": null,
+        "createdAt": "2026-07-19T07:26:53.728Z",
+        "updatedAt": "2026-07-19T07:26:53.728Z"
+      }
+    ],
+    "personaResearchMethod": [],
+    "product": [
+      {
+        "id": "cmrrh309u000u2emsb37q0zgf",
+        "name": "Brand-API & MCP-connector",
+        "slug": "branddock-mcp-connector",
+        "description": "Het merk reist mee naar buiten: via de MCP-connector (branddock.app/mcp) werkt het volledige merk-DNA in Claude, ChatGPT en n8n — 17 merk-tools van get_brand_context tot generate_on_brand en score_against_brand. Voor eigen workflows: publieke REST-API en webhooks met HMAC-signing.",
+        "category": "Integratie",
+        "pricingModel": "Inbegrepen in het abonnement",
+        "pricingDetails": "Zelfde credits als in het platform; lezen van merkcontext en scoren is gratis. OAuth-login of API-keys per workspace.",
+        "source": "MANUAL",
+        "sourceUrl": null,
+        "status": "ANALYZED",
+        "features": [
+          "17 MCP-tools met merkcontext, generatie en merk-check",
+          "OAuth-login (merk volgt je actieve organisatie) of merk-vergrendelde API-keys",
+          "Webhooks: deliverable.generated, content.published, fidelity-events",
+          "n8n-nodes en browser-extensie (beta)"
+        ],
+        "benefits": [
+          "Werk in de AI waar je al zit — met je merk als fundament",
+          "Automatiseer merkwerk machine-to-machine, metadata-only gelogd"
+        ],
+        "useCases": [
+          "LinkedIn-post schrijven in Claude, on-brand en gescoord",
+          "n8n-workflow die content genereert en na goedkeuring publiceert",
+          "E-mail beantwoorden in merkstem via de browser-extensie"
+        ],
+        "categoryIcon": "Plug",
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.730Z",
+        "updatedAt": "2026-07-19T07:26:53.730Z"
+      },
+      {
+        "id": "cmrrh309v000v2emsvi9nmsfd",
+        "name": "F-VAL merk-check",
+        "slug": "branddock-fval-merk-check",
+        "description": "De meetlat onder alles: F-VAL scoort elke uiting 0-100 op merkgetrouwheid via drie pijlers — stijl (35%), AI-beoordeling (45%) en merkregels (20%) — met concrete bevindingen en een STRICT-modus die herschrijft tot de drempel gehaald is. Gratis op elke uiting, ook via de API.",
+        "category": "Merkbewaking",
+        "pricingModel": "Altijd gratis",
+        "pricingDetails": "De merk-check kost nooit credits — bewaken hoort geen meter te hebben.",
+        "source": "MANUAL",
+        "sourceUrl": null,
+        "status": "ANALYZED",
+        "features": [
+          "Drie-pijler-score met per-pijler-uitsplitsing",
+          "Concrete bevindingen per uiting (wat wél/niet on-brand is)",
+          "Drempels per content-type, STRICT-rewrite-modus",
+          "Werkt op eigen én externe content (score_against_brand)"
+        ],
+        "benefits": [
+          "'Is dit on-brand?' is een score, geen discussie",
+          "Rapporteerbaar bewijs per kanaal en per week"
+        ],
+        "useCases": [
+          "Externe copy toetsen vóór publicatie",
+          "Wekelijkse F-VAL-trend in het merkrapport",
+          "Agent-output automatisch langs de merkdrempel leggen"
+        ],
+        "categoryIcon": "BadgeCheck",
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.731Z",
+        "updatedAt": "2026-07-19T07:26:53.731Z"
+      },
+      {
+        "id": "cmrrh309t000t2emskqyshv72",
+        "name": "Branddock Platform",
+        "slug": "branddock-platform",
+        "description": "Het AI-marketingteamplatform: één workspace met het volledige merk-DNA (11 canonieke assets, brand voice, brandstyle, persona's, producten, concurrenten) als fundament onder onderzoek, campagnestrategie, content-, beeld- en videogeneratie — met de F-VAL-merk-check op elke uiting en 9 AI-agents die voorstellen terwijl jij goedkeurt.",
+        "category": "SaaS-platform",
+        "pricingModel": "Maandabonnement met output-credits",
+        "pricingDetails": "Starter €39/mnd (400 credits) · Growth €89/mnd (1.200) · Agency €299/mnd (4.000, meerdere workspaces). 28 dagen gratis proberen zonder creditcard; merkcontext en merk-check kosten nooit credits.",
+        "source": "MANUAL",
+        "sourceUrl": null,
+        "status": "ANALYZED",
+        "features": [
+          "11 canonieke merk-assets met frameworks en validatie",
+          "F-VAL-merkscore (stijl 35% / beoordeling 45% / regels 20%) op elke uiting",
+          "9 AI-agents: onderzoek, strategie, content, merkbewaking, rapportage, loop",
+          "Content Canvas, campagne-wizard, beeld/video, landingspagina's",
+          "Trend Radar en concurrent-monitoring"
+        ],
+        "benefits": [
+          "AI-tempo zonder merkverwatering",
+          "Bewijsbare merkconsistentie richting directie of klant",
+          "Minder rework: goedkeuren in plaats van herschrijven"
+        ],
+        "useCases": [
+          "Wekelijkse content-cadans voor een MKB-merk",
+          "Bureau dat meerdere klantmerken aantoonbaar on-brand bedient",
+          "Campagne van strategie-blueprint tot deliverables"
+        ],
+        "categoryIcon": "LayoutDashboard",
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdAt": "2026-07-19T07:26:53.729Z",
+        "updatedAt": "2026-07-19T07:26:53.729Z"
+      }
+    ],
+    "productImage": [],
+    "productPersona": [],
+    "businessStrategy": [
+      {
+        "id": "cmrrh30a0000z2emsw71pvekb",
+        "name": "Launch 2026 — het bewijsbare AI-marketingteam",
+        "slug": "launch-2026-bewijsbaar-ai-marketingteam",
+        "description": "Van pre-launch naar betalende Nederlandse MKB-basis met één wig: een AI-marketingteam dat je merk écht kent — en dat kan bewijzen. Pilotbewijs eerst, daarna distributie via de agent-kanalen (MCP-connector, n8n, ClawHub) naast een wekelijkse content-cadans.",
+        "type": "BRAND_BUILDING",
+        "status": "ACTIVE",
+        "vision": "Elke uiting die namens een merk ontstaat — in Branddock of in een externe AI — is meetbaar on-brand en door een mens goedgekeurd.",
+        "rationale": "AI-adoptie in marketing explodeert, maar bewaking ontbreekt: tools maken content zonder merkfundament. Postiz bewees dat agent-distributie werkt (8x MRR in 4 maanden); Branddock combineert diezelfde distributie met het onbezette gat — bewijsbare merkgetrouwheid.",
+        "keyAssumptions": [
+          "NL-MKB betaalt voor bewijs van merkconsistentie, niet voor nóg een schrijftool",
+          "De agent-kanalen (Claude/ChatGPT/n8n) worden een primair werkoppervlak voor marketeers",
+          "Een eerlijke bescheiden claim (+7 on-brand) overtuigt beter dan hype",
+          "Wekelijkse publicatie-cadans per klant is de beste voorspeller van retentie"
+        ],
+        "startDate": "2026-06-01T00:00:00.000Z",
+        "endDate": "2026-12-31T00:00:00.000Z",
+        "progressPercentage": 70,
+        "strengths": [],
+        "weaknesses": [],
+        "opportunities": [],
+        "threats": [],
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdById": "demo-user-erik-001",
+        "createdAt": "2026-07-19T07:26:53.736Z",
+        "updatedAt": "2026-07-19T07:26:53.736Z"
+      }
+    ],
+    "focusArea": [
+      {
+        "id": "cmrrh30a100102emsehjyy92s",
+        "name": "Pilotbewijs",
+        "description": "Betterbrands-pilot naar aantoonbare waarde",
+        "icon": "FlaskConical",
+        "color": "#07E5AB",
+        "strategyId": "cmrrh30a0000z2emsw71pvekb"
+      },
+      {
+        "id": "cmrrh30a200112emsdldv2csy",
+        "name": "Agent-distributie",
+        "description": "MCP-connector, n8n, ClawHub, extensie",
+        "icon": "Plug",
+        "color": "#343CED",
+        "strategyId": "cmrrh30a0000z2emsw71pvekb"
+      },
+      {
+        "id": "cmrrh30a200122ems9yxrspap",
+        "name": "Cadans & zichtbaarheid",
+        "description": "Wekelijkse content-cadans + changelog",
+        "icon": "CalendarClock",
+        "color": "#FF7F4D",
+        "strategyId": "cmrrh30a0000z2emsw71pvekb"
+      }
+    ],
+    "objective": [
+      {
+        "id": "cmrrh30a300132emsqebznaai",
+        "title": "Pilot bewijst de wig vóór de peildatum",
+        "description": "De pilot-workspace laat zien dat Branddock wekelijks on-brand output oplevert die ook echt gepubliceerd wordt.",
+        "status": "AT_RISK",
+        "priority": "HIGH",
+        "sortOrder": 0,
+        "metricType": "NUMBER",
+        "startValue": 0,
+        "targetValue": 5,
+        "currentValue": 3,
+        "focusAreaId": "cmrrh30a100102emsehjyy92s",
+        "strategyId": "cmrrh30a0000z2emsw71pvekb",
+        "createdAt": "2026-07-19T07:26:53.739Z",
+        "updatedAt": "2026-07-19T07:26:53.739Z"
+      },
+      {
+        "id": "cmrrh30a700172emspd83wnoi",
+        "title": "Het merk werkt in elke AI-workflow",
+        "description": "De connector-lijn volledig live en vindbaar: MCP, n8n, extensie en publicaties in de agent-directories.",
+        "status": "ON_TRACK",
+        "priority": "HIGH",
+        "sortOrder": 1,
+        "metricType": "PERCENTAGE",
+        "startValue": 0,
+        "targetValue": 100,
+        "currentValue": 80,
+        "focusAreaId": "cmrrh30a200112emsdldv2csy",
+        "strategyId": "cmrrh30a0000z2emsw71pvekb",
+        "createdAt": "2026-07-19T07:26:53.743Z",
+        "updatedAt": "2026-07-19T07:26:53.743Z"
+      },
+      {
+        "id": "cmrrh30a9001b2emscziyjl82",
+        "title": "Wekelijkse cadans maakt Branddock zichtbaar",
+        "description": "Branddock gebruikt zichzelf: wekelijkse LinkedIn-cadans vanuit de eigen workspace, gevoed door de publieke changelog.",
+        "status": "ON_TRACK",
+        "priority": "MEDIUM",
+        "sortOrder": 2,
+        "metricType": "NUMBER",
+        "startValue": 0,
+        "targetValue": 12,
+        "currentValue": 0,
+        "focusAreaId": "cmrrh30a200122ems9yxrspap",
+        "strategyId": "cmrrh30a0000z2emsw71pvekb",
+        "createdAt": "2026-07-19T07:26:53.745Z",
+        "updatedAt": "2026-07-19T07:26:53.745Z"
+      }
+    ],
+    "keyResult": [
+      {
+        "id": "cmrrh30a400142emscqyzcur4",
+        "description": "Wekelijks ≥2 gegenereerde deliverables in de pilot-workspace",
+        "status": "COMPLETE",
+        "progressValue": "loopt",
+        "sortOrder": 0,
+        "objectiveId": "cmrrh30a300132emsqebznaai",
+        "createdAt": "2026-07-19T07:26:53.740Z",
+        "updatedAt": "2026-07-19T07:26:53.740Z"
+      },
+      {
+        "id": "cmrrh30a500152emsmilar60i",
+        "description": "≥1 publicatie per week vanuit de pilot (C2)",
+        "status": "BEHIND",
+        "progressValue": "0 — dé gap",
+        "sortOrder": 1,
+        "objectiveId": "cmrrh30a300132emsqebznaai",
+        "createdAt": "2026-07-19T07:26:53.741Z",
+        "updatedAt": "2026-07-19T07:26:53.741Z"
+      },
+      {
+        "id": "cmrrh30a500162ems3fxxb3ld",
+        "description": "F-VAL-gemiddelde boven de merkdrempel",
+        "status": "ON_TRACK",
+        "progressValue": "~75+",
+        "sortOrder": 2,
+        "objectiveId": "cmrrh30a300132emsqebznaai",
+        "createdAt": "2026-07-19T07:26:53.741Z",
+        "updatedAt": "2026-07-19T07:26:53.741Z"
+      },
+      {
+        "id": "cmrrh30a700182emshh8i4pcr",
+        "description": "MCP-connector live op branddock.app/mcp (OAuth + keys)",
+        "status": "COMPLETE",
+        "progressValue": "live",
+        "sortOrder": 0,
+        "objectiveId": "cmrrh30a700172emspd83wnoi",
+        "createdAt": "2026-07-19T07:26:53.743Z",
+        "updatedAt": "2026-07-19T07:26:53.743Z"
+      },
+      {
+        "id": "cmrrh30a800192emsvuwljg3d",
+        "description": "n8n-package + ClawHub-publicatie",
+        "status": "ON_TRACK",
+        "progressValue": "publish-klaar",
+        "sortOrder": 1,
+        "objectiveId": "cmrrh30a700172emspd83wnoi",
+        "createdAt": "2026-07-19T07:26:53.744Z",
+        "updatedAt": "2026-07-19T07:26:53.744Z"
+      },
+      {
+        "id": "cmrrh30a8001a2emss7ym6m6u",
+        "description": "Browser-extensie in Chrome Web Store",
+        "status": "BEHIND",
+        "progressValue": "wacht op privacy-pagina",
+        "sortOrder": 2,
+        "objectiveId": "cmrrh30a700172emspd83wnoi",
+        "createdAt": "2026-07-19T07:26:53.744Z",
+        "updatedAt": "2026-07-19T07:26:53.744Z"
+      },
+      {
+        "id": "cmrrh30a9001c2emsog1a2jmr",
+        "description": "12 opeenvolgende weken ≥1 LinkedIn-post via Branddock",
+        "status": "ON_TRACK",
+        "progressValue": "start 21-07",
+        "sortOrder": 0,
+        "objectiveId": "cmrrh30a9001b2emscziyjl82",
+        "createdAt": "2026-07-19T07:26:53.745Z",
+        "updatedAt": "2026-07-19T07:26:53.745Z"
+      },
+      {
+        "id": "cmrrh30aa001d2emskp6q8rqr",
+        "description": "Changelog/Nieuws wekelijks bijgewerkt + aankondigingsbalk ververst",
+        "status": "ON_TRACK",
+        "progressValue": "ingericht",
+        "sortOrder": 1,
+        "objectiveId": "cmrrh30a9001b2emscziyjl82",
+        "createdAt": "2026-07-19T07:26:53.746Z",
+        "updatedAt": "2026-07-19T07:26:53.746Z"
+      }
+    ],
+    "milestone": [],
+    "progressSnapshot": [],
+    "competitor": [
+      {
+        "id": "cmrrh309w000w2emscat072qz",
+        "name": "Jasper",
+        "slug": "jasper",
+        "websiteUrl": "https://www.jasper.ai",
+        "description": "Amerikaans AI-content-platform voor marketingteams, gegroeid van AI-schrijftool naar 'AI voor marketing' met campagne-features en een brand-voice-functie.",
+        "tagline": "AI built for marketing",
+        "foundingYear": 2021,
+        "headquarters": "Austin, VS",
+        "employeeRange": "100-250",
+        "logoUrl": null,
+        "valueProposition": "Snel veel marketingcontent produceren met AI, getraind op je merkstem.",
+        "targetAudience": "Marketingteams in het mid-market en enterprise, primair VS/EN-talig.",
+        "differentiators": [
+          "Groot feature-aanbod voor contentproductie",
+          "Sterke merkbekendheid in AI-marketing",
+          "Brand-voice-training"
+        ],
+        "mainOfferings": [
+          "AI-copywriting",
+          "Campagne-content",
+          "Brand voice",
+          "Chrome-extensie"
+        ],
+        "pricingModel": "Abonnement per gebruiker",
+        "pricingDetails": "Vanaf ~$39-59/gebruiker/mnd, enterprise op aanvraag",
+        "toneOfVoice": "Energiek, Amerikaans, groei-gericht",
+        "messagingThemes": [
+          "Sneller content maken",
+          "AI-copiloot voor marketing",
+          "On-brand AI"
+        ],
+        "visualStyleNotes": "Kleurrijk, speels, Amerikaanse SaaS-stijl",
+        "strengths": [
+          "Volwassen product met brede content-features",
+          "Sterke distributie en merkbekendheid",
+          "Brand-voice als bekend concept gevestigd"
+        ],
+        "weaknesses": [
+          "Brand voice is een instelling, geen meetbaar bewijs — geen F-VAL-equivalent",
+          "EN/VS-first; beperkte NL-taligheid en geen NL-marktfocus",
+          "Geen open agent-koppeling (MCP) — het platform is de grens"
+        ],
+        "socialLinks": {
+          "linkedin": "https://www.linkedin.com/company/heyjasperai"
+        },
+        "hasBlog": true,
+        "hasCareersPage": true,
+        "competitiveScore": 72,
+        "tier": "DIRECT",
+        "status": "ANALYZED",
+        "source": "WEBSITE_URL",
+        "lastScrapedAt": "2026-07-19T07:26:53.731Z",
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "monitoringEnabled": false,
+        "monitoringFrequency": "WEEKLY_LIGHT",
+        "nextScheduledScanAt": null,
+        "snapshotCount": 0,
+        "unacknowledgedActivityCount": 0,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdById": "demo-user-erik-001",
+        "createdAt": "2026-07-19T07:26:53.732Z",
+        "updatedAt": "2026-07-19T07:26:53.732Z"
+      },
+      {
+        "id": "cmrrh309y000x2ems2ax6dq4n",
+        "name": "Frontify",
+        "slug": "frontify",
+        "websiteUrl": "https://www.frontify.com",
+        "description": "Zwitsers brand-management-platform: digitale brand guidelines, asset-bibliotheek en samenwerking voor grote merkorganisaties.",
+        "tagline": "A home for every brand",
+        "foundingYear": 2013,
+        "headquarters": "St. Gallen, Zwitserland",
+        "employeeRange": "250-500",
+        "logoUrl": null,
+        "valueProposition": "Eén thuis voor merkrichtlijnen en assets, zodat grote organisaties consistent blijven.",
+        "targetAudience": "Enterprise brand- en designteams.",
+        "differentiators": [
+          "Marktleider in digitale brand guidelines",
+          "Sterk in DAM en governance-workflows",
+          "Enterprise-integraties"
+        ],
+        "mainOfferings": [
+          "Brand guidelines",
+          "Digital Asset Management",
+          "Templates",
+          "Samenwerking"
+        ],
+        "pricingModel": "Enterprise-abonnement",
+        "pricingDetails": "Op aanvraag; instap doorgaans vanaf duizenden euro's per jaar",
+        "toneOfVoice": "Professioneel, design-gedreven, enterprise",
+        "messagingThemes": [
+          "Brand consistency",
+          "Eén merkbron",
+          "Samenwerking"
+        ],
+        "visualStyleNotes": "Strak, design-first, veel wit",
+        "strengths": [
+          "Gevestigde enterprise-klantenbasis en governance-diepgang",
+          "Merkrichtlijnen als product volwassen neergezet"
+        ],
+        "weaknesses": [
+          "Richtlijnen beschrijven het merk maar genereren en toetsen niet — geen AI-generatie of merkscore per uiting",
+          "Enterprise-prijspunt; onbereikbaar voor MKB",
+          "Statisch: het merk leeft in documentatie, niet in de workflow van de maker"
+        ],
+        "socialLinks": {
+          "linkedin": "https://www.linkedin.com/company/frontify"
+        },
+        "hasBlog": true,
+        "hasCareersPage": true,
+        "competitiveScore": 58,
+        "tier": "INDIRECT",
+        "status": "ANALYZED",
+        "source": "WEBSITE_URL",
+        "lastScrapedAt": "2026-07-19T07:26:53.731Z",
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "monitoringEnabled": false,
+        "monitoringFrequency": "WEEKLY_LIGHT",
+        "nextScheduledScanAt": null,
+        "snapshotCount": 0,
+        "unacknowledgedActivityCount": 0,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdById": "demo-user-erik-001",
+        "createdAt": "2026-07-19T07:26:53.734Z",
+        "updatedAt": "2026-07-19T07:26:53.734Z"
+      },
+      {
+        "id": "cmrrh309z000y2emslnswns49",
+        "name": "Postiz",
+        "slug": "postiz",
+        "websiteUrl": "https://postiz.com",
+        "description": "Open-source social-media-scheduler die zich in 2026 herpositioneerde als agentic tool: agents plannen en publiceren via CLI en MCP naar 30+ kanalen. Groeide daarmee naar ~$173K MRR (Stripe-geverifieerd).",
+        "tagline": "The ultimate agentic social media scheduling tool",
+        "foundingYear": 2023,
+        "headquarters": "Remote / Israël",
+        "employeeRange": "1-10",
+        "logoUrl": null,
+        "valueProposition": "Laat je AI-agent je social media draaien: plannen, genereren en publiceren naar 30+ netwerken.",
+        "targetAudience": "Agentic-first makers, developers en automation-teams.",
+        "differentiators": [
+          "Open-source distributie (32K+ GitHub-stars)",
+          "Agent-first positionering met MCP/CLI",
+          "30+ kanalen"
+        ],
+        "mainOfferings": [
+          "Social scheduling",
+          "Agent-CLI en MCP-server",
+          "n8n/Make-integraties"
+        ],
+        "pricingModel": "Freemium + abonnement",
+        "pricingDetails": "Zelf-hosten gratis; cloud gemiddeld ~$34/mnd per abonnement",
+        "toneOfVoice": "Bouwers-taal, direct, build-in-public",
+        "messagingThemes": [
+          "Agentic scheduling",
+          "Open source",
+          "Autopilot voor social"
+        ],
+        "visualStyleNotes": "Donker, developer-esthetiek, meme-vriendelijk",
+        "strengths": [
+          "Bewezen agent-distributiestrategie (8x MRR in 4 maanden)",
+          "Enorme open-source-funnel met $0 advertentiebudget",
+          "Snelle featurevelocity"
+        ],
+        "weaknesses": [
+          "Publiceert zonder merkfundament: geen merk-DNA, geen merkscore, geen bewaking",
+          "Social-only; geen strategie-, campagne- of contentdiepte",
+          "'Autopilot'-framing zonder kwaliteitsvangrails — precies het gat dat Branddock vult"
+        ],
+        "socialLinks": {
+          "github": "https://github.com/gitroomhq/postiz-app"
+        },
+        "hasBlog": true,
+        "hasCareersPage": false,
+        "competitiveScore": 64,
+        "tier": "INDIRECT",
+        "status": "ANALYZED",
+        "source": "WEBSITE_URL",
+        "lastScrapedAt": "2026-07-19T07:26:53.731Z",
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "monitoringEnabled": false,
+        "monitoringFrequency": "WEEKLY_LIGHT",
+        "nextScheduledScanAt": null,
+        "snapshotCount": 0,
+        "unacknowledgedActivityCount": 0,
+        "workspaceId": "cmrrh308e00002ems3zcn6n34",
+        "createdById": "demo-user-erik-001",
+        "createdAt": "2026-07-19T07:26:53.735Z",
+        "updatedAt": "2026-07-19T07:26:53.735Z"
+      }
+    ],
+    "competitorProduct": [],
+    "trend": [],
+    "workspaceAiConfig": []
+  },
+  "vectors": {
+    "brandVoiceguide": {
+      "centroidEmbedding": {}
+    }
+  },
+  "localImageRefs": []
+}
