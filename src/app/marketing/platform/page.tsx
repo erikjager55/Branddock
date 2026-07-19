@@ -81,7 +81,7 @@ const GROUPS: Group[] = [
     title: 'Onderzoek — ken je markt',
     intro: 'Persona’s, concurrenten en trends: je merk-DNA staat niet op giswerk.',
     grad: 'var(--g-cool)',
-    gradPair: ['#343CED', '#FECFBD'],
+    gradPair: ['#07E5AB', '#343CED'],
     modules: [
       {
         Icon: Users,

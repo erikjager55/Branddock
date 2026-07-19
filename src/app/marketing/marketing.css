@@ -25,7 +25,8 @@
   --brand-orange: #FF7F4D;
   --brand-lime: #D8FD48;
   --g-brand: linear-gradient(135deg, #343CED, #07E5AB);
-  --g-cool: linear-gradient(135deg, #343CED, #FECFBD);
+  /* UX-10: was blauw→peach — dat blendt naar violet (off-palette). */
+  --g-cool: linear-gradient(135deg, #07E5AB, #343CED);
   --g-warm: linear-gradient(120deg, #FF7F4D, #D8FD48);
   --g-fresh: linear-gradient(135deg, #07E5AB, #D8FD48);
 
