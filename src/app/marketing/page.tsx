@@ -3,7 +3,6 @@
 // (volgen na de pilot); vertrouwen via tech-credibility + het echte product.
 
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   Dna,
   Palette,
@@ -18,11 +17,13 @@ import {
   BadgeCheck,
   Languages,
   ArrowRight,
+  Building2,
   ChevronDown,
   Cpu,
+  Workflow,
 } from 'lucide-react';
 import { appHref } from './app-url';
-import BookDemoButton from './BookDemoButton';
+import HeroModes from './HeroModes';
 import HowItWorks from './HowItWorks';
 import Mosaic, { MOSAIC_PRODUCT } from './Mosaic';
 import { PLAN_CONFIGS } from '@/lib/constants/plan-limits';
@@ -31,88 +32,17 @@ import { creditExampleLineCompact } from '@/lib/constants/credit-examples';
 export default function MarketingHomePage() {
   return (
     <div>
-      <Hero />
+      <HeroModes />
       <Problem />
       <HowSection />
       <PlatformBreadth />
       <ValuePillars />
       <ProofStrip />
-      <SolutionsSplit />
+      <ForWho />
       <PricingTeaser />
       <FAQ />
       <FinalCTA />
     </div>
-  );
-}
-
-function Hero() {
-  return (
-    <section className="mkt-hero relative">
-      <div className="mkt-hero__ink">
-        <div className="max-w-lg">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm mb-6">
-            <span style={{ color: 'var(--brand-lime)' }}>●</span> Jouw AI-marketingteam
-          </div>
-          <h1 className="mb-6" style={{ color: '#ffffff' }}>
-            Een AI-marketingteam dat je merk écht kent.
-          </h1>
-          <p className="text-xl mb-8" style={{ color: 'rgba(255,255,255,0.9)' }}>
-            Negen AI-agents doen het werk — onderzoek, strategie, content, merkbewaking — op jouw
-            merk-DNA, en elke uiting krijgt een meetbare merk-check (F-VAL). Werkt in Branddock, in
-            Claude en ChatGPT, en overal waar je schrijft. Jij keurt goed.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href={appHref('/?utm_source=marketing-site&utm_medium=hero')}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white font-medium hover:opacity-90"
-              style={{ color: 'var(--brand-slate)' }}
-            >
-              Gratis proberen <ArrowRight className="w-4 h-4" />
-            </Link>
-            <BookDemoButton className="inline-flex items-center px-6 py-3 rounded-lg border border-white/40 text-white font-medium hover:bg-white/10" />
-          </div>
-        </div>
-      </div>
-      <div className="mkt-hero__mosaic">
-        <Mosaic
-          id="hero"
-          cols={7}
-          rows={5}
-          palette={MOSAIC_PRODUCT}
-          className="absolute inset-0 w-full h-full"
-          style={{ opacity: 0.92 }}
-        />
-        <div className="mkt-hero__shot mkt-frame">
-          <div className="mkt-frame__bar">
-            <i></i>
-            <i></i>
-            <i></i>
-          </div>
-          <Image
-            src="/marketing/features/content-canvas.png"
-            alt="Branddock Content Canvas — on-brand content genereren met een merk-fideliteitsscore"
-            width={2880}
-            height={1800}
-            className="w-full h-auto"
-            priority
-          />
-        </div>
-      </div>
-      <div className="mkt-hero__meta">
-        <div className="mkt-hero__meta-item">
-          <b>Modellen</b>
-          <span>Claude · GPT · Gemini</span>
-        </div>
-        <div className="mkt-hero__meta-item">
-          <b>Data</b>
-          <span>EU-hosting · AVG-proof</span>
-        </div>
-        <div className="mkt-hero__meta-item">
-          <b>Start</b>
-          <span>28 dagen gratis · geen creditcard</span>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -276,47 +206,94 @@ function ProofStrip() {
   );
 }
 
-function SolutionsSplit() {
+const FOR_WHO: {
+  Icon: typeof Dna;
+  eyebrow: string;
+  title: string;
+  body: string;
+  href: string;
+  cta: string;
+  featured?: boolean;
+}[] = [
+  {
+    Icon: Megaphone,
+    eyebrow: 'Marketingteams',
+    title: 'Schaal je content zonder je merk te verwateren',
+    body: 'Volume on-brand content over alle kanalen, uit één plek. Minder tools, minder rework, meetbare merkconsistentie voor je stakeholders.',
+    href: '/marketing/solutions/marketingteams',
+    cta: 'Bekijk voor marketingteams',
+    featured: true,
+  },
+  {
+    Icon: Building2,
+    eyebrow: 'Bureaus',
+    title: 'Eén merk-DNA-workspace per klant',
+    body: 'Beheer meerdere klantmerken naast elkaar, elk met een eigen merk-DNA — en lever aantoonbaar on-brand werk. Klanten kijken mee met een eigen login.',
+    href: '/marketing/solutions/bureaus',
+    cta: 'Bekijk voor bureaus',
+  },
+  {
+    Icon: Bot,
+    eyebrow: 'Agentic',
+    title: 'Werk vanuit Claude, ChatGPT of je eigen agent',
+    body: 'Koppel Branddock als MCP-connector en je AI kent je merk: volledige merkcontext, on-brand genereren en een F-VAL-merk-check op elke uiting.',
+    href: '/marketing/guardrails',
+    cta: 'Bekijk de koppel-stappen',
+  },
+  {
+    Icon: Workflow,
+    eyebrow: 'Automatiseerders',
+    title: 'Bouw je merk in je eigen workflows',
+    body: 'Publieke API, webhooks met HMAC-signing en MCP voor n8n en andere tools — van generatie tot merk-check, machine-to-machine.',
+    href: '/marketing/guardrails',
+    cta: 'Bekijk de API & tools',
+  },
+];
+
+function ForWho() {
   return (
     <section className="border-t border-gray-200 bg-gray-50">
       <div className="max-w-6xl mx-auto px-6 py-16">
+        <div className="max-w-2xl mb-10">
+          <div className="text-sm font-semibold mkt-accent uppercase tracking-wide mb-3">
+            Voor wie
+          </div>
+          <h2 className="text-gray-900 mb-3">Voor wie is Branddock?</h2>
+          <p className="text-gray-600">
+            In het platform, vanuit je AI-agent of in je eigen workflows — iedereen werkt op
+            hetzelfde merk-DNA.
+          </p>
+        </div>
         <div className="grid md:grid-cols-2 gap-6">
-          <div className="rounded-2xl border-2 border-primary/30 bg-white p-8">
-            <div className="text-xs font-semibold mkt-accent uppercase tracking-wide mb-2">
-              Voor marketingteams
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              Schaal je content zonder je merk te verwateren
-            </h3>
-            <p className="text-gray-600 text-sm mb-5">
-              Volume on-brand content over alle kanalen, uit één plek. Minder tools, minder rework,
-              meetbare merkconsistentie voor je stakeholders.
-            </p>
-            <Link
-              href="/marketing/solutions/marketingteams"
-              className="inline-flex items-center gap-2 text-sm font-medium mkt-accent"
+          {FOR_WHO.map(({ Icon, eyebrow, title, body, href, cta, featured }) => (
+            <div
+              key={eyebrow}
+              className={`rounded-2xl bg-white p-8 ${
+                featured ? 'border-2 border-primary/30' : 'border border-gray-200'
+              }`}
             >
-              Bekijk voor marketingteams <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="rounded-2xl border border-gray-200 bg-white p-8">
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-              Voor bureaus
+              <div className="mkt-chip w-11 h-11 mb-4">
+                <Icon className="w-5 h-5" />
+              </div>
+              <div
+                className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
+                  featured ? 'mkt-accent' : 'text-gray-400'
+                }`}
+              >
+                {eyebrow}
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>
+              <p className="text-gray-600 text-sm mb-5">{body}</p>
+              <Link
+                href={href}
+                className={`inline-flex items-center gap-2 text-sm font-medium ${
+                  featured ? 'mkt-accent' : 'text-gray-700'
+                }`}
+              >
+                {cta} <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              Eén merk-DNA-workspace per klant
-            </h3>
-            <p className="text-gray-600 text-sm mb-5">
-              Beheer meerdere klantmerken naast elkaar, elk met een eigen merk-DNA — en lever
-              aantoonbaar on-brand werk.
-            </p>
-            <Link
-              href="/marketing/solutions/bureaus"
-              className="inline-flex items-center gap-2 text-sm font-medium text-gray-700"
-            >
-              Bekijk voor bureaus <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
+          ))}
         </div>
       </div>
     </section>
