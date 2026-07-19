@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { appHref } from '../app-url';
 import SplitHeader from '../SplitHeader';
+import TrialNote from '../TrialNote';
 
 export const metadata: Metadata = {
   title: 'Over ons',
@@ -73,6 +74,7 @@ export default function AboutPage() {
         >
           Branddock proberen
         </Link>
+        <TrialNote />
       </div>
     </div>
   );

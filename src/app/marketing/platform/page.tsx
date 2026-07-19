@@ -22,6 +22,7 @@ import {
 import { appHref } from '../app-url';
 import Mosaic from '../Mosaic';
 import SplitHeader from '../SplitHeader';
+import TrialNote from '../TrialNote';
 
 export const metadata: Metadata = {
   title: 'Platform — Branddock',
@@ -241,6 +242,7 @@ export default function PlatformPage() {
         >
           Bekijk prijzen
         </Link>
+        <TrialNote />
       </div>
     </div>
   );

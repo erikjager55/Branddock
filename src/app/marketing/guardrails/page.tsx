@@ -9,6 +9,7 @@ import { ArrowRight, BookOpenCheck, Hammer, ShieldCheck } from 'lucide-react';
 import { appHref } from '../app-url';
 import BookDemoButton from '../BookDemoButton';
 import SplitHeader from '../SplitHeader';
+import TrialNote from '../TrialNote';
 
 export const metadata: Metadata = {
   title: 'Brand guardrails voor AI-agents',
@@ -206,6 +207,7 @@ export default function GuardrailsPage() {
           Start je trial en koppel je agent <ArrowRight className="w-4 h-4" />
         </Link>
         <BookDemoButton />
+        <TrialNote />
       </div>
     </div>
   );

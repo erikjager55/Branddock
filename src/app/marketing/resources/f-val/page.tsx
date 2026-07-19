@@ -8,6 +8,7 @@ import { ArrowRight, Palette, Scale, ListChecks } from 'lucide-react';
 import { appHref } from '../../app-url';
 import Mosaic, { MOSAIC_PROOF } from '../../Mosaic';
 import SplitHeader from '../../SplitHeader';
+import TrialNote from '../../TrialNote';
 
 export const metadata: Metadata = {
   title: 'F-VAL uitgelegd — de merk-fideliteitsscore van Branddock',
@@ -163,6 +164,7 @@ export default function FvalPage() {
         >
           Bekijk de merk-check-feature
         </Link>
+        <TrialNote />
       </div>
     </div>
   );

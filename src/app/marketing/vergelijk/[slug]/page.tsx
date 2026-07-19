@@ -13,6 +13,7 @@ import { ArrowRight, Check } from 'lucide-react';
 import { appHref } from '../../app-url';
 import SplitHeader from '../../SplitHeader';
 import type { Metadata } from 'next';
+import TrialNote from '../../TrialNote';
 
 interface CompareSpec {
   slug: string;
@@ -305,6 +306,7 @@ export default async function ComparePage({
         >
           Koppel je agent — gratis lezen &amp; valideren
         </Link>
+        <TrialNote />
       </div>
     </div>
   );

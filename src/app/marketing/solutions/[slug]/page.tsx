@@ -7,6 +7,7 @@ import { Check } from 'lucide-react';
 import { appHref } from '../../app-url';
 import SplitHeader from '../../SplitHeader';
 import type { Metadata } from 'next';
+import TrialNote from '../../TrialNote';
 
 interface SolutionSpec {
   slug: string;
@@ -167,6 +168,7 @@ export default async function SolutionPage({
         >
           Bekijk prijzen
         </Link>
+        <TrialNote />
       </div>
     </div>
   );

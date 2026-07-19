@@ -10,6 +10,7 @@
 import type { Metadata } from 'next';
 import { Mail, Linkedin, CalendarClock, ArrowUpRight } from 'lucide-react';
 import SplitHeader from '../SplitHeader';
+import TrialNote from '../TrialNote';
 
 export const metadata: Metadata = {
   title: 'Contact',
@@ -81,6 +82,7 @@ export default function ContactPage() {
               Kies een tijd
               <ArrowUpRight className="w-4 h-4" />
             </a>
+            <TrialNote />
           </div>
         </div>
       ) : (

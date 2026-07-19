@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { appHref } from '../app-url';
 import SplitHeader from '../SplitHeader';
+import TrialNote from '../TrialNote';
 
 export const metadata: Metadata = {
   title: 'Changelog',
@@ -119,6 +120,7 @@ export default function ChangelogPage() {
         >
           Bekijk het platform
         </Link>
+        <TrialNote />
       </div>
     </div>
   );

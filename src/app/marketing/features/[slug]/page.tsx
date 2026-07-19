@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { appHref } from '../../app-url';
 import SplitHeader, { type SplitHeaderFamily } from '../../SplitHeader';
 import type { Metadata } from 'next';
+import TrialNote from '../../TrialNote';
 
 interface FeatureSpec {
   slug: string;
@@ -207,6 +208,7 @@ export default async function FeaturePage({
         >
           Bekijk prijzen
         </Link>
+        <TrialNote />
       </div>
     </div>
   );
