@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { ArrowRight, Check, ChevronDown, ShieldCheck } from 'lucide-react';
 import { appHref } from '../app-url';
 import SplitHeader from '../SplitHeader';
+import Testimonial from '../Testimonial';
 import { PLAN_CONFIGS, TOPUP_PACKS, TRIAL_DAYS, TRIAL_CREDITS } from '@/lib/constants/plan-limits';
 import { creditExampleLine, creditExampleLineCompact } from '@/lib/constants/credit-examples';
 import { CREDIT_COSTS, isZeroCostAction } from '@/lib/billing/credits/credit-costs';
@@ -56,6 +57,7 @@ const TIER_COPY: TierCopy[] = [
     name: 'Starter',
     description: 'Voor solo-founders en merken in de opstartfase',
     proseFeatures: [
+      'Gratis setup-scan: van website naar merk-DNA in minuten',
       'Volledig merk-DNA + Brand Voice',
       'AI-content over 25+ contenttypes',
       'Merk-check (F-VAL) op elke output — gratis',
@@ -156,6 +158,14 @@ const FAQ_ITEMS = [
     a: `${TRIAL_DAYS} dagen gratis met ${nl.format(TRIAL_CREDITS)} credits — geen creditcard. Na de proef blijft je merkdata veilig en zichtbaar; je kiest pas een plan als je wilt blijven genereren.`,
   },
   {
+    q: 'Ik heb geen marketingteam of merkdocumenten — werkt Branddock dan?',
+    a: 'Ja. De gratis setup-scan bouwt je merk-DNA vanaf je website, en een brand voice maak je uit 3 voorbeeldteksten in \u00b15 minuten. Starter is precies hiervoor bedoeld: de agents zijn dan je eerste marketingcollega\u2019s — zij stellen voor, jij keurt goed.',
+  },
+  {
+    q: 'In welke talen werkt Branddock?',
+    a: 'Je stelt de contenttaal per workspace in — Nederlands, Engels, Duits, Frans, Spaans, Portugees of Italiaans. Generatie én de merk-check werken in die taal.',
+  },
+  {
     q: 'Hoe werken credits?',
     a: `Credits tellen alleen wat we voor je genereren (output): een kort stuk ≈ ${CREDIT_COSTS.short}, longform ≈ ${CREDIT_COSTS['long-form']}, een afbeelding ${CREDIT_COSTS.image}, een videoclip ${CREDIT_COSTS['video-clip']}. Ter indicatie: met Starter (${nl.format(PLAN_CONFIGS.STARTER.monthlyCredits)} credits) maak je ${creditExampleLine(PLAN_CONFIGS.STARTER.monthlyCredits)}. Je merkcontext en elke merk-check (F-VAL) zijn altijd gratis — dat is juist het punt van Branddock.`,
   },
@@ -212,6 +222,11 @@ export default function PricingPage() {
           De trial loopt automatisch af — geen creditcard, dus geen verrassing. Je merkdata blijft
           veilig en zichtbaar; je kiest pas een plan als je wilt blijven genereren.
         </p>
+
+        {/* V2-04: proof-element op het twijfelmoment. */}
+        <div className="mt-6 max-w-2xl mx-auto">
+          <Testimonial context="pricing" />
+        </div>
 
         {/* UX-09: Enterprise met een duidelijke bestemming i.p.v. een losse
             tekstlink in de voetnoot.
