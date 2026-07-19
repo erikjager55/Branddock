@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 422. UX-verbeterplan branddock.app — 19 issues in drie golven (P0/P1/P2)
+
+Volledige uitvoering van Eriks UX-audit (19-07; UX-06 social proof bewust overgeslagen), PR's #211/#212/#213. **P0**: WCAG-contrast site-breed (slate-op-mint-knoppen 8.95:1, link-inkt #047857; was 1.64:1), registratie- vs login-context op alle CTA's (?view=register + trial-belofte op het registratiescherm), type-scale op merkspec via marketing-scoped px (app-root bewust ongemoeid), hero-blur-placeholder (LCP), juridische basis (privacy/voorwaarden/security uit concept-PR #161 + footer-blok + bedrijfsvermelding). **P1**: TrialNote-microcopy onder elke CTA, klikbare modulekaarten, pricing-herstructurering (badge/na-trial/Enterprise), violet uit de mozaïeken + kleurmapping, enkelvoudige title-suffixen, canonicals + host-scoped /marketing→/-redirect. **P2**: Voor-wie-kaarten volledig klikbaar, knop/typografie-systeem vastgelegd, platform-shots + orphan-vrije grids, probleem-sectie met score-vergelijk, HowItWorks-highlights + mini-CTA's, focus-visible + skip-link, hero-toggle prominenter, route /marketing/voor-ai-agents (301 vanaf guardrails). Open voor Erik: KvK-nummer, demo-URL-alias, jaarfacturering-besluit, juridische review.
+
+- Task: `-` (uitvoering van Eriks UX-auditdocument, commit per issue)
+
 ### 421. Marketing-header: aankondigingsbalk, wig vooraan, dropdowns + mobiel menu
 
 Derde Postiz-patroon op Eriks verzoek. (1) Aankondigingsbalk boven de nav — cadans-surface met config-blokje (nieuw bericht = nieuw id), dismissbaar via localStorage (useSyncExternalStore, geen setState-in-effect); startbericht: de Claude/ChatGPT-connector. (2) Nav-herstructurering: "Voor AI-agents" naar positie 1 met accent-dot; Platform en Oplossingen worden dropdowns (8 feature-pagina's resp. 2 solution-LP's + 3 vergelijk-pagina's — breedte-bewijs zonder klik); Nieuws (changelog) in de nav; Over ons/Contact naar de footer (stonden daar al). (3) CTA "Gratis proberen" → "Start gratis" met drempelverlager-microcopy. (4) Mobiel hamburger-menu — daarvoor had mobiel helemaal géén navigatie (omissie-fix). Bijvangst: `md:hidden` was door de Tailwind-4-purge afwezig in index.css → appended in het md-blok. Playwright-geverifieerd: dropdowns, dismiss-persistentie na reload, hamburger alleen op mobiel. PR #209.
