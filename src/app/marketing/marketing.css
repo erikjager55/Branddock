@@ -40,11 +40,18 @@
 
   font-family: 'halyard-text', 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.6;
+
+  /* UX-03: de app-root staat op 14px (index.css --font-size, app-breed —
+     bewust NIET aanraken). Alle rem-maten krompen daardoor 12,5% onder de
+     merkspec. Binnen de marketing-root zetten we de maten in px zodat de
+     site op spec rendert (H1 56 / H2 36 / H3 20 / body 16 / caption 12)
+     zónder de app-UI te herschalen. */
+  font-size: 16px;
 }
 
 .marketing-root h1 {
   font-family: 'halyard-display', 'Hanken Grotesk', sans-serif;
-  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-size: clamp(32px, 5vw, 56px);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -52,10 +59,27 @@
 
 .marketing-root h2 {
   font-family: 'halyard-display', 'Hanken Grotesk', sans-serif;
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 600;
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 700;
   letter-spacing: -0.01em;
 }
+
+.marketing-root h3 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* UX-03: Tailwind-text-utilities zijn rem-gebaseerd en volgen de 14px-root;
+   scoped px-overrides brengen ze binnen marketing op spec. Marketing gebruikt
+   geen responsive text-*-varianten (geverifieerd 2026-07-19). */
+.marketing-root .text-xs { font-size: 12px; line-height: 17px; }
+.marketing-root .text-sm { font-size: 14px; line-height: 21px; }
+.marketing-root .text-base { font-size: 16px; line-height: 26px; }
+.marketing-root .text-lg { font-size: 18px; line-height: 28px; }
+.marketing-root .text-xl { font-size: 20px; line-height: 30px; }
+.marketing-root .text-2xl { font-size: 24px; line-height: 32px; }
+.marketing-root .text-3xl { font-size: 30px; line-height: 37px; }
+.marketing-root .text-4xl { font-size: 36px; line-height: 41px; }
 
 /* Homepage v2 — scoped utilities. Kleuren via de CSS-var --primary zodat ze
    NIET door de Tailwind 4 purge sneuvelen (zie gotchas: kleurklassen in
@@ -149,7 +173,7 @@
 }
 
 .mkt-split__eyebrow {
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -158,7 +182,7 @@
 }
 
 .mkt-split__lead {
-  font-size: 1.1rem;
+  font-size: 18px;
   color: rgba(255, 255, 255, 0.86);
   margin-top: 0.85rem;
   margin-bottom: 0;
@@ -228,7 +252,7 @@
 
 .mkt-hero__meta-item b {
   display: block;
-  font-size: 0.68rem;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(255, 255, 255, 0.55);
@@ -237,7 +261,7 @@
 }
 
 .mkt-hero__meta-item span {
-  font-size: 0.9rem;
+  font-size: 14px;
   color: #fff;
   font-weight: 500;
 }
@@ -268,7 +292,7 @@
 .mkt-badge-popular {
   display: inline-flex;
   align-items: center;
-  font-size: 0.7rem;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
