@@ -7,6 +7,9 @@ import { ArrowRight, Check } from 'lucide-react';
 import { appHref } from './app-url';
 import BookDemoButton from './BookDemoButton';
 import Mosaic, { MOSAIC_PRODUCT } from './Mosaic';
+// UX-04: statische import → Next genereert een blur-placeholder, zodat het
+// hero-paneel nooit seconden leeg-wit staat terwijl de grote PNG laadt.
+import contentCanvasShot from '../../../public/marketing/features/content-canvas.png';
 
 // Hero met modus-switch (Postiz-patroon, besluit Erik 2026-07-19): één toggle
 // die het hele hero-verhaal wisselt tussen "in het platform" (het AI-team in
@@ -65,10 +68,10 @@ export default function HeroModes() {
           </div>
           {mode === 'platform' ? (
             <Image
-              src="/marketing/features/content-canvas.png"
+              src={contentCanvasShot}
               alt="Branddock Content Canvas — on-brand content genereren met een merk-fideliteitsscore"
-              width={2880}
-              height={1800}
+              placeholder="blur"
+              sizes="(max-width: 768px) 100vw, 46vw"
               className="w-full h-auto"
               priority
             />
@@ -85,7 +88,12 @@ export default function HeroModes() {
         </div>
         <div className="mkt-hero__meta-item">
           <b>Data</b>
-          <span>EU-hosting · AVG-proof</span>
+          {/* UX-05: de AVG-claim klikt door naar de onderbouwing. */}
+          <span>
+            <Link href="/marketing/security" className="hover:underline">
+              EU-hosting · AVG-proof
+            </Link>
+          </span>
         </div>
         <div className="mkt-hero__meta-item">
           <b>Start</b>
@@ -125,7 +133,7 @@ function PlatformInk() {
       </p>
       <div className="flex flex-wrap gap-3">
         <Link
-          href={appHref('/?utm_source=marketing-site&utm_medium=hero')}
+          href={appHref('/?view=register&utm_source=marketing-site&utm_medium=hero')}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white font-medium hover:opacity-90"
           style={{ color: 'var(--brand-slate)' }}
         >
@@ -150,7 +158,7 @@ function AgentInk() {
       </p>
       <div className="flex flex-wrap gap-3">
         <Link
-          href={appHref('/?utm_source=marketing-site&utm_medium=hero-agent')}
+          href={appHref('/?view=register&utm_source=marketing-site&utm_medium=hero-agent')}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white font-medium hover:opacity-90"
           style={{ color: 'var(--brand-slate)' }}
         >

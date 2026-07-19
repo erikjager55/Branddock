@@ -61,7 +61,7 @@ const TIER_COPY: TierCopy[] = [
       'E-mailsupport',
     ],
     ctaLabel: 'Gratis proberen',
-    ctaHref: '/?utm_source=marketing-site&utm_medium=pricing-starter',
+    ctaHref: '/?view=register&utm_source=marketing-site&utm_medium=pricing-starter',
   },
   {
     id: 'growth',
@@ -74,7 +74,7 @@ const TIER_COPY: TierCopy[] = [
       'Prioriteitssupport',
     ],
     ctaLabel: 'Gratis proberen',
-    ctaHref: '/?utm_source=marketing-site&utm_medium=pricing-growth',
+    ctaHref: '/?view=register&utm_source=marketing-site&utm_medium=pricing-growth',
     highlighted: true,
   },
   {
@@ -83,7 +83,7 @@ const TIER_COPY: TierCopy[] = [
     description: 'Voor bureaus die meerdere merken beheren',
     proseFeatures: ['Alles uit Growth', 'Multi-tenant klantbeheer', 'Persoonlijke onboarding'],
     ctaLabel: 'Gratis proberen',
-    ctaHref: '/?utm_source=marketing-site&utm_medium=pricing-agency',
+    ctaHref: '/?view=register&utm_source=marketing-site&utm_medium=pricing-agency',
   },
 ];
 
@@ -320,7 +320,7 @@ function TierCard({ tier }: { tier: Tier }) {
         href={appHref(tier.ctaHref)}
         className={`inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-medium text-sm transition-colors ${
           tier.highlighted
-            ? 'bg-primary text-white hover:opacity-90'
+            ? 'mkt-btn-primary'
             : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
         }`}
       >

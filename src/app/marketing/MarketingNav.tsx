@@ -85,7 +85,7 @@ function AnnouncementBar() {
       </Link>
       <button
         type="button"
-        // eslint-disable-next-line no-restricted-syntax -- marketing-site is NL-first (geen product-UI)
+         
         aria-label="Aankondiging sluiten"
         onClick={dismissAnnouncement}
         className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 hover:bg-white/10"
@@ -157,21 +157,21 @@ function NavBar() {
 
         <div className="flex items-center gap-3">
           <Link
-            href={appHref('/?utm_source=marketing-site&utm_medium=nav-login')}
+            href={appHref('/?view=login&utm_source=marketing-site&utm_medium=nav-login')}
             className="hidden sm:inline text-sm text-gray-600 hover:text-gray-900"
           >
             Inloggen
           </Link>
           <Link
-            href={appHref('/?utm_source=marketing-site&utm_medium=nav')}
+            href={appHref('/?view=register&utm_source=marketing-site&utm_medium=nav')}
             title="28 dagen gratis · geen creditcard"
-            className="inline-flex items-center px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 transition-opacity"
+            className="inline-flex items-center px-4 py-2 rounded-lg mkt-btn-primary text-sm font-medium"
           >
             Start gratis
           </Link>
           <button
             type="button"
-            // eslint-disable-next-line no-restricted-syntax -- marketing-site is NL-first (geen product-UI)
+             
             aria-label={mobileOpen ? 'Menu sluiten' : 'Menu openen'}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -291,13 +291,13 @@ function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
       <Link href="/marketing/changelog" onClick={onNavigate} className={item}>
         Nieuws
       </Link>
-      <Link href={appHref('/?utm_source=marketing-site&utm_medium=nav-login')} className={item}>
+      <Link href={appHref('/?view=login&utm_source=marketing-site&utm_medium=nav-login')} className={item}>
         Inloggen
       </Link>
       <div className="px-6 pt-3">
         <Link
-          href={appHref('/?utm_source=marketing-site&utm_medium=nav')}
-          className="inline-flex w-full items-center justify-center px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90"
+          href={appHref('/?view=register&utm_source=marketing-site&utm_medium=nav')}
+          className="inline-flex w-full items-center justify-center px-4 py-2.5 rounded-lg mkt-btn-primary text-sm font-medium"
         >
           Start gratis
         </Link>

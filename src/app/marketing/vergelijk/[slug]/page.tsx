@@ -294,8 +294,8 @@ export default async function ComparePage({
       {/* Compacte CTA: trial + guardrails-link */}
       <div className="pt-8 border-t border-gray-200 flex flex-wrap gap-3">
         <Link
-          href={appHref(`/?utm_source=marketing-site&utm_medium=vergelijk-${spec.slug}`)}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
+          href={appHref(`/?view=register&utm_source=marketing-site&utm_medium=vergelijk-${spec.slug}`)}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg mkt-btn-primary font-medium"
         >
           Branddock proberen <ArrowRight className="w-4 h-4" />
         </Link>

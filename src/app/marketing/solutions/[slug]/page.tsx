@@ -156,8 +156,8 @@ export default async function SolutionPage({
 
       <div className="pt-8 border-t border-gray-200 flex flex-wrap gap-3">
         <Link
-          href={appHref(`/?utm_source=marketing-site&utm_medium=solution-${solution.slug}`)}
-          className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
+          href={appHref(`/?view=register&utm_source=marketing-site&utm_medium=solution-${solution.slug}`)}
+          className="inline-flex items-center px-6 py-3 rounded-lg mkt-btn-primary font-medium"
         >
           Gratis proberen
         </Link>

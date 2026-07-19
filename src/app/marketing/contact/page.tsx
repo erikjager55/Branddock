@@ -75,7 +75,7 @@ export default function ContactPage() {
               href={BOOKING_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg mkt-btn-primary font-medium"
             >
               <CalendarClock className="w-4 h-4" />
               Kies een tijd
