@@ -157,13 +157,13 @@ function NavBar() {
 
         <div className="flex items-center gap-3">
           <Link
-            href={appHref('/?utm_source=marketing-site&utm_medium=nav-login')}
+            href={appHref('/?view=login&utm_source=marketing-site&utm_medium=nav-login')}
             className="hidden sm:inline text-sm text-gray-600 hover:text-gray-900"
           >
             Inloggen
           </Link>
           <Link
-            href={appHref('/?utm_source=marketing-site&utm_medium=nav')}
+            href={appHref('/?view=register&utm_source=marketing-site&utm_medium=nav')}
             title="28 dagen gratis · geen creditcard"
             className="inline-flex items-center px-4 py-2 rounded-lg mkt-btn-primary text-sm font-medium"
           >
@@ -291,12 +291,12 @@ function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
       <Link href="/marketing/changelog" onClick={onNavigate} className={item}>
         Nieuws
       </Link>
-      <Link href={appHref('/?utm_source=marketing-site&utm_medium=nav-login')} className={item}>
+      <Link href={appHref('/?view=login&utm_source=marketing-site&utm_medium=nav-login')} className={item}>
         Inloggen
       </Link>
       <div className="px-6 pt-3">
         <Link
-          href={appHref('/?utm_source=marketing-site&utm_medium=nav')}
+          href={appHref('/?view=register&utm_source=marketing-site&utm_medium=nav')}
           className="inline-flex w-full items-center justify-center px-4 py-2.5 rounded-lg mkt-btn-primary text-sm font-medium"
         >
           Start gratis

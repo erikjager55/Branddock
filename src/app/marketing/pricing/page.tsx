@@ -61,7 +61,7 @@ const TIER_COPY: TierCopy[] = [
       'E-mailsupport',
     ],
     ctaLabel: 'Gratis proberen',
-    ctaHref: '/?utm_source=marketing-site&utm_medium=pricing-starter',
+    ctaHref: '/?view=register&utm_source=marketing-site&utm_medium=pricing-starter',
   },
   {
     id: 'growth',
@@ -74,7 +74,7 @@ const TIER_COPY: TierCopy[] = [
       'Prioriteitssupport',
     ],
     ctaLabel: 'Gratis proberen',
-    ctaHref: '/?utm_source=marketing-site&utm_medium=pricing-growth',
+    ctaHref: '/?view=register&utm_source=marketing-site&utm_medium=pricing-growth',
     highlighted: true,
   },
   {
@@ -83,7 +83,7 @@ const TIER_COPY: TierCopy[] = [
     description: 'Voor bureaus die meerdere merken beheren',
     proseFeatures: ['Alles uit Growth', 'Multi-tenant klantbeheer', 'Persoonlijke onboarding'],
     ctaLabel: 'Gratis proberen',
-    ctaHref: '/?utm_source=marketing-site&utm_medium=pricing-agency',
+    ctaHref: '/?view=register&utm_source=marketing-site&utm_medium=pricing-agency',
   },
 ];
 

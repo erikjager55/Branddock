@@ -359,7 +359,7 @@ function PricingTeaser() {
           Alle prijzen bekijken
         </Link>
         <Link
-          href={appHref('/?utm_source=marketing-site&utm_medium=pricing-teaser')}
+          href={appHref('/?view=register&utm_source=marketing-site&utm_medium=pricing-teaser')}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg mkt-btn-primary text-sm font-medium"
         >
           Gratis proberen
@@ -439,7 +439,7 @@ function FinalCTA() {
           direct voor je klaar.
         </p>
         <Link
-          href={appHref('/?utm_source=marketing-site&utm_medium=final-cta')}
+          href={appHref('/?view=register&utm_source=marketing-site&utm_medium=final-cta')}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white font-medium hover:opacity-90"
           style={{ color: 'var(--brand-slate)' }}
         >

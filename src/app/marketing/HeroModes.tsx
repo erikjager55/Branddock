@@ -128,7 +128,7 @@ function PlatformInk() {
       </p>
       <div className="flex flex-wrap gap-3">
         <Link
-          href={appHref('/?utm_source=marketing-site&utm_medium=hero')}
+          href={appHref('/?view=register&utm_source=marketing-site&utm_medium=hero')}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white font-medium hover:opacity-90"
           style={{ color: 'var(--brand-slate)' }}
         >
@@ -153,7 +153,7 @@ function AgentInk() {
       </p>
       <div className="flex flex-wrap gap-3">
         <Link
-          href={appHref('/?utm_source=marketing-site&utm_medium=hero-agent')}
+          href={appHref('/?view=register&utm_source=marketing-site&utm_medium=hero-agent')}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white font-medium hover:opacity-90"
           style={{ color: 'var(--brand-slate)' }}
         >

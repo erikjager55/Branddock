@@ -13,6 +13,16 @@ type AuthView = 'login' | 'register' | 'forgot-password';
 
 export function AuthPage() {
   const [activeView, setActiveView] = useState<AuthView>('login');
+
+  // UX-02: marketing-CTA's onderscheiden registratie van login via ?view=…
+  // (Start gratis → ?view=register, Inloggen → ?view=login). Eénmalige
+  // URL-lezing ná mount — hydration-veilig (SSR kent de query niet).
+  React.useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('view') === 'register') {
+      // eslint-disable-next-line no-restricted-syntax -- eenmalige mount-sync vanuit de URL, geen cascade
+      setActiveView('register');
+    }
+  }, []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -219,6 +229,19 @@ export function AuthPage() {
                   {t('auth.register')}
                 </button>
               </div>
+
+              {/* UX-02: herhaal de trial-belofte uit de marketing op het
+                  registratiemoment — zelfde formulering als op de site. */}
+              {activeView === 'register' && (
+                <p
+                  data-testid="trial-promise"
+                  className="mb-4 text-center text-sm text-gray-600"
+                >
+                  {t('auth.trialPromise', {
+                    defaultValue: '28 days free · 300 credits · no credit card required',
+                  })}
+                </p>
+              )}
 
               {/* Social Login Buttons */}
               <SocialLoginButtons />

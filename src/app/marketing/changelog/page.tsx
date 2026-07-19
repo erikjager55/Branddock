@@ -108,7 +108,7 @@ export default function ChangelogPage() {
 
       <div className="mt-12 pt-8 border-t border-gray-200 flex flex-wrap gap-3">
         <Link
-          href={appHref('/?utm_source=marketing-site&utm_medium=changelog')}
+          href={appHref('/?view=register&utm_source=marketing-site&utm_medium=changelog')}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-lg mkt-btn-primary font-medium"
         >
           Probeer het nieuwste zelf <ArrowRight className="w-4 h-4" />
