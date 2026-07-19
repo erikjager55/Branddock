@@ -26,6 +26,7 @@ import { appHref } from './app-url';
 import HeroModes from './HeroModes';
 import HowItWorks from './HowItWorks';
 import Mosaic, { MOSAIC_PRODUCT } from './Mosaic';
+import Testimonial from './Testimonial';
 import { PLAN_CONFIGS } from '@/lib/constants/plan-limits';
 import { creditExampleLineCompact } from '@/lib/constants/credit-examples';
 
@@ -231,10 +232,49 @@ function ValuePillars() {
             </div>
           ))}
         </div>
+        {/* V2-05: het team tastbaar — de 9 agents met naam en rol (echte
+            product-rollen), klik door naar de agents-pagina. */}
+        <Link
+          href="/marketing/features/agents"
+          className="mt-10 flex flex-wrap items-center gap-2.5 rounded-xl border border-gray-200 bg-white p-4 hover:border-gray-300 hover:shadow-md transition-all"
+        >
+          {AGENTS.map(([name, role]) => (
+            <span
+              key={name}
+              className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 pl-1 pr-3 py-1"
+            >
+              <span
+                className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white"
+                style={{ background: 'var(--brand-slate)' }}
+              >
+                {name[0]}
+              </span>
+              <span className="text-sm text-gray-800 font-medium">{name}</span>
+              <span className="text-xs text-gray-500">{role}</span>
+            </span>
+          ))}
+          <span className="inline-flex items-center gap-1.5 text-sm font-medium mkt-accent ml-auto">
+            Ontmoet het team <ArrowRight className="w-4 h-4" />
+          </span>
+        </Link>
       </div>
     </section>
   );
 }
+
+// V2-05: namen + rollen zoals ze in het product bestaan — ze stellen voor,
+// jij keurt goed.
+const AGENTS: [string, string][] = [
+  ['Nova', 'Research-analist'],
+  ['Stella', 'Strateeg'],
+  ['Milo', 'Content-creator'],
+  ['Vera', 'Brand Guardian'],
+  ['Dana', 'Data-analist'],
+  ['Marco', 'Markt-analist'],
+  ['Remi', 'Reporting-analist'],
+  ['Iris', 'SEO/GEO-watchdog'],
+  ['Ada', 'Ads-watchdog'],
+];
 
 function ProofStrip() {
   const stats = [
@@ -259,10 +299,13 @@ function ProofStrip() {
         Eerlijke pilotmeting — geen opgeblazen cijfers. De merk-check is één van de garanties in het
         platform.
       </p>
+      {/* V2-04: proof-pack — quote of feitelijke pilot-regel. */}
+      <Testimonial context="home" className="mt-6" />
     </section>
   );
 }
 
+// TODO(Erik): vijfde voor-wie-kaart voor founders/kleine merken? (V2-08.4 — besluit)
 const FOR_WHO: {
   Icon: typeof Dna;
   eyebrow: string;
@@ -444,6 +487,14 @@ function FAQ() {
     {
       q: 'Wat gebeurt er met mijn data?',
       a: 'Je data staat in de EU en we werken AVG-proof. Je merk-DNA wordt niet gebruikt om modellen van derden te trainen.',
+    },
+    {
+      q: 'Ik heb geen marketingteam of merkdocumenten — werkt Branddock dan?',
+      a: 'Ja. De gratis setup-scan bouwt je merk-DNA vanaf je website, en een brand voice maak je uit 3 voorbeeldteksten in ±5 minuten. Starter is precies hiervoor bedoeld: de agents zijn dan je eerste marketingcollega\u2019s — zij stellen voor, jij keurt goed.',
+    },
+    {
+      q: 'In welke talen werkt Branddock?',
+      a: 'Je stelt de contenttaal per workspace in — Nederlands, Engels, Duits, Frans, Spaans, Portugees of Italiaans. Generatie én de merk-check werken in die taal; meertalige merken kunnen per merkprofiel een taal voeren.',
     },
     {
       q: 'Kan ik gratis beginnen?',
