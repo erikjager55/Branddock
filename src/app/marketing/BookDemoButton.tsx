@@ -1,3 +1,4 @@
+// TODO(Erik): booking-URL toont "betterbrands" — alias met "branddock" instellen (UX-20.2).
 // Provider-neutrale demo-boeking (Morgen/Calendly/Cal.com). Zonder booking-URL:
 // val terug op de contactpagina i.p.v. een dood `#`. Gedeeld door de homepage
 // en de guardrails-pagina (P2.2).

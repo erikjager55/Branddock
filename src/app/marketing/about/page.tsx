@@ -1,3 +1,4 @@
+// TODO(Erik): KvK- en btw-nummer toevoegen bij de BetterBrands-vermelding (UX-20.5).
 // About-page met founder-story + missie. NL-first (Fase 2).
 
 import type { Metadata } from 'next';

@@ -305,7 +305,7 @@ export default async function ComparePage({
           Branddock proberen <ArrowRight className="w-4 h-4" />
         </Link>
         <Link
-          href="/marketing/guardrails"
+          href="/marketing/voor-ai-agents"
           className="inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
         >
           Koppel je agent — gratis lezen &amp; valideren
