@@ -77,7 +77,7 @@ function AnnouncementBar() {
   if (dismissed) return null;
 
   return (
-    <div className="relative text-center text-sm text-white px-10 py-2" style={{ background: 'var(--brand-slate)' }}>
+    <div className="mkt-ondark relative text-center text-sm text-white px-10 py-2" style={{ background: 'var(--brand-slate)' }}>
       <span style={{ color: 'var(--brand-lime)' }}>●</span>{' '}
       <span style={{ color: 'rgba(255,255,255,0.9)' }}>{ANNOUNCEMENT.label}</span>{' '}
       <Link href={ANNOUNCEMENT.href} className="font-medium underline underline-offset-2 hover:opacity-80">

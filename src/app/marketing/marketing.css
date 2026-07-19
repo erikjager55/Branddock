@@ -39,6 +39,14 @@
   --btn-primary-ink: #1F2937;
   --link-ink: #047857;
 
+  /* UX-14 — knop- en typografie-systeem (vastgelegd 2026-07-19):
+     · primair-op-licht  = .mkt-btn-primary (mint-vlak, slate-inkt)
+     · primair-op-donker = wit vlak met slate-inkt (hero's/CTA-banden)
+     · secundair         = outline (border-gray-300 op licht, border-white/40 op donker)
+     · koppen = halyard-display · body & UI = halyard-text — merkspec-conform,
+       met Hanken Grotesk als zelf-gehoste fallback (Inter is de ápp-font en
+       hoort niet op de marketing-site). Geen derde knopstijl toevoegen. */
+
   font-family: 'halyard-text', 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.6;
 
@@ -113,6 +121,42 @@
   border-radius: 12px;
   background: color-mix(in srgb, var(--primary) 12%, transparent);
   color: var(--link-ink);
+}
+
+/* UX-18: zichtbare toetsenbord-focus (audit: outline: none op de primaire CTA). */
+.marketing-root a:focus-visible,
+.marketing-root button:focus-visible {
+  outline: 2px solid var(--brand-slate);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Op donkere vlakken (hero, ink-panelen, aankondigingsbalk) is de outline wit. */
+.mkt-hero a:focus-visible,
+.mkt-hero button:focus-visible,
+.mkt-split__ink a:focus-visible,
+.mkt-split__ink button:focus-visible,
+.mkt-ondark a:focus-visible,
+.mkt-ondark button:focus-visible {
+  outline-color: #fff;
+}
+
+/* UX-18: skip-link — eerste focusbare element, zichtbaar zodra hij focus krijgt. */
+.mkt-skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  color: var(--brand-slate);
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 8px 0;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.mkt-skip:focus {
+  left: 0;
 }
 
 .mkt-frame {

@@ -45,8 +45,14 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
     <div className="marketing-root min-h-screen flex flex-col bg-white text-gray-900">
       {/* Merk-font Halyard via Adobe Fonts (Typekit); CSP staat use.typekit.net toe. */}
       <link rel="stylesheet" href="https://use.typekit.net/idv8cqe.css" />
+      {/* UX-18: skip-link als eerste focusbare element. */}
+      <a href="#mkt-main" className="mkt-skip">
+        Naar inhoud
+      </a>
       <MarketingNav />
-      <main className="flex-1">{children}</main>
+      <main id="mkt-main" className="flex-1">
+        {children}
+      </main>
       <MarketingFooter />
     </div>
   );
