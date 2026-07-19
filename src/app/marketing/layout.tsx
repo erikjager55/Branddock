@@ -7,7 +7,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { appHref } from './app-url';
+import MarketingNav from './MarketingNav';
 import { PLAN_CONFIGS } from '@/lib/constants/plan-limits';
 import './marketing.css';
 
@@ -49,53 +49,6 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       <main className="flex-1">{children}</main>
       <MarketingFooter />
     </div>
-  );
-}
-
-function MarketingNav() {
-  return (
-    <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/80 backdrop-blur">
-      <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-        <Link href="/marketing" className="flex items-center" aria-label="Branddock">
-          {/* eslint-disable-next-line @next/next/no-img-element -- statische SVG-merkasset */}
-          <img src="/marketing/branddock-logo.svg" alt="Branddock" className="h-6 w-auto" />
-        </Link>
-        <nav className="hidden md:flex items-center gap-6 text-sm text-gray-600">
-          <Link href="/marketing/platform" className="hover:text-gray-900">
-            Platform
-          </Link>
-          <Link href="/marketing/solutions/marketingteams" className="hover:text-gray-900">
-            Oplossingen
-          </Link>
-          <Link href="/marketing/guardrails" className="hover:text-gray-900">
-            Voor AI-agents
-          </Link>
-          <Link href="/marketing/pricing" className="hover:text-gray-900">
-            Prijzen
-          </Link>
-          <Link href="/marketing/about" className="hover:text-gray-900">
-            Over ons
-          </Link>
-          <Link href="/marketing/contact" className="hover:text-gray-900">
-            Contact
-          </Link>
-        </nav>
-        <div className="flex items-center gap-3">
-          <Link
-            href={appHref('/?utm_source=marketing-site&utm_medium=nav-login')}
-            className="hidden sm:inline text-sm text-gray-600 hover:text-gray-900"
-          >
-            Inloggen
-          </Link>
-          <Link
-            href={appHref('/?utm_source=marketing-site&utm_medium=nav')}
-            className="inline-flex items-center px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 transition-opacity"
-          >
-            Gratis proberen
-          </Link>
-        </div>
-      </div>
-    </header>
   );
 }
 
