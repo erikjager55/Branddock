@@ -116,6 +116,11 @@ function MarketingFooter() {
                   Voor AI-agents
                 </Link>
               </li>
+              <li>
+                <Link href="/marketing/voor-ai-agents#api" className="hover:text-gray-900">
+                  Voor developers (API)
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -206,7 +211,7 @@ function MarketingFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/marketing/terms" className="hover:text-gray-900">
+                <Link href="/marketing/voorwaarden" className="hover:text-gray-900">
                   Algemene voorwaarden
                 </Link>
               </li>

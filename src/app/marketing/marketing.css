@@ -260,7 +260,10 @@
 }
 
 .mkt-hero__ink {
-  padding: 3.5rem 3rem;
+  /* V2-01: de tekstkolom lijnt uit met de max-w-6xl-container (72rem + 1.5rem
+     gutter) van nav en secties — de hero bleef full-bleed, maar de inkt hing
+     op brede schermen tegen de viewportrand. max() houdt 3rem als vloer. */
+  padding: 3.5rem 3rem 3.5rem max(3rem, calc((100vw - 72rem) / 2 + 1.5rem));
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -295,12 +298,18 @@
   border-right: 0;
 }
 
+/* V2-01: eerste meta-item lijnt mee met de container (zelfde max()-regel). */
+.mkt-hero__meta-item:first-child {
+  padding-left: max(2rem, calc((100vw - 72rem) / 2 + 1.5rem));
+}
+
 .mkt-hero__meta-item b {
   display: block;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.55);
+  /* V2-03: was 0.55 — te licht voor kleine tekst op slate. */
+  color: rgba(255, 255, 255, 0.72);
   margin-bottom: 0.25rem;
   font-weight: 600;
 }

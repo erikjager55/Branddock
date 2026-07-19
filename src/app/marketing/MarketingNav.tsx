@@ -244,7 +244,7 @@ function DropdownPanel({
         ))}
         {divider && extraItems && (
           <>
-            <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
               {divider}
             </div>
             {extraItems.map((item) => (
@@ -265,7 +265,7 @@ function DropdownPanel({
 }
 
 function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
-  const section = 'px-6 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400';
+  const section = 'px-6 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500';
   const item = 'block px-6 py-2 text-sm text-gray-700 hover:bg-gray-50';
 
   return (
@@ -303,7 +303,7 @@ function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
         >
           Start gratis
         </Link>
-        <p className="text-center text-xs text-gray-400 mt-2">28 dagen gratis · geen creditcard</p>
+        <p className="text-center text-xs text-gray-500 mt-2">28 dagen gratis · geen creditcard</p>
       </div>
     </nav>
   );

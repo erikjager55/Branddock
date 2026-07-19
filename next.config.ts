@@ -46,6 +46,13 @@ const nextConfig: NextConfig = {
         destination: '/marketing/voor-ai-agents',
         permanent: true,
       },
+      // V2-12: NL-taallijn voor juridische slugs — voorwaarden i.p.v. terms
+      // (privacy en security zijn gangbare NL-woorden en blijven).
+      {
+        source: '/marketing/terms',
+        destination: '/marketing/voorwaarden',
+        permanent: true,
+      },
     ];
   },
   // Korte connector-URL: https://branddock.app/mcp is de publieke vorm;

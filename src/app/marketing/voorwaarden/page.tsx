@@ -8,7 +8,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  alternates: { canonical: '/marketing/terms' },
+  alternates: { canonical: '/marketing/voorwaarden' },
   title: 'Algemene voorwaarden',
   description: 'De voorwaarden voor het gebruik van Branddock.',
 };

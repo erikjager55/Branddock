@@ -9822,6 +9822,9 @@
 
 
 :root {
+  /* Bewust 14px (app-kalibratie: de volledige product-UI is hierop gemeten).
+     NIET verhogen — de marketing-site compenseert scoped in px
+     (src/app/marketing/marketing.css, UX-03/V2-03c). */
   --font-size: 14px;
   --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-text: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
