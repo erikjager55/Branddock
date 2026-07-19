@@ -9,7 +9,13 @@ export default function CopyBlock({ value, label }: { value: string; label?: str
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(value);
+    // Fail-soft: zonder clipboard-permissie (strenge browsers/embeds) blijft de
+    // tekst select-all-baar; de knop bevestigt dan alsnog de selectie-intentie.
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      // genegeerd — value staat selecteerbaar naast de knop
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
