@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 420. Homepage: hero-modus-switch (platform ↔ AI-agent) + "Voor wie is Branddock?"-sectie
+
+Twee Postiz-patronen overgenomen op verzoek van Erik (Postiz zit inmiddels Stripe-geverifieerd op ~$173K MRR na exact deze agent-herpositionering). (1) De hero heeft een toggle "In het platform" / "In je AI-agent": platform-modus is het bestaande teamverhaal; agent-modus wisselt H1 ("Geef Claude en ChatGPT je merk-DNA."), subcopy, CTA's (koppel-stappen → guardrails) én de visual — een gestileerde chat-mock (geen derde-partij-screenshot) met tool-chips en F-VAL-badge, plus de connector-URL branddock.app/mcp. (2) SolutionsSplit is uitgebreid naar "Voor wie is Branddock?" met vier doelgroep-kaarten: marketingteams, bureaus, agentic (MCP) en automatiseerders (API/webhooks/n8n). Claims-grens bewaakt: geen autopilot-taal, "jij keurt goed" in beide modi. Playwright-screenshots desktop + mobiel gecheckt. PR #208.
+
+- Task: `-` (homepage-iteratie op het wig-besluit, vervolg op #414)
+
 ### 419. API-restjes: webhook-beheer-UI + deliverable.generated op alle generatie-paden
 
 De laatste twee restjes uit de P3-lijn. (1) Outbound webhooks zijn nu zelf te beheren in Settings → API & Connectors: endpoints aanmaken (URL + event-selectie), signing-secret eenmalig zichtbaar (whsec_, HMAC-SHA256-uitleg erbij), delivery-status en auto-disable-badge per rij, verwijderen met confirm — zelfde patroon als de API-keys-lijst. (2) `deliverable.generated` vuurde alleen op het generieke content-pad; nu ook op webpage (headless service én UI-route), video (headless) en SEO (job-completion, idempotent via de COMPLETED-guard) — altijd fire-and-forget en metadata-only. Bewijs: emit-smoke 5/5 met echte webpage-generatie + lokale ontvanger (payload-shape + metadata-only-assert), webhooks-UI-browser-smoke 9/9 (secret-once, prefix na reload, delete). PR #207.
