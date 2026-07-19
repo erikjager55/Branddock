@@ -5,7 +5,10 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { appHref } from '../../app-url';
+import BookDemoButton from '../../BookDemoButton';
 import SplitHeader from '../../SplitHeader';
+import Testimonial from '../../Testimonial';
+import { PLAN_CONFIGS } from '@/lib/constants/plan-limits';
 import type { Metadata } from 'next';
 import TrialNote from '../../TrialNote';
 
@@ -18,9 +21,20 @@ interface SolutionSpec {
   gains: string[];
   screenshotPath?: string;
   screenshotAlt?: string;
+  /** V2-06/07: verdiepingsblokken per doelgroep — uitsluitend echte product-werking. */
+  sections: { title: string; body: string }[];
+  /** V2-07: bureaus willen praten — demo-knop naast de trial-CTA. */
+  demoCta?: boolean;
+  /** V2-06: directie-vraag — security-link naast de CTA. */
+  securityLink?: boolean;
+  proofContext: 'marketingteams' | 'bureaus';
   /** Smalle UI-detail-screenshot (bv. een dropdown) i.p.v. een volle app-schermafbeelding. */
   screenshotInset?: boolean;
 }
+
+// V2-07: per-klant-rekensom rechtstreeks uit PLAN_CONFIGS — kan niet driften.
+const agency = PLAN_CONFIGS.AGENCY;
+const perBrand = Math.round(agency.monthlyPriceEur / agency.workspaces);
 
 const SOLUTIONS: Record<string, SolutionSpec> = {
   marketingteams: {
@@ -43,6 +57,18 @@ const SOLUTIONS: Record<string, SolutionSpec> = {
       'Een merk-check die consistentie meetbaar maakt (+7 punten on-brand)',
       '9 agents die onderzoek, content en bewaking uit handen nemen',
     ],
+    sections: [
+      {
+        title: 'Samenwerken & goedkeuren',
+        body: 'Vier rollen — owner, admin, member en viewer. Teamleden met schrijfrechten maken en keuren goed; viewers kijken mee zonder te genereren. Agent-voorstellen landen in één inbox en niets gaat live zonder goedkeuring van een teamlid: het vier-ogen-principe zit in het product, niet in een werkafspraak.',
+      },
+      {
+        title: 'Van content naar kanaal',
+        body: 'Content verlaat Branddock zoals jouw team werkt: kopieer of exporteer per kanaal, publiceer landingspagina\u2019s op je eigen subdomein, schrijf via de browser-extensie (beta) direct in je eigen tools, of koppel je werkstroom via de MCP-connector en de publieke API met webhooks.',
+      },
+    ],
+    securityLink: true,
+    proofContext: 'marketingteams',
   },
   bureaus: {
     slug: 'bureaus',
@@ -65,6 +91,26 @@ const SOLUTIONS: Record<string, SolutionSpec> = {
     screenshotPath: '/marketing/solutions/bureaus-workspaces.png',
     screenshotAlt: 'Branddock workspace-switcher — meerdere klantmerken naast elkaar beheren',
     screenshotInset: true,
+    sections: [
+      {
+        title: 'De rekensom per klantmerk',
+        body: `Agency: \u20ac${agency.monthlyPriceEur} per maand voor ${agency.workspaces} workspaces \u2248 \u20ac${perBrand} per klantmerk — inclusief merk-check, agents en de connector. Bekijk de volledige prijzen op de pricing-pagina.`,
+      },
+      {
+        title: 'Het weekrapport als leverbaar',
+        body: 'Remi, de reporting-analist, schrijft een klant-klaar wekelijks merkrapport — productie, merkscores, campagnestand en marktsignalen. Doorleverbaar aan je klant, op schema.',
+      },
+      {
+        title: 'Bestaand merk? Zo migreer je',
+        body: 'Bestaande huisstijlgids of website? De gratis setup-scan (website-scan + brandstyle-analyse) zet \u2019m om naar een merk-DNA-workspace — geen overtypen.',
+      },
+      {
+        title: 'Jij bepaalt wat de klant-login mag',
+        body: 'Nodig je klant uit als viewer (meekijken en rapporten inzien, zonder te genereren) of als member (meewerken en goedkeuren). Genereren — en dus credits verbruiken — kan alleen met de rechten die jij toekent.',
+      },
+    ],
+    demoCta: true,
+    proofContext: 'bureaus',
   },
 };
 
@@ -156,6 +202,18 @@ export default async function SolutionPage({
         </div>
       </div>
 
+      {/* V2-06/07: doelgroep-verdieping — echte product-werking, geen verzonnen features. */}
+      <div className="grid md:grid-cols-2 gap-4 mb-12">
+        {solution.sections.map((sec) => (
+          <div key={sec.title} className="rounded-xl border border-gray-200 bg-white p-6">
+            <h2 className="text-gray-900 text-base font-semibold mb-2">{sec.title}</h2>
+            <p className="text-sm text-gray-600 leading-relaxed">{sec.body}</p>
+          </div>
+        ))}
+      </div>
+
+      <Testimonial context={solution.proofContext} className="mb-12" />
+
       <div className="pt-8 border-t border-gray-200 flex flex-wrap gap-3">
         <Link
           href={appHref(`/?view=register&utm_source=marketing-site&utm_medium=solution-${solution.slug}`)}
@@ -169,6 +227,15 @@ export default async function SolutionPage({
         >
           Bekijk prijzen
         </Link>
+        {solution.demoCta ? <BookDemoButton /> : null}
+        {solution.securityLink ? (
+          <Link
+            href="/marketing/security"
+            className="inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
+          >
+            Security &amp; AVG
+          </Link>
+        ) : null}
         <TrialNote />
       </div>
     </div>
