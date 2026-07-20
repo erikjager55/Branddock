@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 425. Gemeente Barneveld merk-DNA-seed + channelTones-fix in AI-context
+
+Klant-workspace "Gemeente Barneveld" gevuld vanuit de aangeleverde brondocumenten (huisstijlhandboek v0.8 Public Cinema, FotografieWijzer v1.0) plus een kanaal-analyse van barneveld.nl/Instagram/LinkedIn (Facebook login-walled): 4 onderbouwde brand-assets (kernwaarden, personality, story, maatschappelijke opgaven — rest bewust DRAFT), volledige voiceguide mét per-kanaal tonen (website u-vorm/taakgericht, social je-vorm/activerend, e-mail service, werving energiek) en een published brandstyle (10 kleuren, Bree Serif/Fira Sans, fotografie-principes connectie/beweging/lef incl. AVG-regels). Seed: `scripts/dev/seed-barneveld-brand.ts`; bundle `scripts/migrate-brand-dna/bundles/barneveld-2026-07-20.json` (25 rijen). Bijvangst-bugfix: `formatBrandVoiceguide` gooide channelTones in de UI-vorm `{description, axisShift}` stilletjes weg (filterde op platte strings) — accepteert nu beide vormen; geverifieerd via getBrandContext-probe (11/11 checks). Geen persona's/producten/concurrenten verzonnen — dat vult de gemeente zelf. Logo-SVG's ontbreken (alleen PDF) — nalevering via Brandstyle-UI. PR #218.
+
+- Task: `-` (klantdata-seed + bugfix <30 min)
+
 ### 424. Fase 0 €100k-plan: het meetfundament (Growth-KPI-dashboard)
 
 Eerste fase van het €100k-coachplan (go Erik 2026-07-20; fasering in docs/reports/100k-plan-fasering-2026-07-20.md). Developer-only tab Settings → Growth (KPIs): de funnel per week (aanmelding → activatie → betaald, 8 weken), activatie-percentage tegen de 40%-lat, de noordster (netto nieuwe MRR per dag, rechtstreeks uit Stripe met jaarprijzen/12, fail-soft) en de Gate-1-stand (€3k · 10 klanten · 5 bureaus · 35%+). Activatie-definitie v1: ≥3 volledig ingevulde merk-assets én eerste goedgekeurde uiting (accept/publicatie) — gedocumenteerd, DNA gemeten op nu. Plus: workspace_activated-event bij de eerste accept en UTM-bron-attributie op signup_completed. Metadata-only; geen schema-wijziging. Endpoint- en UI-smoke op dev geverifieerd. PR #215.
