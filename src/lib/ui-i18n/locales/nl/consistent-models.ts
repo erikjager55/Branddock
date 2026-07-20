@@ -58,6 +58,9 @@ const consistentModels = {
   },
   detail: {
     trainingFailedAlert: 'Training mislukt: {{message}}',
+    uploadFailedAlert: 'Uploaden mislukt: {{message}}',
+    uploadPartialAlert:
+      '{{uploaded}} afbeelding(en) geüpload, {{failed}} geweigerd:\n\n{{details}}',
     confirmDelete:
       'Weet je zeker dat je "{{name}}" wilt verwijderen? Dit verwijdert het model, alle referentiebeelden en alle gegenereerde beelden definitief. Dit kan niet ongedaan worden gemaakt.',
     overviewTitle: 'Overzicht',
