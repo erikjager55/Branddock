@@ -241,7 +241,25 @@ export function ModelDetailPage({
   };
 
   const handleUpload = (files: File[]) => {
-    uploadImages.mutate(files);
+    uploadImages.mutate(files, {
+      onSuccess: (result) => {
+        if (result.errors.length > 0) {
+          const details = result.errors
+            .map((e) => `${e.fileName}: ${e.error}`)
+            .join("\n");
+          window.alert(
+            t("detail.uploadPartialAlert", {
+              failed: result.errors.length,
+              uploaded: result.uploaded.length,
+              details,
+            }),
+          );
+        }
+      },
+      onError: (error: Error) => {
+        window.alert(t("detail.uploadFailedAlert", { message: error.message }));
+      },
+    });
   };
 
   const handleDeleteImage = (imageId: string) => {

@@ -89,7 +89,9 @@ export function useUploadReferenceImages(modelId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (files: File[]) => api.uploadReferenceImages(modelId!, files),
-    onSuccess: () => {
+    // onSettled i.p.v. onSuccess: bij een deels mislukte batch zijn er tóch
+    // bestanden geüpload — die moeten ook na een error zichtbaar worden.
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: consistentModelKeys.detail(modelId!) });
       qc.invalidateQueries({ queryKey: consistentModelKeys.list() });
     },
