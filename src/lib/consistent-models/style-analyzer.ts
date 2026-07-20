@@ -16,6 +16,26 @@ import type {
 
 // ─── Image download helper (supports local files + R2) ─────
 
+/**
+ * ReferenceImage.storageKey bevat in de praktijk drie vormen: een lokaal pad
+ * ("/uploads/..."), een kale R2-sleutel ("ws_.../media/x.png") of — zoals de
+ * upload-route hem wegschrijft (`storageKey: result.url`) — de volledige
+ * publieke URL. R2 GetObject verwacht de kale sleutel; een URL als Key gaf
+ * op prod "The specified key does not exist".
+ */
+function toR2Key(storageKey: string): string {
+  if (!/^https?:\/\//i.test(storageKey)) return storageKey;
+  const publicUrl = process.env.R2_PUBLIC_URL;
+  if (publicUrl && storageKey.startsWith(publicUrl)) {
+    return storageKey.slice(publicUrl.length).replace(/^\//, "");
+  }
+  try {
+    return decodeURIComponent(new URL(storageKey).pathname.replace(/^\//, ""));
+  } catch {
+    return storageKey;
+  }
+}
+
 async function downloadImageBuffer(storageKey: string): Promise<Buffer> {
   // Local storage: storageKey is a path like /uploads/media/...
   if (storageKey.startsWith("/uploads/") || storageKey.startsWith("uploads/")) {
@@ -40,12 +60,13 @@ async function downloadImageBuffer(storageKey: string): Promise<Buffer> {
     credentials: { accessKeyId, secretAccessKey },
   });
 
+  const key = toR2Key(storageKey);
   const response = await client.send(
-    new GetObjectCommand({ Bucket: bucketName, Key: storageKey }),
+    new GetObjectCommand({ Bucket: bucketName, Key: key }),
   );
 
   if (!response.Body) {
-    throw new Error(`Empty response for R2 key: ${storageKey}`);
+    throw new Error(`Empty response for R2 key: ${key}`);
   }
 
   const chunks: Uint8Array[] = [];
@@ -137,11 +158,15 @@ export async function analyzeIllustrationStyle(
     );
   } else if (process.env.R2_PUBLIC_URL) {
     console.log(`[style-analyzer] Using R2 public URLs...`);
-    imageUrls = selectedImages.map((img) => `${process.env.R2_PUBLIC_URL}/${img.storageKey}`);
+    imageUrls = selectedImages.map((img) =>
+      /^https?:\/\//i.test(img.storageKey)
+        ? img.storageKey
+        : `${process.env.R2_PUBLIC_URL}/${img.storageKey}`,
+    );
   } else {
     console.log(`[style-analyzer] Using R2 signed URLs...`);
     imageUrls = await Promise.all(
-      selectedImages.map((img) => getR2SignedUrl(img.storageKey, 300)),
+      selectedImages.map((img) => getR2SignedUrl(toR2Key(img.storageKey), 300)),
     );
   }
 
