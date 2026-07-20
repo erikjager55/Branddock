@@ -446,11 +446,21 @@ export function formatBrandVoiceguide(data: BrandVoiceguideRow): string {
     if (tones.length > 0) parts.push(`Tone of voice: ${tones.join(', ')}`);
   }
 
-  // Channel tones: per-channel overrides
+  // Channel tones: per-channel overrides. Twee opslagvormen in het wild:
+  // legacy platte string, en de UI-vorm { description, axisShift } uit
+  // ChannelTonesSection — beide moeten de AI-context bereiken.
   if (data.channelTones && typeof data.channelTones === 'object') {
-    const channels = Object.entries(data.channelTones as Record<string, string>)
-      .filter(([, v]) => typeof v === 'string' && v.trim().length > 0)
-      .map(([k, v]) => `${k}: ${v}`);
+    const channels = Object.entries(data.channelTones as Record<string, unknown>)
+      .map(([k, v]) => {
+        const text =
+          typeof v === 'string'
+            ? v
+            : v && typeof v === 'object' && typeof (v as { description?: unknown }).description === 'string'
+              ? (v as { description: string }).description
+              : '';
+        return text.trim().length > 0 ? `${k}: ${text.trim()}` : null;
+      })
+      .filter(Boolean);
     if (channels.length > 0) parts.push(`Channel-specific tone: ${channels.join('; ')}`);
   }
 
