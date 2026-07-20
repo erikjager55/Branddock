@@ -76,6 +76,18 @@ export function SettingsSubNav() {
             Credit Admin
           </button>
           <button
+            data-testid="settings-tab-growth"
+            onClick={() => setActiveTab('growth')}
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'growth'
+                ? 'bg-primary/10 text-primary'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <Coins className="w-4 h-4" />
+            Growth (KPIs)
+          </button>
+          <button
             data-testid="settings-tab-ai-models"
             onClick={() => setActiveTab('ai-models')}
             className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${

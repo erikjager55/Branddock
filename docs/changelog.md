@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 424. Fase 0 €100k-plan: het meetfundament (Growth-KPI-dashboard)
+
+Eerste fase van het €100k-coachplan (go Erik 2026-07-20; fasering in docs/reports/100k-plan-fasering-2026-07-20.md). Developer-only tab Settings → Growth (KPIs): de funnel per week (aanmelding → activatie → betaald, 8 weken), activatie-percentage tegen de 40%-lat, de noordster (netto nieuwe MRR per dag, rechtstreeks uit Stripe met jaarprijzen/12, fail-soft) en de Gate-1-stand (€3k · 10 klanten · 5 bureaus · 35%+). Activatie-definitie v1: ≥3 volledig ingevulde merk-assets én eerste goedgekeurde uiting (accept/publicatie) — gedocumenteerd, DNA gemeten op nu. Plus: workspace_activated-event bij de eerste accept en UTM-bron-attributie op signup_completed. Metadata-only; geen schema-wijziging. Endpoint- en UI-smoke op dev geverifieerd. PR #215.
+
+- Task: [tasks/kpi-fase0.md](../tasks/kpi-fase0.md)
+
 ### 423. UX-verbeterplan v2 — doelgroep-diepteanalyse doorgevoerd (16 issues)
 
 Uitvoering van Eriks her-audit met doelgroep-analyse (Merel/Bas/Jesse/agentic/automatiseerders), PR #214. **P0**: hero lijnt weer uit met de container (regressie uit de tweevlaks-hero; max()-padding op ink + meta), caption-contrast ≥4.5:1 (gray-500/600-sweep), 14px-root-besluit gedocumenteerd bij de bron. V2-02 bleek een audit-false-negative: ?view=register/login stond al live (query-genormaliseerd gemeten) — met curl-bewijs vastgelegd. **P1**: herbruikbaar Testimonial-proof-element op home/pricing/beide solutions (feitelijke pilot-regel tot Erik quotes vrijgeeft), agent-strook met de 9 échte namen+rollen op home, solutions-verdieping (teams: samenwerken/kanaal-blokken + security-link; bureaus: €-per-klantmerk-rekensom uit PLAN_CONFIGS, Remi's weekrapport als leverbaar, migratie- en rollen-regel + demo-CTA), founder-instappad (setup-scan-FAQ + Starter-regel + talen-FAQ en/nl/de/fr/es/pt/it), voor-ai-agents: copy-blok met werkende kopieer-knop, per-platform-koppelstappen, scopes-regel, 3 voorbeeldprompts én een #api-developer-sectie (REST/webhook-voorbeelden met HMAC, n8n; docs-site als TODO), platform-tegels één stijl, /marketing/voorwaarden (301 vanaf terms, NL-taallijn). Playwright-gemeten: h1 en logo op exact dezelfde x, clipboard bevat de connector-URL, alle nieuwe blokken renderen. Open besluiten Erik (V2-13/16): jaarfacturering, quotes, 5e voor-wie-kaart, KvK, demo-alias.

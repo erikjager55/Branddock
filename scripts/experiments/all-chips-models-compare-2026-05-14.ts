@@ -247,7 +247,7 @@ async function main() {
   console.log('=== All-chips model comparison — 2026-05-14 ===\n');
 
   const allResults: GenResult[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const allScores: Record<string, JudgeScore[]> = {};
 
   for (const group of USE_CASES) {

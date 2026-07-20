@@ -63,7 +63,14 @@ export function AuthPage() {
     if (authError) {
       setError(authError.message || t('auth.registrationFailed'));
     } else {
-      void trackBrowserEvent('signup_completed', { method: 'email' });
+      // Fase 0 (€100k-plan): bron-attributie — de UTM's van de marketing-CTA's
+      // staan op de URL en gaan mee het funnel-event in.
+      const utm = Object.fromEntries(
+        [...new URLSearchParams(window.location.search)].filter(
+          ([key]) => key.startsWith('utm_') || key === 'view',
+        ),
+      );
+      void trackBrowserEvent('signup_completed', { method: 'email', ...utm });
     }
     setLoading(false);
   };
