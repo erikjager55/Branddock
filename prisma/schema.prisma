@@ -115,6 +115,11 @@ model Invitation {
   invitedById    String
   invitedBy      User         @relation(fields: [invitedById], references: [id])
 
+  // Workspace-scoping: leeg = alle workspaces (huidig gedrag). Bij accepteren
+  // worden hiervoor WorkspaceMemberAccess-rijen aangemaakt. Alleen zinvol voor
+  // member/viewer — owner/admin bypassen de per-workspace ACL.
+  workspaceIds String[] @default([])
+
   createdAt DateTime @default(now())
 
   @@index([organizationId])

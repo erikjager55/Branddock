@@ -72,6 +72,7 @@ export async function GET() {
       token: string;
       expiresAt: Date;
       createdAt: Date;
+      workspaceIds: string[];
     }[] = [];
 
     if (["owner", "admin"].includes(myMembership.role)) {
@@ -103,6 +104,7 @@ export async function GET() {
         token: i.token,
         expiresAt: i.expiresAt.toISOString(),
         createdAt: i.createdAt.toISOString(),
+        workspaceIds: i.workspaceIds,
       })),
       myRole: myMembership.role,
     });

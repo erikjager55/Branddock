@@ -46,9 +46,34 @@ export async function GET() {
       return NextResponse.json({ workspaces: [], activeWorkspaceId: null });
     }
 
+    // Per-workspace ACL: member/viewer met WorkspaceMemberAccess-rijen ziet
+    // alleen die workspaces (leeg = alle; owner/admin bypassen — zelfde
+    // semantiek als hasWorkspaceAccess en de switch-route).
+    const membership = await prisma.organizationMember.findUnique({
+      where: {
+        userId_organizationId: {
+          userId: session.user.id,
+          organizationId: activeOrgId,
+        },
+      },
+      select: {
+        role: true,
+        workspaceAccess: { select: { workspaceId: true } },
+      },
+    });
+    const restrictedIds =
+      membership &&
+      !["owner", "admin"].includes(membership.role) &&
+      membership.workspaceAccess.length > 0
+        ? membership.workspaceAccess.map((wa) => wa.workspaceId)
+        : null;
+
     const [workspaces, activeWorkspaceId] = await Promise.all([
       prisma.workspace.findMany({
-        where: { organizationId: activeOrgId },
+        where: {
+          organizationId: activeOrgId,
+          ...(restrictedIds ? { id: { in: restrictedIds } } : {}),
+        },
         orderBy: { name: "asc" },
         select: { id: true, name: true, slug: true, createdAt: true, contentLanguage: true },
       }),

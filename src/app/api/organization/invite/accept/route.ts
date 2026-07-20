@@ -91,20 +91,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ alreadyMember: true });
     }
 
-    // Create OrganizationMember and mark invitation as accepted (transaction)
-    const [member] = await prisma.$transaction([
-      prisma.organizationMember.create({
+    // Create OrganizationMember (+ eventuele workspace-scoping) and mark
+    // invitation as accepted (transaction). Lege workspaceIds = alle
+    // workspaces (geen ACL-rijen); scoping geldt alleen voor member/viewer.
+    const member = await prisma.$transaction(async (tx) => {
+      const created = await tx.organizationMember.create({
         data: {
           userId: session.user.id,
           organizationId: invitation.organizationId,
           role: invitation.role,
         },
-      }),
-      prisma.invitation.update({
+      });
+
+      if (
+        invitation.workspaceIds.length > 0 &&
+        ["member", "viewer"].includes(invitation.role)
+      ) {
+        // Alleen workspaces die (nog) bij deze organisatie horen — een
+        // workspace kan tussen uitnodigen en accepteren verwijderd zijn.
+        const validWorkspaces = await tx.workspace.findMany({
+          where: {
+            id: { in: invitation.workspaceIds },
+            organizationId: invitation.organizationId,
+          },
+          select: { id: true },
+        });
+        if (validWorkspaces.length > 0) {
+          await tx.workspaceMemberAccess.createMany({
+            data: validWorkspaces.map((w) => ({
+              memberId: created.id,
+              workspaceId: w.id,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      await tx.invitation.update({
         where: { id: invitation.id },
         data: { status: "accepted" },
-      }),
-    ]);
+      });
+
+      return created;
+    });
 
     return NextResponse.json({
       member,

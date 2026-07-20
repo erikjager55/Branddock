@@ -8,6 +8,7 @@ import { useWorkspace } from '@/hooks/use-workspace';
 import { Modal, Input, Select, Button } from '@/components/shared';
 import { Mail } from 'lucide-react';
 import { ApiError, translateApiError } from '@/lib/api/api-error';
+import { WorkspaceAccessPicker } from './WorkspaceAccessPicker';
 
 export function InviteMemberModal() {
   const { t } = useTranslation(['settings-team', 'entitlement-errors']);
@@ -23,13 +24,18 @@ export function InviteMemberModal() {
 
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<string | null>('member');
+  const [workspaceIds, setWorkspaceIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const inviteMember = useInviteMember();
 
+  // ACL geldt alleen voor member/viewer — admins zien altijd alles.
+  const supportsScoping = role === 'member' || role === 'viewer';
+
   function handleClose() {
     setEmail('');
     setRole('member');
+    setWorkspaceIds([]);
     setError(null);
     setIsOpen(false);
   }
@@ -45,6 +51,7 @@ export function InviteMemberModal() {
         email: email.trim(),
         role: role ?? 'member',
         organizationId,
+        workspaceIds: supportsScoping ? workspaceIds : [],
       });
       handleClose();
     } catch (err) {
@@ -98,6 +105,12 @@ export function InviteMemberModal() {
           options={ROLE_OPTIONS}
           placeholder={t('invite.rolePlaceholder')}
         />
+
+        {supportsScoping ? (
+          <WorkspaceAccessPicker value={workspaceIds} onChange={setWorkspaceIds} />
+        ) : (
+          <p className="text-xs text-gray-500">{t('workspaceAccess.adminNote')}</p>
+        )}
       </form>
     </Modal>
   );

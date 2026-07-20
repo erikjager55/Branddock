@@ -190,6 +190,19 @@ export async function updateMemberRole(
   return res.json();
 }
 
+export async function updateMemberWorkspaceAccess(
+  memberId: string,
+  data: import("@/types/settings").UpdateMemberWorkspaceAccessRequest
+): Promise<{ workspaceIds: string[] }> {
+  const res = await fetch(`${BASE}/team/members/${memberId}/workspace-access`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update workspace access");
+  return res.json();
+}
+
 export async function removeMember(
   memberId: string
 ): Promise<{ success: boolean }> {

@@ -113,6 +113,8 @@ export interface TeamMemberItem {
   avatar: string | null;
   isActive: boolean;
   joinedAt: string;
+  /** Leeg = alle workspaces; alleen gevuld voor gescopede member/viewer-leden. */
+  workspaceIds: string[];
 }
 
 export interface TeamMembersResponse {
@@ -123,6 +125,8 @@ export interface InviteMemberRequest {
   email: string;
   role?: string;
   organizationId: string;
+  /** Leeg/afwezig = toegang tot alle workspaces (alleen member/viewer). */
+  workspaceIds?: string[];
 }
 
 export interface InviteMemberResponse {
@@ -136,6 +140,9 @@ export interface PendingInvite {
   status: string;
   expiresAt: string;
   createdAt: string;
+  /** Leeg = alle workspaces. */
+  workspaceIds?: string[];
+  workspaceNames?: string[];
 }
 
 export interface PendingInvitesResponse {
@@ -144,6 +151,11 @@ export interface PendingInvitesResponse {
 
 export interface UpdateMemberRoleRequest {
   role: "admin" | "member" | "viewer";
+}
+
+export interface UpdateMemberWorkspaceAccessRequest {
+  /** Leeg array = toegang tot alle workspaces. */
+  workspaceIds: string[];
 }
 
 export interface ResendInviteResponse {

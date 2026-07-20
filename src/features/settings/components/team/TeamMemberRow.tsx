@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useUpdateMemberRole, useRemoveMember } from '@/hooks/use-settings';
 import { OptimizedImage } from '@/components/shared';
 import { RoleBadge } from './RoleBadge';
+import { MemberWorkspaceAccessModal } from './MemberWorkspaceAccessModal';
 import { MoreHorizontal } from 'lucide-react';
 import { useFormat } from '@/lib/ui-i18n/format';
 import type { TeamMemberItem } from '@/types/settings';
@@ -18,6 +19,7 @@ export function TeamMemberRow({ member }: TeamMemberRowProps) {
   const { formatDate } = useFormat();
   const [menuOpen, setMenuOpen] = useState(false);
   const [roleSubmenuOpen, setRoleSubmenuOpen] = useState(false);
+  const [accessModalOpen, setAccessModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const updateRole = useUpdateMemberRole();
@@ -63,6 +65,8 @@ export function TeamMemberRow({ member }: TeamMemberRowProps) {
   });
 
   const isOwner = member.role.toLowerCase() === 'owner';
+  // ACL geldt alleen voor member/viewer; owner/admin zien altijd alles.
+  const supportsScoping = ['member', 'viewer'].includes(member.role.toLowerCase());
 
   return (
     <tr className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
@@ -89,6 +93,15 @@ export function TeamMemberRow({ member }: TeamMemberRowProps) {
       {/* Role */}
       <td className="py-3 px-4">
         <RoleBadge role={member.role} />
+      </td>
+
+      {/* Workspace access */}
+      <td className="py-3 px-4">
+        <span className="text-sm text-gray-600">
+          {supportsScoping && member.workspaceIds.length > 0
+            ? t('workspaceAccess.columnCount', { count: member.workspaceIds.length })
+            : t('workspaceAccess.columnAll')}
+        </span>
       </td>
 
       {/* Status */}
@@ -156,6 +169,20 @@ export function TeamMemberRow({ member }: TeamMemberRowProps) {
                   )}
                 </div>
 
+                {/* Workspace access */}
+                {supportsScoping && (
+                  <button
+                    onClick={() => {
+                      setAccessModalOpen(true);
+                      setMenuOpen(false);
+                      setRoleSubmenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    {t('memberRow.manageWorkspaces')}
+                  </button>
+                )}
+
                 {/* Remove */}
                 <button
                   onClick={handleRemove}
@@ -166,6 +193,13 @@ export function TeamMemberRow({ member }: TeamMemberRowProps) {
               </div>
             )}
           </div>
+        )}
+        {accessModalOpen && (
+          <MemberWorkspaceAccessModal
+            member={member}
+            isOpen={accessModalOpen}
+            onClose={() => setAccessModalOpen(false)}
+          />
         )}
       </td>
     </tr>
