@@ -116,13 +116,22 @@ export async function uploadReferenceImages(
         method: "POST",
         body: formData,
       });
-      const result = await handleResponse<UploadReferenceImagesResponse>(
-        res,
-        `Failed to upload reference image "${file.name}"`,
-      );
-      uploaded.push(...result.uploaded);
-      errors.push(...result.errors);
-      total = result.total;
+      const body = (await res.json().catch(() => null)) as
+        | (Partial<UploadReferenceImagesResponse> & { error?: string })
+        | null;
+
+      if (body && Array.isArray(body.uploaded) && Array.isArray(body.errors)) {
+        // Zowel 201 als 400-met-details heeft deze vorm — de server geeft
+        // per bestand de echte weigerreden mee (te klein, te groot, corrupt).
+        uploaded.push(...body.uploaded);
+        errors.push(...body.errors);
+        if (typeof body.total === "number") total = body.total;
+      } else if (!res.ok) {
+        errors.push({
+          fileName: file.name,
+          error: body?.error ?? `Upload failed (${res.status})`,
+        });
+      }
     } catch (err) {
       errors.push({
         fileName: file.name,
