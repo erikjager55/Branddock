@@ -30,7 +30,14 @@ function toR2Key(storageKey: string): string {
     return storageKey.slice(publicUrl.length).replace(/^\//, "");
   }
   try {
-    return decodeURIComponent(new URL(storageKey).pathname.replace(/^\//, ""));
+    const url = new URL(storageKey);
+    let key = decodeURIComponent(url.pathname.replace(/^\//, ""));
+    // Signed/endpoint-URL-vorm (<account>.r2.cloudflarestorage.com/<bucket>/<key>):
+    // het eerste padsegment is de bucketnaam, geen deel van de sleutel.
+    if (url.hostname.endsWith(".r2.cloudflarestorage.com")) {
+      key = key.split("/").slice(1).join("/");
+    }
+    return key;
   } catch {
     return storageKey;
   }
