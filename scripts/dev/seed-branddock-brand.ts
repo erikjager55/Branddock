@@ -338,11 +338,13 @@ async function main() {
       createdById: USER_ID,
       voiceDescription:
         "Branddock klinkt als een nuchtere Nederlandse vakgenoot: deskundig zonder jargon, direct zonder botheid, en altijd concreet. We onderbouwen met cijfers en voorbeelden, benoemen eerlijk wat iets niet kan, en vermijden elke vorm van AI-hype. De lezer is een drukke professional — we respecteren diens tijd met korte zinnen en een duidelijke kern.",
+      // NN/g-schaal 1-7 (4 = neutraal) — de UI-sliders en formatBrandVoiceguide
+      // rekenen hiermee; 0-100-waarden lazen als "funny/irreverent/enthousiast".
       toneDimensions: {
-        formalCasual: 55,
-        seriousFunny: 30,
-        respectfulIrreverent: 20,
-        matterOfFactEnthusiastic: 40,
+        formalCasual: 4,
+        seriousFunny: 2,
+        respectfulIrreverent: 2,
+        matterOfFactEnthusiastic: 3,
       },
       contentGuidelines: [
         "Leid met het resultaat of de kern — de lezer beslist in de eerste zin of hij doorleest",
