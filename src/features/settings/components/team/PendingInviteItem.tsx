@@ -42,6 +42,11 @@ export function PendingInviteItem({ invite }: PendingInviteItemProps) {
             <RoleBadge role={invite.role} />
             <span className="text-xs text-gray-400">{t('pending.sent', { date: sentDate })}</span>
           </div>
+          {(invite.workspaceNames?.length ?? 0) > 0 && (
+            <p className="text-xs text-gray-500 mt-0.5 truncate">
+              {t('pending.scopedTo', { names: invite.workspaceNames!.join(', ') })}
+            </p>
+          )}
         </div>
       </div>
 

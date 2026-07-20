@@ -66,6 +66,9 @@ export function TeamMembersTable() {
                 {t('membersTable.columns.role')}
               </th>
               <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2.5 px-4">
+                {t('membersTable.columns.workspaces')}
+              </th>
+              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2.5 px-4">
                 {t('membersTable.columns.status')}
               </th>
               <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2.5 px-4">

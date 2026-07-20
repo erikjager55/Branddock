@@ -53,6 +53,19 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
+    // Workspace-namen voor gescopede uitnodigingen (leeg = alle workspaces).
+    const scopedIds = [...new Set(invitations.flatMap((i) => i.workspaceIds))];
+    const workspaceNames = new Map(
+      scopedIds.length > 0
+        ? (
+            await prisma.workspace.findMany({
+              where: { id: { in: scopedIds }, organizationId: activeOrgId },
+              select: { id: true, name: true },
+            })
+          ).map((w) => [w.id, w.name] as const)
+        : []
+    );
+
     return NextResponse.json({
       invites: invitations.map((i) => ({
         id: i.id,
@@ -61,6 +74,10 @@ export async function GET() {
         status: i.status,
         expiresAt: i.expiresAt.toISOString(),
         createdAt: i.createdAt.toISOString(),
+        workspaceIds: i.workspaceIds,
+        workspaceNames: i.workspaceIds
+          .map((id) => workspaceNames.get(id))
+          .filter((n): n is string => Boolean(n)),
       })),
     });
   } catch (error) {

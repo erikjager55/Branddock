@@ -57,6 +57,7 @@ export async function GET() {
             image: true,
           },
         },
+        workspaceAccess: { select: { workspaceId: true } },
       },
       orderBy: { joinedAt: "asc" },
     });
@@ -71,6 +72,8 @@ export async function GET() {
         avatar: m.user.avatarUrl ?? m.user.image ?? null,
         isActive: m.isActive,
         joinedAt: m.joinedAt.toISOString(),
+        // Leeg = alle workspaces (en altijd leeg voor owner/admin — ACL-bypass).
+        workspaceIds: m.workspaceAccess.map((wa) => wa.workspaceId),
       })),
     });
   } catch (error) {

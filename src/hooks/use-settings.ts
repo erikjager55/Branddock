@@ -19,6 +19,7 @@ import {
   // Team
   fetchTeam,
   fetchTeamMembers,
+  updateMemberWorkspaceAccess,
   inviteMember,
   updateMemberRole,
   removeMember,
@@ -232,6 +233,23 @@ export function useUpdateMemberRole() {
       qc.invalidateQueries({ queryKey: settingsKeys.team() });
       qc.invalidateQueries({ queryKey: settingsKeys.members() });
       qc.invalidateQueries({ queryKey: settingsKeys.invites() });
+    },
+  });
+}
+
+export function useUpdateMemberWorkspaceAccess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      memberId,
+      workspaceIds,
+    }: {
+      memberId: string;
+      workspaceIds: string[];
+    }) => updateMemberWorkspaceAccess(memberId, { workspaceIds }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: settingsKeys.team() });
+      qc.invalidateQueries({ queryKey: settingsKeys.members() });
     },
   });
 }

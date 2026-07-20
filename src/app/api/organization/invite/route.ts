@@ -21,6 +21,8 @@ const inviteSchema = z.object({
     .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Invalid email address"),
   organizationId: z.string().min(1).max(100),
   role: z.string().max(50).optional(),
+  // Leeg/afwezig = toegang tot alle workspaces (huidig gedrag).
+  workspaceIds: z.array(z.string().min(1).max(100)).max(100).optional(),
 });
 
 // POST /api/organization/invite — create an invitation
@@ -34,6 +36,7 @@ export async function POST(request: NextRequest) {
     const parsed = await parseJsonBody(request, inviteSchema);
     if (!parsed.ok) return parsed.response;
     const { email, role, organizationId } = parsed.data;
+    const workspaceIds = [...new Set(parsed.data.workspaceIds ?? [])];
 
     const inviteRole = role ?? "member";
 
@@ -69,6 +72,30 @@ export async function POST(request: NextRequest) {
         { error: "Invalid role. Must be one of: owner, admin, member, viewer" },
         { status: 400 }
       );
+    }
+
+    // Workspace-scoping geldt alleen voor member/viewer — owner/admin bypassen
+    // de per-workspace ACL (zie hasWorkspaceAccess), dus een beperking zou
+    // stilletjes niets doen. Liever expliciet weigeren dan schijnveiligheid.
+    if (workspaceIds.length > 0) {
+      if (!["member", "viewer"].includes(inviteRole)) {
+        return NextResponse.json(
+          {
+            error: "Workspace restriction only applies to member/viewer roles — owners and admins always see all workspaces",
+            code: "WORKSPACE_SCOPE_ROLE_MISMATCH",
+          },
+          { status: 400 }
+        );
+      }
+      const validCount = await prisma.workspace.count({
+        where: { id: { in: workspaceIds }, organizationId },
+      });
+      if (validCount !== workspaceIds.length) {
+        return NextResponse.json(
+          { error: "One or more workspaces do not belong to this organization" },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if user is already a member
@@ -126,6 +153,7 @@ export async function POST(request: NextRequest) {
         role: inviteRole,
         organizationId,
         invitedById: session.user.id,
+        workspaceIds,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       },
     });
