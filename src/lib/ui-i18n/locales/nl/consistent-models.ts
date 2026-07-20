@@ -196,6 +196,8 @@ const consistentModels = {
   uploader: {
     unsupportedFormat: '{{file}}: niet-ondersteund formaat (gebruik JPEG, PNG of WebP)',
     tooLarge: '{{file}}: overschrijdt de limiet van 10MB',
+    tooSmall: '{{file}}: te klein ({{width}}x{{height}}px) — minimaal 512x512px',
+    unreadable: '{{file}}: kan niet worden gelezen (mogelijk beschadigd bestand)',
     onlyMore_one: 'Er kan nog {{count}} beeld worden toegevoegd',
     onlyMore_other: 'Er kunnen nog {{count}} beelden worden toegevoegd',
     maxReached: 'Maximum van {{count}} referentiebeelden bereikt',
