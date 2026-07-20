@@ -58,6 +58,9 @@ const consistentModels = {
   },
   detail: {
     trainingFailedAlert: 'Training failed: {{message}}',
+    uploadFailedAlert: 'Upload failed: {{message}}',
+    uploadPartialAlert:
+      '{{uploaded}} image(s) uploaded, {{failed}} rejected:\n\n{{details}}',
     confirmDelete:
       'Are you sure you want to delete "{{name}}"? This will permanently remove the model, all reference images, and all generated images. This action cannot be undone.',
     overviewTitle: 'Overview',

@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 426. AI-trainer upload: stille totaalfaal na per-bestand-fix hersteld
+
+Vervolgbug op #425/PR #217: één geweigerd bestand (bv. model al op max 20 referentiebeelden) brak de hele per-bestand-uploadloop af, de hook invalideerde alleen bij succes en de UI toonde geen enkele foutmelding — samen leek uploaden "helemaal stuk". Nu: fouten per bestand verzameld (geslaagde uploads blijven staan), query-invalidatie via onSettled (ook na fouten), en duidelijke alerts (volledige faal + deels-geweigerd met details, nl/en). PR #219.
+
+- Task: `-` (bugfix <30 min)
+
 ### 425. Gemeente Barneveld merk-DNA-seed + channelTones-fix in AI-context
 
 Klant-workspace "Gemeente Barneveld" gevuld vanuit de aangeleverde brondocumenten (huisstijlhandboek v0.8 Public Cinema, FotografieWijzer v1.0) plus een kanaal-analyse van barneveld.nl/Instagram/LinkedIn (Facebook login-walled): 4 onderbouwde brand-assets (kernwaarden, personality, story, maatschappelijke opgaven — rest bewust DRAFT), volledige voiceguide mét per-kanaal tonen (website u-vorm/taakgericht, social je-vorm/activerend, e-mail service, werving energiek) en een published brandstyle (10 kleuren, Bree Serif/Fira Sans, fotografie-principes connectie/beweging/lef incl. AVG-regels). Seed: `scripts/dev/seed-barneveld-brand.ts`; bundle `scripts/migrate-brand-dna/bundles/barneveld-2026-07-20.json` (25 rijen). Bijvangst-bugfix: `formatBrandVoiceguide` gooide channelTones in de UI-vorm `{description, axisShift}` stilletjes weg (filterde op platte strings) — accepteert nu beide vormen; geverifieerd via getBrandContext-probe (11/11 checks). Geen persona's/producten/concurrenten verzonnen — dat vult de gemeente zelf. Logo-SVG's ontbreken (alleen PDF) — nalevering via Brandstyle-UI. PR #218.

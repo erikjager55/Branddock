@@ -99,25 +99,42 @@ export async function uploadReferenceImages(
   files: File[],
 ): Promise<UploadReferenceImagesResponse> {
   // Eén bestand per request: alles in één formData botste op de ±4,5MB
-  // serverless-request-limiet van prod, waardoor batches boven ~12 foto's
-  // stil faalden. Sequentieel per bestand blijft altijd binnen de limiet
-  // en geeft per bestand een duidelijke foutmelding.
-  let last: UploadReferenceImagesResponse | null = null;
+  // serverless-request-limiet van prod. Eén geweigerd bestand (bv. model op
+  // max 20, te klein, te groot) mag de rest niet blokkeren: fouten worden
+  // per bestand verzameld en de geslaagde uploads blijven staan. Alleen als
+  // álles faalt, gooit de functie — met de serverfout als boodschap.
+  const uploaded: UploadReferenceImagesResponse["uploaded"] = [];
+  const errors: UploadReferenceImagesResponse["errors"] = [];
+  let total = 0;
+
   for (const file of files) {
     const formData = new FormData();
     formData.append("images", file);
 
-    const res = await fetch(`${BASE}/${modelId}/reference-images`, {
-      method: "POST",
-      body: formData,
-    });
-    last = await handleResponse<UploadReferenceImagesResponse>(
-      res,
-      `Failed to upload reference image "${file.name}"`,
-    );
+    try {
+      const res = await fetch(`${BASE}/${modelId}/reference-images`, {
+        method: "POST",
+        body: formData,
+      });
+      const result = await handleResponse<UploadReferenceImagesResponse>(
+        res,
+        `Failed to upload reference image "${file.name}"`,
+      );
+      uploaded.push(...result.uploaded);
+      errors.push(...result.errors);
+      total = result.total;
+    } catch (err) {
+      errors.push({
+        fileName: file.name,
+        error: err instanceof Error ? err.message : "Upload failed",
+      });
+    }
   }
-  if (!last) throw new Error("No files to upload");
-  return last;
+
+  if (files.length > 0 && uploaded.length === 0) {
+    throw new Error(errors[0]?.error ?? "No files uploaded");
+  }
+  return { uploaded, errors, total };
 }
 
 // ─── 7. Delete Reference Image ──────────────────────────────
