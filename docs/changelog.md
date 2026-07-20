@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 427. Uitnodigingen en leden per workspace scopen
+
+Erik: uitgenodigde leden werden meteen lid van álle werkomgevingen. Het ACL-model (`WorkspaceMemberAccess`, leeg = alle, afgedwongen in `hasWorkspaceAccess`/switch-route) bestond al maar werd door de invite-flow nooit gevuld. Nu: `Invitation.workspaceIds` (additieve kolom — **Neon db push vereist vóór gebruik op prod**), invite-route valideert de selectie (alleen member/viewer; owner/admin bypassen de ACL → 400), accept-route zet de ACL-rijen in de transactie, nieuwe PATCH `settings/team/members/[id]/workspace-access` voor bestaande leden, en `GET /api/workspaces` filtert nu ook de lijst voor beperkte leden (voorheen: alles zichtbaar, switchen 403). UI: workspace-kiezer in de uitnodigingsmodal (standaard = actieve werkomgeving bij "alleen geselecteerde"), werkomgevingen-kolom + "Werkomgevingen beheren" in de ledentabel, scope-regel op openstaande uitnodigingen (nl/en). Smoke op dev-DB: gescoped lid ziet alleen zijn workspace, lege ACL = alle. PR #220.
+
+- Task: [tasks/workspace-scoped-invites.md](../tasks/workspace-scoped-invites.md)
+
 ### 426. AI-trainer upload: stille totaalfaal na per-bestand-fix hersteld
 
 Vervolgbug op #425/PR #217: één geweigerd bestand (bv. model al op max 20 referentiebeelden) brak de hele per-bestand-uploadloop af, de hook invalideerde alleen bij succes en de UI toonde geen enkele foutmelding — samen leek uploaden "helemaal stuk". Nu: fouten per bestand verzameld (geslaagde uploads blijven staan), query-invalidatie via onSettled (ook na fouten), en duidelijke alerts (volledige faal + deels-geweigerd met details, nl/en). PR #219.
