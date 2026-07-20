@@ -98,14 +98,26 @@ export async function uploadReferenceImages(
   modelId: string,
   files: File[],
 ): Promise<UploadReferenceImagesResponse> {
-  const formData = new FormData();
-  files.forEach((file) => formData.append("images", file));
+  // Eén bestand per request: alles in één formData botste op de ±4,5MB
+  // serverless-request-limiet van prod, waardoor batches boven ~12 foto's
+  // stil faalden. Sequentieel per bestand blijft altijd binnen de limiet
+  // en geeft per bestand een duidelijke foutmelding.
+  let last: UploadReferenceImagesResponse | null = null;
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append("images", file);
 
-  const res = await fetch(`${BASE}/${modelId}/reference-images`, {
-    method: "POST",
-    body: formData,
-  });
-  return handleResponse(res, "Failed to upload reference images");
+    const res = await fetch(`${BASE}/${modelId}/reference-images`, {
+      method: "POST",
+      body: formData,
+    });
+    last = await handleResponse<UploadReferenceImagesResponse>(
+      res,
+      `Failed to upload reference image "${file.name}"`,
+    );
+  }
+  if (!last) throw new Error("No files to upload");
+  return last;
 }
 
 // ─── 7. Delete Reference Image ──────────────────────────────
