@@ -26,6 +26,7 @@ import { cacheKeys } from "@/lib/api/cache-keys";
 import { chargeAfter } from "@/lib/billing/credits/meter-generation";
 import { getAgentDefinition } from "@/lib/agents/registry";
 import { enforceNotLocked } from "@/lib/stripe/enforcement";
+import { trackEvent } from "@/lib/analytics/posthog";
 
 // Contentgeneratie ná approve kan minuten duren (zelfde budget als de run-route).
 export const maxDuration = 800;
@@ -165,6 +166,20 @@ export async function POST(
         { error: "Proposal is already resolved", runStatus: healedStatus },
         { status: 409 },
       );
+    }
+
+    // Fase 0 (€100k-plan): eerste accept van deze workspace = het activatie-
+    // moment uit de KPI-boom. Eén count-query, alleen op het accept-pad;
+    // trackEvent verrijkt zelf met brand_foundation_coverage.
+    const acceptedBefore = await prisma.agentArtifact.count({
+      where: { workspaceId, acceptedAt: { not: null } },
+    });
+    if (acceptedBefore === 1) {
+      void trackEvent({
+        event: "workspace_activated",
+        workspaceId,
+        properties: { via: "agent_confirm" },
+      });
     }
 
     const releaseClaim = async () => {

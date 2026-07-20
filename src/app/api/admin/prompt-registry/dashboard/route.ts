@@ -103,7 +103,7 @@ export async function GET() {
     // Aggregate
     let calls24h = 0;
     let calls7d = 0;
-    let calls30d = traces.length;
+    const calls30d = traces.length;
     let cost24h = 0;
     let cost7d = 0;
     let cost30d = 0;

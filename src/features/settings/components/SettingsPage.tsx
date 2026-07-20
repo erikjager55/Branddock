@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { GrowthTab } from './growth/GrowthTab';
 import { useSettingsStore, type SettingsTab } from '@/stores/useSettingsStore';
 import { PageShell, PageHeader } from '@/components/ui/layout';
 import { SettingsSubNav } from './SettingsSubNav';
@@ -25,7 +26,7 @@ import { FeedbackTriageTab } from './developer/FeedbackTriageTab';
 import { CreditAdminPanel } from './developer/CreditAdminPanel';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
 
-const DEVELOPER_TABS: SettingsTab[] = ['administrator', 'ai-models', 'ai-prompts', 'author-profile', 'visual-fidelity', 'bug-triage', 'feature-triage', 'feedback-triage', 'credit-admin'];
+const DEVELOPER_TABS: SettingsTab[] = ['administrator', 'ai-models', 'ai-prompts', 'author-profile', 'visual-fidelity', 'bug-triage', 'feature-triage', 'feedback-triage', 'credit-admin', 'growth'];
 
 interface SettingsPageProps {
   initialTab?: SettingsTab;
@@ -99,6 +100,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
         return <FeedbackTriageTab />;
       case 'credit-admin':
         return <CreditAdminPanel />;
+      case 'growth':
+        return <GrowthTab />;
       default:
         return <AccountTab />;
     }

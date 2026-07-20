@@ -36,7 +36,7 @@ const VAR_BAL = '(?:[^()]|\\([^()]*\\))*';
  */
 export function resolveCssVar(value: string, fullCss: string, depth = 0): string | null {
   if (depth > 8) return null;
-  let v = value.replace(/!important/gi, '').trim();
+  const v = value.replace(/!important/gi, '').trim();
   if (!v) return null;
 
   // Hele waarde = één var(--name, fallback?)

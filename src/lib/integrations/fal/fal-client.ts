@@ -503,7 +503,7 @@ export async function generateFalImage(
   const endpoint = provider ? getFalEndpoint(provider) : modelId;
   console.log(`[fal-client] dispatching ${modelId} → endpoint ${endpoint}`);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const result = await fal.subscribe(endpoint, {
     input: input as any,
     timeout: 180_000, // 3 minutes — GPU queue can be slow
@@ -552,7 +552,7 @@ export async function editFalImageWithInstruction(
   // fal SDK heeft typed input voor nano-banana-pro; cast naar `any` voor
   // edit-flow met image_urls (fal accepteert het runtime maar type is op
   // generate-only flow gemodelleerd).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const result = await fal.subscribe(editModelId, {
     input: input as any,
     timeout: 180_000,
