@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 428. AI-trainer: upload-duidelijkheid afgemaakt + stijlanalyse-storage-fix
+
+Drie vervolg-fixes op de upload-arc van #426. (1) PR #222: de weiger-alert toont nu de échte serverreden per bestand (te klein/te groot/corrupt) i.p.v. een kale "(400)". (2) PR #223: de uploader leest afmetingen vooraf in de browser (createImageBitmap) — te kleine (<512×512) of onleesbare bestanden krijgen direct een nl/en-melding mét gemeten maten, vóór er iets geüpload wordt. (3) PR #224: "Style analysis failed: The specified key does not exist" — de upload-route schrijft de volledige publieke URL naar `ReferenceImage.storageKey`, maar de stijlanalyzer gebruikte dat veld letterlijk als R2-sleutel (lokaal werkte het toevallig via de pad-vorm). `toR2Key()` normaliseert nu URL/pad/sleutel op alle drie de leespaden (GetObject, publieke URL, signed URL) — repareert ook bestaande rijen zonder datamigratie.
+
+- Task: `-` (bugfix-arc)
+
 ### 427. Uitnodigingen en leden per workspace scopen
 
 Erik: uitgenodigde leden werden meteen lid van álle werkomgevingen. Het ACL-model (`WorkspaceMemberAccess`, leeg = alle, afgedwongen in `hasWorkspaceAccess`/switch-route) bestond al maar werd door de invite-flow nooit gevuld. Nu: `Invitation.workspaceIds` (additieve kolom — **Neon db push vereist vóór gebruik op prod**), invite-route valideert de selectie (alleen member/viewer; owner/admin bypassen de ACL → 400), accept-route zet de ACL-rijen in de transactie, nieuwe PATCH `settings/team/members/[id]/workspace-access` voor bestaande leden, en `GET /api/workspaces` filtert nu ook de lijst voor beperkte leden (voorheen: alles zichtbaar, switchen 403). UI: workspace-kiezer in de uitnodigingsmodal (standaard = actieve werkomgeving bij "alleen geselecteerde"), werkomgevingen-kolom + "Werkomgevingen beheren" in de ledentabel, scope-regel op openstaande uitnodigingen (nl/en). Smoke op dev-DB: gescoped lid ziet alleen zijn workspace, lege ACL = alle. PR #220.
