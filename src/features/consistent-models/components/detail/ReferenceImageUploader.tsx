@@ -15,6 +15,9 @@ interface ReferenceImageUploaderProps {
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+// Spiegel van de server-eis in src/lib/storage/image-validator.ts (sharp is
+// niet client-safe, dus geen gedeelde import mogelijk).
+const MIN_DIMENSION = 512;
 
 /** Drag & drop + file picker for reference image uploads */
 export function ReferenceImageUploader({
@@ -31,7 +34,7 @@ export function ReferenceImageUploader({
   const remaining = maxCount - currentCount;
 
   const validateFiles = useCallback(
-    (files: File[]): File[] => {
+    async (files: File[]): Promise<File[]> => {
       setError(null);
       const valid: File[] = [];
       const errors: string[] = [];
@@ -43,6 +46,21 @@ export function ReferenceImageUploader({
         }
         if (file.size > MAX_FILE_SIZE) {
           errors.push(t("uploader.tooLarge", { file: file.name }));
+          continue;
+        }
+        // Afmetingen vooraf in de browser lezen: te kleine bestanden kregen
+        // anders pas ná de upload een (Engelse) serverweigering — precies de
+        // verwarring van 2026-07-20. Vangt en passant corrupte bestanden af.
+        try {
+          const bitmap = await createImageBitmap(file);
+          const { width, height } = bitmap;
+          bitmap.close();
+          if (width < MIN_DIMENSION || height < MIN_DIMENSION) {
+            errors.push(t("uploader.tooSmall", { file: file.name, width, height }));
+            continue;
+          }
+        } catch {
+          errors.push(t("uploader.unreadable", { file: file.name }));
           continue;
         }
         valid.push(file);
@@ -65,10 +83,12 @@ export function ReferenceImageUploader({
   const handleFiles = useCallback(
     (files: FileList | null) => {
       if (!files || files.length === 0) return;
-      const validated = validateFiles(Array.from(files));
-      if (validated.length > 0) {
-        onUpload(validated);
-      }
+      void (async () => {
+        const validated = await validateFiles(Array.from(files));
+        if (validated.length > 0) {
+          onUpload(validated);
+        }
+      })();
     },
     [validateFiles, onUpload],
   );

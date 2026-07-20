@@ -196,6 +196,8 @@ const consistentModels = {
   uploader: {
     unsupportedFormat: '{{file}}: unsupported format (use JPEG, PNG, or WebP)',
     tooLarge: '{{file}}: exceeds 10MB limit',
+    tooSmall: '{{file}}: too small ({{width}}x{{height}}px) — minimum 512x512px',
+    unreadable: '{{file}}: could not be read (file may be corrupt)',
     onlyMore_one: 'Only {{count}} more image can be added',
     onlyMore_other: 'Only {{count}} more images can be added',
     maxReached: 'Maximum of {{count}} reference images reached',
