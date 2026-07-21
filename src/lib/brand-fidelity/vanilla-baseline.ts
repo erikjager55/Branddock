@@ -31,7 +31,10 @@ export interface VanillaBaselineResult {
   generationMs: number;
 }
 
-const VANILLA_MODEL = 'gpt-4o';
+// Hermeting 2026-07-21 (go Erik): baseline gemoderniseerd naar wat een
+// ChatGPT-gebruiker vandaag echt krijgt. De oude gpt-4o-meting (+7/+12)
+// is vervangen door de hermeting — zie docs/reports/pilot-hermeting-2026-07-21.md.
+const VANILLA_MODEL = 'gpt-5.6';
 
 /**
  * System prompt — het minimum dat een ChatGPT-gebruiker zonder Branddock
@@ -86,6 +89,8 @@ function buildVanillaUserPrompt(input: VanillaBriefInput): string {
  */
 export async function generateVanillaBaseline(
   input: VanillaBriefInput,
+  /** Alleen voor meetscripts (bv. gpt-4o-referentie) — product gebruikt de default. */
+  modelOverride?: string,
 ): Promise<VanillaBaselineResult> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY not configured for vanilla baseline');
@@ -97,10 +102,12 @@ export async function generateVanillaBaseline(
   const userPrompt = buildVanillaUserPrompt(input);
   const startedAt = Date.now();
 
+  const model = modelOverride ?? VANILLA_MODEL;
   const response = await client.chat.completions.create({
-    model: VANILLA_MODEL,
-    max_tokens: 4096,
-    temperature: 1.0, // GPT-4o vanille default — niet tunen, dat zou Branddock-effect zijn
+    model,
+    // gpt-5.x: max_completion_tokens (reasoning telt mee) i.p.v. max_tokens.
+    max_completion_tokens: 8000,
+    temperature: 1.0, // vanille default — niet tunen, dat zou Branddock-effect zijn
     messages: [
       { role: 'system', content: VANILLA_SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },
@@ -115,7 +122,7 @@ export async function generateVanillaBaseline(
   return {
     text,
     wordCount: text.split(/\s+/).filter(Boolean).length,
-    model: VANILLA_MODEL,
+    model,
     generationMs: Date.now() - startedAt,
   };
 }
