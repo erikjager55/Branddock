@@ -18,16 +18,60 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
-import type { CompetitorTier, InsightCategory, ImpactLevel, InsightTimeframe, Prisma } from '@prisma/client';
-import { CANONICAL_BRAND_ASSETS } from '@/lib/constants/canonical-brand-assets';
+import type { CompetitorTier, Prisma } from '@prisma/client';
+import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from '@/lib/constants/canonical-brand-assets';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { invalidateBrandContext } from '@/lib/ai/brand-context';
 import { localeForLanguage, syncDefaultLocaleProfile } from '@/lib/content-locale/default-profile';
-import { syncVoiceguideToRules } from '@/lib/brand-fidelity/brand-rule-sync';
+import {
+  syncVoiceguideToRules,
+  syncWordsAvoidToRules,
+  syncWorkspaceBrandRules,
+} from '@/lib/brand-fidelity/brand-rule-sync';
+import { enforceFeature, enforceNotLocked } from '@/lib/stripe/enforcement';
+import { createVersion } from '@/lib/versioning';
+import { buildBrandAssetSnapshot } from '@/lib/snapshot-builders';
 
 /** Zelfde allowlist als POST/PATCH /api/workspaces — houd in sync. */
 const VALID_CONTENT_LANGUAGES = new Set(['en', 'nl', 'de', 'fr', 'es', 'pt', 'it']);
+
+/**
+ * Toegestane top-level frameworkData-keys per frameworkType (bron:
+ * src/features/brand-asset-detail/types/framework.types.ts, incl. legacy/
+ * deprecated keys). Onbekende keys worden gedropt en gerapporteerd zodat
+ * publieke payloads geen dead data of renderer-brekende shapes injecteren.
+ */
+const FRAMEWORK_KEYS: Record<string, readonly string[]> = {
+  PURPOSE_WHEEL: ['statement', 'impactType', 'impactDescription', 'mechanismCategory', 'mechanism', 'pressureTest'],
+  GOLDEN_CIRCLE: ['why', 'how', 'what'],
+  BRAND_ESSENCE: ['essenceStatement', 'essenceNarrative', 'functionalBenefit', 'emotionalBenefit', 'selfExpressiveBenefit', 'discriminator', 'proofPoints', 'attributes', 'audienceInsight', 'validationScores'],
+  BRAND_PROMISE: ['promiseStatement', 'promiseOneLiner', 'functionalValue', 'emotionalValue', 'selfExpressiveValue', 'targetAudience', 'coreCustomerNeed', 'differentiator', 'onlynessStatement', 'proofPoints', 'measurableOutcomes'],
+  MISSION_STATEMENT: ['missionStatement', 'missionOneLiner', 'forWhom', 'whatWeDo', 'howWeDoIt', 'visionStatement', 'timeHorizon', 'boldAspiration', 'desiredFutureState', 'successIndicators', 'stakeholderBenefit', 'impactGoal', 'valuesAlignment', 'missionVisionTension'],
+  BRAND_ARCHETYPE: ['primaryArchetype', 'subArchetype', 'coreDesire', 'coreFear', 'brandGoal', 'strategy', 'giftTalent', 'shadowWeakness', 'brandVoiceDescription', 'voiceAdjectives', 'languagePatterns', 'weSayNotThat', 'toneVariations', 'blacklistedPhrases', 'colorDirection', 'typographyDirection', 'imageryStyle', 'visualMotifs', 'archetypeInAction', 'marketingExpression', 'customerExperience', 'contentStrategy', 'storytellingApproach', 'brandExamples', 'positioningApproach', 'competitiveLandscape'],
+  TRANSFORMATIVE_GOALS: ['massiveTransformativePurpose', 'mtpNarrative', 'goals', 'authenticityScores', 'stakeholderImpact', 'brandIntegration'],
+  BRAND_PERSONALITY: ['dimensionScores', 'primaryDimension', 'secondaryDimension', 'personalityTraits', 'spectrumSliders', 'toneDimensions', 'brandVoiceDescription', 'wordsWeUse', 'wordsWeAvoid', 'writingSample', 'channelTones', 'colorDirection', 'typographyDirection', 'imageryDirection'],
+  BRAND_STORY: ['originStory', 'founderMotivation', 'coreBeliefStatement', 'worldContext', 'customerExternalProblem', 'customerInternalProblem', 'philosophicalProblem', 'stakesCostOfInaction', 'brandRole', 'empathyStatement', 'authorityCredentials', 'transformationPromise', 'customerSuccessVision', 'abtStatement', 'brandThemes', 'emotionalTerritory', 'keyNarrativeMessages', 'narrativeArc', 'proofPoints', 'valuesInAction', 'brandMilestones', 'elevatorPitch', 'manifestoText', 'audienceAdaptations', 'theChallenge', 'theSolution', 'theOutcome'],
+  BRANDHOUSE_VALUES: ['anchorValue1', 'anchorValue2', 'aspirationValue1', 'aspirationValue2', 'ownValue', 'valueTension'],
+  ESG: ['impactStatement', 'impactNarrative', 'activismLevel', 'milieu', 'mens', 'maatschappij', 'authenticityScores', 'proofPoints', 'certifications', 'antiGreenwashingStatement', 'sdgAlignment', 'communicationPrinciples', 'keyStakeholders', 'activationChannels', 'annualCommitment', 'pillars'],
+};
+
+/** Filtert onbekende top-level keys uit frameworkData; geeft gedropte keys terug. */
+function filterFrameworkData(
+  frameworkType: string,
+  data: Record<string, unknown>,
+): { data: Record<string, unknown>; dropped: string[] } {
+  const allowed = FRAMEWORK_KEYS[frameworkType];
+  if (!allowed) return { data, dropped: [] };
+  const allowedSet = new Set(allowed);
+  const out: Record<string, unknown> = {};
+  const dropped: string[] = [];
+  for (const [key, value] of Object.entries(data)) {
+    if (allowedSet.has(key)) out[key] = value;
+    else dropped.push(key);
+  }
+  return { data: out, dropped };
+}
 
 // ─── Payload-types (spiegel van het werkbestand) ─────────────
 
@@ -201,6 +245,20 @@ async function resolveActorUserId(workspaceId: string, userId?: string): Promise
   return member?.userId ?? null;
 }
 
+/**
+ * UI-pariteit met PATCH /api/workspaces: workspace-settings (contentLanguage)
+ * zijn owner/admin-only. Zonder userId (API-key-pad: merk-vergrendelde
+ * machine-toegang) geldt de gate niet.
+ */
+async function hasWorkspaceAdminRole(workspaceId: string, userId?: string): Promise<boolean> {
+  if (!userId) return true;
+  const member = await prisma.organizationMember.findFirst({
+    where: { userId, organization: { workspaces: { some: { id: workspaceId } } } },
+    select: { role: true },
+  });
+  return member?.role === 'owner' || member?.role === 'admin';
+}
+
 /** Verwijdert keys met undefined zodat Prisma-updates alleen aangeleverde velden raken. */
 function compact<T extends Record<string, unknown>>(obj: T): T {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as T;
@@ -275,13 +333,22 @@ async function importBrandAssets(
   workspaceId: string,
   assets: BrandAssetImport[],
   report: BrandImportReport,
+  userId?: string,
 ): Promise<void> {
+  const actorId = await resolveActorUserId(workspaceId, userId);
   await perItem(assets, 'brandAssets', (a) => a.slug, report, async (asset) => {
     const canonical = CANONICAL_BRAND_ASSETS.find((c) => c.slug === asset.slug);
     if (!canonical) {
       push(report, 'brandAssets', asset.slug, 'skipped', `onbekende asset-slug — geldige slugs: ${CANONICAL_BRAND_ASSETS.map((c) => c.slug).join(', ')}`);
       return;
     }
+    const { data: frameworkData, dropped } = filterFrameworkData(
+      canonical.frameworkType,
+      asset.frameworkData,
+    );
+    const droppedNote = dropped.length ? `onbekende keys genegeerd: ${dropped.join(', ')}` : undefined;
+    const filtered: BrandAssetImport = { ...asset, frameworkData };
+
     const existing = await prisma.brandAsset.findUnique({
       where: { workspaceId_slug: { workspaceId, slug: asset.slug } },
     });
@@ -290,11 +357,11 @@ async function importBrandAssets(
       return;
     }
     if (existing) {
-      await applyAssetUpdate(existing, asset, canonical.name, report);
+      await applyAssetUpdate(existing, filtered, canonical, report, actorId, droppedNote);
       return;
     }
     try {
-      await prisma.brandAsset.create({
+      const created = await prisma.brandAsset.create({
         data: {
           workspaceId,
           name: canonical.name,
@@ -302,12 +369,23 @@ async function importBrandAssets(
           category: canonical.category,
           description: canonical.description,
           frameworkType: canonical.frameworkType,
-          frameworkData: asset.frameworkData as Prisma.InputJsonValue,
-          content: asset.content !== undefined ? (asset.content as Prisma.InputJsonValue) : undefined,
+          frameworkData: frameworkData as Prisma.InputJsonValue,
+          content: filtered.content !== undefined ? (filtered.content as Prisma.InputJsonValue) : undefined,
           status: 'IN_PROGRESS',
+          // Pariteit met workspace-provisioning: zonder deze rijen 404't de
+          // research-methods-flow op via-import aangemaakte assets.
+          researchMethods: {
+            create: ACTIVE_RESEARCH_METHOD_TYPES.map((method) => ({
+              method,
+              status: 'AVAILABLE' as const,
+              progress: 0,
+            })),
+          },
         },
       });
-      push(report, 'brandAssets', canonical.name, 'created');
+      await snapshotAssetVersion(workspaceId, created, actorId);
+      await syncPersonalityRules(workspaceId, canonical.frameworkType, frameworkData);
+      push(report, 'brandAssets', canonical.name, 'created', droppedNote);
     } catch (err) {
       if (!isUniqueViolation(err)) throw err;
       // Race met een parallelle create (bijv. workspace-provisioning) —
@@ -320,7 +398,7 @@ async function importBrandAssets(
         push(report, 'brandAssets', canonical.name, 'skipped', 'asset is vergrendeld (isLocked)');
         return;
       }
-      await applyAssetUpdate(raced, asset, canonical.name, report);
+      await applyAssetUpdate(raced, filtered, canonical, report, actorId, droppedNote);
     }
   });
 }
@@ -329,14 +407,16 @@ async function importBrandAssets(
 async function applyAssetUpdate(
   existing: { id: string; status: string; validatedCount: number; frameworkData: unknown },
   asset: BrandAssetImport,
-  canonicalName: string,
+  canonical: { name: string; frameworkType: string },
   report: BrandImportReport,
+  actorId: string | null,
+  extraNote?: string,
 ): Promise<void> {
   const merged = deepMerge(
     (existing.frameworkData as Record<string, unknown> | null) ?? {},
     asset.frameworkData,
   );
-  await prisma.brandAsset.update({
+  const updated = await prisma.brandAsset.update({
     where: { id: existing.id },
     data: compact({
       frameworkData: merged as Prisma.InputJsonValue,
@@ -344,19 +424,68 @@ async function applyAssetUpdate(
       status: existing.status === 'DRAFT' ? 'IN_PROGRESS' : undefined,
     }),
   });
+  await snapshotAssetVersion(updated.workspaceId, updated, actorId);
+  await syncPersonalityRules(updated.workspaceId, canonical.frameworkType, merged);
   // Gevalideerde content wordt wél bijgewerkt (zelfde semantiek als de UI-
   // editor), maar de caller moet weten dat de validatiestatus dan content
   // attesteert die na de import gewijzigd is.
   const wasValidated = existing.status === 'READY' || existing.validatedCount > 0;
-  push(
-    report,
-    'brandAssets',
-    canonicalName,
-    'updated',
+  const notes = [
     wasValidated
       ? `let op: asset had status ${existing.status} met validaties — content bijgewerkt, validatiestatus ongemoeid`
       : undefined,
-  );
+    extraNote,
+  ].filter(Boolean);
+  push(report, 'brandAssets', canonical.name, 'updated', notes.length ? notes.join('; ') : undefined);
+}
+
+/**
+ * UI-pariteit met PATCH /api/brand-assets/[id]/framework: auto-versioning
+ * vóórdat een import onherstelbaar zou overschrijven. Non-fataal.
+ */
+async function snapshotAssetVersion(
+  workspaceId: string,
+  asset: Parameters<typeof buildBrandAssetSnapshot>[0],
+  actorId: string | null,
+): Promise<void> {
+  if (!actorId) return;
+  try {
+    await createVersion({
+      resourceType: 'BRAND_ASSET',
+      resourceId: asset.id,
+      snapshot: buildBrandAssetSnapshot(asset),
+      changeType: 'MANUAL_SAVE',
+      changeNote: 'Import via import_brand_data (werkbestand)',
+      userId: actorId,
+      workspaceId,
+    });
+  } catch {
+    // Non-fataal — zelfde als de UI-route.
+  }
+}
+
+/**
+ * UI-pariteit met de framework-route: BRAND_PERSONALITY.wordsWeAvoid voedt de
+ * BrandRule-auto-sync (F-VAL pijler 3), incl. de voiceguide-takeover (W-6).
+ * Non-fataal.
+ */
+async function syncPersonalityRules(
+  workspaceId: string,
+  frameworkType: string,
+  frameworkData: Record<string, unknown>,
+): Promise<void> {
+  if (frameworkType !== 'BRAND_PERSONALITY') return;
+  try {
+    if ('wordsWeAvoid' in frameworkData) {
+      const words = Array.isArray(frameworkData.wordsWeAvoid)
+        ? (frameworkData.wordsWeAvoid as string[])
+        : [];
+      await syncWordsAvoidToRules(workspaceId, words);
+    }
+    await syncWorkspaceBrandRules(workspaceId);
+  } catch {
+    // Non-fataal — zelfde als de UI-route.
+  }
 }
 
 async function importVoiceguide(
@@ -390,7 +519,7 @@ async function importVoiceguide(
   // Tweede-deur-pariteit met PATCH /api/brandvoiceguide: wijzigingen in
   // wordsWeAvoid/antiPatterns voeden de BrandRule-auto-sync (F-VAL pijler 3).
   // Non-fataal — de import zelf slaagt ook als de sync faalt.
-  let syncNote: string | undefined;
+  const notes: string[] = [];
   if (vg.wordsWeAvoid !== undefined || vg.antiPatterns !== undefined) {
     try {
       await syncVoiceguideToRules(workspaceId, {
@@ -398,14 +527,15 @@ async function importVoiceguide(
         antiPatterns: saved.antiPatterns,
       });
     } catch (err) {
-      syncNote = `BrandRule-sync faalde (niet-fataal): ${err instanceof Error ? err.message : String(err)}`;
+      notes.push(`BrandRule-sync faalde (niet-fataal): ${err instanceof Error ? err.message : String(err)}`);
     }
   }
-  if (!syncNote && vg.writingSamples !== undefined) {
-    syncNote =
-      'writingSamples gewijzigd — draai de centroid-recompute (Brand Voice → References) voor F-VAL pijler 1';
+  if (vg.writingSamples !== undefined) {
+    notes.push(
+      'writingSamples gewijzigd — draai de centroid-recompute (Brand Voice → References) voor F-VAL pijler 1',
+    );
   }
-  push(report, 'voiceguide', 'Brand Voiceguide', existing ? 'updated' : 'created', syncNote);
+  push(report, 'voiceguide', 'Brand Voiceguide', existing ? 'updated' : 'created', notes.join('; ') || undefined);
 }
 
 async function importPersonas(
@@ -454,7 +584,22 @@ async function importPersonas(
     } else if (!actorId) {
       push(report, 'personas', p.name, 'skipped', 'geen gebruiker gevonden voor createdById');
     } else {
-      await prisma.persona.create({ data: { workspaceId, name: p.name, createdById: actorId, ...data } });
+      // M5-pariteit: throw'i PlanLimitError bij bereikte limiet (no-op zolang
+      // billing uit staat) — perItem rapporteert die als skipped.
+      await enforceFeature(workspaceId, 'PERSONAS');
+      await prisma.persona.create({
+        data: {
+          workspaceId,
+          name: p.name,
+          createdById: actorId,
+          ...data,
+          // Pariteit met POST /api/personas: zonder deze rij breekt de
+          // research-methods-flow voor via-import aangemaakte personas.
+          researchMethods: {
+            create: [{ method: 'AI_EXPLORATION', status: 'AVAILABLE', workspaceId }],
+          },
+        },
+      });
       push(report, 'personas', p.name, 'created');
     }
   });
@@ -505,6 +650,7 @@ async function importProducts(
         push(report, 'products', prod.name, 'skipped', 'geen stabiele slug afleidbaar uit de naam');
         return;
       }
+      await enforceFeature(workspaceId, 'PRODUCTS');
       const slug = await uniqueProductSlug(base);
       try {
         const created = await prisma.product.create({
@@ -518,19 +664,31 @@ async function importProducts(
         return;
       }
     }
+    // Koppel-fouten apart vangen: het product zelf is al gerapporteerd en mag
+    // niet nogmaals (als 'skipped') in het rapport belanden via perItem.
     for (const personaName of prod.personaNames ?? []) {
-      const persona = await prisma.persona.findFirst({
-        where: { workspaceId, name: { equals: personaName, mode: 'insensitive' } },
-        orderBy: { createdAt: 'asc' },
-      });
-      if (!persona) {
-        push(report, 'products', `${prod.name} → ${personaName}`, 'skipped', 'persona niet gevonden voor koppeling');
-        continue;
+      try {
+        const persona = await prisma.persona.findFirst({
+          where: { workspaceId, name: { equals: personaName, mode: 'insensitive' } },
+          orderBy: { createdAt: 'asc' },
+        });
+        if (!persona) {
+          push(report, 'products', `${prod.name} → ${personaName}`, 'skipped', 'persona niet gevonden voor koppeling');
+          continue;
+        }
+        await prisma.productPersona.createMany({
+          data: [{ productId, personaId: persona.id }],
+          skipDuplicates: true,
+        });
+      } catch (err) {
+        push(
+          report,
+          'products',
+          `${prod.name} → ${personaName}`,
+          'skipped',
+          `koppeling mislukt: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
-      await prisma.productPersona.createMany({
-        data: [{ productId, personaId: persona.id }],
-        skipDuplicates: true,
-      });
     }
   });
 }
@@ -648,16 +806,37 @@ async function importTrends(
     }
     const data = compact({
       description: trend.description,
-      category: trend.category as InsightCategory | undefined,
-      impactLevel: trend.impact as ImpactLevel | undefined,
-      timeframe: trend.timeframe as InsightTimeframe | undefined,
+      category: trend.category,
+      impactLevel: trend.impact,
+      timeframe: trend.timeframe,
       direction: trend.direction,
       howToUse: trend.keyInsights !== undefined ? [trend.keyInsights] : undefined,
       sourceUrls: trend.sources,
     });
     if (existing) {
-      await prisma.detectedTrend.update({ where: { id: existing.id }, data });
-      push(report, 'trends', trend.title, 'updated');
+      // Zichtbaarheids-pariteit: een gedetecteerde-maar-niet-geactiveerde trend
+      // die via import wordt bijgewerkt hoort zichtbaar te worden (create-pad
+      // activeert ook). Dismissed blijft dismissed — dat was een bewuste keuze
+      // van de gebruiker; het rapport meldt het.
+      const activate = !existing.isActivated && !existing.isDismissed;
+      await prisma.detectedTrend.update({
+        where: { id: existing.id },
+        data: {
+          ...data,
+          ...(activate
+            ? { isActivated: true, activatedAt: new Date(), activatedById: existing.activatedById ?? actorId }
+            : {}),
+        },
+      });
+      push(
+        report,
+        'trends',
+        trend.title,
+        'updated',
+        existing.isDismissed
+          ? 'let op: trend staat op dismissed en blijft verborgen in de Trend Radar tot hij hersteld wordt'
+          : undefined,
+      );
       return;
     }
     const slug = await uniqueTrendSlug(trend.title);
@@ -713,6 +892,7 @@ async function importKnowledgeResources(
       await prisma.knowledgeResource.update({ where: { id: existing.id }, data });
       push(report, 'knowledgeResources', res.title, 'updated');
     } else {
+      await enforceFeature(workspaceId, 'KNOWLEDGE_RESOURCES');
       await prisma.knowledgeResource.create({
         data: { workspaceId, title: res.title, source: 'MANUAL', ...data, description: res.description },
       });
@@ -759,12 +939,25 @@ export async function importBrandData(
     }
   };
 
+  // Fase 4-pariteit: verlopen no-card trial → read-only-lock op entity-creatie.
+  // Zelfde gate als de UI-POST-routes; no-op zolang credits/billing uit staan.
+  const locked = await enforceNotLocked(workspaceId);
+  if (locked) {
+    throw new Error('Entity-creatie is vergrendeld: trial verlopen (read-only-lock). Upgrade het abonnement om te importeren.');
+  }
+
   try {
     if (payload.contentLanguage) {
       await runSection('workspace', async () => {
         const lang = payload.contentLanguage!;
         if (!VALID_CONTENT_LANGUAGES.has(lang)) {
           push(report, 'workspace', `contentLanguage → ${lang}`, 'skipped', `ongeldige taalcode — toegestaan: ${[...VALID_CONTENT_LANGUAGES].join(', ')}`);
+          return;
+        }
+        // Rol-pariteit met PATCH /api/workspaces: workspace-settings zijn
+        // owner/admin-only — een member-token mag de taal niet wijzigen.
+        if (!(await hasWorkspaceAdminRole(workspaceId, opts?.userId))) {
+          push(report, 'workspace', `contentLanguage → ${lang}`, 'skipped', 'workspace-instellingen vereisen owner/admin-rol');
           return;
         }
         await prisma.workspace.update({
@@ -779,7 +972,9 @@ export async function importBrandData(
       });
     }
     if (payload.brandAssets?.length) {
-      await runSection('brandAssets', () => importBrandAssets(workspaceId, payload.brandAssets!, report));
+      await runSection('brandAssets', () =>
+        importBrandAssets(workspaceId, payload.brandAssets!, report, opts?.userId),
+      );
     }
     if (payload.voiceguide) {
       await runSection('voiceguide', () => importVoiceguide(workspaceId, payload.voiceguide!, report));
