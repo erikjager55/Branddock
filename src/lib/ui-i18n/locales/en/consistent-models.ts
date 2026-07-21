@@ -269,12 +269,12 @@ const consistentModels = {
     copy: 'Copy',
   },
   trainingChoice: {
-    title: 'How would you like to train this model?',
-    subtitle: 'Choose how you want to provide reference images for training.',
-    ownTitle: 'Train with own images',
+    title: 'Where do your style references come from?',
+    subtitle: 'Choose how to provide the reference images for this model — you can generate right after.',
+    ownTitle: 'Upload your own images',
     ownDescription:
-      'Upload your own photos or images to train the model on your specific subject.',
-    syntheticTitle: 'Train with synthetic images',
+      'Upload your own photos or images — they steer every generation as style references.',
+    syntheticTitle: 'Generate synthetic images',
     syntheticDescription:
       'Let AI generate reference images based on your brand context and style.',
     getStarted: 'Get started',

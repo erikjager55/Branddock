@@ -4,7 +4,6 @@ import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload, ImagePlus, AlertCircle } from "lucide-react";
 import { Button } from "@/components/shared";
-import { TRAINING_DEFAULTS } from "../../constants/model-constants";
 
 interface ReferenceImageUploaderProps {
   onUpload: (files: File[]) => void;

@@ -9,7 +9,6 @@ import type {
   CreateModelBody,
   UpdateModelBody,
   GenerateImageBody,
-  StartTrainingBody,
   GenerationsListParams,
 } from "../types/consistent-model.types";
 
@@ -20,7 +19,6 @@ export const consistentModelKeys = {
   list: () => [...consistentModelKeys.all, "list"] as const,
   detail: (id: string) => [...consistentModelKeys.all, "detail", id] as const,
   generations: (id: string) => [...consistentModelKeys.all, "generations", id] as const,
-  trainingStatus: (id: string) => [...consistentModelKeys.all, "training-status", id] as const,
   stats: () => [...consistentModelKeys.all, "stats"] as const,
 };
 
@@ -130,52 +128,6 @@ export function useReorderReferenceImages(modelId: string | undefined) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: consistentModelKeys.detail(modelId!) });
     },
-  });
-}
-
-// ─── 9. useStartTraining ────────────────────────────────────
-
-export function useStartTraining(modelId: string | undefined) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (config?: StartTrainingBody) => api.startTraining(modelId!, config),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: consistentModelKeys.detail(modelId!) });
-      qc.invalidateQueries({ queryKey: consistentModelKeys.list() });
-    },
-  });
-}
-
-// ─── 10. useTrainingStatus (polling) ────────────────────────
-
-export function useTrainingStatus(
-  modelId: string | null | undefined,
-  isTraining: boolean,
-) {
-  return useQuery({
-    queryKey: consistentModelKeys.trainingStatus(modelId ?? ""),
-    queryFn: () => api.fetchTrainingStatus(modelId!),
-    enabled: !!modelId && isTraining,
-    refetchInterval: isTraining ? 10_000 : false,
-    staleTime: 5_000,
-  });
-}
-
-/** Background polling for models with TRAINING status.
- * Polls every 30s even when the training modal is closed,
- * so training completion is never missed. */
-export function useBackgroundTrainingPoll(
-  modelId: string | undefined,
-  modelStatus: string | undefined,
-) {
-  const isStillTraining = modelStatus === "TRAINING" || modelStatus === "UPLOADING";
-
-  return useQuery({
-    queryKey: consistentModelKeys.trainingStatus(modelId ?? ""),
-    queryFn: () => api.fetchTrainingStatus(modelId!),
-    enabled: !!modelId && isStillTraining,
-    refetchInterval: isStillTraining ? 30_000 : false,
-    staleTime: 10_000,
   });
 }
 

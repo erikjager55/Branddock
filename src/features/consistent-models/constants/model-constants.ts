@@ -161,56 +161,34 @@ export const STATUS_CONFIG: Record<ConsistentModelStatus, ModelStatusConfig> = {
   },
 };
 
-// ─── Training Defaults ──────────────────────────────────────
+// ─── Reference-set limieten ─────────────────────────────────
 
-export const TRAINING_DEFAULTS = {
-  steps: 500,
-  minSteps: 100,
-  maxSteps: 1500,
-  defaultResolution: 1024,
-  minReferenceImages: 10,
-  maxReferenceImages: 20,
-  supportedResolutions: [512, 768, 1024],
-};
+/** Maximum aantal referentiebeelden per model (spiegel van image-validator). */
+export const MAX_REFERENCE_IMAGES_PER_MODEL = 20;
 
-/** Per-type training step defaults — fewer steps for style/illustration, more for faces */
-export const TRAINING_STEPS_BY_TYPE: Record<ConsistentModelType, number> = {
-  PERSON:       800,
-  PRODUCT:      600,
-  OBJECT:       500,
-  STYLE:        400,
-  BRAND_STYLE:  400,
-  PHOTOGRAPHY:  500,
-  ILLUSTRATION: 400,
-  VOICE:        0,
-  SOUND_EFFECT: 0,
-};
+/** Minimaal aantal referentiebeelden voordat genereren kan. */
+export const MIN_REFERENCE_IMAGES_FOR_GENERATION = 3;
 
-// ─── Trigger Words (single source of truth) ─────────────────
-
-export const TRIGGER_WORDS: Record<ConsistentModelType, string> = {
-  PERSON: "TOK person",
-  PRODUCT: "TOK product",
-  STYLE: "TOK style",
-  OBJECT: "TOK object",
-  BRAND_STYLE: "TOK brand_style",
-  PHOTOGRAPHY: "TOK photography",
-  ILLUSTRATION: "TOK illustration",
-  VOICE: "",
-  SOUND_EFFECT: "",
-};
+/**
+ * Multi-ref generator voor referentie-gedreven generatie (cap via
+ * maxAnchorsForModel). Nano Banana Pro: sterke stijl-/identiteit-fusie.
+ * Trainer-ombouw 2026-07-21: vervangt de fal-LoRA-pijplijn.
+ */
+export const REFERENCE_GENERATOR_MODEL = 'fal-ai/nano-banana-pro';
 
 // ─── Min Reference Images per Type ──────────────────────────
 // Based on fal.ai docs: portrait-trainer recommends 10, flux-2-trainer recommends 10 (9-50 for style).
 
+// Trainer-ombouw 2026-07-21: 3 refs volstaat voor multi-ref stijl-fusie;
+// 10+ was een LoRA-trainings-eis.
 export const MIN_IMAGES_BY_TYPE: Record<ConsistentModelType, number> = {
-  PERSON: 10,
-  PRODUCT: 10,
-  STYLE: 10,
-  OBJECT: 10,
-  BRAND_STYLE: 10,
-  PHOTOGRAPHY: 10,
-  ILLUSTRATION: 10,
+  PERSON: 3,
+  PRODUCT: 3,
+  STYLE: 3,
+  OBJECT: 3,
+  BRAND_STYLE: 3,
+  PHOTOGRAPHY: 3,
+  ILLUSTRATION: 3,
   VOICE: 0,
   SOUND_EFFECT: 0,
 };
@@ -252,119 +230,18 @@ export const STATUS_FILTER_OPTIONS = [
   { value: "ARCHIVED", label: "Archived" },
 ];
 
-// ─── Trainable Types (require fal.ai training) ─────────────
+// ─── Referentie-gedreven types (upload/synthetische refs) ───
 
 /** Types that support AI training + generation. Non-trainable types are style guides only. */
 export const TRAINABLE_TYPES = new Set<ConsistentModelType>(['PERSON', 'PRODUCT', 'STYLE', 'OBJECT', 'BRAND_STYLE', 'PHOTOGRAPHY', 'ILLUSTRATION']);
 
-// ─── LoRA Generation Quality Config per Type ────────────────
-
-export interface LoraQualityConfig {
-  /** LoRA influence strength — higher = more faithful to trained subject (0.8–1.3) */
-  loraScale: number;
-  /** Prompt adherence — higher = follows prompt more strictly (1–20, Flux default ~3.5) */
-  guidanceScale: number;
-  /** Denoising steps — higher = finer detail, slower (28–50) */
-  inferenceSteps: number;
-  /** Negative prompt to prevent common issues */
-  negativePrompt: string;
-  /** Prompt prefix when auto-injecting trigger word (e.g., "A photo of" / "An illustration in the style of") */
-  triggerPrefix: string;
-}
-
-const SHARED_NEGATIVE = 'blurry, low quality, distorted, deformed, disfigured, bad anatomy, extra limbs, watermark, text, logo, signature, jpeg artifacts';
-
-export const LORA_QUALITY_CONFIG: Record<ConsistentModelType, LoraQualityConfig> = {
-  PERSON: {
-    loraScale: 1.15,
-    guidanceScale: 4.5,
-    inferenceSteps: 40,
-    negativePrompt: `${SHARED_NEGATIVE}, wrong face, different person, inconsistent identity, mutation, extra fingers`,
-    triggerPrefix: 'A photo of',
-  },
-  PRODUCT: {
-    loraScale: 1.1,
-    guidanceScale: 5.0,
-    inferenceSteps: 40,
-    negativePrompt: `${SHARED_NEGATIVE}, wrong product, different shape, inconsistent design`,
-    triggerPrefix: 'A product photo of',
-  },
-  OBJECT: {
-    loraScale: 1.1,
-    guidanceScale: 4.5,
-    inferenceSteps: 35,
-    negativePrompt: `${SHARED_NEGATIVE}, wrong object, different shape`,
-    triggerPrefix: 'A photo of',
-  },
-  STYLE: {
-    loraScale: 1.0,
-    guidanceScale: 4.0,
-    inferenceSteps: 35,
-    negativePrompt: SHARED_NEGATIVE,
-    triggerPrefix: 'An image in the style of',
-  },
-  BRAND_STYLE: {
-    loraScale: 1.0,
-    guidanceScale: 4.0,
-    inferenceSteps: 35,
-    negativePrompt: SHARED_NEGATIVE,
-    triggerPrefix: 'A brand visual in the style of',
-  },
-  PHOTOGRAPHY: {
-    loraScale: 1.05,
-    guidanceScale: 4.0,
-    inferenceSteps: 35,
-    negativePrompt: `${SHARED_NEGATIVE}, illustration, cartoon, painting, drawing`,
-    triggerPrefix: 'A photograph in the style of',
-  },
-  ILLUSTRATION: {
-    loraScale: 1.05,
-    guidanceScale: 4.0,
-    inferenceSteps: 35,
-    negativePrompt: `${SHARED_NEGATIVE}, photograph, photo, realistic`,
-    triggerPrefix: 'An illustration in the style of',
-  },
-  VOICE: { loraScale: 1.0, guidanceScale: 3.5, inferenceSteps: 28, negativePrompt: '', triggerPrefix: '' },
-  SOUND_EFFECT: { loraScale: 1.0, guidanceScale: 3.5, inferenceSteps: 28, negativePrompt: '', triggerPrefix: '' },
-};
-
-// ─── fal.ai Trainer + Generator per Model Type ─────────────
-
-export interface FalModelConfig {
-  trainer: string;
-  generator: string;
-  label: string;
-}
-
-/** Best trainer + generator per model type.
- *
- * F-training-P1 (audit 2026-05-15): PERSON trainer migrated van legacy
- * FLUX 1 portrait-trainer naar flux-2-trainer. Uniforme stack over alle
- * types, betere quality (per Gewoon Guus praktijkervaring), zelfde
- * cost-profiel. Bestaande PERSON LoRAs op flux-lora generator blijven
- * werken — training-poller reads endpoint uit DB-stored trainingConfig.
- *
- * Mapping: alle trainbare types → fal-ai/flux-2-trainer + fal-ai/flux-2/lora.
- */
-export const FAL_MODEL_CONFIG: Record<ConsistentModelType, FalModelConfig> = {
-  PERSON:       { trainer: 'fal-ai/flux-2-trainer',             generator: 'fal-ai/flux-2/lora',  label: 'Flux 2 Trainer' },
-  PRODUCT:      { trainer: 'fal-ai/flux-2-trainer',             generator: 'fal-ai/flux-2/lora',  label: 'Flux 2 Trainer' },
-  STYLE:        { trainer: 'fal-ai/flux-2-trainer',             generator: 'fal-ai/flux-2/lora',  label: 'Flux 2 Trainer' },
-  OBJECT:       { trainer: 'fal-ai/flux-2-trainer',             generator: 'fal-ai/flux-2/lora',  label: 'Flux 2 Trainer' },
-  BRAND_STYLE:  { trainer: 'fal-ai/flux-2-trainer',             generator: 'fal-ai/flux-2/lora',  label: 'Flux 2 Trainer' },
-  PHOTOGRAPHY:  { trainer: 'fal-ai/flux-2-trainer',             generator: 'fal-ai/flux-2/lora',  label: 'Flux 2 Trainer' },
-  ILLUSTRATION: { trainer: 'fal-ai/flux-2-trainer',             generator: 'fal-ai/flux-2/lora',  label: 'Flux 2 Trainer' },
-  VOICE:        { trainer: '',                                   generator: '',                     label: '' },
-  SOUND_EFFECT: { trainer: '',                                   generator: '',                     label: '' },
-};
-
 // ─── Wizard Steps ───────────────────────────────────────────
 
-export const WIZARD_STEPS_OWN_IMAGES = ["Upload", "Training & Showcase"] as const;
-export const WIZARD_STEPS_SYNTHETIC = ["Generate References", "Training & Showcase"] as const;
+export const WIZARD_STEPS_OWN_IMAGES = ["Upload", "Showcase"] as const;
+export const WIZARD_STEPS_SYNTHETIC = ["Generate References", "Showcase"] as const;
 export const WIZARD_STEPS_NON_TRAINABLE = ["Style Guide", "Reference Images", "Overview"] as const;
 export const WIZARD_STEPS_ILLUSTRATION = ["Illustration Style", "Reference Images", "Overview"] as const;
-export const WIZARD_STEPS_ILLUSTRATION_TRAINABLE = ["Upload & Curate", "AI Style Analysis", "Training & Showcase"] as const;
+export const WIZARD_STEPS_ILLUSTRATION_TRAINABLE = ["Upload & Curate", "AI Style Analysis", "Showcase"] as const;
 
 export const ILLUSTRATION_STYLE_OPTIONS = {
   illustrationStyle: [

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { validateTrainingImage, stripExifData, MAX_REFERENCE_IMAGES } from '@/lib/storage/image-validator';
+import { MIN_REFERENCE_IMAGES_FOR_GENERATION } from '@/features/consistent-models/constants/model-constants';
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
@@ -149,6 +150,15 @@ export async function POST(
     }
 
     if (uploaded.length > 0) {
+      // Trainer-ombouw 2026-07-21: geen training meer — een model is READY
+      // zodra er genoeg referentiebeelden zijn voor multi-ref generatie.
+      const total = currentCount + uploaded.length;
+      if (total >= MIN_REFERENCE_IMAGES_FOR_GENERATION && model.status !== 'READY') {
+        await prisma.consistentModel.update({
+          where: { id },
+          data: { status: 'READY', trainingError: null },
+        });
+      }
       invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
     }
 

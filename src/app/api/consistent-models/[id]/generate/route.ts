@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
-import { foldNegativeIntoPrompt, isFalConfigured, runFalGeneration } from '@/lib/integrations/fal/fal-client';
+import { generateFalImage, isFalConfigured } from '@/lib/integrations/fal/fal-client';
+import { maxAnchorsForModel } from '@/lib/ai/brand-style-anchors';
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { chargeAfter } from '@/lib/billing/credits/meter-generation';
-import { TRIGGER_WORDS } from '@/features/consistent-models/constants/model-constants';
+import { MIN_REFERENCE_IMAGES_FOR_GENERATION, REFERENCE_GENERATOR_MODEL } from '@/features/consistent-models/constants/model-constants';
 import { validateGeneratedImage } from '@/lib/consistent-models/style-validator';
 import type { IllustrationStyleProfile } from '@/lib/consistent-models/style-profile.types';
-import type { ConsistentModelType } from '@prisma/client';
 import { z } from 'zod';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
@@ -23,12 +23,34 @@ const generateSchema = z.object({
   width: z.number().int().min(512).max(1536).optional(),
   height: z.number().int().min(512).max(1536).optional(),
   seed: z.number().int().optional(),
+  // Legacy LoRA-parameter — geaccepteerd voor client-compat, niet meer gebruikt.
   guidanceScale: z.number().min(1).max(20).optional(),
   numImages: z.number().int().min(1).max(4).optional(),
   saveToLibrary: z.boolean().optional(),
 });
 
-/** POST /api/consistent-models/:id/generate — Generate image with trained model */
+type FalImageSize = 'square_hd' | 'landscape_16_9' | 'portrait_16_9' | 'landscape_4_3' | 'portrait_4_3';
+
+/** Kies het dichtstbijzijnde fal-size-preset bij een gevraagde breedte/hoogte. */
+function presetForDims(width?: number, height?: number): FalImageSize {
+  const w = width ?? 1024;
+  const h = height ?? 1024;
+  const ratio = w / h;
+  if (ratio >= 1.4) return 'landscape_16_9';
+  if (ratio > 1.05) return 'landscape_4_3';
+  if (ratio <= 0.6) return 'portrait_16_9';
+  if (ratio < 0.95) return 'portrait_4_3';
+  return 'square_hd';
+}
+
+/**
+ * POST /api/consistent-models/:id/generate — Generate on-style image.
+ *
+ * Trainer-ombouw 2026-07-21: geen LoRA meer — de referentiebeelden van het
+ * model gaan als image_urls (multi-ref) rechtstreeks mee in de generatie,
+ * hetzelfde mechanisme als de brand-style anchors (F40). Directe start,
+ * geen trainingskosten, en de kwaliteit stijgt mee met elk nieuw beeldmodel.
+ */
 export async function POST(
   request: NextRequest,
   context: RouteContext
@@ -69,76 +91,59 @@ export async function POST(
       );
     }
 
-    // Fetch model and verify ownership + status
+    // Fetch model + reference images and verify ownership
     const model = await prisma.consistentModel.findFirst({
       where: { id, workspaceId },
+      include: {
+        referenceImages: {
+          where: { isTrainingImage: true },
+          orderBy: { sortOrder: 'asc' },
+          select: { storageUrl: true },
+        },
+      },
     });
 
     if (!model) {
       return NextResponse.json({ error: 'Model not found' }, { status: 404 });
     }
 
-    if (model.status !== 'READY') {
+    if (model.referenceImages.length < MIN_REFERENCE_IMAGES_FOR_GENERATION) {
       return NextResponse.json(
-        { error: `Model is not ready for generation. Current status: ${model.status}` },
+        { error: `Upload at least ${MIN_REFERENCE_IMAGES_FOR_GENERATION} reference images before generating. Currently: ${model.referenceImages.length}.` },
         { status: 400 }
       );
     }
 
-    if (!model.falLoraUrl) {
-      return NextResponse.json(
-        { error: 'Model has no trained LoRA weights. Training may not have completed.' },
-        { status: 400 }
-      );
-    }
+    const { prompt, negativePrompt, width, height, seed, numImages } = parsed.data;
 
-    const { prompt, negativePrompt, width, height, seed, guidanceScale, numImages } = parsed.data;
-
-    // Inject trigger word if not present in prompt
-    const triggerWord = TRIGGER_WORDS[model.type as ConsistentModelType] ?? 'TOK';
-    const finalPrompt = prompt.includes(triggerWord) ? prompt : `${triggerWord} ${prompt}`;
-
-    // Combine with model-level style/negative prompts
-    const combinedPrompt = model.stylePrompt ? `${finalPrompt}, ${model.stylePrompt}` : finalPrompt;
-
-    // Style profile-aware LoRA scale and negative prompt
+    // Combine with model-level style prompt (+ style-profile prompts for ILLUSTRATION)
     const styleProfile = model.styleProfile as Record<string, unknown> | null;
-    const profilePrompts = styleProfile?.generatedPrompts as { negativePrompt?: string } | undefined;
-    const profileNegative = profilePrompts?.negativePrompt;
+    const profilePrompts = styleProfile?.generatedPrompts as { stylePrompt?: string; negativePrompt?: string } | undefined;
 
-    // Higher LoRA scale for styles with strong analysis (more specific = stronger enforcement)
-    const baseLoraScale = model.type === 'ILLUSTRATION' && styleProfile ? 1.1 : 1.0;
+    const combinedPrompt = [prompt, model.stylePrompt, profilePrompts?.stylePrompt]
+      .filter(Boolean)
+      .join(', ');
 
     // Merge negative prompts: user > style profile > model default
     const mergedNegative = [
       negativePrompt,
-      profileNegative,
+      profilePrompts?.negativePrompt,
       model.negativePrompt,
     ]
       .filter(Boolean)
       .join(', ') || undefined;
 
-    // Call fal.ai to generate
-    const generatorEndpoint = model.generatorEndpoint ?? 'fal-ai/flux-lora';
-    // The LoRA generators (fal-ai/flux-2/lora, fal-ai/flux-lora) have no
-    // negative_prompt input field and fal drops unknown fields silently, so
-    // sending the merged negatives as a native param was a dead no-op
-    // (prompt-audit 2026-06-11). Fold them into the positive prompt instead.
-    const promptForModel = foldNegativeIntoPrompt(generatorEndpoint, combinedPrompt, mergedNegative);
-    const result = await runFalGeneration(generatorEndpoint, {
-      prompt: promptForModel,
-      // LoRA scale is independent of the CFG choice — it previously reset to
-      // 1.0 whenever the user set guidanceScale, silently weakening style
-      // enforcement (prompt-audit 2026-06-11).
-      loras: [{ path: model.falLoraUrl!, scale: baseLoraScale }],
-      num_images: numImages ?? 1,
-      // Only send guidance_scale when the user set it, so each endpoint keeps
-      // its conforming default (fal-ai/flux-2/lora: 2.5, legacy flux-lora:
-      // 3.5). The previous hardcoded 7.5 oversaturated FLUX-family output.
-      ...(guidanceScale != null ? { guidance_scale: guidanceScale } : {}),
-      image_size: { width: width ?? 1024, height: height ?? 1024 },
+    // Referentiebeelden als multi-ref image_urls, gecapt per generator.
+    const referenceImageUrls = model.referenceImages
+      .map((img) => img.storageUrl)
+      .slice(0, maxAnchorsForModel(REFERENCE_GENERATOR_MODEL));
+
+    const result = await generateFalImage(REFERENCE_GENERATOR_MODEL, combinedPrompt, {
+      negativePrompt: mergedNegative,
+      numImages: numImages ?? 1,
       seed,
-      output_format: 'png',
+      imageSize: presetForDims(width, height),
+      referenceImageUrls,
     });
 
     // Process each generated image
@@ -157,7 +162,7 @@ export async function POST(
           continue;
         }
 
-        // Upload via storage provider (local storage for now, R2 later)
+        // Upload via storage provider
         const storageResult = await storage.upload(imageBuffer, {
           workspaceId,
           fileName: `generation-${Date.now()}.png`,
@@ -187,17 +192,17 @@ export async function POST(
             consistentModelId: id,
             workspaceId,
             createdById: session.user.id,
-            prompt: finalPrompt,
+            prompt,
             negativePrompt: negativePrompt ?? null,
             seed: seed ?? null,
             width: width ?? 1024,
             height: height ?? 1024,
-            guidanceScale: guidanceScale ?? null,
+            guidanceScale: null,
             storageKey: storageResult.url,
             storageUrl: storageResult.url,
             generationTimeMs: Date.now() - startTime,
             aiProvider: 'fal',
-            aiModel: generatorEndpoint,
+            aiModel: REFERENCE_GENERATOR_MODEL,
             styleValidationScore: validationScore,
             styleValidationDetails: validationDetails ? JSON.parse(JSON.stringify(validationDetails)) : undefined,
           },

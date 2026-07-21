@@ -57,7 +57,6 @@ const envSchema = z.object({
   FAL_KEY: z.string().optional(),
   ELEVENLABS_API_KEY: z.string().optional(),
   RUNWAYML_API_SECRET: z.string().optional(),
-  REPLICATE_API_TOKEN: z.string().optional(),
   EMAILIT_API_KEY: z.string().optional(),
   UPSTASH_REDIS_REST_URL: z.string().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Trash2, Maximize2, ImageOff } from "lucide-react";
 import { Card, Badge } from "@/components/shared";
 import { ReferenceImageUploader } from "./ReferenceImageUploader";
-import { TRAINING_DEFAULTS, MIN_IMAGES_BY_TYPE } from "../../constants/model-constants";
+import { MAX_REFERENCE_IMAGES_PER_MODEL, MIN_IMAGES_BY_TYPE } from "../../constants/model-constants";
 import { useUpdateReferenceCaption } from "../../hooks";
 import type { ReferenceImageWithMeta, ConsistentModelType } from "../../types/consistent-model.types";
 
@@ -32,7 +32,7 @@ export function ReferenceImagesSection({
   const { t } = useTranslation("consistent-models");
   const count = images.length;
   const minRequired = MIN_IMAGES_BY_TYPE[modelType];
-  const maxAllowed = TRAINING_DEFAULTS.maxReferenceImages;
+  const maxAllowed = MAX_REFERENCE_IMAGES_PER_MODEL;
   const updateCaption = useUpdateReferenceCaption(modelId);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 

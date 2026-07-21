@@ -50,6 +50,7 @@ const ns = {
     upload: 'Uploaden',
     trainingShowcase: 'Training & showcase',
     generateReferences: 'Referenties genereren',
+    showcase: 'Showcase',
     uploadCurate: 'Uploaden & cureren',
     aiStyleAnalysis: 'AI-stijlanalyse',
   },

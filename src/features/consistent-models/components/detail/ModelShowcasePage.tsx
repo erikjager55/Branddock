@@ -6,7 +6,6 @@ import { ArrowLeft, ChevronDown, Eye, Pencil, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/shared";
 import { ModelTypeBadge } from "../shared/ModelTypeBadge";
 import { ModelInfoCard } from "./sidebar/ModelInfoCard";
-import { TrainingStatusCard } from "./sidebar/TrainingStatusCard";
 import { QuickActionsCard } from "./sidebar/QuickActionsCard";
 import {
   useConsistentModelDetail,
@@ -230,7 +229,6 @@ export function ModelShowcasePage({
             onBack={onNavigateBack}
           />
           <ModelInfoCard model={model} />
-          {isTrainable && <TrainingStatusCard model={model} />}
         </div>
       </div>
 

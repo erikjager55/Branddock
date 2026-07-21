@@ -9,8 +9,6 @@ import type {
   CreateModelBody,
   UpdateModelBody,
   GenerateImageBody,
-  StartTrainingBody,
-  TrainingStatusResponse,
   GenerationsListResponse,
   GenerationsListParams,
   ReferenceImageWithMeta,
@@ -189,29 +187,6 @@ export async function reorderReferenceImages(
     body: JSON.stringify({ imageIds }),
   });
   return handleResponse(res, "Failed to reorder reference images");
-}
-
-// ─── 9. Start Training ──────────────────────────────────────
-
-export async function startTraining(
-  modelId: string,
-  config?: StartTrainingBody,
-): Promise<{ status: string; falRequestId: string | null }> {
-  const res = await fetch(`${BASE}/${modelId}/train`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(config ?? {}),
-  });
-  return handleResponse(res, "Failed to start training");
-}
-
-// ─── 10. Training Status ────────────────────────────────────
-
-export async function fetchTrainingStatus(
-  modelId: string,
-): Promise<TrainingStatusResponse> {
-  const res = await fetch(`${BASE}/${modelId}/training-status`);
-  return handleResponse(res, "Failed to fetch training status");
 }
 
 // ─── 11. Generate Image ─────────────────────────────────────
