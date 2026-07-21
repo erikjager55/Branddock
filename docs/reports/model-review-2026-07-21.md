@@ -38,9 +38,21 @@ Plus: `claude-fable-5` toegevoegd aan de developer-picker (premium-optie, zelfde
 2. **Embeddings** (`text-embedding-3-small`): wisselen maakt alle opgeslagen pgvector-centroids ongeldig — alleen ooit met her-embedding-migratie.
 3. **`dall-e-3`-restanten** in beeldpaden: API-parameters verschillen van gpt-image-2; apart afwegen in de beeld-review (samen met de AI-trainer-ombouw).
 
+## Fase 2 — F-VAL-judges (uitgevoerd 2026-07-21, PR #228)
+
+Gepaarde kalibratie op een vast 10-teksten-corpus (on-brand NL → generiek → AI-slop → off-brand hype), identieke rubric-context (HQ-voice-baseline uit dev-DB + detector-output), oude vs. nieuwe judge (`scripts/experiments/judge-calibration-2026-07.ts`):
+
+| Judge-familie | Swap | Δ gem (pijler 2) | Composite-effect (×0,45) | Besluit |
+|---|---|---|---|---|
+| OpenAI (judged Anthropic-generators) | gpt-5 → gpt-5.6 | +1,2 | **+0,5** | swap, drempels ongewijzigd |
+| Anthropic (judged OpenAI-generators) | claude-sonnet-4-6 → claude-sonnet-5 | −4,0 | **−1,8** | swap, drempels ongewijzigd (binnen ±2-band) |
+
+Opvallend: Sonnet 5 discrimineert scherper — AI-slop zakt tot −18 terwijl on-brand-teksten vrijwel gelijk scoren; het onderscheidend vermogen (spread on-brand↔slop) blijft ~51 punten. Mee omgezet: visual-judge (sonnet-4.5 → sonnet-5; advisory badge-pad, geen publish-gate — zonder beeld-kalibratie, monitoren) en de STRICT-rewrite-generator. **Bewust bevroren**: `vanilla-baseline` op gpt-4o — dat is het meetinstrument onder de +7-pilotclaim; een baseline-swap verandert de claim en is een productbesluit (zie nazorg).
+
 ## Risico's / nazorg
 
 - Workspaces met een per-feature override op een oud model-id blijven dat id gebruiken tot de provider het uitzet; de nieuwe pickers tonen alleen de verse lijst. Check `WorkspaceAiConfig`-rijen bij klachten.
 - `gemini-3.1-pro-preview` is preview: bij een GA-release het id updaten.
 - Prijzen Sonnet 5 / Fable 5 aangenomen op resp. Sonnet-/Opus-tier — verifiëren bij de eerste factuur.
-- De nachtelijke promptfoo-golden-set kan verschuiven door de generator-swap (pre-existing flaky, zie gotcha) — eerste run na merge bekijken.
+- De nachtelijke promptfoo-golden-set kan verschuiven door de generator-swap (pre-existing flaky, zie gotcha) — gecheckt na merge #226: 6/10 (60%), exact dezelfde score als de fails van 17-07 en 20-07 vóór de swap → geen regressie.
+- **Productbesluit Erik (open)**: vanilla-baseline moderniseren (gpt-4o → gpt-5.6)? Verandert de +7-pilotclaim-vergelijking — alleen doen met een her-meting en nieuwe claim.

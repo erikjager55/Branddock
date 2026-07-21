@@ -123,7 +123,7 @@ export async function scoreImageFidelity(
 
   // Construct tracking payload
   const judgePayload: AICallPayload = {
-    model: "claude-sonnet-4-5",
+    model: "claude-sonnet-5",
     messages: [
       { role: "system", content: "[visual-fidelity-judge]" },
       { role: "user", content: `image=${component.imageUrl} ctx=${JSON.stringify(visualContext).slice(0, 500)}` },

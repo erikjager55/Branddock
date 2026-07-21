@@ -767,7 +767,9 @@ export function buildFidelityScoreEventPayload(result: FidelityCompositeResult) 
 
 // ─── STRICT mode runner ─────────────────────────────
 
-const STRICT_REWRITE_MODEL = 'claude-sonnet-4-6';
+// Judge-refresh 2026-07-21: STRICT-rewrite is een generator (geen judge)
+// — mee naar het sonnet-5-werkpaard.
+const STRICT_REWRITE_MODEL = 'claude-sonnet-5';
 const STRICT_REWRITE_MAX_TOKENS = 8000;
 
 export interface StrictRunInput {
