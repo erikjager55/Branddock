@@ -20,7 +20,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 
-const MODEL_ID = "claude-sonnet-4-5-20250929";
+// Judge-refresh 2026-07-21: sonnet-5. Visueel pad is advisory (badge,
+// geen publish-gate) — swap zonder beeld-kalibratie, monitoren.
+const MODEL_ID = "claude-sonnet-5";
 const MAX_TOKENS = 1500;
 const TIMEOUT_MS = 60_000;
 

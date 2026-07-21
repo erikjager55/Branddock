@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 431. LLM-modellen-refresh fase 2 — F-VAL-judges gekalibreerd en omgezet
+
+Op Eriks go. Gepaarde kalibratie (10-teksten-corpus × oude vs. nieuwe judge, identieke rubric-context; script in scripts/experiments/) vooraf: gpt-5→gpt-5.6 composite-effect +0,5, sonnet-4-6→sonnet-5 −1,8 — beide binnen de ±2-band, dus swap zónder drempelwijziging (75/65 blijven). Sonnet 5 discrimineert AI-slop scherper (−18) bij vrijwel gelijke on-brand-scores. Mee omgezet: visual-judge (advisory pad) en STRICT-rewrite-generator naar sonnet-5. Bewust bevroren: vanilla-baseline op gpt-4o (meetinstrument +7-pilotclaim — moderniseren = productbesluit + her-meting). Kalibratie + besluit gedocumenteerd in docs/reports/model-review-2026-07-21.md. PR #228.
+
+- Task: `-` (fase 2 van de modellen-review, go Erik 2026-07-21)
+
 ### 430. AI-trainer omgebouwd — LoRA-training eruit, referentie-gedreven generatie erin
 
 Eriks kwaliteitsoordeel + go ("kunnen we de lora-training niet ombouwen?"). De structureel zwakke fal.ai-LoRA-pijplijn (trainen op 10-20 beelden, wachttijd, kosten, veroudert per basismodel) is volledig verwijderd; de drie generatiepaden (model-showcase, studio trained-style, media-library TRAINED_MODEL) draaien nu op multi-ref generatie: de referentiebeelden van het model gaan als image_urls rechtstreeks mee (Nano Banana Pro, cap 14 — zelfde mechanisme als brand-style anchors/F40). Upload + Claude-Vision-stijlanalyse + showcase blijven; minimum 3 refs (was 10), model is READY bij genoeg refs, wizard zonder trainingsstap, strength-slider vervallen. Bestaande modellen blijven werken via hun referentiebeelden. Geen schema-migratie (LoRA-kolommen ongebruikt laten staan — geen Neon-push). Opgeruimd: train/training-status-routes, training-pipeline/-poller, fal-LoRA-primitieven, LORA_QUALITY_CONFIG/FAL_MODEL_CONFIG/TRIGGER_WORDS, dode REPLICATE_API_TOKEN-env. PR #227.

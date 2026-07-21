@@ -2,8 +2,15 @@
 // Judge dispatcher — cross-family rotatie voor pijler 2 G-Eval
 //
 // Cross-family principe (geleerd in week 1 drift-meting):
-//  - Generator Claude (Opus/Sonnet) → Judge OpenAI (GPT-5)
-//  - Generator OpenAI (GPT-4o/GPT-5) → Judge Anthropic (Claude Sonnet)
+//  - Generator Claude (Opus/Sonnet) → Judge OpenAI (GPT-5.6)
+//  - Generator OpenAI (GPT-5.x) → Judge Anthropic (Claude Sonnet 5)
+//
+// Judge-refresh 2026-07-21 (fase 2 model-review): gpt-5→gpt-5.6 en
+// sonnet-4-6→sonnet-5 na gepaarde kalibratie op 10-teksten-corpus
+// (scripts/experiments/judge-calibration-2026-07.ts): composite-effect
+// +0.5 (openai) / -1.8 (anthropic) — binnen de ±2-band, drempels
+// ongewijzigd. Sonnet 5 discrimineert AI-slop scherper (-18) bij
+// vrijwel gelijke on-brand-scores.
 //  - Generator Google (Gemini)        → Judge OpenAI of Anthropic
 //
 // Dezelfde-family judges hebben blinde vlekken voor patronen die ze
@@ -40,12 +47,12 @@ interface JudgeChoice {
 export function pickCrossFamilyJudge(generator: GeneratorProvider): JudgeChoice {
   switch (generator) {
     case 'anthropic':
-      return { provider: 'openai', model: 'gpt-5' };
+      return { provider: 'openai', model: 'gpt-5.6' };
     case 'openai':
-      return { provider: 'anthropic', model: 'claude-sonnet-4-6' };
+      return { provider: 'anthropic', model: 'claude-sonnet-5' };
     case 'google':
       // Google generator → either OpenAI or Anthropic; default to OpenAI
-      return { provider: 'openai', model: 'gpt-5' };
+      return { provider: 'openai', model: 'gpt-5.6' };
   }
 }
 
