@@ -37,6 +37,13 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 433. AI-trainer bugfix — opgeslagen storage-URLs bij het lezen resolven (verlopen signed R2-URLs)
+
+Eriks trainer-test na de #227-ombouw legde drie symptomen bloot met één oorzaak: oudere `ReferenceImage`/`ConsistentModelGeneration`-rijen dragen **verlopen signed R2-URLs** (van vóór `R2_PUBLIC_URL` op prod). De generate-routes stuurden die rauw als fal-`image_urls` — fal kon geen enkele referentie downloaden en Nano Banana genereerde **stil zonder stijl door** (illustratiestijl → foto), en de UI-previews 403'den. Lokaal onzichtbaar (local storage = niet-verlopende `/uploads/`-paden). Fix: nieuwe `resolveStorageUrl()`-helper (`src/lib/storage/resolve-storage-url.ts`) die élke opgeslagen URL-vorm (path-style én virtual-host signed, kale key, publieke CDN) bij het lézen normaliseert naar `R2_PUBLIC_URL` of een verse signed URL — toegepast in beide generate-routes en de drie serve-routes (model-detail, generations, reference-images). Assert-test 6/6 groen; echte prod-flow-validatie door Erik na deploy.
+
+- Task: `-` (bugfix, root-cause-trace in sessie 2026-07-21)
+- Gotcha: [gotchas.md 2026-07-21](../gotchas.md)
+
 ### 432. Pilot-claim hermeting — vanilla-baseline naar gpt-5.6, +7-claim blijft staan
 
 Go Erik na fase 2. De in-product vanilla-baseline is gemoderniseerd (gpt-4o → gpt-5.6, incl. max_completion_tokens-fix) en de on-brand-gap is opnieuw gemeten met de volledige nieuwe stack: 3 content-types × 2 briefing-condities, Branddock (opus-4.8 + BVD) vs vanilla gpt-5.6 én gpt-4o-referentie, symmetrisch gescoord via F-VAL met de nieuwe judges. Uitkomst: **+6,8 gemiddeld tegen gpt-5.6** — de "+7"-claim blijft staan tegen de eerlijke moderne baseline; magere briefing +11 (patroon herhaalt zich), newsletter +9,5, gpt-4o-referentie +9,7 (het betere vanilla-model verklaart ~3 punten versmalling). Zwakste cel: rijk-gebriefde blog (−5) — niet mee demo'en. Rapport: docs/reports/pilot-hermeting-2026-07-21.md; script reproduceerbaar in scripts/experiments/. PR #229.

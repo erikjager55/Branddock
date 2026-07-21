@@ -21,6 +21,7 @@ import { generateFalImage } from '@/lib/integrations/fal/fal-client';
 import { maxAnchorsForModel } from '@/lib/ai/brand-style-anchors';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { getStorageProvider } from '@/lib/storage';
+import { resolveStorageUrls } from '@/lib/storage/resolve-storage-url';
 import { invalidateCache } from '@/lib/api/cache';
 import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer';
 import { cacheKeys } from '@/lib/api/cache-keys';
@@ -249,9 +250,13 @@ export async function POST(request: Request, { params }: RouteParams) {
       ? prompts.map((p) => `${p} ${body!.instruction}`)
       : prompts;
 
-    const referenceImageUrls = trainedModel.referenceImages
-      .map((img) => img.storageUrl)
-      .slice(0, maxAnchorsForModel(REFERENCE_GENERATOR_MODEL));
+    // Resolve naar een nú-bereikbare URL: oude rijen dragen verlopen signed
+    // R2-URLs die fal niet kan downloaden — de stijl wordt dan stil genegeerd.
+    const referenceImageUrls = await resolveStorageUrls(
+      trainedModel.referenceImages
+        .map((img) => img.storageUrl)
+        .slice(0, maxAnchorsForModel(REFERENCE_GENERATOR_MODEL)),
+    );
 
     const explicitFalSize = body?.aspectRatio ? FAL_SIZE_FOR_LABEL[body.aspectRatio] : null;
     const falImageSize: FalImageSize =

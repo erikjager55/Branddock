@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
+import { resolveImageRowUrls } from '@/lib/storage/resolve-storage-url';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -52,7 +53,8 @@ export async function GET(
     ]);
 
     return NextResponse.json({
-      generations,
+      // Oude rijen dragen verlopen signed R2-URLs — resolve zodat previews renderen.
+      generations: await Promise.all(generations.map(resolveImageRowUrls)),
       total,
       limit,
       offset,
