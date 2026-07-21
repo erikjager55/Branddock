@@ -244,8 +244,9 @@ export async function generateFalImage(
   const imageSize = options?.imageSize ?? 'square_hd';
 
   // F40: brand-style anchor reference URLs als image_urls voor multi-ref
-  // modellen. Nano Banana / Recraft / FLUX 2 accepteren deze; andere
-  // modellen negeren het veld (fal doet input-validation per endpoint).
+  // modellen. LET OP: fal dropt onbekende input-velden STIL per endpoint —
+  // Nano Banana t2i negeert image_urls en heeft de /edit-variant nodig
+  // (endpoint-switch hieronder); Recraft/FLUX 2 accepteren het veld direct.
   const refUrls = options?.referenceImageUrls ?? [];
   const hasRefs = refUrls.length > 0;
 
@@ -293,7 +294,14 @@ export async function generateFalImage(
   // not found" 404 voor deze providers. Static import (was dynamic;
   // dynamic import had cache-issues bij HMR).
   const provider = getFalProviderById(modelId);
-  const endpoint = provider ? getFalEndpoint(provider) : modelId;
+  let endpoint = provider ? getFalEndpoint(provider) : modelId;
+  // Nano Banana's text-to-image-endpoint NEGEERT image_urls volledig (fal
+  // dropt onbekende input-velden stil); multi-ref werkt alleen op de
+  // /edit-variant. Empirisch bewezen 2026-07-21: t2i + 3 illustratie-refs →
+  // foto; /edit + dezelfde refs → illustratie in referentiestijl.
+  if (hasRefs && endpoint.includes('nano-banana') && !endpoint.endsWith('/edit')) {
+    endpoint = `${endpoint}/edit`;
+  }
   console.log(`[fal-client] dispatching ${modelId} → endpoint ${endpoint}`);
 
    
@@ -321,8 +329,9 @@ export async function generateFalImage(
  * image_url and prompt for local edits. Other models (FLUX 2 Pro etc)
  * lack this feature.
  *
- * Per fal.ai docs the nano-banana endpoint accepts `image_urls` array
- * (1-14 images) alongside `prompt`. For edit mode we pass 1 image.
+ * The `/edit` endpoint accepts an `image_urls` array (1-14 images) alongside
+ * `prompt` — the base text-to-image endpoint silently DROPS that field
+ * (proven 2026-07-21), so edits must go to the /edit variant.
  */
 export async function editFalImageWithInstruction(
   imageUrl: string,
@@ -331,7 +340,7 @@ export async function editFalImageWithInstruction(
 ): Promise<FalGenerationResult> {
   ensureConfigured();
 
-  const editModelId = 'fal-ai/nano-banana-pro';
+  const editModelId = 'fal-ai/nano-banana-pro/edit';
   const input: Record<string, unknown> = {
     prompt: instruction,
     image_urls: [imageUrl],
