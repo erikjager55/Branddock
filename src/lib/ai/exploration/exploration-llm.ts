@@ -30,17 +30,17 @@ export const EXPLORATION_MODELS: {
   description: string;
 }[] = [
   {
-    id: 'claude-sonnet-4-6',
+    id: 'claude-sonnet-5',
     name: 'Claude Sonnet 4.6',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-5',
     description: 'Anthropic — Best for nuanced brand strategy',
   },
   {
     id: 'claude-sonnet-4',
     name: 'Claude Sonnet 4',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-5',
     description: 'Anthropic — Proven, reliable',
   },
   {
@@ -218,7 +218,7 @@ function resolveReportModel(
     const byConfig = EXPLORATION_MODELS.find((m) => m.id === configModel || m.model === configModel);
     if (byConfig) return byConfig;
     // The admin UI whitelists against EXPLORATION_AI_MODELS (raw SDK model
-    // ids, incl. the seeded default claude-sonnet-4-20250514) — honor the
+    // ids, incl. the seeded default claude-sonnet-5) — honor the
     // anthropic/google entries here too. OpenAI entries can't be honored:
     // callLLM has no openai path (ExplorationProvider excludes it).
     const adminModel = EXPLORATION_AI_MODELS.find((m) => m.id === configModel);

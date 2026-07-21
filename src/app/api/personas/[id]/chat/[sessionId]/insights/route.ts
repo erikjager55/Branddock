@@ -137,7 +137,7 @@ export async function POST(
     });
 
     const provider = chatConfig?.provider || "anthropic";
-    const model = chatConfig?.model || "claude-sonnet-4-20250514";
+    const model = chatConfig?.model || "claude-sonnet-5";
 
     // Call LLM to extract insight
     const extracted = await generateInsightFromMessage({

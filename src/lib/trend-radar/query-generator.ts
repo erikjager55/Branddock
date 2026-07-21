@@ -10,7 +10,7 @@ import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
 import { buildQueryGenerationPrompt } from '@/lib/ai/prompts/trend-analysis';
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
 
-const FLASH_MODEL = 'gemini-2.5-flash';
+const FLASH_MODEL = 'gemini-3.5-flash';
 
 interface QueryGenerationResult {
   queries?: string[];

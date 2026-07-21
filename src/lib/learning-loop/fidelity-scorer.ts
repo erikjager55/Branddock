@@ -328,7 +328,7 @@ Score each dimension 0-100. Return JSON.`;
   // but not surface the id back to us, so we manage it directly to capture
   // judgeCallTraceId on the resulting ContentFidelityScore record.
   const payload: AICallPayload = {
-    model: "claude-sonnet-4-5",
+    model: "claude-sonnet-5",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },

@@ -79,11 +79,11 @@ import type { PipelineConfig, ModelRigor } from '@/features/campaigns/lib/pipeli
 
 // ─── Constants ──────────────────────────────────────────────
 
-const CLAUDE_OPUS = 'claude-opus-4-6';
-const GPT_54 = 'gpt-5.4';
+const CLAUDE_OPUS = 'claude-opus-4-8';
+const GPT_54 = 'gpt-5.6';
 const GEMINI_31_PRO = 'gemini-3.1-pro-preview';
-const GEMINI_FLASH = 'gemini-2.5-flash';
-const GEMINI_FLASH_LITE = 'gemini-2.5-flash-lite';
+const GEMINI_FLASH = 'gemini-3.5-flash';
+const GEMINI_FLASH_LITE = 'gemini-3.1-flash-lite';
 
 /** Deep thinking configuration for strategy variant generation */
 const THINKING_CONFIG = {
@@ -114,7 +114,7 @@ const RIGOR_THINKING_MULTIPLIER: Record<ModelRigor, number> = {
  */
 const FAST_TIER_MODELS: Record<AiProvider, string> = {
   anthropic: 'claude-haiku-4-5-20251001',
-  openai: 'gpt-5.4-mini',
+  openai: 'gpt-5.6-luna',
   google: GEMINI_FLASH,
 };
 
@@ -122,9 +122,9 @@ const FAST_TIER_MODELS: Record<AiProvider, string> = {
  * Balanced-tier fallbacks per provider. Used when ModelRigor === 'balanced'.
  */
 const BALANCED_TIER_MODELS: Record<AiProvider, string> = {
-  anthropic: 'claude-sonnet-4-6',
+  anthropic: 'claude-sonnet-5',
   openai: GPT_54,
-  google: 'gemini-3.1-flash-lite-preview',
+  google: 'gemini-3.1-flash-lite',
 };
 
 /**
@@ -1583,7 +1583,7 @@ export async function buildStrategyFoundation(
   // bij 57.606 chars ≈ 16k tokens (dogfood 2026-07-12, agent-pad) waardoor de
   // strategist-tool faalde. De Claude-wrapper streamt (geen SDK-non-streaming-
   // plafond) en budgetWithThinking schaalt de timeout mee. Caveat: deliberate
-  // rigor + een workspace-model met een output-cap < 36k (gpt-4.1: 32.768)
+  // rigor + een workspace-model met een output-cap < 36k (gpt-5.6-terra: 32.768)
   // geeft een API 400 — Anthropic-modellen (64k-cap, de default) passen ruim.
   const foundationBudget = budgetWithThinking(24_000, foundationThinking);
 

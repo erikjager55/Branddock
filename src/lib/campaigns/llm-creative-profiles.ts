@@ -52,7 +52,7 @@ export const LLM_CREATIVE_PROFILES: Record<AiProvider, LlmCreativeProfile> = {
   anthropic: {
     providerId: 'anthropic',
     moniker: 'Strategic Poet',
-    defaultModel: 'claude-opus-4-6',
+    defaultModel: 'claude-opus-4-8',
     creativeScore: 8.6,
     strengthDimensions: {
       prose_quality: 9,
@@ -93,7 +93,7 @@ export const LLM_CREATIVE_PROFILES: Record<AiProvider, LlmCreativeProfile> = {
   openai: {
     providerId: 'openai',
     moniker: 'Prolific Executioner',
-    defaultModel: 'gpt-5.4',
+    defaultModel: 'gpt-5.6',
     creativeScore: 7.8,
     strengthDimensions: {
       prose_quality: 7,

@@ -21,10 +21,13 @@
  * Anthropic pricing-pagina. Verifieer bij volgende migratie/pricing-shift.
  */
 export const ANTHROPIC_PRICING_PER_M_TOKENS: Record<string, { input: number; output: number }> = {
-  // Sonnet 4.6 — default voor Strategy Analyst (smart-en-snel balans).
+  // Sonnet 5 — default werkpaard sinds model-refresh 2026-07-21.
+  "claude-sonnet-5": { input: 3.0, output: 15.0 },
+  // Opus 4.8 — premium-paden (zware reasoning-runs).
+  "claude-opus-4-8": { input: 15.0, output: 75.0 },
+  // Legacy: workspaces met een oude per-feature override.
   "claude-sonnet-4-6": { input: 3.0, output: 15.0 },
   "claude-sonnet-4-6-20251001": { input: 3.0, output: 15.0 },
-  // Opus 4.7 — voor toekomstige zware reasoning-runs (Optimization-node misschien).
   "claude-opus-4-7": { input: 15.0, output: 75.0 },
   // Haiku 4.5 — voor lichte sub-tools binnen agent-loop.
   "claude-haiku-4-5": { input: 1.0, output: 5.0 },

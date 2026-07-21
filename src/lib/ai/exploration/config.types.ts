@@ -46,11 +46,13 @@ export interface AIModelOption {
 }
 
 export const EXPLORATION_AI_MODELS: AIModelOption[] = [
-  { id: 'claude-sonnet-4-20250514', provider: 'anthropic', label: 'Claude Sonnet 4', description: 'Best balance of quality and speed' },
-  { id: 'claude-sonnet-4-5-20250929', provider: 'anthropic', label: 'Claude Sonnet 4.5', description: 'Latest Sonnet — more advanced' },
+  // Model-refresh 2026-07-21. Bestaande configs met oude ids blijven werken;
+  // dit is alleen de keuzelijst.
+  { id: 'claude-sonnet-5', provider: 'anthropic', label: 'Claude Sonnet 5', description: 'Best balance of quality and speed' },
+  { id: 'claude-opus-4-8', provider: 'anthropic', label: 'Claude Opus 4.8', description: 'Most capable — complex explorations' },
   { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', label: 'Claude Haiku 4.5', description: 'Fastest — for simple tasks' },
-  { id: 'gpt-4o', provider: 'openai', label: 'GPT-4o', description: 'OpenAI flagship model' },
-  { id: 'gpt-4o-mini', provider: 'openai', label: 'GPT-4o Mini', description: 'Faster and more affordable' },
+  { id: 'gpt-5.6', provider: 'openai', label: 'GPT-5.6', description: 'OpenAI flagship model' },
+  { id: 'gpt-5.6-luna', provider: 'openai', label: 'GPT-5.6 Luna', description: 'Faster and more affordable' },
   { id: 'gemini-3.1-pro-preview', provider: 'google', label: 'Gemini 3.1 Pro', description: 'Google — Advanced reasoning' },
-  { id: 'gemini-2.5-flash', provider: 'google', label: 'Gemini 2.5 Flash', description: 'Google — Fast and cost-efficient' },
+  { id: 'gemini-3.5-flash', provider: 'google', label: 'Gemini 3.5 Flash', description: 'Google — Fast and cost-efficient' },
 ];

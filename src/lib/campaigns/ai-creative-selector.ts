@@ -155,7 +155,7 @@ Find 3 Goldenberg templates and 3 creative angles that would make THIS specific 
     }>(
       systemPrompt,
       userPrompt,
-      { model: 'gemini-2.5-flash', temperature: 0.9 },
+      { model: 'gemini-3.5-flash', temperature: 0.9 },
       tracking
         ? {
             ...tracking,

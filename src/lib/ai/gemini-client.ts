@@ -97,8 +97,8 @@ export async function findUrlsViaGoogleSearch(
 ): Promise<SearchGroundedUrl[]> {
   const client = getClient();
 
-  // Use gemini-2.5-flash for search grounding (gemini-3.x does not support it)
-  const SEARCH_MODEL = 'gemini-2.5-flash';
+  // Use gemini-3.5-flash for search grounding (gemini-3.x does not support it)
+  const SEARCH_MODEL = 'gemini-3.5-flash';
 
   const response = await client.models.generateContent({
     model: SEARCH_MODEL,
@@ -200,7 +200,7 @@ export async function searchWithGrounding(
   maxResults = 8,
 ): Promise<SearchGroundedResult> {
   const client = getClient();
-  const SEARCH_MODEL = 'gemini-2.5-flash';
+  const SEARCH_MODEL = 'gemini-3.5-flash';
 
   const response = await client.models.generateContent({
     model: SEARCH_MODEL,

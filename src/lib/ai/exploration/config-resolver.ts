@@ -138,7 +138,7 @@ export function getSystemDefault(itemType: string, itemSubType?: string | null):
     itemSubType: itemSubType ?? null,
     label: null,
     provider: 'anthropic',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-5',
     temperature: 0.4,
     maxTokens: 2048,
     systemPrompt: isArchetype ? BRAND_ARCHETYPE_SYSTEM_PROMPT : DEFAULT_SYSTEM_PROMPT,

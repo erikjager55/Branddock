@@ -117,7 +117,7 @@ export const anthropicClient = {
     options?: AnthropicCompletionOptions,
   ): Promise<AnthropicCompletionResult> {
     const useCase = options?.useCase ?? 'CHAT';
-    const model = options?.model ?? 'claude-sonnet-4-5-20250929';
+    const model = options?.model ?? 'claude-sonnet-5';
     const temperature = isTempDeprecatedModel(model)
       ? undefined
       : (options?.temperature ?? aiConfig.temperature(useCase));

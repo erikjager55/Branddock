@@ -291,7 +291,7 @@ export interface ToTAnglesConfig {
 }
 
 const DEFAULT_GENERATE_PROVIDER = 'google';
-const DEFAULT_GENERATE_MODEL = 'gemini-2.5-flash';
+const DEFAULT_GENERATE_MODEL = 'gemini-3.5-flash';
 const DEFAULT_EVALUATE_PROVIDER = 'anthropic';
 const DEFAULT_EVALUATE_MODEL = 'claude-haiku-4-5-20251001';
 

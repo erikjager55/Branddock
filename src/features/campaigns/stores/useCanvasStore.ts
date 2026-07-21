@@ -302,7 +302,7 @@ interface CanvasStoreState {
     detectorVerdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI' | null;
     humanBaselinePosition: number | null;
     pillars: { style: number | null; judge: number | null; rules: number | null } | null;
-    /** Vanille model used (gpt-4o) */
+    /** Vanille model used (gpt-5.6-terra) */
     model: string | null;
     /** Foutmelding bij stage === 'error' */
     errorMessage: string | null;

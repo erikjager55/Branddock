@@ -23,15 +23,14 @@ export interface ModelPricing {
 /**
  * Lookup keyed by case-insensitive substring match on the model name.
  * Order matters — first match wins, so put more specific keys before
- * less specific ones (e.g. "claude-opus-4-7" before "claude").
+ * less specific ones (e.g. "claude-opus-4-8" before "claude").
  */
 const PRICING_TABLE: Array<{ match: string; pricing: ModelPricing }> = [
   // ── Anthropic ────────────────────────────────────────
-  { match: 'claude-opus-4-7',     pricing: { provider: 'anthropic', inputPer1M: 15.00, outputPer1M: 75.00 } },
-  { match: 'claude-opus-4-6',     pricing: { provider: 'anthropic', inputPer1M: 15.00, outputPer1M: 75.00 } },
+  { match: 'claude-fable-5',      pricing: { provider: 'anthropic', inputPer1M: 15.00, outputPer1M: 75.00 } },
+  { match: 'claude-opus-4-8',     pricing: { provider: 'anthropic', inputPer1M: 15.00, outputPer1M: 75.00 } },
   { match: 'claude-opus-4',       pricing: { provider: 'anthropic', inputPer1M: 15.00, outputPer1M: 75.00 } },
-  { match: 'claude-sonnet-4-6',   pricing: { provider: 'anthropic', inputPer1M:  3.00, outputPer1M: 15.00 } },
-  { match: 'claude-sonnet-4-5',   pricing: { provider: 'anthropic', inputPer1M:  3.00, outputPer1M: 15.00 } },
+  { match: 'claude-sonnet-5',     pricing: { provider: 'anthropic', inputPer1M:  3.00, outputPer1M: 15.00 } },
   { match: 'claude-sonnet-4',     pricing: { provider: 'anthropic', inputPer1M:  3.00, outputPer1M: 15.00 } },
   { match: 'claude-haiku-4-5',    pricing: { provider: 'anthropic', inputPer1M:  1.00, outputPer1M:  5.00 } },
   { match: 'claude-haiku',        pricing: { provider: 'anthropic', inputPer1M:  1.00, outputPer1M:  5.00 } },
@@ -39,10 +38,12 @@ const PRICING_TABLE: Array<{ match: string; pricing: ModelPricing }> = [
   { match: 'claude',              pricing: { provider: 'anthropic', inputPer1M:  3.00, outputPer1M: 15.00 } }, // fallback
 
   // ── OpenAI ───────────────────────────────────────────
-  { match: 'gpt-5.4',             pricing: { provider: 'openai',    inputPer1M: 12.50, outputPer1M: 50.00 } },
+  // Specifiek vóór generiek: 'gpt-5.6' matcht anders ook -luna/-terra.
+  // GPT-5.6-prijzen per launch 2026-07-09: sol $5/$30, terra $2.50/$15, luna $1/$6.
+  { match: 'gpt-5.6-luna',        pricing: { provider: 'openai',    inputPer1M:  1.00, outputPer1M:  6.00 } },
+  { match: 'gpt-5.6-terra',       pricing: { provider: 'openai',    inputPer1M:  2.50, outputPer1M: 15.00 } },
+  { match: 'gpt-5.6',             pricing: { provider: 'openai',    inputPer1M:  5.00, outputPer1M: 30.00 } },
   { match: 'gpt-5',               pricing: { provider: 'openai',    inputPer1M: 12.50, outputPer1M: 50.00 } },
-  { match: 'gpt-4o-mini',         pricing: { provider: 'openai',    inputPer1M:  0.15, outputPer1M:  0.60 } },
-  { match: 'gpt-4o',              pricing: { provider: 'openai',    inputPer1M:  2.50, outputPer1M: 10.00 } },
   { match: 'gpt-4',               pricing: { provider: 'openai',    inputPer1M: 30.00, outputPer1M: 60.00 } },
   { match: 'text-embedding-3-small', pricing: { provider: 'openai', inputPer1M:  0.02, outputPer1M:  0.00 } },
   { match: 'text-embedding-3-large', pricing: { provider: 'openai', inputPer1M:  0.13, outputPer1M:  0.00 } },
@@ -50,9 +51,10 @@ const PRICING_TABLE: Array<{ match: string; pricing: ModelPricing }> = [
   // ── Google ───────────────────────────────────────────
   { match: 'gemini-3.1-pro-preview', pricing: { provider: 'google', inputPer1M:  1.25, outputPer1M:  5.00 } },
   { match: 'gemini-3.1-pro',      pricing: { provider: 'google',    inputPer1M:  1.25, outputPer1M:  5.00 } },
+  // -lite vóór de kale flash-match (substring first-match wins).
+  { match: 'gemini-3.1-flash-lite', pricing: { provider: 'google',  inputPer1M:  0.05, outputPer1M:  0.20 } },
   { match: 'gemini-3.1-flash',    pricing: { provider: 'google',    inputPer1M:  0.075, outputPer1M:  0.30 } },
-  { match: 'gemini-2.5-flash-lite', pricing: { provider: 'google',  inputPer1M:  0.05, outputPer1M:  0.20 } },
-  { match: 'gemini-2.5-flash',    pricing: { provider: 'google',    inputPer1M:  0.075, outputPer1M:  0.30 } },
+  { match: 'gemini-3.5-flash',    pricing: { provider: 'google',    inputPer1M:  0.075, outputPer1M:  0.30 } },
   { match: 'gemini',              pricing: { provider: 'google',    inputPer1M:  0.075, outputPer1M:  0.30 } }, // fallback
 ];
 

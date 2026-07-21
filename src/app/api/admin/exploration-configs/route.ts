@@ -45,7 +45,7 @@ const createConfigSchema = z.object({
   itemSubType: z.string().max(100).nullish(),
   label: z.string().max(200).nullish(),
   provider: z.enum(['anthropic', 'openai', 'google']).default('anthropic'),
-  model: modelSchema.default('claude-sonnet-4-20250514'),
+  model: modelSchema.default('claude-sonnet-5'),
   temperature: z.number().min(0).max(1).default(0.4),
   maxTokens: z.number().int().min(1).max(32_000).default(2048),
   systemPrompt: z.string().min(1).max(PROMPT_MAX_CHARS),

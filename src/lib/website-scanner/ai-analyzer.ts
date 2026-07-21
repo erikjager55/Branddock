@@ -70,7 +70,7 @@ export interface AnalysisResults {
 }
 
 const CLAUDE_OPTIONS = {
-  model: 'claude-sonnet-4-5-20250929',
+  model: 'claude-sonnet-5',
   temperature: 0.3,
   maxTokens: 16000,
   timeoutMs: 120_000,

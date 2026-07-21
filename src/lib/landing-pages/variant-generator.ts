@@ -12,7 +12,7 @@
  *  3. generateLandingPageVariant(params) — orchestrator: Anthropic call → parse → retry-on-validation-failure
  *
  * Beslissingen (gedocumenteerd voor retroactive review):
- *  - **Provider Anthropic**: claude-sonnet-4-5+ is sterk in structured JSON output
+ *  - **Provider Anthropic**: claude-sonnet-5+ is sterk in structured JSON output
  *    + dezelfde stack als strategy-flow + F-VAL judge. Bewuste afwijking van
  *    OpenAI dat content-generation default doet, omdat schema-strictness hier
  *    belangrijker is dan throughput.
@@ -1011,7 +1011,7 @@ export async function generateLandingPageVariant(
   const maxTokens = hasOwnVariantSchema(params.contentType) ? 6000 : 4500;
 
   // Audit 2026-06-10: model komt via canvas-model-routing uit de route
-  // ('Website & Landing Pages' → claude-sonnet-4-6, benchmark 91). NB: op
+  // ('Website & Landing Pages' → claude-sonnet-5, benchmark 91). NB: op
   // sonnet-4-6+ dropt anthropic-client de temperature-param (deprecated) —
   // variant-divergentie leunt dan volledig op angles/axes, wat sinds P3a/P3b
   // toch al het primaire divergentie-mechanisme is.
@@ -1048,7 +1048,7 @@ export async function generateLandingPageVariant(
     retried: false,
     angleLabel: params.angleLabel ?? null,
     prompt,
-    modelUsed: opts?.model ?? "claude-sonnet-4-5-20250929",
+    modelUsed: opts?.model ?? "claude-sonnet-5",
   };
 }
 

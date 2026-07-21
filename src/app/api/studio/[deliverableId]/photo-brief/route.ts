@@ -97,7 +97,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
         { role: 'system', content: PHOTO_BRIEF_SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
       ],
-      { model: 'claude-sonnet-4-6', maxTokens: 2000, temperature: 0.4 },
+      { model: 'claude-sonnet-5', maxTokens: 2000, temperature: 0.4 },
     );
     if (!markdown.trim()) {
       return NextResponse.json({ error: 'Generation produced empty brief' }, { status: 502 });

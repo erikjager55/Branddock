@@ -321,7 +321,7 @@ export async function streamPersonaChat(
         return await streamOpenAI({
           ...params,
           provider: 'openai',
-          model: 'gpt-4o',
+          model: 'gpt-5.6-terra',
         });
       }
       throw err;

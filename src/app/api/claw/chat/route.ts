@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
         // ── Agentic loop: Claude may call tools multiple times ──
         while (continueLoop) {
           const response = await client.messages.create({
-            model: 'claude-sonnet-4-5-20250929',
+            model: 'claude-sonnet-5',
             max_tokens: 4096,
             system: systemPrompt,
             messages: currentMessages,

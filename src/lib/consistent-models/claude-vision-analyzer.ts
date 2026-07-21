@@ -138,7 +138,7 @@ export async function analyzeWithClaudeVision(
   try {
     response = await client.messages.create(
       {
-        model: "claude-sonnet-4-5-20250929",
+        model: "claude-sonnet-5",
         max_tokens: 4096,
         system: ILLUSTRATION_ANALYSIS_SYSTEM_PROMPT,
         messages: [

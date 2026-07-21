@@ -31,7 +31,7 @@ import { resolveLocaleLabel } from '@/lib/ai/locale-instruction';
 // Opus 4.7 thinking = composite 90 (winnaar) op blog-post. Direct-SDK-
 // call hieronder gebruikt nieuwe adaptive-API zodra REWRITE_MODEL Opus 4.7
 // is — anders legacy thinking-API.
-const REWRITE_MODEL = 'claude-opus-4-7';
+const REWRITE_MODEL = 'claude-opus-4-8';
 const REWRITE_MAX_TOKENS = 4096;
 const REWRITE_THINKING_BUDGET = 4000;
 

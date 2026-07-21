@@ -217,7 +217,7 @@ export async function POST(
         : contentLang;
 
   // Audit 2026-06-10 — HVD-gating (pariteit canvas-orchestrator) + per-type
-  // model-routing ('Website & Landing Pages' → claude-sonnet-4-6, benchmark 91).
+  // model-routing ('Website & Landing Pages' → claude-sonnet-5, benchmark 91).
   // De generator ondersteunt alleen Anthropic; een niet-Anthropic workspace-
   // override valt terug op de generator-default.
   const [humanVoiceMode, routedModel] = await Promise.all([

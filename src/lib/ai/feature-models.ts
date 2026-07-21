@@ -13,35 +13,24 @@ import type { AIModelOption } from './exploration/config.types';
 // ─── Available Models ────────────────────────────────────────
 
 export const AVAILABLE_MODELS: AIModelOption[] = [
+  // Model-refresh 2026-07-21: gpt-5.6-familie (GA 09-07), Claude Sonnet 5 /
+  // Opus 4.8 / Fable 5, Gemini 3.5 Flash. Shut-down ids (gemini-3-pro-preview,
+  // gemini-3.1-flash-lite-preview) verwijderd. Workspaces met een oude
+  // override blijven werken zolang de provider het id serveert.
   // ── Anthropic ──
-  { id: 'claude-opus-4-7', provider: 'anthropic', label: 'Claude Opus 4.7', description: 'Newest flagship — vision + design, released Apr 17, 2026' },
-  { id: 'claude-opus-4-6', provider: 'anthropic', label: 'Claude Opus 4.6', description: 'Most capable — best for complex tasks' },
-  { id: 'claude-opus-4-5-20251101', provider: 'anthropic', label: 'Claude Opus 4.5', description: 'Very capable — deep analysis' },
-  { id: 'claude-sonnet-4-6', provider: 'anthropic', label: 'Claude Sonnet 4.6', description: 'Latest Sonnet — fast and smart' },
-  { id: 'claude-sonnet-4-5-20250929', provider: 'anthropic', label: 'Claude Sonnet 4.5', description: 'Advanced reasoning, balanced speed' },
-  { id: 'claude-sonnet-4-20250514', provider: 'anthropic', label: 'Claude Sonnet 4', description: 'Reliable quality and speed' },
+  { id: 'claude-fable-5', provider: 'anthropic', label: 'Claude Fable 5', description: 'Most intelligent Anthropic model (Claude 5 family, Jul 2026) — premium' },
+  { id: 'claude-opus-4-8', provider: 'anthropic', label: 'Claude Opus 4.8', description: 'Flagship — best for complex tasks' },
+  { id: 'claude-sonnet-5', provider: 'anthropic', label: 'Claude Sonnet 5', description: 'Default workhorse — fast and smart (Jun 30, 2026)' },
   { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', label: 'Claude Haiku 4.5', description: 'Fastest — for simple tasks' },
   // ── OpenAI ──
-  { id: 'gpt-5.4-pro', provider: 'openai', label: 'GPT-5.4 Pro', description: 'Most capable OpenAI model' },
-  { id: 'gpt-5.4', provider: 'openai', label: 'GPT-5.4', description: 'Latest flagship model' },
-  { id: 'gpt-5.4-mini', provider: 'openai', label: 'GPT-5.4 Mini', description: 'Fast and affordable' },
-  { id: 'gpt-5.4-nano', provider: 'openai', label: 'GPT-5.4 Nano', description: 'Fastest, lowest cost' },
-  { id: 'gpt-4.1', provider: 'openai', label: 'GPT-4.1', description: 'Solid all-rounder' },
-  { id: 'gpt-4.1-mini', provider: 'openai', label: 'GPT-4.1 Mini', description: 'Fast, good quality' },
-  { id: 'gpt-4.1-nano', provider: 'openai', label: 'GPT-4.1 Nano', description: 'Lightest OpenAI model' },
-  { id: 'gpt-4o', provider: 'openai', label: 'GPT-4o', description: 'Previous gen flagship' },
-  { id: 'gpt-4o-mini', provider: 'openai', label: 'GPT-4o Mini', description: 'Previous gen fast model' },
-  { id: 'o4-mini', provider: 'openai', label: 'o4 Mini', description: 'Reasoning model — compact' },
-  { id: 'o3', provider: 'openai', label: 'o3', description: 'Reasoning model — advanced' },
-  { id: 'o3-mini', provider: 'openai', label: 'o3 Mini', description: 'Reasoning model — affordable' },
+  { id: 'gpt-5.6', provider: 'openai', label: 'GPT-5.6 (Sol)', description: 'Latest flagship — GA Jul 9, 2026' },
+  { id: 'gpt-5.6-terra', provider: 'openai', label: 'GPT-5.6 Terra', description: 'Balanced quality and cost' },
+  { id: 'gpt-5.6-luna', provider: 'openai', label: 'GPT-5.6 Luna', description: 'Fast and affordable' },
   // ── Google Gemini ──
-  { id: 'gemini-3.1-pro-preview', provider: 'google', label: 'Gemini 3.1 Pro', description: 'Most capable, advanced reasoning' },
-  { id: 'gemini-3-pro-preview', provider: 'google', label: 'Gemini 3 Pro', description: 'Strong reasoning' },
-  { id: 'gemini-3-flash-preview', provider: 'google', label: 'Gemini 3 Flash', description: 'Fast with good quality' },
-  { id: 'gemini-3.1-flash-lite-preview', provider: 'google', label: 'Gemini 3.1 Flash Lite', description: 'Ultra-fast, lowest cost' },
-  { id: 'gemini-2.5-pro', provider: 'google', label: 'Gemini 2.5 Pro', description: 'Balanced performance' },
-  { id: 'gemini-2.5-flash', provider: 'google', label: 'Gemini 2.5 Flash', description: 'Fast and cost-efficient' },
-  { id: 'gemini-2.5-flash-lite', provider: 'google', label: 'Gemini 2.5 Flash Lite', description: 'Lightest, cheapest option' },
+  { id: 'gemini-3.1-pro-preview', provider: 'google', label: 'Gemini 3.1 Pro', description: 'Most capable, advanced reasoning (preview)' },
+  { id: 'gemini-3.5-flash', provider: 'google', label: 'Gemini 3.5 Flash', description: 'Fast with frontier quality' },
+  { id: 'gemini-3.1-flash-lite', provider: 'google', label: 'Gemini 3.1 Flash Lite', description: 'Ultra-fast, lowest cost' },
+  { id: 'gemini-2.5-pro', provider: 'google', label: 'Gemini 2.5 Pro', description: 'Previous gen — balanced' },
 ];
 
 // ─── Feature Definitions ─────────────────────────────────────
@@ -102,7 +91,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Conversational AI when chatting with personas',
     category: 'chat-analysis',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-5-20250929',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
@@ -111,7 +100,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Ephemeral on-brand rewrite/reply (public API, MCP, browser-extensie)',
     category: 'campaign-content',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-5-20250929',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
@@ -120,7 +109,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Evidence-based strategy variant (deep thinking enabled)',
     category: 'chat-analysis',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-opus-4-6',
+    defaultModel: 'claude-opus-4-8',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
@@ -129,7 +118,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Creative provocateur strategy variant (deep thinking enabled)',
     category: 'chat-analysis',
     defaultProvider: 'openai',
-    defaultModel: 'gpt-5.4',
+    defaultModel: 'gpt-5.6',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
@@ -147,7 +136,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'AI curator that selects 3 creative angles from the 20-angle library and assigns each to the best-suited LLM',
     category: 'chat-analysis',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-5-20250929',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
@@ -165,7 +154,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'AI develops behavioral change strategy via chain-of-prompts: behavioral diagnosis → enrichment synthesis → strategic direction',
     category: 'chat-analysis',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-5-20250929',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
@@ -174,7 +163,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Pre-step for creative hooks: synthesizes enrichment data + MINDSPACE + ELM into a focused creative brief',
     category: 'chat-analysis',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-5-20250929',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   // Campaign & Content — Canvas
@@ -190,7 +179,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     // override naar Sonnet 4.6 mogelijk via WorkspaceAiConfig voor
     // cost-gevoelige tier.
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-opus-4-7',
+    defaultModel: 'claude-opus-4-8',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
@@ -203,7 +192,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     // nauwelijks kwaliteitsgevoelig maar veel sneller. Per-workspace override
     // mogelijk via WorkspaceAiConfig.
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
@@ -212,7 +201,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Image generation for canvas visuals (placeholder for nanobanana)',
     category: 'campaign-content',
     defaultProvider: 'openai',
-    defaultModel: 'gpt-4o',
+    defaultModel: 'gpt-5.6-terra',
     supportedProviders: ['openai'],
   },
   {
@@ -230,7 +219,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Audio generation for canvas content (placeholder for ElevenLabs)',
     category: 'campaign-content',
     defaultProvider: 'openai',
-    defaultModel: 'gpt-4o',
+    defaultModel: 'gpt-5.6-terra',
     supportedProviders: ['openai'],
   },
   {
@@ -249,7 +238,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'AI content generation in Content Studio',
     category: 'campaign-content',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-5-20250929',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
@@ -258,7 +247,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Content quality analysis and scoring',
     category: 'campaign-content',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-5-20250929',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
@@ -267,7 +256,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'AI-powered content improvement suggestions',
     category: 'campaign-content',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-5-20250929',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   // Research & Monitoring
@@ -277,7 +266,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Trend synthesis and analysis in Trend Radar',
     category: 'research-monitoring',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-5-20250929',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
@@ -287,7 +276,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     category: 'research-monitoring',
     // Gemini Flash: snel + goedkoop voor de korte verfijnings-step vóór de run.
     defaultProvider: 'google',
-    defaultModel: 'gemini-2.5-flash',
+    defaultModel: 'gemini-3.5-flash',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
@@ -299,7 +288,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     // Anthropic-only: de synthese/verify-fasen lopen via de Anthropic-wrapper en
     // borgen dit met assertProvider — bied geen niet-werkende providers aan in de UI.
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic'],
   },
   {
@@ -326,7 +315,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'AI report generation for completed workshops',
     category: 'research-monitoring',
     defaultProvider: 'openai',
-    defaultModel: 'gpt-4o',
+    defaultModel: 'gpt-5.6-terra',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
 
@@ -339,7 +328,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Deep research agent producing cited reports',
     category: 'agents',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic'],
   },
   {
@@ -348,7 +337,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Brand fidelity review agent (F-VAL scoring + findings)',
     category: 'agents',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic'],
   },
   {
@@ -357,7 +346,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Campaign strategy agent building blueprints',
     category: 'agents',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic'],
   },
   {
@@ -366,7 +355,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Content creation agent driving the canvas pipeline',
     category: 'agents',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic'],
   },
   {
@@ -375,7 +364,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Competitor and trend analysis agent',
     category: 'agents',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic'],
   },
   {
@@ -384,7 +373,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Workspace data analysis agent producing tables',
     category: 'agents',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic'],
   },
   {
@@ -393,7 +382,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Weekly client-ready brand report agent',
     category: 'agents',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic'],
   },
   {
@@ -402,7 +391,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Published GEO content decay-scan and maintenance report agent',
     category: 'agents',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic'],
   },
   {
@@ -411,7 +400,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Creative-fatigue scan and refresh-proposal agent for connected ad accounts',
     category: 'agents',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic'],
   },
   {
@@ -420,7 +409,7 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     description: 'Weekly content-loop agent: reads brand signals and proposes next content for approval (Brandclaw BC-1)',
     category: 'agents',
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-5',
     supportedProviders: ['anthropic'],
   },
 ];
