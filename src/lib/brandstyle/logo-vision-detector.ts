@@ -22,7 +22,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import sharp from "sharp";
 import { getStorageProvider } from "@/lib/storage";
 
-const MODEL = "claude-sonnet-4-5-20250929";
+const MODEL = "claude-sonnet-5";
 const TIMEOUT_MS = 30_000;
 
 let _client: Anthropic | null = null;

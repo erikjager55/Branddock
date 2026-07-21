@@ -217,7 +217,7 @@ export type AICompletionFn = <T>(
 export interface PlanAndSolveConfig {
   /** Provider voor plan + execute (default: anthropic). */
   provider?: string;
-  /** Model voor beide stages (default: claude-sonnet-4-5-20251001). */
+  /** Model voor beide stages (default: claude-sonnet-5). */
   model?: string;
   /** Override AI-caller voor smoke-tests. */
   aiCompletion?: AICompletionFn;
@@ -226,7 +226,7 @@ export interface PlanAndSolveConfig {
 }
 
 const DEFAULT_PROVIDER = 'anthropic';
-const DEFAULT_MODEL = 'claude-sonnet-4-5-20251001';
+const DEFAULT_MODEL = 'claude-sonnet-5';
 
 /**
  * Run plan-stage: produceer structureel plan vóór execute.

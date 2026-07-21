@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 429. LLM-modellen-refresh fase 1 — generatie-paden naar de juli-2026-generatie
+
+Review + swap op Eriks verzoek ("betere modellen bijgekomen"). Alle generatie-paden (45 bestanden: register-defaults, pickers, campagne-chain, canvas-routing, 10 agents, exploration, knowledge-research, brandstyle-analyse, persona-chat, trend-radar) van drie door-elkaar-lopende generaties naar: Claude Sonnet 5 (werkpaard), Claude Opus 4.8 (premium), GPT-5.6/terra/luna, Gemini 3.5 Flash / 3.1 Flash Lite; Claude Fable 5 als picker-optie. Bijvangst: twee door Google uitgezette model-ids (gemini-3-pro-preview, gemini-3.1-flash-lite-preview) uit code/pickers — dat waren actieve breukpunten — en prijstabellen bijgewerkt incl. first-match-ordering-fix. Bewust onaangeraakt: F-VAL-judges + vanilla-baseline (fase 2 mét golden-set-kalibratie), embeddings (vectors), dall-e-3-beeldpaden. Volledig rapport: docs/reports/model-review-2026-07-21.md. PR #226.
+
+- Task: `-` (review-opdracht Erik 2026-07-21)
+
 ### 428. AI-trainer: upload-duidelijkheid afgemaakt + stijlanalyse-storage-fix
 
 Drie vervolg-fixes op de upload-arc van #426. (1) PR #222: de weiger-alert toont nu de échte serverreden per bestand (te klein/te groot/corrupt) i.p.v. een kale "(400)". (2) PR #223: de uploader leest afmetingen vooraf in de browser (createImageBitmap) — te kleine (<512×512) of onleesbare bestanden krijgen direct een nl/en-melding mét gemeten maten, vóór er iets geüpload wordt. (3) PR #224: "Style analysis failed: The specified key does not exist" — de upload-route schrijft de volledige publieke URL naar `ReferenceImage.storageKey`, maar de stijlanalyzer gebruikte dat veld letterlijk als R2-sleutel (lokaal werkte het toevallig via de pad-vorm). `toR2Key()` normaliseert nu URL/pad/sleutel op alle drie de leespaden (GetObject, publieke URL, signed URL) — repareert ook bestaande rijen zonder datamigratie.

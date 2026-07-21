@@ -167,7 +167,7 @@ export async function scoreContentQuality(
   try {
     const { provider, model } = workspaceId
       ? await resolveFeatureModel(workspaceId, 'content-quality')
-      : { provider: 'anthropic', model: 'claude-sonnet-4-5-20250929' };
+      : { provider: 'anthropic', model: 'claude-sonnet-5' };
 
     // Use type-specific prompt and parser if criteria available
     const baseScoringPrompt = typeSpecificCriteria && typeSpecificCriteria.length > 0

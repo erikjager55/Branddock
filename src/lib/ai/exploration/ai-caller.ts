@@ -402,7 +402,7 @@ function sleep(ms: number): Promise<void> {
 
 // ─── Claude Structured JSON Completion ──────────────────────
 
-const CLAUDE_SONNET = 'claude-sonnet-4-5-20250929';
+const CLAUDE_SONNET = 'claude-sonnet-5';
 
 interface ClaudeCompletionOptions {
   model?: string;

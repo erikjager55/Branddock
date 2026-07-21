@@ -209,7 +209,7 @@ export async function POST(
     .join("\n");
 
   // HVD mode-gated achter de gedeelde rewrite-systemprompt + model-routing
-  // ('Website & Landing Pages' → claude-sonnet-4-6; alleen Anthropic-providers).
+  // ('Website & Landing Pages' → claude-sonnet-5; alleen Anthropic-providers).
   const [humanVoiceMode, routedModel] = await Promise.all([
     resolveHumanVoiceMode(workspaceId),
     resolveCanvasModelForContentType(workspaceId, deliverable.contentType),

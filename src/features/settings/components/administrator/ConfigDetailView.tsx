@@ -156,7 +156,7 @@ export function ConfigDetailView({
   const [itemSubType, setItemSubType] = useState(initialData?.itemSubType ?? '');
   const [label, setLabel] = useState(initialData?.label ?? '');
   const [provider, setProvider] = useState(initialData?.provider ?? 'anthropic');
-  const [model, setModel] = useState(initialData?.model ?? 'claude-sonnet-4-20250514');
+  const [model, setModel] = useState(initialData?.model ?? 'claude-sonnet-5');
   const [temperature, setTemperature] = useState(initialData?.temperature ?? 0.4);
   const [maxTokens, setMaxTokens] = useState(initialData?.maxTokens ?? 2048);
   const [systemPrompt, setSystemPrompt] = useState(initialData?.systemPrompt ?? '');

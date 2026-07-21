@@ -140,7 +140,7 @@ export async function generateCreativeAngles(
 
     const response = await createStructuredCompletion<AngleResponse>(
       'google',
-      'gemini-2.5-flash',
+      'gemini-3.5-flash',
       buildAngleSystemPrompt(n),
       userPrompt,
       {

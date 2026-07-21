@@ -23,7 +23,7 @@ export function isComponentVisionEnabled(): boolean {
   return process.env.BRANDSTYLE_COMPONENT_VISION === "1";
 }
 
-const MODEL = "claude-sonnet-4-5-20250929";
+const MODEL = "claude-sonnet-5";
 const TIMEOUT_MS = 90_000;
 
 let _client: Anthropic | null = null;

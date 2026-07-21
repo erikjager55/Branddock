@@ -174,7 +174,7 @@ export async function generateInsightFromMessage(
           '[insight-generator] Anthropic failed, falling back to OpenAI:',
           err instanceof Error ? err.message : err,
         );
-        return await extractWithOpenAI(prompt, 'gpt-4o');
+        return await extractWithOpenAI(prompt, 'gpt-5.6-terra');
       }
       throw err;
     }

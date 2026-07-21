@@ -55,7 +55,7 @@ export async function planResearch(input: PlanInput): Promise<ResearchPlan> {
             PLAN_SYSTEM_PROMPT,
             prompt,
             // Thinking uit: voor gestructureerde JSON-extractie niet nodig, en
-            // gemini-2.5-flash's thinking-tokens vraten anders het output-budget
+            // gemini-3.5-flash's thinking-tokens vraten anders het output-budget
             // op → MAX_TOKENS-truncatie. Ruim budget voor de JSON zelf.
             {
               model: resolved.model,

@@ -41,11 +41,11 @@ const TIMEOUT_MS: Record<AiUseCase, number> = {
 export const aiConfig = {
   /** Primary model — configurable via BRANDDOCK_AI_MODEL env var */
   get model(): string {
-    return process.env.BRANDDOCK_AI_MODEL || 'gpt-4o';
+    return process.env.BRANDDOCK_AI_MODEL || 'gpt-5.6-terra';
   },
 
   /** Fallback model for cheaper/faster calls */
-  fallbackModel: 'gpt-4o-mini' as const,
+  fallbackModel: 'gpt-5.6-luna' as const,
 
   /** OpenAI API key — required for AI features */
   get openaiApiKey(): string | undefined {

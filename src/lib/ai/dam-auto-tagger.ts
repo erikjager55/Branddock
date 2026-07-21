@@ -79,7 +79,7 @@ export async function analyzeMediaAssetForDam(
     const imageSource = await toImageSource(fileUrl);
     if (!imageSource) return null;
     const res = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-5',
       max_tokens: 1500,
       temperature: 0.2,
       system: DAM_SYSTEM_PROMPT,

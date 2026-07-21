@@ -31,14 +31,14 @@ interface ContentTypeOptimalModel {
 }
 
 const CATEGORY_OPTIMAL_MODEL: Record<string, ContentTypeOptimalModel> = {
-  'Long-Form Content': { provider: 'anthropic', model: 'claude-opus-4-7' },
-  'Email & Automation': { provider: 'anthropic', model: 'claude-opus-4-7' },
-  'Video & Audio': { provider: 'anthropic', model: 'claude-opus-4-7' },
-  'PR, HR & Communications': { provider: 'anthropic', model: 'claude-opus-4-7' },
-  'Sales Enablement': { provider: 'anthropic', model: 'claude-opus-4-7' },
-  'Social Media': { provider: 'openai', model: 'gpt-5.4' },
+  'Long-Form Content': { provider: 'anthropic', model: 'claude-opus-4-8' },
+  'Email & Automation': { provider: 'anthropic', model: 'claude-opus-4-8' },
+  'Video & Audio': { provider: 'anthropic', model: 'claude-opus-4-8' },
+  'PR, HR & Communications': { provider: 'anthropic', model: 'claude-opus-4-8' },
+  'Sales Enablement': { provider: 'anthropic', model: 'claude-opus-4-8' },
+  'Social Media': { provider: 'openai', model: 'gpt-5.6' },
   'Advertising & Paid': { provider: 'google', model: 'gemini-3.1-pro-preview' },
-  'Website & Landing Pages': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'Website & Landing Pages': { provider: 'anthropic', model: 'claude-sonnet-5' },
 };
 
 /**

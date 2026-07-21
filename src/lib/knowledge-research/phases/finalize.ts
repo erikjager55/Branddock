@@ -143,7 +143,7 @@ async function extractMetadata(
     return createGeminiStructuredCompletion<FinalizeLlmResult>(
       FINALIZE_SYSTEM_PROMPT,
       prompt,
-      // Thinking uit (zie plan.ts) — anders trunceert gemini-2.5-flash de JSON
+      // Thinking uit (zie plan.ts) — anders trunceert gemini-3.5-flash de JSON
       // en vallen titel/tags/takeaways/summary terug op zwakke heuristieken.
       {
         model: resolved.model,

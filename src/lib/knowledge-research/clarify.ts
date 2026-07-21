@@ -65,7 +65,7 @@ export async function generateClarifyingQuestions(
         ? await createGeminiStructuredCompletion<ClarifyLlmResult>(
             CLARIFY_SYSTEM_PROMPT,
             prompt,
-            // Thinking uit (zie plan.ts) — anders trunceert gemini-2.5-flash de JSON.
+            // Thinking uit (zie plan.ts) — anders trunceert gemini-3.5-flash de JSON.
             {
               model: resolved.model,
               temperature: 0.4,

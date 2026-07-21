@@ -1527,8 +1527,8 @@ export async function* orchestrateContentGeneration(
 // generation doesn't fail user-visibly. Order: primary → OpenAI → Google.
 
 const FALLBACK_MODELS: Record<AiProvider, string> = {
-  anthropic: 'claude-sonnet-4-6',
-  openai: 'gpt-5.4',
+  anthropic: 'claude-sonnet-5',
+  openai: 'gpt-5.6',
   google: 'gemini-3.1-pro-preview',
 };
 
