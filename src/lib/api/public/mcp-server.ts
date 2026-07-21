@@ -631,10 +631,10 @@ function registerImageTool(server: McpServer, ctx: PublicMcpContext): void {
 
 const importToneDimensions = z
   .object({
-    formalCasual: z.number().min(1).max(7),
-    seriousFunny: z.number().min(1).max(7),
-    respectfulIrreverent: z.number().min(1).max(7),
-    matterOfFactEnthusiastic: z.number().min(1).max(7),
+    formalCasual: z.number().int().min(1).max(7),
+    seriousFunny: z.number().int().min(1).max(7),
+    respectfulIrreverent: z.number().int().min(1).max(7),
+    matterOfFactEnthusiastic: z.number().int().min(1).max(7),
   })
   .describe('NN/g 4-assen tone-baseline, elk 1-7 (4 = neutraal; 1 = formeel/serieus/respectvol/zakelijk)');
 
@@ -644,6 +644,13 @@ const MAX_IMPORT_ITEMS = 50;
 const shortText = z.string().max(2_000);
 const longText = z.string().max(20_000);
 const textList = z.array(z.string().max(2_000)).max(100);
+// URL-velden worden elders als href gerenderd en (websiteUrl) gescrapet —
+// zelfde validatie-strengheid als de UI-routes, plus scheme-allowlist.
+const httpUrl = z
+  .string()
+  .max(2_000)
+  .regex(/^https?:\/\/\S+$/, 'moet een absolute http(s)-URL zijn');
+const httpUrlList = z.array(httpUrl).max(50);
 
 const importSchema = z.object({
   contentLanguage: z
@@ -660,6 +667,7 @@ const importSchema = z.object({
           .describe('Canonieke asset-slug, bijv. "golden-circle", "core-values", "brand-story"'),
         frameworkData: z
           .record(z.string(), z.unknown())
+          .refine((v) => JSON.stringify(v).length <= 50_000, 'frameworkData te groot (max 50KB geserialiseerd)')
           .describe('Framework-velden — exacte keys per frameworkType; wordt diep gemerged over bestaande data'),
         content: longText.optional().describe('Optionele vrije-tekst aanvulling'),
       }),
@@ -733,7 +741,7 @@ const importSchema = z.object({
         description: longText.optional(),
         pricingModel: shortText.optional(),
         pricingDetails: longText.optional(),
-        sourceUrl: z.string().max(2_000).optional(),
+        sourceUrl: httpUrl.optional(),
         features: textList.optional(),
         benefits: textList.optional(),
         useCases: textList.optional(),
@@ -747,7 +755,7 @@ const importSchema = z.object({
     .array(
       z.object({
         name: z.string().min(1).max(200),
-        websiteUrl: z.string().max(2_000).optional(),
+        websiteUrl: httpUrl.optional(),
         tier: z.enum(['DIRECT', 'INDIRECT', 'ASPIRATIONAL']).optional(),
         tagline: shortText.optional(),
         headquarters: shortText.optional(),
@@ -772,25 +780,30 @@ const importSchema = z.object({
       z.object({
         title: z.string().min(1).max(200),
         description: longText.min(1),
-        category: shortText.optional().describe('technology / consumer / social / business / environmental'),
-        impact: shortText.optional().describe('high / medium / low'),
-        timeframe: shortText.optional().describe('short-term / medium-term / long-term'),
-        direction: shortText.optional().describe('rising / stable / declining'),
-        keyInsights: longText.optional(),
-        sources: textList.optional(),
+        category: z
+          .enum(['TECHNOLOGY', 'CONSUMER_BEHAVIOR', 'MARKET_DYNAMICS', 'COMPETITIVE', 'REGULATORY'])
+          .optional()
+          .describe('Trend Radar-categorie'),
+        impact: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']).optional(),
+        timeframe: z.enum(['SHORT_TERM', 'MEDIUM_TERM', 'LONG_TERM']).optional(),
+        direction: z.enum(['rising', 'stable', 'declining']).optional(),
+        keyInsights: longText.optional().describe('Wat betekent deze trend voor het merk (howToUse)'),
+        sources: httpUrlList.optional().describe('Bron-URL\'s'),
       }),
     )
     .max(MAX_IMPORT_ITEMS)
     .optional()
-    .describe('Trends (deel 7) — match op titel binnen het merk'),
+    .describe('Trends (deel 7) — landen in de Trend Radar; match op titel binnen het merk'),
   knowledgeResources: z
     .array(
       z.object({
         title: z.string().min(1).max(200),
         description: longText.min(1),
-        type: shortText.optional().describe('document / article / book / website / video / podcast'),
+        type: z
+          .enum(['document', 'article', 'book', 'website', 'video', 'image', 'podcast', 'course'])
+          .optional(),
         author: shortText.optional(),
-        url: z.string().max(2_000).optional(),
+        url: httpUrl.optional(),
         content: z.string().max(200_000).optional().describe('Volledige tekst-body — gaat mee in AI-context'),
       }),
     )

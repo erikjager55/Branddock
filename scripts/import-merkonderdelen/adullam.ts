@@ -131,7 +131,7 @@ const payload: BrandImportPayload = {
       // Voorstel-status in het werkbestand — nog formeel te valideren.
       frameworkData: {
         primaryArchetype: "Caregiver",
-        secondaryArchetype:
+        subArchetype:
           "Sage (de methodische wijsheid van ASBM: rust en kaders brengen in de chaos van moeilijk verstaanbaar gedrag)",
         coreDesire: "De naaste beschermen, dienen en laten floreren — vanuit de opdracht van naastenliefde.",
         brandVoiceDescription:
@@ -468,9 +468,9 @@ const payload: BrandImportPayload = {
       title: "Secularisering en de behoefte aan psychologische veiligheid",
       description:
         "In een seculariserende maatschappij ervaren reformatorische professionals een groeiende behoefte aan een werkomgeving waar zij hun normen, waarden en geloofsovertuiging niet hoeven uit te leggen (Self-Determination Theory: relatedness — 'aan een half woord genoeg').",
-      category: "social",
-      impact: "high",
-      timeframe: "long-term",
+      category: "CONSUMER_BEHAVIOR",
+      impact: "HIGH",
+      timeframe: "LONG_TERM",
       direction: "rising",
       keyInsights:
         "Adullams identiteit is geen beperking maar een uniek EVP-bestanddeel: een veilige haven die seculiere werkgevers niet kunnen bieden.",
@@ -479,9 +479,9 @@ const payload: BrandImportPayload = {
       title: "Agressie, verzuim en uitputting in de zorgsector",
       description:
         "Hoge verzuimcijfers (7-8%) en stijgende agressie in de zorg (57% van de medewerkers ervaart agressie) zorgen voor uitstroom en handelingsverlegenheid bij zorgprofessionals.",
-      category: "business",
-      impact: "high",
-      timeframe: "medium-term",
+      category: "MARKET_DYNAMICS",
+      impact: "HIGH",
+      timeframe: "MEDIUM_TERM",
       direction: "rising",
       keyInsights:
         "Het ASBM-kader (sterke rug) en het dragende team (groot hart) zijn het directe antwoord op deze sectorpijn — centraal in de wervingscommunicatie zetten.",
@@ -490,9 +490,9 @@ const payload: BrandImportPayload = {
       title: "Zij-instroom en de zoektocht naar betekenis",
       description:
         "Professionals uit commerciële sectoren (bouw, ICT, retail) ontvluchten de targetgestuurde wereld op zoek naar existentiële betekenis in hun werk.",
-      category: "consumer",
-      impact: "high",
-      timeframe: "medium-term",
+      category: "CONSUMER_BEHAVIOR",
+      impact: "HIGH",
+      timeframe: "MEDIUM_TERM",
       direction: "rising",
       keyInsights:
         "'Werk met eeuwigheidswaarde' en het frame van roeping en rentmeesterschap sluiten direct aan op deze motivatie; toerusting neemt de drempel ('kan ik dit wel?') weg.",

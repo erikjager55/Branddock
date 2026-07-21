@@ -420,9 +420,9 @@ Waarom bestaat de organisatie, los van winst?
 | Veld | Waarde |
 |---|---|
 | ⭐ Titel | _[invullen]_ |
-| Categorie — `technology` / `consumer` / `social` / `business` / `environmental` | _[invullen]_ |
-| Impact — `high` / `medium` / `low` | _[invullen]_ |
-| Tijdshorizon — `short-term` / `medium-term` / `long-term` | _[invullen]_ |
+| Categorie — `TECHNOLOGY` / `CONSUMER_BEHAVIOR` (consument & maatschappij) / `MARKET_DYNAMICS` (markt & business) / `COMPETITIVE` / `REGULATORY` | _[invullen]_ |
+| Impact — `CRITICAL` / `HIGH` / `MEDIUM` / `LOW` | _[invullen]_ |
+| Tijdshorizon — `SHORT_TERM` / `MEDIUM_TERM` / `LONG_TERM` | _[invullen]_ |
 | Richting — `rising` / `stable` / `declining` | _[invullen]_ |
 
 - ⭐ **Beschrijving**:
@@ -484,7 +484,7 @@ Zet ingevulde velden in `frameworkData` (Json) met exact deze keys. Zet `status`
 | 1.3 | `brand-essence` | `BRAND_ESSENCE` | `essenceStatement`, `emotionalBenefit`, `functionalBenefit`, `attributes` (string[] — de persoonlijkheidskenmerken), `proofPoints` (string[]) |
 | 1.4 | `brand-promise` | `BRAND_PROMISE` | `promiseStatement`, `functionalValue`, `emotionalValue`, `targetAudience`, `differentiator` |
 | 1.5 | `mission-statement` | `MISSION_STATEMENT` | `missionStatement`, `whatWeDo`, `forWhom`, `howWeDoIt`, `impactGoal`, `visionStatement`, `timeHorizon`, `desiredFutureState`, `boldAspiration`, `successIndicators` (string[]) |
-| 1.6 | `brand-archetype` | `BRAND_ARCHETYPE` | `primaryArchetype`, `secondaryArchetype`, `coreDesire`, `brandVoiceDescription`, `archetypeInAction` |
+| 1.6 | `brand-archetype` | `BRAND_ARCHETYPE` | `primaryArchetype`, `subArchetype` (secundair/variant), `coreDesire`, `brandVoiceDescription`, `archetypeInAction` |
 | 1.7 | `transformative-goals` | `TRANSFORMATIVE_GOALS` | `massiveTransformativePurpose`, `goals[]` met `title`, `description`, `timeframe`, `measurableCommitment` |
 | 1.8 | `brand-personality` | `BRAND_PERSONALITY` | `primaryDimension`, `secondaryDimension`, `personalityTraits` (objecten: `{name, description, weAreThis, butNeverThat}`) — de tone-of-voice- en praktijk-teksten horen in de Brand Voiceguide (deel 2), niet hier |
 | 1.9 | `brand-story` | `BRAND_STORY` | `elevatorPitch`, `customerExternalProblem` (+ legacy `theChallenge`), `theSolution`, `transformationPromise` (+ legacy `theOutcome`), `originStory` |
@@ -523,9 +523,9 @@ Match op naam binnen de workspace. Tabelvelden → gelijknamige demografie-kolom
 
 `name`, `slug`, `websiteUrl`, `tier` (`DIRECT`/`INDIRECT`/`ASPIRATIONAL`), `tagline`, `headquarters`, `employeeRange`, `description`, `valueProposition`, `targetAudience`, `mainOfferings`/`differentiators`/`strengths`/`weaknesses` (string[]), `pricingModel`, `pricingDetails`, `toneOfVoice`, `source: "MANUAL"`.
 
-### Deel 7 → `Trend`
+### Deel 7 → `DetectedTrend` (Trend Radar — NIET het legacy `Trend`-model)
 
-`title`, `description`, `category`, `impact`, `timeframe`, `direction`, `keyInsights`, `sources` (Json string[]).
+`title`, `description`, `category` (enum), `impact` → `impactLevel` (enum), `timeframe` (enum), `direction`, `keyInsights` → `howToUse[]`, `sources` → `sourceUrls[]` (http(s)-URL's). Slug + `detectionSource: MANUAL` + activatie zoals `POST /api/trend-radar/manual`.
 
 ### Deel 8 → `KnowledgeResource`
 

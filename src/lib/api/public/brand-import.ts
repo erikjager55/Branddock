@@ -18,11 +18,16 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
-import type { CompetitorTier, Prisma } from '@prisma/client';
+import type { CompetitorTier, InsightCategory, ImpactLevel, InsightTimeframe, Prisma } from '@prisma/client';
 import { CANONICAL_BRAND_ASSETS } from '@/lib/constants/canonical-brand-assets';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { invalidateBrandContext } from '@/lib/ai/brand-context';
+import { localeForLanguage, syncDefaultLocaleProfile } from '@/lib/content-locale/default-profile';
+import { syncVoiceguideToRules } from '@/lib/brand-fidelity/brand-rule-sync';
+
+/** Zelfde allowlist als POST/PATCH /api/workspaces — houd in sync. */
+const VALID_CONTENT_LANGUAGES = new Set(['en', 'nl', 'de', 'fr', 'es', 'pt', 'it']);
 
 // ─── Payload-types (spiegel van het werkbestand) ─────────────
 
@@ -122,11 +127,14 @@ export interface CompetitorImport {
 export interface TrendImport {
   title: string;
   description: string;
-  category?: string;
-  impact?: string;
-  timeframe?: string;
-  direction?: string;
+  /** DetectedTrend-categorie (Trend Radar). */
+  category?: 'TECHNOLOGY' | 'CONSUMER_BEHAVIOR' | 'MARKET_DYNAMICS' | 'COMPETITIVE' | 'REGULATORY';
+  impact?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  timeframe?: 'SHORT_TERM' | 'MEDIUM_TERM' | 'LONG_TERM';
+  direction?: 'rising' | 'stable' | 'declining';
+  /** Wat betekent deze trend voor het merk — landt in DetectedTrend.howToUse. */
   keyInsights?: string;
+  /** Bron-URL's — landt in DetectedTrend.sourceUrls. */
   sources?: string[];
 }
 
@@ -175,8 +183,8 @@ function slugify(input: string): string {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/&/g, 'en')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
+    .slice(0, 60)
+    .replace(/^-+|-+$/g, '');
 }
 
 /**
@@ -202,20 +210,30 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
+/** Keys die op een object prototype-gedrag triggeren — nooit als data mergen. */
+const UNSAFE_MERGE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const MAX_MERGE_DEPTH = 20;
+
 /**
  * Diepe merge voor frameworkData: geneste objecten (why/how/what, pillars,
  * anchorValue1, …) worden per key gemerged; arrays en scalars vervangen.
  * Zo wist een re-import met alleen `why.statement` niet de bestaande
- * `why.details`.
+ * `why.details`. Prototype-keys worden geskipt; voorbij MAX_MERGE_DEPTH
+ * wordt vervangen i.p.v. gemerged (RangeError-bescherming op publieke input).
  */
 function deepMerge(
   base: Record<string, unknown>,
   patch: Record<string, unknown>,
+  depth = 0,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = { ...base };
   for (const [key, value] of Object.entries(patch)) {
+    if (UNSAFE_MERGE_KEYS.has(key)) continue;
     const existing = out[key];
-    out[key] = isPlainObject(existing) && isPlainObject(value) ? deepMerge(existing, value) : value;
+    out[key] =
+      depth < MAX_MERGE_DEPTH && isPlainObject(existing) && isPlainObject(value)
+        ? deepMerge(existing, value, depth + 1)
+        : value;
   }
   return out;
 }
@@ -230,6 +248,27 @@ function isUniqueViolation(err: unknown): boolean {
   );
 }
 
+/**
+ * Itereert items met per-item foutisolatie: een falend item wordt als
+ * 'skipped' (met foutreden) gerapporteerd en de rest van de sectie draait
+ * door — het rapport verhult zo nooit welke items onverwerkt bleven.
+ */
+async function perItem<T>(
+  items: T[],
+  section: string,
+  nameOf: (item: T) => string,
+  report: BrandImportReport,
+  fn: (item: T) => Promise<void>,
+): Promise<void> {
+  for (const item of items) {
+    try {
+      await fn(item);
+    } catch (err) {
+      push(report, section, nameOf(item), 'skipped', `fout: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+}
+
 // ─── Sectie-importers ────────────────────────────────────────
 
 async function importBrandAssets(
@@ -237,73 +276,87 @@ async function importBrandAssets(
   assets: BrandAssetImport[],
   report: BrandImportReport,
 ): Promise<void> {
-  for (const asset of assets) {
+  await perItem(assets, 'brandAssets', (a) => a.slug, report, async (asset) => {
     const canonical = CANONICAL_BRAND_ASSETS.find((c) => c.slug === asset.slug);
     if (!canonical) {
       push(report, 'brandAssets', asset.slug, 'skipped', `onbekende asset-slug — geldige slugs: ${CANONICAL_BRAND_ASSETS.map((c) => c.slug).join(', ')}`);
-      continue;
+      return;
     }
     const existing = await prisma.brandAsset.findUnique({
       where: { workspaceId_slug: { workspaceId, slug: asset.slug } },
     });
     if (existing?.isLocked) {
       push(report, 'brandAssets', canonical.name, 'skipped', 'asset is vergrendeld (isLocked)');
-      continue;
+      return;
     }
     if (existing) {
-      const merged = deepMerge(
-        (existing.frameworkData as Record<string, unknown> | null) ?? {},
-        asset.frameworkData,
-      );
-      await prisma.brandAsset.update({
-        where: { id: existing.id },
-        data: compact({
-          frameworkData: merged as Prisma.InputJsonValue,
-          content: asset.content !== undefined ? (asset.content as Prisma.InputJsonValue) : undefined,
-          status: existing.status === 'DRAFT' ? 'IN_PROGRESS' : undefined,
-        }),
-      });
-      // Gevalideerde content wordt wél bijgewerkt (zelfde semantiek als de UI-
-      // editor), maar de caller moet weten dat de validatiestatus dan content
-      // attesteert die na de import gewijzigd is.
-      const wasValidated = existing.status === 'READY' || existing.validatedCount > 0;
-      push(
-        report,
-        'brandAssets',
-        canonical.name,
-        'updated',
-        wasValidated
-          ? `let op: asset had status ${existing.status} met validaties — content bijgewerkt, validatiestatus ongemoeid`
-          : undefined,
-      );
-    } else {
-      try {
-        await prisma.brandAsset.create({
-          data: {
-            workspaceId,
-            name: canonical.name,
-            slug: canonical.slug,
-            category: canonical.category,
-            description: canonical.description,
-            frameworkType: canonical.frameworkType,
-            frameworkData: asset.frameworkData as Prisma.InputJsonValue,
-            content: asset.content !== undefined ? (asset.content as Prisma.InputJsonValue) : undefined,
-            status: 'IN_PROGRESS',
-          },
-        });
-        push(report, 'brandAssets', canonical.name, 'created');
-      } catch (err) {
-        if (!isUniqueViolation(err)) throw err;
-        // Race met een parallelle create (bijv. workspace-provisioning) —
-        // herprobeer als update op het inmiddels bestaande record.
-        await prisma.brandAsset.update({
-          where: { workspaceId_slug: { workspaceId, slug: asset.slug } },
-          data: { frameworkData: asset.frameworkData as Prisma.InputJsonValue, status: 'IN_PROGRESS' },
-        });
-        push(report, 'brandAssets', canonical.name, 'updated');
-      }
+      await applyAssetUpdate(existing, asset, canonical.name, report);
+      return;
     }
-  }
+    try {
+      await prisma.brandAsset.create({
+        data: {
+          workspaceId,
+          name: canonical.name,
+          slug: canonical.slug,
+          category: canonical.category,
+          description: canonical.description,
+          frameworkType: canonical.frameworkType,
+          frameworkData: asset.frameworkData as Prisma.InputJsonValue,
+          content: asset.content !== undefined ? (asset.content as Prisma.InputJsonValue) : undefined,
+          status: 'IN_PROGRESS',
+        },
+      });
+      push(report, 'brandAssets', canonical.name, 'created');
+    } catch (err) {
+      if (!isUniqueViolation(err)) throw err;
+      // Race met een parallelle create (bijv. workspace-provisioning) —
+      // refetch en door hetzelfde locked+deep-merge-pad als een gewone update.
+      const raced = await prisma.brandAsset.findUnique({
+        where: { workspaceId_slug: { workspaceId, slug: asset.slug } },
+      });
+      if (!raced) throw err;
+      if (raced.isLocked) {
+        push(report, 'brandAssets', canonical.name, 'skipped', 'asset is vergrendeld (isLocked)');
+        return;
+      }
+      await applyAssetUpdate(raced, asset, canonical.name, report);
+    }
+  });
+}
+
+/** Gedeeld update-pad voor bestaande assets (regulier én race-fallback). */
+async function applyAssetUpdate(
+  existing: { id: string; status: string; validatedCount: number; frameworkData: unknown },
+  asset: BrandAssetImport,
+  canonicalName: string,
+  report: BrandImportReport,
+): Promise<void> {
+  const merged = deepMerge(
+    (existing.frameworkData as Record<string, unknown> | null) ?? {},
+    asset.frameworkData,
+  );
+  await prisma.brandAsset.update({
+    where: { id: existing.id },
+    data: compact({
+      frameworkData: merged as Prisma.InputJsonValue,
+      content: asset.content !== undefined ? (asset.content as Prisma.InputJsonValue) : undefined,
+      status: existing.status === 'DRAFT' ? 'IN_PROGRESS' : undefined,
+    }),
+  });
+  // Gevalideerde content wordt wél bijgewerkt (zelfde semantiek als de UI-
+  // editor), maar de caller moet weten dat de validatiestatus dan content
+  // attesteert die na de import gewijzigd is.
+  const wasValidated = existing.status === 'READY' || existing.validatedCount > 0;
+  push(
+    report,
+    'brandAssets',
+    canonicalName,
+    'updated',
+    wasValidated
+      ? `let op: asset had status ${existing.status} met validaties — content bijgewerkt, validatiestatus ongemoeid`
+      : undefined,
+  );
 }
 
 async function importVoiceguide(
@@ -328,12 +381,31 @@ async function importVoiceguide(
     contentLocale: vg.contentLocale,
   });
   const existing = await prisma.brandVoiceguide.findUnique({ where: { workspaceId } });
-  await prisma.brandVoiceguide.upsert({
+  const saved = await prisma.brandVoiceguide.upsert({
     where: { workspaceId },
     update: data,
     create: { workspaceId, ...data },
   });
-  push(report, 'voiceguide', 'Brand Voiceguide', existing ? 'updated' : 'created');
+
+  // Tweede-deur-pariteit met PATCH /api/brandvoiceguide: wijzigingen in
+  // wordsWeAvoid/antiPatterns voeden de BrandRule-auto-sync (F-VAL pijler 3).
+  // Non-fataal — de import zelf slaagt ook als de sync faalt.
+  let syncNote: string | undefined;
+  if (vg.wordsWeAvoid !== undefined || vg.antiPatterns !== undefined) {
+    try {
+      await syncVoiceguideToRules(workspaceId, {
+        wordsWeAvoid: saved.wordsWeAvoid,
+        antiPatterns: saved.antiPatterns,
+      });
+    } catch (err) {
+      syncNote = `BrandRule-sync faalde (niet-fataal): ${err instanceof Error ? err.message : String(err)}`;
+    }
+  }
+  if (!syncNote && vg.writingSamples !== undefined) {
+    syncNote =
+      'writingSamples gewijzigd — draai de centroid-recompute (Brand Voice → References) voor F-VAL pijler 1';
+  }
+  push(report, 'voiceguide', 'Brand Voiceguide', existing ? 'updated' : 'created', syncNote);
 }
 
 async function importPersonas(
@@ -343,13 +415,14 @@ async function importPersonas(
   userId?: string,
 ): Promise<void> {
   const actorId = await resolveActorUserId(workspaceId, userId);
-  for (const p of personas) {
+  await perItem(personas, 'personas', (p) => p.name, report, async (p) => {
     const existing = await prisma.persona.findFirst({
       where: { workspaceId, name: { equals: p.name, mode: 'insensitive' } },
+      orderBy: { createdAt: 'asc' },
     });
     if (existing?.isLocked) {
       push(report, 'personas', p.name, 'skipped', 'persona is vergrendeld (isLocked)');
-      continue;
+      return;
     }
     const data = compact({
       tagline: p.tagline,
@@ -384,7 +457,7 @@ async function importPersonas(
       await prisma.persona.create({ data: { workspaceId, name: p.name, createdById: actorId, ...data } });
       push(report, 'personas', p.name, 'created');
     }
-  }
+  });
 }
 
 async function uniqueProductSlug(base: string): Promise<string> {
@@ -402,13 +475,14 @@ async function importProducts(
   products: ProductImport[],
   report: BrandImportReport,
 ): Promise<void> {
-  for (const prod of products) {
+  await perItem(products, 'products', (p) => p.name, report, async (prod) => {
     const existing = await prisma.product.findFirst({
       where: { workspaceId, name: { equals: prod.name, mode: 'insensitive' } },
+      orderBy: { createdAt: 'asc' },
     });
     if (existing?.isLocked) {
       push(report, 'products', prod.name, 'skipped', 'product is vergrendeld (isLocked)');
-      continue;
+      return;
     }
     const data = compact({
       category: prod.category,
@@ -429,18 +503,25 @@ async function importProducts(
       const base = slugify(prod.name);
       if (!base) {
         push(report, 'products', prod.name, 'skipped', 'geen stabiele slug afleidbaar uit de naam');
-        continue;
+        return;
       }
       const slug = await uniqueProductSlug(base);
-      const created = await prisma.product.create({
-        data: { workspaceId, name: prod.name, slug, source: 'MANUAL', ...data },
-      });
-      productId = created.id;
-      push(report, 'products', prod.name, 'created');
+      try {
+        const created = await prisma.product.create({
+          data: { workspaceId, name: prod.name, slug, source: 'MANUAL', ...data },
+        });
+        productId = created.id;
+        push(report, 'products', prod.name, 'created');
+      } catch (err) {
+        if (!isUniqueViolation(err)) throw err;
+        push(report, 'products', prod.name, 'skipped', 'slug-conflict door parallelle create — draai de import opnieuw');
+        return;
+      }
     }
     for (const personaName of prod.personaNames ?? []) {
       const persona = await prisma.persona.findFirst({
         where: { workspaceId, name: { equals: personaName, mode: 'insensitive' } },
+        orderBy: { createdAt: 'asc' },
       });
       if (!persona) {
         push(report, 'products', `${prod.name} → ${personaName}`, 'skipped', 'persona niet gevonden voor koppeling');
@@ -451,7 +532,7 @@ async function importProducts(
         skipDuplicates: true,
       });
     }
-  }
+  });
 }
 
 /**
@@ -473,7 +554,7 @@ async function importCompetitors(
   report: BrandImportReport,
   userId?: string,
 ): Promise<void> {
-  for (const comp of competitors) {
+  await perItem(competitors, 'competitors', (c) => c.name, report, async (comp) => {
     // Naam-match (net als personas/producten): idempotent tegen zowel eerdere
     // imports als via de UI aangemaakte concurrenten, ongeacht slug-varianten.
     const existing = await prisma.competitor.findFirst({
@@ -482,7 +563,7 @@ async function importCompetitors(
     });
     if (existing?.isLocked) {
       push(report, 'competitors', comp.name, 'skipped', 'concurrent is vergrendeld (isLocked)');
-      continue;
+      return;
     }
     const data = compact({
       websiteUrl: comp.websiteUrl,
@@ -504,13 +585,14 @@ async function importCompetitors(
     if (existing) {
       await prisma.competitor.update({ where: { id: existing.id }, data });
       push(report, 'competitors', comp.name, 'updated');
-      continue;
+      return;
     }
-    let slug = competitorSlug(comp.name);
-    if (!slug) {
+    const base = competitorSlug(comp.name);
+    if (!base) {
       push(report, 'competitors', comp.name, 'skipped', 'geen stabiele slug afleidbaar uit de naam');
-      continue;
+      return;
     }
+    let slug: string = base;
     const slugTaken = await prisma.competitor.findUnique({
       where: { workspaceId_slug: { workspaceId, slug } },
       select: { id: true },
@@ -525,37 +607,89 @@ async function importCompetitors(
       if (!isUniqueViolation(err)) throw err;
       push(report, 'competitors', comp.name, 'skipped', 'slug-conflict door parallelle create — draai de import opnieuw');
     }
-  }
+  });
 }
 
+/** Zelfde slug-algoritme als POST /api/trend-radar/manual (DetectedTrend.slug is globaal uniek). */
+async function uniqueTrendSlug(title: string): Promise<string | null> {
+  const base = title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 60);
+  if (!base) return null;
+  let slug = base;
+  for (let attempt = 1; attempt < 50; attempt++) {
+    const taken = await prisma.detectedTrend.findUnique({ where: { slug }, select: { id: true } });
+    if (!taken) return slug;
+    slug = `${base}-${attempt}`;
+  }
+  return `${base}-${Date.now().toString(36)}`;
+}
+
+// Trends landen in DetectedTrend — het model dat de Trend Radar-UI én
+// getBrandContext lezen (het oude Trend-model is legacy en nergens zichtbaar).
 async function importTrends(
   workspaceId: string,
   trends: TrendImport[],
   report: BrandImportReport,
+  userId?: string,
 ): Promise<void> {
-  for (const trend of trends) {
-    const existing = await prisma.trend.findFirst({
+  const actorId = await resolveActorUserId(workspaceId, userId);
+  await perItem(trends, 'trends', (t) => t.title, report, async (trend) => {
+    const existing = await prisma.detectedTrend.findFirst({
       where: { workspaceId, title: { equals: trend.title, mode: 'insensitive' } },
+      orderBy: { createdAt: 'asc' },
     });
+    if (existing?.isLocked) {
+      push(report, 'trends', trend.title, 'skipped', 'trend is vergrendeld (isLocked)');
+      return;
+    }
     const data = compact({
       description: trend.description,
-      category: trend.category,
-      impact: trend.impact,
-      timeframe: trend.timeframe,
+      category: trend.category as InsightCategory | undefined,
+      impactLevel: trend.impact as ImpactLevel | undefined,
+      timeframe: trend.timeframe as InsightTimeframe | undefined,
       direction: trend.direction,
-      keyInsights: trend.keyInsights,
-      sources: trend.sources as unknown as Prisma.InputJsonValue | undefined,
+      howToUse: trend.keyInsights !== undefined ? [trend.keyInsights] : undefined,
+      sourceUrls: trend.sources,
     });
     if (existing) {
-      await prisma.trend.update({ where: { id: existing.id }, data });
+      await prisma.detectedTrend.update({ where: { id: existing.id }, data });
       push(report, 'trends', trend.title, 'updated');
-    } else {
-      await prisma.trend.create({
-        data: { workspaceId, title: trend.title, ...data, description: trend.description },
-      });
-      push(report, 'trends', trend.title, 'created');
+      return;
     }
-  }
+    const slug = await uniqueTrendSlug(trend.title);
+    if (!slug) {
+      push(report, 'trends', trend.title, 'skipped', 'geen stabiele slug afleidbaar uit de titel');
+      return;
+    }
+    const createData: Prisma.DetectedTrendUncheckedCreateInput = {
+      workspaceId,
+      title: trend.title,
+      slug,
+      detectionSource: 'MANUAL',
+      isActivated: true,
+      activatedAt: new Date(),
+      activatedById: actorId,
+      description: trend.description,
+      // Zelfde default als POST /api/trend-radar/manual (category is verplicht).
+      category: trend.category ?? 'TECHNOLOGY',
+    };
+    if (trend.impact !== undefined) createData.impactLevel = trend.impact;
+    if (trend.timeframe !== undefined) createData.timeframe = trend.timeframe;
+    if (trend.direction !== undefined) createData.direction = trend.direction;
+    if (trend.keyInsights !== undefined) createData.howToUse = [trend.keyInsights];
+    if (trend.sources !== undefined) createData.sourceUrls = trend.sources;
+    try {
+      await prisma.detectedTrend.create({ data: createData });
+      push(report, 'trends', trend.title, 'created');
+    } catch (err) {
+      if (!isUniqueViolation(err)) throw err;
+      push(report, 'trends', trend.title, 'skipped', 'slug-conflict door parallelle create — draai de import opnieuw');
+    }
+  });
 }
 
 async function importKnowledgeResources(
@@ -563,9 +697,10 @@ async function importKnowledgeResources(
   resources: KnowledgeResourceImport[],
   report: BrandImportReport,
 ): Promise<void> {
-  for (const res of resources) {
+  await perItem(resources, 'knowledgeResources', (r) => r.title, report, async (res) => {
     const existing = await prisma.knowledgeResource.findFirst({
       where: { workspaceId, title: { equals: res.title, mode: 'insensitive' } },
+      orderBy: { createdAt: 'asc' },
     });
     const data = compact({
       description: res.description,
@@ -583,7 +718,7 @@ async function importKnowledgeResources(
       });
       push(report, 'knowledgeResources', res.title, 'created');
     }
-  }
+  });
 }
 
 function push(
@@ -627,11 +762,20 @@ export async function importBrandData(
   try {
     if (payload.contentLanguage) {
       await runSection('workspace', async () => {
+        const lang = payload.contentLanguage!;
+        if (!VALID_CONTENT_LANGUAGES.has(lang)) {
+          push(report, 'workspace', `contentLanguage → ${lang}`, 'skipped', `ongeldige taalcode — toegestaan: ${[...VALID_CONTENT_LANGUAGES].join(', ')}`);
+          return;
+        }
         await prisma.workspace.update({
           where: { id: workspaceId },
-          data: { contentLanguage: payload.contentLanguage },
+          data: { contentLanguage: lang },
         });
-        push(report, 'workspace', `contentLanguage → ${payload.contentLanguage}`, 'updated');
+        // Content-locale anker (ADR 2026-07-16): zelfde flankerende sync als
+        // PATCH /api/workspaces — zonder deze draait repair-anchors de
+        // taalwijziging later terug naar het oude default-profiel.
+        await syncDefaultLocaleProfile(workspaceId, localeForLanguage(lang));
+        push(report, 'workspace', `contentLanguage → ${lang}`, 'updated');
       });
     }
     if (payload.brandAssets?.length) {
@@ -652,7 +796,7 @@ export async function importBrandData(
       );
     }
     if (payload.trends?.length) {
-      await runSection('trends', () => importTrends(workspaceId, payload.trends!, report));
+      await runSection('trends', () => importTrends(workspaceId, payload.trends!, report, opts?.userId));
     }
     if (payload.knowledgeResources?.length) {
       await runSection('knowledgeResources', () =>
