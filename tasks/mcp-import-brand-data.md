@@ -45,6 +45,21 @@
   check tegen het huisstijlhandboek.
 - Verwijderen van records via MCP (tool is upsert-only, niets destructiefs).
 
+## Geaccepteerde afwijkingen (review-rondes 1-4)
+
+- **frameworkData-values ongevalideerd** (alleen top-level key-allowlist):
+  bewuste pariteit met `PATCH /api/brand-assets/[id]/framework`, dat ook
+  `z.record(z.unknown())` accepteert. Mitigaties: 50KB-cap, prototype-guard,
+  fail-closed key-filter, en de personality→BrandRule-sync synct alleen bij
+  een échte array (kapotte shapes kunnen geen rules wegvagen).
+- **Actor-attributie op het API-key-pad**: `createdById`/versie-auteur valt
+  terug op de org-owner (machine-calls hebben geen sessie-user); API-keys
+  zijn owner/admin-only aangemaakt, dus geen privilege-verruiming.
+- **Adullam toneDimensions.formalCasual = 2** (formule zou 3 geven): bewust
+  richting het formele uiteinde afgerond conform de Schrijfwijzer.
+- **ESG governance-pillar zonder `impact`-level**: het werkbestand gaf geen
+  niveau ("—") — niet verzonnen; aanvullen via de app.
+
 ## Notities
 
 - De remote Cowork-omgeving heeft geen DB; de Adullam-import moet dus lokaal

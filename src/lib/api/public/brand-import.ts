@@ -56,13 +56,19 @@ const FRAMEWORK_KEYS: Record<string, readonly string[]> = {
   ESG: ['impactStatement', 'impactNarrative', 'activismLevel', 'milieu', 'mens', 'maatschappij', 'authenticityScores', 'proofPoints', 'certifications', 'antiGreenwashingStatement', 'sdgAlignment', 'communicationPrinciples', 'keyStakeholders', 'activationChannels', 'annualCommitment', 'pillars'],
 };
 
-/** Filtert onbekende top-level keys uit frameworkData; geeft gedropte keys terug. */
+/**
+ * Filtert onbekende top-level keys uit frameworkData; geeft gedropte keys
+ * terug. NB: alleen key-námen worden gecheckt — geneste value-shapes zijn
+ * bewust ongevalideerd (zelfde pariteit als PATCH /api/brand-assets/[id]/
+ * framework, dat ook z.record(z.unknown()) accepteert). Fail-closed: een
+ * onbekend frameworkType levert een lege payload op i.p.v. ongefilterd door.
+ */
 function filterFrameworkData(
   frameworkType: string,
   data: Record<string, unknown>,
 ): { data: Record<string, unknown>; dropped: string[] } {
   const allowed = FRAMEWORK_KEYS[frameworkType];
-  if (!allowed) return { data, dropped: [] };
+  if (!allowed) return { data: {}, dropped: Object.keys(data) };
   const allowedSet = new Set(allowed);
   const out: Record<string, unknown> = {};
   const dropped: string[] = [];
@@ -405,13 +411,17 @@ async function importBrandAssets(
 
 /** Gedeeld update-pad voor bestaande assets (regulier én race-fallback). */
 async function applyAssetUpdate(
-  existing: { id: string; status: string; validatedCount: number; frameworkData: unknown },
+  existing: Parameters<typeof buildBrandAssetSnapshot>[0],
   asset: BrandAssetImport,
   canonical: { name: string; frameworkType: string },
   report: BrandImportReport,
   actorId: string | null,
   extraNote?: string,
 ): Promise<void> {
+  // Pre-import snapshot voor assets die nog nooit geversioneerd zijn
+  // (provisioned/AI-gevuld): zonder deze zou de pre-import-staat na de merge
+  // onherstelbaar zijn — de UI-route versiont alleen post-save.
+  await ensurePreImportSnapshot(existing.workspaceId, existing, actorId);
   const merged = deepMerge(
     (existing.frameworkData as Record<string, unknown> | null) ?? {},
     asset.frameworkData,
@@ -422,6 +432,10 @@ async function applyAssetUpdate(
       frameworkData: merged as Prisma.InputJsonValue,
       content: asset.content !== undefined ? (asset.content as Prisma.InputJsonValue) : undefined,
       status: existing.status === 'DRAFT' ? 'IN_PROGRESS' : undefined,
+      // Herstel het canonieke frameworkType als het ontbreekt of afwijkt —
+      // anders rendert de detail-UI canonical-gefilterde data onder een
+      // verkeerd (of geen) framework.
+      frameworkType: existing.frameworkType === canonical.frameworkType ? undefined : canonical.frameworkType,
     }),
   });
   await snapshotAssetVersion(updated.workspaceId, updated, actorId);
@@ -439,9 +453,36 @@ async function applyAssetUpdate(
   push(report, 'brandAssets', canonical.name, 'updated', notes.length ? notes.join('; ') : undefined);
 }
 
+/** Eénmalige pre-import versie voor assets zonder enige versiehistorie. Non-fataal. */
+async function ensurePreImportSnapshot(
+  workspaceId: string,
+  asset: Parameters<typeof buildBrandAssetSnapshot>[0],
+  actorId: string | null,
+): Promise<void> {
+  if (!actorId) return;
+  try {
+    const hasVersion = await prisma.resourceVersion.findFirst({
+      where: { resourceType: 'BRAND_ASSET', resourceId: asset.id },
+      select: { id: true },
+    });
+    if (hasVersion) return;
+    await createVersion({
+      resourceType: 'BRAND_ASSET',
+      resourceId: asset.id,
+      snapshot: buildBrandAssetSnapshot(asset),
+      changeType: 'MANUAL_SAVE',
+      changeNote: 'Pre-import snapshot (staat vóór import_brand_data)',
+      userId: actorId,
+      workspaceId,
+    });
+  } catch {
+    // Non-fataal.
+  }
+}
+
 /**
- * UI-pariteit met PATCH /api/brand-assets/[id]/framework: auto-versioning
- * vóórdat een import onherstelbaar zou overschrijven. Non-fataal.
+ * UI-pariteit met PATCH /api/brand-assets/[id]/framework: post-save snapshot
+ * van de nieuwe staat (zelfde moment als de UI-route). Non-fataal.
  */
 async function snapshotAssetVersion(
   workspaceId: string,
@@ -476,11 +517,10 @@ async function syncPersonalityRules(
 ): Promise<void> {
   if (frameworkType !== 'BRAND_PERSONALITY') return;
   try {
-    if ('wordsWeAvoid' in frameworkData) {
-      const words = Array.isArray(frameworkData.wordsWeAvoid)
-        ? (frameworkData.wordsWeAvoid as string[])
-        : [];
-      await syncWordsAvoidToRules(workspaceId, words);
+    // Alleen syncen bij een échte array: een kapotte shape ({} of string) mag
+    // nooit als "lege lijst" bestaande FORBIDDEN_WORD-rules wegvagen.
+    if ('wordsWeAvoid' in frameworkData && Array.isArray(frameworkData.wordsWeAvoid)) {
+      await syncWordsAvoidToRules(workspaceId, frameworkData.wordsWeAvoid as string[]);
     }
     await syncWorkspaceBrandRules(workspaceId);
   } catch {
@@ -877,8 +917,10 @@ async function importKnowledgeResources(
   report: BrandImportReport,
 ): Promise<void> {
   await perItem(resources, 'knowledgeResources', (r) => r.title, report, async (res) => {
+    // Gearchiveerde resources zijn onzichtbaar in UI én AI-context — die stil
+    // "updaten" zou een succesmelding zonder zichtbaar effect geven.
     const existing = await prisma.knowledgeResource.findFirst({
-      where: { workspaceId, title: { equals: res.title, mode: 'insensitive' } },
+      where: { workspaceId, isArchived: false, title: { equals: res.title, mode: 'insensitive' } },
       orderBy: { createdAt: 'asc' },
     });
     const data = compact({
@@ -893,8 +935,17 @@ async function importKnowledgeResources(
       push(report, 'knowledgeResources', res.title, 'updated');
     } else {
       await enforceFeature(workspaceId, 'KNOWLEDGE_RESOURCES');
+      // Slug-pariteit met POST /api/knowledge-resources: base uit de titel +
+      // random suffix (kolom is globaal @unique; suffix voorkomt botsingen).
+      const slugBase = res.title
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      const slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
       await prisma.knowledgeResource.create({
-        data: { workspaceId, title: res.title, source: 'MANUAL', ...data, description: res.description },
+        data: { workspaceId, title: res.title, source: 'MANUAL', slug, ...data },
       });
       push(report, 'knowledgeResources', res.title, 'created');
     }
@@ -966,9 +1017,16 @@ export async function importBrandData(
         });
         // Content-locale anker (ADR 2026-07-16): zelfde flankerende sync als
         // PATCH /api/workspaces — zonder deze draait repair-anchors de
-        // taalwijziging later terug naar het oude default-profiel.
-        await syncDefaultLocaleProfile(workspaceId, localeForLanguage(lang));
-        push(report, 'workspace', `contentLanguage → ${lang}`, 'updated');
+        // taalwijziging later terug naar het oude default-profiel. De taal is
+        // op dit punt al gepersisteerd, dus een sync-fout wordt als note bij
+        // 'updated' gemeld (niet als skipped — dat zou de werkelijkheid verhullen).
+        let anchorNote: string | undefined;
+        try {
+          await syncDefaultLocaleProfile(workspaceId, localeForLanguage(lang));
+        } catch (err) {
+          anchorNote = `let op: taal is gewijzigd maar de locale-anker-sync faalde (${err instanceof Error ? err.message : String(err)}) — draai de import opnieuw of herstel via Settings, anders draait repair-anchors de taal terug`;
+        }
+        push(report, 'workspace', `contentLanguage → ${lang}`, 'updated', anchorNote);
       });
     }
     if (payload.brandAssets?.length) {

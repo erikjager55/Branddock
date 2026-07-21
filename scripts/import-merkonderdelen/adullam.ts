@@ -248,6 +248,9 @@ const payload: BrandImportPayload = {
     voiceDescription:
       "De stem van Adullam is warm én eerbiedig: pastorale zorg gecombineerd met praktische toerusting. Nuchter, ingetogen, gedragen, oprecht, betrouwbaar en vakkundig. Adullam spreekt met de rust van Bijbelse overtuiging en blijft daarbij toegankelijk en compassievol. In elke tekst klinken het grote hart (zorgzaamheid, gemeenschap) en de sterke rug (vakmanschap, methodische scherpte) samen. Vuistregel: schrijf zoals je praat tegen iemand die je vertrouwt — rustig, gemeend, zonder overdrijving of verkooptaal.",
     // Werkbestand gaf 0-100 (25/10/5/30); geconverteerd naar de NN/g 1-7-schaal.
+    // formalCasual wijkt bewust af van de template-afrondingsformule (die 3 zou
+    // geven): 25 ligt exact tussen 2 en 3 in, en de Schrijfwijzer ("formeel,
+    // serieus, ingetogen") rechtvaardigt afronden richting het formele uiteinde.
     toneDimensions: {
       formalCasual: 2,
       seriousFunny: 2,

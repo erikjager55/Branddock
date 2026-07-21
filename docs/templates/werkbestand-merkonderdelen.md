@@ -447,7 +447,7 @@ Waarom bestaat de organisatie, los van winst?
 | Veld | Waarde |
 |---|---|
 | ⭐ Titel | _[invullen]_ |
-| Type — `document` / `article` / `book` / `website` / `video` / `podcast` | _[invullen]_ |
+| Type — `document` / `article` / `book` / `website` / `video` / `image` / `podcast` / `course` | _[invullen]_ |
 | Auteur | _[invullen]_ |
 | URL of bestandsnaam | _[invullen]_ |
 
