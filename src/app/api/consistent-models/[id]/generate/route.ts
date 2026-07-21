@@ -4,6 +4,7 @@ import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { generateFalImage, isFalConfigured } from '@/lib/integrations/fal/fal-client';
 import { maxAnchorsForModel } from '@/lib/ai/brand-style-anchors';
 import { getStorageProvider } from '@/lib/storage';
+import { resolveStorageUrls } from '@/lib/storage/resolve-storage-url';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { chargeAfter } from '@/lib/billing/credits/meter-generation';
@@ -134,9 +135,13 @@ export async function POST(
       .join(', ') || undefined;
 
     // Referentiebeelden als multi-ref image_urls, gecapt per generator.
-    const referenceImageUrls = model.referenceImages
-      .map((img) => img.storageUrl)
-      .slice(0, maxAnchorsForModel(REFERENCE_GENERATOR_MODEL));
+    // Resolve naar een nú-bereikbare URL: oude rijen dragen verlopen signed
+    // R2-URLs die fal niet kan downloaden — de stijl wordt dan stil genegeerd.
+    const referenceImageUrls = await resolveStorageUrls(
+      model.referenceImages
+        .map((img) => img.storageUrl)
+        .slice(0, maxAnchorsForModel(REFERENCE_GENERATOR_MODEL)),
+    );
 
     const result = await generateFalImage(REFERENCE_GENERATOR_MODEL, combinedPrompt, {
       negativePrompt: mergedNegative,

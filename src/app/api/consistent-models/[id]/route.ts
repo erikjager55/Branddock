@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { deleteR2Prefix } from '@/lib/storage/r2-storage';
+import { resolveImageRowUrls } from '@/lib/storage/resolve-storage-url';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { z } from 'zod';
@@ -54,7 +55,13 @@ export async function GET(
       return NextResponse.json({ error: 'Model not found' }, { status: 404 });
     }
 
-    return NextResponse.json(model);
+    // Oude rijen dragen verlopen signed R2-URLs — resolve zodat previews renderen.
+    const [referenceImages, generations] = await Promise.all([
+      Promise.all(model.referenceImages.map(resolveImageRowUrls)),
+      Promise.all(model.generations.map(resolveImageRowUrls)),
+    ]);
+
+    return NextResponse.json({ ...model, referenceImages, generations });
   } catch (error) {
     console.error('GET /api/consistent-models/:id error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -4,6 +4,7 @@ import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { validateTrainingImage, stripExifData, MAX_REFERENCE_IMAGES } from '@/lib/storage/image-validator';
 import { MIN_REFERENCE_IMAGES_FOR_GENERATION } from '@/features/consistent-models/constants/model-constants';
 import { getStorageProvider } from '@/lib/storage';
+import { resolveImageRowUrls } from '@/lib/storage/resolve-storage-url';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 
@@ -42,7 +43,8 @@ export async function GET(
       orderBy: { sortOrder: 'asc' },
     });
 
-    return NextResponse.json({ images });
+    // Oude rijen dragen verlopen signed R2-URLs — resolve zodat previews renderen.
+    return NextResponse.json({ images: await Promise.all(images.map(resolveImageRowUrls)) });
   } catch (error) {
     console.error('GET /api/consistent-models/:id/reference-images error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
