@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 432. Pilot-claim hermeting — vanilla-baseline naar gpt-5.6, +7-claim blijft staan
+
+Go Erik na fase 2. De in-product vanilla-baseline is gemoderniseerd (gpt-4o → gpt-5.6, incl. max_completion_tokens-fix) en de on-brand-gap is opnieuw gemeten met de volledige nieuwe stack: 3 content-types × 2 briefing-condities, Branddock (opus-4.8 + BVD) vs vanilla gpt-5.6 én gpt-4o-referentie, symmetrisch gescoord via F-VAL met de nieuwe judges. Uitkomst: **+6,8 gemiddeld tegen gpt-5.6** — de "+7"-claim blijft staan tegen de eerlijke moderne baseline; magere briefing +11 (patroon herhaalt zich), newsletter +9,5, gpt-4o-referentie +9,7 (het betere vanilla-model verklaart ~3 punten versmalling). Zwakste cel: rijk-gebriefde blog (−5) — niet mee demo'en. Rapport: docs/reports/pilot-hermeting-2026-07-21.md; script reproduceerbaar in scripts/experiments/. PR #229.
+
+- Task: `-` (hermeting-opdracht Erik 2026-07-21)
+
 ### 431. LLM-modellen-refresh fase 2 — F-VAL-judges gekalibreerd en omgezet
 
 Op Eriks go. Gepaarde kalibratie (10-teksten-corpus × oude vs. nieuwe judge, identieke rubric-context; script in scripts/experiments/) vooraf: gpt-5→gpt-5.6 composite-effect +0,5, sonnet-4-6→sonnet-5 −1,8 — beide binnen de ±2-band, dus swap zónder drempelwijziging (75/65 blijven). Sonnet 5 discrimineert AI-slop scherper (−18) bij vrijwel gelijke on-brand-scores. Mee omgezet: visual-judge (advisory pad) en STRICT-rewrite-generator naar sonnet-5. Bewust bevroren: vanilla-baseline op gpt-4o (meetinstrument +7-pilotclaim — moderniseren = productbesluit + her-meting). Kalibratie + besluit gedocumenteerd in docs/reports/model-review-2026-07-21.md. PR #228.
