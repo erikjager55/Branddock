@@ -22,8 +22,11 @@
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
-import { prisma } from "../../src/lib/prisma";
-import { importBrandData, type BrandImportPayload } from "../../src/lib/api/public/brand-import";
+// Type-only import (erased at runtime); de echte modules worden in main()
+// dynamisch geïmporteerd — esbuild/tsx hoist statische imports boven de
+// dotenv.config-call, waardoor src/lib/prisma anders al crasht op een
+// ontbrekende DATABASE_URL vóór .env.local geladen is.
+import type { BrandImportPayload } from "../../src/lib/api/public/brand-import";
 
 const WORKSPACE_NAME = "Adullam";
 const ACTOR_EMAIL = "erik@betterbrands.nl";
@@ -159,11 +162,10 @@ const payload: BrandImportPayload = {
           { name: "Doelgericht", description: "", weAreThis: "", butNeverThat: "Doelloos of louter custodial" },
           { name: "Nuchter en betrouwbaar", description: "", weAreThis: "", butNeverThat: "" },
         ],
-        toneOfVoice:
-          "Formeel, serieus, respectvol, zakelijk-nuchter (matter-of-fact). Warm én eerbiedig. Niet 'bold', 'playful', 'innovative', 'modern' of 'energetic' — die generieke marketingdimensies passen niet bij Adullam.",
-        personalityInPractice:
-          "Vacatureteksten: nuchter, concreet vakmanschap voorop. Social media: gemeenschapsgericht en dankbaar, verhalen uit het gewone leven. Crisis: rustig, transparant, gegrond in geloof. Interne communicatie: pastoraal en persoonlijk. Geen uitroeptekens, hypewoorden of jeugdig jargon.",
       },
+      // Tone-of-voice en personality-in-practice uit het werkbestand staan in
+      // de Brand Voiceguide (voiceDescription, writingGuidelines, channelTones,
+      // contentGuidelines) — BrandPersonalityFrameworkData kent die keys niet.
     },
     {
       slug: "brand-story",
@@ -327,6 +329,7 @@ const payload: BrandImportPayload = {
       "AVG bij verhalen: expliciete toestemming met gebruikstermijn, vertrekscenario vastgelegd, inzage vóór publicatie, cliënten alleen herkenbaar met toestemming van de wettelijk vertegenwoordiger.",
       "Crisiscommunicatie: rustig, transparant, gegrond in geloof (Gods soevereiniteit), met concrete verantwoordelijke actie.",
       "Zorgcontact: compassievol en geduldig, met oog voor identiteitsgebonden zorgprincipes.",
+      "Interne communicatie: pastoraal en persoonlijk.",
     ],
     writingGuidelines: [
       "Geen uitroeptekens, hypewoorden of jeugdig jargon.",
@@ -531,30 +534,35 @@ const payload: BrandImportPayload = {
 };
 
 async function main() {
-  const workspace = await prisma.workspace.findFirst({
-    where: { name: { equals: WORKSPACE_NAME, mode: "insensitive" } },
-  });
-  if (!workspace) {
-    console.error(`Workspace '${WORKSPACE_NAME}' niet gevonden — controleer de naam in Branddock.`);
-    process.exit(1);
-  }
-  const actor = await prisma.user.findFirst({ where: { email: ACTOR_EMAIL } });
+  const { prisma } = await import("../../src/lib/prisma");
+  const { importBrandData } = await import("../../src/lib/api/public/brand-import");
 
-  console.log(`[import] workspace=${workspace.id} (${workspace.name}) actor=${actor?.email ?? "org-owner fallback"}`);
-  const report = await importBrandData(workspace.id, payload, { userId: actor?.id });
+  try {
+    const workspace = await prisma.workspace.findFirst({
+      where: { name: { equals: WORKSPACE_NAME, mode: "insensitive" } },
+    });
+    if (!workspace) {
+      console.error(`Workspace '${WORKSPACE_NAME}' niet gevonden — controleer de naam in Branddock.`);
+      process.exit(1);
+    }
+    const actor = await prisma.user.findFirst({ where: { email: ACTOR_EMAIL } });
 
-  console.log(`\n[import] klaar: ${report.created} aangemaakt, ${report.updated} bijgewerkt, ${report.skipped} overgeslagen`);
-  for (const item of report.items) {
-    console.log(`  - [${item.section}] ${item.name}: ${item.action}${item.reason ? ` (${item.reason})` : ""}`);
+    console.log(`[import] workspace=${workspace.id} (${workspace.name}) actor=${actor?.email ?? "org-owner fallback"}`);
+    const report = await importBrandData(workspace.id, payload, { userId: actor?.id });
+
+    console.log(`\n[import] klaar: ${report.created} aangemaakt, ${report.updated} bijgewerkt, ${report.skipped} overgeslagen`);
+    for (const item of report.items) {
+      console.log(`  - [${item.section}] ${item.name}: ${item.action}${item.reason ? ` (${item.reason})` : ""}`);
+    }
+    console.log(
+      "\nLet op: brandstyle is bewust niet geïmporteerd — draai de brandstyle-analyse op www.adullamzorg.nl via de app (Brandstyle → analyseer website).",
+    );
+  } finally {
+    await prisma.$disconnect();
   }
-  console.log(
-    "\nLet op: brandstyle is bewust niet geïmporteerd — draai de brandstyle-analyse op www.adullamzorg.nl via de app (Brandstyle → analyseer website).",
-  );
 }
 
-main()
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

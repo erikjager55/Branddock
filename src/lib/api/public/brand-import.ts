@@ -4,11 +4,17 @@
 // docs/templates/werkbestand-merkonderdelen.md).
 //
 // Idempotent: upserts op natuurlijke sleutels (workspaceId+slug voor
-// brand assets/concurrenten, naam/titel-match voor personas, producten,
+// brand assets, naam/titel-match voor personas, producten, concurrenten,
 // trends en kennisbronnen; BrandVoiceguide is 1-op-1 met workspace).
 // Vergrendelde records (isLocked) worden overgeslagen, nooit overschreven.
 // Ontbrekende velden in de payload blijven onaangeroerd — de import
-// merge't, hij reset niet.
+// merge't (diep, voor frameworkData), hij reset niet.
+//
+// Concurrency-kanttekening: naam/titel-matches zijn geen DB-constraints;
+// twee gelijktijdige imports op hetzelfde merk kunnen duplicaten geven.
+// Unique-violations op de wél-geconstrainde sleutels (assets, product-slug)
+// worden opgevangen en als update herprobeerd. De tool is bedoeld voor
+// één werkbestand-import per merk tegelijk, niet voor parallelle bulk.
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
@@ -192,6 +198,38 @@ function compact<T extends Record<string, unknown>>(obj: T): T {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as T;
 }
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+/**
+ * Diepe merge voor frameworkData: geneste objecten (why/how/what, pillars,
+ * anchorValue1, …) worden per key gemerged; arrays en scalars vervangen.
+ * Zo wist een re-import met alleen `why.statement` niet de bestaande
+ * `why.details`.
+ */
+function deepMerge(
+  base: Record<string, unknown>,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(patch)) {
+    const existing = out[key];
+    out[key] = isPlainObject(existing) && isPlainObject(value) ? deepMerge(existing, value) : value;
+  }
+  return out;
+}
+
+/** Prisma P2002 (unique-constraint violation) — race met een parallelle create. */
+function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    (err as { code?: string }).code === 'P2002'
+  );
+}
+
 // ─── Sectie-importers ────────────────────────────────────────
 
 async function importBrandAssets(
@@ -213,10 +251,10 @@ async function importBrandAssets(
       continue;
     }
     if (existing) {
-      const merged = {
-        ...(existing.frameworkData as Record<string, unknown> | null ?? {}),
-        ...asset.frameworkData,
-      };
+      const merged = deepMerge(
+        (existing.frameworkData as Record<string, unknown> | null) ?? {},
+        asset.frameworkData,
+      );
       await prisma.brandAsset.update({
         where: { id: existing.id },
         data: compact({
@@ -225,22 +263,45 @@ async function importBrandAssets(
           status: existing.status === 'DRAFT' ? 'IN_PROGRESS' : undefined,
         }),
       });
-      push(report, 'brandAssets', canonical.name, 'updated');
+      // Gevalideerde content wordt wél bijgewerkt (zelfde semantiek als de UI-
+      // editor), maar de caller moet weten dat de validatiestatus dan content
+      // attesteert die na de import gewijzigd is.
+      const wasValidated = existing.status === 'READY' || existing.validatedCount > 0;
+      push(
+        report,
+        'brandAssets',
+        canonical.name,
+        'updated',
+        wasValidated
+          ? `let op: asset had status ${existing.status} met validaties — content bijgewerkt, validatiestatus ongemoeid`
+          : undefined,
+      );
     } else {
-      await prisma.brandAsset.create({
-        data: {
-          workspaceId,
-          name: canonical.name,
-          slug: canonical.slug,
-          category: canonical.category as never,
-          description: canonical.description,
-          frameworkType: canonical.frameworkType,
-          frameworkData: asset.frameworkData as Prisma.InputJsonValue,
-          content: asset.content !== undefined ? (asset.content as Prisma.InputJsonValue) : undefined,
-          status: 'IN_PROGRESS',
-        },
-      });
-      push(report, 'brandAssets', canonical.name, 'created');
+      try {
+        await prisma.brandAsset.create({
+          data: {
+            workspaceId,
+            name: canonical.name,
+            slug: canonical.slug,
+            category: canonical.category,
+            description: canonical.description,
+            frameworkType: canonical.frameworkType,
+            frameworkData: asset.frameworkData as Prisma.InputJsonValue,
+            content: asset.content !== undefined ? (asset.content as Prisma.InputJsonValue) : undefined,
+            status: 'IN_PROGRESS',
+          },
+        });
+        push(report, 'brandAssets', canonical.name, 'created');
+      } catch (err) {
+        if (!isUniqueViolation(err)) throw err;
+        // Race met een parallelle create (bijv. workspace-provisioning) —
+        // herprobeer als update op het inmiddels bestaande record.
+        await prisma.brandAsset.update({
+          where: { workspaceId_slug: { workspaceId, slug: asset.slug } },
+          data: { frameworkData: asset.frameworkData as Prisma.InputJsonValue, status: 'IN_PROGRESS' },
+        });
+        push(report, 'brandAssets', canonical.name, 'updated');
+      }
     }
   }
 }
@@ -365,7 +426,12 @@ async function importProducts(
       productId = existing.id;
       push(report, 'products', prod.name, 'updated');
     } else {
-      const slug = await uniqueProductSlug(slugify(prod.name));
+      const base = slugify(prod.name);
+      if (!base) {
+        push(report, 'products', prod.name, 'skipped', 'geen stabiele slug afleidbaar uit de naam');
+        continue;
+      }
+      const slug = await uniqueProductSlug(base);
       const created = await prisma.product.create({
         data: { workspaceId, name: prod.name, slug, source: 'MANUAL', ...data },
       });
@@ -388,6 +454,19 @@ async function importProducts(
   }
 }
 
+/**
+ * Zelfde algoritme als POST /api/competitors (route.ts) zodat import en UI
+ * dezelfde slug voor dezelfde naam opleveren. Lege slug (naam zonder
+ * a-z0-9) → null: caller slaat over i.p.v. een instabiele fallback te maken.
+ */
+function competitorSlug(name: string): string | null {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+  return slug || null;
+}
+
 async function importCompetitors(
   workspaceId: string,
   competitors: CompetitorImport[],
@@ -395,9 +474,11 @@ async function importCompetitors(
   userId?: string,
 ): Promise<void> {
   for (const comp of competitors) {
-    const slug = slugify(comp.name);
-    const existing = await prisma.competitor.findUnique({
-      where: { workspaceId_slug: { workspaceId, slug } },
+    // Naam-match (net als personas/producten): idempotent tegen zowel eerdere
+    // imports als via de UI aangemaakte concurrenten, ongeacht slug-varianten.
+    const existing = await prisma.competitor.findFirst({
+      where: { workspaceId, name: { equals: comp.name, mode: 'insensitive' } },
+      orderBy: { createdAt: 'asc' },
     });
     if (existing?.isLocked) {
       push(report, 'competitors', comp.name, 'skipped', 'concurrent is vergrendeld (isLocked)');
@@ -423,11 +504,26 @@ async function importCompetitors(
     if (existing) {
       await prisma.competitor.update({ where: { id: existing.id }, data });
       push(report, 'competitors', comp.name, 'updated');
-    } else {
+      continue;
+    }
+    let slug = competitorSlug(comp.name);
+    if (!slug) {
+      push(report, 'competitors', comp.name, 'skipped', 'geen stabiele slug afleidbaar uit de naam');
+      continue;
+    }
+    const slugTaken = await prisma.competitor.findUnique({
+      where: { workspaceId_slug: { workspaceId, slug } },
+      select: { id: true },
+    });
+    if (slugTaken) slug = `${slug}-${Date.now().toString(36)}`;
+    try {
       await prisma.competitor.create({
         data: { workspaceId, name: comp.name, slug, source: 'MANUAL', createdById: userId ?? null, ...data },
       });
       push(report, 'competitors', comp.name, 'created');
+    } catch (err) {
+      if (!isUniqueViolation(err)) throw err;
+      push(report, 'competitors', comp.name, 'skipped', 'slug-conflict door parallelle create — draai de import opnieuw');
     }
   }
 }
@@ -518,31 +614,62 @@ export async function importBrandData(
 ): Promise<BrandImportReport> {
   const report: BrandImportReport = { created: 0, updated: 0, skipped: 0, items: [] };
 
-  if (payload.contentLanguage) {
-    await prisma.workspace.update({
-      where: { id: workspaceId },
-      data: { contentLanguage: payload.contentLanguage },
-    });
-    push(report, 'workspace', `contentLanguage → ${payload.contentLanguage}`, 'updated');
-  }
-  if (payload.brandAssets?.length) await importBrandAssets(workspaceId, payload.brandAssets, report);
-  if (payload.voiceguide) await importVoiceguide(workspaceId, payload.voiceguide, report);
-  if (payload.personas?.length) await importPersonas(workspaceId, payload.personas, report, opts?.userId);
-  if (payload.products?.length) await importProducts(workspaceId, payload.products, report);
-  if (payload.competitors?.length) await importCompetitors(workspaceId, payload.competitors, report, opts?.userId);
-  if (payload.trends?.length) await importTrends(workspaceId, payload.trends, report);
-  if (payload.knowledgeResources?.length) {
-    await importKnowledgeResources(workspaceId, payload.knowledgeResources, report);
-  }
+  // Eén sectie-fout mag de rest niet meeslepen: de fout wordt gerapporteerd
+  // en de overige secties draaien door (geen transactie — zie header).
+  const runSection = async (section: string, fn: () => Promise<void>) => {
+    try {
+      await fn();
+    } catch (err) {
+      push(report, section, 'sectie-fout', 'skipped', err instanceof Error ? err.message : String(err));
+    }
+  };
 
-  invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
-  invalidateCache(cacheKeys.prefixes.personas(workspaceId));
-  invalidateCache(cacheKeys.prefixes.products(workspaceId));
-  invalidateCache(cacheKeys.prefixes.trendRadar(workspaceId));
-  invalidateCache(cacheKeys.prefixes.knowledgeResources(workspaceId));
-  invalidateCache(cacheKeys.prefixes.competitors(workspaceId));
-  invalidateCache(cacheKeys.prefixes.brandvoiceguide(workspaceId));
-  invalidateBrandContext(workspaceId);
+  try {
+    if (payload.contentLanguage) {
+      await runSection('workspace', async () => {
+        await prisma.workspace.update({
+          where: { id: workspaceId },
+          data: { contentLanguage: payload.contentLanguage },
+        });
+        push(report, 'workspace', `contentLanguage → ${payload.contentLanguage}`, 'updated');
+      });
+    }
+    if (payload.brandAssets?.length) {
+      await runSection('brandAssets', () => importBrandAssets(workspaceId, payload.brandAssets!, report));
+    }
+    if (payload.voiceguide) {
+      await runSection('voiceguide', () => importVoiceguide(workspaceId, payload.voiceguide!, report));
+    }
+    if (payload.personas?.length) {
+      await runSection('personas', () => importPersonas(workspaceId, payload.personas!, report, opts?.userId));
+    }
+    if (payload.products?.length) {
+      await runSection('products', () => importProducts(workspaceId, payload.products!, report));
+    }
+    if (payload.competitors?.length) {
+      await runSection('competitors', () =>
+        importCompetitors(workspaceId, payload.competitors!, report, opts?.userId),
+      );
+    }
+    if (payload.trends?.length) {
+      await runSection('trends', () => importTrends(workspaceId, payload.trends!, report));
+    }
+    if (payload.knowledgeResources?.length) {
+      await runSection('knowledgeResources', () =>
+        importKnowledgeResources(workspaceId, payload.knowledgeResources!, report),
+      );
+    }
+  } finally {
+    // Ook na een partiële import mogen er geen stale caches achterblijven.
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+    invalidateCache(cacheKeys.prefixes.personas(workspaceId));
+    invalidateCache(cacheKeys.prefixes.products(workspaceId));
+    invalidateCache(cacheKeys.prefixes.trendRadar(workspaceId));
+    invalidateCache(cacheKeys.prefixes.knowledgeResources(workspaceId));
+    invalidateCache(cacheKeys.prefixes.competitors(workspaceId));
+    invalidateCache(cacheKeys.prefixes.brandvoiceguide(workspaceId));
+    invalidateBrandContext(workspaceId);
+  }
 
   return report;
 }

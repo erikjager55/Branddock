@@ -467,7 +467,7 @@ Waarom bestaat de organisatie, los van winst?
 
 1. **Verzin niets.** Lege velden, `…` of `n.v.t.` → veld overslaan. Vul nooit zelf aan zonder expliciete toestemming van de gebruiker. Vraag bij ambigue input (bijv. ongeldig archetype of impact-type) éérst na via `AskUserQuestion`.
 2. **Workspace-resolutie**: zoek de workspace op naam uit Deel 0 (`Workspace.name`, case-insensitive). Bestaat die niet → stop en vraag de gebruiker welke workspace bedoeld is. Nooit een workspace-ID uit env vars gebruiken.
-3. **Idempotent verwerken**: gebruik upserts op natuurlijke sleutels (`workspaceId + slug` voor assets/concurrenten, naam-match voor personas/producten/trends). Bestaat een record al → velden bijwerken, niet dupliceren. **Sla vergrendelde records (`isLocked = true`) over** en meld dat aan de gebruiker.
+3. **Idempotent verwerken**: gebruik upserts op natuurlijke sleutels (`workspaceId + slug` voor assets, naam/titel-match voor personas/producten/concurrenten/trends/kennisbronnen). Bestaat een record al → velden bijwerken, niet dupliceren. **Sla vergrendelde records (`isLocked = true`) over** en meld dat aan de gebruiker.
 4. **Aanpak — voorkeursroute**: gebruik de MCP-tool `mcp__Branddock__import_brand_data` (accepteert de volledige payload hieronder, doet de upserts + cache-invalidatie server-side en geeft een created/updated/skipped-rapport terug). Geen toegang tot de MCP-tool maar wél tot de repo+database: schrijf een eenmalig `tsx`-script dat `importBrandData()` uit `src/lib/api/public/brand-import.ts` aanroept met de payload (voorbeeld: `scripts/import-merkonderdelen/adullam.ts`) en draai het lokaal. Volg de workflow-regels uit `CLAUDE.md`.
 5. **Rapporteer na afloop** per onderdeel: aangemaakt / bijgewerkt / overgeslagen (met reden).
 
@@ -485,8 +485,8 @@ Zet ingevulde velden in `frameworkData` (Json) met exact deze keys. Zet `status`
 | 1.4 | `brand-promise` | `BRAND_PROMISE` | `promiseStatement`, `functionalValue`, `emotionalValue`, `targetAudience`, `differentiator` |
 | 1.5 | `mission-statement` | `MISSION_STATEMENT` | `missionStatement`, `whatWeDo`, `forWhom`, `howWeDoIt`, `impactGoal`, `visionStatement`, `timeHorizon`, `desiredFutureState`, `boldAspiration`, `successIndicators` (string[]) |
 | 1.6 | `brand-archetype` | `BRAND_ARCHETYPE` | `primaryArchetype`, `secondaryArchetype`, `coreDesire`, `brandVoiceDescription`, `archetypeInAction` |
-| 1.7 | `transformative-goals` | `TRANSFORMATIVE_GOALS` | `massiveTransformativePurpose`, `goals[]` met `title`, `description`, `timeframe`, `measurableOutcome` |
-| 1.8 | `brand-personality` | `BRAND_PERSONALITY` | `primaryDimension`, `secondaryDimension`, `personalityTraits` (objecten: `{name, description, weAreThis, butNeverThat}`), `toneOfVoice`, `personalityInPractice` |
+| 1.7 | `transformative-goals` | `TRANSFORMATIVE_GOALS` | `massiveTransformativePurpose`, `goals[]` met `title`, `description`, `timeframe`, `measurableCommitment` |
+| 1.8 | `brand-personality` | `BRAND_PERSONALITY` | `primaryDimension`, `secondaryDimension`, `personalityTraits` (objecten: `{name, description, weAreThis, butNeverThat}`) — de tone-of-voice- en praktijk-teksten horen in de Brand Voiceguide (deel 2), niet hier |
 | 1.9 | `brand-story` | `BRAND_STORY` | `elevatorPitch`, `customerExternalProblem` (+ legacy `theChallenge`), `theSolution`, `transformationPromise` (+ legacy `theOutcome`), `originStory` |
 | 1.10 | `core-values` | `BRANDHOUSE_VALUES` | `anchorValue1{name,description}`, `anchorValue2{…}`, `aspirationValue1{…}`, `aspirationValue2{…}`, `ownValue{…}`, `valueTension` |
 | 1.11 | `social-relevancy` | `ESG` | `pillars.environmental{impact,description}`, `pillars.social{…}`, `pillars.governance{…}`, optioneel `proofPoints`, `certifications`, `sdgAlignment` (number[]), `antiGreenwashingStatement` |
@@ -519,7 +519,7 @@ Match op naam binnen de workspace. Tabelvelden → gelijknamige demografie-kolom
 
 `name`, `slug` (genereren, globaal uniek), `description`, `category`, `pricingModel`, `pricingDetails`, `features`/`benefits`/`useCases` (string[]), `sourceUrl`, `source: MANUAL`. Gekoppelde personas → `ProductPersona`-joins op basis van naam-match met Deel 4.
 
-### Deel 6 → `Competitor` (upsert op `workspaceId + slug`)
+### Deel 6 → `Competitor` (match op naam binnen de workspace; slug wordt bij aanmaak gegenereerd zoals in de UI)
 
 `name`, `slug`, `websiteUrl`, `tier` (`DIRECT`/`INDIRECT`/`ASPIRATIONAL`), `tagline`, `headquarters`, `employeeRange`, `description`, `valueProposition`, `targetAudience`, `mainOfferings`/`differentiators`/`strengths`/`weaknesses` (string[]), `pricingModel`, `pricingDetails`, `toneOfVoice`, `source: "MANUAL"`.
 

@@ -638,10 +638,17 @@ const importToneDimensions = z
   })
   .describe('NN/g 4-assen tone-baseline, elk 1-7 (4 = neutraal; 1 = formeel/serieus/respectvol/zakelijk)');
 
+// Payload-bounds: publiek write-endpoint — begrens aantallen en tekstlengtes
+// zodat één call geen onbegrensde row-/query-fanout kan triggeren.
+const MAX_IMPORT_ITEMS = 50;
+const shortText = z.string().max(2_000);
+const longText = z.string().max(20_000);
+const textList = z.array(z.string().max(2_000)).max(100);
+
 const importSchema = z.object({
   contentLanguage: z
     .string()
-    .length(2)
+    .regex(/^[a-z]{2}$/, 'ISO 639-1 lowercase, bijv. "nl"')
     .optional()
     .describe('ISO 639-1 workspace-taal, bijv. "nl" — zet Workspace.contentLanguage'),
   brandAssets: z
@@ -649,33 +656,38 @@ const importSchema = z.object({
       z.object({
         slug: z
           .string()
+          .max(50)
           .describe('Canonieke asset-slug, bijv. "golden-circle", "core-values", "brand-story"'),
         frameworkData: z
           .record(z.string(), z.unknown())
-          .describe('Framework-velden — exacte keys per frameworkType; wordt gemerged over bestaande data'),
-        content: z.string().optional().describe('Optionele vrije-tekst aanvulling'),
+          .describe('Framework-velden — exacte keys per frameworkType; wordt diep gemerged over bestaande data'),
+        content: longText.optional().describe('Optionele vrije-tekst aanvulling'),
       }),
     )
+    .max(11)
     .optional()
     .describe('De 11 canonieke brand assets (deel 1 van het werkbestand)'),
   voiceguide: z
     .object({
-      voiceDescription: z.string().optional(),
+      voiceDescription: longText.optional(),
       toneDimensions: importToneDimensions.optional(),
-      wordsWeUse: z.array(z.string()).optional(),
-      wordsWeAvoid: z.array(z.string()).optional(),
-      vocabularyDo: z.array(z.string()).optional(),
-      vocabularyDont: z.array(z.string()).optional(),
-      antiPatterns: z.array(z.string()).optional(),
-      examplePhrases: z.array(z.object({ text: z.string(), type: z.enum(['do', 'dont']) })).optional(),
-      voiceSample: z.string().optional(),
-      writingSamples: z.array(z.string()).optional(),
-      contentGuidelines: z.array(z.string()).optional(),
-      writingGuidelines: z.array(z.string()).optional(),
+      wordsWeUse: textList.optional(),
+      wordsWeAvoid: textList.optional(),
+      vocabularyDo: textList.optional(),
+      vocabularyDont: textList.optional(),
+      antiPatterns: textList.optional(),
+      examplePhrases: z
+        .array(z.object({ text: shortText, type: z.enum(['do', 'dont']) }))
+        .max(100)
+        .optional(),
+      voiceSample: longText.optional(),
+      writingSamples: z.array(z.string().max(20_000)).max(20).optional(),
+      contentGuidelines: textList.optional(),
+      writingGuidelines: textList.optional(),
       channelTones: z
         .partialRecord(
           z.enum(['website', 'socialMedia', 'email', 'ads', 'video']),
-          z.object({ description: z.string() }),
+          z.object({ description: shortText }),
         )
         .optional(),
       contentLocale: z.enum(['nl-NL', 'nl-BE', 'en-GB', 'de-DE']).optional(),
@@ -685,102 +697,121 @@ const importSchema = z.object({
   personas: z
     .array(
       z.object({
-        name: z.string().min(1),
-        tagline: z.string().optional(),
-        age: z.string().optional(),
-        gender: z.string().optional(),
-        location: z.string().optional(),
-        occupation: z.string().optional(),
-        education: z.string().optional(),
-        income: z.string().optional(),
-        familyStatus: z.string().optional(),
-        personalityType: z.string().optional(),
-        bio: z.string().optional(),
-        quote: z.string().optional(),
-        coreValues: z.array(z.string()).optional(),
-        interests: z.array(z.string()).optional(),
-        goals: z.array(z.string()).optional(),
-        motivations: z.array(z.string()).optional(),
-        frustrations: z.array(z.string()).optional(),
-        behaviors: z.array(z.string()).optional(),
-        preferredChannels: z.array(z.string()).optional(),
-        techStack: z.array(z.string()).optional(),
-        buyingTriggers: z.array(z.string()).optional(),
-        decisionCriteria: z.array(z.string()).optional(),
-        strategicImplications: z.string().optional(),
+        name: z.string().min(1).max(200),
+        tagline: shortText.optional(),
+        age: shortText.optional(),
+        gender: shortText.optional(),
+        location: shortText.optional(),
+        occupation: shortText.optional(),
+        education: shortText.optional(),
+        income: shortText.optional(),
+        familyStatus: shortText.optional(),
+        personalityType: shortText.optional(),
+        bio: longText.optional(),
+        quote: shortText.optional(),
+        coreValues: textList.optional(),
+        interests: textList.optional(),
+        goals: textList.optional(),
+        motivations: textList.optional(),
+        frustrations: textList.optional(),
+        behaviors: textList.optional(),
+        preferredChannels: textList.optional(),
+        techStack: textList.optional(),
+        buyingTriggers: textList.optional(),
+        decisionCriteria: textList.optional(),
+        strategicImplications: longText.optional(),
       }),
     )
+    .max(MAX_IMPORT_ITEMS)
     .optional()
     .describe('Personas (deel 4) — match op naam binnen het merk'),
   products: z
     .array(
       z.object({
-        name: z.string().min(1),
-        category: z.string().optional(),
-        description: z.string().optional(),
-        pricingModel: z.string().optional(),
-        pricingDetails: z.string().optional(),
-        sourceUrl: z.string().optional(),
-        features: z.array(z.string()).optional(),
-        benefits: z.array(z.string()).optional(),
-        useCases: z.array(z.string()).optional(),
-        personaNames: z.array(z.string()).optional(),
+        name: z.string().min(1).max(200),
+        category: shortText.optional(),
+        description: longText.optional(),
+        pricingModel: shortText.optional(),
+        pricingDetails: longText.optional(),
+        sourceUrl: z.string().max(2_000).optional(),
+        features: textList.optional(),
+        benefits: textList.optional(),
+        useCases: textList.optional(),
+        personaNames: z.array(z.string().max(200)).max(MAX_IMPORT_ITEMS).optional(),
       }),
     )
+    .max(MAX_IMPORT_ITEMS)
     .optional()
     .describe('Producten/diensten (deel 5) — match op naam binnen het merk'),
   competitors: z
     .array(
       z.object({
-        name: z.string().min(1),
-        websiteUrl: z.string().optional(),
+        name: z.string().min(1).max(200),
+        websiteUrl: z.string().max(2_000).optional(),
         tier: z.enum(['DIRECT', 'INDIRECT', 'ASPIRATIONAL']).optional(),
-        tagline: z.string().optional(),
-        headquarters: z.string().optional(),
-        employeeRange: z.string().optional(),
-        description: z.string().optional(),
-        valueProposition: z.string().optional(),
-        targetAudience: z.string().optional(),
-        mainOfferings: z.array(z.string()).optional(),
-        differentiators: z.array(z.string()).optional(),
-        strengths: z.array(z.string()).optional(),
-        weaknesses: z.array(z.string()).optional(),
-        pricingModel: z.string().optional(),
-        pricingDetails: z.string().optional(),
-        toneOfVoice: z.string().optional(),
+        tagline: shortText.optional(),
+        headquarters: shortText.optional(),
+        employeeRange: shortText.optional(),
+        description: longText.optional(),
+        valueProposition: longText.optional(),
+        targetAudience: longText.optional(),
+        mainOfferings: textList.optional(),
+        differentiators: textList.optional(),
+        strengths: textList.optional(),
+        weaknesses: textList.optional(),
+        pricingModel: shortText.optional(),
+        pricingDetails: longText.optional(),
+        toneOfVoice: longText.optional(),
       }),
     )
+    .max(MAX_IMPORT_ITEMS)
     .optional()
-    .describe('Concurrenten (deel 6) — upsert op naam-slug binnen het merk'),
+    .describe('Concurrenten (deel 6) — match op naam binnen het merk'),
   trends: z
     .array(
       z.object({
-        title: z.string().min(1),
-        description: z.string().min(1),
-        category: z.string().optional().describe('technology / consumer / social / business / environmental'),
-        impact: z.string().optional().describe('high / medium / low'),
-        timeframe: z.string().optional().describe('short-term / medium-term / long-term'),
-        direction: z.string().optional().describe('rising / stable / declining'),
-        keyInsights: z.string().optional(),
-        sources: z.array(z.string()).optional(),
+        title: z.string().min(1).max(200),
+        description: longText.min(1),
+        category: shortText.optional().describe('technology / consumer / social / business / environmental'),
+        impact: shortText.optional().describe('high / medium / low'),
+        timeframe: shortText.optional().describe('short-term / medium-term / long-term'),
+        direction: shortText.optional().describe('rising / stable / declining'),
+        keyInsights: longText.optional(),
+        sources: textList.optional(),
       }),
     )
+    .max(MAX_IMPORT_ITEMS)
     .optional()
     .describe('Trends (deel 7) — match op titel binnen het merk'),
   knowledgeResources: z
     .array(
       z.object({
-        title: z.string().min(1),
-        description: z.string().min(1),
-        type: z.string().optional().describe('document / article / book / website / video / podcast'),
-        author: z.string().optional(),
-        url: z.string().optional(),
-        content: z.string().optional().describe('Volledige tekst-body — gaat mee in AI-context'),
+        title: z.string().min(1).max(200),
+        description: longText.min(1),
+        type: shortText.optional().describe('document / article / book / website / video / podcast'),
+        author: shortText.optional(),
+        url: z.string().max(2_000).optional(),
+        content: z.string().max(200_000).optional().describe('Volledige tekst-body — gaat mee in AI-context'),
       }),
     )
+    .max(MAX_IMPORT_ITEMS)
     .optional()
     .describe('Kennisbronnen (deel 8) — match op titel binnen het merk'),
 });
+
+// Drift-guards: het zod-schema en BrandImportPayload worden parallel
+// onderhouden — deze asserts breken de build zodra een top-level sectie in
+// één van beide ontbreekt (stille key-strip door zod wordt zo zichtbaar).
+type ImportSchemaPayload = z.infer<typeof importSchema>;
+type AssertNever<T extends never> = T;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _ImportKeysMissingInSchema = AssertNever<
+  Exclude<keyof BrandImportPayload, keyof ImportSchemaPayload>
+>;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _ImportKeysExtraInSchema = AssertNever<
+  Exclude<keyof ImportSchemaPayload, keyof BrandImportPayload>
+>;
 
 function registerImportTool(server: McpServer, ctx: PublicMcpContext): void {
   server.registerTool(
@@ -798,9 +829,8 @@ function registerImportTool(server: McpServer, ctx: PublicMcpContext): void {
     },
     async ({ brand, ...payload }) =>
       runTool(ctx, 'import_brand_data', 'write', brand, async (workspaceId) => {
-        const report = await importBrandData(workspaceId, payload as BrandImportPayload, {
-          userId: ctx.userId,
-        });
+        const data: BrandImportPayload = payload;
+        const report = await importBrandData(workspaceId, data, { userId: ctx.userId });
         return { result: jsonResult(report) };
       }),
   );
