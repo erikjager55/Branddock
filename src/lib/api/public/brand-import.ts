@@ -53,7 +53,9 @@ const FRAMEWORK_KEYS: Record<string, readonly string[]> = {
   BRAND_PERSONALITY: ['dimensionScores', 'primaryDimension', 'secondaryDimension', 'personalityTraits', 'spectrumSliders', 'toneDimensions', 'brandVoiceDescription', 'wordsWeUse', 'wordsWeAvoid', 'writingSample', 'channelTones', 'colorDirection', 'typographyDirection', 'imageryDirection'],
   BRAND_STORY: ['originStory', 'founderMotivation', 'coreBeliefStatement', 'worldContext', 'customerExternalProblem', 'customerInternalProblem', 'philosophicalProblem', 'stakesCostOfInaction', 'brandRole', 'empathyStatement', 'authorityCredentials', 'transformationPromise', 'customerSuccessVision', 'abtStatement', 'brandThemes', 'emotionalTerritory', 'keyNarrativeMessages', 'narrativeArc', 'proofPoints', 'valuesInAction', 'brandMilestones', 'elevatorPitch', 'manifestoText', 'audienceAdaptations', 'theChallenge', 'theSolution', 'theOutcome'],
   BRANDHOUSE_VALUES: ['anchorValue1', 'anchorValue2', 'aspirationValue1', 'aspirationValue2', 'ownValue', 'valueTension'],
-  ESG: ['impactStatement', 'impactNarrative', 'activismLevel', 'milieu', 'mens', 'maatschappij', 'authenticityScores', 'proofPoints', 'certifications', 'antiGreenwashingStatement', 'sdgAlignment', 'communicationPrinciples', 'keyStakeholders', 'activationChannels', 'annualCommitment', 'pillars'],
+  // NB: het legacy 'pillars'-shape staat bewust NIET in de lijst — renderer
+  // (SocialRelevancySection) en formatSocialRelevancy lezen het nergens.
+  ESG: ['impactStatement', 'impactNarrative', 'activismLevel', 'milieu', 'mens', 'maatschappij', 'authenticityScores', 'proofPoints', 'certifications', 'antiGreenwashingStatement', 'sdgAlignment', 'communicationPrinciples', 'keyStakeholders', 'activationChannels', 'annualCommitment'],
 };
 
 /**
@@ -245,9 +247,15 @@ function slugify(input: string): string {
 async function resolveActorUserId(workspaceId: string, userId?: string): Promise<string | null> {
   if (userId) return userId;
   const orgFilter = { organization: { workspaces: { some: { id: workspaceId } } } };
-  const owner = await prisma.organizationMember.findFirst({ where: { ...orgFilter, role: 'owner' } });
+  const owner = await prisma.organizationMember.findFirst({
+    where: { ...orgFilter, role: 'owner', isActive: true },
+    orderBy: { joinedAt: 'asc' },
+  });
   if (owner) return owner.userId;
-  const member = await prisma.organizationMember.findFirst({ where: orgFilter });
+  const member = await prisma.organizationMember.findFirst({
+    where: { ...orgFilter, isActive: true },
+    orderBy: { joinedAt: 'asc' },
+  });
   return member?.userId ?? null;
 }
 
@@ -434,10 +442,11 @@ async function applyAssetUpdate(
       status: existing.status === 'DRAFT' ? 'IN_PROGRESS' : undefined,
       // Herstel het canonieke frameworkType als het ontbreekt of afwijkt —
       // anders rendert de detail-UI canonical-gefilterde data onder een
-      // verkeerd (of geen) framework.
+      // verkeerd (of geen) framework. Wordt in het rapport gemeld.
       frameworkType: existing.frameworkType === canonical.frameworkType ? undefined : canonical.frameworkType,
     }),
   });
+  const typeRestored = existing.frameworkType !== canonical.frameworkType;
   await snapshotAssetVersion(updated.workspaceId, updated, actorId);
   await syncPersonalityRules(updated.workspaceId, canonical.frameworkType, merged);
   // Gevalideerde content wordt wél bijgewerkt (zelfde semantiek als de UI-
@@ -447,6 +456,9 @@ async function applyAssetUpdate(
   const notes = [
     wasValidated
       ? `let op: asset had status ${existing.status} met validaties — content bijgewerkt, validatiestatus ongemoeid`
+      : undefined,
+    typeRestored
+      ? `frameworkType hersteld van ${existing.frameworkType ?? 'null'} naar ${canonical.frameworkType}`
       : undefined,
     extraNote,
   ].filter(Boolean);
@@ -937,15 +949,17 @@ async function importKnowledgeResources(
       await enforceFeature(workspaceId, 'KNOWLEDGE_RESOURCES');
       // Slug-pariteit met POST /api/knowledge-resources: base uit de titel +
       // random suffix (kolom is globaal @unique; suffix voorkomt botsingen).
+      // Kolom is nullable — bij een titel zonder a-z0-9 laten we de slug weg
+      // i.p.v. een betekenisloze "-xxxx" te maken (lookups zijn by-id).
       const slugBase = res.title
         .toLowerCase()
         .replace(/\s+/g, '-')
         .replace(/[^a-z0-9-]/g, '')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');
-      const slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
+      const slug = slugBase ? `${slugBase}-${Math.random().toString(36).slice(2, 6)}` : undefined;
       await prisma.knowledgeResource.create({
-        data: { workspaceId, title: res.title, source: 'MANUAL', slug, ...data },
+        data: compact({ workspaceId, title: res.title, source: 'MANUAL' as const, slug, ...data }),
       });
       push(report, 'knowledgeResources', res.title, 'created');
     }

@@ -449,7 +449,7 @@ Waarom bestaat de organisatie, los van winst?
 | ⭐ Titel | _[invullen]_ |
 | Type — `document` / `article` / `book` / `website` / `video` / `image` / `podcast` / `course` | _[invullen]_ |
 | Auteur | _[invullen]_ |
-| URL of bestandsnaam | _[invullen]_ |
+| URL (alleen een absolute http(s)-link; een bestandsnaam of vindplaats hoort in de beschrijving) | _[invullen]_ |
 
 - ⭐ **Beschrijving / waarom relevant**:
   > …
@@ -489,7 +489,7 @@ Zet ingevulde velden in `frameworkData` (Json) met exact deze keys. Zet `status`
 | 1.8 | `brand-personality` | `BRAND_PERSONALITY` | `primaryDimension`, `secondaryDimension`, `personalityTraits` (objecten: `{name, description, weAreThis, butNeverThat}`) — de tone-of-voice- en praktijk-teksten horen in de Brand Voiceguide (deel 2), niet hier |
 | 1.9 | `brand-story` | `BRAND_STORY` | `elevatorPitch`, `customerExternalProblem` (+ legacy `theChallenge`), `theSolution`, `transformationPromise` (+ legacy `theOutcome`), `originStory` |
 | 1.10 | `core-values` | `BRANDHOUSE_VALUES` | `anchorValue1{name,description}`, `anchorValue2{…}`, `aspirationValue1{…}`, `aspirationValue2{…}`, `ownValue{…}`, `valueTension` |
-| 1.11 | `social-relevancy` | `ESG` | `pillars.environmental{impact,description}`, `pillars.social{…}`, `pillars.governance{…}`, optioneel `proofPoints`, `certifications`, `sdgAlignment` (number[]), `antiGreenwashingStatement` |
+| 1.11 | `social-relevancy` | `ESG` | `impactStatement` (kern van de maatschappelijke impact), `milieu.pillarReflection` (environmental-beschrijving), `mens.pillarReflection` / `maatschappij.pillarReflection` (sociale beschrijving), optioneel `activismLevel`, `proofPoints`, `certifications`, `sdgAlignment` (number[]), `antiGreenwashingStatement`. **Niet** het legacy `pillars.*`-shape gebruiken (wordt nergens gerenderd); governance-tekst → `BrandAsset.content` (geen governance-pijler in dit framework); het stellingen+scores-deel vult de gebruiker via de app |
 
 Referentie voor de exacte veldsemantiek: `src/docs/brand-assets-field-specifications.md`. Canonieke namen/categorieën: `src/lib/constants/canonical-brand-assets.ts`.
 
@@ -529,7 +529,7 @@ Match op naam binnen de workspace. Tabelvelden → gelijknamige demografie-kolom
 
 ### Deel 8 → `KnowledgeResource`
 
-`title`, `type`, `author`, `url`, `description`, geplakte tekst → `content`, `source: MANUAL`. Bestanden die de gebruiker meelevert (PDF) via de app-upload-flow laten lopen (unpdf-parsing), niet handmatig parsen.
+`title`, `type`, `author`, `url`, `description`, geplakte tekst → `content`, `source: MANUAL`. **`url` accepteert uitsluitend absolute http(s)-URL's** — bestandsnamen of vindplaats-referenties horen in `description` (een niet-URL in dit veld laat de hele `import_brand_data`-call op schema-validatie falen). Bestanden die de gebruiker meelevert (PDF) via de app-upload-flow laten lopen (unpdf-parsing), niet handmatig parsen.
 
 ## Afronding
 

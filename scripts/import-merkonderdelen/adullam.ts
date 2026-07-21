@@ -227,19 +227,14 @@ const payload: BrandImportPayload = {
     {
       slug: "social-relevancy",
       // Environmental staat op n.v.t.; het stellingen+scores-deel van het
-      // ESG-framework vergt invulling via de app. Dit is de basis-vulling.
+      // framework vergt invulling via de app. impactStatement is het veld dat
+      // de UI (SocialRelevancySection) en de AI-context daadwerkelijk lezen.
+      // Governance heeft geen pijler in dit framework → asset-content.
+      content:
+        "Governance: identiteitsgebonden governance op grondslag van de Bijbel en de Drie Formulieren van Enigheid. (Verder aanvullen vanuit jaarverslag/governancecode.)",
       frameworkData: {
-        pillars: {
-          social: {
-            impact: "high",
-            description:
-              "Zorg, wonen en dagbesteding voor een kwetsbare doelgroep (EMB/MVG); werkgelegenheid met structurele toerusting; hechte verbinding met kerken, vrijwilligers en de achterban; het mogelijk maken van 'het gewone leven' voor mensen voor wie dat niet vanzelfsprekend is.",
-          },
-          governance: {
-            description:
-              "Identiteitsgebonden governance op grondslag van de Bijbel en de Drie Formulieren van Enigheid.",
-          },
-        },
+        impactStatement:
+          "Zorg, wonen en dagbesteding voor een kwetsbare doelgroep (EMB/MVG); werkgelegenheid met structurele toerusting; hechte verbinding met kerken, vrijwilligers en de achterban; het mogelijk maken van 'het gewone leven' voor mensen voor wie dat niet vanzelfsprekend is.",
       },
     },
   ],

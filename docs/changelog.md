@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 433. MCP write-tool `import_brand_data` + werkbestand-flow + Adullam-import
+
+Publieke MCP-tool (18e) die merkonderdelen idempotent in een merk laadt: de 11 brand assets (frameworkData per canonieke slug, deep-merge, auto-versioning incl. pre-import snapshot), brand voice (incl. BrandRule-sync), personas, producten, concurrenten, Trend Radar-trends en kennisbronnen. Gedeelde service `importBrandData()` met volledige tweede-deur-pariteit (plan-limits, trial-lock, rol-gate op workspace-settings, locale-anker-sync, researchMethods-provisioning, cache-invalidatie) en isLocked-respect op elk pad. Invulbaar werkbestand-template (`docs/templates/werkbestand-merkonderdelen.md`) + gevuld Adullam-importscript. Vijf review-rondes (10 subagents) doorlopen; alle CRITICAL/WARNING-bevindingen gefixt.
+
+- Task: [tasks/done/mcp-import-brand-data.md](../tasks/done/mcp-import-brand-data.md)
+- ADR: `-`
+- Spec: [docs/templates/werkbestand-merkonderdelen.md](templates/werkbestand-merkonderdelen.md)
+- Commit: (branch `claude/branddock-merkonderdelen-werkbestand-o2tmfs`)
+
 ### 432. Pilot-claim hermeting — vanilla-baseline naar gpt-5.6, +7-claim blijft staan
 
 Go Erik na fase 2. De in-product vanilla-baseline is gemoderniseerd (gpt-4o → gpt-5.6, incl. max_completion_tokens-fix) en de on-brand-gap is opnieuw gemeten met de volledige nieuwe stack: 3 content-types × 2 briefing-condities, Branddock (opus-4.8 + BVD) vs vanilla gpt-5.6 én gpt-4o-referentie, symmetrisch gescoord via F-VAL met de nieuwe judges. Uitkomst: **+6,8 gemiddeld tegen gpt-5.6** — de "+7"-claim blijft staan tegen de eerlijke moderne baseline; magere briefing +11 (patroon herhaalt zich), newsletter +9,5, gpt-4o-referentie +9,7 (het betere vanilla-model verklaart ~3 punten versmalling). Zwakste cel: rijk-gebriefde blog (−5) — niet mee demo'en. Rapport: docs/reports/pilot-hermeting-2026-07-21.md; script reproduceerbaar in scripts/experiments/. PR #229.

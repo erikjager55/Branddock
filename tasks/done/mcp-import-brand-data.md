@@ -1,6 +1,7 @@
 # Task: MCP write-tool `import_brand_data` + Adullam-import
 
-**Status**: done (code klaar; Adullam-import wacht op lokale run)
+**Status**: done
+**Completed**: 2026-07-21 (Adullam-import op de echte DB wacht op lokale run — zie acceptatiecriteria)
 **Datum**: 2026-07-21
 **Sessie**: Claude Cowork remote (branch `claude/branddock-merkonderdelen-werkbestand-o2tmfs`)
 
@@ -35,8 +36,20 @@
 - [x] Tool registreert onder bestaand write-access-pad (OAuth-viewer krijgt nette error)
 - [x] Import is idempotent (herdraaien geeft `updated`, geen duplicaten)
 - [x] Vergrendelde records worden overgeslagen en gerapporteerd
-- [ ] Smoke lokaal: `npx tsx scripts/import-merkonderdelen/adullam.ts` draait groen
-      tegen de lokale DB en `get_brand_context` toont de Adullam-context
+- [x] Smoke tegen scratch-Postgres (remote sessie, PG16+pgvector, volledig schema):
+      26 onderdelen gevuld; herdraai 0 duplicaten; locked asset geskipt;
+      BrandRule-sync 13+6 rules; locale-anker nl-NL; 3 DetectedTrends MANUAL/
+      geactiveerd; 27 asset-versiesnapshots (incl. pre-import); persona-create
+      incl. AI_EXPLORATION-rij; deep-merge behoudt geneste velden
+- [ ] Smoke lokaal (Erik): `npx tsx scripts/import-merkonderdelen/adullam.ts`
+      tegen de echte DB en `get_brand_context` toont de Adullam-context
+
+## Test-notitie
+
+Geen unit-tests toegevoegd: het project heeft alleen een Playwright-e2e-runner
+(geen vitest/jest); een unit-runner introduceren is een aparte
+architectuurbeslissing (ADR). De import-logica is end-to-end geverifieerd via
+de scratch-DB-smokes hierboven.
 
 ## Out-of-scope
 
