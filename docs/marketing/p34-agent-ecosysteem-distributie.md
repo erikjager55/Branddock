@@ -38,7 +38,7 @@ Zelfde opbouw als A; vervang de openingszin door: "ChatGPT kent jouw merk niet �
 ### LP C — "Brand guardrails voor AI-agents" (de wig-pagina, = P2.2)
 - **H1**: Elke agent kan content maken. Geen enkele weet of het on-brand is.
 - **Kern**: Branddock is de merklaag onder je agent-stack: context erin, validatie eroverheen, en een meetbaar F-VAL-cijfer op alles wat eruit komt — welk model of platform je ook gebruikt.
-- **Proof-blok**: pilot-benchmark (+7 gem. / +12 newsletter vs. vanilla, eerlijk geframed: briefing-gevoelig).
+- **Proof-blok**: pilot-benchmark (+7 gem. / +9,5 newsletter vs. vanilla, eerlijk geframed: briefing-gevoelig).
 - **CTA**: Bekijk de 14 tools → koppel je agent
 
 ## 4. Publicatie-stappenlijst (Erik, na flag-aan)

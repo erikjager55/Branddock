@@ -279,7 +279,7 @@ const AGENTS: [string, string][] = [
 function ProofStrip() {
   const stats = [
     { big: '9', cap: 'AI-agents met eigen rollen — van onderzoek tot merkbewaking' },
-    { big: '+7', cap: 'punten on-brand vs. vanilla-AI (gemiddeld; +12 op de nieuwsbrief)' },
+    { big: '+7', cap: 'punten on-brand vs. vanilla-AI (gemiddeld; bijna +10 op de nieuwsbrief)' },
     { big: '17', cap: 'agent-tools via de MCP-connector — je team werkt ook in Claude en ChatGPT' },
   ];
   return (

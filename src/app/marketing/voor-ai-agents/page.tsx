@@ -237,7 +237,7 @@ export default function GuardrailsPage() {
           </div>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-6">
-          <div className="text-4xl font-bold mkt-accent tabular-nums">+12</div>
+          <div className="text-4xl font-bold mkt-accent tabular-nums">+9,5</div>
           <div className="text-sm text-gray-600 mt-2">
             punten op de nieuwsbrief — het type waar merkstem het zwaarst weegt
           </div>

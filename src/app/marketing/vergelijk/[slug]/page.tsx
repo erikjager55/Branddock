@@ -288,7 +288,7 @@ export default async function ComparePage({
       </div>
       <p className="text-xs text-gray-500 mb-14 max-w-2xl">
         Hoeveel scheelt het? In onze pilotmeting gemiddeld +7 punten on-brand vs. vanilla-AI bij
-        een eerlijke, volledige briefing (en +12 op de nieuwsbrief); het verschil is het grootst
+        een eerlijke, volledige briefing (en bijna +10 op de nieuwsbrief); het verschil is het grootst
         bij magere briefings. Meer over de meting:{' '}
         <Link href="/marketing/resources/f-val" className="underline hover:text-gray-600">
           F-VAL uitgelegd

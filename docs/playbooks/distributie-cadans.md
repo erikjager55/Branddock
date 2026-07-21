@@ -25,7 +25,7 @@ Distributie is een systeem, geen losse lanceringen. Eén kanaal, vast ritme, vas
 Hoofdframe: **"Een AI-marketingteam dat je merk écht kent — en dat kan bewijzen."**
 
 - Agents zijn personages met namen en rollen (Nova, Ada, Vera, Milo, Remi, Iris, …) — schrijf over ze zoals over collega's.
-- Bewijs boven belofte: F-VAL-cijfers bescheiden framen (+7 gem. / +12 newsletter, briefing-gevoelig — zie memory `pilot-fval-claim`; nooit "2× beter").
+- Bewijs boven belofte: F-VAL-cijfers bescheiden framen (+7 gem. / +9,5 newsletter — hermeting 2026-07-21 vs gpt-5.6-baseline, briefing-gevoelig — zie memory `pilot-fval-claim`; nooit "2× beter").
 - **Verboden**: "autopilot"/volledige autonomie claimen (Brandclaw is er nog niet), concurrenten afzeiken, feature-opsommingen (de wig, niet de breedte).
 - Eerlijkheid is het format: wat níet werkte is even goede content als wat wél werkte (Postiz' build-in-public-geloofwaardigheid komt daarvandaan).
 
