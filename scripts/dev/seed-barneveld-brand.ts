@@ -4,6 +4,9 @@
 //     vormentaal, iconen, tekst-regels
 //   - FotografieWijzer v1.0: merkwaarden, maatschappelijke opgaven,
 //     fotografische principes + genre-richtlijnen
+//   - Schrijfwijzer & taaltips v0.1 (november 2024, verwerkt 2026-07-21):
+//     B1-schrijfregels, ambtelijke-woordenlijst, huisstijl-schrijfafspraken,
+//     standaard tekstblokken (aanhef/afsluiting/bezwaar)
 //   - Kanaal-analyse: barneveld.nl (taakgericht, u-vorm, B1),
 //     Instagram/LinkedIn (je-vorm, uitnodigend; LinkedIn "Blij met Barneveld")
 // Bewust NIET gevuld: persona's, producten, concurrenten, strategie en de
@@ -141,7 +144,7 @@ async function main() {
       contentLocale: "nl-NL",
       createdById: USER_ID,
       voiceDescription:
-        "Gemeente Barneveld communiceert laagdrempelig, praktisch, eenvoudig en logisch — Begrijpelijke Taal (B1) is de norm. De grondhouding: communiceer mét inwoners, ondernemers en bezoekers, niet óver hen. In formele en service-communicatie is de aanspreekvorm u; in werving en op social media je/jij. De toon is gastvrij en verbindend: uitnodigend, zonder ambtelijk jargon, met de pay-off 'Samen impact maken' als belofte.",
+        "Gemeente Barneveld communiceert laagdrempelig, praktisch, eenvoudig en logisch — Begrijpelijke Taal (B1) is de norm. De grondhouding: communiceer mét inwoners, ondernemers en bezoekers, niet óver hen. In formele en service-communicatie is de aanspreekvorm u; in werving en op social media je/jij. De toon is gastvrij en verbindend: uitnodigend, zonder ambtelijk jargon, met de pay-off 'Samen impact maken' als belofte. De Schrijfwijzer & taaltips (v0.1, november 2024) maakt dit concreet: zinnen van maximaal 12-15 woorden, actieve vorm, geen afkortingen en geen ambtelijk of ouderwets taalgebruik.",
       // 1-7-schaal, 4 = neutraal: iets formeler en serieuzer dan neutraal,
       // duidelijk respectvol, feitelijk met ruimte voor enthousiasme op social.
       toneDimensions: {
@@ -153,7 +156,12 @@ async function main() {
       contentGuidelines: [
         "Communiceer mét inwoners, ondernemers en bezoekers — niet óver hen",
         "Schrijf volgens Begrijpelijke Taal (bewaakt door Team Communicatie); taalniveau B1",
-        "Aanspreekvorm: u in formele en service-communicatie, je/jij in werving en op social media",
+        "Aanspreekvorm: u in formele en service-communicatie, je/jij als we direct jongeren aanspreken en op social media",
+        "Begin met de belangrijkste boodschap; werk met een kop en korte tussenkoppen (max 3 woorden), gebruik opsommingen; alinea's van 2-10 zinnen, max 5 alinea's per tussenkop (Schrijfwijzer)",
+        "Maximaal 12-15 woorden per zin; één mededeling per zin, één onderwerp per alinea",
+        "Wees concreet: 'De beoordeling duurt 5 werkdagen', niet 'enige tijd'; vermijd vage taal (aspecten, bepaalde factoren, tot op zekere hoogte, na verloop van tijd)",
+        "Leg vaktermen uit — wat voor de gemeente logisch is (burgerparticipatie, verordening, inspraakavond) is dat voor een inwoner niet",
+        "Maak het persoonlijk met een herkenbare vraag ('Heeft u hulp nodig bij het aanvragen van studietoeslag?') en herhaal belangrijke informatie",
         "OBSERVED: barneveld.nl is taakgericht (toptaken-model): korte imperatieve koppen ('Verhuizing doorgeven'), u-vorm, weinig omhaal",
         "OBSERVED: social media gebruikt de je-vorm en een uitnodigende, activerende toon ('Heb jij ideeën over de toekomst van gemeente Barneveld?')",
         "OBSERVED: LinkedIn combineert vacatures met projectnieuws in een trots-op-inwoners-frame ('Dankzij jou bloeit Barneveld', 'Blij met Barneveld')",
@@ -163,10 +171,39 @@ async function main() {
         "Geen woorden in KAPITALEN — nadruk via zinsbouw, niet via hoofdletters",
         "Cursief of onderstreept alleen als accent of voor URL's en e-mailadressen",
         "Geen woordafbrekingen; tekst linkslijnend met vrije regelval",
-        "Korte zinnen, actieve vorm, één boodschap per alinea",
+        "Actieve zinnen: 'De wethouder neemt morgen het besluit', niet 'Het besluit wordt morgen genomen door de wethouder'",
+        "Leg verbanden met signaalwoorden: omdat, daarom, daarna, hoewel, ten eerste, voordat, bovendien",
+        "Gebruik het werkwoord in plaats van het zelfstandig naamwoord; houd samengestelde woorden bij elkaar ('wilt aanmelden', niet 'aan wilt melden'); vermijd samentrekkingen ('eerst de interne, daarna de externe onderdelen', niet 'de in- en externe')",
+        "Vermijd uitdrukkingen die letterlijk opgevat kunnen worden: op de hoogte, gepaard gaan met, tekortschieten, aan het licht komen, vindt plaats",
+        "Geen afkortingen: d.w.z. en o.a. voluit schrijven; wetten de eerste keer voluit met de afkorting tussen haakjes, daarna de afkorting (bron: wetten.nl)",
+        "Huisstijl-schrijfafspraken: enkele aanhalingstekens; bedragen als € 100,- / € 12.345,67; data voluit ('1 augustus', huidig jaartal weglaten); getallen in cijfers met duizendtallen-punt (1.500); tijden als 8.00 uur / 18.30 uur; telefoonnummers als 012 345 67 89 of 06-12 34 56 78",
       ],
       vocabularyDo: ["Samen impact maken", "samen", "welkom", "meedoen", "denk mee", "inwoners", "ondernemers", "bezoekers"],
-      vocabularyDont: ["ten behoeve van", "in het kader van", "met betrekking tot", "ter inzage leggen (zonder uitleg)"],
+      // Ambtelijke-woordenlijst uit de Schrijfwijzer (p15): niet gebruiken → wél.
+      vocabularyDont: [
+        "ten behoeve van",
+        "in het kader van",
+        "ter inzage leggen (zonder uitleg)",
+        "circa (zeg: ongeveer)",
+        "conform / op grond van (zeg: volgens)",
+        "constateren (zeg: vaststellen)",
+        "door middel van (zeg: door, via, met)",
+        "echter (zeg: maar)",
+        "gang van zaken (zeg: ontwikkeling, proces)",
+        "geenszins (zeg: niet)",
+        "gehoor geven aan (zeg: doen)",
+        "indien (zeg: als)",
+        "in aanmerking komen voor (zeg: krijgen)",
+        "jegens (zeg: tegenover)",
+        "locatie (zeg: plaats, plek, gebouw)",
+        "met betrekking tot / ten aanzien van (zeg: over)",
+        "op het punt staan om (zeg: beginnen met)",
+        "realiseren (zeg: maken, bouwen)",
+        "spoedig (zeg: snel)",
+        "tevens (zeg: ook)",
+        "thans (zeg: nu)",
+        "van mening zijn (zeg: vinden)",
+      ],
       wordsWeUse: ["gastvrij", "ondernemend", "verbindend", "wendbaar", "groeigemeente"],
       wordsWeAvoid: ["derhalve", "middels", "geschiedt", "reeds", "c.q."],
       voiceSample:
@@ -186,7 +223,7 @@ async function main() {
         },
         email: {
           description:
-            "Servicegericht en begrijpelijk: u-vorm, één onderwerp per bericht, altijd een duidelijke vervolgstap. Volgt Begrijpelijke Taal.",
+            "Servicegericht en begrijpelijk: u-vorm, één onderwerp per bericht, altijd een duidelijke vervolgstap. Volgt Begrijpelijke Taal. Brieven volgens de Schrijfwijzer-tekstblokken: aanhef 'Geachte heer/mevrouw <achternaam>,', afsluiting 'Met vriendelijke groet, Namens burgemeester en wethouders' + naam en functie; vast vragen-blok ('Heeft u vragen? Bel naar 14 0342 of mail.') en bezwaar-blok (eerst contact opnemen, daarna bezwaar binnen 6 weken via barneveld.nl/bezwaar).",
           axisShift: null,
         },
         ads: {
@@ -199,14 +236,20 @@ async function main() {
         { text: "Heb jij ideeën over de toekomst van gemeente Barneveld? Denk mee!", type: "do" },
         { text: "Dankzij jou bloeit Barneveld.", type: "do" },
         { text: "Verhuizing doorgeven? Dat regelt u eenvoudig online via barneveld.nl.", type: "do" },
+        { text: "U bent nieuw in onze gemeente. Het is belangrijk dat u deelneemt aan het inburgeringsprogramma.", type: "do" },
+        { text: "Bent u het niet eens met dit besluit? Neem dan eerst contact op. Bel naar 14 0342.", type: "do" },
         { text: "LET OP: aanvragen geschiedt UITSLUITEND middels het digitale loket.", type: "dont" },
         { text: "In het kader van het participatietraject worden burgers geacht kennis te nemen van de ter inzage gelegde stukken.", type: "dont" },
+        { text: "Gezien het feit dat u zich recentelijk in onze gemeente hebt gevestigd, willen wij u erop attenderen dat het van belang is om deel te nemen aan het inburgeringsprogramma.", type: "dont" },
       ],
       antiPatterns: [
         "Woorden in KAPITALEN voor nadruk",
         "Ambtelijk jargon (derhalve, middels, geschiedt)",
         "Óver inwoners praten in plaats van mét hen",
-        "Lange zinnen met meerdere bijzinnen",
+        "Lange zinnen met meerdere bijzinnen (max 12-15 woorden per zin)",
+        "Lijdende vorm ('er wordt', 'wordt door') waar een actieve zin kan",
+        "Vage taal: aspecten, bepaalde factoren, herhaaldelijk, tot op zekere hoogte, na verloop van tijd",
+        "Afkortingen (d.w.z., o.a.) en wetsafkortingen zonder eerste voluit-vermelding",
       ],
       voiceDnaSavedForAi: true,
       vocabularySavedForAi: true,
