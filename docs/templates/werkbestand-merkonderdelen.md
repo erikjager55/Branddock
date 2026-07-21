@@ -223,11 +223,11 @@ Waarom bestaat de organisatie, los van winst?
 
 - **Voice-beschrijving** (vrije tekst: hoe klinkt het merk?):
   > …
-- **Tone-dimensies** (NN/g — score 0-100 per as, 0 = links, 100 = rechts):
-  - Formeel (0) ↔ Casual (100): _[invullen]_
-  - Serieus (0) ↔ Speels (100): _[invullen]_
-  - Respectvol (0) ↔ Eigenwijs/brutaal (100): _[invullen]_
-  - Zakelijk (0) ↔ Enthousiast (100): _[invullen]_
+- **Tone-dimensies** (NN/g — score 1-7 per as, 1 = links, 7 = rechts, 4 = neutraal):
+  - Formeel (1) ↔ Casual (7): _[invullen]_
+  - Serieus (1) ↔ Speels (7): _[invullen]_
+  - Respectvol (1) ↔ Eigenwijs/brutaal (7): _[invullen]_
+  - Zakelijk (1) ↔ Enthousiast (7): _[invullen]_
 - **Woorden die we gebruiken** (single words):
   - …
 - **Woorden die we vermijden**:
@@ -468,7 +468,7 @@ Waarom bestaat de organisatie, los van winst?
 1. **Verzin niets.** Lege velden, `…` of `n.v.t.` → veld overslaan. Vul nooit zelf aan zonder expliciete toestemming van de gebruiker. Vraag bij ambigue input (bijv. ongeldig archetype of impact-type) éérst na via `AskUserQuestion`.
 2. **Workspace-resolutie**: zoek de workspace op naam uit Deel 0 (`Workspace.name`, case-insensitive). Bestaat die niet → stop en vraag de gebruiker welke workspace bedoeld is. Nooit een workspace-ID uit env vars gebruiken.
 3. **Idempotent verwerken**: gebruik upserts op natuurlijke sleutels (`workspaceId + slug` voor assets/concurrenten, naam-match voor personas/producten/trends). Bestaat een record al → velden bijwerken, niet dupliceren. **Sla vergrendelde records (`isLocked = true`) over** en meld dat aan de gebruiker.
-4. **Aanpak**: schrijf een eenmalig `tsx`-importscript (patroon: `prisma/seed.ts`) dat het gevulde werkbestand als data bevat, en draai het tegen de lokale database. Volg de workflow-regels uit `CLAUDE.md` (task-file, eigen worktree bij code-wijzigingen). Draait de app: cache-invalidatie is bij directe DB-writes niet automatisch — herstart de dev-server of wacht de 5-min `getBrandContext`-cache af, en meld dit.
+4. **Aanpak — voorkeursroute**: gebruik de MCP-tool `mcp__Branddock__import_brand_data` (accepteert de volledige payload hieronder, doet de upserts + cache-invalidatie server-side en geeft een created/updated/skipped-rapport terug). Geen toegang tot de MCP-tool maar wél tot de repo+database: schrijf een eenmalig `tsx`-script dat `importBrandData()` uit `src/lib/api/public/brand-import.ts` aanroept met de payload (voorbeeld: `scripts/import-merkonderdelen/adullam.ts`) en draai het lokaal. Volg de workflow-regels uit `CLAUDE.md`.
 5. **Rapporteer na afloop** per onderdeel: aangemaakt / bijgewerkt / overgeslagen (met reden).
 
 ## Mapping per deel
@@ -481,13 +481,13 @@ Zet ingevulde velden in `frameworkData` (Json) met exact deze keys. Zet `status`
 |---|---|---|---|
 | 1.1 | `purpose-statement` | `PURPOSE_WHEEL` | `statement`, `impactType`, `impactDescription`, `mechanism`, `pressureTest` |
 | 1.2 | `golden-circle` | `GOLDEN_CIRCLE` | `why.statement`, `why.details`, `how.statement`, `how.details`, `what.statement`, `what.details` |
-| 1.3 | `brand-essence` | `BRAND_ESSENCE` | `essenceStatement`, `emotionalBenefit`, `functionalBenefit`, `brandPersonalityTraits` (string[]), `proofPoints` (string[]) |
+| 1.3 | `brand-essence` | `BRAND_ESSENCE` | `essenceStatement`, `emotionalBenefit`, `functionalBenefit`, `attributes` (string[] — de persoonlijkheidskenmerken), `proofPoints` (string[]) |
 | 1.4 | `brand-promise` | `BRAND_PROMISE` | `promiseStatement`, `functionalValue`, `emotionalValue`, `targetAudience`, `differentiator` |
 | 1.5 | `mission-statement` | `MISSION_STATEMENT` | `missionStatement`, `whatWeDo`, `forWhom`, `howWeDoIt`, `impactGoal`, `visionStatement`, `timeHorizon`, `desiredFutureState`, `boldAspiration`, `successIndicators` (string[]) |
 | 1.6 | `brand-archetype` | `BRAND_ARCHETYPE` | `primaryArchetype`, `secondaryArchetype`, `coreDesire`, `brandVoiceDescription`, `archetypeInAction` |
 | 1.7 | `transformative-goals` | `TRANSFORMATIVE_GOALS` | `massiveTransformativePurpose`, `goals[]` met `title`, `description`, `timeframe`, `measurableOutcome` |
-| 1.8 | `brand-personality` | `BRAND_PERSONALITY` | `primaryDimension`, `secondaryDimension`, `personalityTraits` (string[]), `toneOfVoice`, `personalityInPractice` |
-| 1.9 | `brand-story` | `BRAND_STORY` | `elevatorPitch`, `theChallenge`, `theSolution`, `theOutcome`, `originStory` |
+| 1.8 | `brand-personality` | `BRAND_PERSONALITY` | `primaryDimension`, `secondaryDimension`, `personalityTraits` (objecten: `{name, description, weAreThis, butNeverThat}`), `toneOfVoice`, `personalityInPractice` |
+| 1.9 | `brand-story` | `BRAND_STORY` | `elevatorPitch`, `customerExternalProblem` (+ legacy `theChallenge`), `theSolution`, `transformationPromise` (+ legacy `theOutcome`), `originStory` |
 | 1.10 | `core-values` | `BRANDHOUSE_VALUES` | `anchorValue1{name,description}`, `anchorValue2{…}`, `aspirationValue1{…}`, `aspirationValue2{…}`, `ownValue{…}`, `valueTension` |
 | 1.11 | `social-relevancy` | `ESG` | `pillars.environmental{impact,description}`, `pillars.social{…}`, `pillars.governance{…}`, optioneel `proofPoints`, `certifications`, `sdgAlignment` (number[]), `antiGreenwashingStatement` |
 
@@ -496,12 +496,12 @@ Referentie voor de exacte veldsemantiek: `src/docs/brand-assets-field-specificat
 ### Deel 2 → `BrandVoiceguide` (upsert op `workspaceId`, is `@unique`)
 
 - Voice-beschrijving → `voiceDescription`
-- Tone-dimensies → `toneDimensions` Json: `{ formalCasual, seriousFunny, respectfulIrreverent, matterOfFactEnthusiastic }` (0-100)
+- Tone-dimensies → `toneDimensions` Json: `{ formalCasual, seriousFunny, respectfulIrreverent, matterOfFactEnthusiastic }` (schaal 1-7, 4 = neutraal — is de invuller een 0-100-schaal gebruikt, converteer dan: `1 + round(score/100*6)`, max 7)
 - Woordenlijsten → `wordsWeUse`, `wordsWeAvoid`, `vocabularyDo`, `vocabularyDont`, `antiPatterns`
 - DO/DON'T-zinnen → `examplePhrases` Json: `{ text, type: 'do' | 'dont' }[]`
 - Voice sample → `voiceSample`; writing samples → `writingSamples` (Json-array)
 - Guidelines → `contentGuidelines`, `writingGuidelines` (géén `OBSERVED:`/`RECOMMENDED:`-prefix toevoegen — dat is gereserveerd voor scraper-provenance)
-- Kanaal-afwijkingen → `channelTones` Json (keys: `website`, `socialMedia`, `email`, `ads`, `video`)
+- Kanaal-afwijkingen → `channelTones` Json (keys: `website`, `socialMedia`, `email`, `ads`, `video`, elk `{ description: string }`; overige kanalen → `contentGuidelines`)
 - Locale uit Deel 0 → `contentLocale`
 - `centroidEmbedding` NIET zelf vullen — wordt door de app berekend.
 

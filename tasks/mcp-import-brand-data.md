@@ -1,0 +1,54 @@
+# Task: MCP write-tool `import_brand_data` + Adullam-import
+
+**Status**: done (code klaar; Adullam-import wacht op lokale run)
+**Datum**: 2026-07-21
+**Sessie**: Claude Cowork remote (branch `claude/branddock-merkonderdelen-werkbestand-o2tmfs`)
+
+## Scope
+
+1. Schrijf-tool voor de publieke MCP-server zodat de werkbestand-flow
+   (`docs/templates/werkbestand-merkonderdelen.md`) merkonderdelen direct in
+   een merk kan laden: brand assets, brand voice, personas, producten,
+   concurrenten, trends, kennisbronnen.
+2. Verwerking van het ingevulde Adullam-werkbestand (21 juli 2026) via
+   diezelfde code.
+
+## File-list
+
+- `src/lib/api/public/brand-import.ts` — nieuw: gedeelde import-service
+  (`importBrandData`), idempotente upserts op natuurlijke sleutels, skip bij
+  `isLocked`, rapport created/updated/skipped, cache-invalidatie
+  (module-prefixes + `invalidateBrandContext`).
+- `src/lib/api/public/mcp-server.ts` — nieuw tool `import_brand_data`
+  (18e publieke tool), zod-schema spiegelt het werkbestand, write-gate via
+  bestaand `runTool`/`requireWriteAccess`-pad.
+- `scripts/import-merkonderdelen/adullam.ts` — nieuw: Adullam-payload +
+  aanroep van de service. Lokaal draaien: `npx tsx scripts/import-merkonderdelen/adullam.ts`.
+- `docs/templates/werkbestand-merkonderdelen.md` — correcties: NN/g
+  tone-schaal 1-7 (was 0-100), veldnamen gelijkgetrokken met
+  `framework.types.ts` (`attributes`, `personalityTraits`-objecten,
+  brand-story-keys), verwerkingsroute via `import_brand_data`.
+
+## Acceptatiecriteria
+
+- [x] `npx tsc --noEmit` 0 errors
+- [x] Tool registreert onder bestaand write-access-pad (OAuth-viewer krijgt nette error)
+- [x] Import is idempotent (herdraaien geeft `updated`, geen duplicaten)
+- [x] Vergrendelde records worden overgeslagen en gerapporteerd
+- [ ] Smoke lokaal: `npx tsx scripts/import-merkonderdelen/adullam.ts` draait groen
+      tegen de lokale DB en `get_brand_context` toont de Adullam-context
+
+## Out-of-scope
+
+- Brandstyle-import (kleuren/fonts/logo's) — bewust: brandstyle loopt via de
+  analyse-flow; handmatige merkstijl-invoer uit het werkbestand vergt eerst een
+  check tegen het huisstijlhandboek.
+- Verwijderen van records via MCP (tool is upsert-only, niets destructiefs).
+
+## Notities
+
+- De remote Cowork-omgeving heeft geen DB; de Adullam-import moet dus lokaal
+  gedraaid worden (of via de MCP-tool zodra de server met deze code herstart is).
+- `[voorstel]`-velden uit het werkbestand (archetype, BrandHouse-mapping
+  kernwaarden, persona-leeftijden) zijn meegenomen op verzoek van Erik
+  ("verwerk deze gegevens") — validatie kan in de app.
