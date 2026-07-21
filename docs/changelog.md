@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 430. AI-trainer omgebouwd — LoRA-training eruit, referentie-gedreven generatie erin
+
+Eriks kwaliteitsoordeel + go ("kunnen we de lora-training niet ombouwen?"). De structureel zwakke fal.ai-LoRA-pijplijn (trainen op 10-20 beelden, wachttijd, kosten, veroudert per basismodel) is volledig verwijderd; de drie generatiepaden (model-showcase, studio trained-style, media-library TRAINED_MODEL) draaien nu op multi-ref generatie: de referentiebeelden van het model gaan als image_urls rechtstreeks mee (Nano Banana Pro, cap 14 — zelfde mechanisme als brand-style anchors/F40). Upload + Claude-Vision-stijlanalyse + showcase blijven; minimum 3 refs (was 10), model is READY bij genoeg refs, wizard zonder trainingsstap, strength-slider vervallen. Bestaande modellen blijven werken via hun referentiebeelden. Geen schema-migratie (LoRA-kolommen ongebruikt laten staan — geen Neon-push). Opgeruimd: train/training-status-routes, training-pipeline/-poller, fal-LoRA-primitieven, LORA_QUALITY_CONFIG/FAL_MODEL_CONFIG/TRIGGER_WORDS, dode REPLICATE_API_TOKEN-env. PR #227.
+
+- Task: [tasks/trainer-refs-ombouw.md](../tasks/trainer-refs-ombouw.md)
+
 ### 429. LLM-modellen-refresh fase 1 — generatie-paden naar de juli-2026-generatie
 
 Review + swap op Eriks verzoek ("betere modellen bijgekomen"). Alle generatie-paden (45 bestanden: register-defaults, pickers, campagne-chain, canvas-routing, 10 agents, exploration, knowledge-research, brandstyle-analyse, persona-chat, trend-radar) van drie door-elkaar-lopende generaties naar: Claude Sonnet 5 (werkpaard), Claude Opus 4.8 (premium), GPT-5.6/terra/luna, Gemini 3.5 Flash / 3.1 Flash Lite; Claude Fable 5 als picker-optie. Bijvangst: twee door Google uitgezette model-ids (gemini-3-pro-preview, gemini-3.1-flash-lite-preview) uit code/pickers — dat waren actieve breukpunten — en prijstabellen bijgewerkt incl. first-match-ordering-fix. Bewust onaangeraakt: F-VAL-judges + vanilla-baseline (fase 2 mét golden-set-kalibratie), embeddings (vectors), dall-e-3-beeldpaden. Volledig rapport: docs/reports/model-review-2026-07-21.md. PR #226.

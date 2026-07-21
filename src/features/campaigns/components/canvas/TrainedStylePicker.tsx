@@ -20,13 +20,14 @@ interface TrainedStylePickerProps {
 }
 
 /**
- * Inline picker for selecting one of the workspace's trained ConsistentModels
- * (LoRA fine-tunes) + a style-strength slider, then triggering image
- * generation. Wired to Visual Brief source = 'trained-style'.
+ * Inline picker for selecting one of the workspace's style ConsistentModels,
+ * then triggering image generation. Wired to Visual Brief source =
+ * 'trained-style'. Trainer-ombouw 2026-07-21: de stijl komt uit de
+ * referentiebeelden van het model (multi-ref image_urls), niet meer uit een
+ * LoRA — de strength-slider is daarmee vervallen.
  *
- * The model + strength are persisted to settings.visualBrief.trained so they
- * survive Canvas reopen and feed forward to the generate-visual-trained
- * endpoint (which reads them server-side).
+ * The model is persisted to settings.visualBrief.trained so it survives
+ * Canvas reopen and feeds forward to the generate-visual-trained endpoint.
  */
 export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, target }: TrainedStylePickerProps) {
   const { t } = useTranslation('campaigns-canvas');
@@ -39,13 +40,12 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
 
   const initialTrained = visualBrief.trained;
   const [selectedModelId, setSelectedModelId] = useState<string | null>(initialTrained?.modelId ?? null);
-  const [strength, setStrength] = useState<number>(initialTrained?.strength ?? 80);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Only READY models can be used for generation. Status alone is enough —
-  // the API only flips to READY once the LoRA URL is set; the server route
-  // re-validates as a safety net.
+  // the API flips to READY once er genoeg referentiebeelden zijn; the server
+  // route re-validates as a safety net.
   const { data, isLoading } = useConsistentModels({ status: 'READY' });
   const models = useMemo(() => data?.models ?? [], [data]);
 
@@ -61,8 +61,8 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
   // the debounced PATCH; we also force-flush before generating.
   useEffect(() => {
     if (!selectedModelId) return;
-    setVisualBriefField('trained', { modelId: selectedModelId, strength });
-  }, [selectedModelId, strength, setVisualBriefField]);
+    setVisualBriefField('trained', { modelId: selectedModelId });
+  }, [selectedModelId, setVisualBriefField]);
 
   const selectedModel = models.find((m) => m.id === selectedModelId);
 
@@ -79,7 +79,7 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           settings: {
-            visualBrief: { ...visualBrief, source: 'trained-style', trained: { modelId: selectedModelId, strength } },
+            visualBrief: { ...visualBrief, source: 'trained-style', trained: { modelId: selectedModelId } },
           },
         }),
       });
@@ -191,30 +191,6 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
         {selectedModel?.modelDescription && (
           <p className="text-[11px] text-gray-500">{selectedModel.modelDescription}</p>
         )}
-      </div>
-
-      {/* Strength slider */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <label htmlFor="trained-strength" className="block text-xs font-medium text-gray-700">
-            {t('trainedStyle.strengthLabel')}
-          </label>
-          <span className="text-xs font-mono text-gray-600">{strength}%</span>
-        </div>
-        <input
-          id="trained-strength"
-          type="range"
-          min={20}
-          max={150}
-          step={5}
-          value={strength}
-          onChange={(e) => setStrength(parseInt(e.target.value, 10))}
-          disabled={submitting}
-          className="w-full accent-teal-600 disabled:opacity-50"
-        />
-        <p className="text-[11px] text-gray-500">
-          {t('trainedStyle.strengthHintPrefix')} <span className="font-medium">100%</span> {t('trainedStyle.strengthHintSuffix')}
-        </p>
       </div>
 
       {/* Error */}

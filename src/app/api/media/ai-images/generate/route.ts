@@ -8,7 +8,8 @@ import { getStorageProvider } from '@/lib/storage';
 import { z } from 'zod';
 import { generateImage } from '@/lib/ai/gemini-client';
 import { generateDalleImage } from '@/lib/ai/openai-client';
-import { runFalGeneration, generateFalImage, foldNegativeIntoPrompt } from '@/lib/integrations/fal/fal-client';
+import { generateFalImage } from '@/lib/integrations/fal/fal-client';
+import { maxAnchorsForModel } from '@/lib/ai/brand-style-anchors';
 import { getFalProviderById } from '@/lib/integrations/fal/fal-providers';
 
 // detectRecraftStyle + toFalImageSize zijn gedeeld met de headless service
@@ -16,7 +17,7 @@ import { getFalProviderById } from '@/lib/integrations/fal/fal-providers';
 import { detectRecraftStyle, toFalImageSize } from '@/lib/content/headless-image';
 import { buildPromptWithContext } from '@/lib/ai/prompt-context-builder';
 import { resolveWorkspaceBrandContext } from '@/lib/consistent-models/workspace-context-resolver';
-import { LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
+import { MIN_REFERENCE_IMAGES_FOR_GENERATION, REFERENCE_GENERATOR_MODEL } from '@/features/consistent-models/constants/model-constants';
 import { mapGeneratedImage } from '@/features/media-library/utils/media-utils';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
@@ -127,66 +128,62 @@ export async function POST(request: NextRequest) {
     let resolvedAspectRatio: string | undefined;
 
     if (provider === 'TRAINED_MODEL') {
-      // ─── Trained LoRA model(s) via fal.ai ─────────────────
+      // ─── Stijlmodel(len) via referentiebeelden ─────────────
+      // Trainer-ombouw 2026-07-21: geen LoRA meer — referentiebeelden van de
+      // gekozen modellen gaan als multi-ref image_urls mee (cap 14 totaal).
       // Support both single trainedModelId and multi trainedModelIds
       const modelIds = trainedModelIds?.length ? trainedModelIds : trainedModelId ? [trainedModelId] : [];
       if (modelIds.length === 0) {
-        return NextResponse.json({ error: 'At least one trained model ID is required' }, { status: 400 });
+        return NextResponse.json({ error: 'At least one style model ID is required' }, { status: 400 });
       }
 
       const trainedModels = await prisma.consistentModel.findMany({
-        where: { id: { in: modelIds }, workspaceId, status: 'READY' },
+        where: { id: { in: modelIds }, workspaceId },
+        include: {
+          referenceImages: {
+            where: { isTrainingImage: true },
+            orderBy: { sortOrder: 'asc' },
+            select: { storageUrl: true },
+          },
+        },
       });
 
-      const readyModels = trainedModels.filter((m) => m.falLoraUrl);
+      const readyModels = trainedModels.filter(
+        (m) => m.referenceImages.length >= MIN_REFERENCE_IMAGES_FOR_GENERATION,
+      );
       if (readyModels.length === 0) {
-        return NextResponse.json({ error: 'No ready trained models found' }, { status: 404 });
+        return NextResponse.json(
+          { error: `No usable style models found — each needs at least ${MIN_REFERENCE_IMAGES_FOR_GENERATION} reference images.` },
+          { status: 404 },
+        );
       }
 
-      // Build LoRA array + combined prompt with all trigger words
-      const loras: Array<{ path: string; scale: number }> = [];
-      const triggerWords: string[] = [];
-      let combinedNegativePrompt = '';
-      let maxInferenceSteps = 0;
-      let avgGuidanceScale = 0;
+      // Refs eerlijk verdelen over de modellen binnen de generator-cap.
+      const refCap = maxAnchorsForModel(REFERENCE_GENERATOR_MODEL);
+      const perModel = Math.max(1, Math.floor(refCap / readyModels.length));
+      const referenceImageUrls = readyModels
+        .flatMap((m) => m.referenceImages.slice(0, perModel).map((img) => img.storageUrl))
+        .slice(0, refCap);
 
-      for (const model of readyModels) {
-        const config = LORA_QUALITY_CONFIG[model.type as ConsistentModelType];
-        // Scale down each LoRA when combining multiple (prevent oversaturation)
-        const scaleMultiplier = readyModels.length > 1 ? 0.8 : 1.0;
-        loras.push({ path: model.falLoraUrl!, scale: config.loraScale * scaleMultiplier });
+      const stylePrompts = readyModels
+        .map((m) => m.stylePrompt)
+        .filter((sp): sp is string => !!sp && sp.trim().length > 0);
+      const combinedNegativePrompt = readyModels
+        .map((m) => m.negativePrompt)
+        .filter((np): np is string => !!np && np.trim().length > 0)
+        .join(', ');
 
-        const tw = model.triggerWord ?? 'TOK';
-        if (!prompt.includes(tw)) triggerWords.push(`${config.triggerPrefix} ${tw}`);
+      const styledPrompt = stylePrompts.length > 0 ? `${prompt}, ${stylePrompts.join(', ')}` : prompt;
 
-        if (config.negativePrompt) {
-          combinedNegativePrompt += (combinedNegativePrompt ? ', ' : '') + config.negativePrompt;
-        }
-        maxInferenceSteps = Math.max(maxInferenceSteps, config.inferenceSteps);
-        avgGuidanceScale += config.guidanceScale;
-      }
-      avgGuidanceScale /= readyModels.length;
-
-      const triggerPrefix = triggerWords.length > 0 ? triggerWords.join(', ') + ', ' : '';
-      const loraPrompt = triggerPrefix + prompt;
-
-      // Use first model's endpoint (all should be compatible Flux-based)
-      const generatorEndpoint = readyModels[0].generatorEndpoint ?? 'fal-ai/flux-lora';
-
-      const result = await runFalGeneration(generatorEndpoint, {
-        // LoRA generator endpoints have no negative_prompt input (fal drops
-        // unknown fields silently) — fold negatives into the prompt instead.
-        prompt: foldNegativeIntoPrompt(generatorEndpoint, loraPrompt, combinedNegativePrompt),
-        loras,
-        num_images: 1,
-        num_inference_steps: maxInferenceSteps || 40,
-        guidance_scale: avgGuidanceScale || 4.5,
-        output_format: 'png',
-        image_size: aspectRatio === '16:9' ? { width: 1344, height: 768 }
-          : aspectRatio === '9:16' ? { width: 768, height: 1344 }
-          : aspectRatio === '3:4' ? { width: 896, height: 1152 }
-          : aspectRatio === '4:3' ? { width: 1152, height: 896 }
-          : { width: 1024, height: 1024 },
+      const result = await generateFalImage(REFERENCE_GENERATOR_MODEL, styledPrompt, {
+        negativePrompt: combinedNegativePrompt || undefined,
+        numImages: 1,
+        imageSize: aspectRatio === '16:9' ? 'landscape_16_9'
+          : aspectRatio === '9:16' ? 'portrait_16_9'
+          : aspectRatio === '3:4' ? 'portrait_4_3'
+          : aspectRatio === '4:3' ? 'landscape_4_3'
+          : 'square_hd',
+        referenceImageUrls,
       });
 
       if (!result.images?.[0]?.url) {
@@ -201,7 +198,7 @@ export async function POST(request: NextRequest) {
       }
       mimeType = 'image/png';
       const modelNames = readyModels.map((m) => m.name).join(' + ');
-      modelName = `${generatorEndpoint} (LoRA: ${modelNames})`;
+      modelName = `${REFERENCE_GENERATOR_MODEL} (stijlreferenties: ${modelNames})`;
       resolvedAspectRatio = aspectRatio ?? '1:1';
 
     } else if (provider.startsWith('fal-ai/')) {

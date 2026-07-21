@@ -269,12 +269,12 @@ const consistentModels = {
     copy: 'Kopiëren',
   },
   trainingChoice: {
-    title: 'Hoe wil je dit model trainen?',
-    subtitle: 'Kies hoe je referentiebeelden voor de training wilt aanleveren.',
-    ownTitle: 'Trainen met eigen beelden',
+    title: 'Waar komen je stijlreferenties vandaan?',
+    subtitle: 'Kies hoe je de referentiebeelden voor dit model wilt aanleveren — genereren kan direct daarna.',
+    ownTitle: 'Eigen beelden uploaden',
     ownDescription:
-      "Upload je eigen foto's of beelden om het model op jouw specifieke onderwerp te trainen.",
-    syntheticTitle: 'Trainen met synthetische beelden',
+      "Upload je eigen foto's of beelden — die sturen als stijlreferentie elke generatie.",
+    syntheticTitle: 'Synthetische beelden genereren',
     syntheticDescription:
       'Laat AI referentiebeelden genereren op basis van je brand context en stijl.',
     getStarted: 'Aan de slag',

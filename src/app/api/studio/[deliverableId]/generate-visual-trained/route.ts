@@ -1,13 +1,11 @@
 // =============================================================================
 // POST /api/studio/[deliverableId]/generate-visual-trained
 //
-// Phase 5 of the Visual Brief — generates image variants from one of the
-// workspace's trained ConsistentModels (LoRA fine-tunes). Selected via
-// settings.visualBrief.trained.modelId; strength maps to LoRA scale.
-//
-// Flow mirrors generate-visual: build prompts via buildVisualBriefImagePrompts,
-// resolve aspect ratio from MediumEnrichment, swap the model swap-out for a
-// runFalGeneration call against model.generatorEndpoint with a LoRA array.
+// Phase 5 of the Visual Brief — generates image variants in the style of one
+// of the workspace's ConsistentModels. Trainer-ombouw 2026-07-21: geen LoRA
+// meer — de referentiebeelden van het model gaan als multi-ref image_urls
+// rechtstreeks mee in de generatie (zelfde mechanisme als brand-style
+// anchors/F40). Selected via settings.visualBrief.trained.modelId.
 // =============================================================================
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -19,7 +17,8 @@ import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleCanvasContext, type CanvasContextStack } from '@/lib/ai/canvas-context';
 import { buildVisualBriefImagePrompts } from '@/lib/ai/visual-brief-prompts';
 import { getMultiCandidateDefault } from '@/features/campaigns/lib/deliverable-types';
-import { foldNegativeIntoPrompt, runFalGeneration } from '@/lib/integrations/fal/fal-client';
+import { generateFalImage } from '@/lib/integrations/fal/fal-client';
+import { maxAnchorsForModel } from '@/lib/ai/brand-style-anchors';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
@@ -29,11 +28,9 @@ import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 import { enforceCreditsForAction } from '@/lib/stripe/enforcement';
 import { ingestUploadsToLibrary } from '@/lib/media/ingest-uploads-to-library';
 import { patchHeroVisualUrl } from '@/lib/deliverable/patch-hero-visual';
-import { LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
-import type { ConsistentModelType } from '@/features/consistent-models/types/consistent-model.types';
+import { MIN_REFERENCE_IMAGES_FOR_GENERATION, REFERENCE_GENERATOR_MODEL } from '@/features/consistent-models/constants/model-constants';
 
 const VISUAL_GROUP = 'visual';
-const DEFAULT_GENERATOR = 'fal-ai/flux-lora';
 
 /**
  * Aspect-ratio resolution mirrors generate-visual — duplicated locally so
@@ -189,17 +186,24 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     const trainedModel = await prisma.consistentModel.findFirst({
-      where: { id: modelId, workspaceId, status: 'READY' },
+      where: { id: modelId, workspaceId },
+      include: {
+        referenceImages: {
+          where: { isTrainingImage: true },
+          orderBy: { sortOrder: 'asc' },
+          select: { storageUrl: true },
+        },
+      },
     });
     if (!trainedModel) {
       return NextResponse.json(
-        { error: 'Selected trained model is not available. It may be archived, training, or belong to another workspace.' },
+        { error: 'Selected style model is not available. It may be archived or belong to another workspace.' },
         { status: 404 },
       );
     }
-    if (!trainedModel.falLoraUrl) {
+    if (trainedModel.referenceImages.length < MIN_REFERENCE_IMAGES_FOR_GENERATION) {
       return NextResponse.json(
-        { error: 'Trained model has no LoRA weights — training may be incomplete.' },
+        { error: `Style model needs at least ${MIN_REFERENCE_IMAGES_FOR_GENERATION} reference images — it has ${trainedModel.referenceImages.length}.` },
         { status: 400 },
       );
     }
@@ -232,70 +236,44 @@ export async function POST(request: Request, { params }: RouteParams) {
       promptCount,
     );
 
-    // Inject trigger word + LoRA-type-specific prefix so the model fires
-    // its trained subject (mirrors the multi-LoRA pattern in
-    // /api/media/ai-images/generate).
-    const config = LORA_QUALITY_CONFIG[trainedModel.type as ConsistentModelType];
-    const triggerWord = trainedModel.triggerWord ?? 'TOK';
-    const triggerPrefix = `${config.triggerPrefix} ${triggerWord}, `;
-    const prompts = basePrompts.map((p) =>
-      p.includes(triggerWord) ? p : triggerPrefix + p,
-    );
+    // Model-stijlprompt meenemen; de stijl zelf komt uit de referentiebeelden.
+    const prompts = trainedModel.stylePrompt
+      ? basePrompts.map((p) => `${p}, ${trainedModel.stylePrompt}`)
+      : basePrompts;
 
-    // Pattern A image-quality-chain: combine the LoRA-config negative prompt
-    // with the workspace negative prompt (defaults + imageryDonts).
-    const combinedNegativePrompt = [config.negativePrompt, negativePrompt]
+    const combinedNegativePrompt = [trainedModel.negativePrompt, negativePrompt]
       .filter((s): s is string => !!s && s.trim().length > 0)
       .join(', ');
 
-    const generatorEndpoint = trainedModel.generatorEndpoint ?? DEFAULT_GENERATOR;
-
-    const instructedPrompts = body?.instruction
+    const finalPrompts = body?.instruction
       ? prompts.map((p) => `${p} ${body!.instruction}`)
       : prompts;
-    // The LoRA generators (fal-ai/flux-2/lora, fal-ai/flux-lora) have no
-    // negative_prompt input field and fal drops unknown fields silently, so
-    // sending the negatives as a native param was a dead no-op (prompt-audit
-    // 2026-06-11). Fold them into the positive prompt as a capped directive.
-    const finalPrompts = instructedPrompts.map((p) =>
-      foldNegativeIntoPrompt(generatorEndpoint, p, combinedNegativePrompt),
-    );
+
+    const referenceImageUrls = trainedModel.referenceImages
+      .map((img) => img.storageUrl)
+      .slice(0, maxAnchorsForModel(REFERENCE_GENERATOR_MODEL));
 
     const explicitFalSize = body?.aspectRatio ? FAL_SIZE_FOR_LABEL[body.aspectRatio] : null;
     const falImageSize: FalImageSize =
       explicitFalSize ?? resolveAspectFromMedium(stack) ?? 'square_hd';
     const aspectLabel = falSizeToAspectLabel(falImageSize);
 
-    // Strength slider 0-100 → LoRA scale relative to the type's default.
-    // 100 = config default, 50 = half. Clamps so the model still fires.
-    const rawStrength = trainedConfig?.strength;
-    const strengthFactor =
-      typeof rawStrength === 'number' && Number.isFinite(rawStrength)
-        ? Math.max(0.1, Math.min(2.0, rawStrength / 100))
-        : 1.0;
-    const loraScale = config.loraScale * strengthFactor;
-
     const startMs = Date.now();
     const generated = await Promise.all(
       finalPrompts.map(async (prompt) => {
         try {
-          const result = await runFalGeneration(generatorEndpoint, {
-            prompt,
-            loras: [{ path: trainedModel.falLoraUrl!, scale: loraScale }],
-            num_images: 1,
-            num_inference_steps: config.inferenceSteps || 40,
-            guidance_scale: config.guidanceScale || 4.5,
-            output_format: 'png',
-            image_size: falSizeToDims(falImageSize),
-            // No negative_prompt here: the endpoint has no such input — the
-            // negatives are folded into the prompt above.
+          const result = await generateFalImage(REFERENCE_GENERATOR_MODEL, prompt, {
+            negativePrompt: combinedNegativePrompt || undefined,
+            numImages: 1,
+            imageSize: falImageSize,
+            referenceImageUrls,
           });
           const url = result.images?.[0]?.url;
           if (!url) return null;
           return { prompt, hostedUrl: url };
         } catch (err) {
           console.error(
-            `[generate-visual-trained] ${generatorEndpoint} call failed:`,
+            `[generate-visual-trained] ${REFERENCE_GENERATOR_MODEL} call failed:`,
             err instanceof Error ? err.message : err,
           );
           return null;
@@ -335,7 +313,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     const elapsedMs = Date.now() - startMs;
-    const aiModel = `${generatorEndpoint} (LoRA: ${trainedModel.name})`;
+    const aiModel = `${REFERENCE_GENERATOR_MODEL} (stijlreferenties: ${trainedModel.name})`;
 
     const components = await prisma.$transaction(async (tx) => {
       await tx.deliverableComponent.deleteMany({
