@@ -37,6 +37,13 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 434. AI-trainer bugfix ronde 2+3 — AI Studio-route + anchors + Nano Banana /edit-endpoint
+
+Eriks hertest na #433 faalde identiek; twee extra lagen gevonden. **Ronde 2**: de "Beeld genereren"-knop loopt via `/api/media/ai-images/generate` (derde generate-route, gemist in de sweep) — nu ook door de URL-resolver, net als `fetchBrandStyleAnchors` (MediaAsset.fileUrl, dekt generate-visual/feature-visuals/logo-audit) en de model-detail-hero (`thumbnailUrl`/`sampleImageUrls`). **Ronde 3 (de echte stijl-killer)**: lokale probe met echte fal-calls bewees dat het `nano-banana-pro`-t2i-endpoint `image_urls` volledig negeert (fal dropt onbekende velden stil) terwijl de `/edit`-variant dezelfde refs wél volgt. Cure centraal in `generateFalImage`: automatische endpoint-switch naar `/edit` zodra refs meegaan op een nano-banana-model — alle callers gedekt. Bijvangst: F39-image-edit stuurde het bronbeeld óók naar t2i (werd stil genegeerd) → nu /edit; F40-anchors werkten op nano-banana nooit. End-to-end gevalideerd: illustratie-refs → illustratie-output in referentiestijl.
+
+- Task: `-` (bugfix-vervolg, zelfde sessie als #433)
+- Gotcha: [gotchas.md 2026-07-21](../gotchas.md) (uitgebreid met ronde 2+3)
+
 ### 433. AI-trainer bugfix — opgeslagen storage-URLs bij het lezen resolven (verlopen signed R2-URLs)
 
 Eriks trainer-test na de #227-ombouw legde drie symptomen bloot met één oorzaak: oudere `ReferenceImage`/`ConsistentModelGeneration`-rijen dragen **verlopen signed R2-URLs** (van vóór `R2_PUBLIC_URL` op prod). De generate-routes stuurden die rauw als fal-`image_urls` — fal kon geen enkele referentie downloaden en Nano Banana genereerde **stil zonder stijl door** (illustratiestijl → foto), en de UI-previews 403'den. Lokaal onzichtbaar (local storage = niet-verlopende `/uploads/`-paden). Fix: nieuwe `resolveStorageUrl()`-helper (`src/lib/storage/resolve-storage-url.ts`) die élke opgeslagen URL-vorm (path-style én virtual-host signed, kale key, publieke CDN) bij het lézen normaliseert naar `R2_PUBLIC_URL` of een verse signed URL — toegepast in beide generate-routes en de drie serve-routes (model-detail, generations, reference-images). Assert-test 6/6 groen; echte prod-flow-validatie door Erik na deploy.
