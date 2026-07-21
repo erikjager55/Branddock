@@ -141,7 +141,7 @@ async function main() {
         "Alleen Branddock geeft elke AI-uiting een meetbare merk-check op je eigen merk-DNA — waar die uiting ook ontstaat: in het platform, in Claude of ChatGPT, of in je eigen workflow.",
       proofPoints: [
         "F-VAL-merkscore met drie pijlers (stijl, beoordeling, regels) op elke uiting",
-        "Eerlijke pilotmeting: +7 punten on-brand gemiddeld, +12 op nieuwsbrieven",
+        "Eerlijke pilotmeting: +7 punten on-brand gemiddeld, bijna +10 op nieuwsbrieven",
         "MCP-connector met 17 merk-tools voor Claude/ChatGPT/n8n",
         "9 AI-agents die voorstellen — de mens keurt goed",
         "EU-hosting, AVG-proof, merkdata traint geen modellen van derden",

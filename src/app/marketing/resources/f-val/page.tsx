@@ -1,6 +1,6 @@
 // "F-VAL uitgelegd" — de categorie-definiërende cornerstone (Fase 3,
 // website-verbeterplan v2). Legt het merk-fideliteitsmodel uit: 3 pijlers,
-// 0–100-schaal, STRICT-rewrite, en de eerlijke pilotcijfers (+7/+12).
+// 0–100-schaal, STRICT-rewrite, en de eerlijke pilotcijfers (+7/+9,5).
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -129,7 +129,7 @@ export default function FvalPage() {
       <h2 className="text-gray-900 mb-2">Wat het oplevert — eerlijk gemeten</h2>
       <p className="text-gray-600 mb-6 max-w-2xl">
         In onze pilotmeting vergeleken we Branddock-output met vanilla-AI (zelfde briefing, zelfde
-        model) per contenttype:
+        scorer) per contenttype:
       </p>
       <div className="grid sm:grid-cols-2 gap-4 mb-6 max-w-2xl">
         <div className="rounded-xl border border-gray-200 bg-white p-6">
@@ -139,7 +139,7 @@ export default function FvalPage() {
           </div>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-6">
-          <div className="text-4xl font-bold mkt-accent tabular-nums">+12</div>
+          <div className="text-4xl font-bold mkt-accent tabular-nums">+9,5</div>
           <div className="text-sm text-gray-600 mt-2">
             punten op de nieuwsbrief — het type waar merkstem het zwaarst weegt
           </div>

@@ -15,7 +15,7 @@ Het frame: iedereen kan AI-content maken; alleen Branddock kan aantonen dat het 
 
 **Voor:**
 - Sluit aan op de huidige site-framing → kleinste wijziging, geen herbouw van G1.
-- Gedekt door echte data (pilot-meting: +7 gem. / +12 newsletter vs. vanilla).
+- Gedekt door echte data (pilot-meting: +7 gem. / +9,5 newsletter vs. vanilla — hermeting 2026-07-21 vs gpt-5.6).
 - Uniek claimbaar: geen enkele concurrent (Jasper, Postiz, ChatGPT) heeft een validatie-laag.
 
 **Tegen:**
