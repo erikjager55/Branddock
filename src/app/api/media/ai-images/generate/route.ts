@@ -5,6 +5,7 @@ import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { getStorageProvider } from '@/lib/storage';
+import { resolveStorageUrls } from '@/lib/storage/resolve-storage-url';
 import { z } from 'zod';
 import { generateImage } from '@/lib/ai/gemini-client';
 import { generateDalleImage } from '@/lib/ai/openai-client';
@@ -161,9 +162,13 @@ export async function POST(request: NextRequest) {
       // Refs eerlijk verdelen over de modellen binnen de generator-cap.
       const refCap = maxAnchorsForModel(REFERENCE_GENERATOR_MODEL);
       const perModel = Math.max(1, Math.floor(refCap / readyModels.length));
-      const referenceImageUrls = readyModels
-        .flatMap((m) => m.referenceImages.slice(0, perModel).map((img) => img.storageUrl))
-        .slice(0, refCap);
+      // Resolve naar een nú-bereikbare URL: opgeslagen signed R2-URLs verlopen
+      // na 1 uur — fal kan ze dan niet downloaden en genereert stil zonder stijl.
+      const referenceImageUrls = await resolveStorageUrls(
+        readyModels
+          .flatMap((m) => m.referenceImages.slice(0, perModel).map((img) => img.storageUrl))
+          .slice(0, refCap),
+      );
 
       const stylePrompts = readyModels
         .map((m) => m.stylePrompt)

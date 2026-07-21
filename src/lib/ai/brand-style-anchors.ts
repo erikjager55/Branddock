@@ -13,6 +13,7 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
+import { resolveStorageUrl } from '@/lib/storage/resolve-storage-url';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { prepareJudgeImage } from '@/lib/brand-fidelity/judge-image';
 import { detectLogoInImage, type LogoProminence } from '@/lib/visual/detect-logo-in-image';
@@ -48,14 +49,18 @@ export async function fetchBrandStyleAnchors(
     // Preserve original order from anchorIds; filter out anchors die niet
     // meer bestaan (asset deleted).
     const assetMap = new Map(assets.map((a) => [a.id, a]));
-    const hydrated = anchorIds
-      .map((id) => assetMap.get(id))
-      .filter((a): a is NonNullable<typeof a> => Boolean(a))
-      .map((a) => ({
-        mediaAssetId: a.id,
-        fileUrl: a.fileUrl,
-        alt: a.name ?? null,
-      }));
+    // Resolve fileUrl naar een nú-bereikbare vorm: opgeslagen signed R2-URLs
+    // verlopen na 1 uur — fal/vision kan ze dan niet downloaden.
+    const hydrated = await Promise.all(
+      anchorIds
+        .map((id) => assetMap.get(id))
+        .filter((a): a is NonNullable<typeof a> => Boolean(a))
+        .map(async (a) => ({
+          mediaAssetId: a.id,
+          fileUrl: await resolveStorageUrl(a.fileUrl),
+          alt: a.name ?? null,
+        })),
+    );
     // Orphans falen anders silent naar [] terwijl de user denkt dat anchors
     // actief zijn (Napking: 10/10 orphaned — audit 2026-06-10).
     if (hydrated.length < anchorIds.length) {

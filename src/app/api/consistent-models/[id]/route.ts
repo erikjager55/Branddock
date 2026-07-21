@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { deleteR2Prefix } from '@/lib/storage/r2-storage';
-import { resolveImageRowUrls } from '@/lib/storage/resolve-storage-url';
+import { resolveImageRowUrls, resolveStorageUrl, resolveStorageUrls } from '@/lib/storage/resolve-storage-url';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { z } from 'zod';
@@ -56,12 +56,16 @@ export async function GET(
     }
 
     // Oude rijen dragen verlopen signed R2-URLs — resolve zodat previews renderen.
-    const [referenceImages, generations] = await Promise.all([
+    const [referenceImages, generations, thumbnailUrl, sampleImageUrls] = await Promise.all([
       Promise.all(model.referenceImages.map(resolveImageRowUrls)),
       Promise.all(model.generations.map(resolveImageRowUrls)),
+      model.thumbnailUrl ? resolveStorageUrl(model.thumbnailUrl) : Promise.resolve(model.thumbnailUrl),
+      Array.isArray(model.sampleImageUrls)
+        ? resolveStorageUrls(model.sampleImageUrls.filter((u): u is string => typeof u === 'string'))
+        : Promise.resolve(model.sampleImageUrls),
     ]);
 
-    return NextResponse.json({ ...model, referenceImages, generations });
+    return NextResponse.json({ ...model, referenceImages, generations, thumbnailUrl, sampleImageUrls });
   } catch (error) {
     console.error('GET /api/consistent-models/:id error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
