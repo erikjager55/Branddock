@@ -279,7 +279,7 @@ const ns = {
     loadingModels: 'Loading trained models...',
     noModels: 'No trained models available',
     noModelsHint:
-      'Train a Consistent AI Model in the AI Trainer first, then return here to generate on-brand visuals using your trained style.',
+      'Create a style model in Style Studio first (upload at least 3 reference images), then return here to generate on-brand visuals in that style.',
     modelLabel: 'Trained model',
     strengthLabel: 'Style strength',
     strengthHintPrefix:

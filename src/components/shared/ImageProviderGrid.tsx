@@ -14,7 +14,7 @@ export interface ImageProviderGridProps {
 
 /**
  * Visual card grid for picking an AI image provider.
- * Shared between AI Trainer (reference generation) and AI Studio (ad-hoc generation).
+ * Shared between Style Studio (reference generation) and AI Studio (ad-hoc generation).
  */
 export function ImageProviderGrid({ providers, selectedId, onSelect }: ImageProviderGridProps) {
   return (

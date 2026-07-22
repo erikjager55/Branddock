@@ -43,7 +43,7 @@ const navigation = {
       products: 'Producten & diensten',
       competitors: 'Concurrenten',
       'media-library': 'Mediabibliotheek',
-      'ai-trainer': 'AI-trainer',
+      'ai-trainer': 'Stijlstudio',
       'ai-studio': 'AI-studio',
       trends: 'Trendradar',
       knowledge: 'Kennisbibliotheek',
