@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 440. Migratie-import waarschuwt bij contenttaal-verschil
+
+De `Workspace`-rij migreert bewust niet mee in een merk-DNA-bundel (het ís de doel-workspace), dus `Workspace.contentLanguage` bleef bij een klant-migratie stil op de oude waarde staan: Nederlands merk-DNA landde in een Engelse workspace, waarna de settings-UI een andere taal toonde dan de generatie gebruikte. Twee keer geraakt — Better Brands (#411) en Adullam (2026-07-22). De export legt de bron-contenttaal nu vast in `meta.sourceContentLanguage`; de import vergelijkt die met de doel-workspace en waarschuwt bij verschil, in dry-run én echte run, met de instructie om de taal na afloop in de app om te zetten. Bundles van vóór dit veld slaan de check stil over. Bewezen op de echte Adullam-bundle: `nl` → Engelse doel-workspace geeft de waarschuwing, `nl` → `nl` zwijgt.
+
+- Task: `-` (preventie n.a.v. de Adullam-migratie, #437)
+
 ### 438. MCP write-tool `import_brand_data` + werkbestand-flow + Adullam-import
 
 Publieke MCP-tool (18e) die merkonderdelen idempotent in een merk laadt: de 11 brand assets (frameworkData per canonieke slug, deep-merge, auto-versioning incl. pre-import snapshot), brand voice (incl. BrandRule-sync), personas, producten, concurrenten, Trend Radar-trends en kennisbronnen. Gedeelde service `importBrandData()` met volledige tweede-deur-pariteit (plan-limits, trial-lock, rol-gate op workspace-settings, locale-anker-sync, researchMethods-provisioning, cache-invalidatie) en isLocked-respect op elk pad. Invulbaar werkbestand-template (`docs/templates/werkbestand-merkonderdelen.md`) + gevuld Adullam-importscript. Vijf review-rondes (10 subagents) doorlopen; alle CRITICAL/WARNING-bevindingen gefixt. Gebouwd in een Cowork-sessie op branch `claude/branddock-merkonderdelen-werkbestand-o2tmfs`; hier gemerged nadat de halve merge in de main-worktree was afgerond (entry hernummerd 433 → 438 wegens collisie met #433-#437).
