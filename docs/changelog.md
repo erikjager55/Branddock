@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 440. Migratie-import waarschuwt bij contenttaal-verschil
+
+De `Workspace`-rij migreert bewust niet mee in een merk-DNA-bundel (het ís de doel-workspace), dus `Workspace.contentLanguage` bleef bij een klant-migratie stil op de oude waarde staan: Nederlands merk-DNA landde in een Engelse workspace, waarna de settings-UI een andere taal toonde dan de generatie gebruikte. Twee keer geraakt — Better Brands (#411) en Adullam (2026-07-22). De export legt de bron-contenttaal nu vast in `meta.sourceContentLanguage`; de import vergelijkt die met de doel-workspace en waarschuwt bij verschil, in dry-run én echte run, met de instructie om de taal na afloop in de app om te zetten. Bundles van vóór dit veld slaan de check stil over. Bewezen op de echte Adullam-bundle: `nl` → Engelse doel-workspace geeft de waarschuwing, `nl` → `nl` zwijgt.
+
+- Task: `-` (preventie n.a.v. de Adullam-migratie, #437)
+
 ### 439. "AI Trainer" hernoemd naar Stijlstudio (app + website)
 
 Besluit Erik na de geslaagde hertest: sinds de #227-ombouw wordt er niets meer getraind (≥3 referentiebeelden → direct genereren), dus de naam dekte de lading niet meer. **NL: Stijlstudio · EN: Style Studio** — alle gebruikerszichtbare plekken om: sidebar-navigatie (beide locales), paginakop, "Terug naar…"-knoppen (3×), showcase-label, module-registry in `design-tokens.ts` en het credit-label op de marketing-pricingpagina. Twee bijvangsten: (1) de paginakop en de knop "Create Model" stonden **hardcoded in het Engels** — nu via i18n (`consistent-models.page.*`), dus de pagina is eindelijk tweetalig; (2) de canvas-hint stuurde gebruikers nog naar "train eerst een Consistent AI Model" — herschreven naar de werkelijkheid (stijlmodel maken met minimaal 3 referentiebeelden). Interne sleutels, routes en API-paden (`ai-trainer`, `/media/trainer`, `/api/consistent-models`) bewust ongewijzigd: geen gebruikerswinst, wel gebroken bladwijzers. Code-commentaren meegetrokken zodat de oude naam nergens meer rondslingert.

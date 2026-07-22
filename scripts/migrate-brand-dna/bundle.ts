@@ -11,6 +11,14 @@ export interface BrandDnaBundle {
     sourceWorkspaceId: string;
     sourceWorkspaceName: string;
     sourceSlug: string;
+    /**
+     * `Workspace.contentLanguage` van de bron. De Workspace-rij zelf migreert
+     * bewust NIET (het is de doel-workspace), dus dit veld bestaat puur om de
+     * import te laten waarschuwen bij een taalverschil — anders landt Nederlands
+     * merk-DNA stil in een Engelse workspace (Adullam, 2026-07-22).
+     * Optioneel: bundles van vóór deze versie hebben het niet.
+     */
+    sourceContentLanguage?: string;
     note: string;
   };
   /** accessor → rijen (alleen scalar velden; relaties/vectors niet inbegrepen). */
