@@ -136,7 +136,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     const workspaceId = await resolveDeliverableWorkspaceId((await params).deliverableId);
     // Gate B (Fase 3): pre-flight 402 bij ontoereikend saldo. count=1 = conservatieve
     // per-unit-schatting (blokkeert 0-saldo op elke dure route); exacte count = follow-up.
-    const creditBlock = await enforceCreditsForAction(workspaceId ?? '', 'image', 1);
+    const creditBlock = await enforceCreditsForAction(workspaceId ?? '', 'image-4k', 1);
     if (creditBlock) return creditBlock;
     if (!workspaceId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -296,7 +296,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     // Credit-afboeking (Fase 2): count = werkelijk gegenereerde beelden (successful).
-    await chargeAfter({ workspaceId, action: 'image', feature: 'studio-visual-trained' }, { count: successful.length }).catch(() => {});
+    await chargeAfter({ workspaceId, action: 'image-4k', feature: 'studio-visual-trained' }, { count: successful.length }).catch(() => {});
 
     const storage = getStorageProvider();
     const uploads = await Promise.all(

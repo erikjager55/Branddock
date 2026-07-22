@@ -104,6 +104,7 @@ export type CreditAction =
   | 'short'
   | 'long-form'
   | 'image'
+  | 'image-4k'
   | 'video-clip'
   | 'agent-deliverable';
 

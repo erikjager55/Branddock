@@ -143,6 +143,7 @@ const PAID_ACTION_LABELS: Record<CreditAction, string> = {
   short: 'Kort content-item (social post, e-mail, ad)',
   'long-form': 'Long-form artikel (volledige SEO/GEO-pipeline)',
   image: 'Beeld',
+  'image-4k': 'Beeld in jouw merkstijl (AI Trainer, 4K)',
   'video-clip': 'Videoclip',
   'agent-deliverable': 'Agent-deliverable (uitgewerkt concept in je inbox)',
 };

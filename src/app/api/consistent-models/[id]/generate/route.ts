@@ -231,8 +231,9 @@ export async function POST(
     invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
 
     // Credit-afboeking (Fase 2): count = werkelijk gegenereerde beelden.
+    // 'image-4k': stijlreferentie-beelden zijn 4K + multi-ref (duurdere COGS).
     await chargeAfter(
-      { workspaceId, action: 'image', feature: 'consistent-model' },
+      { workspaceId, action: 'image-4k', feature: 'consistent-model' },
       { count: generations.length },
     ).catch(() => {});
 
