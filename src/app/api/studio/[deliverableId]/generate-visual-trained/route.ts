@@ -272,6 +272,7 @@ export async function POST(request: Request, { params }: RouteParams) {
             numImages: 1,
             imageSize: falImageSize,
             referenceImageUrls,
+            resolution: '4K',
           });
           const url = result.images?.[0]?.url;
           if (!url) return null;

@@ -31,6 +31,8 @@ export interface ConsistentModelWithMeta {
   stylePrompt: string | null;
   negativePrompt: string | null;
   thumbnailUrl: string | null;
+  /** Kaart-preview uit de lijst-API: thumbnail of eerste referentiebeeld (resolved). */
+  previewUrl?: string | null;
   sampleImageUrls: string[] | null;
   modelName: string | null;
   modelDescription: string | null;

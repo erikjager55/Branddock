@@ -149,6 +149,7 @@ export async function POST(
       seed,
       imageSize: presetForDims(width, height),
       referenceImageUrls,
+      resolution: '4K',
     });
 
     // Process each generated image
