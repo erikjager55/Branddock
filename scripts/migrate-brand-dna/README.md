@@ -54,7 +54,7 @@ DATABASE_URL="<prod-neon-pooled-url>" npx prisma db push
 ```bash
 DATABASE_URL="<prod-neon-DIRECT-url>" \
   npx tsx scripts/migrate-brand-dna/import.ts brand-dna-better-brands.json \
-  --email owner@betterbrands.example --dry-run
+  --workspace-id <prod-workspace-id> --dry-run
 ```
 Toont de `DB-host`, de doel-staat per guard-model, en per model hoeveel er gewist/ingevoegd
 zou worden. De **fresh-workspace-guard** weigert (buiten `--force`) een workspace met >11
@@ -70,15 +70,19 @@ toonde (`[import] DB-host=…`) — zo wipe je nooit per ongeluk de verkeerde da
 ```bash
 DATABASE_URL="<prod-neon-DIRECT-url>" \
   npx tsx scripts/migrate-brand-dna/import.ts brand-dna-better-brands.json \
-  --email owner@betterbrands.example --confirm-host <db-host-uit-dry-run>
+  --workspace-id <prod-workspace-id> --confirm-host <db-host-uit-dry-run>
 ```
 Draait in één transactie (wipe + insert atomisch). Remapt `workspaceId` naar de nieuwe
 workspace en user-referenties (`createdById`/`lockedById`/…) naar de nieuwe owner. Lost een
 globaal-unieke `Product.slug`-botsing met een andere workspace op via een suffix. Herstelt
 de `centroidEmbedding`-vector via raw SQL.
 
-> Ambigu wie de workspace is? De owner heeft >1 workspace? Het script stopt en vraagt om
-> `--slug <workspace-slug>` i.p.v. `--email`.
+> **Doel-workspace kiezen — drie manieren, in volgorde van zekerheid**: `--workspace-id <id>`
+> (eenduidig; gebruik dit als de workspace al bestaat — het id haal je uit de MCP-tool
+> `list_brands` of uit de app-URL), `--slug <workspace-slug>` (stopt als de slug meerdere
+> workspaces matcht) of `--email <owner>` (alleen bruikbaar als de owner precies één
+> workspace heeft; anders stopt het script). Namen zijn géén sleutel: dezelfde merknaam
+> kan lokaal én op prod bestaan — dat was de Adullam-verwarring van 2026-07-22.
 > Bewust een niet-verse workspace overschrijven? Voeg `--force` toe. De guard weigert
 > anders bij meer dan de canonieke brand assets of enig `NONFRESH_MODELS`-signaal
 > (campaigns/media/personas/producten/concurrenten/strategie/voice/style/rules/fidelity/

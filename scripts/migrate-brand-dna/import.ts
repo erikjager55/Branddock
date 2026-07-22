@@ -4,7 +4,7 @@
  * org+workspace+owner). Re-parent de merk-DNA naar die workspace.
  *
  * Run (tegen de DIRECTE/unpooled prod DATABASE_URL — niet de PgBouncer-pooler):
- *   npx tsx scripts/migrate-brand-dna/import.ts brand-dna-<slug>.json --email <owner> [--slug <ws>] --confirm-host <db-host> [--dry-run] [--force]
+ *   npx tsx scripts/migrate-brand-dna/import.ts brand-dna-<slug>.json (--workspace-id <id> | --slug <ws> | --email <owner>) --confirm-host <db-host> [--dry-run] [--force]
  *
  * Veiligheid: (1) draait in één transactie (wipe + insert atomisch); (2) weigert een
  * workspace die al merk-DNA/content bevat (campaigns/media/personas/producten/
@@ -34,6 +34,7 @@ interface Flags {
   bundlePath: string;
   email?: string;
   slug?: string;
+  workspaceId?: string;
   confirmHost?: string;
   dryRun: boolean;
   force: boolean;
@@ -45,6 +46,7 @@ function parseArgs(argv: string[]): Flags {
     const a = argv[i];
     if (a === '--email') flags.email = argv[++i];
     else if (a === '--slug') flags.slug = argv[++i];
+    else if (a === '--workspace-id') flags.workspaceId = argv[++i];
     else if (a === '--confirm-host') flags.confirmHost = argv[++i];
     else if (a === '--dry-run') flags.dryRun = true;
     else if (a === '--force') flags.force = true;
@@ -53,20 +55,43 @@ function parseArgs(argv: string[]): Flags {
   return flags;
 }
 
-/** Resolve doel-workspace + owner-user via workspace-slug of owner-email. */
+/** Doel + org-owner voor een gevonden workspace. */
+async function targetForWorkspace(
+  ws: { id: string; name: string; organizationId: string },
+): Promise<Target> {
+  const owner = await prisma.organizationMember.findFirst({
+    where: { organizationId: ws.organizationId, role: 'owner' },
+    select: { userId: true },
+  });
+  if (!owner) throw new Error(`Geen owner voor org ${ws.organizationId}.`);
+  return { workspaceId: ws.id, workspaceName: ws.name, ownerUserId: owner.userId };
+}
+
+/** Resolve doel-workspace + owner-user via workspace-id, -slug of owner-email. */
 async function resolveTarget(flags: Flags): Promise<Target> {
+  // Workspace-id is de enige eenduidige sleutel: namen mogen dubbel voorkomen
+  // (lokaal én prod een "Adullam") en slugs zijn niet org-gescoped. Gebruik dit
+  // wanneer de doel-workspace al bestaat en je 'm exact kent (bv. uit list_brands).
+  if (flags.workspaceId) {
+    const ws = await prisma.workspace.findUnique({
+      where: { id: flags.workspaceId },
+      select: { id: true, name: true, organizationId: true },
+    });
+    if (!ws) throw new Error(`Workspace-id '${flags.workspaceId}' niet gevonden op deze DB.`);
+    return targetForWorkspace(ws);
+  }
   if (flags.slug) {
-    const ws = await prisma.workspace.findFirst({
+    const matches = await prisma.workspace.findMany({
       where: { slug: flags.slug },
       select: { id: true, name: true, organizationId: true },
     });
-    if (!ws) throw new Error(`Workspace-slug '${flags.slug}' niet gevonden op deze DB.`);
-    const owner = await prisma.organizationMember.findFirst({
-      where: { organizationId: ws.organizationId, role: 'owner' },
-      select: { userId: true },
-    });
-    if (!owner) throw new Error(`Geen owner voor org ${ws.organizationId}.`);
-    return { workspaceId: ws.id, workspaceName: ws.name, ownerUserId: owner.userId };
+    if (matches.length === 0) throw new Error(`Workspace-slug '${flags.slug}' niet gevonden op deze DB.`);
+    if (matches.length > 1) {
+      throw new Error(
+        `Slug '${flags.slug}' matcht ${matches.length} workspaces (${matches.map((m) => m.id).join(', ')}) — kies er één met --workspace-id.`,
+      );
+    }
+    return targetForWorkspace(matches[0]);
   }
   if (flags.email) {
     // Álle owner-memberships (een e-mail kan owner van meerdere orgs zijn).
@@ -88,7 +113,7 @@ async function resolveTarget(flags: Flags): Promise<Target> {
     }
     return { workspaceId: workspaces[0].id, workspaceName: workspaces[0].name, ownerUserId: memberships[0].userId };
   }
-  throw new Error('Geef --email <owner> of --slug <workspace-slug>.');
+  throw new Error('Geef --workspace-id <id>, --slug <workspace-slug> of --email <owner>.');
 }
 
 /**
@@ -238,7 +263,7 @@ async function runImport(bundle: BrandDnaBundle, target: Target): Promise<void> 
 async function main(): Promise<void> {
   const flags = parseArgs(process.argv.slice(2));
   if (!flags.bundlePath) {
-    console.error('Usage: import.ts <bundle.json> --email <owner> [--slug <ws>] --confirm-host <db-host> [--dry-run] [--force]');
+    console.error('Usage: import.ts <bundle.json> (--workspace-id <id> | --slug <ws> | --email <owner>) --confirm-host <db-host> [--dry-run] [--force]');
     process.exit(1);
   }
   const bundle = loadBundle(flags.bundlePath);

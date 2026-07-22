@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 437. Adullam-migratiebundle + migrate-tooling op workspace-id
+
+Adullam bestond dubbel: het merk-DNA (import 21-07 via `scripts/import-merkonderdelen/adullam.ts`, dat `.env.local` laadt) landde in de **lokale** workspace, terwijl de klant-workspace op productie leeg bleef — Erik zag daardoor niets in de app. Bundle `adullam-2026-07-22.json` geëxporteerd: 76 rijen (11 brand-assets, voiceguide, styleguide + 10 kleuren, **19 brand rules**, 7 persona's, 6 producten, 1 concurrent). Drie tooling-verbeteringen die hieruit volgden: (1) `import.ts` accepteert nu **`--workspace-id`** — de enige eenduidige sleutel, want merknamen bestaan dubbel (lokaal én prod een "Adullam") en slugs zijn niet org-gescoped; `--slug` stopt voortaan bij meerdere treffers i.p.v. er stil één te kiezen. (2) De export-detector voor lokale beeld-refs matchte `/uploads/` óók binnen externe URL's → vals "draai upload-images"-alarm; nu wordt alleen een relatief pad (of localhost-URL) als lokaal geteld, bewezen met 5 URL-vormen. (3) Databronfix: de 7 `brandImages` uit de april-website-scan misten het `/wp-content`-deel (404); hersteld naar de geverifieerde absolute URL's (7× 200) in de lokale bron, zodat ook her-exports kloppen.
+
+- Task: `-` (klant-migratie + tooling-hardening)
+
 ### 436. Credit-prijs stijlreferentie-beelden — nieuwe actie `image-4k` (5 credits)
 
 Vervolg op Eriks "het bedrag klopt niet"-melding; besluit door Erik gedelegeerd ("maak hier een weloverwogen keuze"). Trained-style-beelden draaien sinds #435 op 4K via het Nano Banana `/edit`-pad met multi-ref — fal factureert per output-resolutie (4K ≈ 2× 1K), waardoor de generieke 2-credits-prijs de COGS niet meer dekte (marge ~0/negatief vs de ~46%-doelmarge uit de pricing-ADR 2026-07-07). Keuze: nieuwe `CreditAction` **`image-4k` = 5 credits** voor de drie stijlreferentie-flows (trainer-generate, AI Studio TRAINED_MODEL, canvas trained-style — charge én Gate-B-preflight waar aanwezig); reguliere beelden blijven 2. De pricing-pagina toont het nieuwe tarief automatisch uit de registry ("Beeld in jouw merkstijl (AI Trainer, 4K) — 5"). Terugdraaibaar met één registry-regel als Erik anders besluit.

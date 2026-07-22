@@ -101,7 +101,11 @@ async function main(): Promise<void> {
   saveBundle(outPath, bundle);
   const totalRows = Object.values(records).reduce((n, r) => n + r.length, 0);
   console.log(`\n[export] ${totalRows} rijen → ${outPath}`);
-  console.log(`[export] lokale beeld-referenties: ${imageRefs.size} (draai upload-images vóór import)`);
+  console.log(
+    imageRefs.size > 0
+      ? `[export] lokale beeld-referenties: ${imageRefs.size} (draai upload-images vóór import)`
+      : '[export] lokale beeld-referenties: 0 — upload-images niet nodig',
+  );
 }
 
 main()

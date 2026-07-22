@@ -21,7 +21,13 @@ export interface BrandDnaBundle {
   localImageRefs: string[];
 }
 
-const UPLOADS_RE = /\/uploads\/[^\s"')\\]+/g;
+// Optionele origin-groep vóór het pad: zo herkennen we of een /uploads/-pad
+// deel is van een absolute URL. Een pad binnen een EXTERNE URL (bv. beelden uit
+// een website-scan: https://klant.nl/wp-content/uploads/…) is géén lokale ref —
+// die resolveert op prod prima. Zonder dit onderscheid meldde de export een vals
+// "draai upload-images"-alarm (gevonden bij de Adullam-migratie 2026-07-22).
+const UPLOADS_RE = /(https?:\/\/[^\s"')\\]*?)?(\/uploads\/[^\s"')\\]+)/g;
+const LOCAL_HOST_RE = /localhost|127\.0\.0\.1/;
 
 /** JSON.stringify-replacer die BigInt overleeft (→ string). */
 export function jsonReplacer(_key: string, value: unknown): unknown {
@@ -44,8 +50,11 @@ export function loadBundle(filePath: string): BrandDnaBundle {
  */
 export function collectLocalImageRefs(value: unknown, out: Set<string>): void {
   if (typeof value === 'string') {
-    const matches = value.match(UPLOADS_RE);
-    if (matches) for (const m of matches) out.add(m);
+    for (const m of value.matchAll(UPLOADS_RE)) {
+      const [, origin, path] = m;
+      if (origin && !LOCAL_HOST_RE.test(origin)) continue;
+      out.add(path);
+    }
     return;
   }
   if (Array.isArray(value)) {
