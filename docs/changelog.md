@@ -46,6 +46,7 @@ Bewezen met echte runs: gewiste én vervalste cookie landen binnen de scope, leg
 - Task: [tasks/done/invite-acl-hardening.md](../tasks/done/invite-acl-hardening.md)
 - ADR: `-`
 - Gotcha: "leeg = onbeperkt" is fail-open + een `after`-hook kan niet fail-closed zijn (2026-07-22)
+- Commit: `9822c04c`
 
 ### 439. Uitnodigingsflow gerepareerd — dode accept-link, verkeerde naam in de mail, resend die niets verstuurde
 
