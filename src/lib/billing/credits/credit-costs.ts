@@ -20,6 +20,12 @@ export const CREDIT_COSTS: Record<CreditAction, number> = {
   short: 5,
   'long-form': 80,
   image: 2,
+  // Stijlreferentie-beelden (AI Trainer / trained-style): 4K-output via het
+  // Nano Banana /edit-pad met multi-ref. fal factureert per output-resolutie
+  // (4K ≈ 2× 1K) en de multi-ref-call is zwaarder — bij 2 credits was de marge
+  // ~0; 5 credits houdt de ADR-marge (2026-07-07) intact. Besluit 2026-07-22,
+  // gedelegeerd door Erik ("maak hier een weloverwogen keuze").
+  'image-4k': 5,
   'video-clip': 20,
   'agent-deliverable': 3,
 };

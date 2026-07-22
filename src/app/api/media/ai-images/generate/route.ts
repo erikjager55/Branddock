@@ -386,7 +386,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Credit-afboeking (Fase 2): 1 beeld = image-credits (count-gebaseerd), post-hoc.
-    await chargeAfter({ workspaceId, action: 'image', feature: 'ai-image' }, { count: 1 }).catch(() => {});
+    // Trained-style = 'image-4k' (4K + multi-ref, duurdere COGS); rest = 'image'.
+    await chargeAfter(
+      { workspaceId, action: trainedModelsUsed.length > 0 ? 'image-4k' : 'image', feature: 'ai-image' },
+      { count: 1 },
+    ).catch(() => {});
 
     return NextResponse.json(
       mapGeneratedImage(image as unknown as Record<string, unknown>),

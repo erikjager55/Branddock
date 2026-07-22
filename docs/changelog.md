@@ -37,6 +37,13 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 436. Credit-prijs stijlreferentie-beelden — nieuwe actie `image-4k` (5 credits)
+
+Vervolg op Eriks "het bedrag klopt niet"-melding; besluit door Erik gedelegeerd ("maak hier een weloverwogen keuze"). Trained-style-beelden draaien sinds #435 op 4K via het Nano Banana `/edit`-pad met multi-ref — fal factureert per output-resolutie (4K ≈ 2× 1K), waardoor de generieke 2-credits-prijs de COGS niet meer dekte (marge ~0/negatief vs de ~46%-doelmarge uit de pricing-ADR 2026-07-07). Keuze: nieuwe `CreditAction` **`image-4k` = 5 credits** voor de drie stijlreferentie-flows (trainer-generate, AI Studio TRAINED_MODEL, canvas trained-style — charge én Gate-B-preflight waar aanwezig); reguliere beelden blijven 2. De pricing-pagina toont het nieuwe tarief automatisch uit de registry ("Beeld in jouw merkstijl (AI Trainer, 4K) — 5"). Terugdraaibaar met één registry-regel als Erik anders besluit.
+
+- Task: `-` (micro-besluit binnen ADR 2026-07-07-pricing-credits-launch)
+- ADR: [2026-07-07-pricing-credits-launch](adr/2026-07-07-pricing-credits-launch.md) (per-actie-registry, bewust bijstelbaar)
+
 ### 435. AI-trainer afwerking — previews op overzicht/hero, generatie-registratie, 4K-output
 
 Eriks vervolgtest (22-07-nacht) na de #433/#434-fixes: stijl komt door, maar vier afwerkingsgaten. (1+2) **Previews**: niets zet nog een `thumbnailUrl` nu LoRA weg is — de lijst-API levert nu een resolved `previewUrl` (thumbnail ?? eerste referentiebeeld) voor de overzichtskaart, en de detail-hero valt terug op het eerste referentiebeeld. (3) **Twee-ketens-gat** (gotcha 2026-06-24-klasse): de AI Studio-route schreef alleen een `GeneratedImage` (mediabibliotheek) — trained-model-generaties maken nu óók fail-soft `ConsistentModelGeneration`-rijen aan (+`usageCount`-increment + cache-invalidatie), zodat de model-detailpagina hero/galerij/teller vult. (4) **4K**: `resolution`-optie op `generateFalImage` (default '1K'); de drie stijlreferentie-flows genereren op '4K' — geverifieerd met echte call via het /edit-pad: 4096×4096, 11,8MB (onder de 25MB-cap). Let op: fal rekent per output-resolutie, dus 4K verhoogt de COGS per trainer-beeld; de credit-prijs (2/beeld) is ongewijzigd.
