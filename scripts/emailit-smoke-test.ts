@@ -39,7 +39,7 @@ const recipient = process.argv[2] ?? 'erik@betterbrands.nl';
 const { subject, html, text } = renderInviteEmail({
   recipientEmail: recipient,
   inviterName: 'Sarah van den Berg',
-  organizationName: 'Acme Studio',
+  targetName: 'Acme Studio',
   role: 'owner',
   acceptUrl: 'https://branddock.app/invite/accept?token=' + Math.random().toString(36).slice(2, 20),
   expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),

@@ -80,7 +80,17 @@ export function WorkspacesTab() {
     setError(null);
 
     try {
-      await deleteWorkspace(ws.id);
+      const result = await deleteWorkspace(ws.id);
+      if (result.strandedMembers?.length) {
+        // Deze leden waren uitsluitend tot deze workspace toegelaten en hebben
+        // er nu geen enkele meer; stil laten gaan zou de beheerder pas laten
+        // merken als zo iemand belt.
+        window.alert(
+          t('workspaces.strandedWarning', {
+            members: result.strandedMembers.join(', '),
+          }),
+        );
+      }
       if (ws.id === activeWorkspaceId) {
         window.location.reload();
         return;

@@ -225,7 +225,14 @@ export async function resendInvite(
   const res = await fetch(`${BASE}/team/invites/${inviteId}/resend`, {
     method: "POST",
   });
-  if (!res.ok) throw new Error("Failed to resend invite");
+  if (!res.ok) {
+    // Cooldown (429) en een verdwenen workspace (400) zijn geen storingen maar
+    // verwachte uitkomsten met een eigen melding; alleen de code doorgeven,
+    // nooit de rauwe provider-/servertekst.
+    const body = (await res.json().catch(() => ({}))) as { code?: string };
+    const known = ["RESEND_COOLDOWN", "WORKSPACE_GONE"];
+    throw new Error(known.includes(body.code ?? "") ? body.code! : "RESEND_FAILED");
+  }
   return res.json();
 }
 

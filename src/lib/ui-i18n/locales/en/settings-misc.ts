@@ -85,6 +85,8 @@ const ns = {
     profileCount_other: '{{count}} profiles',
   },
   workspaces: {
+    strandedWarning:
+      'Heads up: {{members}} only had access to this workspace and can now open none. Adjust their workspace access under Team.',
     heading: 'Workspaces',
     description:
       'Manage workspaces in your organization. Each workspace has its own brand assets, personas, campaigns and other data.',

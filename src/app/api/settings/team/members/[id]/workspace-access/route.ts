@@ -99,6 +99,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // `workspaceScoped` volgt de selectie: met workspaces aangevinkt is dit lid
+    // beperkt tot precies die, zonder selectie onbeperkt. Vóór 2026-07-22 was
+    // dat impliciet ("nul rijen = onbeperkt"), waardoor deze route de scoping
+    // niet kon vasthouden als de laatste workspace later verdween.
     await prisma.$transaction([
       prisma.workspaceMemberAccess.deleteMany({
         where: { memberId: targetMember.id },
@@ -113,6 +117,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             }),
           ]
         : []),
+      prisma.organizationMember.update({
+        where: { id: targetMember.id },
+        data: { workspaceScoped: workspaceIds.length > 0 },
+      }),
     ]);
 
     return NextResponse.json({ workspaceIds });
