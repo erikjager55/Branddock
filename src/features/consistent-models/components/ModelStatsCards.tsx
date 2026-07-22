@@ -36,8 +36,8 @@ export function ModelStatsCards({ stats, isLoading }: ModelStatsCardsProps) {
         icon={CheckCircle2}
       />
       <StatCard
-        label={t("stats.training")}
-        value={stats?.training ?? 0}
+        label={t("stats.draft")}
+        value={stats?.draft ?? 0}
         icon={Loader2}
       />
       <StatCard

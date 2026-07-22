@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 441. Training-terminologie opgeruimd na de Stijlstudio-hernoeming
+
+Sluitstuk van #439: de UI sprak nog overal over "getrainde modellen" terwijl er sinds #227 niets meer getraind wordt. **Levende teksten herschreven** (NL+EN): canvas-blok trained-style (laadtekst, lege staat, "Getraind model" → "Stijlmodel", stijlsterkte-hint verwijst nu naar de referentiestijl i.p.v. "het getrainde onderwerp"), de bron-chip "Getraind" → "Stijlmodel", de generator-omschrijving ("fine-tuned brand model" → stijlmodel), en in de Stijlstudio zelf de selectie-hint, de minimum-eis, de notitie-placeholder en "Trainingssamples" → "Voorbeeldbeelden". De curatietips heetten "Curatietips voor sterke LoRA-training" en bevatten een inmiddels onjuist advies over trainingsdata vs inferentiemodel — herschreven naar referentieset-taal. **Dode sleutels verwijderd**: de secties `shared`, `training`, `trainingModal` en `trainingStatus` (0 verwijzingen; hun componenten sneuvelden in #227) plus `detail.trainingFailedAlert`. **Bijvangst**: de statistiek-kaart "Training" telde een status die niets meer zet en stond dus permanent op 0 — nu "Concept"/"Draft" met de `draft`-waarde die de API al meestuurde. NL/EN-sleutelpariteit geverifieerd (274/274 en 371/371).
+
+- Task: `-` (sluitstuk hernoeming #439)
+
 ### 440. Migratie-import waarschuwt bij contenttaal-verschil
 
 De `Workspace`-rij migreert bewust niet mee in een merk-DNA-bundel (het ís de doel-workspace), dus `Workspace.contentLanguage` bleef bij een klant-migratie stil op de oude waarde staan: Nederlands merk-DNA landde in een Engelse workspace, waarna de settings-UI een andere taal toonde dan de generatie gebruikte. Twee keer geraakt — Better Brands (#411) en Adullam (2026-07-22). De export legt de bron-contenttaal nu vast in `meta.sourceContentLanguage`; de import vergelijkt die met de doel-workspace en waarschuwt bij verschil, in dry-run én echte run, met de instructie om de taal na afloop in de app om te zetten. Bundles van vóór dit veld slaan de check stil over. Bewezen op de echte Adullam-bundle: `nl` → Engelse doel-workspace geeft de waarschuwing, `nl` → `nl` zwijgt.

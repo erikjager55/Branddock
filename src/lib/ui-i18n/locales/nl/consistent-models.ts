@@ -1,15 +1,5 @@
 // Dutch UI strings — `consistent-models` namespace.
 const consistentModels = {
-  // Strings shared across the training-status components
-  shared: {
-    waitingForGpu: 'Wachten op GPU...',
-    starting: 'Starten...',
-    trainingInProgress: 'Training bezig...',
-    trainingComplete: 'Training voltooid',
-    trainingFailed: 'Training mislukt',
-    percentComplete: '{{progress}}% voltooid',
-    backToAiTrainer: 'Terug naar Stijlstudio',
-  },
   page: {
     title: 'Stijlstudio',
     subtitle: 'Leg je merkstijl vast met referentiebeelden',
@@ -29,7 +19,7 @@ const consistentModels = {
   stats: {
     total: 'Totaal modellen',
     ready: 'Klaar',
-    training: 'Training',
+    draft: 'Concept',
     generations: 'Generaties',
   },
   create: {
@@ -62,7 +52,6 @@ const consistentModels = {
     viewShowcase: 'Showcase bekijken',
   },
   detail: {
-    trainingFailedAlert: 'Training mislukt: {{message}}',
     uploadFailedAlert: 'Uploaden mislukt: {{message}}',
     uploadPartialAlert:
       '{{uploaded}} afbeelding(en) geüpload, {{failed}} geweigerd:\n\n{{details}}',
@@ -118,7 +107,7 @@ const consistentModels = {
     selectedCount: '{{selected}} / {{total}} geselecteerd',
     selectAll: 'Alles selecteren',
     deselectAll: 'Alles deselecteren',
-    selectHint: 'Selecteer {{target}} beelden voor training (minimaal {{min}})',
+    selectHint: 'Selecteer {{target}} referentiebeelden (minimaal {{min}})',
     saving: 'Opslaan...',
     useSelected: 'Selectie gebruiken & doorgaan ({{count}})',
     close: 'Sluiten',
@@ -127,7 +116,7 @@ const consistentModels = {
     captionPlaceholder: 'Waarom dit beeld? (optioneel)',
     curation: {
       show: 'Curatietips tonen',
-      title: 'Curatietips voor sterke LoRA-training',
+      title: 'Curatietips voor een sterke referentieset',
       hide: 'Tips verbergen',
       clusterTitle: 'Bepaal eerst het dominante esthetische cluster.',
       clusterBody:
@@ -135,15 +124,15 @@ const consistentModels = {
       skyTitle: 'Vermijd sky-only / abstracte prompts in scènecontext.',
       skyBody:
         'Prompts als "no land, just sky" veroorzaken wildlife-hallucinaties (dierensilhouetten aan de horizon). Laat deze prompts weg of formuleer ze als een puur abstracte wash.',
-      objectTitle: 'Objecttraining: veranker de kleur expliciet.',
+      objectTitle: 'Objecten: veranker de kleur expliciet.',
       objectBody:
         'Zonsondergang/dageraad-licht laat het model objectkleuren verbleken. Gebruik neutrale lichtprompts OF codeer de objectkleur per promptvariant met een hex-code.',
       marginTitle: 'Plan een ruime marge in.',
       marginBody:
         '160 outputs terug naar 30 picks (~19% retentie) paste goed bij Gewoon Guus. Bij krappe sets (40 → 30) kunnen clusteroutliers + hallucinaties je te kort laten komen.',
-      matchTitle: 'Trainingsdata moet matchen met het inferentiemodel.',
+      matchTitle: 'Houd referenties en generaties in dezelfde modelfamilie.',
       matchBody:
-        'Gemini-output als trainingsdata + FLUX-inferentie = domain shift. Branddock genereert trainingsbeelden met FLUX 2 — niet mixen.',
+        'Referentiebeelden uit een andere modelfamilie dan je uiteindelijke generaties geven een stijlbreuk (domain shift) — niet mixen.',
     },
   },
   result: {
@@ -189,13 +178,13 @@ const consistentModels = {
   },
   referenceImages: {
     heading: 'Referentiebeelden',
-    minRequired: 'Minimaal {{count}} beelden vereist voor training',
+    minRequired: 'Minimaal {{count}} referentiebeelden vereist',
     close: 'Sluiten',
     enlargedAlt: 'Vergrote weergave',
     removeImage: 'Beeld verwijderen',
     enlargeImage: 'Beeld vergroten',
     captionPlaceholder:
-      "Notities voor training (bijv. 'goede belichting, juiste logoplaatsing')",
+      "Notitie bij dit beeld (bijv. 'goede belichting, juiste logoplaatsing')",
     saving: 'Opslaan...',
   },
   uploader: {
@@ -213,8 +202,8 @@ const consistentModels = {
     remaining_other: 'Er kunnen nog {{count}} beelden worden toegevoegd',
   },
   samples: {
-    heading: 'Trainingssamples',
-    alt: 'Trainingssample {{index}}',
+    heading: 'Voorbeeldbeelden',
+    alt: 'Voorbeeldbeeld {{index}}',
   },
   styleGuide: {
     heading: 'Details styleguide',
@@ -284,40 +273,6 @@ const consistentModels = {
       'Laat AI referentiebeelden genereren op basis van je brand context en stijl.',
     getStarted: 'Aan de slag',
   },
-  trainingModal: {
-    modalTitle: 'Training: {{name}}',
-    steps: {
-      UPLOADING: 'Referentiebeelden uploaden',
-      TRAINING: 'AI-model fine-tunen',
-      READY: 'Samples genereren',
-    },
-    elapsed: 'Verstreken: {{time}}',
-    backgroundInfo:
-      'De training gaat op de achtergrond door als je dit venster sluit.',
-    failedTitle: 'Training mislukt',
-    failedFallback: 'Er is een onverwachte fout opgetreden. Probeer het opnieuw.',
-    completeMessage: 'Training voltooid! Hier zijn je samplebeelden:',
-    sampleAlt: 'Sample {{index}}',
-    close: 'Sluiten',
-    viewModel: 'Model bekijken',
-  },
-  training: {
-    trainingWith: 'Trainen met {{model}} op {{steps}} stappen.',
-    queuedHint:
-      'Je trainingsjob staat in de wachtrij en wacht op een beschikbare GPU. Dit kan een paar minuten duren.',
-    queuedShort: 'In wachtrij — wachten op GPU',
-    startingTraining: 'Training starten...',
-    configSummary:
-      '{{images}} referentiebeelden · {{steps}} stappen · {{resolution}}px resolutie',
-    failedTitle: 'Training mislukt',
-    failedBody:
-      'Er ging iets mis tijdens de training. Je kunt het opnieuw proberen met de knop hieronder.',
-    retry: 'Training opnieuw',
-    completeTitle: 'Training voltooid',
-    completeBody: 'Je model is klaar om beelden te genereren.',
-    notEnoughImages:
-      'Je hebt minimaal {{min}} trainingsbeelden nodig om te starten ({{count}} beschikbaar). Ga terug om meer referentiebeelden te selecteren.',
-  },
   brandContext: {
     heading: 'Brand context',
     none:
@@ -361,13 +316,6 @@ const consistentModels = {
     archive: 'Archiveren',
     deleteModel: 'Model verwijderen',
     backToAiTrainer: 'Terug naar Stijlstudio',
-  },
-  trainingStatus: {
-    heading: 'Trainingsstatus',
-    started: 'Gestart',
-    completed: 'Voltooid',
-    configuration: 'Configuratie',
-    steps: '{{steps}} stappen',
   },
   triggerWord: {
     clickToCopy: 'Klik om te kopiëren',

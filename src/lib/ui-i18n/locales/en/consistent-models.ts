@@ -1,15 +1,5 @@
 // Canonical (source-of-truth) English UI strings — `consistent-models` namespace.
 const consistentModels = {
-  // Strings shared across the training-status components
-  shared: {
-    waitingForGpu: 'Waiting for GPU...',
-    starting: 'Starting...',
-    trainingInProgress: 'Training in progress...',
-    trainingComplete: 'Training complete',
-    trainingFailed: 'Training failed',
-    percentComplete: '{{progress}}% complete',
-    backToAiTrainer: 'Back to Style Studio',
-  },
   page: {
     title: 'Style Studio',
     subtitle: 'Capture your brand style with reference images',
@@ -29,7 +19,7 @@ const consistentModels = {
   stats: {
     total: 'Total Models',
     ready: 'Ready',
-    training: 'Training',
+    draft: 'Draft',
     generations: 'Generations',
   },
   create: {
@@ -62,7 +52,6 @@ const consistentModels = {
     viewShowcase: 'View Showcase',
   },
   detail: {
-    trainingFailedAlert: 'Training failed: {{message}}',
     uploadFailedAlert: 'Upload failed: {{message}}',
     uploadPartialAlert:
       '{{uploaded}} image(s) uploaded, {{failed}} rejected:\n\n{{details}}',
@@ -118,7 +107,7 @@ const consistentModels = {
     selectedCount: '{{selected}} / {{total}} selected',
     selectAll: 'Select All',
     deselectAll: 'Deselect All',
-    selectHint: 'Select {{target}} images for training (minimum {{min}})',
+    selectHint: 'Select {{target}} reference images (minimum {{min}})',
     saving: 'Saving...',
     useSelected: 'Use Selected & Continue ({{count}})',
     close: 'Close',
@@ -127,7 +116,7 @@ const consistentModels = {
     captionPlaceholder: 'Why this image? (optional)',
     curation: {
       show: 'Show curation tips',
-      title: 'Curation tips for strong LoRA training',
+      title: 'Curation tips for a strong reference set',
       hide: 'Hide tips',
       clusterTitle: 'Identify the dominant aesthetic cluster first.',
       clusterBody:
@@ -135,15 +124,15 @@ const consistentModels = {
       skyTitle: 'Avoid sky-only / abstract prompts in scene context.',
       skyBody:
         'Prompts like "no land, just sky" trigger wildlife hallucination (animal silhouettes on the horizon). Drop these prompts or frame them as a pure abstract wash.',
-      objectTitle: 'Object training: anchor color explicitly.',
+      objectTitle: 'Objects: anchor color explicitly.',
       objectBody:
         'Sunset/dawn lighting causes the model to bleach object colors. Use neutral lighting prompts OR hex-code the object color per prompt variant.',
       marginTitle: 'Plan for a generous margin.',
       marginBody:
         '160 outputs down to 30 picks (~19% retention) was a good fit for Gewoon Guus. With tight sets (40 → 30), cluster outliers + hallucinations can leave you short.',
-      matchTitle: 'Training data must match the inference model.',
+      matchTitle: 'Keep references and generations in the same model family.',
       matchBody:
-        'Gemini output as training data + FLUX inference = domain shift. Branddock generates training images with FLUX 2 — don\'t mix.',
+        'Reference images from a different model family than your final generations cause a style break (domain shift) — don\'t mix.',
     },
   },
   result: {
@@ -189,13 +178,13 @@ const consistentModels = {
   },
   referenceImages: {
     heading: 'Reference Images',
-    minRequired: 'Min {{count}} images required for training',
+    minRequired: 'Min {{count}} reference images required',
     close: 'Close',
     enlargedAlt: 'Enlarged preview',
     removeImage: 'Remove image',
     enlargeImage: 'Enlarge image',
     captionPlaceholder:
-      "Notes for training (e.g. 'good lighting, correct logo placement')",
+      "Note for this image (e.g. 'good lighting, correct logo placement')",
     saving: 'Saving...',
   },
   uploader: {
@@ -213,8 +202,8 @@ const consistentModels = {
     remaining_other: '{{count}} more images can be added',
   },
   samples: {
-    heading: 'Training samples',
-    alt: 'Training sample {{index}}',
+    heading: 'Sample images',
+    alt: 'Sample image {{index}}',
   },
   styleGuide: {
     heading: 'Style Guide Details',
@@ -284,40 +273,6 @@ const consistentModels = {
       'Let AI generate reference images based on your brand context and style.',
     getStarted: 'Get started',
   },
-  trainingModal: {
-    modalTitle: 'Training: {{name}}',
-    steps: {
-      UPLOADING: 'Uploading reference images',
-      TRAINING: 'Fine-tuning AI model',
-      READY: 'Generating samples',
-    },
-    elapsed: 'Elapsed: {{time}}',
-    backgroundInfo:
-      'Training continues in the background if you close this window.',
-    failedTitle: 'Training failed',
-    failedFallback: 'An unexpected error occurred. Please try again.',
-    completeMessage: 'Training complete! Here are your sample images:',
-    sampleAlt: 'Sample {{index}}',
-    close: 'Close',
-    viewModel: 'View Model',
-  },
-  training: {
-    trainingWith: 'Training with {{model}} at {{steps}} steps.',
-    queuedHint:
-      'Your training job is queued and waiting for an available GPU. This can take a few minutes.',
-    queuedShort: 'Queued — waiting for GPU',
-    startingTraining: 'Starting training...',
-    configSummary:
-      '{{images}} reference images · {{steps}} steps · {{resolution}}px resolution',
-    failedTitle: 'Training failed',
-    failedBody:
-      'Something went wrong during training. You can retry with the button below.',
-    retry: 'Retry Training',
-    completeTitle: 'Training complete',
-    completeBody: 'Your model is ready to generate images.',
-    notEnoughImages:
-      'Need at least {{min}} training images to start ({{count}} available). Go back to select more reference images.',
-  },
   brandContext: {
     heading: 'Brand Context',
     none:
@@ -361,13 +316,6 @@ const consistentModels = {
     archive: 'Archive',
     deleteModel: 'Delete Model',
     backToAiTrainer: 'Back to Style Studio',
-  },
-  trainingStatus: {
-    heading: 'Training Status',
-    started: 'Started',
-    completed: 'Completed',
-    configuration: 'Configuration',
-    steps: '{{steps}} steps',
   },
   triggerWord: {
     clickToCopy: 'Click to copy',
