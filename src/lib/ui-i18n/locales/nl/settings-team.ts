@@ -59,6 +59,11 @@ const settingsTeam = {
     expired: 'Verlopen',
     scopedTo: 'Alleen: {{names}}',
     resend: 'Opnieuw versturen',
+    resendSent: 'Uitnodiging opnieuw verstuurd',
+    resendNotSent: 'Vervaldatum verlengd, maar de e-mail kon niet worden verstuurd',
+    resendCooldown: 'Net al verstuurd — wacht even voor je het opnieuw probeert',
+    resendFailed: 'Opnieuw versturen is mislukt',
+    resendWorkspaceGone: 'De workspace uit deze uitnodiging bestaat niet meer — annuleer en nodig opnieuw uit',
     cancel: 'Annuleren',
   },
   invite: {

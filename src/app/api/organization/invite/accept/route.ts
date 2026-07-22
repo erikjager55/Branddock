@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
 import { parseJsonBody } from "@/lib/api/parse-json-body";
+import { resolveInviteTargetName } from "@/lib/invitations/invite-target-name";
 
 // L8 Zod-sweep (audit 2026-06-26, batch 6): een niet-string `token` (getal/
 // object) 500'de in prisma.findUnique; malformed JSON idem.
@@ -12,6 +14,14 @@ const acceptSchema = z.object({
 
 // POST /api/organization/invite/accept — accept an invitation
 export async function POST(request: NextRequest) {
+  // Buiten de try, zodat de race-afhandeling in de catch dezelfde velden kan
+  // teruggeven als het normale pad (anders toont de verliezende tab een lege
+  // naam en slaat hij setActive over).
+  const raceContext: {
+    targetName?: string;
+    organizationId?: string;
+    workspaceId?: string;
+  } = {};
   try {
     const parsed = await parseJsonBody(request, acceptSchema);
     if (!parsed.ok) return parsed.response;
@@ -22,16 +32,32 @@ export async function POST(request: NextRequest) {
       include: { organization: true },
     });
 
+    // `code` is het contract met de accept-pagina. Die matchte eerder op de
+    // Engelse fouttekst (regex op "expired"), wat stil breekt zodra iemand de
+    // copy herformuleert én elke onbekende 400 als "al gebruikt" toonde.
     if (!invitation) {
       return NextResponse.json(
-        { error: "Invitation not found" },
+        { error: "Invitation not found", code: "NOT_FOUND" },
         { status: 404 }
       );
     }
 
     if (invitation.status !== "pending") {
+      // Twee onderscheiden die anders allebei als "al gebruikt" landden:
+      // (1) een verlopen uitnodiging is hieronder al op `expired` gezet door
+      //     een eerdere aanroep, en moet "verlopen" blijven melden;
+      // (2) ingetrokken uitnodigingen bestaan in twee spellingen in dezelfde
+      //     tabel — onze cancel-route schrijft "cancelled", de Better-Auth-
+      //     organization-plugin "canceled" (plus "rejected").
+      const withdrawn = ["cancelled", "canceled", "rejected"];
+      const statusCode =
+        invitation.status === "expired"
+          ? "EXPIRED"
+          : withdrawn.includes(invitation.status)
+            ? "CANCELLED"
+            : "NOT_PENDING";
       return NextResponse.json(
-        { error: `Invitation is ${invitation.status}` },
+        { error: `Invitation is ${invitation.status}`, code: statusCode },
         { status: 400 }
       );
     }
@@ -42,7 +68,56 @@ export async function POST(request: NextRequest) {
         data: { status: "expired" },
       });
       return NextResponse.json(
-        { error: "Invitation has expired" },
+        { error: "Invitation has expired", code: "EXPIRED" },
+        { status: 400 }
+      );
+    }
+
+    // Waar de uitnodiging voor geldt — één workspace toont de workspace-naam,
+    // anders de organisatie. Gedeeld met de uitnodigingsmail zodat de landing
+    // exact hetzelfde noemt als het mailtje waar de gebruiker vandaan komt.
+    const targetName = await resolveInviteTargetName({
+      organizationId: invitation.organizationId,
+      organizationName: invitation.organization.name,
+      workspaceIds: invitation.workspaceIds,
+    });
+    raceContext.targetName = targetName;
+    raceContext.organizationId = invitation.organizationId;
+
+    const isScoped =
+      invitation.workspaceIds.length > 0 &&
+      ["member", "viewer"].includes(invitation.role);
+
+    // Alleen workspaces die (nog) bij deze organisatie horen — een workspace
+    // kan tussen uitnodigen en accepteren verwijderd zijn.
+    const validWorkspaces = isScoped
+      ? await prisma.workspace.findMany({
+          where: {
+            id: { in: invitation.workspaceIds },
+            organizationId: invitation.organizationId,
+          },
+          select: { id: true },
+          // Deterministisch: zonder orderBy verschilt de landings-workspace
+          // per request bij een invite voor meerdere workspaces.
+          orderBy: { createdAt: "asc" },
+        })
+      : [];
+    raceContext.workspaceId = validWorkspaces[0]?.id;
+
+    // Fail-CLOSED, en bewust vóór de sessiecheck: eerder werd bij een lege
+    // `validWorkspaces` gewoon doorgelopen zonder ACL-rijen aan te maken — en
+    // `hasWorkspaceAccess` leest "nul ACL-rijen" als ONBEPERKT
+    // (workspace-resolver.ts:103), dus een uitnodiging voor één inmiddels
+    // verwijderde workspace gaf toegang tot álle workspaces van de
+    // organisatie. Deze check staat vóór de login-tak zodat een genodigde
+    // niet eerst een account aanmaakt voor een uitnodiging die tóch niet kan
+    // slagen (gevonden in de smoke).
+    if (isScoped && validWorkspaces.length === 0) {
+      return NextResponse.json(
+        {
+          error: "The workspace for this invitation no longer exists",
+          code: "WORKSPACE_GONE",
+        },
         { status: 400 }
       );
     }
@@ -51,26 +126,72 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession();
 
     if (!session) {
-      // User not logged in — return info for the client to redirect to register
+      // User not logged in — the accept page renders its own sign-up/sign-in
+      // with this email locked, then retries this endpoint.
       return NextResponse.json(
         {
           requiresAuth: true,
           email: invitation.email,
-          organizationName: invitation.organization.name,
+          targetName,
+          role: invitation.role,
         },
         { status: 401 }
       );
     }
 
-    // Verify email matches (or allow any logged-in user for now)
-    if (session.user.email !== invitation.email) {
+    // Hoofdletter-ongevoelig vergelijken: nieuwe uitnodigingen worden
+    // genormaliseerd opgeslagen, maar bestaande rijen (van vóór 2026-07-22)
+    // kunnen hoofdletters bevatten terwijl Better Auth de gebruiker
+    // gegarandeerd lowercase heeft aangemaakt.
+    if (
+      session.user.email.toLowerCase() !== invitation.email.toLowerCase()
+    ) {
       return NextResponse.json(
         {
           error: "This invitation was sent to a different email address",
+          code: "EMAIL_MISMATCH",
         },
         { status: 403 }
       );
     }
+
+    /**
+     * Bij een uitnodiging voor precies één workspace ook de workspace-cookie
+     * zetten. `resolveWorkspaceId()` valt anders terug op de OUDSTE workspace
+     * van de organisatie (workspace-resolver.ts:35-40), en dat pad raadpleegt
+     * de ACL niet — een gescopete genodigde zou dus op een workspace landen
+     * waar hij geen toegang toe heeft. Geldt voor béide succespaden (nieuw
+     * lid én bestaand lid). Zelfde cookie-opties als /api/workspace/switch.
+     */
+    const withWorkspaceCookie = (response: NextResponse) => {
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax" as const,
+        path: "/",
+      };
+      // Élke workspace uit `validWorkspaces` is per definitie ACL-toegekend,
+      // dus ook bij een uitnodiging voor méér dan één workspace is de eerste
+      // een veilige landing. Alleen de cookie wissen (het `else`-pad) zou de
+      // gebruiker juist uitleveren aan de ACL-blinde fallback.
+      if (validWorkspaces.length >= 1) {
+        response.cookies.set("branddock-workspace-id", validWorkspaces[0].id, {
+          ...cookieOptions,
+          maxAge: 60 * 60 * 24 * 365,
+        });
+      } else {
+        // Geen enkele workspace-scoping: een bestaand lid heeft mogelijk nog
+        // een cookie van zijn vórige workspace, en die WINT van de zojuist
+        // actief gezette organisatie (resolveWorkspaceId stap 1). Zonder dit
+        // landt hij na accepteren alsnog in zijn oude workspace — precies wat
+        // `setActive` moest voorkomen.
+        response.cookies.set("branddock-workspace-id", "", {
+          ...cookieOptions,
+          maxAge: 0,
+        });
+      }
+      return response;
+    };
 
     // Check not already a member
     const existingMember = await prisma.organizationMember.findUnique({
@@ -83,12 +204,37 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingMember) {
-      // Already a member — mark invite as accepted
-      await prisma.invitation.update({
-        where: { id: invitation.id },
-        data: { status: "accepted" },
+      await prisma.$transaction(async (tx) => {
+        // Scoping alleen VERBREDEN, nooit inperken: een bestaand lid met een
+        // lege ACL heeft onbeperkte toegang; daar een rij aan toevoegen zou
+        // hem juist opsluiten in één workspace. Heeft hij al een beperkte
+        // ACL, dan voegt deze uitnodiging de nieuwe workspaces toe.
+        if (isScoped) {
+          const aclCount = await tx.workspaceMemberAccess.count({
+            where: { memberId: existingMember.id },
+          });
+          if (aclCount > 0) {
+            await tx.workspaceMemberAccess.createMany({
+              data: validWorkspaces.map((w) => ({
+                memberId: existingMember.id,
+                workspaceId: w.id,
+              })),
+              skipDuplicates: true,
+            });
+          }
+        }
+        await tx.invitation.update({
+          where: { id: invitation.id },
+          data: { status: "accepted" },
+        });
       });
-      return NextResponse.json({ alreadyMember: true });
+      return withWorkspaceCookie(
+        NextResponse.json({
+          alreadyMember: true,
+          targetName,
+          organizationId: invitation.organizationId,
+        })
+      );
     }
 
     // Create OrganizationMember (+ eventuele workspace-scoping) and mark
@@ -103,28 +249,14 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      if (
-        invitation.workspaceIds.length > 0 &&
-        ["member", "viewer"].includes(invitation.role)
-      ) {
-        // Alleen workspaces die (nog) bij deze organisatie horen — een
-        // workspace kan tussen uitnodigen en accepteren verwijderd zijn.
-        const validWorkspaces = await tx.workspace.findMany({
-          where: {
-            id: { in: invitation.workspaceIds },
-            organizationId: invitation.organizationId,
-          },
-          select: { id: true },
+      if (isScoped) {
+        await tx.workspaceMemberAccess.createMany({
+          data: validWorkspaces.map((w) => ({
+            memberId: created.id,
+            workspaceId: w.id,
+          })),
+          skipDuplicates: true,
         });
-        if (validWorkspaces.length > 0) {
-          await tx.workspaceMemberAccess.createMany({
-            data: validWorkspaces.map((w) => ({
-              memberId: created.id,
-              workspaceId: w.id,
-            })),
-            skipDuplicates: true,
-          });
-        }
       }
 
       await tx.invitation.update({
@@ -135,11 +267,47 @@ export async function POST(request: NextRequest) {
       return created;
     });
 
-    return NextResponse.json({
-      member,
-      organizationName: invitation.organization.name,
-    });
+    return withWorkspaceCookie(
+      NextResponse.json({
+        member,
+        targetName,
+        // De pagina zet hiermee de uitgenodigde organisatie actief; zonder dat
+        // landt een net aangemelde genodigde in zijn eigen auto-org (leeg) en
+        // lijkt de uitnodiging mislukt.
+        organizationId: invitation.organizationId,
+      })
+    );
   } catch (error) {
+    // Twee tabbladen die tegelijk accepteren passeren allebei de
+    // existingMember-check en racen op de unique (userId, organizationId).
+    // De verliezer is feitelijk gewoon lid — geen 500 tonen. Alleen déze
+    // constraint afvangen: een andere P2002 is een echte fout en mag niet als
+    // succes worden gerapporteerd.
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002" &&
+      String(error.meta?.target ?? "").includes("organizationId")
+    ) {
+      const raceResponse = NextResponse.json({
+        alreadyMember: true,
+        targetName: raceContext.targetName,
+        organizationId: raceContext.organizationId,
+      });
+      // Zelfde landing als het normale pad; anders valt juist de verliezende
+      // tab terug op de ACL-blinde workspace-resolutie.
+      raceResponse.cookies.set(
+        "branddock-workspace-id",
+        raceContext.workspaceId ?? "",
+        {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: raceContext.workspaceId ? 60 * 60 * 24 * 365 : 0,
+        }
+      );
+      return raceResponse;
+    }
     console.error("[POST /api/organization/invite/accept]", error);
     return NextResponse.json(
       { error: "Internal server error" },

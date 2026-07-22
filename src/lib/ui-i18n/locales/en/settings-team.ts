@@ -59,6 +59,11 @@ const settingsTeam = {
     expired: 'Expired',
     scopedTo: 'Only: {{names}}',
     resend: 'Resend',
+    resendSent: 'Invitation sent again',
+    resendNotSent: 'Expiry extended, but the email could not be sent',
+    resendCooldown: 'Just sent — please wait a moment before trying again',
+    resendFailed: 'Resending failed',
+    resendWorkspaceGone: 'The workspace for this invitation no longer exists — cancel it and invite again',
     cancel: 'Cancel',
   },
   invite: {

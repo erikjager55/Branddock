@@ -12,6 +12,12 @@ interface PendingInviteItemProps {
   invite: PendingInvite;
 }
 
+/** Fout-codes van de resend-route → i18n-key. Onbekend valt terug op generiek. */
+const RESEND_ERROR_KEYS: Record<string, string> = {
+  RESEND_COOLDOWN: 'pending.resendCooldown',
+  WORKSPACE_GONE: 'pending.resendWorkspaceGone',
+};
+
 export function PendingInviteItem({ invite }: PendingInviteItemProps) {
   const { t } = useTranslation('settings-team');
   const { formatDate } = useFormat();
@@ -29,6 +35,23 @@ export function PendingInviteItem({ invite }: PendingInviteItemProps) {
     day: 'numeric',
     year: 'numeric',
   });
+
+  // De resend-knop moet zeggen wat er écht gebeurde: de route kan de
+  // vervaldatum verlengen terwijl de mail faalt, en kent een cooldown.
+  const resendFeedback = resendInvite.isSuccess
+    ? resendInvite.data?.emailSent === false
+      ? { ok: false, message: t('pending.resendNotSent') }
+      : { ok: true, message: t('pending.resendSent') }
+    : resendInvite.isError
+      ? {
+          ok: false,
+          message: t(
+            RESEND_ERROR_KEYS[
+              resendInvite.error instanceof Error ? resendInvite.error.message : ''
+            ] ?? 'pending.resendFailed',
+          ),
+        }
+      : null;
 
   return (
     <div className="flex items-center justify-between py-3 px-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
@@ -66,6 +89,14 @@ export function PendingInviteItem({ invite }: PendingInviteItemProps) {
         >
           {t('pending.resend')}
         </Button>
+        {resendFeedback ? (
+          <span
+            role="status"
+            className={`text-xs ${resendFeedback.ok ? 'text-gray-500' : 'text-red-600'}`}
+          >
+            {resendFeedback.message}
+          </span>
+        ) : null}
 
         <Button
           variant="ghost"

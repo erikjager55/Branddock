@@ -161,6 +161,12 @@ export interface UpdateMemberWorkspaceAccessRequest {
 export interface ResendInviteResponse {
   success: boolean;
   newExpiresAt: string;
+  /**
+   * False wanneer de vervaldatum wél is verlengd maar de mail niet de deur
+   * uit ging. De UI moet dit tonen — anders meldt de knop stil succes terwijl
+   * de genodigde niets ontvangt (precies de bug die deze route had).
+   */
+  emailSent?: boolean;
 }
 
 // ─── Team Permissions ───────────────────────────────────────

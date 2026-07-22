@@ -7,6 +7,7 @@ import { trySendTransactional } from "@/lib/email/transactional";
 import { emailBaseUrl } from "@/lib/email/base-url";
 import { resolveEmailLocale } from "@/lib/email/email-locale";
 import { renderInviteEmail } from "@/lib/email/templates/invite";
+import { resolveInviteTargetName } from "@/lib/invitations/invite-target-name";
 import { enforceOrgPlanLimit } from "@/lib/stripe/enforcement";
 
 // L8 Zod-sweep (audit 2026-06-26, batch 6): `email` was elke willekeurige
@@ -15,10 +16,18 @@ import { enforceOrgPlanLimit } from "@/lib/stripe/enforcement";
 // (admin-invites-owner) van 400 (onbekende rol) — een enum-schema zou die
 // semantiek platslaan naar 400.
 const inviteSchema = z.object({
+  // Lowercase + trim: Better Auth normaliseert e-mailadressen bij sign-up
+  // (`normalizedEmail = email.toLowerCase()`) en bij lookup. Sloegen wij het
+  // adres verbatim op, dan maakte een uitnodiging aan `Naam@Domein.nl` een
+  // account op `naam@domein.nl` dat vervolgens permanent op EMAIL_MISMATCH
+  // stuk liep — met de "uitloggen en opnieuw"-knop als eindeloze lus.
   email: z
     .string()
     .max(320)
-    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Invalid email address"),
+    .transform((value) => value.trim().toLowerCase())
+    .refine((value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value), {
+      message: "Invalid email address",
+    }),
   organizationId: z.string().min(1).max(100),
   role: z.string().max(50).optional(),
   // Leeg/afwezig = toegang tot alle workspaces (huidig gedrag).
@@ -124,7 +133,10 @@ export async function POST(request: NextRequest) {
     // Check for existing pending invite
     const existingInvite = await prisma.invitation.findFirst({
       where: {
-        email,
+        // Insensitive: legacy-rijen van vóór de normalisatie kunnen
+        // hoofdletters bevatten en zouden anders een tweede pending
+        // uitnodiging voor hetzelfde adres toelaten.
+        email: { equals: email, mode: "insensitive" },
         organizationId,
         status: "pending",
       },
@@ -161,20 +173,28 @@ export async function POST(request: NextRequest) {
     // Send the invite email. We intentionally don't fail the request if
     // mail fails — the invitation record exists and the link can be
     // retrieved by the inviter from the UI.
-    // emailBaseUrl → de app-host (app.branddock.app), niet de marketing-apex.
-    const acceptUrl = `${emailBaseUrl()}/invite/accept?token=${encodeURIComponent(invitation.token)}`;
     const inviterName = session.user.name || session.user.email || "A teammate";
-    // E-mailtaal: voorkeur van de ontvanger als die al een account heeft,
-    // anders die van de uitnodiger (zelfde team ≈ zelfde taal).
-    const recipientUser = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
+    // E-mailtaal: heeft de ontvanger nog geen account, dan volgen we de
+    // uitnodiger (zelfde team ≈ zelfde taal). Heeft hij er wél een, dan zijn
+    // eigen voorkeur — en zonder voorkeur-rij valt `resolveEmailLocale`
+    // terug op 'en', niet op de uitnodiger.
+    const locale = await resolveEmailLocale(existingUser?.id ?? session.user.id);
+    // emailBaseUrl → de app-host (app.branddock.app), niet de marketing-apex.
+    // `lang` reist mee omdat de ontvanger nog geen UI-taalvoorkeur heeft: de
+    // accept-pagina leest bewust deze parameter i.p.v. i18next/de cookie,
+    // anders opent een NL-mail een EN-landing.
+    const acceptUrl =
+      `${emailBaseUrl()}/invite/accept` +
+      `?token=${encodeURIComponent(invitation.token)}&lang=${locale}`;
+    const targetName = await resolveInviteTargetName({
+      organizationId,
+      organizationName: org?.name ?? "your team",
+      workspaceIds,
     });
-    const locale = await resolveEmailLocale(recipientUser?.id ?? session.user.id);
     const { subject, html, text } = renderInviteEmail({
       recipientEmail: email,
       inviterName,
-      organizationName: org?.name ?? "your team",
+      targetName,
       role: inviteRole,
       acceptUrl,
       expiresAt: invitation.expiresAt,
