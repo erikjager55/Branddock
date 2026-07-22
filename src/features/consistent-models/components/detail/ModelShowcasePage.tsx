@@ -77,7 +77,8 @@ export function ModelShowcasePage({
   // [6+] = remaining gallery
   // Use sample images as showcase when no user generations exist
   // Sample layout: [0]=hero close-up, [1-5]=portrait strip poses
-  const heroImage = generations[0]?.storageUrl ?? sampleUrls[0] ?? model.thumbnailUrl;
+  const heroImage =
+    generations[0]?.storageUrl ?? sampleUrls[0] ?? model.thumbnailUrl ?? model.referenceImages[0]?.storageUrl;
   const portraitSlots = generations.length > 0
     ? generations.slice(1, 5)
     : sampleUrls.slice(1, 6).map((url, i) => ({ id: `sample-${i}`, storageUrl: url, prompt: '' } as GeneratedImageWithMeta));

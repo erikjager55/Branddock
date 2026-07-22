@@ -79,6 +79,12 @@ export interface FalStandaloneGenerationOptions {
    */
   referenceImageUrls?: string[];
   /**
+   * Output-resolutie voor aspect-ratio-modellen (Nano Banana Pro / Phota).
+   * Default '1K'; stijlreferentie-flows (AI Trainer) gebruiken '4K'.
+   * Let op: fal rekent per output-resolutie — 4K is duurder dan 1K.
+   */
+  resolution?: '1K' | '2K' | '4K';
+  /**
    * F42d (audit 2026-05-14): Recraft-specific style param. Recraft V3
    * heeft een structured `style` veld dat OUTPUT-aard bepaalt: 'any' |
    * 'digital_illustration' | 'vector_illustration' | 'realistic_image' |
@@ -270,7 +276,7 @@ export async function generateFalImage(
     output_format: 'png',
     ...(options?.seed != null ? { seed: options.seed } : {}),
     ...(useAspectRatio
-      ? { aspect_ratio: toAspectRatio(imageSize), resolution: '1K' }
+      ? { aspect_ratio: toAspectRatio(imageSize), resolution: options?.resolution ?? '1K' }
       : { image_size: imageSize }),
     ...(hasRefs ? { image_urls: refUrls } : {}),
     // F42d: Recraft V3 structured style param (alleen meesturen voor Recraft;

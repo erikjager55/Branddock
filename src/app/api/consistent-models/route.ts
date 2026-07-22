@@ -4,6 +4,7 @@ import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { resolveModelBrandContext } from '@/lib/consistent-models/model-context-resolver';
+import { resolveStorageUrl } from '@/lib/storage/resolve-storage-url';
 import { z } from 'zod';
 
 const createModelSchema = z.object({
@@ -64,6 +65,11 @@ export async function GET(request: NextRequest) {
         include: {
           _count: { select: { referenceImages: true, generations: true } },
           createdBy: { select: { id: true, name: true, image: true } },
+          referenceImages: {
+            orderBy: { sortOrder: 'asc' },
+            take: 1,
+            select: { storageUrl: true, thumbnailUrl: true },
+          },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -85,12 +91,19 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json({
-      models: models.map((m) => ({
+      models: await Promise.all(models.map(async (m) => ({
         ...m,
+        // Kaart-preview: model-thumbnail of anders het eerste referentiebeeld —
+        // resolved, want opgeslagen signed R2-URLs kunnen verlopen zijn.
+        previewUrl:
+          (await resolveStorageUrl(
+            m.thumbnailUrl ?? m.referenceImages[0]?.thumbnailUrl ?? m.referenceImages[0]?.storageUrl ?? '',
+          )) || null,
         referenceImageCount: m._count.referenceImages,
         generationCount: m._count.generations,
+        referenceImages: undefined,
         _count: undefined,
-      })),
+      }))),
       stats: {
         total: models.length,
         ready: statsMap['READY'] ?? 0,

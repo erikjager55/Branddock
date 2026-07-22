@@ -20,6 +20,7 @@ export function ModelCard({ model, onClick }: ModelCardProps) {
   const isReady = model.status === "READY";
   const isTrainable = TRAINABLE_TYPES.has(model.type);
   const [thumbFailed, setThumbFailed] = useState(false);
+  const previewUrl = model.previewUrl ?? model.thumbnailUrl;
 
   return (
     <Card
@@ -31,9 +32,9 @@ export function ModelCard({ model, onClick }: ModelCardProps) {
     >
       {/* Thumbnail */}
       <div className="relative h-40 overflow-hidden rounded-t-lg bg-gray-100">
-        {model.thumbnailUrl && !thumbFailed ? (
+        {previewUrl && !thumbFailed ? (
           <img
-            src={model.thumbnailUrl}
+            src={previewUrl}
             alt={model.name}
             loading="lazy"
             className="h-full w-full object-cover"

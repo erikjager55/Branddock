@@ -127,6 +127,7 @@ export async function POST(request: NextRequest) {
     let width: number | undefined;
     let height: number | undefined;
     let resolvedAspectRatio: string | undefined;
+    let trainedModelsUsed: Array<{ id: string }> = [];
 
     if (provider === 'TRAINED_MODEL') {
       // ─── Stijlmodel(len) via referentiebeelden ─────────────
@@ -158,6 +159,7 @@ export async function POST(request: NextRequest) {
           { status: 404 },
         );
       }
+      trainedModelsUsed = readyModels.map((m) => ({ id: m.id }));
 
       // Refs eerlijk verdelen over de modellen binnen de generator-cap.
       const refCap = maxAnchorsForModel(REFERENCE_GENERATOR_MODEL);
@@ -189,6 +191,7 @@ export async function POST(request: NextRequest) {
           : aspectRatio === '4:3' ? 'landscape_4_3'
           : 'square_hd',
         referenceImageUrls,
+        resolution: '4K',
       });
 
       if (!result.images?.[0]?.url) {
@@ -345,6 +348,42 @@ export async function POST(request: NextRequest) {
 
     invalidateCache(cacheKeys.media.aiImages(workspaceId));
     invalidateCache(cacheKeys.prefixes.media(workspaceId));
+
+    // Trained-model-generaties óók als ConsistentModelGeneration registreren —
+    // anders blijft de model-detailpagina (hero/galerij/Generaties-teller) leeg
+    // terwijl AI Studio het beeld wél toont (twee-ketens-klasse, gotcha
+    // 2026-06-24). Fail-soft: het beeld is al gemaakt en opgeslagen, dus deze
+    // secundaire boekhouding mag de request niet laten falen.
+    if (trainedModelsUsed.length > 0) {
+      try {
+        await prisma.$transaction([
+          prisma.consistentModelGeneration.createMany({
+            data: trainedModelsUsed.map((m) => ({
+              consistentModelId: m.id,
+              workspaceId,
+              createdById: session.user.id,
+              prompt,
+              width: width ?? 1024,
+              height: height ?? 1024,
+              storageKey: uploadResult.url,
+              storageUrl: uploadResult.url,
+              aiProvider: 'fal',
+              aiModel: REFERENCE_GENERATOR_MODEL,
+            })),
+          }),
+          prisma.consistentModel.updateMany({
+            where: { id: { in: trainedModelsUsed.map((m) => m.id) } },
+            data: { usageCount: { increment: 1 } },
+          }),
+        ]);
+        invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
+      } catch (genErr) {
+        console.warn(
+          '[ai-images/generate] ConsistentModelGeneration-registratie faalde (non-blocking):',
+          genErr instanceof Error ? genErr.message : genErr,
+        );
+      }
+    }
 
     // Credit-afboeking (Fase 2): 1 beeld = image-credits (count-gebaseerd), post-hoc.
     await chargeAfter({ workspaceId, action: 'image', feature: 'ai-image' }, { count: 1 }).catch(() => {});

@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 435. AI-trainer afwerking — previews op overzicht/hero, generatie-registratie, 4K-output
+
+Eriks vervolgtest (22-07-nacht) na de #433/#434-fixes: stijl komt door, maar vier afwerkingsgaten. (1+2) **Previews**: niets zet nog een `thumbnailUrl` nu LoRA weg is — de lijst-API levert nu een resolved `previewUrl` (thumbnail ?? eerste referentiebeeld) voor de overzichtskaart, en de detail-hero valt terug op het eerste referentiebeeld. (3) **Twee-ketens-gat** (gotcha 2026-06-24-klasse): de AI Studio-route schreef alleen een `GeneratedImage` (mediabibliotheek) — trained-model-generaties maken nu óók fail-soft `ConsistentModelGeneration`-rijen aan (+`usageCount`-increment + cache-invalidatie), zodat de model-detailpagina hero/galerij/teller vult. (4) **4K**: `resolution`-optie op `generateFalImage` (default '1K'); de drie stijlreferentie-flows genereren op '4K' — geverifieerd met echte call via het /edit-pad: 4096×4096, 11,8MB (onder de 25MB-cap). Let op: fal rekent per output-resolutie, dus 4K verhoogt de COGS per trainer-beeld; de credit-prijs (2/beeld) is ongewijzigd.
+
+- Task: `-` (bugfix-vervolg, zelfde keten als #433/#434)
+
 ### 434. AI-trainer bugfix ronde 2+3 — AI Studio-route + anchors + Nano Banana /edit-endpoint
 
 Eriks hertest na #433 faalde identiek; twee extra lagen gevonden. **Ronde 2**: de "Beeld genereren"-knop loopt via `/api/media/ai-images/generate` (derde generate-route, gemist in de sweep) — nu ook door de URL-resolver, net als `fetchBrandStyleAnchors` (MediaAsset.fileUrl, dekt generate-visual/feature-visuals/logo-audit) en de model-detail-hero (`thumbnailUrl`/`sampleImageUrls`). **Ronde 3 (de echte stijl-killer)**: lokale probe met echte fal-calls bewees dat het `nano-banana-pro`-t2i-endpoint `image_urls` volledig negeert (fal dropt onbekende velden stil) terwijl de `/edit`-variant dezelfde refs wél volgt. Cure centraal in `generateFalImage`: automatische endpoint-switch naar `/edit` zodra refs meegaan op een nano-banana-model — alle callers gedekt. Bijvangst: F39-image-edit stuurde het bronbeeld óók naar t2i (werd stil genegeerd) → nu /edit; F40-anchors werkten op nano-banana nooit. End-to-end gevalideerd: illustratie-refs → illustratie-output in referentiestijl.
