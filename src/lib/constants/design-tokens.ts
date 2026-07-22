@@ -514,7 +514,7 @@ export const SIDEBAR_NAV: {
       label: 'MEDIA',
       items: [
         { key: 'media-library', label: 'Media Library', icon: 'Images', href: '/media/library' },
-        { key: 'ai-trainer', label: 'AI Trainer', icon: 'GraduationCap', href: '/media/trainer' },
+        { key: 'ai-trainer', label: 'Style Studio', icon: 'GraduationCap', href: '/media/trainer' },
         { key: 'ai-studio', label: 'AI Studio', icon: 'Wand2', href: '/media/studio' },
       ],
     },
@@ -685,8 +685,8 @@ export const MODULE_META: Record<string, {
     comingSoonDescription: 'Browse help articles, watch tutorials, and contact our support team for assistance.',
   },
   'ai-trainer': {
-    title: 'AI Trainer',
-    subtitle: 'Train models and define brand styles',
+    title: 'Style Studio',
+    subtitle: 'Capture your brand style with reference images',
     phase: 'Phase 12',
     comingSoonDescription: '',
   },

@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 439. "AI Trainer" hernoemd naar Stijlstudio (app + website)
+
+Besluit Erik na de geslaagde hertest: sinds de #227-ombouw wordt er niets meer getraind (≥3 referentiebeelden → direct genereren), dus de naam dekte de lading niet meer. **NL: Stijlstudio · EN: Style Studio** — alle gebruikerszichtbare plekken om: sidebar-navigatie (beide locales), paginakop, "Terug naar…"-knoppen (3×), showcase-label, module-registry in `design-tokens.ts` en het credit-label op de marketing-pricingpagina. Twee bijvangsten: (1) de paginakop en de knop "Create Model" stonden **hardcoded in het Engels** — nu via i18n (`consistent-models.page.*`), dus de pagina is eindelijk tweetalig; (2) de canvas-hint stuurde gebruikers nog naar "train eerst een Consistent AI Model" — herschreven naar de werkelijkheid (stijlmodel maken met minimaal 3 referentiebeelden). Interne sleutels, routes en API-paden (`ai-trainer`, `/media/trainer`, `/api/consistent-models`) bewust ongewijzigd: geen gebruikerswinst, wel gebroken bladwijzers. Code-commentaren meegetrokken zodat de oude naam nergens meer rondslingert.
+
+- Task: `-` (naamsbesluit Erik 2026-07-22, restpunt uit de trainer-ombouw #227)
+
 ### 438. MCP write-tool `import_brand_data` + werkbestand-flow + Adullam-import
 
 Publieke MCP-tool (18e) die merkonderdelen idempotent in een merk laadt: de 11 brand assets (frameworkData per canonieke slug, deep-merge, auto-versioning incl. pre-import snapshot), brand voice (incl. BrandRule-sync), personas, producten, concurrenten, Trend Radar-trends en kennisbronnen. Gedeelde service `importBrandData()` met volledige tweede-deur-pariteit (plan-limits, trial-lock, rol-gate op workspace-settings, locale-anker-sync, researchMethods-provisioning, cache-invalidatie) en isLocked-respect op elk pad. Invulbaar werkbestand-template (`docs/templates/werkbestand-merkonderdelen.md`) + gevuld Adullam-importscript. Vijf review-rondes (10 subagents) doorlopen; alle CRITICAL/WARNING-bevindingen gefixt. Gebouwd in een Cowork-sessie op branch `claude/branddock-merkonderdelen-werkbestand-o2tmfs`; hier gemerged nadat de halve merge in de main-worktree was afgerond (entry hernummerd 433 → 438 wegens collisie met #433-#437).

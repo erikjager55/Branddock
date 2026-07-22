@@ -8,7 +8,12 @@ const consistentModels = {
     trainingComplete: 'Training complete',
     trainingFailed: 'Training failed',
     percentComplete: '{{progress}}% complete',
-    backToAiTrainer: 'Back to AI Trainer',
+    backToAiTrainer: 'Back to Style Studio',
+  },
+  page: {
+    title: 'Style Studio',
+    subtitle: 'Capture your brand style with reference images',
+    createModel: 'Create model',
   },
   overview: {
     empty: {
@@ -170,9 +175,9 @@ const consistentModels = {
   showcase: {
     confirmDelete:
       'Are you sure you want to delete "{{name}}"? This action cannot be undone.',
-    aiTrainer: 'AI Trainer',
+    aiTrainer: 'Style Studio',
     edit: 'Edit',
-    backToAiTrainer: 'Back to AI Trainer',
+    backToAiTrainer: 'Back to Style Studio',
     gallery: 'Gallery',
     altSide: '{{name}} — side {{index}}',
     altFeature: '{{name}} — feature',
@@ -355,7 +360,7 @@ const consistentModels = {
     generateImage: 'Generate Image',
     archive: 'Archive',
     deleteModel: 'Delete Model',
-    backToAiTrainer: 'Back to AI Trainer',
+    backToAiTrainer: 'Back to Style Studio',
   },
   trainingStatus: {
     heading: 'Training Status',

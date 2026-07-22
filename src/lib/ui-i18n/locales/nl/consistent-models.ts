@@ -8,7 +8,12 @@ const consistentModels = {
     trainingComplete: 'Training voltooid',
     trainingFailed: 'Training mislukt',
     percentComplete: '{{progress}}% voltooid',
-    backToAiTrainer: 'Terug naar AI Trainer',
+    backToAiTrainer: 'Terug naar Stijlstudio',
+  },
+  page: {
+    title: 'Stijlstudio',
+    subtitle: 'Leg je merkstijl vast met referentiebeelden',
+    createModel: 'Model maken',
   },
   overview: {
     empty: {
@@ -170,9 +175,9 @@ const consistentModels = {
   showcase: {
     confirmDelete:
       'Weet je zeker dat je "{{name}}" wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
-    aiTrainer: 'AI Trainer',
+    aiTrainer: 'Stijlstudio',
     edit: 'Bewerken',
-    backToAiTrainer: 'Terug naar AI Trainer',
+    backToAiTrainer: 'Terug naar Stijlstudio',
     gallery: 'Galerij',
     altSide: '{{name}} — zijkant {{index}}',
     altFeature: '{{name}} — uitgelicht',
@@ -355,7 +360,7 @@ const consistentModels = {
     generateImage: 'Beeld genereren',
     archive: 'Archiveren',
     deleteModel: 'Model verwijderen',
-    backToAiTrainer: 'Terug naar AI Trainer',
+    backToAiTrainer: 'Terug naar Stijlstudio',
   },
   trainingStatus: {
     heading: 'Trainingsstatus',

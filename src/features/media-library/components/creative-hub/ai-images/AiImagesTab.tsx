@@ -44,7 +44,7 @@ function AiImageCardWithFavorite({
 // ─── Component ──────────────────────────────────────────────
 
 interface AiImagesTabProps {
-  /** Pre-select a trained model in the generate modal (from AI Trainer) */
+  /** Pre-select a trained model in the generate modal (from Style Studio) */
   preselectedModel?: TrainedModelOption | null;
   /** Pre-select by ID (before model data loads) */
   preselectedModelId?: string | null;
@@ -65,7 +65,7 @@ export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModel
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [sendToLibraryImage, setSendToLibraryImage] = useState<GeneratedImageWithMeta | null>(null);
 
-  // Auto-open generate modal when navigating from AI Trainer
+  // Auto-open generate modal when navigating from Style Studio
   const autoOpenedRef = useRef(false);
   useEffect(() => {
     if (autoOpenGenerate && !autoOpenedRef.current) {
