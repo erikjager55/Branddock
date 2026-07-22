@@ -5,12 +5,24 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
 import { parseJsonBody } from "@/lib/api/parse-json-body";
 import { resolveInviteTargetName } from "@/lib/invitations/invite-target-name";
+import { enforceOrgPlanLimit } from "@/lib/stripe/enforcement";
+import { checkGenericRateLimit } from "@/lib/ai/rate-limiter";
+import { authRateLimitMax } from "@/lib/auth/auth-rate-limiter";
 
 // L8 Zod-sweep (audit 2026-06-26, batch 6): een niet-string `token` (getal/
 // object) 500'de in prisma.findUnique; malformed JSON idem.
 const acceptSchema = z.object({
   token: z.string().min(1).max(500),
 });
+
+// Dit endpoint is onauthenticated tot ná de token-lookup en ontgrendelt
+// accountaanmaak op andermans adres; `src/proxy.ts` limiteert alleen
+// `/api/auth/*`. Ruim genoeg voor een heel team achter één kantoor-NAT (de
+// pagina doet ~2 calls per genodigde), streng genoeg tegen token-raden.
+// Distributed zodra `UPSTASH_REDIS_REST_URL` is gezet; zonder Redis valt
+// `checkGenericRateLimit` terug op een per-instance map.
+const ACCEPT_WINDOW_MS = 15 * 60 * 1000;
+const ACCEPT_MAX = authRateLimitMax(60);
 
 // POST /api/organization/invite/accept — accept an invitation
 export async function POST(request: NextRequest) {
@@ -23,6 +35,29 @@ export async function POST(request: NextRequest) {
     workspaceId?: string;
   } = {};
   try {
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      request.headers.get("x-real-ip") ||
+      "unknown";
+    const limit = await checkGenericRateLimit(
+      `invite-accept:${ip}`,
+      ACCEPT_MAX,
+      ACCEPT_WINDOW_MS,
+    );
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Too many attempts", code: "RATE_LIMITED" },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(
+              Math.max(1, Math.ceil((limit.resetAt.getTime() - Date.now()) / 1000)),
+            ),
+          },
+        },
+      );
+    }
+
     const parsed = await parseJsonBody(request, acceptSchema);
     if (!parsed.ok) return parsed.response;
     const { token } = parsed.data;
@@ -209,11 +244,19 @@ export async function POST(request: NextRequest) {
         // lege ACL heeft onbeperkte toegang; daar een rij aan toevoegen zou
         // hem juist opsluiten in één workspace. Heeft hij al een beperkte
         // ACL, dan voegt deze uitnodiging de nieuwe workspaces toe.
+        //
+        // Uitzondering: gaat de rol omláág van owner/admin naar member/viewer,
+        // dan had dit lid geen ACL-rijen omdát zijn rol de ACL oversloeg. Zonder
+        // die rijen zou hij ná de degradatie alsnog onbeperkt zijn (nul rijen =
+        // onbeperkt) en de scoping uit de uitnodiging stil verdampen.
+        const losesRoleBypass =
+          ["owner", "admin"].includes(existingMember.role) &&
+          ["member", "viewer"].includes(invitation.role);
         if (isScoped) {
           const aclCount = await tx.workspaceMemberAccess.count({
             where: { memberId: existingMember.id },
           });
-          if (aclCount > 0) {
+          if (aclCount > 0 || losesRoleBypass) {
             await tx.workspaceMemberAccess.createMany({
               data: validWorkspaces.map((w) => ({
                 memberId: existingMember.id,
@@ -221,6 +264,45 @@ export async function POST(request: NextRequest) {
               })),
               skipDuplicates: true,
             });
+          }
+        }
+        // Rol verzoenen: de uitnodiging belooft een rol ("je doet mee als
+        // beheerder") en die belofte werd niet nagekomen voor wie al lid was.
+        // Owner-toekenning is bij het uitnodigen al beperkt tot owners (M1),
+        // dus overnemen is hier veilig — met één uitzondering: de laatste
+        // owner mag niet gedegradeerd worden, anders blijft de organisatie
+        // stuurloos achter.
+        // Alleen een uitnodiging die NIEUWER is dan de laatste rolwijziging mag
+        // de rol overschrijven. Uitnodigingen leven 7 dagen; zonder deze check
+        // zet een oude mail een sindsdien bewust aangepaste rol stil terug.
+        const invitationIsFresh =
+          invitation.createdAt >= existingMember.updatedAt;
+
+        if (existingMember.role !== invitation.role && invitationIsFresh) {
+          const wouldDropLastOwner =
+            existingMember.role === "owner" && invitation.role !== "owner";
+          const otherOwners = wouldDropLastOwner
+            ? await tx.organizationMember.count({
+                where: {
+                  organizationId: invitation.organizationId,
+                  role: "owner",
+                  // Een gedeactiveerd lid telt niet als achtervang — elders in
+                  // de codebase filtert élke seat-/ledentelling op isActive.
+                  isActive: true,
+                  id: { not: existingMember.id },
+                },
+              })
+            : 1;
+          if (!wouldDropLastOwner || otherOwners > 0) {
+            await tx.organizationMember.update({
+              where: { id: existingMember.id },
+              data: { role: invitation.role },
+            });
+          } else {
+            console.warn(
+              "[invite/accept] rol-degradatie geweigerd — laatste owner",
+              { organizationId: invitation.organizationId },
+            );
           }
         }
         await tx.invitation.update({
@@ -236,6 +318,15 @@ export async function POST(request: NextRequest) {
         })
       );
     }
+
+    // Seat-limiet óók bij accepteren: bij het versturen telt
+    // `enforceOrgPlanLimit` alleen bestaande leden, dus N openstaande
+    // uitnodigingen konden samen over de planlimiet heen accepteren.
+    const seatLimited = await enforceOrgPlanLimit(
+      invitation.organizationId,
+      "TEAM_MEMBERS",
+    );
+    if (seatLimited) return seatLimited;
 
     // Create OrganizationMember (+ eventuele workspace-scoping) and mark
     // invitation as accepted (transaction). Lege workspaceIds = alle

@@ -2,6 +2,59 @@ import { prisma } from "./prisma";
 import { cookies } from "next/headers";
 
 /**
+ * De workspace-ids waartoe een lid binnen één organisatie toegang heeft.
+ *
+ * Spiegelt exact de regels van `hasWorkspaceAccess`: owner/admin bypassen de
+ * per-workspace-ACL, en voor member/viewer betekent een LEGE
+ * `WorkspaceMemberAccess` onbeperkt. `null` = onbeperkt binnen deze
+ * organisatie, een array = precies deze workspaces, lege array = geen enkele.
+ */
+async function accessibleWorkspaceIds(
+  userId: string,
+  organizationId: string,
+): Promise<string[] | null> {
+  const membership = await prisma.organizationMember.findUnique({
+    where: { userId_organizationId: { userId, organizationId } },
+    select: { id: true, role: true },
+  });
+  if (!membership) return [];
+
+  if (["owner", "admin"].includes(membership.role)) return null;
+
+  const acl = await prisma.workspaceMemberAccess.findMany({
+    where: { memberId: membership.id, workspace: { organizationId } },
+    select: { workspaceId: true },
+  });
+  return acl.length === 0 ? null : acl.map((row) => row.workspaceId);
+}
+
+/**
+ * Eerste workspace binnen een organisatie waar deze gebruiker écht bij mag.
+ *
+ * Waarom niet gewoon de oudste: dit pad voedt `resolveWorkspaceId`, en dat
+ * wordt door ~398 API-routes vertrouwd zonder eigen ACL-check. Een
+ * workspace-gescopet lid landde daardoor op de oudste workspace van de
+ * organisatie — buiten zijn scope, met lees/schrijf-toegang (gevonden bij de
+ * invite-flow-review 2026-07-22, toen gescopete leden voor het eerst konden
+ * ontstaan).
+ */
+async function firstAccessibleWorkspace(
+  organizationId: string,
+  userId: string,
+) {
+  const allowed = await accessibleWorkspaceIds(userId, organizationId);
+  if (allowed !== null && allowed.length === 0) return null;
+
+  return prisma.workspace.findFirst({
+    where: {
+      organizationId,
+      ...(allowed === null ? {} : { id: { in: allowed } }),
+    },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+/**
  * Get workspace by explicit cookie selection.
  * Used when an agency user has switched to a specific workspace.
  */
@@ -10,29 +63,33 @@ export async function getExplicitWorkspace(userId: string) {
   const workspaceId = cookieStore.get("branddock-workspace-id")?.value;
   if (!workspaceId) return null;
 
-  // Validate the user still has access to this workspace
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
   });
 
   if (!workspace) return null;
 
-  // Check membership in the workspace's organization
-  const membership = await prisma.organizationMember.findUnique({
-    where: {
-      userId_organizationId: {
-        userId,
-        organizationId: workspace.organizationId,
-      },
-    },
-  });
-
-  if (!membership) return null;
+  // Volledige ACL-check, niet alleen org-lidmaatschap: anders kon een
+  // gescopet lid met een zelfgezette cookie elke workspace van zijn
+  // organisatie openen. Bewust niet via `hasWorkspaceAccess` — die zou de
+  // workspace hierboven nóg een keer ophalen, en dit is het heetste pad van
+  // de app (elke request via `resolveWorkspaceId`).
+  const allowed = await accessibleWorkspaceIds(userId, workspace.organizationId);
+  if (allowed !== null && !allowed.includes(workspaceId)) return null;
 
   return workspace;
 }
 
-export async function getWorkspaceForOrganization(organizationId: string) {
+/**
+ * Eerste workspace van een organisatie. Geef `userId` mee waar de gebruiker
+ * bekend is — dan respecteert de keuze zijn workspace-ACL.
+ */
+export async function getWorkspaceForOrganization(
+  organizationId: string,
+  userId?: string,
+) {
+  if (userId) return firstAccessibleWorkspace(organizationId, userId);
+
   return prisma.workspace.findFirst({
     where: { organizationId },
     orderBy: { createdAt: "asc" },
@@ -40,23 +97,21 @@ export async function getWorkspaceForOrganization(organizationId: string) {
 }
 
 export async function getWorkspaceForUser(userId: string) {
-  // Find user's first organization membership → first workspace
-  const membership = await prisma.organizationMember.findFirst({
+  // Alle organisaties van de gebruiker langs, en per organisatie de eerste
+  // workspace waar hij daadwerkelijk bij mag. Nam eerder blind de eerste
+  // workspace van de eerste organisatie.
+  const memberships = await prisma.organizationMember.findMany({
     where: { userId },
-    include: {
-      organization: {
-        include: {
-          workspaces: { take: 1 },
-        },
-      },
-    },
+    select: { organizationId: true },
+    orderBy: { joinedAt: "asc" },
   });
 
-  if (!membership?.organization?.workspaces?.[0]) {
-    return null;
+  for (const { organizationId } of memberships) {
+    const workspace = await firstAccessibleWorkspace(organizationId, userId);
+    if (workspace) return workspace;
   }
 
-  return membership.organization.workspaces[0];
+  return null;
 }
 
 /**

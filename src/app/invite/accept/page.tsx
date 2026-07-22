@@ -67,6 +67,10 @@ const STRINGS = {
     errWrongEmailHint: 'Sign out and try again with the invited address.',
     errWorkspaceGone: 'The workspace for this invitation no longer exists.',
     errWorkspaceGoneHint: 'Ask your teammate for a new invitation.',
+    errSeatLimit: 'This team has no seats left.',
+    errSeatLimitHint: 'Ask your teammate to upgrade the plan, then open this link again.',
+    errRateLimited: 'Too many attempts from this network.',
+    errRateLimitedHint: 'Wait a few minutes and open the link again.',
     errGeneric: 'Something went wrong while accepting this invitation.',
     signOutRetry: 'Sign out and try again',
     signOutFailed: 'Signing out failed. Please clear your cookies and retry.',
@@ -110,6 +114,10 @@ const STRINGS = {
     errWrongEmailHint: 'Log uit en probeer het opnieuw met het uitgenodigde adres.',
     errWorkspaceGone: 'De workspace uit deze uitnodiging bestaat niet meer.',
     errWorkspaceGoneHint: 'Vraag je collega om een nieuwe uitnodiging.',
+    errSeatLimit: 'Dit team heeft geen plekken meer vrij.',
+    errSeatLimitHint: 'Vraag je collega het abonnement op te hogen en open deze link daarna opnieuw.',
+    errRateLimited: 'Te veel pogingen vanaf dit netwerk.',
+    errRateLimitedHint: 'Wacht een paar minuten en open de link opnieuw.',
     errGeneric: 'Er ging iets mis bij het accepteren van deze uitnodiging.',
     signOutRetry: 'Uitloggen en opnieuw proberen',
     signOutFailed: 'Uitloggen is mislukt. Wis je cookies en probeer het opnieuw.',
@@ -184,6 +192,10 @@ function toErrorPhase(status: number, data: AcceptResponse, s: Strings): Phase {
       return { kind: 'error', title: s.errCancelled, hint: s.errCancelledHint };
     case 'WORKSPACE_GONE':
       return { kind: 'error', title: s.errWorkspaceGone, hint: s.errWorkspaceGoneHint };
+    case 'SEAT_LIMIT_REACHED':
+      return { kind: 'error', title: s.errSeatLimit, hint: s.errSeatLimitHint };
+    case 'RATE_LIMITED':
+      return { kind: 'error', title: s.errRateLimited, hint: s.errRateLimitedHint };
     case 'EMAIL_MISMATCH':
       return {
         kind: 'error',

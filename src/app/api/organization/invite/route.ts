@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
@@ -162,6 +163,11 @@ export async function POST(request: NextRequest) {
     const invitation = await prisma.invitation.create({
       data: {
         email,
+        // Expliciet CSPRNG i.p.v. de `@default(cuid())` uit het schema: cuid is
+        // timestamp + counter + fingerprint + weinig entropie, terwijl dit
+        // token 7 dagen lang accountaanmaak op andermans adres ontgrendelt.
+        // Geen schema-wijziging nodig — de default blijft als vangnet staan.
+        token: randomBytes(32).toString("base64url"),
         role: inviteRole,
         organizationId,
         invitedById: session.user.id,
