@@ -48,6 +48,7 @@ Eriks test-uitnodiging legde drie bugs bloot. (1) **De accept-link was dood**: d
 - Task: [tasks/done/invite-flow-fixes.md](../tasks/done/invite-flow-fixes.md)
 - ADR: `-`
 - Gotcha: mail-link naar een nooit-gebouwde landing (2026-07-22, tweede vindplaats)
+- Commit: `dd7a5524`
 
 ### 438. MCP write-tool `import_brand_data` + werkbestand-flow + Adullam-import
 
