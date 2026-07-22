@@ -39,6 +39,7 @@ export async function getWorkspaceUsers(workspaceId: string): Promise<WorkspaceU
     orderBy: { joinedAt: "asc" }, // deterministische volgorde voor single-recipient callers
     select: {
       role: true,
+      workspaceScoped: true,
       user: { select: { id: true, email: true, name: true } },
       workspaceAccess: { select: { workspaceId: true } },
     },
@@ -47,11 +48,13 @@ export async function getWorkspaceUsers(workspaceId: string): Promise<WorkspaceU
   const seen = new Set<string>();
   const result: WorkspaceUser[] = [];
   for (const m of members) {
-    // Spiegelt hasWorkspaceAccess(): owner/admin bypassen de per-workspace ACL.
+    // Spiegelt hasWorkspaceAccess(): owner/admin bypassen de per-workspace
+    // ACL, en `workspaceScoped` beslist de rest — NIET het aantal rijen. Nul
+    // rijen bij een gescopet lid betekent geen toegang (2026-07-22).
     const canSee =
       m.role === "owner" ||
       m.role === "admin" ||
-      m.workspaceAccess.length === 0 ||
+      !m.workspaceScoped ||
       m.workspaceAccess.some((wa) => wa.workspaceId === workspaceId);
     if (!canSee || seen.has(m.user.id)) continue;
     seen.add(m.user.id);
@@ -84,6 +87,7 @@ export async function canActInWorkspace(workspaceId: string, userId: string): Pr
     },
     select: {
       role: true,
+      workspaceScoped: true,
       workspaceAccess: { select: { workspaceId: true } },
     },
   });
@@ -92,7 +96,7 @@ export async function canActInWorkspace(workspaceId: string, userId: string): Pr
   return (
     member.role === "owner" ||
     member.role === "admin" ||
-    member.workspaceAccess.length === 0 ||
+    !member.workspaceScoped ||
     member.workspaceAccess.some((wa) => wa.workspaceId === workspaceId)
   );
 }

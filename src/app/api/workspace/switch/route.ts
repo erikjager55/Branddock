@@ -62,12 +62,16 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // If there are any access records for this member, they need one for this workspace
-      const hasAnyAccess = await prisma.workspaceMemberAccess.count({
-        where: { memberId: membership.id },
+      // `workspaceScoped` beslist, niet het aantal rijen: anders zou een
+      // gescopet lid met nul rijen hier 200 krijgen en een cookie zetten die
+      // `getExplicitWorkspace` daarna weigert — de gebruiker houdt dan
+      // helemaal geen workspace over (2026-07-22).
+      const scoped = await prisma.organizationMember.findUnique({
+        where: { id: membership.id },
+        select: { workspaceScoped: true },
       });
 
-      if (hasAnyAccess > 0 && !access) {
+      if (scoped?.workspaceScoped && !access) {
         return NextResponse.json(
           { error: "No access to this workspace" },
           { status: 403 }

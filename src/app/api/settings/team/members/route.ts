@@ -72,7 +72,9 @@ export async function GET() {
         avatar: m.user.avatarUrl ?? m.user.image ?? null,
         isActive: m.isActive,
         joinedAt: m.joinedAt.toISOString(),
-        // Leeg = alle workspaces (en altijd leeg voor owner/admin — ACL-bypass).
+        // `workspaceScoped` beslist of deze lijst een beperking ís: zonder de
+        // vlag betekent leeg "alle workspaces", mét de vlag "geen enkele".
+        workspaceScoped: m.workspaceScoped,
         workspaceIds: m.workspaceAccess.map((wa) => wa.workspaceId),
       })),
     });

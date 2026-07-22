@@ -5,9 +5,10 @@ import { cookies } from "next/headers";
  * De workspace-ids waartoe een lid binnen één organisatie toegang heeft.
  *
  * Spiegelt exact de regels van `hasWorkspaceAccess`: owner/admin bypassen de
- * per-workspace-ACL, en voor member/viewer betekent een LEGE
- * `WorkspaceMemberAccess` onbeperkt. `null` = onbeperkt binnen deze
- * organisatie, een array = precies deze workspaces, lege array = geen enkele.
+ * per-workspace-ACL, en voor member/viewer beslist `workspaceScoped`.
+ * `null` = onbeperkt binnen deze organisatie, een array = precies deze
+ * workspaces — en een LEGE array betekent dus géén enkele (niet "alle", zoals
+ * vóór 2026-07-22).
  */
 async function accessibleWorkspaceIds(
   userId: string,
@@ -15,17 +16,22 @@ async function accessibleWorkspaceIds(
 ): Promise<string[] | null> {
   const membership = await prisma.organizationMember.findUnique({
     where: { userId_organizationId: { userId, organizationId } },
-    select: { id: true, role: true },
+    select: { id: true, role: true, workspaceScoped: true },
   });
   if (!membership) return [];
 
   if (["owner", "admin"].includes(membership.role)) return null;
+  // `workspaceScoped` is de bron-van-waarheid, niet "heeft dit lid rijen?".
+  // Zonder die vlag betekende nul rijen ONBEPERKT, en dan promoveert het
+  // verwijderen van de laatste toegekende workspace een gescopet lid stil
+  // tot toegang-tot-alles.
+  if (!membership.workspaceScoped) return null;
 
   const acl = await prisma.workspaceMemberAccess.findMany({
     where: { memberId: membership.id, workspace: { organizationId } },
     select: { workspaceId: true },
   });
-  return acl.length === 0 ? null : acl.map((row) => row.workspaceId);
+  return acl.map((row) => row.workspaceId);
 }
 
 /**
@@ -120,9 +126,11 @@ export async function getWorkspaceForUser(userId: string) {
  * Rules (mirrors `/api/workspace/switch`):
  *   1. User must be an OrganizationMember of the workspace's org.
  *   2. OWNER/ADMIN bypass per-workspace ACL.
- *   3. For member/viewer: empty `WorkspaceMemberAccess` = unrestricted
- *      (all workspaces in the org). Non-empty = must have an explicit row
- *      for the target workspace.
+ *   3. For member/viewer beslist `OrganizationMember.workspaceScoped`:
+ *      `false` = onbeperkt binnen de organisatie, `true` = uitsluitend de
+ *      workspaces met een expliciete `WorkspaceMemberAccess`-rij — en dat
+ *      mogen er nul zijn (= geen toegang). Vóór 2026-07-22 werd "nul rijen"
+ *      als onbeperkt gelezen; zie de veld-documentatie in schema.prisma.
  *
  * Use this for any direct-ID lookup that would otherwise trust
  * `resolveWorkspaceId()`'s cookie/session path — that path does not
@@ -146,16 +154,12 @@ export async function hasWorkspaceAccess(
         organizationId: workspace.organizationId,
       },
     },
-    select: { id: true, role: true },
+    select: { id: true, role: true, workspaceScoped: true },
   });
   if (!membership) return false;
 
   if (["owner", "admin"].includes(membership.role)) return true;
-
-  const aclCount = await prisma.workspaceMemberAccess.count({
-    where: { memberId: membership.id },
-  });
-  if (aclCount === 0) return true;
+  if (!membership.workspaceScoped) return true;
 
   const row = await prisma.workspaceMemberAccess.findUnique({
     where: {

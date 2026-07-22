@@ -38,6 +38,7 @@ const settingsTeam = {
     remove: 'Remove',
   },
   workspaceAccess: {
+    columnNone: 'No access',
     columnAll: 'All',
     columnCount_one: '{{count}} workspace',
     columnCount_other: '{{count}} workspaces',

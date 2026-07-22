@@ -309,6 +309,14 @@ async function main() {
         workspaceId: workspace.id,
       },
     });
+    // ACL-rijen zonder deze vlag worden sinds 2026-07-22 als ONBEPERKT
+    // gelezen — de seed moet de scoping dus expliciet maken.
+    await prisma.organizationMember.update({
+      where: { id: teamMembership.id },
+      data: { workspaceScoped: true },
+    });
+    // NB: de admin hieronder krijgt de vlag óók, maar diens rol bypasst de ACL
+    // sowieso — het is alleen relevant zodra zo iemand gedegradeerd wordt.
   }
 
   // Admin + viewer (RBAC-403 e2e-smokes — additief, raakt bestaande users niet)
@@ -325,6 +333,7 @@ async function main() {
       role: "admin",
       userId: adminUser.id,
       organizationId: organization.id,
+      workspaceScoped: true,
     },
   });
 
@@ -348,6 +357,7 @@ async function main() {
       role: "viewer",
       userId: viewerUser.id,
       organizationId: organization.id,
+      workspaceScoped: true,
     },
   });
 

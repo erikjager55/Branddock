@@ -38,6 +38,7 @@ const settingsTeam = {
     remove: 'Verwijderen',
   },
   workspaceAccess: {
+    columnNone: 'Geen toegang',
     columnAll: 'Alle',
     columnCount_one: '{{count}} werkomgeving',
     columnCount_other: '{{count}} werkomgevingen',

@@ -256,13 +256,20 @@ export async function POST(request: NextRequest) {
           const aclCount = await tx.workspaceMemberAccess.count({
             where: { memberId: existingMember.id },
           });
-          if (aclCount > 0 || losesRoleBypass) {
+          // `workspaceScoped` telt óók mee: een lid dat gescopet is maar
+          // door een workspace-verwijdering nul rijen overhield, moet met
+          // deze uitnodiging juist wél weer rijen krijgen.
+          if (existingMember.workspaceScoped || aclCount > 0 || losesRoleBypass) {
             await tx.workspaceMemberAccess.createMany({
               data: validWorkspaces.map((w) => ({
                 memberId: existingMember.id,
                 workspaceId: w.id,
               })),
               skipDuplicates: true,
+            });
+            await tx.organizationMember.update({
+              where: { id: existingMember.id },
+              data: { workspaceScoped: true },
             });
           }
         }
@@ -337,6 +344,9 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           organizationId: invitation.organizationId,
           role: invitation.role,
+          // Expliciet beperkt: zonder deze vlag zou het wegvallen van de
+          // laatste toegekende workspace dit lid onbeperkt maken.
+          workspaceScoped: isScoped,
         },
       });
 

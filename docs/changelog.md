@@ -37,6 +37,20 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 441. "Lege ACL = onbeperkt" wegwerkt — expliciete `workspaceScoped`-vlag + sweep over alle lezers
+
+⚠️ **Deploy-volgorde**: nieuwe kolom `OrganizationMember.workspaceScoped`. Neon-push én backfill horen direct achter elkaar, vóór/bij de deploy — anders is elk gescopet lid tijdelijk onbeperkt. SQL + alternatief (`POST /api/admin/repair-defaults`) staan bovenaan de [task-file](../tasks/done/workspace-scoping-fail-open.md). Zonder de kolom 500't élk geauthenticeerd request.
+
+Vervolg op #440. `WorkspaceMemberAccess` beperkt een member/viewer tot bepaalde workspaces, maar "nul rijen" werd overal gelezen als **onbeperkt** — een fail-open default die op drie manieren toesloeg: een verwijderde workspace cascadeerde de laatste rij weg (lid werd stil onbeperkt), de team-UI met alles uitgevinkt wiste alle rijen (bedoeld als "geen toegang", gaf toegang tot álles), en elk pad dat per ongeluk geen rijen schreef deed hetzelfde. De nieuwe vlag maakt "beperkt tot niets" uitdrukbaar: `true` = uitsluitend de gekoppelde rijen, `false` = onbeperkt; owner/admin bypassen de ACL sowieso.
+
+De review legde bloot dat #440 alléén de resolver had omgezet. Vier andere lezers stonden nog op de oude telling en zijn meegenomen: `canActInWorkspace` (acting identity voor agent-runs, untrusted webhook-payload), `getWorkspaceUsers` (notificatie-fan-out), de workspaces-lijst, `POST /api/workspace/switch` en de publieke MCP/REST-`brand-resolver` (3 plekken). Verder: invite-accept keek naar `aclCount` i.p.v. de vlag en sloot daarmee juist een gestrand lid voorgoed buiten; workspace-delete meldt nu welke leden zonder workspace achterblijven (tot in de UI); de team-tabel toont "Geen toegang" i.p.v. "Alle"; en `repair-defaults` kreeg een idempotente backfill met diagnose.
+
+Bewezen: na het verwijderen van zijn énige workspace geeft `hasWorkspaceAccess` voor dat lid **false** (was `true`), lege-ACL-leden ongewijzigd, backfill 2 → 0, `strandedMembers` correct gerapporteerd, Playwright `invite-accept` 6/6 en `permissions` 19/19 inclusief een nieuwe scoping-test.
+
+- Task: [tasks/done/workspace-scoping-fail-open.md](../tasks/done/workspace-scoping-fail-open.md)
+- ADR: `-`
+- Gotcha: zie de 2026-07-22-entry over fail-open defaults
+
 ### 440. Workspace-scoping écht afdwingen — ACL-blinde resolver, tweede deur, rol/seats, tokensterkte
 
 Vervolg op #439, dat gescopete uitnodigingen voor het eerst accepteerbaar maakte en daarmee blootlegde dat de scoping uit PR #220 **adviserend** was. Zes punten gesloten. (1) **De workspace-resolutie is ACL-bewust**: `getWorkspaceForOrganization` koos de *oudste* workspace van de organisatie zonder ACL-check en `getExplicitWorkspace` valideerde de cookie alleen op org-lidmaatschap — een gescopet lid dat zijn cookie wiste of vervalste las dus data buiten zijn scope, op een pad dat ~398 API-routes vertrouwen. Nieuwe gedeelde `accessibleWorkspaceIds`/`firstAccessibleWorkspace` spiegelen exact de regels van `hasWorkspaceAccess` (owner/admin bypassen; lege ACL = onbeperkt), zodat owners, admins en leden met lege ACL ongewijzigd gedrag houden. (2) **Tweede deur dicht**: de Better-Auth-organization-plugin exposeert een eigen `accept-invitation` op dezelfde tabellen die `workspaceIds` niet kent en dus een lid met nul ACL-rijen (= onbeperkt) aanmaakte; die route wordt nu in `beforeAcceptInvitation` geweigerd — bewust blokkeren i.p.v. nabouwen, omdat een `after`-hook per definitie ná de commit draait en dus niet fail-closed kán zijn. (3) **Rolverzoening** bij her-uitnodigen, met een vers-heidscheck (een 7 dagen oude mail overschrijft geen bewust gewijzigde rol) en een laatste-actieve-owner-guard. (4) **Seat-limiet** wordt nu ook bij accepteren gecheckt. (5) **CSPRNG-tokens** (`randomBytes(32)`) i.p.v. de `cuid()`-default, plus een per-IP rate-limit op het accept-endpoint. (6) **Playwright-spec** over zes takken van de accept-pagina (6/6 groen).

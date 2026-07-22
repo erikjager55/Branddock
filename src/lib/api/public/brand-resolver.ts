@@ -79,15 +79,14 @@ export async function getMembershipForWorkspace(
 
   const membership = await prisma.organizationMember.findUnique({
     where: { userId_organizationId: { userId, organizationId: workspace.organizationId } },
-    select: { id: true, role: true, isActive: true },
+    select: { id: true, role: true, isActive: true, workspaceScoped: true },
   });
   if (!membership || !membership.isActive) return null;
 
   if (!ADMIN_ROLES.includes(membership.role)) {
-    const aclCount = await prisma.workspaceMemberAccess.count({
-      where: { memberId: membership.id },
-    });
-    if (aclCount > 0) {
+    // `workspaceScoped` i.p.v. het aantal ACL-rijen — de publieke MCP/REST-
+    // deur mag niet fail-open zijn waar de app dat niet meer is (2026-07-22).
+    if (membership.workspaceScoped) {
       const row = await prisma.workspaceMemberAccess.findUnique({
         where: { memberId_workspaceId: { memberId: membership.id, workspaceId } },
         select: { id: true },
@@ -101,16 +100,28 @@ export async function getMembershipForWorkspace(
 
 /** Oudste workspace van een org die deze membership mag zien (ACL-bewust). */
 async function oldestAccessibleWorkspace(
-  member: { id: string; role: string },
+  member: { id: string; role: string; workspaceScoped?: boolean },
   organizationId: string,
 ): Promise<string | null> {
   let restrictedIds: string[] | null = null;
   if (!ADMIN_ROLES.includes(member.role)) {
-    const acl = await prisma.workspaceMemberAccess.findMany({
-      where: { memberId: member.id },
-      select: { workspaceId: true },
-    });
-    if (acl.length > 0) restrictedIds = acl.map((row) => row.workspaceId);
+    const scoped =
+      member.workspaceScoped ??
+      (
+        await prisma.organizationMember.findUnique({
+          where: { id: member.id },
+          select: { workspaceScoped: true },
+        })
+      )?.workspaceScoped ??
+      false;
+    if (scoped) {
+      const acl = await prisma.workspaceMemberAccess.findMany({
+        where: { memberId: member.id },
+        select: { workspaceId: true },
+      });
+      // Bewust ook bij nul rijen beperken: gescopet-met-niets = geen toegang.
+      restrictedIds = acl.map((row) => row.workspaceId);
+    }
   }
   const workspace = await prisma.workspace.findFirst({
     where: { organizationId, ...(restrictedIds ? { id: { in: restrictedIds } } : {}) },
@@ -199,6 +210,7 @@ export async function listBrandsForUser(
     select: {
       id: true,
       role: true,
+      workspaceScoped: true,
       organization: {
         select: {
           name: true,
@@ -212,7 +224,7 @@ export async function listBrandsForUser(
   });
 
   const restrictedMemberIds = memberships
-    .filter((m) => !ADMIN_ROLES.includes(m.role))
+    .filter((m) => !ADMIN_ROLES.includes(m.role) && m.workspaceScoped)
     .map((m) => m.id);
   const aclRows = restrictedMemberIds.length
     ? await prisma.workspaceMemberAccess.findMany({
@@ -229,10 +241,12 @@ export async function listBrandsForUser(
 
   const brands: Array<Omit<BrandListing, 'isDefault'>> = [];
   for (const membership of memberships) {
-    const acl = aclByMember.get(membership.id);
+    const isScoped = !ADMIN_ROLES.includes(membership.role) && membership.workspaceScoped;
+    const acl = aclByMember.get(membership.id) ?? new Set<string>();
     for (const workspace of membership.organization.workspaces) {
-      // Lege ACL = onbeperkt binnen de org; niet-lege = alleen expliciete rijen.
-      if (acl && !acl.has(workspace.id)) continue;
+      // `workspaceScoped` beslist; bij een gescopet lid tellen alleen de
+      // expliciete rijen — nul rijen betekent dus géén merken uit die org.
+      if (isScoped && !acl.has(workspace.id)) continue;
       brands.push({
         workspaceId: workspace.id,
         name: workspace.name,
