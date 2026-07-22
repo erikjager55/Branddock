@@ -50,6 +50,7 @@ Bewezen: na het verwijderen van zijn énige workspace geeft `hasWorkspaceAccess`
 - Task: [tasks/done/workspace-scoping-fail-open.md](../tasks/done/workspace-scoping-fail-open.md)
 - ADR: `-`
 - Gotcha: zie de 2026-07-22-entry over fail-open defaults
+- Commit: `ff4cc5e1`
 
 ### 440. Workspace-scoping écht afdwingen — ACL-blinde resolver, tweede deur, rol/seats, tokensterkte
 
