@@ -279,7 +279,7 @@ const ns = {
     loadingModels: 'Getrainde modellen laden...',
     noModels: 'Geen getrainde modellen beschikbaar',
     noModelsHint:
-      'Train eerst een Consistent AI Model in de AI Trainer en kom dan hier terug om on-brand visuals te genereren met je getrainde stijl.',
+      'Maak eerst een stijlmodel in de Stijlstudio (upload minimaal 3 referentiebeelden) en kom dan hier terug om on-brand visuals te genereren in die stijl.',
     modelLabel: 'Getraind model',
     strengthLabel: 'Stijlsterkte',
     strengthHintPrefix:

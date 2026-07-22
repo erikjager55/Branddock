@@ -2,7 +2,7 @@
 // fal.ai Provider Registry
 //
 // Shared metadata for all fal.ai image generation providers.
-// Consumed by both the AI Trainer (model-type filtering) and
+// Consumed by both the Style Studio (model-type filtering) and
 // the AI Studio (usage-category filtering).
 // =============================================================
 
@@ -77,7 +77,7 @@ const ALL_FAL_PROVIDERS: Record<string, FalProvider> = {
 
 // ─── Trainer filter (by model type) ──────────────────────────
 
-/** Provider IDs per ConsistentModelType — AI Trainer only */
+/** Provider IDs per ConsistentModelType — Style Studio only */
 const FAL_PROVIDERS_BY_TYPE: Record<ModelTypeKey, string[]> = {
   PERSON:       ['openai/gpt-image-2', 'fal-ai/flux-2-pro', 'fal-ai/nano-banana-pro', 'fal-ai/phota'],
   PRODUCT:      ['openai/gpt-image-2', 'fal-ai/flux-2-pro', 'fal-ai/flux-2', 'fal-ai/seedream-v4-5'],
@@ -120,7 +120,7 @@ export function getFalEndpoint(provider: FalProvider): string {
   return provider.endpoint ?? provider.id;
 }
 
-/** Get the relevant providers for an AI Trainer model type (ordered by relevance) */
+/** Get the relevant providers for an Style Studio model type (ordered by relevance) */
 export function getFalProvidersForType(type: string): FalProvider[] {
   const ids = FAL_PROVIDERS_BY_TYPE[type as ModelTypeKey] ?? Object.keys(ALL_FAL_PROVIDERS);
   return ids.map((id) => ALL_FAL_PROVIDERS[id]).filter((p): p is FalProvider => Boolean(p));

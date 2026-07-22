@@ -80,7 +80,7 @@ export interface FalStandaloneGenerationOptions {
   referenceImageUrls?: string[];
   /**
    * Output-resolutie voor aspect-ratio-modellen (Nano Banana Pro / Phota).
-   * Default '1K'; stijlreferentie-flows (AI Trainer) gebruiken '4K'.
+   * Default '1K'; stijlreferentie-flows (Stijlstudio) gebruiken '4K'.
    * Let op: fal rekent per output-resolutie — 4K is duurder dan 1K.
    */
   resolution?: '1K' | '2K' | '4K';

@@ -3,7 +3,7 @@ import { getR2SignedUrl, isR2Configured } from './r2-storage';
 /**
  * Resolve a stored storage-URL to a form that is reachable *right now*.
  *
- * Older rows (AI Trainer reference images, generations) persisted the URL that
+ * Older rows (Style Studio reference images, generations) persisted the URL that
  * the storage provider returned at upload time. Before R2_PUBLIC_URL existed on
  * prod that was a *signed* R2 endpoint URL — which expires after an hour. Those
  * rows then break twice: `<img src>` previews 403 in the UI, and fal.ai cannot

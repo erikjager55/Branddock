@@ -128,7 +128,7 @@ export const MediaLibraryPage = lazy(() =>
   import('@/features/media-library/components/MediaLibraryPage').then(m => ({ default: m.MediaLibraryPage }))
 );
 
-// ─── AI Trainer ──────────────────────────────────────────
+// ─── Style Studio ──────────────────────────────────────────
 export const AiTrainerPage = lazy(() =>
   import('@/features/ai-trainer/components/AiTrainerPage').then(m => ({ default: m.AiTrainerPage }))
 );

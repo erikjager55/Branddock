@@ -21,7 +21,7 @@ export interface BrandContextTagsEditorProps {
 
 /**
  * Brand context tag selector — pills + add-custom input.
- * Shared between AI Trainer (reference generation) and AI Studio (ad-hoc generation).
+ * Shared between Style Studio (reference generation) and AI Studio (ad-hoc generation).
  */
 export function BrandContextTagsEditor({
   initialTags,

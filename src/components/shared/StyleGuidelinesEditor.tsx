@@ -18,7 +18,7 @@ export interface StyleGuidelinesEditorProps {
 
 /**
  * Do's / Don'ts editor for AI image generation.
- * Shared between AI Trainer (reference generation) and AI Studio (ad-hoc generation).
+ * Shared between Style Studio (reference generation) and AI Studio (ad-hoc generation).
  */
 export function StyleGuidelinesEditor({
   dos,
