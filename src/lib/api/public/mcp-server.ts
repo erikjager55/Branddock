@@ -2,7 +2,7 @@
 // Publieke Brand-API — MCP-server (Fase B + "merken zijn taal"-batch,
 // ADR 2026-07-17-public-brand-api).
 //
-// Bouwt per request een verse McpServer met de 17 publieke brand-tools,
+// Bouwt per request een verse McpServer met de 18 publieke brand-tools,
 // gebonden aan de auth-context (stateless serverless-patroon — zie
 // src/app/api/mcp/route.ts). Tweede-deur-principe: elke tool loopt door
 // exact dezelfde services als de UI en de REST-routes (/api/v1/*).
@@ -40,6 +40,7 @@ import {
   resolveBrandParam,
   requireWriteAccess,
 } from '@/lib/api/public/brand-resolver';
+import { importBrandData, type BrandImportPayload } from '@/lib/api/public/brand-import';
 
 /**
  * Auth-context van de aanroepende request: default-merk + via welk auth-pad
@@ -626,10 +627,232 @@ function registerImageTool(server: McpServer, ctx: PublicMcpContext): void {
   );
 }
 
+// ─── import_brand_data (werkbestand-flow) ────────────────────
+
+const importToneDimensions = z
+  .object({
+    formalCasual: z.number().int().min(1).max(7),
+    seriousFunny: z.number().int().min(1).max(7),
+    respectfulIrreverent: z.number().int().min(1).max(7),
+    matterOfFactEnthusiastic: z.number().int().min(1).max(7),
+  })
+  .describe('NN/g 4-assen tone-baseline, elk 1-7 (4 = neutraal; 1 = formeel/serieus/respectvol/zakelijk)');
+
+// Payload-bounds: publiek write-endpoint — begrens aantallen en tekstlengtes
+// zodat één call geen onbegrensde row-/query-fanout kan triggeren.
+const MAX_IMPORT_ITEMS = 50;
+const shortText = z.string().max(2_000);
+const longText = z.string().max(20_000);
+const textList = z.array(z.string().max(2_000)).max(100);
+// URL-velden worden elders als href gerenderd en (websiteUrl) gescrapet —
+// zelfde validatie-strengheid als de UI-routes, plus scheme-allowlist.
+const httpUrl = z
+  .string()
+  .max(2_000)
+  .regex(/^https?:\/\/\S+$/, 'moet een absolute http(s)-URL zijn');
+const httpUrlList = z.array(httpUrl).max(50);
+
+const importSchema = z.object({
+  contentLanguage: z
+    .string()
+    .regex(/^[a-z]{2}$/, 'ISO 639-1 lowercase, bijv. "nl"')
+    .optional()
+    .describe('ISO 639-1 workspace-taal, bijv. "nl" — zet Workspace.contentLanguage'),
+  brandAssets: z
+    .array(
+      z.object({
+        slug: z
+          .string()
+          .max(50)
+          .describe('Canonieke asset-slug, bijv. "golden-circle", "core-values", "brand-story"'),
+        frameworkData: z
+          .record(z.string(), z.unknown())
+          .refine((v) => JSON.stringify(v).length <= 50_000, 'frameworkData te groot (max 50KB geserialiseerd)')
+          .describe('Framework-velden — exacte keys per frameworkType; wordt diep gemerged over bestaande data'),
+        content: longText.optional().describe('Optionele vrije-tekst aanvulling'),
+      }),
+    )
+    .max(11)
+    .optional()
+    .describe('De 11 canonieke brand assets (deel 1 van het werkbestand)'),
+  voiceguide: z
+    .object({
+      voiceDescription: longText.optional(),
+      toneDimensions: importToneDimensions.optional(),
+      wordsWeUse: textList.optional(),
+      wordsWeAvoid: textList.optional(),
+      vocabularyDo: textList.optional(),
+      vocabularyDont: textList.optional(),
+      antiPatterns: textList.optional(),
+      examplePhrases: z
+        .array(z.object({ text: shortText, type: z.enum(['do', 'dont']) }))
+        .max(100)
+        .optional(),
+      voiceSample: longText.optional(),
+      writingSamples: z.array(z.string().max(20_000)).max(20).optional(),
+      contentGuidelines: textList.optional(),
+      writingGuidelines: textList.optional(),
+      channelTones: z
+        .partialRecord(
+          z.enum(['website', 'socialMedia', 'email', 'ads', 'video']),
+          z.object({ description: shortText }),
+        )
+        .optional(),
+      contentLocale: z.enum(['nl-NL', 'nl-BE', 'en-GB', 'de-DE']).optional(),
+    })
+    .optional()
+    .describe('Brand voice (deel 2 van het werkbestand) — upsert op de workspace-voiceguide'),
+  personas: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(200),
+        tagline: shortText.optional(),
+        age: shortText.optional(),
+        gender: shortText.optional(),
+        location: shortText.optional(),
+        occupation: shortText.optional(),
+        education: shortText.optional(),
+        income: shortText.optional(),
+        familyStatus: shortText.optional(),
+        personalityType: shortText.optional(),
+        bio: longText.optional(),
+        quote: shortText.optional(),
+        coreValues: textList.optional(),
+        interests: textList.optional(),
+        goals: textList.optional(),
+        motivations: textList.optional(),
+        frustrations: textList.optional(),
+        behaviors: textList.optional(),
+        preferredChannels: textList.optional(),
+        techStack: textList.optional(),
+        buyingTriggers: textList.optional(),
+        decisionCriteria: textList.optional(),
+        strategicImplications: longText.optional(),
+      }),
+    )
+    .max(MAX_IMPORT_ITEMS)
+    .optional()
+    .describe('Personas (deel 4) — match op naam binnen het merk'),
+  products: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(200),
+        category: shortText.optional(),
+        description: longText.optional(),
+        pricingModel: shortText.optional(),
+        pricingDetails: longText.optional(),
+        sourceUrl: httpUrl.optional(),
+        features: textList.optional(),
+        benefits: textList.optional(),
+        useCases: textList.optional(),
+        personaNames: z.array(z.string().max(200)).max(MAX_IMPORT_ITEMS).optional(),
+      }),
+    )
+    .max(MAX_IMPORT_ITEMS)
+    .optional()
+    .describe('Producten/diensten (deel 5) — match op naam binnen het merk'),
+  competitors: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(200),
+        websiteUrl: httpUrl.optional(),
+        tier: z.enum(['DIRECT', 'INDIRECT', 'ASPIRATIONAL']).optional(),
+        tagline: shortText.optional(),
+        headquarters: shortText.optional(),
+        employeeRange: shortText.optional(),
+        description: longText.optional(),
+        valueProposition: longText.optional(),
+        targetAudience: longText.optional(),
+        mainOfferings: textList.optional(),
+        differentiators: textList.optional(),
+        strengths: textList.optional(),
+        weaknesses: textList.optional(),
+        pricingModel: shortText.optional(),
+        pricingDetails: longText.optional(),
+        toneOfVoice: longText.optional(),
+      }),
+    )
+    .max(MAX_IMPORT_ITEMS)
+    .optional()
+    .describe('Concurrenten (deel 6) — match op naam binnen het merk'),
+  trends: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(200),
+        description: longText.min(1),
+        category: z
+          .enum(['TECHNOLOGY', 'CONSUMER_BEHAVIOR', 'MARKET_DYNAMICS', 'COMPETITIVE', 'REGULATORY'])
+          .optional()
+          .describe('Trend Radar-categorie'),
+        impact: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']).optional(),
+        timeframe: z.enum(['SHORT_TERM', 'MEDIUM_TERM', 'LONG_TERM']).optional(),
+        direction: z.enum(['rising', 'stable', 'declining']).optional(),
+        keyInsights: longText.optional().describe('Wat betekent deze trend voor het merk (howToUse)'),
+        sources: httpUrlList.optional().describe('Bron-URL\'s'),
+      }),
+    )
+    .max(MAX_IMPORT_ITEMS)
+    .optional()
+    .describe('Trends (deel 7) — landen in de Trend Radar; match op titel binnen het merk'),
+  knowledgeResources: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(200),
+        description: longText.min(1),
+        type: z
+          .enum(['document', 'article', 'book', 'website', 'video', 'image', 'podcast', 'course'])
+          .optional(),
+        author: shortText.optional(),
+        url: httpUrl.optional(),
+        content: z.string().max(200_000).optional().describe('Volledige tekst-body — gaat mee in AI-context'),
+      }),
+    )
+    .max(MAX_IMPORT_ITEMS)
+    .optional()
+    .describe('Kennisbronnen (deel 8) — match op titel binnen het merk'),
+});
+
+// Drift-guards: het zod-schema en BrandImportPayload worden parallel
+// onderhouden — deze asserts breken de build zodra een top-level sectie in
+// één van beide ontbreekt (stille key-strip door zod wordt zo zichtbaar).
+type ImportSchemaPayload = z.infer<typeof importSchema>;
+type AssertNever<T extends never> = T;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _ImportKeysMissingInSchema = AssertNever<
+  Exclude<keyof BrandImportPayload, keyof ImportSchemaPayload>
+>;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _ImportKeysExtraInSchema = AssertNever<
+  Exclude<keyof ImportSchemaPayload, keyof BrandImportPayload>
+>;
+
+function registerImportTool(server: McpServer, ctx: PublicMcpContext): void {
+  server.registerTool(
+    'import_brand_data',
+    {
+      title: 'Import brand data',
+      description:
+        'Laadt merkonderdelen idempotent in een merk: brand assets (frameworkData per canonieke slug), ' +
+        'brand voice, personas, producten, concurrenten, trends en kennisbronnen — de werkbestand-flow ' +
+        '(docs/templates/werkbestand-merkonderdelen.md). Upserts op natuurlijke sleutels: bestaande ' +
+        'records worden bijgewerkt (alleen aangeleverde velden), vergrendelde records overgeslagen. ' +
+        'Retourneert een rapport met created/updated/skipped per onderdeel. Gratis.',
+      inputSchema: { ...importSchema.shape, ...brandParam },
+      annotations: { title: 'Import brand data', ...WRITE_TOOL },
+    },
+    async ({ brand, ...payload }) =>
+      runTool(ctx, 'import_brand_data', 'write', brand, async (workspaceId) => {
+        const data: BrandImportPayload = payload;
+        const report = await importBrandData(workspaceId, data, { userId: ctx.userId });
+        return { result: jsonResult(report) };
+      }),
+  );
+}
+
 // ─── Public API ──────────────────────────────────────────────
 
 /**
- * Bouwt een verse McpServer met de 17 publieke brand-tools, gebonden aan de
+ * Bouwt een verse McpServer met de 18 publieke brand-tools, gebonden aan de
  * auth-context (bd_live-key óf OAuth-token — zie PublicMcpContext). Eén
  * server per request (stateless) — de route sluit hem na afhandeling weer.
  */
@@ -652,6 +875,7 @@ export function createPublicMcpServer(ctx: PublicMcpContext): McpServer {
   registerBrandDirectoryTool(server, ctx);
   registerDeliverableContentTool(server, ctx);
   registerImageTool(server, ctx);
+  registerImportTool(server, ctx);
   return server;
 }
 

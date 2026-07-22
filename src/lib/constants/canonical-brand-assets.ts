@@ -5,10 +5,12 @@
  * Imported by: seed, workspace creation (API + auth provisioning).
  */
 
+import type { AssetCategory } from "@prisma/client";
+
 export interface CanonicalBrandAsset {
   name: string;
   slug: string;
-  category: string; // Prisma AssetCategory enum value
+  category: AssetCategory;
   description: string;
   frameworkType: string;
 }

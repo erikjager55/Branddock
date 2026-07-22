@@ -37,6 +37,14 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 438. MCP write-tool `import_brand_data` + werkbestand-flow + Adullam-import
+
+Publieke MCP-tool (18e) die merkonderdelen idempotent in een merk laadt: de 11 brand assets (frameworkData per canonieke slug, deep-merge, auto-versioning incl. pre-import snapshot), brand voice (incl. BrandRule-sync), personas, producten, concurrenten, Trend Radar-trends en kennisbronnen. Gedeelde service `importBrandData()` met volledige tweede-deur-pariteit (plan-limits, trial-lock, rol-gate op workspace-settings, locale-anker-sync, researchMethods-provisioning, cache-invalidatie) en isLocked-respect op elk pad. Invulbaar werkbestand-template (`docs/templates/werkbestand-merkonderdelen.md`) + gevuld Adullam-importscript. Vijf review-rondes (10 subagents) doorlopen; alle CRITICAL/WARNING-bevindingen gefixt. Gebouwd in een Cowork-sessie op branch `claude/branddock-merkonderdelen-werkbestand-o2tmfs`; hier gemerged nadat de halve merge in de main-worktree was afgerond (entry hernummerd 433 → 438 wegens collisie met #433-#437).
+
+- Task: [tasks/done/mcp-import-brand-data.md](../tasks/done/mcp-import-brand-data.md)
+- ADR: `-`
+- Spec: [docs/templates/werkbestand-merkonderdelen.md](templates/werkbestand-merkonderdelen.md)
+
 ### 437. Adullam-migratiebundle + migrate-tooling op workspace-id
 
 Adullam bestond dubbel: het merk-DNA (import 21-07 via `scripts/import-merkonderdelen/adullam.ts`, dat `.env.local` laadt) landde in de **lokale** workspace, terwijl de klant-workspace op productie leeg bleef — Erik zag daardoor niets in de app. Bundle `adullam-2026-07-22.json` geëxporteerd: 76 rijen (11 brand-assets, voiceguide, styleguide + 10 kleuren, **19 brand rules**, 7 persona's, 6 producten, 1 concurrent). Drie tooling-verbeteringen die hieruit volgden: (1) `import.ts` accepteert nu **`--workspace-id`** — de enige eenduidige sleutel, want merknamen bestaan dubbel (lokaal én prod een "Adullam") en slugs zijn niet org-gescoped; `--slug` stopt voortaan bij meerdere treffers i.p.v. er stil één te kiezen. (2) De export-detector voor lokale beeld-refs matchte `/uploads/` óók binnen externe URL's → vals "draai upload-images"-alarm; nu wordt alleen een relatief pad (of localhost-URL) als lokaal geteld, bewezen met 5 URL-vormen. (3) Databronfix: de 7 `brandImages` uit de april-website-scan misten het `/wp-content`-deel (404); hersteld naar de geverifieerde absolute URL's (7× 200) in de lokale bron, zodat ook her-exports kloppen.
