@@ -165,8 +165,8 @@ const ns = {
   generateImage: {
     title: 'Generate AI Image',
     description:
-      'Use a fine-tuned brand model for consistent output, or pick a fal.ai provider with brand context tags. The result is auto-saved to your Media Library.',
-    loadingModels: 'Loading trained models…',
+      'Use a style model for consistent output, or pick a fal.ai provider with brand context tags. The result is auto-saved to your Media Library.',
+    loadingModels: 'Loading style models…',
     saving: 'Saving to library...',
     openGenerator: 'Open generator',
   },
@@ -275,15 +275,15 @@ const ns = {
   },
   trainedStyle: {
     errSaveBrief: 'Could not save the Visual Brief (HTTP {{status}}) — please try again.',
-    errGenerate: 'Failed to generate trained-style visual',
-    loadingModels: 'Loading trained models...',
-    noModels: 'No trained models available',
+    errGenerate: 'Failed to generate styled visual',
+    loadingModels: 'Loading style models...',
+    noModels: 'No style models available',
     noModelsHint:
-      'Train a Consistent AI Model in the AI Trainer first, then return here to generate on-brand visuals using your trained style.',
-    modelLabel: 'Trained model',
+      'Create a style model in Style Studio first (upload at least 3 reference images), then return here to generate on-brand visuals in that style.',
+    modelLabel: 'Style model',
     strengthLabel: 'Style strength',
     strengthHintPrefix:
-      'Lower = more freedom for the model to interpret. Higher = locks tighter to the trained subject.',
+      'Lower = more freedom for the model to interpret. Higher = locks tighter to the reference style.',
     strengthHintSuffix: 'is the recommended default for on-brand consistency.',
     generating: 'Generating...',
     generateVisual: 'Generate visual',
@@ -374,13 +374,13 @@ const ns = {
       url: 'URL',
       stock: 'Stock',
       compose: 'Compose',
-      'trained-style': 'Trained',
+      'trained-style': 'Style model',
       'photography-request': 'Real photo',
       none: 'None',
     },
     noHandler: 'No selection handler wired.',
     composeLabel: 'Compose',
-    trainedLabel: 'Trained style',
+    trainedLabel: 'Style model',
     onlyStep2:
       'is only available in Step 2 (Content Variants). Switch to that view to generate.',
     noneModal: 'No visual for this content item. Switch sources above to add one.',

@@ -54,7 +54,7 @@ async function main(): Promise<void> {
 
   const ws = await prisma.workspace.findFirst({
     where: { name: { contains: nameArg, mode: 'insensitive' } },
-    select: { id: true, name: true, slug: true },
+    select: { id: true, name: true, slug: true, contentLanguage: true },
   });
   if (!ws) {
     console.error(`Workspace met '${nameArg}' niet gevonden.`);
@@ -90,6 +90,7 @@ async function main(): Promise<void> {
       sourceWorkspaceId: ws.id,
       sourceWorkspaceName: ws.name,
       sourceSlug: ws.slug,
+      sourceContentLanguage: ws.contentLanguage,
       note: 'Merk-DNA-export (alleen brand foundation; geen content/telemetrie/historie).',
     },
     records,

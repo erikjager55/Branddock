@@ -165,8 +165,8 @@ const ns = {
   generateImage: {
     title: 'AI-afbeelding genereren',
     description:
-      'Gebruik een fine-tuned brand model voor consistente output, of kies een fal.ai-provider met brand-context tags. Het resultaat wordt automatisch opgeslagen in je Media Library.',
-    loadingModels: 'Getrainde modellen laden…',
+      'Gebruik een stijlmodel voor consistente output, of kies een fal.ai-provider met brand-context tags. Het resultaat wordt automatisch opgeslagen in je Media Library.',
+    loadingModels: 'Stijlmodellen laden…',
     saving: 'Opslaan in library...',
     openGenerator: 'Generator openen',
   },
@@ -275,15 +275,15 @@ const ns = {
   },
   trainedStyle: {
     errSaveBrief: 'Kon de Visual Brief niet opslaan (HTTP {{status}}) — probeer het opnieuw.',
-    errGenerate: 'Genereren van trained-style visual mislukt',
-    loadingModels: 'Getrainde modellen laden...',
-    noModels: 'Geen getrainde modellen beschikbaar',
+    errGenerate: 'Genereren van visual in stijl mislukt',
+    loadingModels: 'Stijlmodellen laden...',
+    noModels: 'Geen stijlmodellen beschikbaar',
     noModelsHint:
-      'Train eerst een Consistent AI Model in de AI Trainer en kom dan hier terug om on-brand visuals te genereren met je getrainde stijl.',
-    modelLabel: 'Getraind model',
+      'Maak eerst een stijlmodel in de Stijlstudio (upload minimaal 3 referentiebeelden) en kom dan hier terug om on-brand visuals te genereren in die stijl.',
+    modelLabel: 'Stijlmodel',
     strengthLabel: 'Stijlsterkte',
     strengthHintPrefix:
-      'Lager = meer vrijheid voor het model om te interpreteren. Hoger = houdt strakker vast aan het getrainde onderwerp.',
+      'Lager = meer vrijheid voor het model om te interpreteren. Hoger = houdt strakker vast aan de referentiestijl.',
     strengthHintSuffix: 'is de aanbevolen standaard voor on-brand consistentie.',
     generating: 'Genereren...',
     generateVisual: 'Visual genereren',
@@ -374,13 +374,13 @@ const ns = {
       url: 'URL',
       stock: 'Stock',
       compose: 'Samenstellen',
-      'trained-style': 'Getraind',
+      'trained-style': 'Stijlmodel',
       'photography-request': 'Echte foto',
       none: 'Geen',
     },
     noHandler: 'Geen selectie-handler gekoppeld.',
     composeLabel: 'Samenstellen',
-    trainedLabel: 'Getrainde stijl',
+    trainedLabel: 'Stijlmodel',
     onlyStep2:
       'is alleen beschikbaar in Stap 2 (Content Variants). Schakel naar die weergave om te genereren.',
     noneModal: 'Geen visual voor dit content-item. Wissel hierboven van bron om er een toe te voegen.',

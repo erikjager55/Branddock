@@ -25,7 +25,7 @@ type StudioTab = (typeof TABS)[number]['key'];
 export function AiStudioPage() {
   const [activeTab, setActiveTab] = useState<StudioTab>('images');
 
-  // Read pre-selected model from consistent models store (set by "Generate Image" in AI Trainer)
+  // Read pre-selected model from consistent models store (set by "Generate Image" in Style Studio)
   const { generateInStudioModelId, clearGenerateInStudio } = useConsistentModelStore();
 
   // Fetch all READY trained models for the selector
@@ -44,7 +44,7 @@ export function AiStudioPage() {
 
   const preselectedModel = trainedModels.find((m) => m.id === generateInStudioModelId) ?? null;
 
-  // Auto-switch to images tab when coming from AI Trainer
+  // Auto-switch to images tab when coming from Style Studio
   useEffect(() => {
     if (generateInStudioModelId) {
       setActiveTab('images');
