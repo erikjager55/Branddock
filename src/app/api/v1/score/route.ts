@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { runFidelityForExternalContent } from '@/lib/brand-fidelity/external-content-runner';
 import { isPublicApiEnabled, requireApiKey } from '@/lib/api/public/auth';
+import { rateLimitIp, rateLimitWorkspace } from '@/lib/api/public/rate-limit';
 import { logApiCall } from '@/lib/api/public/usage';
 
 // F-VAL-judge kan op lange content > 60s duren.
@@ -24,8 +25,14 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   if (!isPublicApiEnabled()) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  const ipLimited = await rateLimitIp(request);
+  if (ipLimited) return ipLimited;
+
   const auth = await requireApiKey(request);
   if (!auth) return NextResponse.json({ error: 'Invalid or missing API key' }, { status: 401 });
+
+  const wsLimited = await rateLimitWorkspace(auth.workspaceId);
+  if (wsLimited) return wsLimited;
 
   let raw: unknown;
   try {

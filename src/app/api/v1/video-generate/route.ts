@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { generateVideoClip } from '@/lib/content/headless-video';
 import { isPublicApiEnabled, requireApiKey } from '@/lib/api/public/auth';
+import { rateLimitIp, rateLimitWorkspace } from '@/lib/api/public/rate-limit';
 import { enforceCreditsForAction } from '@/lib/stripe/enforcement';
 import { logApiCall } from '@/lib/api/public/usage';
 
@@ -41,8 +42,14 @@ const ERROR_STATUS: Record<string, number> = {
 export async function POST(request: Request) {
   if (!isPublicApiEnabled()) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  const ipLimited = await rateLimitIp(request);
+  if (ipLimited) return ipLimited;
+
   const auth = await requireApiKey(request);
   if (!auth) return NextResponse.json({ error: 'Invalid or missing API key' }, { status: 401 });
+
+  const wsLimited = await rateLimitWorkspace(auth.workspaceId);
+  if (wsLimited) return wsLimited;
 
   let raw: unknown;
   try {
