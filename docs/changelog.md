@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 452. OAuth-connector-intrekpad — "Connected apps" met revoke (audit-LOW afgerond)
+
+Het laatste audit-item dat als feature was geparkeerd (zie #451): de MCP-connector (claude.ai/ChatGPT) kreeg via de Better-Auth-mcp-plugin een `OauthAccessToken`-rij (access + refresh) per gebruiker per client, maar er was géén intrek-pad — ontkoppelen in de client stopt alleen die client; de tokenrij bleef geldig tot de 60-daagse refresh-expiry. Nu: nieuwe `listUserConnections`/`revokeUserConnection` (`src/lib/api/public/connections.ts`) die de tokens per client groeperen en, bij intrekken, de token- én consent-rijen in één transactie verwijderen (`requireOAuthToken` valideert elke MCP-request tegen `OauthAccessToken` → zonder rij onmiddellijk 401, de connector moet opnieuw koppelen én inloggen). Sessie-route `GET/DELETE /api/oauth/connections` strikt op de eigen `session.user.id` gescopet (geen IDOR; DELETE met optionele `clientId`, anders álle koppelingen). UI: `ConnectionsPanel` in Settings → API & Connectors (spiegelt `WebhooksPanel`), met revoke-knop + bevestiging per koppeling. Functioneel bewezen tegen de echte DB: 8/8 asserts (groepering, appName-join, tokenCount, transactie-delete van token+consent, en de koppeling verdwijnt uit de lijst). Daarmee is de volledige security-audit van 2026-07-23 afgehandeld.
+
+- Task: `-` (security-audit remediatie — OAuth-revoke-feature)
+
 ### 451. Security-audit fase 3 (LOW) — DNS-rebind-bescherming bij webhook-dispatch
 
 De outbound-webhook-dispatcher (`deliverToEndpoint`) deed een kale `fetch(endpoint.url)`. `validateWebhookUrl` draait alleen bij het aanmaken van een endpoint en checkt de letterlijke hostname — een owner/admin kan dus een publieke host registreren die later naar een intern IP resolvet (DNS-rebinding → blinde SSRF-probe, de HTTP-status komt terug in `lastDeliveryStatus`). Nu draait `assertSafeUrl(endpoint.url)` (DNS-resolutie + private/link-local/metadata-IP-check) vlak vóór elke dispatch; bij een intern adres gooit het en valt de delivery fail-soft in de bestaande catch. Sluit het laatste actief-fixbare audit-item. **Bewust NIET in deze ronde** (bewuste v1-trade-offs / feature-beslissing): OAuth-token-intrek-pad (60d refresh, geen revoke — feature, wacht op Eriks go/no-go), webhook-replay-nonce en plaintext signing-secret-at-rest (geaccepteerd, zoals Stripe/GitHub); de register-endpoint is al door de proxy-auth-ratelimit gedekt.
