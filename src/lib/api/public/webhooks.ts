@@ -23,6 +23,7 @@
 
 import { createHmac } from 'crypto';
 import { prisma } from '@/lib/prisma';
+import { assertSafeUrl } from '@/lib/utils/ssrf';
 
 /**
  * Ondersteunde webhook-event-types (v1).
@@ -159,6 +160,12 @@ async function deliverToEndpoint(
   let status = STATUS_NO_RESPONSE;
   let delivered = false;
   try {
+    // DNS-rebind-bescherming bij dispatch (audit 2026-07-23, LOW): validateWebhookUrl
+    // draait alleen bij create op de letterlijke hostname; een owner/admin kan een
+    // publieke host registreren die later naar een intern IP resolvet. assertSafeUrl
+    // resolvet de DNS nú en gooit bij een private/link-local/metadata-IP.
+    await assertSafeUrl(endpoint.url);
+
     const res = await fetch(endpoint.url, {
       method: 'POST',
       headers: {
