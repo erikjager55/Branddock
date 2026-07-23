@@ -29,6 +29,7 @@ import {
   requireOAuthToken,
 } from '@/lib/api/public/auth';
 import { createPublicMcpServer, type PublicMcpContext } from '@/lib/api/public/mcp-server';
+import { rateLimitIp, rateLimitWorkspace } from '@/lib/api/public/rate-limit';
 
 // generate_on_brand draait de volledige canvas-pipeline binnen de request —
 // zelfde budget als /api/v1/generate.
@@ -85,8 +86,18 @@ async function resolveMcpAuth(request: Request): Promise<PublicMcpContext | null
 export async function POST(request: Request) {
   if (!isPublicApiEnabled()) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  // Per-IP limiet vóór de DB-auth: resolveMcpAuth doet een apiKey-lookup +
+  // (bij een Bearer) een volledige Better-Auth-tokenvalidatie per request —
+  // zonder plafond is dat een unauth connection-pool-DoS (audit CRITICAL-3).
+  const ipLimited = await rateLimitIp(request);
+  if (ipLimited) return ipLimited;
+
   const authCtx = await resolveMcpAuth(request);
   if (!authCtx) return unauthorized(request);
+
+  // Per-workspace limiet ná auth: één merk kan de tools niet platslaan (CRITICAL-1).
+  const wsLimited = await rateLimitWorkspace(authCtx.workspaceId);
+  if (wsLimited) return wsLimited;
 
   const server = createPublicMcpServer(authCtx);
   const transport = new WebStandardStreamableHTTPServerTransport({

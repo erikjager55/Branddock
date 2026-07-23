@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 449. Security-audit fase 1b — rate-limiting op de publieke Brand-API
+
+Fixt CRITICAL-1 + CRITICAL-3: de publieke API (`/api/v1/*`, `/api/mcp`) had géén rate-limiting. Eén key kon elke generatie-route platslaan (tot 300s/req → provider-kosten + Vercel-concurrency-uitputting), en een ongeauthenticeerde flood op `/api/mcp` dwong per request een DB-lookup + Better-Auth-tokenvalidatie af (connection-pool-DoS die alle tenants raakt). De bestaande sliding-window-limiter (`checkGenericRateLimit`, Redis-backed op prod) was alleen op de sessie-routes aangesloten. Nieuwe helper `src/lib/api/public/rate-limit.ts` hangt 'm op dit oppervlak: **per-workspace 120/min** ná auth (op alle 12 v1-routes + `/api/mcp` — dekt ook H1: `score` was gratis-maar-ongelimiteerde F-VAL-judge) en **per-IP 60/min** vóór de auth-resolutie (blunt de unauth-flood; dekt ook H5). 429 met `Retry-After`. Functioneel bewezen: 6/6 asserts (120 toegestaan → rest geweigerd, buckets per workspace/IP geïsoleerd, Retry-After aanwezig). Daarmee zijn alle CRITICAL-bevindingen van de audit dicht.
+
+- Task: `-` (security-audit remediatie fase 1b)
+
 ### 448. Security-audit fase 2 (H3) — Emailit-webhookverificatie gefixt + fail-closed
 
 De audit (2026-07-23) vond dat `EMAILIT_WEBHOOK_SECRET` op prod niet gezet was → `verifyEmailitSignature` viel fail-open → een ongeauthenticeerde POST kon willekeurige adressen laten suppressen (ook eigen invites/resets). Bij het fixen bleek de verificatie zélf ook fout: ze tekende de HMAC over de body alleen, terwijl Emailit (docs/webhooks/request-signature) tekent over `${timestamp}.${rawBody}` met de `X-Emailit-Signature` + `X-Emailit-Timestamp`-headers en een door Emailit gegenereerd `whsec_`-secret. Elke echte delivery zou dus zijn afgewezen. Fix: verificatie herschreven naar de echte spec (hex HMAC-SHA256 over `{ts}.{body}`, timing-safe), replay-bescherming toegevoegd (5-min tolerantievenster op de timestamp), en **fail-closed in productie** — een ontbrekend secret weigert nu i.p.v. door te laten. 6/6 unit-asserts (geldig / verkeerd secret / oude body-only-vorm / replay / geen timestamp / fail-closed). ⚠️ Merge/deploy pas nadat het secret op prod staat (anders 401 op alle webhooks). **Apart geflagd (niet in deze PR)**: de event-parser leest `payload.event` terwijl Emailit `type`/`data.object` stuurt — suppression vuurt daardoor mogelijk niet voor echte events; te fixen zodra een geverifieerde test-delivery de echte payload-vorm toont.
