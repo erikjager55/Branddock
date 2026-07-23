@@ -13,12 +13,31 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { EmailitWebhookEvent, EmailitEventType } from './types';
 
-const SIGNATURE_HEADERS = ['x-emailit-signature', 'x-signature'] as const;
+// Emailit-spec (docs/webhooks/request-signature): HMAC-SHA256, hex, getekend
+// over `${timestamp}.${rawBody}` — NIET de body alleen. Header X-Emailit-
+// Signature + X-Emailit-Timestamp; secret is een door Emailit gegenereerde
+// whsec_-sleutel per endpoint. De oude implementatie tekende alleen de body en
+// zou dus élke echte Emailit-delivery afwijzen (audit 2026-07-23).
+const SIGNATURE_HEADER = 'x-emailit-signature';
+const TIMESTAMP_HEADER = 'x-emailit-timestamp';
+/** Replay-venster: weiger een handtekening met een te oude timestamp. */
+const REPLAY_TOLERANCE_MS = 5 * 60 * 1000;
+
+/** Parse de Emailit-timestamp (unit ondocumenteerd) → epoch-ms, of null. */
+function timestampToMs(raw: string): number | null {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  // ≤10 cijfers = seconden (epoch-sec loopt tot 2286), anders al milliseconden.
+  return raw.trim().length <= 10 ? n * 1000 : n;
+}
 
 /**
  * Verify the signature on an incoming Emailit webhook request.
- * Returns `true` when the signature matches OR when no secret is
- * configured (dev-friendly). Returns `false` on explicit mismatch.
+ * Returns `true` only on a valid, fresh signature.
+ *
+ * Fail-CLOSED in productie: een ontbrekend secret betekent weigeren, nooit
+ * stil doorlaten (was fail-open → live unauth email-suppression-vector,
+ * audit 2026-07-23). In non-productie blijft fail-open voor lokaal gemak.
  */
 export function verifyEmailitSignature(
   rawBody: string,
@@ -26,17 +45,24 @@ export function verifyEmailitSignature(
 ): boolean {
   const secret = process.env.EMAILIT_WEBHOOK_SECRET;
   if (!secret) {
-    console.warn('[email-webhook] EMAILIT_WEBHOOK_SECRET not set — skipping signature check');
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[email-webhook] EMAILIT_WEBHOOK_SECRET niet gezet — webhook geweigerd (fail-closed)');
+      return false;
+    }
+    console.warn('[email-webhook] EMAILIT_WEBHOOK_SECRET not set — skipping signature check (dev only)');
     return true;
   }
 
-  const signature = SIGNATURE_HEADERS
-    .map((name) => headers.get(name))
-    .find((value): value is string => Boolean(value));
+  const signature = headers.get(SIGNATURE_HEADER) ?? headers.get('x-signature');
+  const timestamp = headers.get(TIMESTAMP_HEADER);
+  if (!signature || !timestamp) return false;
 
-  if (!signature) return false;
+  // Replay-bescherming: verwerp een timestamp buiten het tolerantievenster.
+  const tsMs = timestampToMs(timestamp);
+  if (tsMs === null || Math.abs(Date.now() - tsMs) > REPLAY_TOLERANCE_MS) return false;
 
-  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+  const signedPayload = `${timestamp}.${rawBody}`;
+  const expected = createHmac('sha256', secret).update(signedPayload, 'utf8').digest('hex');
   const a = Buffer.from(signature.replace(/^sha256=/, ''), 'hex');
   const b = Buffer.from(expected, 'hex');
   if (a.length !== b.length) return false;
