@@ -11,6 +11,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { rewriteOnBrand } from '@/lib/content/rewrite-on-brand';
 import { isPublicApiEnabled, requireApiKey } from '@/lib/api/public/auth';
+import { enforceCreditsForAction } from '@/lib/stripe/enforcement';
 import { logApiCall } from '@/lib/api/public/usage';
 
 export const maxDuration = 120;
@@ -45,6 +46,9 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid body' }, { status: 400 });
   }
+
+  const blocked = await enforceCreditsForAction(auth.workspaceId, 'short', 1);
+  if (blocked) return blocked;
 
   const startedAt = Date.now();
   const result = await rewriteOnBrand({ workspaceId: auth.workspaceId, ...parsed.data });

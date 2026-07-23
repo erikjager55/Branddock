@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { generateVideoClip } from '@/lib/content/headless-video';
 import { isPublicApiEnabled, requireApiKey } from '@/lib/api/public/auth';
+import { enforceCreditsForAction } from '@/lib/stripe/enforcement';
 import { logApiCall } from '@/lib/api/public/usage';
 
 export const maxDuration = 300;
@@ -53,6 +54,9 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid body', details: parsed.error.flatten() }, { status: 400 });
   }
+
+  const blocked = await enforceCreditsForAction(auth.workspaceId, 'video-clip', 1);
+  if (blocked) return blocked;
 
   const startedAt = Date.now();
   const result = await generateVideoClip({ workspaceId: auth.workspaceId, ...parsed.data });
