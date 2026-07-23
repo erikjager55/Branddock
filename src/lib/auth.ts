@@ -464,8 +464,21 @@ export const auth = betterAuth({
         // client (token_endpoint_auth_method=none) — zonder PKCE zou een
         // gelekte authorization-code direct inwisselbaar zijn.
         requirePKCE: true,
-        // Expiry-defaults van de plugin bewust aangehouden (access 1u,
-        // refresh 7d, code 10min — OIDC-spec-aanbevelingen).
+        // Access-token 1u en code 10min blijven de plugin-defaults (OIDC-spec).
+        //
+        // Het refresh-token wél verlengd: 7d (default) betekent dat élke
+        // gebruiker die de connector een week niet aanraakt opnieuw moet
+        // koppelen — het token roteert namelijk alléén bij gebruik. Voor een
+        // connector die weken tussen twee sessies stil kan liggen (pilot-
+        // testers, vakantie, een drukke week) is dat de meest voorspelbare
+        // manier om de koppeling stil te verliezen.
+        //
+        // 60 dagen = een pilot-ronde van 6 weken plus marge. Bewust niet
+        // langer: we hebben (nog) géén intrek-knop — ontkoppelen in Claude/
+        // ChatGPT stopt alleen die client, de tokenrij blijft geldig tot de
+        // vervaldatum, en de rotatie van de plugin trekt het vorige token niet
+        // in. De expiry is dus onze enige bovengrens op een verweesd token.
+        refreshTokenExpiresIn: 60 * 24 * 60 * 60,
       },
     }),
     nextCookies(), // Must be last in plugins array
