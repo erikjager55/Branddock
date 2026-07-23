@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { startSeoGeneration } from '@/lib/content/headless-seo';
 import { isPublicApiEnabled, requireApiKey } from '@/lib/api/public/auth';
+import { enforceCreditsForAction } from '@/lib/stripe/enforcement';
 import { logApiCall } from '@/lib/api/public/usage';
 
 // Context-assembly + job-aanmaak; de pipeline zelf draait in de job-lane.
@@ -72,6 +73,9 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid body', details: parsed.error.flatten() }, { status: 400 });
   }
+
+  const blocked = await enforceCreditsForAction(auth.workspaceId, 'long-form', 1);
+  if (blocked) return blocked;
 
   const startedAt = Date.now();
   const result = await startSeoGeneration({ workspaceId: auth.workspaceId, ...parsed.data });

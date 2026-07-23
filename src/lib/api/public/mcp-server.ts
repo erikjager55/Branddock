@@ -147,6 +147,18 @@ async function runTool(
 
 // ─── Brand-tools (context + score) ───────────────────────────
 
+/**
+ * Pre-flight credit-/trial-lock-blokkade voor een write-tool, vertaald naar een
+ * nette tool-error i.p.v. de NextResponse die enforceCreditsForAction teruggeeft.
+ * Null = doorgaan. Spiegelt de Gate-B-check van de REST-routes (audit 2026-07-23).
+ */
+async function enforceOrToolError(workspaceId: string, action: string): Promise<ToolRun | null> {
+  const blocked = await enforceCreditsForAction(workspaceId, action, 1);
+  if (!blocked) return null;
+  const body = (await blocked.json().catch(() => null)) as { error?: string } | null;
+  return { result: errorResult(body?.error ?? 'Onvoldoende credits of trial verlopen') };
+}
+
 function registerBrandTools(server: McpServer, ctx: PublicMcpContext): void {
   server.registerTool(
     'get_brand_context',
@@ -242,6 +254,8 @@ type GenerateArgs = z.infer<typeof generateSchema>;
 
 /** Zelfde flow en credit-patroon als POST /api/v1/generate — bewust gedeelde idempotency-key. */
 async function runGenerate(workspaceId: string, args: GenerateArgs): Promise<ToolRun> {
+  const gate = await enforceOrToolError(workspaceId, 'short');
+  if (gate) return gate;
   const result = await createAndGenerateDeliverable({ workspaceId, ...args });
   if (!result.ok) {
     return { result: errorResult(`${result.code}: ${result.error}`) };
@@ -317,6 +331,8 @@ function registerRewriteTool(server: McpServer, ctx: PublicMcpContext): void {
     },
     async ({ brand, ...args }) =>
       runTool(ctx, 'rewrite_on_brand', 'write', brand, async (workspaceId) => {
+        const gate = await enforceOrToolError(workspaceId, 'short');
+        if (gate) return gate;
         const result = await rewriteOnBrand({ workspaceId, ...args });
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         return { result: jsonResult({ text: result.text, model: result.model }), credits: 1 };
@@ -368,6 +384,8 @@ function registerStrategyTools(server: McpServer, ctx: PublicMcpContext): void {
     },
     async ({ brand, ...args }) =>
       runTool(ctx, 'generate_campaign_strategy', 'write', brand, async (workspaceId) => {
+        const gate = await enforceOrToolError(workspaceId, 'long-form');
+        if (gate) return gate;
         const result = await startCampaignStrategyGeneration({ workspaceId, ...args });
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         return {
@@ -929,6 +947,8 @@ function registerSpecializedChainTools(server: McpServer, ctx: PublicMcpContext)
     },
     async ({ brand, contentType, deliverableId, title, campaignId, primaryKeyword, funnelStage, secondaryKeywordHints, contextSelection }) =>
       runTool(ctx, 'generate_long_form_seo', 'write', brand, async (workspaceId) => {
+        const gate = await enforceOrToolError(workspaceId, 'long-form');
+        if (gate) return gate;
         const result = await startSeoGeneration({
           workspaceId,
           deliverableId,
@@ -988,6 +1008,8 @@ function registerSpecializedChainTools(server: McpServer, ctx: PublicMcpContext)
     },
     async ({ brand, prompt, contentType, deliverableId, title, campaignId, contextSelection }) =>
       runTool(ctx, 'generate_web_page', 'write', brand, async (workspaceId) => {
+        const gate = await enforceOrToolError(workspaceId, 'short');
+        if (gate) return gate;
         const result = await generateWebPage({ workspaceId, prompt, contentType, deliverableId, title, campaignId, contextSelection });
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         const tree = result.puckData as { content?: unknown[] };
@@ -1030,6 +1052,8 @@ function registerSpecializedChainTools(server: McpServer, ctx: PublicMcpContext)
     },
     async ({ brand, ...args }) =>
       runTool(ctx, 'generate_video', 'write', brand, async (workspaceId) => {
+        const gate = await enforceOrToolError(workspaceId, 'video-clip');
+        if (gate) return gate;
         const result = await generateVideoClip({ workspaceId, ...args });
         if (!result.ok) return { result: errorResult(`${result.code}: ${result.error}`) };
         return {

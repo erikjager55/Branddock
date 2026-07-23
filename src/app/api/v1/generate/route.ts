@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { createAndGenerateDeliverable } from '@/lib/content/headless-create';
 import { chargeAfter } from '@/lib/billing/credits/meter-generation';
 import { isPublicApiEnabled, requireApiKey } from '@/lib/api/public/auth';
+import { enforceCreditsForAction } from '@/lib/stripe/enforcement';
 import { logApiCall } from '@/lib/api/public/usage';
 
 // Volledige canvas-pipeline binnen de request (zelfde budget als claw/confirm).
@@ -65,6 +66,12 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid body', details: parsed.error.flatten() }, { status: 400 });
   }
+
+  // Pre-flight saldo-/trial-lock-blokkade vóór de dure pipeline (spiegelt
+  // image-generate). Zonder dit kon een key met 0/negatief saldo onbeperkt
+  // genereren en werd de trial read-only-lock omzeild (audit 2026-07-23).
+  const blocked = await enforceCreditsForAction(auth.workspaceId, 'short', 1);
+  if (blocked) return blocked;
 
   const startedAt = Date.now();
   const generateRequested = parsed.data.generate !== false;

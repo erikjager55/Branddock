@@ -43,6 +43,12 @@ De audit (2026-07-23) vond dat `EMAILIT_WEBHOOK_SECRET` op prod niet gezet was �
 
 - Task: `-` (security-audit remediatie H3)
 
+### 447. Security-audit fase 1a — pre-flight credit-/trial-lock-blokkade op de publieke generatie-API
+
+Fixt CRITICAL-2 uit de audit (2026-07-23): van de 8 betaalde generatie-endpoints had alleen `image-generate` een pre-flight saldo-blokkade; de overige 6 (generate, rewrite, webpage, video, seo, strategy) genereerden eerst en boekten pas daarna best-effort af (`chargeAfter(...).catch(()=>{})`). Omdat `deductCredits({force:true})` de saldo-bodem schrapt (en 0 afboekt zonder `CreditBalance`-rij), kon een key met 0/negatief saldo onbeperkt dure AI-generatie triggeren — én de trial read-only-lock omzeilen (die zit ín `enforceCreditBalance`). Nu spiegelt elke route + MCP-tool het bewezen `image-generate`-patroon: `enforceCreditsForAction(workspaceId, <action>, 1)` vóór de dure call, met de actie gelijk aan de post-hoc-afboeking (generate/rewrite/webpage = short, video = video-clip, seo/strategy = long-form). MCP-tools via een gedeelde `enforceOrToolError`-helper die de 402-NextResponse naar een tool-error vertaalt. Eén call dekt saldo + trial-lock + exempt + billing. 12 plekken (6 REST + 6 MCP). Rate-limiting (CRITICAL-1/3) volgt in fase 1b.
+
+- Task: `-` (security-audit remediatie fase 1a)
+
 ### 446. API-sectie website: credit-toerekening + key-hygiëne verduidelijkt
 
 De developer-sectie op `voor-ai-agents` legde de merk-vergrendelde API-key wel uit (aanmaken, curl, endpoints, "genereren kost dezelfde credits"), maar liet de vraag onbeantwoord die commercieel het meest telt: **wie betaalt die credits?** Toegevoegd: credits vallen altijd op de workspace van de key, dus de merkeigenaar betaalt z'n eigen verbruik — en voor bureaus houdt één key per klant-workspace elke klant op z'n eigen creditpot (klopt met de meter: key → workspace → org-pool, geverifieerd in de code). Plus een key-hygiëne-regel (behandel als wachtwoord, intrekken bij twijfel). Bijvangst: de REST-kaart claimde "dezelfde 17 capabilities als de MCP-tools" — gecorrigeerd naar de actuele stand (connector 17 tools, met een API-key komt `import_brand_data` erbij → 18; smoke #445). Puur copy op één pagina; geen gedragswijziging. **Terzijde geverifieerd**: `PUBLIC_API_ENABLED` staat al aan op prod (`/api/v1/brand-context` → 401, `/api/mcp` → 401, niet 404), dus de API + connector die deze sectie beschrijft leven al — er viel niets te activeren.
