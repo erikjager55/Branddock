@@ -1,0 +1,1388 @@
+{
+  "meta": {
+    "version": 1,
+    "sourceWorkspaceId": "cmnslwqwv0000akmswepx1gsq",
+    "sourceWorkspaceName": "WRA Juristen",
+    "sourceSlug": "wra-juristen",
+    "sourceContentLanguage": "nl",
+    "note": "Merk-DNA-export (alleen brand foundation; geen content/telemetrie/historie)."
+  },
+  "records": {
+    "brandAsset": [
+      {
+        "id": "cmnslwqzx0009akmseqa3qtxj",
+        "name": "Mission & Vision",
+        "slug": "mission-statement",
+        "description": "Missie: gelijkwaardig partnerschap voor MKB-werkgevers. Visie: een arbeidsmarkt waarin eerlijk werkgeverschap dezelfde bescherming geniet als werknemerschap.",
+        "category": "STRATEGY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": "Missie: WRA Juristen begeleidt MKB-werkgevers bij arbeidsrechtelijke vraagstukken als gelijkwaardige partner. Visie: een arbeidsmarkt waarin eerlijk werkgeverschap dezelfde professionele bescherming geniet als werknemerschap.",
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "MISSION_STATEMENT",
+        "frameworkData": {
+          "forWhom": "Voor MKB-werkgevers die verantwoordelijkheid nemen voor hun mensen en een professionele juridische partner aan hun kant verdienen.",
+          "whatWeDo": "Wij begeleiden bij vaststellingsovereenkomsten, ontslagtrajecten, contracten en reorganisaties. Praktisch, persoonlijk en resultaatgericht.",
+          "howWeDoIt": "Door naast de werkgever te staan, het juridische gewicht over te nemen, in heldere taal te communiceren en aan de onderhandelingstafel het beste resultaat te realiseren.",
+          "impactGoal": "Bewijzen dat eerlijk werkgeverschap bescherming verdient — door het iedere dag te leveren.",
+          "timeHorizon": "5-10 jaar",
+          "boldAspiration": "De vanzelfsprekende juridische partner zijn voor de MKB-werkgever in heel Nederland — net zoals vakbonden dat zijn voor werknemers.",
+          "missionOneLiner": "Jouw recht. Onze zaak.",
+          "valuesAlignment": "De missie is direct geworteld in de kernwaarden: Gelijkwaardigheid (op ooghoogte), Ontzorging (het juridische gewicht overnemen), Voorsprong (vooraan in kennis), Slagvaardig (handelen, niet dralen) en Meesterschap (het spel beheersen aan tafel).",
+          "visionStatement": "Een arbeidsmarkt waarin eerlijk werkgeverschap dezelfde professionele bescherming geniet als werknemerschap — zodat MKB-ondernemers nooit meer alleen hoeven te staan.",
+          "missionStatement": "WRA Juristen begeleidt MKB-werkgevers bij arbeidsrechtelijke vraagstukken — als gelijkwaardige partner die naast de ondernemer staat, in heldere taal en met scherpte aan de onderhandelingstafel.",
+          "successIndicators": [
+            "MKB-werkgevers herkennen WRA als de juridische partner die expliciet voor hen kiest.",
+            "Klanten ervaren rust en grip in trajecten waarin ze normaal alleen zouden staan.",
+            "Onderhandelingsresultaten die de werkgever meetbaar verder helpen.",
+            "Brancheorganisaties verwijzen actief door naar WRA Juristen."
+          ],
+          "desiredFutureState": "Werkgevers stellen geen gesprekken meer uit en laten situaties niet escaleren, omdat ze weten dat WRA Juristen naast hen staat als gelijkwaardige partner.",
+          "stakeholderBenefit": "Werkgevers krijgen rust en scherpte. Werknemers krijgen een professioneel, eerlijk speelveld. De arbeidsmarkt krijgt minder onnodige escalaties.",
+          "missionVisionTension": "De spanning zit tussen de menselijkheid van de Caregiver-zijde (naast de klant staan, ontzorgen, rust geven) en de strijdvaardigheid van de Hero-zijde (scherpte, meevechten, het spel beheersen). WRA lost dit op door beide kanten expliciet te activeren in verschillende contexten — warm in de relatie, scherp aan de onderhandelingstafel."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "createdAt": "2026-04-10T07:50:56.685Z",
+        "updatedAt": "2026-04-10T08:06:41.842Z"
+      },
+      {
+        "id": "cmnslwr02000bakmsluj4qhbr",
+        "name": "Brand Archetype",
+        "slug": "brand-archetype",
+        "description": "Caregiver primair (naast je staan, beschermen, ontzorgen) gecombineerd met Hero secundair (meevechten, slagvaardig, het spel beheersen aan de onderhandelingstafel).",
+        "category": "PERSONALITY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": "WRA Juristen combineert het Caregiver-archetype (naast de klant staan, beschermen, ontzorgen) met het Hero-archetype (slagvaardig, scherp, meevechten waar het nodig is). Warm in de relatie, scherp aan de onderhandelingstafel.",
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_ARCHETYPE",
+        "frameworkData": {
+          "coreFear": "Dat MKB-werkgevers er alleen voor staan tegenover beter bewapende werknemers en escalerende juridische risico's.",
+          "strategy": "Combineer de zorgzame, ontzorgende kant (Caregiver) met de scherpte en slagvaardigheid van een Hero die het spel beheerst en pas stopt als het resultaat er staat.",
+          "brandGoal": "De juridische partner zijn die naast de MKB-ondernemer staat, het juridische gewicht overneemt en het beste resultaat aan de onderhandelingstafel realiseert.",
+          "coreDesire": "Bescherming bieden aan ondernemers die het verdienen — eerlijk werkgeverschap met een professionele partner naast zich.",
+          "giftTalent": "Het vermogen om complexe arbeidsrechtelijke situaties te begrijpen en te vertalen naar heldere, menselijke begeleiding zonder juridisch jargon.",
+          "subArchetype": "Hero",
+          "weSayNotThat": [
+            {
+              "weSay": "Wij regelen het.",
+              "notThat": "Ons kantoor zal de aangelegenheid in behandeling nemen."
+            },
+            {
+              "weSay": "Wat is jouw situatie?",
+              "notThat": "Kunt u de feiten en omstandigheden uiteenzetten?"
+            },
+            {
+              "weSay": "Naast je staan.",
+              "notThat": "Juridische bijstand verlenen."
+            },
+            {
+              "weSay": "Geen gedoe. Een oplossing.",
+              "notThat": "Wij streven naar een efficiënte resolutie."
+            }
+          ],
+          "brandExamples": [
+            "Achmea / Centraal Beheer (Caregiver: \"Even Apeldoorn bellen\")",
+            "BOVAG (Hero: zekerheid en bescherming met vakkennis)",
+            "ARAG Rechtsbijstand (Caregiver+Hero: bescherming met juridische kracht)"
+          ],
+          "shadowWeakness": "De Caregiver-kant kan leiden tot overmatige verantwoordelijkheid nemen. De Hero-kant kan leiden tot een te confronterende toon waar samenwerken effectiever was.",
+          "contentStrategy": "Praktische uitleg van arbeidsrechtelijke onderwerpen in begrijpelijke taal. Casestudies over reële MKB-situaties. Tips over wanneer je actie moet ondernemen om escalatie te voorkomen.",
+          "voiceAdjectives": [
+            "Nuchter",
+            "Eerlijk",
+            "Benaderbaar",
+            "Helder",
+            "Scherp",
+            "Betrokken"
+          ],
+          "languagePatterns": "Korte zinnen, directe taal. Eerstepersoons \"wij\" om partnerschap te benadrukken. Vragen die de ondernemer centraal stellen (\"Wie staat er eigenlijk aan jouw kant?\"). Zelden juridische termen zonder uitleg.",
+          "primaryArchetype": "Caregiver",
+          "archetypeInAction": "Klantcommunicatie: Caregiver 70% / Hero 30% — focus op begrip, rust en ontzorging. Onderhandelingen: Caregiver 30% / Hero 70% — focus op scherpte, strategie en resultaat.",
+          "customerExperience": "Korte lijnen, eerlijke prijsafspraken, geen onaangename verrassingen. Eén vast aanspreekpunt dat het hele traject overziet en ontzorgt.",
+          "marketingExpression": "Beelden van werkgevers in gesprek met een betrokken adviseur. Geen kantoor-stockfoto's, geen gepolijste advocaten. Authentieke ondernemers in hun eigen omgeving. Tone: warm én strategisch.",
+          "positioningApproach": "De toegankelijke arbeidsrechtjurist voor MKB-werkgevers. Niet een afstandelijk advocatenkantoor met wachttijden en uurtarieven, maar een gelijkwaardige partner met heldere taal en scherpe inzet.",
+          "competitiveLandscape": "In een markt vol gespecialiseerde advocatenkantoren, AI-tools en abonnementsformules onderscheidt WRA Juristen zich door menselijke betrokkenheid gecombineerd met scherpte aan de onderhandelingstafel — gericht op één specifieke doelgroep: de MKB-werkgever.",
+          "storytellingApproach": "Vertel vanuit het perspectief van de ondernemer die voor een lastige beslissing staat. Toon de twijfel, de zorgen — en hoe WRA daar verandering in brengt.",
+          "brandVoiceDescription": "Nuchter, eerlijk en benaderbaar. We praten in heldere taal, met oprechte interesse en zonder juridisch jargon. Aan de onderhandelingstafel scherp en strategisch."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "createdAt": "2026-04-10T07:50:56.690Z",
+        "updatedAt": "2026-04-10T08:06:41.833Z"
+      },
+      {
+        "id": "cmnslwr09000fakms0i1xc039",
+        "name": "Brand Personality",
+        "slug": "brand-personality",
+        "description": "Sincerity (eerlijk, gelijkwaardig) en Competence (meesterschap, voorsprong) als primaire dimensies. Nuchter, slagvaardig, scherp en betrokken.",
+        "category": "PERSONALITY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": "WRA Juristen is nuchter, eerlijk en benaderbaar in de relatie — strategisch en scherp aan de onderhandelingstafel. Onze stem klinkt zoals we werken: in heldere taal, zonder jargon, met oprechte interesse.",
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_PERSONALITY",
+        "frameworkData": {
+          "wordsWeUse": [
+            "naast je",
+            "gelijkwaardig",
+            "het regelen",
+            "jouw recht",
+            "onze zaak",
+            "helder",
+            "eerlijke prijs",
+            "meedenken",
+            "scherp",
+            "nuchter"
+          ],
+          "channelTones": {
+            "email": "Heldere koppen, korte alinea's, concrete vervolgstappen. Geen juridische lappen tekst.",
+            "crisis": "Eerlijk en snel. Probleem benoemen, opties uitleggen, aanbevelen wat te doen — en doen wat is afgesproken.",
+            "website": "Toegankelijk en geruststellend. Beantwoord direct de vraag \"wie staat er aan jouw kant?\" en laat zien hoe WRA werkt.",
+            "socialMedia": "Praktische tips en korte cases. Authentiek, geen marketingpraat. Laat zien dat we de wereld van de MKB-ondernemer kennen.",
+            "customerSupport": "Persoonlijk, kort en helder. Eén vast aanspreekpunt dat de situatie kent."
+          },
+          "wordsWeAvoid": [
+            "cliënt",
+            "aangelegenheid",
+            "conform",
+            "derhalve",
+            "rechtsverhouding",
+            "jurisprudentie zonder uitleg",
+            "estate",
+            "compliance-jargon",
+            "wij streven naar",
+            "ons kantoor"
+          ],
+          "writingSample": "Je hebt een werknemer die niet meer functioneert. Je hebt het er al maandenlang over. Je weet dat het zo niet langer kan, maar je stelt het gesprek uit. Begrijpelijk. Want wat als je een misstap maakt? Wij snappen dat. Wij leggen je uit waar je staat, wat je opties zijn en wat het betekent. Daarna regelen we het. Eerlijke prijs, helder traject, jij houdt de regie.",
+          "colorDirection": "Donkerblauw (#233e59) als basis voor vertrouwen en autoriteit. Mintgroen (#0bd8a2) als accent voor energie, beweging en de \"groene\" weegschaal. Off-white (#f2f8f4) als lichte basis. Felrood (#ff4f40) als spaarzame highlight voor urgentie.",
+          "toneDimensions": {
+            "formalCasual": 4,
+            "funnySerious": 5,
+            "respectfulIrreverent": 2,
+            "enthusiasticMatterOfFact": 5
+          },
+          "dimensionScores": {
+            "sincerity": 5,
+            "competence": 5,
+            "excitement": 3,
+            "ruggedness": 3,
+            "sophistication": 3
+          },
+          "spectrumSliders": {
+            "boldSubtle": 4,
+            "friendlyFormal": 3,
+            "playfulSerious": 6,
+            "eliteAccessible": 6,
+            "abstractConcrete": 6,
+            "modernTraditional": 4,
+            "energeticThoughtful": 4
+          },
+          "imageryDirection": "Echte ondernemers in hun eigen omgeving — geen kantoorstockfoto's. Lichte settings. Gezichten met emotie: opluchting, focus, vertrouwen. Symboliek van het schild en de weegschaal subtiel verwerkt.",
+          "primaryDimension": "Sincerity",
+          "personalityTraits": [
+            {
+              "name": "Gelijkwaardig",
+              "weAreThis": "Toegankelijk, in jip-en-janneketaal, met oprechte interesse.",
+              "description": "We staan naast je, niet boven je. Op ooghoogte, in gewone taal.",
+              "butNeverThat": "Nooit hooghartig, neerbuigend of onbereikbaar."
+            },
+            {
+              "name": "Nuchter",
+              "weAreThis": "Realistisch, helder, no-nonsense.",
+              "description": "We doen niet ingewikkeld. We benoemen wat er is en wat er moet gebeuren.",
+              "butNeverThat": "Nooit dramatisch, vaag of opgeklopt."
+            },
+            {
+              "name": "Slagvaardig",
+              "weAreThis": "Doortastend, daadkrachtig, beslist.",
+              "description": "We dralen niet. We lezen de situatie en handelen.",
+              "butNeverThat": "Nooit afwachtend, traag of ontwijkend."
+            },
+            {
+              "name": "Scherp",
+              "weAreThis": "Strategisch, alert, vakkundig.",
+              "description": "Aan de onderhandelingstafel kennen we de regels, tactieken en valkuilen.",
+              "butNeverThat": "Nooit slordig, naïef of overgeleverd."
+            },
+            {
+              "name": "Betrokken",
+              "weAreThis": "Empathisch, present, oprecht.",
+              "description": "We snappen wat een ondernemer meemaakt en staan echt aan zijn kant.",
+              "butNeverThat": "Nooit afstandelijk, transactioneel of ongeïnteresseerd."
+            }
+          ],
+          "secondaryDimension": "Competence",
+          "typographyDirection": "Adelle Sans Condensed Bold voor headlines (stoer, condens en eigen). Adelle Sans Regular voor body (helder, leesbaar). Reenie Beanie als handgeschreven highlight-font voor een persoonlijke noot.",
+          "brandVoiceDescription": "De stem van WRA Juristen is nuchter, eerlijk en benaderbaar. We praten zoals we werken: in heldere taal, zonder juridisch jargon, met oprechte interesse in de situatie van de ondernemer. Aan de onderhandelingstafel klinkt diezelfde stem strategisch en scherp."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "createdAt": "2026-04-10T07:50:56.697Z",
+        "updatedAt": "2026-04-10T08:06:41.839Z"
+      },
+      {
+        "id": "cmnslwr1e000hakms6knrq8yx",
+        "name": "Brand Story",
+        "slug": "brand-story",
+        "description": "Het merkverhaal: voor werknemers staat duidelijk wie hun belangen behartigt, maar voor MKB-werkgevers is dat veel minder vanzelfsprekend. WRA Juristen vult dat gat.",
+        "category": "NARRATIVE",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": "Voor werknemers is duidelijk wie aan hun kant staat — vakbonden, juridisch adviseurs, no cure no pay-juristen. Maar wie kijkt er mee met de MKB-werkgever? WRA Juristen koos expliciet die kant. Niet als advocatenkantoor met wachttijden en uurtarieven, maar als gelijkwaardige partner die naast de ondernemer staat. Jouw recht. Onze zaak.",
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_STORY",
+        "frameworkData": {
+          "brandRole": "De gelijkwaardige juridische partner die naast de werkgever staat — die meedenkt, meekijkt en meevecht wanneer het nodig is.",
+          "brandThemes": [
+            "Aan jouw kant",
+            "Gelijkwaardig",
+            "Eerlijk werkgeverschap",
+            "Ontzorging",
+            "Scherpte aan de onderhandelingstafel"
+          ],
+          "originStory": "Voor een werknemer is duidelijk wie aan zijn kant staat: vakbonden, juridisch adviseurs en platforms die zijn vaststellingsovereenkomst checken. Maar wie kijkt er eigenlijk mee met de werkgever? WRA Juristen ontstond uit de overtuiging dat MKB-ondernemers, die verantwoordelijkheid nemen voor hun mensen, óók een professionele partner verdienen.",
+          "proofPoints": [
+            "Specialisatie in MKB-arbeidsrecht — geen versnipperde generalist.",
+            "Heldere taal, eerlijke prijs, geen verrassingen.",
+            "Eén vast aanspreekpunt door het hele traject.",
+            "Scherpte aan de onderhandelingstafel — meesterschap in onderhandelen."
+          ],
+          "abtStatement": "MKB-ondernemers nemen verantwoordelijkheid voor hun mensen, MAAR staan er juridisch vaak alleen voor terwijl werknemers wel professionele bijstand hebben. DAAROM staat WRA Juristen naast de werkgever — als gelijkwaardige partner met scherpte en menselijkheid.",
+          "narrativeArc": "De werkgever staat er alleen voor → WRA Juristen kiest expliciet zijn kant → Met begrip én scherpte → Zorgvuldige en doortastende beslissingen → Eerlijk werkgeverschap dat beschermd wordt.",
+          "worldContext": "Het arbeidsrecht is in beweging: VBAR, Wet Meer Zekerheid Flexwerkers, EU-Loontransparantie, een transitievergoeding van €102.000 bruto en een tienjaarsrecord aan reorganisatiemeldingen. Werknemers hebben gratis VSO-checks en no cure no pay-juristen. MKB-werkgevers staan er vaak alleen voor.",
+          "elevatorPitch": "WRA Juristen begeleidt MKB-bedrijven bij arbeidsrechtelijke vraagstukken — van vaststellingsovereenkomst en ontslag tot contracten en reorganisaties. Niet als afstandelijk advocatenkantoor, maar als gelijkwaardige partner die naast je staat: in heldere taal, tegen een eerlijke prijs en met scherpte aan de onderhandelingstafel.",
+          "manifestoText": "Als werkgever neem jij beslissingen die er voor jou echt toe doen. Je neemt mensen aan, investeert in ze, en soms moet je afscheid nemen. Dat is misschien wel het zwaarste wat er is. Niet omdat je het niet kunt, maar omdat je het goed wil doen. Zorgvuldig, zonder gedoe achteraf. Maar wie staat er eigenlijk aan jouw kant?\n\nVoor een werknemer is dat duidelijk. Een vakbond of juridisch adviseur. Platforms die zijn vaststellingsovereenkomst checken. Juristen die op no cure no pay werken. Maar wie kijkt er eigenlijk mee met jou?\n\nOp al deze onderdelen komt WRA Juristen in beeld. Niet als advocatenkantoor met wachttijden en uurtarieven waar je van schrikt. Maar als iemand die naast je staat. Die snapt wat je meemaakt, gewone taal spreekt en je helpt om de juiste keuze te maken. Met kennis van het spel, scherpte in de onderhandeling en altijd met jouw belang voorop.\n\nWant wij geloven dat eerlijk werkgeverschap bescherming verdient. Dat jij als ondernemer, die verantwoordelijkheid neemt voor zijn mensen, recht heeft op iemand die verantwoordelijkheid neemt voor hem. Geen ingewikkelde trajecten. Geen juridisch jargon. Gewoon iemand die het regelt, zodat jij kunt ondernemen.\n\nWRA Juristen — Jouw recht. Onze zaak.",
+          "valuesInAction": [
+            "Gelijkwaardigheid: gesprekken op ooghoogte, in gewone taal.",
+            "Ontzorging: het juridische gewicht volledig overnemen.",
+            "Voorsprong: vooraan in kennis, risico's signaleren voordat ze problemen worden.",
+            "Slagvaardig: beslissen en handelen, niet dralen.",
+            "Meesterschap: de regels, tactieken en valkuilen kennen."
+          ],
+          "brandMilestones": [],
+          "empathyStatement": "We begrijpen dat afscheid nemen van mensen misschien wel het zwaarste is wat er is. Niet omdat je het niet kunt, maar omdat je het goed wíl doen. Zorgvuldig. Zonder gedoe achteraf.",
+          "founderMotivation": "De overtuiging dat eerlijk werkgeverschap bescherming verdient — en dat MKB-ondernemers niet alleen mogen staan tegenover steeds beter bewapende werknemers en steeds complexer wordende wetgeving.",
+          "emotionalTerritory": [
+            "Rust",
+            "Vertrouwen",
+            "Steun",
+            "Erkenning",
+            "Grip"
+          ],
+          "audienceAdaptations": {
+            "partners": "Wij zijn de gespecialiseerde MKB-arbeidsrechtpartner waar brancheorganisaties en accountants op kunnen rekenen voor hun klanten.",
+            "customers": "Jij hoeft niet alleen te staan. Wij nemen het juridische gewicht over en zorgen dat je met vertrouwen de juiste beslissingen kunt nemen.",
+            "employees": "Bij WRA werken we naast onze klanten, niet erboven. Wij combineren juridische scherpte met oprechte betrokkenheid bij ondernemers.",
+            "investors": ""
+          },
+          "coreBeliefStatement": "Wij geloven dat eerlijk werkgeverschap bescherming verdient. De werknemer heeft die al lang. De ondernemer verdient een gelijkwaardige partner aan zijn kant.",
+          "authorityCredentials": "Specialisten in arbeidsrecht voor het MKB. Diepgaande kennis van vaststellingsovereenkomsten, ontslagtrajecten, contracten en reorganisaties. Wij kennen de markt, de tactieken en de valkuilen.",
+          "keyNarrativeMessages": [
+            "Jouw recht. Onze zaak.",
+            "Wie staat er eigenlijk aan jouw kant?",
+            "Eerlijk werkgeverschap verdient bescherming.",
+            "Geen ingewikkelde trajecten. Geen juridisch jargon. Gewoon iemand die het regelt."
+          ],
+          "philosophicalProblem": "Waarom is het zelfsprekend dat werknemers professionele bijstand krijgen, maar moet de werkgever het zelf maar uitzoeken? Wie kijkt er eigenlijk mee met de ondernemer die verantwoordelijkheid neemt voor zijn mensen?",
+          "stakesCostOfInaction": "Zonder een eigen adviseur staat de werkgever per definitie op achterstand: hogere transitievergoedingen, juridische missers, gefrustreerde trajecten, escalerende conflicten en uiteindelijk schade aan het bedrijf én aan de werkrelaties.",
+          "customerSuccessVision": "De ondernemer die de juiste beslissingen neemt, situaties niet laat escaleren en met vertrouwen de onderhandelingstafel benadert — wetende dat er iemand naast hem staat die het spel beheerst.",
+          "transformationPromise": "Van alleen staan naar gesteund worden. Van onzekerheid naar rust. Van uitstellen naar zorgvuldig en doortastend handelen.",
+          "customerExternalProblem": "Een arbeidsrechtelijk traject (vaststellingsovereenkomst, ontslag, reorganisatie of contractbeoordeling) zorgvuldig en zonder onnodig gedoe doorlopen.",
+          "customerInternalProblem": "De zorg om iets fout te doen, de stress over de kosten en de afloop, en het gevoel er als werkgever alleen voor te staan in een steeds complexer juridisch landschap."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "createdAt": "2026-04-10T07:50:56.737Z",
+        "updatedAt": "2026-04-10T08:06:41.835Z"
+      },
+      {
+        "id": "cmnslwr45000lakmsgbf1jz9z",
+        "name": "Social Relevancy",
+        "slug": "social-relevancy",
+        "description": "Maatschappelijke relevantie: het herstellen van het juridische evenwicht tussen werkgever en werknemer in het MKB. Mens als kernpijler.",
+        "category": "ESG",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": "WRA Juristen draagt bij aan een eerlijker arbeidsmarkt door MKB-werkgevers de professionele juridische bescherming te bieden die werknemers al lang hebben. Niet door tegen werknemers te zijn, maar door expliciet vóór de werkgever te kiezen.",
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "ESG",
+        "frameworkData": {
+          "mens": {
+            "statements": [
+              {
+                "text": "Wij staan naast MKB-werkgevers die er anders alleen voor zouden staan.",
+                "score": 5,
+                "target": "Iedere MKB-werkgever die ons benadert ervaart een gelijkwaardige partner.",
+                "evidence": "Kernpositionering: \"Wie staat er eigenlijk aan jouw kant?\" Onze hele dienstverlening is gericht op het herstellen van de juridische balans voor de werkgever.",
+                "timeline": "Doorlopend"
+              },
+              {
+                "text": "Wij voorkomen onnodige escalatie van arbeidsconflicten door tijdige en heldere begeleiding.",
+                "score": 5,
+                "target": "Conflicten worden opgelost voordat ze escaleren naar de rechter.",
+                "evidence": "De waarde Slagvaardig en de transformationele doelen \"Handelen\": klanten stellen gesprekken niet meer uit en laten situaties niet escaleren.",
+                "timeline": "Doorlopend"
+              },
+              {
+                "text": "Wij geven ondernemers grip en rust in een steeds complexer arbeidsrechtelijk landschap.",
+                "score": 5,
+                "target": "Klanten voelen rust en weten waar ze staan.",
+                "evidence": "De waarde Voorsprong: vooraan in kennis, signaleren risico's voordat ze problemen worden.",
+                "timeline": "Doorlopend"
+              }
+            ],
+            "pillarReflection": "Mens is de absolute kernpijler van WRA Juristen. Het hele merk is gebouwd rond de overtuiging dat MKB-werkgevers — die verantwoordelijkheid nemen voor hun mensen — recht hebben op iemand die verantwoordelijkheid neemt voor hen."
+          },
+          "milieu": {
+            "statements": [
+              {
+                "text": "Wij werken zoveel mogelijk papierloos en digitaal.",
+                "score": 3,
+                "target": "Volledig digitale werkstroom voor alle dossiers.",
+                "evidence": "",
+                "timeline": ""
+              },
+              {
+                "text": "Wij beperken onnodig reizen door slim gebruik van digitale overlegvormen.",
+                "score": 3,
+                "target": "",
+                "evidence": "",
+                "timeline": ""
+              },
+              {
+                "text": "Wij nemen onze CO2-voetafdruk waar mogelijk in beschouwing in onze bedrijfsvoering.",
+                "score": 2,
+                "target": "",
+                "evidence": "",
+                "timeline": ""
+              }
+            ],
+            "pillarReflection": "Milieu is geen kernpijler van het merk WRA Juristen, maar wij zijn ons bewust van onze ecologische voetafdruk en handelen waar relevant."
+          },
+          "proofPoints": [
+            "Evidence (Social Relevancy): exclusieve focus op MKB-werkgevers — geen verwatering naar andere doelgroepen.",
+            "Evidence (Social Relevancy): heldere taal en eerlijke prijs als anti-drempel voor \"rechtmijders\".",
+            "Evidence (Social Relevancy): proactief signaleren van risico's voordat ze escaleren.",
+            "Evidence (Social Relevancy): één vast aanspreekpunt door het hele traject."
+          ],
+          "maatschappij": {
+            "statements": [
+              {
+                "text": "Wij dragen bij aan een eerlijker speelveld op de arbeidsmarkt.",
+                "score": 5,
+                "target": "Het standaardbeeld doorbreken dat alleen werknemers professionele juridische bijstand verdienen.",
+                "evidence": "Onze missie: eerlijk werkgeverschap verdient bescherming — als tegenwicht voor de bestaande infrastructuur die werknemers al hebben (vakbonden, no cure no pay-juristen, gratis VSO-checkdiensten).",
+                "timeline": "5-10 jaar"
+              },
+              {
+                "text": "Wij vergroten het juridische bewustzijn van MKB-ondernemers door in heldere taal uit te leggen wat hun rechten en plichten zijn.",
+                "score": 4,
+                "target": "MKB-ondernemers begrijpen hun positie en kunnen zorgvuldig handelen.",
+                "evidence": "Gelijkwaardigheid en heldere taal als kernwaarden — geen juridisch jargon.",
+                "timeline": "Doorlopend"
+              },
+              {
+                "text": "Wij voorkomen dat ondernemers door onwetendheid of kostenangst afhaken op noodzakelijke juridische bijstand (\"rechtmijders\").",
+                "score": 4,
+                "target": "Geen MKB-werkgever hoeft af te haken vanwege drempel of prijs.",
+                "evidence": "Trend: slechts 25% van MKB-ondernemers vindt het makkelijk goede juridische hulp te vinden. Onze toegankelijkheid en eerlijke prijs adresseren dit direct.",
+                "timeline": "Doorlopend"
+              }
+            ],
+            "pillarReflection": "De maatschappelijke bijdrage van WRA Juristen zit in het herstellen van het juridische evenwicht tussen werkgever en werknemer in het MKB. Niet door tegen werknemers te zijn, maar door expliciet vóór de werkgever te kiezen."
+          },
+          "sdgAlignment": [
+            8,
+            16
+          ],
+          "activismLevel": "Conscious",
+          "certifications": [],
+          "impactNarrative": "Onze maatschappelijke bijdrage zit in het herstellen van het juridische evenwicht op de arbeidsmarkt. Door naast de MKB-werkgever te staan, voorkomen we onnodige escalaties, beschermen we eerlijk werkgeverschap en geven we ondernemers de ruimte om verantwoordelijkheid te blijven nemen voor hun mensen.",
+          "impactStatement": "WRA Juristen draagt bij aan een eerlijker arbeidsmarkt door MKB-werkgevers de professionele juridische bescherming te bieden die werknemers al lang hebben.",
+          "keyStakeholders": [
+            "MKB-werkgevers (eigenaren, directeuren, HR-verantwoordelijken)",
+            "Brancheorganisaties MKB",
+            "Accountants en bedrijfsadviseurs"
+          ],
+          "annualCommitment": "",
+          "activationChannels": [
+            "Klantcommunicatie en cases",
+            "Brancheverenigingen MKB",
+            "Vakbladen voor ondernemers"
+          ],
+          "authenticityScores": {
+            "consistency": 5,
+            "walkTheTalk": 5,
+            "transparency": 5,
+            "measurability": 3,
+            "stakeholderTrust": 4,
+            "longTermCommitment": 5
+          },
+          "communicationPrinciples": [
+            "Spreek de taal van de ondernemer, niet die van de jurist.",
+            "Wees expliciet over voor wie we wel en niet werken.",
+            "Bewijs onze positie door consistentie, niet door slogans."
+          ],
+          "antiGreenwashingStatement": "WRA Juristen claimt geen breed maatschappelijk programma. Onze bijdrage is helder en specifiek: het herstellen van het juridische evenwicht voor MKB-werkgevers. Daar zijn we expliciet, daar handelen we naar — zonder pretenties op andere terreinen."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "createdAt": "2026-04-10T07:50:56.837Z",
+        "updatedAt": "2026-04-10T08:06:41.845Z"
+      },
+      {
+        "id": "cmnslwr3i000jakmsfvpfsq78",
+        "name": "Core Values",
+        "slug": "core-values",
+        "description": "Vijf kernwaarden: Gelijkwaardigheid en Ontzorging als anker, Voorsprong en Slagvaardig als aspiratie, Meesterschap als onderscheidende fire.",
+        "category": "CULTURE",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": "De waarden van WRA Juristen: Gelijkwaardigheid, Ontzorging, Voorsprong, Slagvaardig en Meesterschap. Samen vormen ze het kompas voor hoe wij werken naast en voor de MKB-werkgever.",
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRANDHOUSE_VALUES",
+        "frameworkData": {
+          "ownValue": {
+            "name": "Meesterschap",
+            "description": "Wij willen niet de grootste zijn, maar wel de scherpste. De onderhandeling is ons speelveld. Wij kennen de regels, de tactieken en de valkuilen. Die kennis en ervaring gebruiken we om het beste resultaat te realiseren."
+          },
+          "anchorValue1": {
+            "name": "Gelijkwaardigheid",
+            "description": "Wij zijn geen partij die boven je staat en uitlegt hoe het zit. Wij zitten naast je. Op ooghoogte, in gewone taal, met oprechte interesse in wat de jou als ondernemer bezighoudt. Die gelijkwaardigheid geldt ook aan de onderhandelingstafel: wij zorgen dat de werkgever met dezelfde juridische kracht aan tafel zit als de tegenpartij."
+          },
+          "anchorValue2": {
+            "name": "Ontzorging",
+            "description": "Als MKB-ondernemer heb je vaak geen juridische afdeling, HR-manager of tijd om je in wetgeving te verdiepen. Dat hoeft ook niet. Wij nemen het juridische gewicht over. Volledig, zorgvuldig en zonder dat je als ondernemer er wakker van hoeft te liggen. Wij regelen het."
+          },
+          "valueTension": "De spanning tussen Ontzorging (volledige overname) en Gelijkwaardigheid (op ooghoogte naast de klant). WRA Juristen lost dit op door de ondernemer juist informatie en grip te geven, terwijl wij het juridische werk wegnemen. De klant blijft regisseur, wij doen het uitvoerende werk.",
+          "aspirationValue1": {
+            "name": "Voorsprong",
+            "description": "De arbeidsrechtmarkt verandert sneller dan ooit. Nieuwe wetgeving, strengere handhaving, hogere vergoedingen; het houdt niet op. Wij wachten niet af. Wij lopen vooraan in kennis, signaleren risico's voordat ze problemen worden en zorgen dat onze klanten nooit worden verrast. Proactief denken is geen luxe, het is een noodzaak."
+          },
+          "aspirationValue2": {
+            "name": "Slagvaardig",
+            "description": "Wij twijfelen niet, dralen niet en wachten niet af. Wij lezen de situatie, bepalen de strategie en handelen. In gesprek met anderen en aan de onderhandelingstafel maakt dat het verschil: we weten wanneer we moeten duwen en wanneer we moeten wachten om het beste resultaat binnen te halen."
+          }
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "createdAt": "2026-04-10T07:50:56.814Z",
+        "updatedAt": "2026-04-10T08:06:41.830Z"
+      },
+      {
+        "id": "cmnslwqzg0005akms7hsjcwib",
+        "name": "Brand Essence",
+        "slug": "brand-essence",
+        "description": "Naast jou. Voor jou. De essentie van WRA Juristen is partnerschap met menselijkheid én meesterschap aan de zijde van de MKB-werkgever.",
+        "category": "CORE",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": "De essentie van WRA Juristen is partnerschap: niet boven de klant, niet tegenover de klant, maar naast de klant. Met begrip én scherpte, met menselijkheid én meesterschap.",
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_ESSENCE",
+        "frameworkData": {
+          "attributes": [
+            "Gelijkwaardig",
+            "Ontzorgend",
+            "Scherp",
+            "Slagvaardig",
+            "Eerlijk",
+            "Benaderbaar"
+          ],
+          "proofPoints": [
+            "Identity evidence: gespecialiseerd in MKB-arbeidsrecht.",
+            "Identity evidence: gelijkwaardige partner — naast de klant, niet erboven.",
+            "Identity evidence: heldere taal in plaats van juridisch jargon.",
+            "Identity evidence: één vast aanspreekpunt door het hele traject."
+          ],
+          "discriminator": "De combinatie van menselijke benaderbaarheid en scherpte aan de onderhandelingstafel — exclusief gericht op de MKB-werkgever.",
+          "audienceInsight": "MKB-werkgevers willen geen \"juridisch gedoe\", maar een oplossing. Ze willen iemand die hun situatie begrijpt, hun taal spreekt en hen helpt om de juiste beslissingen te nemen — zonder dat ze de jurist achteraan moeten zitten of voor onverwachte rekeningen komen te staan.",
+          "emotionalBenefit": "Rust en grip. De zekerheid dat er iemand met je meekijkt en het spel beheerst, zodat jij kunt ondernemen.",
+          "essenceNarrative": "De essentie van WRA Juristen is partnerschap: niet boven de klant, niet tegenover de klant, maar naast de klant. Met begrip én scherpte, met menselijkheid én meesterschap. WRA staat aan de kant van de MKB-werkgever — altijd.",
+          "essenceStatement": "Naast jou. Voor jou.",
+          "validationScores": {
+            "unique": 4,
+            "enduring": 5,
+            "scalable": 4,
+            "authentic": 5,
+            "intangible": 4,
+            "meaningful": 5
+          },
+          "functionalBenefit": "Specialistische arbeidsrechtelijke begeleiding voor MKB-werkgevers: vaststellingsovereenkomsten, ontslagtrajecten, contracten en reorganisaties. Heldere taal, eerlijke prijs, één vast aanspreekpunt.",
+          "selfExpressiveBenefit": "Door te kiezen voor WRA Juristen laat je zien dat je eerlijk werkgeverschap serieus neemt en zorgvuldig wilt handelen — met een professionele partner aan je kant."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "createdAt": "2026-04-10T07:50:56.668Z",
+        "updatedAt": "2026-04-10T08:06:41.836Z"
+      },
+      {
+        "id": "cmnslwqzq0007akmsr66o11x2",
+        "name": "Brand Promise",
+        "slug": "brand-promise",
+        "description": "Jouw recht. Onze zaak. WRA Juristen belooft MKB-werkgevers een gelijkwaardige, ontzorgende en scherpe juridische partner.",
+        "category": "STRATEGY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": "Jouw recht. Onze zaak. Werkgevers verdienen ook een sterke partij aan hun kant. WRA Juristen staat naast je: betrokken, scherp en altijd met jouw belang voorop.",
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_PROMISE",
+        "frameworkData": {
+          "proofPoints": [
+            "Delivery proof: één vast aanspreekpunt door het hele traject.",
+            "Delivery proof: heldere prijsafspraken — geen verrassingen achteraf.",
+            "Delivery proof: signaleren risico's voordat ze problemen worden.",
+            "Delivery proof: meesterschap in onderhandelen — we kennen het spel."
+          ],
+          "differentiator": "De enige specialist die exclusief de MKB-werkgever vertegenwoordigt — met de menselijkheid van een Caregiver en de scherpte van een Hero.",
+          "emotionalValue": "Het gevoel dat je er niet alleen voor staat. Rust over wat je wel en niet mag, wat het kost en hoe het afloopt.",
+          "targetAudience": "MKB-werkgevers (eigenaren, directeuren, HR-verantwoordelijken) die geconfronteerd worden met arbeidsrechtelijke vraagstukken en geen eigen juridische afdeling hebben.",
+          "functionalValue": "Specialistische begeleiding bij arbeidsrechtelijke vraagstukken: vaststellingsovereenkomsten, ontslagtrajecten, contracten en reorganisaties — met heldere taal en een eerlijke prijs.",
+          "promiseOneLiner": "Werkgevers verdienen ook een sterke partij aan hun kant. WRA Juristen staat naast je: betrokken, scherp en altijd met jouw belang voorop.",
+          "coreCustomerNeed": "Een arbeidsrechtjurist die naast de werkgever staat, in heldere taal communiceert en het juridische gewicht overneemt — zonder dat de ondernemer er wakker van hoeft te liggen.",
+          "promiseStatement": "Jouw recht. Onze zaak.",
+          "onlynessStatement": "Alleen WRA Juristen begeleidt MKB-werkgevers in arbeidsrechtelijke trajecten met de combinatie van gelijkwaardige partnerschap, heldere taal en scherpte aan de onderhandelingstafel — omdat wij geloven dat eerlijk werkgeverschap bescherming verdient.",
+          "measurableOutcomes": [
+            "Klanten ervaren de samenwerking als gelijkwaardig en ontzorgend.",
+            "Trajecten worden afgesloten zonder onnodige escalatie.",
+            "Onderhandelingsresultaten die meetbaar beter zijn dan de uitgangspositie."
+          ],
+          "selfExpressiveValue": "Kiezen voor WRA Juristen betekent kiezen voor zorgvuldig en doortastend werkgeverschap, ondersteund door een gelijkwaardige professionele partner."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "createdAt": "2026-04-10T07:50:56.678Z",
+        "updatedAt": "2026-04-10T08:06:41.838Z"
+      },
+      {
+        "id": "cmnslwqx90001akmsdkse8uk9",
+        "name": "Purpose Statement",
+        "slug": "purpose-statement",
+        "description": "Purpose: eerlijk werkgeverschap verdient bescherming. Impact type: Provide Protection. Mechanisme: empowerment door naast de werkgever te staan en het juridische gewicht over te nemen.",
+        "category": "PURPOSE",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": "Wij geloven dat eerlijk werkgeverschap bescherming verdient. WRA Juristen biedt MKB-werkgevers de juridische bescherming die werknemers al lang hebben — zodat ondernemers met vertrouwen verantwoordelijkheid kunnen blijven nemen voor hun mensen.",
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "PURPOSE_WHEEL",
+        "frameworkData": {
+          "mechanism": "Door naast de werkgever te staan, complexe regelgeving te vertalen naar heldere taal, en met scherpte aan de onderhandelingstafel het beste resultaat te realiseren — neemt WRA het juridische gewicht over en geeft de ondernemer grip.",
+          "statement": "Wij geloven dat eerlijk werkgeverschap bescherming verdient.",
+          "impactType": "Provide Protection",
+          "pressureTest": "Zonder WRA Juristen blijft de MKB-werkgever per definitie op achterstand tegenover beter bewapende werknemers en steeds complexer wordende wetgeving. Het gevolg: uitgestelde beslissingen, geëscaleerde conflicten, en juridische missers die schade doen aan zowel het bedrijf als de werkrelaties.",
+          "impactDescription": "WRA Juristen biedt MKB-werkgevers de juridische bescherming die werknemers al lang hebben — zodat ondernemers met vertrouwen verantwoordelijkheid kunnen blijven nemen voor hun mensen.",
+          "mechanismCategory": "Empowerment"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "createdAt": "2026-04-10T07:50:56.589Z",
+        "updatedAt": "2026-04-10T08:06:41.843Z"
+      },
+      {
+        "id": "cmnslwqz80003akmspfedh4h4",
+        "name": "Golden Circle",
+        "slug": "golden-circle",
+        "description": "WHY: eerlijk werkgeverschap verdient bescherming. HOW: naast je staan met heldere taal en eerlijke prijs. WHAT: arbeidsrechtelijke begeleiding voor MKB-werkgevers.",
+        "category": "FOUNDATION",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": "WRA Juristen begeleidt MKB-bedrijven bij arbeidsrechtelijke vraagstukken vanuit de overtuiging dat eerlijk werkgeverschap bescherming verdient. Wij staan naast de werkgever — niet als afstandelijk adviseur, maar als gelijkwaardige partner met heldere taal en scherpte aan de onderhandelingstafel.",
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "GOLDEN_CIRCLE",
+        "frameworkData": {
+          "how": {
+            "details": "Door naast je te staan. Niet als afstandelijk adviseur, maar als iemand die meedenkt, meekijkt en meevecht wanneer het nodig is. Laagdrempelig, in heldere taal en tegen een eerlijke prijs. Wij kennen de markt en snappen dat een ondernemer geen \"juridisch gedoe\" wil, maar een oplossing.",
+            "statement": "Door naast je te staan. Niet als afstandelijk adviseur, maar als iemand die meedenkt, meekijkt en meevecht wanneer het nodig is."
+          },
+          "why": {
+            "details": "Wij geloven dat eerlijk werkgeverschap bescherming verdient. De werknemer heeft die al lang. De ondernemer verdient een gelijkwaardige partner aan zijn kant.",
+            "statement": "Wij geloven dat eerlijk werkgeverschap bescherming verdient."
+          },
+          "what": {
+            "details": "Wij begeleiden MKB-bedrijven bij arbeidsrechtelijke vraagstukken. Van vaststellingsovereenkomst en ontslagtrajecten tot contracten en reorganisaties. Praktisch, persoonlijk en resultaatgericht.",
+            "statement": "Wij begeleiden MKB-bedrijven bij arbeidsrechtelijke vraagstukken."
+          }
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "createdAt": "2026-04-10T07:50:56.660Z",
+        "updatedAt": "2026-04-10T08:06:41.823Z"
+      },
+      {
+        "id": "cmnslwr05000dakmsdoj0ofsy",
+        "name": "Transformative Goals",
+        "slug": "transformative-goals",
+        "description": "Drie transformationele doelen voor MKB-werkgevers: denken (iemand die het begrijpt), voelen (rust en vertrouwen) en handelen (zorgvuldig en doortastend).",
+        "category": "STRATEGY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": "WRA Juristen verandert hoe MKB-werkgevers denken, voelen en handelen rondom arbeidsrechtelijke vraagstukken. Van alleen staan naar gesteund worden, van uitstellen naar zorgvuldig handelen.",
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "TRANSFORMATIVE_GOALS",
+        "frameworkData": {
+          "goals": [
+            {
+              "title": "Denken: Iemand die het begrijpt",
+              "timeframe": "2026-2030",
+              "milestones": [],
+              "description": "WRA Juristen is iemand die begrijpt wat ik als werkgever meemaak. WRA Juristen staat naast mij, doet niet ingewikkeld, maar is nuchter, eerlijk en benaderbaar.",
+              "impactDomain": "People",
+              "sdgAlignment": [],
+              "measurableCommitment": "Klanten ervaren WRA Juristen als nuchtere, eerlijke en benaderbare partner die hun situatie begrijpt."
+            },
+            {
+              "title": "Voelen: Rust en vertrouwen",
+              "timeframe": "2026-2030",
+              "milestones": [],
+              "description": "WRA Juristen geeft mij rust. De onzekerheid over wat ik wel en niet mag, wat iets gaat kosten en hoe het afloopt is verdwenen. Ik voel me gesteund en serieus genomen.",
+              "impactDomain": "People",
+              "sdgAlignment": [],
+              "measurableCommitment": "Ondernemers voelen rust en steun in trajecten waar ze normaal alleen voor zouden staan."
+            },
+            {
+              "title": "Handelen: Zorgvuldig en doortastend",
+              "timeframe": "2026-2030",
+              "milestones": [],
+              "description": "WRA Juristen helpt me de juiste beslissingen te nemen. Ik stel geen gesprekken meer uit en laat situaties niet escaleren. WRA geeft mij de handvatten om zorgvuldig en doortastend te handelen.",
+              "impactDomain": "People",
+              "sdgAlignment": [],
+              "measurableCommitment": "Werkgevers nemen tijdig actie in plaats van situaties te laten escaleren of beslissingen uit te stellen."
+            }
+          ],
+          "mtpNarrative": "WRA Juristen wil dat MKB-ondernemers nooit meer alleen staan bij arbeidsrechtelijke beslissingen. Wij willen het standaardbeeld van de afstandelijke jurist doorbreken en bewijzen dat juridische bijstand laagdrempelig, eerlijk en menselijk kan zijn.",
+          "brandIntegration": {
+            "themes": [
+              "Jouw recht. Onze zaak.",
+              "Wie staat er aan jouw kant?",
+              "Eerlijk werkgeverschap verdient bescherming"
+            ],
+            "campaigns": [],
+            "positioningLink": "WRA Juristen positioneert zich als de gelijkwaardige juridische partner voor MKB-werkgevers — naast je, niet boven je.",
+            "internalActivation": "De transformationele doelen worden intern verankerd via de waarden Gelijkwaardigheid, Meesterschap, Slagvaardig, Voorsprong en Ontzorging — en doorvertaald naar elk klantcontact."
+          },
+          "stakeholderImpact": [
+            {
+              "role": "Klanten",
+              "stakeholder": "MKB-werkgevers",
+              "expectedImpact": "Rust, vertrouwen en handvatten om zorgvuldig en doortastend te handelen."
+            },
+            {
+              "role": "Tegenpartij in arbeidsconflicten",
+              "stakeholder": "Werknemers",
+              "expectedImpact": "Een gelijkwaardig speelveld waarin ook werkgevers professioneel vertegenwoordigd zijn."
+            },
+            {
+              "role": "Partners",
+              "stakeholder": "Brancheorganisaties MKB",
+              "expectedImpact": "Een betrouwbare verwijzing voor leden die juridische bijstand nodig hebben."
+            }
+          ],
+          "authenticityScores": {
+            "clarity": 5,
+            "ambition": 4,
+            "longevity": 4,
+            "integration": 5,
+            "authenticity": 5,
+            "measurability": 3
+          },
+          "massiveTransformativePurpose": "Eerlijk werkgeverschap verdient een gelijkwaardige partner aan zijn kant."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "createdAt": "2026-04-10T07:50:56.693Z",
+        "updatedAt": "2026-04-10T08:06:41.828Z"
+      }
+    ],
+    "brandAssetVersion": [],
+    "brandAssetResearchMethod": [
+      {
+        "id": "cmnslwqyx0002akmstusvrtyd",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnslwqx90001akmsdkse8uk9",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-10T07:50:56.589Z",
+        "updatedAt": "2026-04-10T07:50:56.589Z"
+      },
+      {
+        "id": "cmnslwqza0004akmsetkhc155",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnslwqz80003akmspfedh4h4",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-10T07:50:56.660Z",
+        "updatedAt": "2026-04-10T07:50:56.660Z"
+      },
+      {
+        "id": "cmnslwqzj0006akmsnkw15asp",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnslwqzg0005akms7hsjcwib",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-10T07:50:56.668Z",
+        "updatedAt": "2026-04-10T07:50:56.668Z"
+      },
+      {
+        "id": "cmnslwqzr0008akms5x0j5xpj",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnslwqzq0007akmsr66o11x2",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-10T07:50:56.678Z",
+        "updatedAt": "2026-04-10T07:50:56.678Z"
+      },
+      {
+        "id": "cmnslwqzz000aakmsdomz4w63",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnslwqzx0009akmseqa3qtxj",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-10T07:50:56.685Z",
+        "updatedAt": "2026-04-10T07:50:56.685Z"
+      },
+      {
+        "id": "cmnslwr03000cakmsimcjdh5s",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnslwr02000bakmsluj4qhbr",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-10T07:50:56.690Z",
+        "updatedAt": "2026-04-10T07:50:56.690Z"
+      },
+      {
+        "id": "cmnslwr07000eakms9f2qto85",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnslwr05000dakmsdoj0ofsy",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-10T07:50:56.693Z",
+        "updatedAt": "2026-04-10T07:50:56.693Z"
+      },
+      {
+        "id": "cmnslwr0v000gakmsy6eze57c",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnslwr09000fakms0i1xc039",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-10T07:50:56.697Z",
+        "updatedAt": "2026-04-10T07:50:56.697Z"
+      },
+      {
+        "id": "cmnslwr39000iakmsd2x6kdhs",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnslwr1e000hakms6knrq8yx",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-10T07:50:56.737Z",
+        "updatedAt": "2026-04-10T07:50:56.737Z"
+      },
+      {
+        "id": "cmnslwr3j000kakms57qev2t5",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnslwr3i000jakmsfvpfsq78",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-10T07:50:56.814Z",
+        "updatedAt": "2026-04-10T07:50:56.814Z"
+      },
+      {
+        "id": "cmnslwr60000makmsuced5ve3",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnslwr45000lakmsgbf1jz9z",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-10T07:50:56.837Z",
+        "updatedAt": "2026-04-10T07:50:56.837Z"
+      }
+    ],
+    "brand": [
+      {
+        "id": "cmr4z54fe000g38c92cn2dqr2",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "createdAt": "2026-07-03T13:33:43.466Z",
+        "updatedAt": "2026-07-03T13:33:43.466Z"
+      }
+    ],
+    "brandLocaleProfile": [
+      {
+        "id": "cmr4z54ff000h38c9vay0uvsi",
+        "brandId": "cmr4z54fe000g38c92cn2dqr2",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "locale": "nl-NL",
+        "isDefault": true,
+        "voiceOverrides": null,
+        "localizedAssets": null,
+        "createdAt": "2026-07-03T13:33:43.467Z",
+        "updatedAt": "2026-07-03T13:33:43.467Z"
+      }
+    ],
+    "brandVoiceguide": [
+      {
+        "id": "cmp6lpiiu000627ms4knrhvex",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "voiceDescription": null,
+        "toneDimensions": null,
+        "contentGuidelines": [
+          "Spreek de taal van de ondernemer, niet die van de jurist.",
+          "Vermijd juridisch jargon zonder uitleg.",
+          "Stel de werkgever centraal — gebruik tweede persoon (\"jij/jou\") en partnerschap-taal (\"wij staan naast je\").",
+          "Wees nuchter en helder; geen dramatische framing."
+        ],
+        "writingGuidelines": [
+          "Korte zinnen, actieve vorm, concrete voorbeelden.",
+          "Laat het beste gevoel (rust, grip, vertrouwen) doorklinken in de toon.",
+          "Gebruik headlines die direct herkenning oproepen (\"Wie staat er aan jouw kant?\").",
+          "Sluit af met een duidelijke vervolgstap of geruststelling."
+        ],
+        "vocabularyDo": [],
+        "vocabularyDont": [],
+        "voiceSample": null,
+        "writingSamples": [],
+        "wordsWeUse": [],
+        "wordsWeAvoid": [],
+        "channelTones": null,
+        "antiPatterns": [],
+        "examplePhrases": {
+          "do": [
+            "Jouw recht. Onze zaak.",
+            "Wij staan naast je.",
+            "Wij regelen het, zodat jij kunt ondernemen.",
+            "Geen ingewikkelde trajecten. Geen juridisch jargon."
+          ],
+          "dont": [
+            "Wij behartigen uw belangen conform de geldende rechtspraak.",
+            "Onze rechtsverhouding zal worden vastgelegd.",
+            "Wij streven ernaar de aangelegenheid in goede orde af te wikkelen."
+          ]
+        },
+        "centroidComputedAt": null,
+        "contentLocale": null,
+        "voiceDnaSavedForAi": true,
+        "vocabularySavedForAi": true,
+        "channelTonesSavedForAi": true,
+        "antiPatternsSavedForAi": true,
+        "guidelinesSavedForAi": true,
+        "examplePhrasesSavedForAi": true,
+        "referencesSavedForAi": false,
+        "source": "extracted",
+        "publishedAt": null,
+        "createdAt": "2026-05-15T07:33:47.910Z",
+        "updatedAt": "2026-05-15T07:33:47.910Z",
+        "createdById": null
+      }
+    ],
+    "brandVoice": [],
+    "brandStyleguide": [
+      {
+        "id": "cmnsmh0an0000dmmsf3v06gef",
+        "status": "COMPLETE",
+        "sourceType": "PDF",
+        "sourceUrl": null,
+        "sourceFileName": "Logo 2026 WRA Juristen.pdf",
+        "analysisJobId": null,
+        "analysisStatus": "COMPLETE",
+        "errorMessage": null,
+        "detectedFrameworks": [],
+        "layoutStyle": "COMMERCIAL",
+        "layoutStyleInferred": false,
+        "buttonProfile": null,
+        "spacingProfile": null,
+        "elevationProfile": null,
+        "radiusProfile": null,
+        "motionProfile": null,
+        "typographyProfile": null,
+        "buttonProfileOverride": false,
+        "spacingProfileOverride": false,
+        "elevationProfileOverride": false,
+        "radiusProfileOverride": false,
+        "motionProfileOverride": false,
+        "typographyProfileOverride": false,
+        "designPhilosophy": null,
+        "fixtureSamples": null,
+        "archetype": null,
+        "archetypeConfidence": null,
+        "archetypeReasoning": null,
+        "logoGuidelines": [
+          "Gebruik altijd voldoende witruimte rond het logo.",
+          "Het beeldmerk staat als schild voor bescherming en richting.",
+          "De driehoek met de ronde onderzijde symboliseert de weegschaal waarin het recht wordt afgewogen.",
+          "Adelle Sans Condensed geeft het logo een onderscheidend en modern karakter."
+        ],
+        "logoDonts": [
+          "Niet uitrekken, vervormen of roteren.",
+          "Niet plaatsen op rommelige of onrustige achtergronden.",
+          "Beeldmerk niet los van het woordmerk gebruiken in formele toepassingen — alleen als favicon/profielicoon.",
+          "De groene accentkleur niet vervangen door andere kleuren."
+        ],
+        "logoSavedForAi": true,
+        "colorDonts": [
+          "Gebruik de rode accentkleur (#ff4f40) niet in combinatie met groen (#0bd8a2) als hoofdcombinatie.",
+          "Vermijd pastellen of andere kleuren buiten het palet.",
+          "Gebruik niet de hele groen-pixel als grote vlakken zonder donkerblauw of wit als rust."
+        ],
+        "colorsSavedForAi": true,
+        "semanticColors": null,
+        "primaryFontName": "Adelle Sans Condensed Bold",
+        "primaryFontUrl": "",
+        "additionalFonts": [],
+        "typeScale": {
+          "h1": {
+            "font": "Adelle Sans Condensed Bold",
+            "size": "48px",
+            "lineHeight": "1.1"
+          },
+          "h2": {
+            "font": "Adelle Sans Condensed Bold",
+            "size": "36px",
+            "lineHeight": "1.2"
+          },
+          "h3": {
+            "font": "Adelle Sans Condensed Bold",
+            "size": "24px",
+            "lineHeight": "1.3"
+          },
+          "body": {
+            "font": "Adelle Sans Regular",
+            "size": "16px",
+            "lineHeight": "1.5"
+          },
+          "highlight": {
+            "font": "Reenie Beanie Regular",
+            "size": "24px",
+            "lineHeight": "1.2"
+          }
+        },
+        "typographySavedForAi": true,
+        "photographyStyle": null,
+        "photographyGuidelines": [
+          "Echte MKB-ondernemers in hun eigen omgeving (bedrijfspand, kantoor, werkvloer).",
+          "Geen geposeerde stockfoto's van advocaten of juridische kantoren.",
+          "Lichte, natuurlijke settings met gezichten die emoties tonen: opluchting, focus, vertrouwen.",
+          "Gebruik beeld waarin de mens centraal staat — geen close-ups van paragrafen of contracten."
+        ],
+        "illustrationGuidelines": [
+          "Gebruik symboliek van schild en weegschaal subtiel — niet overdreven juridisch.",
+          "Mintgroene accenten als energiek tegenwicht voor het donkerblauw."
+        ],
+        "imageryDonts": [
+          "Geen klassieke gerechtsbeelden (hamer, balans, toga's).",
+          "Geen anonieme stockmodellen in pakken.",
+          "Geen donkere, intimiderende beelden van rechtszalen."
+        ],
+        "imagerySavedForAi": true,
+        "brandImages": null,
+        "graphicElements": null,
+        "graphicElementsDonts": [],
+        "patternsTextures": null,
+        "iconographyStyle": null,
+        "iconographyDonts": [],
+        "gradientsEffects": null,
+        "layoutPrinciples": null,
+        "designLanguageSavedForAi": false,
+        "visualLanguage": null,
+        "visualLanguageSavedForAi": false,
+        "spacingScale": null,
+        "cornerRadii": null,
+        "shadowSystem": null,
+        "semanticTokens": null,
+        "colorPairings": null,
+        "observedColorPairs": null,
+        "published": false,
+        "publishedAt": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "createdById": "demo-user-erik-001",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "createdAt": "2026-04-10T08:06:41.855Z",
+        "updatedAt": "2026-04-10T08:06:41.855Z"
+      }
+    ],
+    "styleguideColor": [
+      {
+        "id": "cmnsmh0at0001dmms7n05lnv8",
+        "name": "Donkerblauw",
+        "hex": "#233e59",
+        "rgb": "35, 62, 89",
+        "hsl": null,
+        "cmyk": "61, 30, 0, 65",
+        "category": "PRIMARY",
+        "tags": [],
+        "notes": "Hoofdkleur: geeft autoriteit, professionaliteit en vertrouwen. Gebruik voor headlines, logo en grote vlakken.",
+        "contrastWhite": null,
+        "contrastBlack": null,
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 0,
+        "styleguideId": "cmnsmh0an0000dmmsf3v06gef"
+      },
+      {
+        "id": "cmnsmh0av0002dmms6c43sme4",
+        "name": "Mintgroen",
+        "hex": "#0bd8a2",
+        "rgb": "11, 216, 162",
+        "hsl": null,
+        "cmyk": "95, 0, 25, 15",
+        "category": "SECONDARY",
+        "tags": [],
+        "notes": "Accentkleur: geeft energie, beweging en menselijkheid. De groene weegschaalvorm in het beeldmerk. Gebruik als accent en voor call-to-actions.",
+        "contrastWhite": null,
+        "contrastBlack": null,
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 1,
+        "styleguideId": "cmnsmh0an0000dmmsf3v06gef"
+      },
+      {
+        "id": "cmnsmh0aw0003dmmskxfhzkhi",
+        "name": "Off-white",
+        "hex": "#f2f8f4",
+        "rgb": "242, 248, 244",
+        "hsl": null,
+        "cmyk": "2, 0, 2, 3",
+        "category": "BACKGROUND",
+        "tags": [],
+        "notes": "Lichte basis voor pagina-achtergronden en rust in het ontwerp.",
+        "contrastWhite": null,
+        "contrastBlack": null,
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 2,
+        "styleguideId": "cmnsmh0an0000dmmsf3v06gef"
+      },
+      {
+        "id": "cmnsmh0ax0004dmmsxwdwekro",
+        "name": "Highlight rood",
+        "hex": "#ff4f40",
+        "rgb": "255, 79, 64",
+        "hsl": null,
+        "cmyk": "0, 69, 75, 0",
+        "category": "ACCENT",
+        "tags": [],
+        "notes": "Spaarzame highlight voor urgentie of attentie. Niet combineren met mintgroen als hoofdcombinatie.",
+        "contrastWhite": null,
+        "contrastBlack": null,
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 3,
+        "styleguideId": "cmnsmh0an0000dmmsf3v06gef"
+      }
+    ],
+    "styleguideFont": [],
+    "styleguideLogo": [],
+    "styleguideComponent": [],
+    "fidelityConfig": [
+      {
+        "id": "fc_cmnslwqwv0000akmswepx1gsq",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "styleWeight": 0.35,
+        "judgeWeight": 0.45,
+        "ruleWeight": 0.2,
+        "rubricWeights": null,
+        "humanVoiceMode": "STRICT",
+        "aiLeaningThreshold": 30,
+        "disabledContentTypes": [],
+        "createdAt": "2026-05-06T08:52:44.768Z",
+        "updatedAt": "2026-05-06T08:52:44.768Z"
+      }
+    ],
+    "brandRule": [
+      {
+        "id": "cmot11wib00001nc9zo56kepj",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "cliënt",
+        "patternIsRegex": false,
+        "message": "Vermijd het woord \"cliënt\" — staat in BrandPersonality.wordsWeAvoid lijst.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:wordsWeAvoid",
+        "createdAt": "2026-05-05T19:34:33.682Z",
+        "updatedAt": "2026-05-05T19:34:33.682Z"
+      },
+      {
+        "id": "cmot11wic00011nc9d0eze348",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "aangelegenheid",
+        "patternIsRegex": false,
+        "message": "Vermijd het woord \"aangelegenheid\" — staat in BrandPersonality.wordsWeAvoid lijst.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:wordsWeAvoid",
+        "createdAt": "2026-05-05T19:34:33.682Z",
+        "updatedAt": "2026-05-05T19:34:33.682Z"
+      },
+      {
+        "id": "cmot11wic00021nc9xz12gu3x",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "conform",
+        "patternIsRegex": false,
+        "message": "Vermijd het woord \"conform\" — staat in BrandPersonality.wordsWeAvoid lijst.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:wordsWeAvoid",
+        "createdAt": "2026-05-05T19:34:33.682Z",
+        "updatedAt": "2026-05-05T19:34:33.682Z"
+      },
+      {
+        "id": "cmot11wic00031nc9qjwz6si9",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "derhalve",
+        "patternIsRegex": false,
+        "message": "Vermijd het woord \"derhalve\" — staat in BrandPersonality.wordsWeAvoid lijst.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:wordsWeAvoid",
+        "createdAt": "2026-05-05T19:34:33.682Z",
+        "updatedAt": "2026-05-05T19:34:33.682Z"
+      },
+      {
+        "id": "cmot11wic00041nc9ka1okfqs",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "rechtsverhouding",
+        "patternIsRegex": false,
+        "message": "Vermijd het woord \"rechtsverhouding\" — staat in BrandPersonality.wordsWeAvoid lijst.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:wordsWeAvoid",
+        "createdAt": "2026-05-05T19:34:33.682Z",
+        "updatedAt": "2026-05-05T19:34:33.682Z"
+      },
+      {
+        "id": "cmot11wic00051nc972451tjp",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "jurisprudentie zonder uitleg",
+        "patternIsRegex": false,
+        "message": "Vermijd het woord \"jurisprudentie zonder uitleg\" — staat in BrandPersonality.wordsWeAvoid lijst.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:wordsWeAvoid",
+        "createdAt": "2026-05-05T19:34:33.682Z",
+        "updatedAt": "2026-05-05T19:34:33.682Z"
+      },
+      {
+        "id": "cmot11wic00061nc9qv9111qy",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "estate",
+        "patternIsRegex": false,
+        "message": "Vermijd het woord \"estate\" — staat in BrandPersonality.wordsWeAvoid lijst.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:wordsWeAvoid",
+        "createdAt": "2026-05-05T19:34:33.682Z",
+        "updatedAt": "2026-05-05T19:34:33.682Z"
+      },
+      {
+        "id": "cmot11wic00071nc9a135ugp3",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "compliance-jargon",
+        "patternIsRegex": false,
+        "message": "Vermijd het woord \"compliance-jargon\" — staat in BrandPersonality.wordsWeAvoid lijst.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:wordsWeAvoid",
+        "createdAt": "2026-05-05T19:34:33.682Z",
+        "updatedAt": "2026-05-05T19:34:33.682Z"
+      },
+      {
+        "id": "cmot11wic00081nc9stpwbfr0",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "wij streven naar",
+        "patternIsRegex": false,
+        "message": "Vermijd het woord \"wij streven naar\" — staat in BrandPersonality.wordsWeAvoid lijst.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:wordsWeAvoid",
+        "createdAt": "2026-05-05T19:34:33.682Z",
+        "updatedAt": "2026-05-05T19:34:33.682Z"
+      },
+      {
+        "id": "cmot11wic00091nc9qsvvuceo",
+        "workspaceId": "cmnslwqwv0000akmswepx1gsq",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "ons kantoor",
+        "patternIsRegex": false,
+        "message": "Vermijd het woord \"ons kantoor\" — staat in BrandPersonality.wordsWeAvoid lijst.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:wordsWeAvoid",
+        "createdAt": "2026-05-05T19:34:33.682Z",
+        "updatedAt": "2026-05-05T19:34:33.682Z"
+      }
+    ],
+    "workspaceContentTypeThreshold": [],
+    "persona": [],
+    "personaResearchMethod": [],
+    "product": [],
+    "productImage": [],
+    "productPersona": [],
+    "businessStrategy": [],
+    "focusArea": [],
+    "objective": [],
+    "keyResult": [],
+    "milestone": [],
+    "progressSnapshot": [],
+    "competitor": [],
+    "competitorProduct": [],
+    "trend": [],
+    "workspaceAiConfig": []
+  },
+  "vectors": {
+    "brandVoiceguide": {
+      "centroidEmbedding": {}
+    }
+  },
+  "localImageRefs": []
+}

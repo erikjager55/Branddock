@@ -1,0 +1,2570 @@
+{
+  "meta": {
+    "version": 1,
+    "sourceWorkspaceId": "cmo9p7x44000rscms6jjeah23",
+    "sourceWorkspaceName": "DTS Ede",
+    "sourceSlug": "dts-ede",
+    "sourceContentLanguage": "en",
+    "note": "Merk-DNA-export (alleen brand foundation; geen content/telemetrie/historie)."
+  },
+  "records": {
+    "brandAsset": [
+      {
+        "id": "cmo9p7x5p001cscmsiqn1o3mw",
+        "name": "Social Relevancy",
+        "slug": "social-relevancy",
+        "description": "Your brand's societal and environmental impact",
+        "category": "ESG",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "ESG",
+        "frameworkData": {
+          "sdgAlignment": [
+            3,
+            10,
+            11
+          ],
+          "activismLevel": "Silent",
+          "impactNarrative": "As a volunteer-driven amateur sports club, DTS Ede contributes to social wellbeing by providing structured physical activity, youth development opportunities, and community gathering spaces. The club's inclusive approach ensures that sport remains accessible to all, combating social isolation and promoting healthy lifestyles in the Ede region.",
+          "impactStatement": "DTS Ede strengthens community cohesion and promotes healthy, active lifestyles through accessible amateur football programs that bring people together across generations.",
+          "keyStakeholders": [
+            "Local families and youth",
+            "Volunteers and club members",
+            "Municipality of Ede",
+            "KNVB (Dutch Football Association)",
+            "Local schools and community organizations"
+          ],
+          "annualCommitment": "Continued operation of accessible football programs for all age groups, maintenance of volunteer-driven club structure, and hosting of international youth tournament promoting cross-cultural exchange.",
+          "activationChannels": [
+            "Youth development programs",
+            "Volunteer recruitment and recognition",
+            "Community events and tournaments",
+            "Local partnerships"
+          ],
+          "communicationPrinciples": [
+            "Lead by example through inclusive practices",
+            "Celebrate community contributions and volunteer efforts",
+            "Focus on local impact rather than global statements"
+          ]
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T06:55:41.725Z",
+        "updatedAt": "2026-04-22T07:00:48.425Z"
+      },
+      {
+        "id": "cmo9p7x4n000sscms9zumad9y",
+        "name": "Purpose Statement",
+        "slug": "purpose-statement",
+        "description": "The reason your organization exists beyond profit",
+        "category": "PURPOSE",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "PURPOSE_WHEEL",
+        "frameworkData": {
+          "mechanism": "Providing accessible, volunteer-driven football programs across all age groups and skill levels, from youth development to 35+ leagues, supported by organized tournaments and KNVB-sanctioned competition",
+          "statement": "To enable people of all ages in Ede to reach their potential through the power of football and community",
+          "impactType": "Enable Potential",
+          "pressureTest": "Without DTS Ede, many residents of Ede would lack a structured, community-based environment to participate in organized football, develop athletic skills, build social connections, and experience the benefits of team sports across their lifespan",
+          "impactDescription": "DTS Ede creates pathways for youth, adults, and women to develop their football skills, physical fitness, and personal character through structured training, competitive matches, and community engagement",
+          "mechanismCategory": "Community Infrastructure"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T06:55:41.687Z",
+        "updatedAt": "2026-04-22T07:00:48.368Z"
+      },
+      {
+        "id": "cmo9p7x4z000uscms8ckbngu4",
+        "name": "Golden Circle",
+        "slug": "golden-circle",
+        "description": "Simon Sinek's WHY → HOW → WHAT framework",
+        "category": "FOUNDATION",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "GOLDEN_CIRCLE",
+        "frameworkData": {
+          "how": {
+            "details": "We organize KNVB-sanctioned leagues, training sessions, and tournaments like our international U13 Top Tournament. Our approach relies on community volunteers (vrijwilligersbeleid) and structured youth development policies (jeugdbeleidsplan) to create safe, well-organized football experiences.",
+            "statement": "Through volunteer-driven, inclusive programs that serve all ages and abilities"
+          },
+          "why": {
+            "details": "DTS Ede exists because we believe that organized sport, particularly football, has the power to develop character, create belonging, and strengthen the fabric of our local community. Through volunteerism and youth development, we invest in the future of Ede.",
+            "statement": "We believe football builds stronger people and stronger communities"
+          },
+          "what": {
+            "details": "DTS Ede offers football programs for youth, seniors, women's teams, and 35+ leagues, along with hosting the annual international U13 Top Tournament on Easter Monday. We deliver training, matches, and community events in our traditional blauw-witte (blue-white) colors.",
+            "statement": "We provide amateur football club memberships and competitive opportunities"
+          }
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T06:55:41.699Z",
+        "updatedAt": "2026-04-22T07:00:48.392Z"
+      },
+      {
+        "id": "cmo9p7x53000wscmsk2we7im5",
+        "name": "Brand Essence",
+        "slug": "brand-essence",
+        "description": "The heart and soul of your brand",
+        "category": "CORE",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_ESSENCE",
+        "frameworkData": {
+          "attributes": [
+            "Community-focused",
+            "Volunteer-driven",
+            "Youth-oriented",
+            "Inclusive",
+            "Traditional"
+          ],
+          "proofPoints": [
+            "Annual international U13 Top Tournament attracting teams from multiple countries",
+            "Comprehensive youth development policy (jeugdbeleidsplan)",
+            "Structured volunteer policy (vrijwilligersbeleid) ensuring community involvement",
+            "KNVB-sanctioned leagues across youth, senior, and women's divisions",
+            "Multi-generational programming including 35+ leagues"
+          ],
+          "discriminator": "Deep local roots in Ede with comprehensive age-inclusive programming from youth to 35+ leagues, supported by volunteer-driven community engagement",
+          "audienceInsight": "Families in Ede want more than just a sports activity—they seek a community where their children can grow, where they can contribute as volunteers, and where football creates lasting connections across generations",
+          "emotionalBenefit": "A sense of belonging, pride, and connection to a local community that supports your development on and off the pitch",
+          "essenceNarrative": "DTS Ede is the heartbeat of football in Ede, where generations come together to play, grow, and belong. We are more than a club—we are neighbors, volunteers, and families united by our love for the beautiful game and our commitment to each other.",
+          "essenceStatement": "Community Through Football",
+          "validationScores": {
+            "unique": 3,
+            "enduring": 4,
+            "scalable": 2,
+            "authentic": 5,
+            "intangible": 4,
+            "meaningful": 4
+          },
+          "functionalBenefit": "Access to structured, KNVB-sanctioned football training and competition across all age groups and skill levels",
+          "selfExpressiveBenefit": "Being part of a traditional Dutch football club that values volunteerism, youth development, and community contribution"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T06:55:41.703Z",
+        "updatedAt": "2026-04-22T07:00:48.395Z"
+      },
+      {
+        "id": "cmo9p7x55000yscmskkhq03h6",
+        "name": "Brand Promise",
+        "slug": "brand-promise",
+        "description": "Core commitment to your customers",
+        "category": "STRATEGY",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_PROMISE",
+        "frameworkData": {
+          "proofPoints": [
+            "KNVB-sanctioned leagues ensuring quality standards",
+            "International U13 Top Tournament hosted annually",
+            "Documented youth development and volunteer policies",
+            "Programs for youth, women, seniors, and 35+ players",
+            "Active match reporting and community communication"
+          ],
+          "differentiator": "Comprehensive volunteer-supported programming spanning youth development through 35+ leagues, anchored by international tournament hosting",
+          "emotionalValue": "A supportive community environment where you feel valued, connected, and proud to wear the blauw-witte colors",
+          "targetAudience": "Residents of Ede and surrounding areas seeking organized amateur football participation for themselves or their children",
+          "functionalValue": "Reliable access to quality training, competitive KNVB matches, and well-organized tournaments across all age groups",
+          "promiseOneLiner": "Your football home in Ede, where everyone plays, grows, and belongs",
+          "coreCustomerNeed": "A safe, structured, community-based environment to play football, develop skills, and build social connections",
+          "promiseStatement": "DTS Ede promises to provide every member—from youth to senior—a welcoming, well-organized football experience where you can develop your skills, compete with integrity, and contribute to a thriving local community",
+          "onlynessStatement": "Only DTS Ede can offer Ede residents a complete football journey from youth to senior years because we combine deep local community roots with volunteer-driven programs and international youth tournament experience",
+          "measurableOutcomes": [
+            "Member retention and satisfaction across age groups",
+            "Youth player development and progression",
+            "Volunteer participation rates",
+            "Tournament attendance and international team participation"
+          ],
+          "selfExpressiveValue": "Membership in a respected local institution that reflects your commitment to community, sport, and youth development"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T06:55:41.705Z",
+        "updatedAt": "2026-04-22T07:00:48.399Z"
+      },
+      {
+        "id": "cmo9p7x580010scmsy5pbwy51",
+        "name": "Mission & Vision",
+        "slug": "mission-statement",
+        "description": "What you do today and where you're headed",
+        "category": "STRATEGY",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "MISSION_STATEMENT",
+        "frameworkData": {
+          "forWhom": "Residents of Ede and surrounding areas, from youth players to seniors, including women and 35+ participants",
+          "whatWeDo": "Organize and deliver KNVB-sanctioned football training, league matches, and tournaments across multiple age groups and skill levels",
+          "howWeDoIt": "Through volunteer-driven programs guided by structured youth development policies, community engagement, and partnerships with KNVB and international football organizations",
+          "impactGoal": "To positively impact the physical, social, and character development of hundreds of Ede residents annually through the power of organized football",
+          "timeHorizon": "10 years",
+          "boldAspiration": "To become a model for community-based football development in the Netherlands, where every generation in Ede has a meaningful connection to DTS",
+          "missionOneLiner": "Building community through football for all ages in Ede",
+          "valuesAlignment": "Community, volunteerism, youth development, inclusivity, and sporting integrity",
+          "visionStatement": "To be the premier community football club in the region, recognized for developing generations of players, fostering lifelong connections, and setting the standard for volunteer-driven youth sport",
+          "missionStatement": "To provide the Ede community with accessible, high-quality amateur football programs that develop players of all ages through volunteer-supported training, competitive play, and community engagement",
+          "successIndicators": [
+            "Increased membership across all age categories",
+            "Higher percentage of youth players transitioning to senior teams",
+            "Growing volunteer base with multi-year retention",
+            "Expanded international tournament participation and reputation",
+            "Recognition as a leading community sports organization in the region"
+          ],
+          "desiredFutureState": "A thriving multi-generational club where youth players develop into senior members, volunteers, and community leaders, while our international tournament becomes a marquee event in Dutch youth football",
+          "stakeholderBenefit": "Players gain lifelong skills and connections; families find community; volunteers experience meaningful contribution; Ede benefits from stronger social cohesion",
+          "missionVisionTension": "Balancing the immediate need to serve current members with quality programs against the long-term aspiration to expand impact and become a regional model requires careful resource allocation and volunteer capacity building"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T06:55:41.708Z",
+        "updatedAt": "2026-04-22T07:00:48.402Z"
+      },
+      {
+        "id": "cmo9p7x5a0012scmstlanc576",
+        "name": "Brand Archetype",
+        "slug": "brand-archetype",
+        "description": "Universal behavior patterns",
+        "category": "PERSONALITY",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_ARCHETYPE",
+        "frameworkData": {
+          "coreFear": "Being left out or standing alone",
+          "strategy": "Develop down-to-earth community connections through accessible football programs for all ages and skill levels",
+          "brandGoal": "To create an inclusive, accessible football community where everyone can participate and belong",
+          "coreDesire": "To belong and connect with others in the community",
+          "giftTalent": "Creating welcoming, inclusive environments where ordinary people can come together through sport",
+          "subArchetype": "Neighbor",
+          "brandExamples": [
+            "IKEA",
+            "Levi's",
+            "eBay",
+            "Home Depot",
+            "Local community centers"
+          ],
+          "shadowWeakness": "May lack distinctiveness or premium appeal; risk of being seen as too ordinary or traditional",
+          "contentStrategy": "Match reports, community updates, volunteer spotlights, youth development stories, local tournament coverage",
+          "primaryArchetype": "Everyman",
+          "archetypeInAction": "DTS Ede embodies the Everyman through its emphasis on volunteerism (Vrijwilligersbeleid), community engagement, and accessible membership for all age groups from youth to 35+ leagues. The club focuses on participation over exclusivity.",
+          "customerExperience": "Welcoming and unpretentious, focused on making everyone feel part of the team, strong volunteer culture creates sense of shared ownership",
+          "marketingExpression": "Community-focused messaging, emphasis on belonging and participation, accessible language, focus on local connection and tradition",
+          "positioningApproach": "Similarity",
+          "competitiveLandscape": "Positioned among other Dutch amateur football clubs (HSV Zuidvogels, Veensche Boys, CSV Apeldoorn, SDC Putten) with differentiation through the international U13 Top Tournament and strong youth development focus",
+          "storytellingApproach": "Authentic stories of community members, celebration of ordinary achievements, emphasis on collective success over individual glory"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T06:55:41.710Z",
+        "updatedAt": "2026-04-22T07:00:48.407Z"
+      },
+      {
+        "id": "cmo9p7x5e0016scmst4asgqj6",
+        "name": "Brand Personality",
+        "slug": "brand-personality",
+        "description": "Human characteristics of your brand",
+        "category": "PERSONALITY",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_PERSONALITY",
+        "frameworkData": {
+          "wordsWeUse": [
+            "Contributie",
+            "Jeugdbeleidsplan",
+            "Vrijwilligersbeleid",
+            "Wedstrijdzaken",
+            "blauw-witte",
+            "Toernooi",
+            "KNVB",
+            "Afgelastingen",
+            "community",
+            "samen"
+          ],
+          "channelTones": {
+            "email": "Direct and practical, focused on clear communication of schedules, policies, and club news",
+            "crisis": "Transparent, responsible, and community-first, maintaining trust through honest communication",
+            "website": "Informative and community-focused, providing clear information about membership, schedules, and club policies",
+            "socialMedia": "Celebratory of team achievements, match updates, community highlights, volunteer recognition",
+            "customerSupport": "Helpful, patient, and neighborly—treating inquiries with personal attention"
+          },
+          "wordsWeAvoid": [
+            "exclusive",
+            "premium",
+            "elite",
+            "luxury",
+            "cutting-edge",
+            "revolutionary",
+            "disruptive",
+            "glamorous",
+            "prestigious",
+            "world-class"
+          ],
+          "writingSample": "Welkom bij DTS Ede, waar voetbal draait om samen spelen en groeien. Of je nu jeugdspeler bent of in de 35+ competitie speelt, bij onze blauw-witte club vind je een plek. Dankzij onze vrijwilligers bieden we gestructureerde trainingen en KNVB-competitiewedstrijden voor iedereen die van voetbal houdt.",
+          "colorDirection": "Blue and white—traditional, trustworthy, and community-oriented. Blue conveys reliability and tradition, while white suggests openness and inclusivity.",
+          "toneDimensions": {
+            "formalCasual": 4,
+            "seriousFunny": 5,
+            "respectfulIrreverent": 2,
+            "matterOfFactEnthusiastic": 4
+          },
+          "dimensionScores": {
+            "sincerity": 4.5,
+            "competence": 3.5,
+            "excitement": 2.5,
+            "ruggedness": 3,
+            "sophistication": 1.5
+          },
+          "spectrumSliders": {
+            "boldReserved": 5,
+            "friendlyFormal": 2,
+            "playfulSerious": 4,
+            "innovativeProven": 5,
+            "modernTraditional": 5,
+            "inclusiveExclusive": 2,
+            "energeticThoughtful": 4
+          },
+          "imageryDirection": "Authentic action shots of players of all ages, community gatherings, volunteer moments, and local match scenes. Imagery should feel real and unpolished rather than overly produced.",
+          "primaryDimension": "Sincerity",
+          "personalityTraits": [
+            {
+              "name": "Community-Minded",
+              "weAreThis": "Welcoming, inclusive, volunteer-driven",
+              "description": "Deeply rooted in local community values and collective participation",
+              "butNeverThat": "Exclusive, elitist, corporate"
+            },
+            {
+              "name": "Reliable",
+              "weAreThis": "Structured, organized, trustworthy",
+              "description": "Consistent, organized, and dependable in delivering football programs",
+              "butNeverThat": "Chaotic, unpredictable, unreliable"
+            },
+            {
+              "name": "Down-to-Earth",
+              "weAreThis": "Accessible, straightforward, authentic",
+              "description": "Practical and unpretentious in approach to amateur football",
+              "butNeverThat": "Flashy, pretentious, overly commercial"
+            },
+            {
+              "name": "Youth-Focused",
+              "weAreThis": "Developmental, nurturing, forward-thinking",
+              "description": "Committed to developing young players and providing opportunities",
+              "butNeverThat": "Win-at-all-costs, short-term focused, neglectful of youth"
+            }
+          ],
+          "secondaryDimension": "Competence",
+          "typographyDirection": "Clear, legible, and unpretentious. Sans-serif fonts that prioritize readability over style, reflecting the club's accessible and straightforward nature.",
+          "brandVoiceDescription": "DTS Ede speaks with the voice of a trusted neighbor and community pillar. Direct and factual, using familiar Dutch football terminology, the voice is warm without being overly emotional. It's the voice of a club that's been part of the community for years—reliable, straightforward, and focused on collective achievement rather than individual glory."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T06:55:41.714Z",
+        "updatedAt": "2026-04-22T07:00:48.413Z"
+      },
+      {
+        "id": "cmo9p7x5h0018scms62usyzls",
+        "name": "Brand Story",
+        "slug": "brand-story",
+        "description": "Your brand's past, present and future",
+        "category": "NARRATIVE",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_STORY",
+        "frameworkData": {
+          "brandRole": "Guide",
+          "brandThemes": [
+            "Community and Belonging",
+            "Youth Development",
+            "Accessible Sport for All",
+            "Volunteer Spirit"
+          ],
+          "originStory": "DTS Ede was founded as a local amateur football club in Ede, Netherlands, born from the community's desire to provide accessible football opportunities for residents of all ages.",
+          "proofPoints": [
+            "KNVB-affiliated club with structured league play",
+            "Comprehensive youth development policy (Jeugdbeleidsplan)",
+            "Annual international U13 Top Tournament attracting teams from multiple countries",
+            "Programs for all ages from youth to 35+ leagues",
+            "Established volunteer framework supporting club operations"
+          ],
+          "abtStatement": "Many people in Ede want to play football and be part of a community, BUT finding an accessible, well-organized club that welcomes everyone can be challenging, THEREFORE DTS Ede provides structured football programs for all ages with a strong volunteer-driven community focus.",
+          "narrativeArc": "Overcoming the Monster",
+          "worldContext": "In a world where professional football dominates headlines and youth sports can become overly competitive, many communities lack accessible, inclusive spaces where ordinary people can simply play and belong.",
+          "elevatorPitch": "DTS Ede is your local football community in Ede, offering accessible programs for all ages where everyone belongs.",
+          "manifestoText": "We are DTS Ede, the blauw-witte heart of football in our community. We believe football is not just a game—it's a way to connect, to grow, to belong. From our youngest players taking their first steps on the pitch to our 35+ veterans still chasing the ball, everyone has a place here. We are built by volunteers, sustained by passion, and united by the simple love of the game. We develop youth not just as players, but as people. We welcome families not as customers, but as members of our extended football family. In a world of professional spectacle, we offer something more valuable: authentic community, shared purpose, and the joy of playing together. This is amateur football at its best. This is DTS Ede.",
+          "valuesInAction": [
+            "Volunteer-driven operations demonstrate commitment to community over profit",
+            "Youth development programs show investment in future generations",
+            "Inclusive membership across age groups proves accessibility commitment"
+          ],
+          "brandMilestones": [
+            "Establishment as KNVB-affiliated club",
+            "Launch of comprehensive youth development program",
+            "First international U13 Top Tournament",
+            "Expansion to women's and girls' teams",
+            "Introduction of 35+ league programs"
+          ],
+          "empathyStatement": "We understand that you want a place where you and your family can be active, belong to a community, and experience the joy of football without barriers or pretension.",
+          "founderMotivation": "To create a place where the Ede community could come together through the shared love of football, building connections and developing young talent in a supportive environment.",
+          "emotionalTerritory": [
+            "Belonging",
+            "Pride",
+            "Connection",
+            "Trust",
+            "Joy"
+          ],
+          "coreBeliefStatement": "We believe that football is for everyone, and that the true value of sport lies in community, development, and shared experiences rather than individual glory.",
+          "authorityCredentials": "As an established KNVB-affiliated club with comprehensive youth development programs (Jeugdbeleidsplan), structured volunteer policies (Vrijwilligersbeleid), and the annual international U13 Top Tournament, we have the experience and organization to provide quality football experiences.",
+          "keyNarrativeMessages": [
+            "Football for everyone in our community",
+            "Building character through youth development",
+            "Stronger together through volunteer spirit",
+            "Your local club, your blauw-witte family",
+            "From youth to 35+, there's a place for you here"
+          ],
+          "philosophicalProblem": "The commercialization and professionalization of football has created a gap where amateur players and families struggle to find authentic, community-centered sports experiences.",
+          "stakesCostOfInaction": "Without accessible community clubs like DTS Ede, families miss opportunities for connection, youth miss developmental experiences, and communities lose important social fabric that binds neighbors together.",
+          "customerSuccessVision": "Players of all ages thriving in a supportive environment, families connected through shared experiences, youth developing skills and character, volunteers finding purpose, and the entire Ede community strengthened through sport.",
+          "transformationPromise": "From newcomer to valued community member, from beginner to confident player, from spectator to active participant in a thriving football community.",
+          "customerExternalProblem": "Finding a welcoming, well-organized football club that offers programs for all ages and skill levels without exclusivity or excessive costs.",
+          "customerInternalProblem": "Wanting to belong to something larger than themselves, to be part of a community, and to give their children positive developmental experiences through sport."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T06:55:41.717Z",
+        "updatedAt": "2026-04-22T07:00:48.418Z"
+      },
+      {
+        "id": "cmo9p7x5l001ascms4hz23vm0",
+        "name": "Core Values",
+        "slug": "core-values",
+        "description": "Fundamental beliefs that guide your brand",
+        "category": "CULTURE",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRANDHOUSE_VALUES",
+        "frameworkData": {
+          "ownValue": {
+            "name": "Volunteer Spirit",
+            "description": "The distinctive fire that sets DTS Ede apart—a club built and sustained by volunteers (Vrijwilligersbeleid) who give their time and passion because they believe in community football. This volunteer-driven model creates authentic ownership and connection that commercial clubs cannot replicate."
+          },
+          "anchorValue1": {
+            "name": "Community",
+            "description": "Deep commitment to being a gathering place and social fabric for the Ede community, where neighbors become teammates and families connect through shared football experiences."
+          },
+          "anchorValue2": {
+            "name": "Accessibility",
+            "description": "Ensuring football is available to everyone regardless of age, skill level, or background, with programs spanning from youth to 35+ and a welcoming culture for all."
+          },
+          "valueTension": "The tension between aspiring for excellence and international recognition (through youth development and tournaments) while maintaining the accessible, community-first, volunteer-driven nature that defines the club's identity. How do we grow our reputation without losing our soul?",
+          "aspirationValue1": {
+            "name": "Excellence in Youth Development",
+            "description": "Aspiring to be recognized as a leading youth development club, evidenced by the Jeugdbeleidsplan and international U13 tournament, while maintaining community values."
+          },
+          "aspirationValue2": {
+            "name": "International Recognition",
+            "description": "Growing the club's reputation beyond local boundaries through the annual international U13 Top Tournament, attracting top youth teams while staying rooted in community."
+          }
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T06:55:41.721Z",
+        "updatedAt": "2026-04-22T07:00:48.421Z"
+      },
+      {
+        "id": "cmo9p7x5c0014scms5nblg8v3",
+        "name": "Transformative Goals",
+        "slug": "transformative-goals",
+        "description": "Ambitious goals for lasting impact",
+        "category": "STRATEGY",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "TRANSFORMATIVE_GOALS",
+        "frameworkData": {
+          "goals": [
+            {
+              "title": "Universal Youth Participation",
+              "timeframe": "3-5 years",
+              "description": "Ensure every child in Ede who wants to play football has access to quality coaching and development through DTS Ede programs.",
+              "impactDomain": "PEOPLE",
+              "theoryOfChange": "By removing barriers to entry and actively reaching into schools and underserved neighborhoods, we can ensure no child misses the developmental and social benefits of youth football, creating a more inclusive and connected next generation.",
+              "measurableCommitment": "Increase youth membership by 40% and establish partnerships with all primary schools in Ede to provide football access programs."
+            },
+            {
+              "title": "Volunteer Leadership Academy",
+              "timeframe": "1-3 years",
+              "description": "Establish DTS Ede as a model for volunteer-driven sports organizations by creating a comprehensive training and recognition program that empowers community members to lead.",
+              "impactDomain": "PEOPLE",
+              "theoryOfChange": "By investing in volunteer development and creating clear pathways for community leadership, we strengthen both our club and the broader amateur sports ecosystem, while giving individuals meaningful ways to contribute to their community.",
+              "measurableCommitment": "Train 100+ volunteers in coaching, administration, and leadership skills, and create a replicable volunteer development framework shared with other amateur clubs."
+            },
+            {
+              "title": "International Youth Exchange Hub",
+              "timeframe": "5-10 years",
+              "description": "Transform the U13 Top Tournament into a broader international youth exchange program that promotes cross-cultural understanding and positions Ede as a center for youth football development.",
+              "impactDomain": "PROSPERITY",
+              "theoryOfChange": "By leveraging our tournament as a platform for sustained international connection, we can give youth transformative cross-cultural experiences while positioning Ede as a destination for youth sports, creating both social and economic value for our community.",
+              "measurableCommitment": "Expand tournament to 32 international teams, establish year-round exchange programs with partner clubs in 10 countries, and create economic impact for Ede through sports tourism."
+            }
+          ],
+          "mtpNarrative": "DTS Ede exists to prove that amateur sport can be the strongest social fabric in a community. We envision a future where every resident of Ede, regardless of age or background, has experienced the belonging and growth that comes from being part of our football family.",
+          "brandIntegration": {
+            "positioningLink": "These goals reinforce DTS Ede's positioning as the Everyman archetype—focused on accessibility, community connection, and creating opportunities for ordinary people to participate and lead. The goals extend the club's community-first values to transformative scale.",
+            "campaignDirections": [
+              "Storytelling campaign featuring youth whose lives were changed by access to DTS programs",
+              "Volunteer spotlight series celebrating community members who make the club possible",
+              "International tournament content showcasing cultural exchange and youth development"
+            ],
+            "internalActivation": "Goals will be integrated into club communications, volunteer recruitment messaging, and youth development programs. Annual progress updates will be shared with members, and volunteer training will emphasize the club's transformative vision beyond just running football programs.",
+            "communicationThemes": [
+              "Football for Every Child in Ede",
+              "Powered by Our Community",
+              "Ede on the International Youth Football Map",
+              "Where Volunteers Become Leaders"
+            ]
+          },
+          "massiveTransformativePurpose": "To make Ede the most connected community in the Netherlands through the unifying power of football."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T06:55:41.712Z",
+        "updatedAt": "2026-04-22T07:00:48.428Z"
+      }
+    ],
+    "brandAssetVersion": [],
+    "brandAssetResearchMethod": [
+      {
+        "id": "cmo9p7x4r000tscmsextwfq7l",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmo9p7x4n000sscms9zumad9y",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-22T06:55:41.687Z",
+        "updatedAt": "2026-04-22T06:55:41.687Z"
+      },
+      {
+        "id": "cmo9p7x50000vscmsvzpeflib",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmo9p7x4z000uscms8ckbngu4",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-22T06:55:41.699Z",
+        "updatedAt": "2026-04-22T06:55:41.699Z"
+      },
+      {
+        "id": "cmo9p7x53000xscmsuap0e8uw",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmo9p7x53000wscmsk2we7im5",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-22T06:55:41.703Z",
+        "updatedAt": "2026-04-22T06:55:41.703Z"
+      },
+      {
+        "id": "cmo9p7x56000zscmsb9m6xdc3",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmo9p7x55000yscmskkhq03h6",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-22T06:55:41.705Z",
+        "updatedAt": "2026-04-22T06:55:41.705Z"
+      },
+      {
+        "id": "cmo9p7x580011scms374bcmhi",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmo9p7x580010scmsy5pbwy51",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-22T06:55:41.708Z",
+        "updatedAt": "2026-04-22T06:55:41.708Z"
+      },
+      {
+        "id": "cmo9p7x5b0013scmshsksar3z",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmo9p7x5a0012scmstlanc576",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-22T06:55:41.710Z",
+        "updatedAt": "2026-04-22T06:55:41.710Z"
+      },
+      {
+        "id": "cmo9p7x5d0015scmsacziiboh",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmo9p7x5c0014scms5nblg8v3",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-22T06:55:41.712Z",
+        "updatedAt": "2026-04-22T06:55:41.712Z"
+      },
+      {
+        "id": "cmo9p7x5f0017scms3ucbmi7i",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmo9p7x5e0016scmst4asgqj6",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-22T06:55:41.714Z",
+        "updatedAt": "2026-04-22T06:55:41.714Z"
+      },
+      {
+        "id": "cmo9p7x5i0019scmswtvtai8s",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmo9p7x5h0018scms62usyzls",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-22T06:55:41.717Z",
+        "updatedAt": "2026-04-22T06:55:41.717Z"
+      },
+      {
+        "id": "cmo9p7x5m001bscmsjlycszra",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmo9p7x5l001ascms4hz23vm0",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-22T06:55:41.721Z",
+        "updatedAt": "2026-04-22T06:55:41.721Z"
+      },
+      {
+        "id": "cmo9p7x5r001dscms955wvucz",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmo9p7x5p001cscmsiqn1o3mw",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-22T06:55:41.725Z",
+        "updatedAt": "2026-04-22T06:55:41.725Z"
+      }
+    ],
+    "brand": [
+      {
+        "id": "cmr4z54e3000638c9k9dqgjes",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-07-03T13:33:43.419Z",
+        "updatedAt": "2026-07-03T13:33:43.419Z"
+      }
+    ],
+    "brandLocaleProfile": [
+      {
+        "id": "cmr4z54e3000738c9sbzt4xqn",
+        "brandId": "cmr4z54e3000638c9k9dqgjes",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "locale": "en-GB",
+        "isDefault": true,
+        "voiceOverrides": null,
+        "localizedAssets": null,
+        "createdAt": "2026-07-03T13:33:43.419Z",
+        "updatedAt": "2026-07-03T13:33:43.419Z"
+      }
+    ],
+    "brandVoiceguide": [
+      {
+        "id": "cmp6lpiix000727mscadzefjq",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "voiceDescription": null,
+        "toneDimensions": null,
+        "contentGuidelines": [
+          "OBSERVED: Lead with action and results in headlines—use concrete verbs like 'blijft', 'organiseert', 'zoekt', 'gewonnen' rather than abstract concepts",
+          "OBSERVED: Structure news updates with date, headline, and concise summary format—keep match reports to 2-3 sentences maximum",
+          "OBSERVED: Use inclusive language that addresses the entire club community—youth, seniors, volunteers, and supporters",
+          "RECOMMENDED: Maintain a balance between celebrating achievements and acknowledging challenges—reflect the realistic ups and downs of amateur sport",
+          "RECOMMENDED: Prioritize clarity and scannability—use short paragraphs (2-3 sentences) and clear section headers for easy navigation",
+          "RECOMMENDED: Incorporate member and volunteer recognition into regular content—highlight contributions beyond match results"
+        ],
+        "writingGuidelines": [
+          "OBSERVED: Use active voice with clear subjects—'DTS Ede blijft haar zegereeks voortzetten' rather than passive constructions",
+          "OBSERVED: Keep sentences concise and factual—average 15-20 words, focusing on who, what, when, and outcome",
+          "OBSERVED: Write in third person for match reports and news—'DTS Ede organisseert dit toernooi' rather than 'Wij organiseren'",
+          "OBSERVED: Use Dutch football terminology naturally—'wedstrijd', 'toernooi', 'zegereeks', 'achterstand'—without over-explaining",
+          "RECOMMENDED: Front-load key information—put the most important fact (result, date, action) in the first sentence",
+          "RECOMMENDED: Use present tense for immediacy in headlines, past tense for match reports—'DTS Ede zoekt talent' vs 'DTS Ede heeft gewonnen'",
+          "RECOMMENDED: Avoid corporate buzzwords or marketing speak—stay grounded in authentic football club language"
+        ],
+        "vocabularyDo": [],
+        "vocabularyDont": [],
+        "voiceSample": null,
+        "writingSamples": [],
+        "wordsWeUse": [],
+        "wordsWeAvoid": [],
+        "channelTones": null,
+        "antiPatterns": [],
+        "examplePhrases": [
+          {
+            "text": "DTS Ede blijft haar zegereeks voortzetten",
+            "type": "do",
+            "context": "OBSERVED: Direct, active, factual—typical of match reporting"
+          },
+          {
+            "text": "WELKOM BIJ DTS EDE",
+            "type": "do",
+            "context": "OBSERVED: Simple, warm, inclusive greeting"
+          },
+          {
+            "text": "DTS Ede organiseert dit toernooi voor de 23e keer",
+            "type": "do",
+            "context": "OBSERVED: Factual with specific detail that builds credibility"
+          },
+          {
+            "text": "Wedstrijd met twee gezichten",
+            "type": "do",
+            "context": "OBSERVED: Honest, nuanced headline acknowledging complexity"
+          },
+          {
+            "text": "We zijn trots om aan te kondigen dat onze innovatieve voetbalervaring...",
+            "type": "dont",
+            "context": "Too corporate and promotional—not aligned with grassroots authenticity"
+          },
+          {
+            "text": "Ons state-of-the-art faciliteitencomplex biedt...",
+            "type": "dont",
+            "context": "Overly formal jargon—use 'accommodatie' or 'sportpark' instead"
+          },
+          {
+            "text": "Sluit je vandaag nog aan bij de DTS Ede familie en transformeer je voetbalreis!",
+            "type": "dont",
+            "context": "Too sales-driven and hyperbolic—not authentic to club culture"
+          }
+        ],
+        "centroidComputedAt": null,
+        "contentLocale": null,
+        "voiceDnaSavedForAi": true,
+        "vocabularySavedForAi": true,
+        "channelTonesSavedForAi": true,
+        "antiPatternsSavedForAi": true,
+        "guidelinesSavedForAi": true,
+        "examplePhrasesSavedForAi": true,
+        "referencesSavedForAi": false,
+        "source": "extracted",
+        "publishedAt": null,
+        "createdAt": "2026-05-15T07:33:47.913Z",
+        "updatedAt": "2026-05-19T10:12:30.154Z",
+        "createdById": null
+      }
+    ],
+    "brandVoice": [],
+    "brandStyleguide": [
+      {
+        "id": "cmpch1jw4012gd2msiiqgjme3",
+        "status": "COMPLETE",
+        "sourceType": "URL",
+        "sourceUrl": "https://dtsede.nl/",
+        "sourceFileName": null,
+        "analysisJobId": "job_18f03aa4-5143-48aa-820e-ae2bf8a12053",
+        "analysisStatus": "COMPLETE",
+        "errorMessage": null,
+        "detectedFrameworks": [
+          "logo-extraction",
+          "component-screenshots",
+          "component-vision",
+          "visual-ai-analysis",
+          "logo-vision",
+          "multi-page"
+        ],
+        "layoutStyle": "COMMERCIAL",
+        "layoutStyleInferred": false,
+        "buttonProfile": null,
+        "spacingProfile": null,
+        "elevationProfile": null,
+        "radiusProfile": null,
+        "motionProfile": null,
+        "typographyProfile": null,
+        "buttonProfileOverride": false,
+        "spacingProfileOverride": false,
+        "elevationProfileOverride": false,
+        "radiusProfileOverride": false,
+        "motionProfileOverride": false,
+        "typographyProfileOverride": false,
+        "designPhilosophy": null,
+        "fixtureSamples": null,
+        "archetype": null,
+        "archetypeConfidence": null,
+        "archetypeReasoning": null,
+        "logoGuidelines": [
+          "The DTS Ede logo features a circular badge design with 'DOOR TRAINING STERKER' text around the perimeter and 'DTS' prominently in the center",
+          "The logo uses the primary brand blue (#0060A0) and secondary blue (#0040A0) as core colors",
+          "The circular badge format includes '19 35' at the bottom, referencing the club's founding year",
+          "Logo appears on white backgrounds in the header and maintains clear spacing around the mark",
+          "The logo works well at various sizes, from small header implementations to large hero placements"
+        ],
+        "logoDonts": [
+          "Don't alter the circular badge proportions or distort the logo shape",
+          "Don't use colors outside the official brand blue palette for the logo",
+          "Don't remove or modify the '19 35' founding year elements",
+          "Don't place the logo on busy backgrounds that compromise legibility",
+          "Don't recreate or redraw the logo - always use official artwork files"
+        ],
+        "logoSavedForAi": false,
+        "colorDonts": [
+          "Don't use the primary blues (#0060A0, #0040A0) for large text blocks - reserve them for headers, navigation, and accent elements",
+          "Don't mix too many neutral grays in close proximity - maintain clear hierarchy with the established gray scale",
+          "Don't use pure black (#000000) - the brand uses softer near-blacks like #222222 and #333333 for better visual harmony",
+          "Don't apply the brand blues to backgrounds without ensuring sufficient contrast for overlaid text",
+          "Don't introduce additional blue tones outside the defined primary and secondary blues - this dilutes brand consistency"
+        ],
+        "colorsSavedForAi": false,
+        "semanticColors": null,
+        "primaryFontName": "HelveticaNeue-Light",
+        "primaryFontUrl": null,
+        "additionalFonts": [
+          "Geneva",
+          "Droid Sans",
+          "nexus",
+          "Roboto",
+          "Bitstream Charter"
+        ],
+        "typeScale": [
+          {
+            "name": "Small UI",
+            "size": "12px",
+            "color": null,
+            "level": "Small",
+            "weight": null,
+            "lineHeight": null,
+            "letterSpacing": null
+          },
+          {
+            "name": "Caption",
+            "size": "18px",
+            "color": null,
+            "level": "Caption",
+            "weight": null,
+            "lineHeight": null,
+            "letterSpacing": null
+          },
+          {
+            "name": "Body Text",
+            "size": "20px",
+            "color": null,
+            "level": "Body",
+            "weight": null,
+            "lineHeight": null,
+            "letterSpacing": null
+          },
+          {
+            "name": "Heading 3",
+            "size": "30px",
+            "color": null,
+            "level": "H3",
+            "weight": null,
+            "lineHeight": null,
+            "letterSpacing": null
+          },
+          {
+            "name": "Heading 2",
+            "size": "40px",
+            "color": null,
+            "level": "H2",
+            "weight": null,
+            "lineHeight": null,
+            "letterSpacing": null
+          }
+        ],
+        "typographySavedForAi": false,
+        "photographyStyle": {
+          "mood": "OBSERVED: Authentic, celebratory, community-focused. The hero image shows genuine team celebration—players embracing after a match in natural outdoor lighting. The mood is joyful but unposed, capturing real moments of camaraderie.",
+          "subjects": "OBSERVED: Team celebrations, match action shots, players in club kit (blue and white striped jerseys). RECOMMENDED: Youth training sessions, volunteer moments, multi-generational club activities, behind-the-scenes preparation, community events, diverse age groups from youth to 35+ teams.",
+          "composition": "OBSERVED: Wide-angle group shots that show multiple players interacting, shot at field level to create immersion. RECOMMENDED: Use natural outdoor lighting, capture candid moments over posed shots, include environmental context (stadium, pitch, club facilities) to ground images in place."
+        },
+        "photographyGuidelines": [
+          "OBSERVED: Prioritize authentic team moments—celebrations, huddles, genuine interactions—over staged portraits",
+          "OBSERVED: Feature the club's blue and white colors prominently through jerseys and branding in every image",
+          "OBSERVED: Use outdoor, natural lighting that reflects the reality of amateur football—no studio or overly polished aesthetics",
+          "RECOMMENDED: Capture diversity across age groups—from youth (O8-O19) to seniors (35+) and women's teams—to reflect the club's inclusive structure",
+          "RECOMMENDED: Include environmental storytelling—show the 'Rookvrij sportpark', facilities, and local Ede context to build place-based identity",
+          "RECOMMENDED: Balance action shots (matches, training) with community moments (volunteers, supporters, club events) at a 60/40 ratio",
+          "RECOMMENDED: Avoid overly dramatic or professional sports photography aesthetics—maintain the accessible, grassroots feel"
+        ],
+        "illustrationGuidelines": [
+          "RECOMMENDED: Use simple, bold iconography for wayfinding and section identification—prioritize clarity over decorative style",
+          "RECOMMENDED: If illustrations are needed for youth content or educational materials, use a friendly, approachable style that appeals to families",
+          "RECOMMENDED: Incorporate the club's blue color palette into any graphic elements—maintain brand consistency across illustration and photography",
+          "RECOMMENDED: Avoid overly cartoonish or childish styles—the club serves all ages from 8 to 35+, so maintain broad appeal"
+        ],
+        "imageryDonts": [
+          "Don't use stock photography of generic football scenes—all imagery must feel authentic to DTS Ede and the local Ede community",
+          "Don't over-edit or apply heavy filters—maintain the natural, unpolished aesthetic of grassroots amateur sport",
+          "Don't focus exclusively on winning or elite performance—show the full spectrum of club life including training, social moments, and recreational teams",
+          "Don't exclude any demographic—avoid imagery that only shows one age group, gender, or skill level",
+          "Don't use imagery that feels corporate or commercial—no handshake photos, suited executives, or business-style portraits"
+        ],
+        "imagerySavedForAi": false,
+        "brandImages": null,
+        "graphicElements": {
+          "usageNotes": "The design system emphasizes clean, sports-focused layouts with rounded cards, subtle shadows, and diagonal compositional elements. The circular DTS Ede badge is a key brand anchor. Light gradients provide depth without overwhelming content.",
+          "brandShapes": [
+            "Rounded rectangles with 3-4px corner radius",
+            "Circular badge logo with white border",
+            "Diagonal split composition (hero section)",
+            "Rectangular cards with subtle shadows"
+          ],
+          "visualDevices": [
+            "Card-based news layout with thumbnail images",
+            "Icon + text pairings in navigation",
+            "Sponsor logo grid with consistent spacing",
+            "Blue header bars for section titles"
+          ],
+          "decorativeElements": [
+            "Subtle gradient overlays (light gray to white)",
+            "Soft drop shadows (0 2px 6px rgba(10,10,10,0.6))",
+            "Thin border dividers in neutral gray (#ddd, #eeeeee)",
+            "Diagonal white separator lines in hero sections"
+          ]
+        },
+        "graphicElementsDonts": [
+          "Avoid sharp 0px corners on interactive elements (buttons, cards) — maintain the 3-4px brand radius",
+          "Don't use heavy or textured shadows — keep shadows subtle with low opacity (0.6 or less)",
+          "Avoid cluttered layouts — maintain generous whitespace between card elements",
+          "Don't mix diagonal and orthogonal compositions within the same content section"
+        ],
+        "patternsTextures": {
+          "patterns": [
+            "Subtle vertical line texture in hero backgrounds (stadium imagery)",
+            "Grid-based sponsor logo arrangement with equal spacing"
+          ],
+          "textures": [
+            "Smooth linear gradients (top to bottom, #f9f9f9 to #ececec)",
+            "No heavy textures — clean, flat surfaces preferred"
+          ],
+          "usageNotes": "The brand uses minimal texture, relying on subtle gradients and photography. Backgrounds are predominantly light neutrals with white content cards. Blue accent sections provide visual hierarchy and brand reinforcement.",
+          "backgrounds": [
+            "Light neutral backgrounds (#F1F1F1, #DFDFDF) for main content areas",
+            "White (#FFFFFF) cards elevated with subtle shadows",
+            "Deep blue (#0060A0, #0040A0) for header and accent sections",
+            "Photographic backgrounds with gradient overlays in hero sections"
+          ]
+        },
+        "iconographyStyle": {
+          "style": "line",
+          "sizing": "16/20/24/32px",
+          "colorUsage": "Primary blue (#0060A0) for active navigation and interactive icons, neutral gray (#666666, #888888) for inactive states, white (#FFFFFF) for icons on blue backgrounds",
+          "usageNotes": "Icons follow a clean, line-based style consistent with the sports/athletic brand identity. Stroke weight matches the observed 1px median border width. Corner radius aligns with the 4px median from CSS samples.",
+          "cornerRadius": "4px",
+          "strokeWeight": "1px"
+        },
+        "iconographyDonts": [
+          "Don't use filled icons mixed with line icons in the same navigation context",
+          "Avoid stroke weights heavier than 2px — maintain the lightweight, clean aesthetic",
+          "Don't use decorative or overly complex icon designs — keep icons simple and recognizable",
+          "Avoid using brand blue for all icons — reserve for active/interactive states only"
+        ],
+        "gradientsEffects": [
+          {
+            "name": "Subtle Surface Gradient",
+            "type": "linear",
+            "angle": "180deg",
+            "usage": "Observed on button backgrounds and subtle surface elevation — creates soft depth on interactive elements",
+            "colors": [
+              "#f9f9f9",
+              "#ececec"
+            ]
+          },
+          {
+            "name": "RECOMMENDED: Primary Blue Gradient",
+            "type": "linear",
+            "angle": "135deg",
+            "usage": "RECOMMENDED: Hero sections, primary CTA buttons, and accent headers to reinforce brand identity with depth",
+            "colors": [
+              "#0060A0",
+              "#0040A0"
+            ]
+          }
+        ],
+        "layoutPrinciples": {
+          "gridSystem": "12-column responsive grid with fluid gutters, max-width container for content sections",
+          "usageNotes": "The layout system prioritizes content accessibility and sports-focused information hierarchy. The diagonal hero composition creates dynamic energy while maintaining readability. Card-based layouts with subtle shadows provide clear content separation without heavy visual weight.",
+          "spacingScale": "2px base unit: 2, 3, 4, 8, 10, 12, 16, 20, 24, 32px (derived from observed padding/margin median of 10px and samples clustering at 2-3px increments)",
+          "compositionRules": [
+            "Hero sections use diagonal split composition (60/40 ratio) with text left, imagery right",
+            "News cards maintain consistent internal padding of 10-12px with 2-3px between text elements",
+            "Section headers (blue bars) span full width with 12-16px vertical padding",
+            "Sponsor logos arranged in equal-width grid with 16-20px gaps",
+            "Navigation items use 10-12px horizontal padding with 2-3px separators"
+          ],
+          "whitespacePhilosophy": "Moderate whitespace with emphasis on content density — news cards are closely grouped with 10-16px gaps, while major sections use larger 24-32px vertical spacing"
+        },
+        "designLanguageSavedForAi": false,
+        "visualLanguage": {
+          "line": {
+            "borders": "thin",
+            "dividers": "thin",
+            "decorativeLines": false
+          },
+          "depth": {
+            "overlapping": true,
+            "glassmorphism": false,
+            "dimensionality": "subtle-layers"
+          },
+          "shape": {
+            "primary": "geometric",
+            "symmetry": "approximate",
+            "angularity": 7
+          },
+          "space": {
+            "density": "balanced",
+            "sectionSpacing": "normal",
+            "whitespaceRatio": 0.45
+          },
+          "shadow": {
+            "color": null,
+            "style": "subtle",
+            "elevation": "low"
+          },
+          "weight": {
+            "overall": "light",
+            "textDensity": "moderate",
+            "ornamentLevel": "none"
+          },
+          "summary": "A clean, sports-focused design language built on geometric precision with minimal ornamentation. The visual system uses subtle rounded corners (3-4px), light shadows for depth, and a restrained color palette that lets photography and content breathe. Gradients appear prominently in hero overlays for text legibility while maintaining an overall lightweight, accessible aesthetic.",
+          "version": 1,
+          "sourceUrl": "https://dtsede.nl/",
+          "analyzedAt": "2026-05-19T10:12:14.027Z",
+          "components": {
+            "cardStyle": "White rectangular containers with 3-4px rounded corners, thin 1px gray borders, subtle drop shadows (0 1px 3px rgba(0,0,0,0.1)) for separation, clean internal padding",
+            "inputStyle": "Standard form inputs with thin 1px borders, 3px corner radius, light gray backgrounds on focus, simple and functional",
+            "buttonShape": "Rectangular with 3px corner radius, solid color fills, no gradients, minimal border treatment, standard padding",
+            "spacingSystem": "Consistent 10px base unit, moderate padding within components, balanced margins between sections, grid-based layout with clear content blocks"
+          },
+          "cornerRadius": {
+            "dominant": "slightly-rounded",
+            "radiusPx": 3,
+            "consistency": "mixed"
+          },
+          "promptFragment": "Use sharp geometric shapes with minimal rounding—apply 3px border-radius to all containers, cards, and buttons. Keep shadows extremely subtle: 0 1px 3px rgba(0,0,0,0.1) for cards, avoid heavy elevation. Use thin 1px borders in light gray (#e0e0e0) for content separation. Maintain clean white backgrounds with occasional light gray (#f5f5f5) sections. Apply dark semi-transparent gradients (rgba(0,0,0,0.4) to transparent) only on hero images for text contrast. Buttons are rectangular with 3px radius, solid color fills, no gradients or heavy effects. Space content with 10px base unit—balanced padding, not too tight or too loose. Typography should be clean sans-serif, moderate weight. Avoid decorative elements, ornaments, or playful shapes. Keep the design functional, sports-oriented, and information-focused. Do NOT use: pill shapes, bold shadows, glassmorphism, heavy gradients on UI elements, decorative lines, or organic shapes. DO use: crisp edges, subtle layering, generous whitespace, authentic photography with natural lighting.",
+          "colorApplication": {
+            "accentUsage": "Team colors used sparingly for CTAs and navigation highlights, predominantly neutral palette with strategic color pops",
+            "buttonStyle": "Solid fills with primary brand colors, minimal hover states, rectangular with slight rounding",
+            "gradientPresence": "prominent",
+            "backgroundApproach": "Clean white base with subtle gray sections for content separation, diagonal hero overlays with semi-transparent dark gradients for text legibility"
+          }
+        },
+        "visualLanguageSavedForAi": false,
+        "spacingScale": {
+          "tokens": [
+            {
+              "name": "xs",
+              "value": 1
+            },
+            {
+              "name": "sm",
+              "value": 2
+            },
+            {
+              "name": "md",
+              "value": 3
+            },
+            {
+              "name": "lg",
+              "value": 4
+            },
+            {
+              "name": "xl",
+              "value": 5
+            },
+            {
+              "name": "2xl",
+              "value": 9
+            }
+          ],
+          "gridBase": null
+        },
+        "cornerRadii": {
+          "tokens": [
+            {
+              "name": "sm",
+              "value": 0
+            },
+            {
+              "name": "md",
+              "value": 2
+            },
+            {
+              "name": "lg",
+              "value": 3
+            },
+            {
+              "name": "full",
+              "value": 4
+            }
+          ]
+        },
+        "shadowSystem": {
+          "tokens": [
+            {
+              "name": "subtle",
+              "value": "none !important",
+              "intensity": "subtle"
+            },
+            {
+              "name": "default",
+              "value": "",
+              "intensity": "subtle"
+            },
+            {
+              "name": "bold",
+              "value": "0 2px 6px rgba(10, 10, 10, 0.6)",
+              "intensity": "subtle"
+            },
+            {
+              "name": "elevated",
+              "value": "rgba(0, 0, 0, 0.1) 0px 1px 2px 0px inset",
+              "intensity": "subtle"
+            }
+          ]
+        },
+        "semanticTokens": {
+          "resolved": {
+            "colors": {
+              "outline": "#DFDFDF",
+              "primary": "#0254A4",
+              "surface": "#F1F1F1",
+              "secondary": "#0060A0",
+              "on-primary": "#FFFFFF",
+              "on-surface": "#222222",
+              "on-secondary": "#FFFFFF",
+              "surface-variant": "#666666"
+            },
+            "rounded": {
+              "sm": 3,
+              "none": 0
+            },
+            "spacing": {
+              "sm": 9,
+              "xs": 4
+            },
+            "elevation": {
+              "1": "rgba(0, 0, 0, 0.1) 0px 1px 2px 0px inset"
+            },
+            "typography": {
+              "body-lg": {
+                "fontSize": "20px",
+                "fontFamily": "HelveticaNeue-Light",
+                "fontWeight": 400,
+                "lineHeight": "1.4"
+              },
+              "body-md": {
+                "fontSize": "18px",
+                "fontFamily": "HelveticaNeue-Light",
+                "fontWeight": 400,
+                "lineHeight": "1.4"
+              },
+              "label-lg": {
+                "fontSize": "12px",
+                "fontFamily": "HelveticaNeue-Light",
+                "fontWeight": 400,
+                "lineHeight": "1.4"
+              },
+              "headline-lg": {
+                "fontSize": "30px",
+                "fontFamily": "HelveticaNeue-Light",
+                "fontWeight": 400,
+                "lineHeight": "1.4"
+              },
+              "headline-display": {
+                "fontSize": "40px",
+                "fontFamily": "HelveticaNeue-Light",
+                "fontWeight": 400,
+                "lineHeight": "1.4"
+              }
+            },
+            "componentVariants": {
+              "cmpch50l80136d2ms5m9mkrct": "button-primary"
+            }
+          },
+          "resolvedAt": "2026-05-19T10:12:30.594Z",
+          "diagnostics": {
+            "source": {
+              "outline": "neutral L=87",
+              "primary": "button-bg 1x",
+              "surface": "neutral L=95",
+              "secondary": "category PRIMARY",
+              "on-surface": "neutral L=13",
+              "surface-variant": "neutral mid L=40"
+            },
+            "wcagWarnings": [],
+            "unresolvedRoles": []
+          },
+          "resolverVersion": "1.0.0"
+        },
+        "colorPairings": null,
+        "observedColorPairs": null,
+        "published": false,
+        "publishedAt": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "createdById": "demo-user-erik-001",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-05-19T10:09:48.532Z",
+        "updatedAt": "2026-05-19T10:12:30.645Z"
+      }
+    ],
+    "styleguideColor": [
+      {
+        "id": "cmpch50lr0139d2msjqw4ecnr",
+        "name": "Royal Blue",
+        "hex": "#0060A0",
+        "rgb": "0, 96, 160",
+        "hsl": "204, 100%, 31%",
+        "cmyk": "100%, 40%, 0%, 37%",
+        "category": "PRIMARY",
+        "tags": [
+          "brand",
+          "logo",
+          "header",
+          "navigation"
+        ],
+        "notes": "Primary brand color extracted from logo. Appears prominently in the header navigation bar and as the main brand identifier. High confidence detector signal confirms this as the primary brand color.",
+        "contrastWhite": "AA",
+        "contrastBlack": "Fail",
+        "confidence": "high",
+        "detectorSource": "logo-extraction",
+        "sortOrder": 0,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3"
+      },
+      {
+        "id": "cmpch50lu013ad2mscqmh173k",
+        "name": "Deep Blue",
+        "hex": "#0040A0",
+        "rgb": "0, 64, 160",
+        "hsl": "216, 100%, 31%",
+        "cmyk": "100%, 60%, 0%, 37%",
+        "category": "SECONDARY",
+        "tags": [
+          "brand",
+          "logo",
+          "accent"
+        ],
+        "notes": "Secondary brand color extracted from logo. Works as a supporting blue tone to complement the primary royal blue. Detected with high confidence as a secondary brand element.",
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": "high",
+        "detectorSource": "logo-extraction",
+        "sortOrder": 1,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3"
+      },
+      {
+        "id": "cmpch50lw013bd2msuwxstsv2",
+        "name": "Light Gray",
+        "hex": "#DFDFDF",
+        "rgb": "223, 223, 223",
+        "hsl": "0, 0%, 87%",
+        "cmyk": "0%, 0%, 0%, 13%",
+        "category": "NEUTRAL",
+        "tags": [
+          "background",
+          "borders",
+          "dividers"
+        ],
+        "notes": "Frequently used neutral gray (33 occurrences) for backgrounds, borders, and subtle dividers. Provides visual separation without strong contrast.",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 2,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3"
+      },
+      {
+        "id": "cmpch50lz013cd2msrw78wipl",
+        "name": "Off White",
+        "hex": "#F1F1F1",
+        "rgb": "241, 241, 241",
+        "hsl": "0, 0%, 95%",
+        "cmyk": "0%, 0%, 0%, 5%",
+        "category": "NEUTRAL",
+        "tags": [
+          "background",
+          "surface"
+        ],
+        "notes": "Light neutral background color (12 occurrences) used for content surfaces and alternating sections. Creates subtle contrast against pure white.",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 3,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3"
+      },
+      {
+        "id": "cmpch50m2013dd2ms9793drga",
+        "name": "Charcoal",
+        "hex": "#464646",
+        "rgb": "70, 70, 70",
+        "hsl": "0, 0%, 27%",
+        "cmyk": "0%, 0%, 0%, 73%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "headings"
+        ],
+        "notes": "Dark gray used for primary text content and headings (11 occurrences). Provides strong readability while being softer than pure black.",
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 4,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3"
+      },
+      {
+        "id": "cmpch50m3013ed2ms67jdjprk",
+        "name": "Near Black",
+        "hex": "#222222",
+        "rgb": "34, 34, 34",
+        "hsl": "0, 0%, 13%",
+        "cmyk": "0%, 0%, 0%, 87%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "borders"
+        ],
+        "notes": "Very dark gray approaching black (9 occurrences). Used for high-emphasis text, borders, and elements requiring maximum contrast.",
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 5,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3"
+      },
+      {
+        "id": "cmpch50m7013fd2msfxroneht",
+        "name": "Medium Gray",
+        "hex": "#999999",
+        "rgb": "153, 153, 153",
+        "hsl": "0, 0%, 60%",
+        "cmyk": "0%, 0%, 0%, 40%",
+        "category": "NEUTRAL",
+        "tags": [
+          "secondary-text",
+          "borders",
+          "icons"
+        ],
+        "notes": "Mid-tone gray (9 occurrences) for secondary text, subtle borders, and UI elements. Balances visibility with hierarchy.",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 6,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3"
+      },
+      {
+        "id": "cmpch50m9013gd2mssoz24d62",
+        "name": "Slate Gray",
+        "hex": "#666666",
+        "rgb": "102, 102, 102",
+        "hsl": "0, 0%, 40%",
+        "cmyk": "0%, 0%, 0%, 60%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "borders"
+        ],
+        "notes": "Medium-dark gray (9 occurrences) used for body text and border elements. Provides good readability for secondary content.",
+        "contrastWhite": "AA",
+        "contrastBlack": "Fail",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 7,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3"
+      },
+      {
+        "id": "cmpch50md013hd2mshhl39c1h",
+        "name": "Silver Gray",
+        "hex": "#CCCCCC",
+        "rgb": "204, 204, 204",
+        "hsl": "0, 0%, 80%",
+        "cmyk": "0%, 0%, 0%, 20%",
+        "category": "NEUTRAL",
+        "tags": [
+          "borders",
+          "dividers",
+          "shadows"
+        ],
+        "notes": "Light gray (7 occurrences) for subtle borders, dividers, and box shadows. Creates gentle visual separation.",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 8,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3"
+      },
+      {
+        "id": "cmpch50mf013id2mszcycuqvh",
+        "name": "Warm Gray",
+        "hex": "#888888",
+        "rgb": "136, 136, 136",
+        "hsl": "0, 0%, 53%",
+        "cmyk": "0%, 0%, 0%, 47%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "metadata"
+        ],
+        "notes": "Neutral gray (7 occurrences) primarily for text elements. Used for dates, metadata, and de-emphasized content.",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AA",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 9,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3"
+      },
+      {
+        "id": "cmpch50mh013jd2msufv5j5uk",
+        "name": "Dark Charcoal",
+        "hex": "#333333",
+        "rgb": "51, 51, 51",
+        "hsl": "0, 0%, 20%",
+        "cmyk": "0%, 0%, 0%, 80%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "backgrounds"
+        ],
+        "notes": "Dark gray (6 occurrences) for text and occasional background elements. Provides strong contrast for important content.",
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 10,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3"
+      },
+      {
+        "id": "cmpch50mk013kd2mswgg5qp6a",
+        "name": "Graphite",
+        "hex": "#555555",
+        "rgb": "85, 85, 85",
+        "hsl": "0, 0%, 33%",
+        "cmyk": "0%, 0%, 0%, 67%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "borders"
+        ],
+        "notes": "Medium-dark gray (6 occurrences) used for text and borders. Sits between charcoal and medium gray in the neutral hierarchy.",
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 11,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3"
+      }
+    ],
+    "styleguideFont": [
+      {
+        "id": "cmpch50kf0130d2mswnec2awt",
+        "name": "HelveticaNeue-Light",
+        "role": "DISPLAY",
+        "source": "DETECTED",
+        "availability": "COMMERCIAL",
+        "fileUrl": null,
+        "fileName": null,
+        "fileType": null,
+        "fileSize": null,
+        "fontFamily": null,
+        "weight": null,
+        "style": null,
+        "sortOrder": 0,
+        "adobeFontsKitId": null,
+        "uploadedById": null,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-05-19T10:12:30.111Z",
+        "updatedAt": "2026-05-19T10:12:30.111Z"
+      },
+      {
+        "id": "cmpch50kf0131d2mseekwpsxz",
+        "name": "Geneva",
+        "role": "UI",
+        "source": "DETECTED",
+        "availability": "COMMERCIAL",
+        "fileUrl": null,
+        "fileName": null,
+        "fileType": null,
+        "fileSize": null,
+        "fontFamily": null,
+        "weight": null,
+        "style": null,
+        "sortOrder": 1,
+        "adobeFontsKitId": null,
+        "uploadedById": null,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-05-19T10:12:30.111Z",
+        "updatedAt": "2026-05-19T10:12:30.111Z"
+      },
+      {
+        "id": "cmpch50kf0132d2ms1f59cel4",
+        "name": "Droid Sans",
+        "role": "UI",
+        "source": "DETECTED",
+        "availability": "COMMERCIAL",
+        "fileUrl": null,
+        "fileName": null,
+        "fileType": null,
+        "fileSize": null,
+        "fontFamily": null,
+        "weight": null,
+        "style": null,
+        "sortOrder": 2,
+        "adobeFontsKitId": null,
+        "uploadedById": null,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-05-19T10:12:30.111Z",
+        "updatedAt": "2026-05-19T10:12:30.111Z"
+      },
+      {
+        "id": "cmpch50kf0133d2ms4bchrb2g",
+        "name": "nexus",
+        "role": "UI",
+        "source": "DETECTED",
+        "availability": "COMMERCIAL",
+        "fileUrl": null,
+        "fileName": null,
+        "fileType": null,
+        "fileSize": null,
+        "fontFamily": null,
+        "weight": null,
+        "style": null,
+        "sortOrder": 3,
+        "adobeFontsKitId": null,
+        "uploadedById": null,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-05-19T10:12:30.111Z",
+        "updatedAt": "2026-05-19T10:12:30.111Z"
+      },
+      {
+        "id": "cmpch50kf0134d2msqtdbuoh5",
+        "name": "Roboto",
+        "role": "UI",
+        "source": "DETECTED",
+        "availability": "GOOGLE_FONTS",
+        "fileUrl": null,
+        "fileName": null,
+        "fileType": null,
+        "fileSize": null,
+        "fontFamily": null,
+        "weight": null,
+        "style": null,
+        "sortOrder": 4,
+        "adobeFontsKitId": null,
+        "uploadedById": null,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-05-19T10:12:30.111Z",
+        "updatedAt": "2026-05-19T10:12:30.111Z"
+      },
+      {
+        "id": "cmpch50kf0135d2ms4upzjscq",
+        "name": "Bitstream Charter",
+        "role": "UI",
+        "source": "DETECTED",
+        "availability": "COMMERCIAL",
+        "fileUrl": null,
+        "fileName": null,
+        "fileType": null,
+        "fileSize": null,
+        "fontFamily": null,
+        "weight": null,
+        "style": null,
+        "sortOrder": 5,
+        "adobeFontsKitId": null,
+        "uploadedById": null,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-05-19T10:12:30.111Z",
+        "updatedAt": "2026-05-19T10:12:30.111Z"
+      }
+    ],
+    "styleguideLogo": [
+      {
+        "id": "cmpch509p012xd2msxm0dc6cf",
+        "variant": "PRIMARY",
+        "fileUrl": "https://pub-a72c2a76f55a455cbc44a547e597c130.r2.dev/uploads/media/cmo9p7x44000rscms6jjeah23/2026/05/logo-vision-1779185402528-1779185402529.png",
+        "fileName": "logo-vision-1779185402530.png",
+        "fileType": "png",
+        "fileSize": null,
+        "width": 391,
+        "height": 244,
+        "description": "Circular badge logo with 'DOOR TRAINING STERK' around the perimeter, 'DTS' in large letters in the center, 'REDE' below, and '19 35' on either side of the emblem",
+        "sortOrder": 0,
+        "uploadedById": null,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-05-19T10:12:29.725Z",
+        "updatedAt": "2026-05-19T10:12:29.725Z"
+      },
+      {
+        "id": "cmpch509p012yd2msmfewig8h",
+        "variant": "LOCKUP",
+        "fileUrl": "https://www.dtsede.nl/wp-content/uploads/dtsede/2017/07/cropped-logo-512-512-e1519824421558.png",
+        "fileName": "logo-2.png",
+        "fileType": "png",
+        "fileSize": null,
+        "width": null,
+        "height": null,
+        "description": null,
+        "sortOrder": 1,
+        "uploadedById": null,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-05-19T10:12:29.725Z",
+        "updatedAt": "2026-05-19T10:12:29.725Z"
+      },
+      {
+        "id": "cmpch509p012zd2msew5wd5hj",
+        "variant": "LOCKUP",
+        "fileUrl": "https://www.dtsede.nl/wp-content/uploads/dtsede/2019/02/logo-respect.png",
+        "fileName": "logo-3.png",
+        "fileType": "png",
+        "fileSize": null,
+        "width": null,
+        "height": null,
+        "description": null,
+        "sortOrder": 2,
+        "uploadedById": null,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-05-19T10:12:29.725Z",
+        "updatedAt": "2026-05-19T10:12:29.725Z"
+      }
+    ],
+    "styleguideComponent": [
+      {
+        "id": "cmpch50l80136d2ms5m9mkrct",
+        "type": "BUTTON",
+        "label": "Hamburger menu toggle — blue bar",
+        "sourceUrl": null,
+        "screenshotUrl": "https://pub-a72c2a76f55a455cbc44a547e597c130.r2.dev/uploads/media/cmo9p7x44000rscms6jjeah23/2026/05/component-button-1779185546306-3-1779185546306.png",
+        "extractedStyles": {
+          "color": "rgb(255, 255, 255)",
+          "border": "1px solid rgb(1, 32, 63)",
+          "display": "block",
+          "padding": "2px",
+          "fontSize": "15px",
+          "background": "rgb(2, 84, 164)",
+          "fontWeight": "700",
+          "borderRadius": "0px",
+          "textTransform": "uppercase"
+        },
+        "previewHtml": null,
+        "confidence": 0.95,
+        "sortOrder": 0,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-05-19T10:12:30.140Z",
+        "updatedAt": "2026-05-19T10:12:30.140Z"
+      },
+      {
+        "id": "cmpch50l80137d2msabrt5s4v",
+        "type": "FORM_INPUT",
+        "label": "Search input with placeholder text",
+        "sourceUrl": null,
+        "screenshotUrl": "https://pub-a72c2a76f55a455cbc44a547e597c130.r2.dev/uploads/media/cmo9p7x44000rscms6jjeah23/2026/05/component-form_input-1779185546349-0-1779185546349.png",
+        "extractedStyles": {
+          "color": "rgb(34, 34, 34)",
+          "border": "1px solid rgb(204, 204, 204)",
+          "display": "block",
+          "padding": "6.4px",
+          "fontSize": "15px",
+          "boxShadow": "rgba(0, 0, 0, 0.1) 0px 1px 2px 0px inset",
+          "background": "rgb(255, 255, 255)",
+          "fontWeight": "400",
+          "borderRadius": "0px"
+        },
+        "previewHtml": null,
+        "confidence": 0.95,
+        "sortOrder": 1,
+        "styleguideId": "cmpch1jw4012gd2msiiqgjme3",
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-05-19T10:12:30.140Z",
+        "updatedAt": "2026-05-19T10:12:30.140Z"
+      }
+    ],
+    "fidelityConfig": [],
+    "brandRule": [],
+    "workspaceContentTypeThreshold": [],
+    "persona": [
+      {
+        "id": "cmo9pehte002dscmstgaajto1",
+        "name": "Marco van den Berg, The Dedicated Youth Football Parent",
+        "tagline": null,
+        "avatarUrl": null,
+        "avatarSource": "NONE",
+        "age": "35-45",
+        "gender": "Male or Female",
+        "location": "Ede, Netherlands",
+        "occupation": "Working professional in various sectors",
+        "education": "Secondary to Higher Education",
+        "income": "€35,000-€65,000",
+        "familyStatus": null,
+        "personalityType": "Community-minded and actively involved in their children's development. Values structured activities and traditional sports culture. Appreciates the importance of teamwork and physical activity for youth development.",
+        "coreValues": [
+          "Youth development",
+          "Community involvement",
+          "Active lifestyle",
+          "Traditional sports values",
+          "Safety and organization"
+        ],
+        "interests": [
+          "Youth football",
+          "Local community events",
+          "Children's sports development",
+          "Volunteering",
+          "KNVB football culture"
+        ],
+        "goals": [
+          "Find a safe, well-organized club for their child",
+          "Support their child's physical and social development",
+          "Connect with other local families",
+          "Contribute to the local community"
+        ],
+        "motivations": [
+          "Wanting their child to be active and healthy",
+          "Building character through team sports",
+          "Creating social connections for their family",
+          "Supporting local institutions"
+        ],
+        "frustrations": [
+          "Finding reliable youth sports programs",
+          "Balancing schedules with training and matches",
+          "Understanding club requirements and fees",
+          "Navigating match cancellations and scheduling"
+        ],
+        "behaviors": [
+          "Attends their child's matches regularly",
+          "Participates in club volunteer activities",
+          "Checks club website for match schedules and updates",
+          "Engages with other parents at training sessions"
+        ],
+        "strategicImplications": null,
+        "preferredChannels": [
+          "Club website",
+          "Email communications",
+          "WhatsApp groups",
+          "In-person at matches and training"
+        ],
+        "techStack": null,
+        "quote": "I want my son to learn teamwork and stay active, and DTS Ede offers exactly the kind of structured, community-focused environment we were looking for.",
+        "bio": "Marco is a parent of two children living in Ede who values traditional sports culture and community involvement. He actively seeks opportunities for his children to develop through team sports and appreciates clubs with strong youth development programs and volunteer-driven values.",
+        "buyingTriggers": [
+          "Start of football season",
+          "Child expressing interest in football",
+          "Recommendations from other parents",
+          "Proximity to home"
+        ],
+        "decisionCriteria": [
+          "Club reputation and organization",
+          "Quality of youth development program",
+          "Membership fees affordability",
+          "Training schedule compatibility",
+          "Community atmosphere"
+        ],
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdById": "demo-user-erik-001",
+        "localeProfileId": "cmr4z54e3000738c9sbzt4xqn",
+        "createdAt": "2026-04-22T07:00:48.434Z",
+        "updatedAt": "2026-07-03T13:33:43.420Z"
+      },
+      {
+        "id": "cmo9pehtn002fscmsbd0zbep0",
+        "name": "Lisa Jansen, The Aspiring Female Footballer",
+        "tagline": null,
+        "avatarUrl": null,
+        "avatarSource": "NONE",
+        "age": "16-25",
+        "gender": "Female",
+        "location": "Ede and surrounding areas, Netherlands",
+        "occupation": "Student or Entry-level professional",
+        "education": "Secondary school to University",
+        "income": "Student or Early career",
+        "familyStatus": null,
+        "personalityType": "Athletic, ambitious, and community-oriented. Seeks opportunities to play competitive football while balancing education or early career. Values inclusivity and the growing women's football culture in the Netherlands.",
+        "coreValues": [
+          "Athletic development",
+          "Gender equality in sports",
+          "Team camaraderie",
+          "Competitive spirit",
+          "Community belonging"
+        ],
+        "interests": [
+          "Women's football",
+          "KNVB competitions",
+          "Fitness and training",
+          "Team sports",
+          "Local sports community"
+        ],
+        "goals": [
+          "Play competitive amateur football",
+          "Improve football skills and fitness",
+          "Be part of a supportive team environment",
+          "Balance sports with education or work"
+        ],
+        "motivations": [
+          "Passion for football",
+          "Desire to compete at amateur level",
+          "Building friendships through sport",
+          "Staying physically active"
+        ],
+        "frustrations": [
+          "Limited women's football opportunities in some areas",
+          "Balancing training schedules with other commitments",
+          "Finding clubs that take women's teams seriously",
+          "Match scheduling conflicts"
+        ],
+        "behaviors": [
+          "Trains regularly with the team",
+          "Follows KNVB league standings",
+          "Engages with teammates on social media",
+          "Attends matches consistently"
+        ],
+        "strategicImplications": null,
+        "preferredChannels": [
+          "Social media",
+          "Club website",
+          "WhatsApp team groups",
+          "Word of mouth from teammates"
+        ],
+        "techStack": null,
+        "quote": "I love that DTS Ede has a dedicated women's team where I can play competitive football and be part of a real club culture.",
+        "bio": "Lisa is a young woman passionate about football who seeks a club that takes women's football seriously. She values both competitive play and the social aspects of being part of a team, and appreciates clubs with established women's programs within the KNVB structure.",
+        "buyingTriggers": [
+          "Season registration periods",
+          "Friend recommendations",
+          "Desire to join organized competition",
+          "Moving to the Ede area"
+        ],
+        "decisionCriteria": [
+          "Quality of women's program",
+          "Training schedule flexibility",
+          "Team atmosphere and inclusivity",
+          "Competitive level of play",
+          "Membership cost"
+        ],
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdById": "demo-user-erik-001",
+        "localeProfileId": "cmr4z54e3000738c9sbzt4xqn",
+        "createdAt": "2026-04-22T07:00:48.443Z",
+        "updatedAt": "2026-07-03T13:33:43.420Z"
+      },
+      {
+        "id": "cmo9pehtr002hscmsrg7f0jb8",
+        "name": "Henk de Vries, The Senior Amateur Footballer",
+        "tagline": null,
+        "avatarUrl": null,
+        "avatarSource": "NONE",
+        "age": "25-50",
+        "gender": "Male",
+        "location": "Ede, Netherlands",
+        "occupation": "Various professions",
+        "education": "Secondary to Higher Education",
+        "income": "€30,000-€70,000",
+        "familyStatus": null,
+        "personalityType": "Competitive yet social, values the traditional Dutch amateur football culture. Enjoys the weekly routine of training and matches, and the camaraderie of club life. Often willing to volunteer and contribute to club activities.",
+        "coreValues": [
+          "Sportsmanship",
+          "Club loyalty",
+          "Community and tradition",
+          "Active lifestyle",
+          "Volunteer spirit"
+        ],
+        "interests": [
+          "Amateur football",
+          "KNVB league competitions",
+          "Local sports culture",
+          "Social activities with teammates",
+          "Club volunteering"
+        ],
+        "goals": [
+          "Play competitive amateur football regularly",
+          "Maintain fitness and health",
+          "Enjoy social connections through sport",
+          "Contribute to club success"
+        ],
+        "motivations": [
+          "Love of the game",
+          "Weekly routine and structure",
+          "Team camaraderie",
+          "Local pride and identity",
+          "Staying active"
+        ],
+        "frustrations": [
+          "Match cancellations due to weather or field conditions",
+          "Balancing football with work and family",
+          "Administrative requirements and fees",
+          "Scheduling conflicts"
+        ],
+        "behaviors": [
+          "Attends training sessions weekly",
+          "Plays in weekend league matches",
+          "Checks club website for match schedules and results",
+          "Participates in club social events",
+          "May volunteer for club activities"
+        ],
+        "strategicImplications": null,
+        "preferredChannels": [
+          "Club website for match information",
+          "Team WhatsApp groups",
+          "In-person at clubhouse",
+          "Email updates"
+        ],
+        "techStack": null,
+        "quote": "Playing for DTS Ede on Sundays is the highlight of my week - it's not just about football, it's about being part of the blauw-witte family.",
+        "bio": "Henk is an amateur footballer who has been playing in local leagues for years. He values the traditional club culture and enjoys both the competitive and social aspects of amateur football. He's committed to his team and often contributes as a volunteer to support club activities.",
+        "buyingTriggers": [
+          "Season renewal period",
+          "Moving to the area",
+          "Friend or colleague invitation",
+          "Desire to return to football"
+        ],
+        "decisionCriteria": [
+          "Competitive level matching skill",
+          "Training schedule compatibility",
+          "Club atmosphere and culture",
+          "Membership fees",
+          "Location and facilities"
+        ],
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdById": "demo-user-erik-001",
+        "localeProfileId": "cmr4z54e3000738c9sbzt4xqn",
+        "createdAt": "2026-04-22T07:00:48.447Z",
+        "updatedAt": "2026-07-03T13:33:43.420Z"
+      }
+    ],
+    "personaResearchMethod": [
+      {
+        "id": "cmo9pehth002escmszv6gv712",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "personaId": "cmo9pehte002dscmstgaajto1",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T07:00:48.434Z",
+        "updatedAt": "2026-04-22T07:00:48.434Z"
+      },
+      {
+        "id": "cmo9pehto002gscmsv12apwo4",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "personaId": "cmo9pehtn002fscmsbd0zbep0",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T07:00:48.443Z",
+        "updatedAt": "2026-04-22T07:00:48.443Z"
+      },
+      {
+        "id": "cmo9pehts002iscmskrzcfu3i",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "personaId": "cmo9pehtr002hscmsrg7f0jb8",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T07:00:48.447Z",
+        "updatedAt": "2026-04-22T07:00:48.447Z"
+      }
+    ],
+    "product": [
+      {
+        "id": "cmo9pehu1002kscmsfy0lylpv",
+        "name": "Senior Football Membership",
+        "slug": "senior-football-membership",
+        "description": "Adult amateur football club membership for men's senior teams competing in KNVB leagues. Includes weekly training sessions, league matches, and full integration into the club's traditional blauw-witte community culture with opportunities for volunteer involvement.",
+        "category": "sports-recreation",
+        "pricingModel": "Subscription",
+        "pricingDetails": "Annual membership dues (Contributie) - specific pricing available upon inquiry",
+        "source": "WEBSITE_URL",
+        "sourceUrl": "https://dtsede.nl",
+        "status": "ANALYZED",
+        "features": [
+          "Weekly training sessions",
+          "KNVB league competition",
+          "Multiple senior team levels",
+          "Match day organization",
+          "Club facilities access",
+          "Team management support",
+          "Volunteer opportunities"
+        ],
+        "benefits": [
+          "Competitive amateur football",
+          "Physical fitness and health",
+          "Social connections and camaraderie",
+          "Community involvement",
+          "Regular sports routine",
+          "Club culture participation"
+        ],
+        "useCases": [
+          "Adult men seeking competitive amateur football",
+          "Players wanting regular training and matches",
+          "Individuals new to Ede looking for community",
+          "Former players returning to the sport",
+          "Athletes seeking team sports participation"
+        ],
+        "categoryIcon": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T07:00:48.457Z",
+        "updatedAt": "2026-04-22T07:00:48.457Z"
+      },
+      {
+        "id": "cmo9pehtw002jscms904rsfk6",
+        "name": "Youth Football Membership",
+        "slug": "youth-football-membership",
+        "description": "Comprehensive youth football club membership for children and teenagers, providing structured training, KNVB league matches, and development within a community-focused environment. Includes participation in the club's youth development program (Jeugdbeleidsplan) with age-appropriate coaching and competition.",
+        "category": "sports-recreation",
+        "pricingModel": "Subscription",
+        "pricingDetails": "Annual membership dues (Contributie) - specific pricing available upon inquiry",
+        "source": "WEBSITE_URL",
+        "sourceUrl": "https://dtsede.nl",
+        "status": "ANALYZED",
+        "features": [
+          "Regular training sessions",
+          "KNVB league match participation",
+          "Age-appropriate youth divisions",
+          "Structured youth development program",
+          "Access to club facilities",
+          "Match day organization",
+          "Qualified coaching staff",
+          "Integration into club community"
+        ],
+        "benefits": [
+          "Professional youth development",
+          "Active and healthy lifestyle",
+          "Team sports skills and values",
+          "Social connections and friendships",
+          "Competitive match experience",
+          "Safe and organized environment",
+          "Community belonging"
+        ],
+        "useCases": [
+          "Children wanting to learn and play football",
+          "Parents seeking structured sports activities",
+          "Youth athletes developing football skills",
+          "Families new to the Ede area",
+          "Children transitioning from recreational to competitive play"
+        ],
+        "categoryIcon": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T07:00:48.452Z",
+        "updatedAt": "2026-04-22T07:00:48.452Z"
+      },
+      {
+        "id": "cmo9pehu4002lscms6uypdioq",
+        "name": "Women's Football Membership",
+        "slug": "women-s-football-membership",
+        "description": "Football club membership specifically for women and girls, offering dedicated teams and training programs. Provides opportunities to play competitive football in KNVB competitions while being part of a supportive and inclusive club community.",
+        "category": "sports-recreation",
+        "pricingModel": "Subscription",
+        "pricingDetails": "Annual membership dues (Contributie) - specific pricing available upon inquiry",
+        "source": "WEBSITE_URL",
+        "sourceUrl": "https://dtsede.nl",
+        "status": "ANALYZED",
+        "features": [
+          "Women's and girls' dedicated teams",
+          "Regular training sessions",
+          "KNVB league participation",
+          "Female-focused development",
+          "Inclusive team environment",
+          "Match organization",
+          "Club community integration"
+        ],
+        "benefits": [
+          "Competitive women's football opportunities",
+          "Supportive team environment",
+          "Athletic development",
+          "Social connections",
+          "Active lifestyle",
+          "Gender-inclusive sports culture"
+        ],
+        "useCases": [
+          "Women seeking competitive football opportunities",
+          "Girls wanting to play organized football",
+          "Female athletes looking for team sports",
+          "Women new to the area seeking community",
+          "Players wanting dedicated women's programs"
+        ],
+        "categoryIcon": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T07:00:48.460Z",
+        "updatedAt": "2026-04-22T07:00:48.460Z"
+      },
+      {
+        "id": "cmo9pehu6002mscmsg7h5lu2a",
+        "name": "35+ League Membership",
+        "slug": "35-league-membership",
+        "description": "Specialized football membership for players aged 35 and over, offering age-appropriate competition and training. Allows experienced players to continue enjoying competitive football in a format suited to their age group within the KNVB league structure.",
+        "category": "sports-recreation",
+        "pricingModel": "Subscription",
+        "pricingDetails": "Annual membership dues (Contributie) - specific pricing available upon inquiry",
+        "source": "WEBSITE_URL",
+        "sourceUrl": "https://dtsede.nl",
+        "status": "ANALYZED",
+        "features": [
+          "Age-appropriate competition (35+)",
+          "Training sessions",
+          "KNVB 35+ league matches",
+          "Experienced player community",
+          "Club facilities access",
+          "Match organization"
+        ],
+        "benefits": [
+          "Age-appropriate football competition",
+          "Continued athletic participation",
+          "Social connections with peers",
+          "Fitness maintenance",
+          "Competitive outlet",
+          "Club community belonging"
+        ],
+        "useCases": [
+          "Experienced players over 35 wanting to continue playing",
+          "Former competitive players seeking age-appropriate football",
+          "Adults looking for fitness through sport",
+          "Players wanting less physically demanding competition"
+        ],
+        "categoryIcon": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T07:00:48.462Z",
+        "updatedAt": "2026-04-22T07:00:48.462Z"
+      },
+      {
+        "id": "cmo9pehu7002nscmso1ewbklx",
+        "name": "International U13 Top Tournament",
+        "slug": "international-u13-top-tournament",
+        "description": "Annual international youth football tournament hosted by DTS Ede on Easter Monday, attracting top U13 teams from various countries. Provides high-level youth competition and international exposure for participating teams in a well-organized tournament environment.",
+        "category": "sports-recreation",
+        "pricingModel": null,
+        "pricingDetails": null,
+        "source": "WEBSITE_URL",
+        "sourceUrl": "https://dtsede.nl",
+        "status": "ANALYZED",
+        "features": [
+          "International U13 team participation",
+          "Annual Easter Monday event",
+          "Top-level youth competition",
+          "Multi-country participation",
+          "Professional tournament organization",
+          "Competitive match format"
+        ],
+        "benefits": [
+          "High-level youth competition",
+          "International exposure for young players",
+          "Experience against diverse opponents",
+          "Tournament atmosphere",
+          "Player development opportunity",
+          "Prestigious youth event participation"
+        ],
+        "useCases": [
+          "Youth teams seeking international competition",
+          "Clubs wanting tournament experience for U13 players",
+          "Teams looking for Easter holiday tournaments",
+          "Players seeking high-level competition",
+          "Clubs building international connections"
+        ],
+        "categoryIcon": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdAt": "2026-04-22T07:00:48.463Z",
+        "updatedAt": "2026-04-22T07:00:48.463Z"
+      }
+    ],
+    "productImage": [],
+    "productPersona": [],
+    "businessStrategy": [],
+    "focusArea": [],
+    "objective": [],
+    "keyResult": [],
+    "milestone": [],
+    "progressSnapshot": [],
+    "competitor": [
+      {
+        "id": "cmo9pehuc002oscmsmd08zrmc",
+        "name": "HSV Zuidvogels",
+        "slug": "hsv-zuidvogels",
+        "websiteUrl": null,
+        "description": "Dutch amateur football club competing in the same regional league system as DTS Ede, representing a direct local competitor for players and match fixtures.",
+        "tagline": null,
+        "foundingYear": null,
+        "headquarters": null,
+        "employeeRange": null,
+        "logoUrl": null,
+        "valueProposition": null,
+        "targetAudience": "Local football players in the region",
+        "differentiators": [],
+        "mainOfferings": [
+          "Amateur football programs",
+          "KNVB league participation"
+        ],
+        "pricingModel": null,
+        "pricingDetails": null,
+        "toneOfVoice": null,
+        "messagingThemes": [],
+        "visualStyleNotes": null,
+        "strengths": [],
+        "weaknesses": [],
+        "socialLinks": null,
+        "hasBlog": null,
+        "hasCareersPage": null,
+        "competitiveScore": 50,
+        "tier": "DIRECT",
+        "status": "DRAFT",
+        "source": "MANUAL",
+        "lastScrapedAt": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "monitoringEnabled": false,
+        "monitoringFrequency": "WEEKLY_LIGHT",
+        "nextScheduledScanAt": null,
+        "snapshotCount": 0,
+        "unacknowledgedActivityCount": 0,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdById": "demo-user-erik-001",
+        "createdAt": "2026-04-22T07:00:48.468Z",
+        "updatedAt": "2026-04-22T07:00:48.468Z"
+      },
+      {
+        "id": "cmo9pehuf002pscmsngou3wpz",
+        "name": "CSV Apeldoorn",
+        "slug": "csv-apeldoorn",
+        "websiteUrl": null,
+        "description": "Regional amateur football club from Apeldoorn competing in similar league divisions, serving as a direct competitor for local talent and league positioning.",
+        "tagline": null,
+        "foundingYear": null,
+        "headquarters": null,
+        "employeeRange": null,
+        "logoUrl": null,
+        "valueProposition": null,
+        "targetAudience": "Football players in the Apeldoorn region",
+        "differentiators": [],
+        "mainOfferings": [
+          "Amateur football programs",
+          "Regional league competition"
+        ],
+        "pricingModel": null,
+        "pricingDetails": null,
+        "toneOfVoice": null,
+        "messagingThemes": [],
+        "visualStyleNotes": null,
+        "strengths": [],
+        "weaknesses": [],
+        "socialLinks": null,
+        "hasBlog": null,
+        "hasCareersPage": null,
+        "competitiveScore": 50,
+        "tier": "DIRECT",
+        "status": "DRAFT",
+        "source": "MANUAL",
+        "lastScrapedAt": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "monitoringEnabled": false,
+        "monitoringFrequency": "WEEKLY_LIGHT",
+        "nextScheduledScanAt": null,
+        "snapshotCount": 0,
+        "unacknowledgedActivityCount": 0,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdById": "demo-user-erik-001",
+        "createdAt": "2026-04-22T07:00:48.471Z",
+        "updatedAt": "2026-04-22T07:00:48.471Z"
+      },
+      {
+        "id": "cmo9pehuh002qscmsrt5tx87w",
+        "name": "SDC Putten",
+        "slug": "sdc-putten",
+        "websiteUrl": null,
+        "description": "Amateur football club from Putten competing in the same regional football ecosystem, representing direct competition for league matches and player recruitment.",
+        "tagline": null,
+        "foundingYear": null,
+        "headquarters": null,
+        "employeeRange": null,
+        "logoUrl": null,
+        "valueProposition": null,
+        "targetAudience": "Local football community in Putten area",
+        "differentiators": [],
+        "mainOfferings": [
+          "Amateur football",
+          "KNVB league participation"
+        ],
+        "pricingModel": null,
+        "pricingDetails": null,
+        "toneOfVoice": null,
+        "messagingThemes": [],
+        "visualStyleNotes": null,
+        "strengths": [],
+        "weaknesses": [],
+        "socialLinks": null,
+        "hasBlog": null,
+        "hasCareersPage": null,
+        "competitiveScore": 50,
+        "tier": "DIRECT",
+        "status": "DRAFT",
+        "source": "MANUAL",
+        "lastScrapedAt": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "monitoringEnabled": false,
+        "monitoringFrequency": "WEEKLY_LIGHT",
+        "nextScheduledScanAt": null,
+        "snapshotCount": 0,
+        "unacknowledgedActivityCount": 0,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdById": "demo-user-erik-001",
+        "createdAt": "2026-04-22T07:00:48.473Z",
+        "updatedAt": "2026-04-22T07:00:48.473Z"
+      },
+      {
+        "id": "cmo9pehuk002rscms85v5u3en",
+        "name": "KVC Westerlo",
+        "slug": "kvc-westerlo",
+        "websiteUrl": null,
+        "description": "Belgian professional football club participating in DTS Ede's U13 Top Tournament, representing an aspirational benchmark for youth development quality.",
+        "tagline": null,
+        "foundingYear": null,
+        "headquarters": null,
+        "employeeRange": null,
+        "logoUrl": null,
+        "valueProposition": "Professional youth development pathway",
+        "targetAudience": "Elite youth football talent",
+        "differentiators": [
+          "Professional club status",
+          "International reputation"
+        ],
+        "mainOfferings": [
+          "Professional football",
+          "Elite youth academy"
+        ],
+        "pricingModel": null,
+        "pricingDetails": null,
+        "toneOfVoice": null,
+        "messagingThemes": [],
+        "visualStyleNotes": null,
+        "strengths": [
+          "Professional infrastructure",
+          "International network"
+        ],
+        "weaknesses": [],
+        "socialLinks": null,
+        "hasBlog": null,
+        "hasCareersPage": null,
+        "competitiveScore": 75,
+        "tier": "ASPIRATIONAL",
+        "status": "DRAFT",
+        "source": "MANUAL",
+        "lastScrapedAt": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "monitoringEnabled": false,
+        "monitoringFrequency": "WEEKLY_LIGHT",
+        "nextScheduledScanAt": null,
+        "snapshotCount": 0,
+        "unacknowledgedActivityCount": 0,
+        "workspaceId": "cmo9p7x44000rscms6jjeah23",
+        "createdById": "demo-user-erik-001",
+        "createdAt": "2026-04-22T07:00:48.476Z",
+        "updatedAt": "2026-04-22T07:00:48.476Z"
+      }
+    ],
+    "competitorProduct": [],
+    "trend": [],
+    "workspaceAiConfig": []
+  },
+  "vectors": {
+    "brandVoiceguide": {
+      "centroidEmbedding": {}
+    }
+  },
+  "localImageRefs": []
+}

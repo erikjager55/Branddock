@@ -1,0 +1,3204 @@
+{
+  "meta": {
+    "version": 1,
+    "sourceWorkspaceId": "cmnzy32qq0054b1msasa6pz9b",
+    "sourceWorkspaceName": "Napking",
+    "sourceSlug": "napking",
+    "sourceContentLanguage": "nl",
+    "note": "Merk-DNA-export (alleen brand foundation; geen content/telemetrie/historie)."
+  },
+  "records": {
+    "brandAsset": [
+      {
+        "id": "cmnzy32r20055b1ms0y5cpv6h",
+        "name": "Purpose Statement",
+        "slug": "purpose-statement",
+        "description": "The reason your organization exists beyond profit",
+        "category": "PURPOSE",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "PURPOSE_WHEEL",
+        "frameworkData": {
+          "mechanism": "By providing comprehensive textile management—cleaning, inventory, delivery—as a seamless, worry-free service, we eliminate a persistent operational burden that distracts from core hospitality excellence.",
+          "statement": "We exist to free hospitality professionals from textile worries so they can focus entirely on creating exceptional dining experiences.",
+          "impactType": "Reduce Friction",
+          "pressureTest": "Without Napking, restaurant professionals must manage textile procurement, cleaning logistics, inventory tracking, and quality control—tasks that drain time and attention from guest experience and culinary innovation. We restore their focus to their true purpose.",
+          "impactDescription": "Napking removes operational complexity and time-consuming textile management from restaurant operations, allowing chefs and owners to dedicate their energy to what truly matters: their guests and culinary craft.",
+          "mechanismCategory": "Operational Liberation"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:06:10.478Z",
+        "updatedAt": "2026-04-15T11:10:42.197Z"
+      },
+      {
+        "id": "cmnzy32rj0057b1msxr3znym9",
+        "name": "Golden Circle",
+        "slug": "golden-circle",
+        "description": "Simon Sinek's WHY → HOW → WHAT framework",
+        "category": "FOUNDATION",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "GOLDEN_CIRCLE",
+        "frameworkData": {
+          "how": {
+            "details": "Our approach combines rigorous hygiene standards, 24/7 inventory management, flexible subscription models, and 100% electric delivery. We handle every detail—from cleaning to stock management to weekend service—so restaurants never have to think about textiles.",
+            "statement": "We deliver carefree, comprehensive textile management through HACCP-compliant cleaning, automated inventory systems, and sustainable premium textiles."
+          },
+          "why": {
+            "details": "Great restaurants are built on passion for food and guest experience. Textile management is a necessary but time-consuming distraction. We believe removing this burden allows the hospitality industry to thrive and deliver the exceptional experiences guests deserve.",
+            "statement": "We believe hospitality professionals deserve to focus entirely on their craft, not on operational distractions."
+          },
+          "what": {
+            "details": "We clean, rent, sell, and manage hospitality textiles including chef's clothing, napkins, and table linens. Our services include HACCP-compliant cleaning, sustainable textile options from premium brands, embroidery services, and complete inventory management with 7-day availability.",
+            "statement": "We provide professional laundry services and textile rental for restaurants in the Randstad."
+          }
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:06:10.495Z",
+        "updatedAt": "2026-04-15T11:10:42.221Z"
+      },
+      {
+        "id": "cmnzy32rp0059b1mshygqo904",
+        "name": "Brand Essence",
+        "slug": "brand-essence",
+        "description": "The heart and soul of your brand",
+        "category": "CORE",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_ESSENCE",
+        "frameworkData": {
+          "attributes": [
+            "Zorgeloos (Carefree)",
+            "Vlekkeloos (Spotless)",
+            "Duurzaam (Sustainable)",
+            "Betrouwbaar (Reliable)",
+            "Flexibel (Flexible)"
+          ],
+          "proofPoints": [
+            "HACCP-compliant cleaning processes with extensive auditing",
+            "24/7 automated inventory management ensuring sufficient stock",
+            "Sustainable textiles (GOTS, Oeko-Tex, Fairtrade) at no extra cost",
+            "100% electric delivery fleet",
+            "Weekend service availability for hospitality schedules"
+          ],
+          "discriminator": "The only Randstad textile service combining HACCP-compliant cleaning, automated 24/7 inventory management, sustainable premium textiles, and 100% electric delivery in one carefree subscription.",
+          "audienceInsight": "Restaurant owners and managers in the Randstad are passionate about hospitality but overwhelmed by operational details. They want to maintain high standards and sustainability without adding complexity or time burden to their already demanding schedules.",
+          "emotionalBenefit": "Peace of mind and professional confidence knowing textile needs are handled flawlessly, allowing focus on passion and craft without distraction or worry.",
+          "essenceNarrative": "Napking embodies the peace of mind that comes from flawless execution behind the scenes. We are the invisible partner that ensures every textile detail is spotless, sustainable, and always available—allowing hospitality professionals to shine in their element without operational worry.",
+          "essenceStatement": "Carefree Excellence",
+          "validationScores": {
+            "unique": 4,
+            "enduring": 4,
+            "scalable": 3,
+            "authentic": 4,
+            "intangible": 3,
+            "meaningful": 5
+          },
+          "functionalBenefit": "Complete textile management that guarantees spotless, HACCP-compliant linens and chef's clothing are always available when needed, with zero operational effort required.",
+          "selfExpressiveBenefit": "Demonstrates commitment to quality, sustainability, and professional standards while showing smart operational management that prioritizes what truly matters."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:06:10.501Z",
+        "updatedAt": "2026-04-15T11:10:42.223Z"
+      },
+      {
+        "id": "cmnzy32rx005bb1ms7lkohm0n",
+        "name": "Brand Promise",
+        "slug": "brand-promise",
+        "description": "Core commitment to your customers",
+        "category": "STRATEGY",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_PROMISE",
+        "frameworkData": {
+          "proofPoints": [
+            "HACCP-compliant cleaning with extensive audit processes",
+            "24/7 automated inventory management preventing stock-outs",
+            "Sustainable textiles (GOTS, Oeko-Tex, Fairtrade) at standard pricing",
+            "100% electric delivery fleet across the Randstad",
+            "Weekend service availability matching restaurant schedules"
+          ],
+          "differentiator": "Comprehensive service integration: combining HACCP cleaning, automated inventory, sustainable premium textiles, and electric delivery in one flexible subscription designed specifically for hospitality schedules.",
+          "emotionalValue": "Complete peace of mind and operational confidence, knowing textile management is handled flawlessly so you can focus entirely on your guests and culinary craft.",
+          "targetAudience": "Restaurant owners and managers in the Randstad region who value quality, sustainability, and operational efficiency.",
+          "functionalValue": "HACCP-compliant cleaning, automated 24/7 inventory management, and flexible delivery ensure spotless textiles are always available without manual effort or stock-outs.",
+          "promiseOneLiner": "Vlekkeloos en zorgeloos: perfect textiles, zero worry.",
+          "coreCustomerNeed": "Reliable, high-quality textile management that meets hygiene standards and sustainability values without consuming time or creating operational complexity.",
+          "promiseStatement": "Napking promises that your restaurant will always have spotless, sustainable textiles exactly when you need them—without you ever having to think about it.",
+          "onlynessStatement": "Only Napking can deliver completely carefree, sustainable textile management for Randstad restaurants because we combine HACCP-compliant cleaning, 24/7 automated inventory systems, premium sustainable textiles, and hospitality-specific service (including weekends) in one integrated solution.",
+          "measurableOutcomes": [
+            "Zero textile-related operational interruptions or stock-outs",
+            "100% HACCP compliance on all cleaned textiles",
+            "Reduced carbon footprint through electric delivery and sustainable textiles",
+            "Time saved on textile management redirected to guest experience"
+          ],
+          "selfExpressiveValue": "Demonstrates professional excellence and environmental responsibility while showing smart prioritization of what truly matters in hospitality."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:06:10.509Z",
+        "updatedAt": "2026-04-15T11:10:42.228Z"
+      },
+      {
+        "id": "cmnzy32s0005db1msdszy4jrv",
+        "name": "Mission & Vision",
+        "slug": "mission-statement",
+        "description": "What you do today and where you're headed",
+        "category": "STRATEGY",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "MISSION_STATEMENT",
+        "frameworkData": {
+          "forWhom": "Restaurant owners, managers, and hospitality professionals in the Randstad region who demand quality and sustainability without operational complexity.",
+          "whatWeDo": "We provide comprehensive textile management services including HACCP-compliant cleaning, rental and sales of sustainable premium textiles, and automated inventory management.",
+          "howWeDoIt": "Through integrated systems combining rigorous hygiene processes, 24/7 automated inventory management, sustainable textile sourcing, flexible subscriptions, and hospitality-focused service including weekend availability and 100% electric delivery.",
+          "impactGoal": "To measurably improve the operational efficiency and sustainability of the Randstad restaurant industry while enabling hospitality professionals to dedicate more energy to exceptional guest experiences.",
+          "timeHorizon": "5 years",
+          "boldAspiration": "Every restaurant in the Randstad that values quality and sustainability chooses Napking as their textile partner, making textile worries obsolete in the hospitality industry.",
+          "missionOneLiner": "Freeing restaurants to focus on hospitality, not textiles.",
+          "valuesAlignment": "Quality without compromise, sustainability as standard practice, reliability as foundation, flexibility as service principle, and carefree operation as ultimate outcome.",
+          "visionStatement": "To become the trusted textile partner for every quality-focused restaurant in the Randstad, recognized as the standard for carefree, sustainable hospitality textile management.",
+          "missionStatement": "To liberate hospitality professionals in the Randstad from textile management burdens by providing spotless, sustainable, and completely carefree textile services that meet the highest hygiene and quality standards.",
+          "successIndicators": [
+            "Market leadership position among Randstad restaurant textile services",
+            "100% customer retention among quality-focused restaurants",
+            "Recognition as the sustainability standard in hospitality textiles",
+            "Measurable increase in customer operational efficiency and focus time",
+            "Complete carbon-neutral operations across the service chain"
+          ],
+          "desiredFutureState": "A Randstad hospitality landscape where textile management is universally recognized as a solved problem, allowing the entire industry to elevate guest experiences and culinary innovation while operating sustainably.",
+          "stakeholderBenefit": "Restaurant professionals gain time and peace of mind; guests experience consistently high standards; the environment benefits from sustainable practices and electric delivery; the hospitality industry elevates overall quality standards.",
+          "missionVisionTension": "The mission focuses on current operational excellence and burden removal for existing customers, while the vision pushes toward market transformation and industry-wide standard-setting—requiring balance between service depth and market breadth."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:06:10.512Z",
+        "updatedAt": "2026-04-15T11:10:42.231Z"
+      },
+      {
+        "id": "cmnzy32s4005fb1msvr1n607w",
+        "name": "Brand Archetype",
+        "slug": "brand-archetype",
+        "description": "Universal behavior patterns",
+        "category": "PERSONALITY",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_ARCHETYPE",
+        "frameworkData": {
+          "coreFear": "Restaurants running out of clean textiles during service or being let down by unreliable suppliers",
+          "strategy": "Offer comprehensive, flexible service that anticipates needs and removes hassle through automation and reliability",
+          "brandGoal": "To provide carefree, reliable textile management so restaurant owners can focus entirely on their guests and cuisine",
+          "coreDesire": "To protect and care for restaurant owners by removing operational burdens and ensuring their staff always looks professional",
+          "giftTalent": "Anticipating restaurant needs and delivering spotless, sustainable textiles with zero effort required from the client",
+          "subArchetype": "Service Provider",
+          "brandExamples": [
+            "Mollie (payment caregiver)",
+            "Coolblue (service caregiver)",
+            "Johnson & Johnson (health caregiver)",
+            "Volvo (safety caregiver)",
+            "TOMS (social caregiver)"
+          ],
+          "shadowWeakness": "May be perceived as expensive or overly service-focused rather than cost-competitive",
+          "contentStrategy": "Focus on peace of mind, testimonials showing time saved, sustainability credentials, and service reliability proof points",
+          "primaryArchetype": "Caregiver",
+          "archetypeInAction": "24/7 inventory management, weekend service availability, HACCP compliance without client effort, flexible scaling during busy periods",
+          "customerExperience": "Seamless, automated service where textiles simply arrive clean and on time without manual ordering or stock management",
+          "marketingExpression": "Emphasizes 'zorgeloos' (carefree), reliability, and the promise that restaurants never have to worry about textile availability or quality",
+          "positioningApproach": "Guidance",
+          "competitiveLandscape": "Positioned as premium service provider in Randstad hospitality market, differentiating through sustainability, flexibility, and complete inventory management versus traditional laundry services",
+          "storytellingApproach": "Position as the trusted partner that handles the invisible but essential details, allowing chefs and owners to shine"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:06:10.516Z",
+        "updatedAt": "2026-04-15T11:10:42.237Z"
+      },
+      {
+        "id": "cmnzy32sa005jb1ms7ergbzwt",
+        "name": "Brand Personality",
+        "slug": "brand-personality",
+        "description": "Human characteristics of your brand",
+        "category": "PERSONALITY",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_PERSONALITY",
+        "frameworkData": {
+          "wordsWeUse": [
+            "Vlekkeloos",
+            "Zorgeloos",
+            "Flexibel",
+            "Duurzaam",
+            "Betrouwbaar",
+            "Kwaliteit",
+            "Altijd voldoende",
+            "Weekendservice",
+            "HACCP",
+            "Randstad"
+          ],
+          "channelTones": {
+            "email": "Direct and informative, with clear next steps and service confirmations.",
+            "crisis": "Transparent, accountable, solution-focused. Acknowledges issues and provides concrete remediation plans.",
+            "website": "Clear, reassuring, benefit-focused. Emphasizes convenience and reliability with concrete service details.",
+            "socialMedia": "Professional but warm, showcasing sustainable partnerships and behind-the-scenes reliability.",
+            "customerSupport": "Helpful, solution-oriented, responsive. Focuses on quick problem resolution and proactive communication."
+          },
+          "wordsWeAvoid": [
+            "Goedkoop",
+            "Basis",
+            "Standaard",
+            "Misschien",
+            "Proberen",
+            "Ingewikkeld",
+            "Luxe (overused)",
+            "Premium (overused)",
+            "Revolutionair",
+            "Uniek"
+          ],
+          "writingSample": "Wij zorgen dat je altijd voldoende schoon textiel hebt. Vlekkeloos, op tijd, en volledig zorgeloos. Jij focust op je gasten, wij regelen de rest. Duurzaam textiel, flexibel abonnement, en 7 dagen per week beschikbaar. Zo simpel kan het zijn.",
+          "colorDirection": "Clean, professional palette with natural/sustainable accents. Likely whites, blues (trust), greens (sustainability), with crisp contrast.",
+          "toneDimensions": {
+            "formalCasual": 4,
+            "seriousFunny": 6,
+            "respectfulIrreverent": 6,
+            "matterOfFactEnthusiastic": 5
+          },
+          "dimensionScores": {
+            "sincerity": 4.5,
+            "competence": 5,
+            "excitement": 2,
+            "ruggedness": 1.5,
+            "sophistication": 3.5
+          },
+          "spectrumSliders": {
+            "boldReserved": 5,
+            "friendlyFormal": 4,
+            "playfulSerious": 6,
+            "innovativeProven": 5,
+            "modernTraditional": 5,
+            "inclusiveExclusive": 4,
+            "energeticThoughtful": 5
+          },
+          "imageryDirection": "Clean textiles, professional restaurant settings, sustainable materials close-ups, satisfied restaurant staff in quality clothing.",
+          "primaryDimension": "Competence",
+          "personalityTraits": [
+            {
+              "name": "Betrouwbaar (Reliable)",
+              "weAreThis": "Dependable, punctual, consistent, trustworthy",
+              "description": "Consistently delivers on promises with spotless results and on-time service",
+              "butNeverThat": "Unpredictable, inconsistent, unreliable, careless"
+            },
+            {
+              "name": "Zorgeloos (Carefree enabler)",
+              "weAreThis": "Proactive, anticipating, seamless, effortless",
+              "description": "Takes away operational worries so clients can focus on their core business",
+              "butNeverThat": "Complicated, demanding, high-maintenance, bureaucratic"
+            },
+            {
+              "name": "Duurzaam bewust (Sustainably conscious)",
+              "weAreThis": "Eco-friendly, certified, responsible, forward-thinking",
+              "description": "Committed to environmental responsibility without compromising quality",
+              "butNeverThat": "Greenwashing, superficial, wasteful, indifferent"
+            },
+            {
+              "name": "Flexibel (Flexible)",
+              "weAreThis": "Adaptable, scalable, responsive, accommodating",
+              "description": "Adapts to restaurant needs whether busy or quiet periods",
+              "butNeverThat": "Rigid, inflexible, one-size-fits-all, bureaucratic"
+            }
+          ],
+          "secondaryDimension": "Sincerity",
+          "typographyDirection": "Clean, modern sans-serif for clarity and professionalism. Highly legible and straightforward.",
+          "brandVoiceDescription": "Professional yet approachable, with a focus on clarity and reassurance. Direct and solution-oriented, emphasizing reliability and ease. Confident without being boastful, sustainable without being preachy."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:06:10.522Z",
+        "updatedAt": "2026-04-15T11:10:42.239Z"
+      },
+      {
+        "id": "cmnzy32sd005lb1ms77e2m6kk",
+        "name": "Brand Story",
+        "slug": "brand-story",
+        "description": "Your brand's past, present and future",
+        "category": "NARRATIVE",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_STORY",
+        "frameworkData": {
+          "brandRole": "Guide",
+          "brandThemes": [
+            "Operational freedom through reliable service",
+            "Sustainability without compromise",
+            "Professional appearance made effortless"
+          ],
+          "originStory": "Founded in 2010 in Hilversum to serve the Randstad restaurant community with a better textile solution",
+          "proofPoints": [
+            "HACCP compliant cleaning processes",
+            "100% electric delivery fleet",
+            "Weekend service availability",
+            "24/7 automated inventory management",
+            "GOTS, Oeko-Tex, Fairtrade certified textiles"
+          ],
+          "abtStatement": "Restaurants need spotless textiles to maintain professional standards, BUT managing inventory and laundry is time-consuming and unreliable, THEREFORE we provide complete textile management that's automated, sustainable, and guaranteed spotless",
+          "narrativeArc": "Overcoming the Monster",
+          "worldContext": "The hospitality industry faces increasing pressure to maintain high standards while managing costs, sustainability expectations, and operational complexity",
+          "elevatorPitch": "Napking provides carefree textile management for Randstad restaurants—spotless, sustainable, and always available when you need it.",
+          "manifestoText": "Restaurants exist to create memorable experiences, not to manage laundry logistics. We believe every restaurant owner deserves to focus entirely on their craft and their guests. That's why we've built a textile service that simply works—spotless quality, sustainable materials, and automated management that requires zero effort from you. No stockouts. No compromises. No worries. Just the freedom to do what you do best: create exceptional dining experiences. Because when your textiles are taken care of, you can take care of what truly matters.",
+          "valuesInAction": [
+            "Sustainability: Electric delivery, certified eco-friendly textiles at standard pricing",
+            "Reliability: Weekend service, automated stock management, spotless guarantee"
+          ],
+          "brandMilestones": [
+            "Founded 2010 in Hilversum",
+            "Established partnerships with Chaud Devant and Le Nouveau Chef",
+            "Achieved HACCP compliance and extensive audit certification",
+            "Transitioned to 100% electric delivery fleet",
+            "Expanded sustainable textile offerings with premium certifications"
+          ],
+          "empathyStatement": "We understand that running a restaurant is demanding enough without worrying whether you'll have clean aprons tomorrow",
+          "founderMotivation": "Recognition that restaurant owners were wasting valuable time managing textile inventory and dealing with unreliable laundry services when they should be focusing on their guests and cuisine",
+          "emotionalTerritory": [
+            "Relief",
+            "Confidence",
+            "Pride",
+            "Trust",
+            "Peace of mind"
+          ],
+          "coreBeliefStatement": "Restaurant owners deserve to focus entirely on their craft and guests, not on managing textile logistics",
+          "authorityCredentials": "HACCP compliant processes, extensively audited operations, partnerships with premium brands (Chaud Devant, Le Nouveau Chef), sustainable certifications (GOTS, Oeko-Tex, Fairtrade), 100% electric delivery fleet, part of Lamme Textile Management",
+          "keyNarrativeMessages": [
+            "Focus on your guests, we'll handle the textiles",
+            "Spotless quality, delivered reliably",
+            "Sustainable textiles at no extra cost",
+            "Never run out, never worry",
+            "Flexible service that scales with your needs"
+          ],
+          "philosophicalProblem": "Restaurant owners shouldn't have to choose between quality, sustainability, and operational ease",
+          "stakesCostOfInaction": "Staff appearing unprofessional, service disruptions from textile shortages, wasted time on logistics instead of guests, environmental harm from unsustainable practices",
+          "customerSuccessVision": "Restaurant owners who never think about textiles because they simply work, allowing full focus on culinary excellence and guest experience",
+          "transformationPromise": "From textile stress to complete peace of mind, with spotless, sustainable textiles delivered automatically",
+          "customerExternalProblem": "Running out of clean chef's clothing or table linens during service, or spending hours managing textile inventory and laundry logistics",
+          "customerInternalProblem": "Frustration and stress from unreliable suppliers, worry about hygiene standards, guilt about environmental impact of textile waste"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:06:10.525Z",
+        "updatedAt": "2026-04-15T11:10:42.243Z"
+      },
+      {
+        "id": "cmnzy32sg005nb1ms60boktkc",
+        "name": "Core Values",
+        "slug": "core-values",
+        "description": "Fundamental beliefs that guide your brand",
+        "category": "CULTURE",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRANDHOUSE_VALUES",
+        "frameworkData": {
+          "ownValue": {
+            "name": "Zorgeloosheid (Carefreeness)",
+            "description": "The distinctive promise that sets Napking apart—complete peace of mind through proactive, anticipatory service that removes operational burden entirely. This is not just reliability, but the emotional freedom that comes from knowing textiles will never be a concern."
+          },
+          "anchorValue1": {
+            "name": "Betrouwbaarheid (Reliability)",
+            "description": "Consistently delivering spotless textiles on time, every time. This is the foundation of trust with restaurant partners and demonstrated through HACCP compliance, weekend service, and automated inventory management."
+          },
+          "anchorValue2": {
+            "name": "Kwaliteit (Quality)",
+            "description": "Uncompromising standards in textile cleanliness, material selection, and service delivery. Evidenced through premium brand partnerships, extensive auditing, and the 'vlekkeloos' promise."
+          },
+          "valueTension": "The tension between maintaining premium quality/sustainability standards while delivering on the 'zorgeloos' promise of effortless simplicity—ensuring that comprehensive service doesn't become complicated or demanding for the client.",
+          "aspirationValue1": {
+            "name": "Duurzaamheid (Sustainability)",
+            "description": "Leading the industry toward environmental responsibility through certified sustainable textiles, electric delivery, and circular textile management—making eco-friendly choices the default, not a premium."
+          },
+          "aspirationValue2": {
+            "name": "Innovatie (Innovation)",
+            "description": "Continuously improving service delivery through automation, technology, and process optimization to make textile management increasingly effortless for restaurant partners."
+          }
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:06:10.528Z",
+        "updatedAt": "2026-04-15T11:10:42.246Z"
+      },
+      {
+        "id": "cmnzy32sk005pb1ms5wiwjxx2",
+        "name": "Social Relevancy",
+        "slug": "social-relevancy",
+        "description": "Your brand's societal and environmental impact",
+        "category": "ESG",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "ESG",
+        "frameworkData": {
+          "sdgAlignment": [
+            12,
+            13,
+            8
+          ],
+          "activismLevel": "Vocal",
+          "impactNarrative": "Napking demonstrates that environmental responsibility and operational excellence are not trade-offs. By offering GOTS, Oeko-Tex, and Fairtrade certified textiles at standard pricing and operating a 100% electric delivery fleet, we're making sustainability the default choice for Randstad restaurants. Our circular model—cleaning, reusing, and managing textile lifecycles—reduces waste while our efficient logistics minimize carbon footprint.",
+          "impactStatement": "Making sustainable hospitality textiles the accessible standard, not a premium choice, while reducing environmental impact through circular textile management and electric delivery",
+          "keyStakeholders": [
+            "Randstad restaurant community",
+            "Sustainable textile suppliers and certification bodies",
+            "Premium brand partners (Chaud Devant, Le Nouveau Chef)",
+            "Local communities affected by delivery operations",
+            "Hospitality industry sustainability advocates"
+          ],
+          "annualCommitment": "Maintain 100% electric delivery operations, expand certified sustainable textile offerings, and continue making eco-friendly options the default choice at no premium pricing",
+          "activationChannels": [
+            "Product offering (sustainable textiles at standard pricing)",
+            "Operations (100% electric delivery fleet)",
+            "Partnerships (certified sustainable brands)",
+            "Website and service communications",
+            "Industry events and hospitality networks"
+          ],
+          "communicationPrinciples": [
+            "Sustainability is integrated into service, not marketed as a premium add-on",
+            "Environmental benefits are concrete and measurable (electric fleet, certified materials)",
+            "Focus on making sustainable choices easy and accessible for restaurant partners",
+            "Transparency about certifications and environmental standards",
+            "Lead by example rather than preaching"
+          ]
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:06:10.532Z",
+        "updatedAt": "2026-04-15T11:10:42.248Z"
+      },
+      {
+        "id": "cmnzy32s7005hb1msj23zfeof",
+        "name": "Transformative Goals",
+        "slug": "transformative-goals",
+        "description": "Ambitious goals for lasting impact",
+        "category": "STRATEGY",
+        "status": "IN_PROGRESS",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "TRANSFORMATIVE_GOALS",
+        "frameworkData": {
+          "goals": [
+            {
+              "title": "Zero Textile Stress for 1,000 Randstad Restaurants",
+              "timeframe": "3-5 years",
+              "description": "Become the default textile partner for 1,000 restaurants across the Randstad, ensuring none ever experience a textile shortage or quality issue during service",
+              "impactDomain": "PROSPERITY",
+              "theoryOfChange": "By removing textile management burden from restaurant operations, we free up thousands of hours annually for hospitality professionals to focus on guest experience, menu innovation, and business growth—strengthening the entire Randstad restaurant ecosystem",
+              "measurableCommitment": "Achieve 1,000 active restaurant partnerships with 99.5%+ on-time delivery rate and zero critical stockouts"
+            },
+            {
+              "title": "100% Circular Textile Economy in Our Operations",
+              "timeframe": "5-10 years",
+              "description": "Achieve complete circularity in textile management—every item cleaned, reused, repaired, or responsibly recycled with zero textile waste to landfill",
+              "impactDomain": "PLANET",
+              "theoryOfChange": "By demonstrating that premium hospitality textiles can operate in a fully circular model, we prove that sustainability and quality are complementary, inspiring industry-wide adoption of circular practices",
+              "measurableCommitment": "Zero hospitality textile waste to landfill, 100% sustainable material sourcing, measurable reduction in water and energy use per textile cycle"
+            },
+            {
+              "title": "Industry Standard for Sustainable Hospitality Textiles",
+              "timeframe": "5-10 years",
+              "description": "Establish Napking's sustainability standards as the benchmark for the Dutch hospitality textile industry, influencing supplier practices and customer expectations nationwide",
+              "impactDomain": "PLANET",
+              "theoryOfChange": "By making sustainable textiles accessible and demonstrating business viability, we shift market expectations and supplier behavior, creating systemic change beyond our direct operations",
+              "measurableCommitment": "Achieve industry recognition as sustainability leader, influence at least 3 major competitors to adopt similar standards, contribute to industry-wide sustainability guidelines"
+            }
+          ],
+          "mtpNarrative": "Napking envisions a hospitality industry where restaurant owners and staff never waste a moment on textile logistics. By perfecting invisible infrastructure—automated, sustainable, and utterly reliable—we enable the Randstad's culinary talent to channel 100% of their energy into what they love: crafting memorable dining experiences.",
+          "brandIntegration": {
+            "positioningLink": "The 'zorgeloos' promise extends beyond operational convenience to environmental peace of mind—restaurants can trust that their textile partner is handling sustainability responsibly",
+            "campaignDirections": [
+              "Showcase time saved and redirected to guest experience",
+              "Highlight sustainability achievements with concrete metrics",
+              "Feature restaurant partner success stories enabled by textile freedom"
+            ],
+            "internalActivation": "Embed transformative goals into service KPIs, employee training on sustainability impact, recognition programs for circular economy innovations, regular progress reporting to team and partners",
+            "communicationThemes": [
+              "Sustainability made simple and accessible",
+              "Operational freedom through reliable infrastructure",
+              "Quality without compromise",
+              "Circular economy in action"
+            ]
+          },
+          "massiveTransformativePurpose": "To liberate hospitality professionals from operational burdens so they can focus entirely on creating exceptional guest experiences"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:06:10.519Z",
+        "updatedAt": "2026-04-15T11:10:42.250Z"
+      }
+    ],
+    "brandAssetVersion": [],
+    "brandAssetResearchMethod": [
+      {
+        "id": "cmnzy32r70056b1msf9rv69xy",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnzy32r20055b1ms0y5cpv6h",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-15T11:06:10.478Z",
+        "updatedAt": "2026-04-15T11:06:10.478Z"
+      },
+      {
+        "id": "cmnzy32rl0058b1mstr1sml2y",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnzy32rj0057b1msxr3znym9",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-15T11:06:10.495Z",
+        "updatedAt": "2026-04-15T11:06:10.495Z"
+      },
+      {
+        "id": "cmnzy32rr005ab1msygin11fk",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnzy32rp0059b1mshygqo904",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-15T11:06:10.501Z",
+        "updatedAt": "2026-04-15T11:06:10.501Z"
+      },
+      {
+        "id": "cmnzy32ry005cb1msapazoejz",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnzy32rx005bb1ms7lkohm0n",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-15T11:06:10.509Z",
+        "updatedAt": "2026-04-15T11:06:10.509Z"
+      },
+      {
+        "id": "cmnzy32s1005eb1mszqhe68qg",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnzy32s0005db1msdszy4jrv",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-15T11:06:10.512Z",
+        "updatedAt": "2026-04-15T11:06:10.512Z"
+      },
+      {
+        "id": "cmnzy32s5005gb1ms8dk32gkx",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnzy32s4005fb1msvr1n607w",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-15T11:06:10.516Z",
+        "updatedAt": "2026-04-15T11:06:10.516Z"
+      },
+      {
+        "id": "cmnzy32s8005ib1msdj00fr4r",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnzy32s7005hb1msj23zfeof",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-15T11:06:10.519Z",
+        "updatedAt": "2026-04-15T11:06:10.519Z"
+      },
+      {
+        "id": "cmnzy32sb005kb1msg3p4belf",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnzy32sa005jb1ms7ergbzwt",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-15T11:06:10.522Z",
+        "updatedAt": "2026-04-15T11:06:10.522Z"
+      },
+      {
+        "id": "cmnzy32se005mb1msj5zzrjx7",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnzy32sd005lb1ms77e2m6kk",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-15T11:06:10.525Z",
+        "updatedAt": "2026-04-15T11:06:10.525Z"
+      },
+      {
+        "id": "cmnzy32sh005ob1msbo5lw8ki",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnzy32sg005nb1ms60boktkc",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-15T11:06:10.528Z",
+        "updatedAt": "2026-04-15T11:06:10.528Z"
+      },
+      {
+        "id": "cmnzy32sk005qb1mss5k1enji",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmnzy32sk005pb1ms5wiwjxx2",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-04-15T11:06:10.532Z",
+        "updatedAt": "2026-04-15T11:06:10.532Z"
+      }
+    ],
+    "brand": [
+      {
+        "id": "cmr4z54er000c38c9dm78btay",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-07-03T13:33:43.443Z",
+        "updatedAt": "2026-07-03T13:33:43.443Z"
+      }
+    ],
+    "brandLocaleProfile": [
+      {
+        "id": "cmr4z54et000d38c9j6h2rq5u",
+        "brandId": "cmr4z54er000c38c9dm78btay",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "locale": "nl-NL",
+        "isDefault": true,
+        "voiceOverrides": null,
+        "localizedAssets": null,
+        "createdAt": "2026-07-03T13:33:43.445Z",
+        "updatedAt": "2026-07-03T13:33:43.445Z"
+      }
+    ],
+    "brandVoiceguide": [
+      {
+        "id": "cmp2sjess000ecfmswxdbp5m9",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "voiceDescription": "Napking speaks with practical Dutch directness, using concrete sensory language (vlekkeloos, kraakhelder, smetteloos) to make cleanliness tangible. The voice is reassuring without being salesy—focused on removing worry ('geen omkijken naar', 'zonder dat je er zelf achteraan hoeft') rather than hyping benefits. Sentences are short and action-oriented. The brand positions itself as a capable partner who handles the unglamorous work so restaurants can focus on their craft. Sustainability is stated as fact, not virtue-signaled. The tone is grounded, competent, and quietly confident.",
+        "toneDimensions": {
+          "formalCasual": 5,
+          "seriousFunny": 3,
+          "respectfulIrreverent": 3,
+          "matterOfFactEnthusiastic": 3
+        },
+        "contentGuidelines": [
+          "OBSERVED: Lead with outcome-focused headlines that emphasize 'vlekkeloos' (spotless) quality and reliability — the brand's core promise.",
+          "OBSERVED: Use direct, second-person address ('jouw restaurant', 'je betaalt alleen') to create a personal, partnership tone.",
+          "OBSERVED: Structure content around customer pain points ('Heb ik wel genoeg servetten op voorraad?') before presenting solutions.",
+          "OBSERVED: Emphasize flexibility and convenience ('Pas je abonnement in drukke en rustige periodes aan') as key differentiators.",
+          "RECOMMENDED: Open service descriptions with the customer benefit first, technical details second — maintain the 'what's in it for you' hierarchy throughout.",
+          "RECOMMENDED: Use short, scannable sections with clear subheadings that mirror customer questions or concerns.",
+          "RECOMMENDED: Include specific proof points (e.g., '300 restaurants', '180 jaar ervaring', 'HACCP-richtlijnen') to build credibility without being boastful."
+        ],
+        "writingGuidelines": [
+          "OBSERVED: Sentence structure alternates between short, punchy statements (8-12 words) and slightly longer explanatory sentences (15-20 words) for rhythm.",
+          "OBSERVED: Active voice dominates ('Wij reinigen', 'We leveren', 'Wij regelen') to convey agency and reliability.",
+          "OBSERVED: Questions are used strategically to voice customer concerns ('Heb ik wel genoeg servetten op voorraad?') before answering them.",
+          "OBSERVED: Repetition of 'vlekkeloos' and 'kwaliteit' reinforces brand positioning without overuse — appears 8-10 times across the page.",
+          "OBSERVED: Technical terms (HACCP, GOTS, Oeko-Tex) are mentioned but not explained in detail — assumes B2B audience familiarity.",
+          "RECOMMENDED: Maintain a 70/30 split between benefit-driven language and feature descriptions — lead with outcomes.",
+          "RECOMMENDED: Use parallel structure in lists ('Van servetten tot kokskleding. Van theedoeken tot tafellakens.') for memorability and rhythm.",
+          "RECOMMENDED: Keep paragraphs to 3-4 sentences maximum for digital readability — current structure works well."
+        ],
+        "vocabularyDo": [
+          "vlekkeloos",
+          "kwaliteitstextiel",
+          "zorgeloze reiniging",
+          "flexibele partner",
+          "scherpe tarieven",
+          "geen omkijken naar",
+          "op het juiste moment",
+          "Wij regelen dit voor je",
+          "altijd genoeg op de plank",
+          "bewust duurzaam",
+          "kraakhelder",
+          "onberispelijk"
+        ],
+        "vocabularyDont": [
+          "revolutionair",
+          "game-changing",
+          "disruptive",
+          "exclusief",
+          "elite",
+          "luxe (as primary positioning)",
+          "cutting-edge",
+          "next-level",
+          "emoji",
+          "!!!"
+        ],
+        "voiceSample": "Napking reinigt, verhuurt, verkoopt en beheert jouw horecatextiel. Van servetten tot kokskleding. Van theedoeken tot tafellakens. Wil je altijd zeker zijn van vlekkeloos kwaliteitstextiel voor jouw restaurant? Schakel ons in voor zorgeloze reiniging en beheer. Ruim 300 restaurants maken gebruik van onze service.",
+        "writingSamples": [
+          "Heb ik wel genoeg servetten op voorraad? Is er voldoende kokskleding? Bij Napking heb je hier geen omkijken naar. Wij zijn dé flexibele partner voor horecatextiel in de Randstad. Wij doen het textielbeheer en de reiniging voor meer dan 280 restaurants in de regio. Bij ons kun je rekenen op vlekkeloze servetten, kraakheldere tafellakens, schone koksjassen, frisse theedoeken en onberispelijke kleding voor de bediening. Wij leveren je het juiste textiel op de juiste plek en op het juiste moment.",
+          "Vlekkeloos (samen)werken – dat is ons streven. Sinds 2010 bieden wij smetteloos linnen voor restaurants in de Randstad en daarbuiten. We reinigen, verhuren, beheren en verkopen horecatextiel voor restaurants die hun focus liever leggen op waar zij goed in zijn: gerechten bereiden en gasten een mooie beleving bezorgen. Ondertussen doen wij waar wij in uitblinken: jou vlekkeloos textiel leveren. Precies op het moment dat jij het nodig hebt.",
+          "Nee. Wij werken met een uniek abonnementsysteem: wat je als vuile was inlevert, sturen wij een week later schoon retour. Je hoeft dus geen bestellingen te plaatsen. Met dit systeem blijft je voorraad goed op peil. Heb je tijdelijk meer of minder nodig? Geen probleem, dan passen we het abonnement snel aan.",
+          "Uniek aan Napking is dat wij onze servetten van duurzamer katoen (Fairtrade, GOTS of Oeko-Tex) leveren tegen een scherpe prijs. Zo hebben we servetten van biologisch geteeld katoen. De boeren krijgen hiervoor uiteraard een eerlijke prijs. Toch betaal je er bij ons niet meer voor dan voor niet-ecologisch textiel. We dragen het prijsverschil voor eco-textiel zelf. Zo zetten wij ons samen met restaurants in voor de wereld van morgen."
+        ],
+        "wordsWeUse": [
+          "vlekkeloos",
+          "smetteloos",
+          "kraakhelder",
+          "onberispelijk",
+          "omkijken",
+          "scherp",
+          "flexibel",
+          "uitblinken",
+          "regelen",
+          "beheren",
+          "afleveren",
+          "retour",
+          "peil",
+          "plank",
+          "poule",
+          "streven",
+          "bewust",
+          "uiteraard",
+          "vierkant"
+        ],
+        "wordsWeAvoid": [
+          "revolutionair",
+          "innovatief",
+          "cutting-edge",
+          "game-changer",
+          "premium",
+          "luxe",
+          "exclusief",
+          "passie",
+          "excellentie",
+          "toonaangevend",
+          "state-of-the-art",
+          "next-level",
+          "ultiem",
+          "ongeëvenaard"
+        ],
+        "channelTones": {
+          "ads": {
+            "axisShift": null,
+            "description": "Lead with the worry-removal promise ('geen omkijken naar') rather than product features. Concrete sensory words (vlekkeloos, kraakhelder) do the persuasion work. Likely ends with a simple, non-pushy CTA like 'Bel of app ons' rather than 'Ontdek nu!' or 'Vraag vandaag nog aan!'."
+          },
+          "email": {
+            "axisShift": null,
+            "description": "Transactional and clear. Likely mirrors the FAQ structure: question, direct answer, next step. Uses 'je' consistently. Avoids pleasantries beyond 'graag' and 'uiteraard'. Focuses on logistics (delivery times, invoice details) with the same no-fuss clarity as the website."
+          },
+          "video": {
+            "axisShift": null,
+            "description": "Would likely feature the physical process—folding, stacking, delivering—with minimal voiceover. Any narration would be factual ('We leveren twee keer per week') rather than emotional. The visuals (crisp linens, organized shelves) carry the brand promise more than words."
+          },
+          "website": {
+            "axisShift": null,
+            "description": "Primary voice. Structured in short paragraphs with clear headings. Uses rhetorical questions to surface customer worries, then immediately answers them. Balances service details (HACCP, NEN-ISO) with reassurance. Sustainability is integrated as operational fact, not marketing angle."
+          },
+          "socialMedia": {
+            "axisShift": null,
+            "description": "Would maintain the practical tone but compress into single-sentence reassurances. Likely uses concrete imagery (a stack of folded napkins, a delivery van) rather than abstract concepts. No emoji or forced enthusiasm—just straightforward updates and availability."
+          }
+        },
+        "antiPatterns": [
+          "Ontdek de magie van",
+          "Jouw ultieme partner in",
+          "Wij gaan voor excellentie",
+          "Til jouw restaurant naar een hoger niveau",
+          "De nummer 1 keuze voor",
+          "Onze passie is jouw succes",
+          "Ervaar het verschil",
+          "Laat ons jouw droom waarmaken",
+          "Exclusieve service op maat",
+          "Innovatieve oplossingen die werken",
+          "Samen bouwen we aan de toekomst",
+          "Jouw vertrouwde partner sinds jaar en dag"
+        ],
+        "examplePhrases": [
+          {
+            "text": "Wij leveren je het juiste textiel op de juiste plek en op het juiste moment.",
+            "type": "do"
+          },
+          {
+            "text": "Zonder dat je er zelf omkijken naar hebt! Wij regelen dit voor je.",
+            "type": "do"
+          },
+          {
+            "text": "Je betaalt bij ons alleen voor wat je gebruikt.",
+            "type": "do"
+          },
+          {
+            "text": "Onze belofte? Wij leveren mooi kwaliteitstextiel tegen scherpe tarieven.",
+            "type": "do"
+          },
+          {
+            "text": "Revolutioneer je restaurant met onze game-changing textile solutions!",
+            "type": "dont"
+          },
+          {
+            "text": "Exclusieve premium linens voor de elite horeca.",
+            "type": "dont"
+          },
+          {
+            "text": "Wow! 😍 Check out our amazing napkins!",
+            "type": "dont"
+          }
+        ],
+        "centroidComputedAt": null,
+        "contentLocale": "nl-NL",
+        "voiceDnaSavedForAi": true,
+        "vocabularySavedForAi": true,
+        "channelTonesSavedForAi": true,
+        "antiPatternsSavedForAi": true,
+        "guidelinesSavedForAi": true,
+        "examplePhrasesSavedForAi": true,
+        "referencesSavedForAi": false,
+        "source": "analyzer",
+        "publishedAt": null,
+        "createdAt": "2026-05-12T15:33:55.756Z",
+        "updatedAt": "2026-06-05T20:32:04.323Z",
+        "createdById": null
+      }
+    ],
+    "brandVoice": [
+      {
+        "id": "cmqrv054l001ci9msl7m5vv1q",
+        "name": "test",
+        "voiceGender": null,
+        "voiceAge": null,
+        "voiceTone": null,
+        "voiceAccent": null,
+        "speakingPace": null,
+        "voicePrompt": null,
+        "ttsProvider": "elevenlabs",
+        "ttsVoiceId": "iP95p4xoKVk53GoZ742B",
+        "ttsSettings": null,
+        "sampleAudioUrl": "https://pub-a72c2a76f55a455cbc44a547e597c130.r2.dev/uploads/media/cmnzy32qq0054b1msasa6pz9b/2026/06/brand-voice-sample-cmqrv054l001ci9msl7m5vv1q-1782292649429-1782292649429.mp3",
+        "isDefault": false,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-06-24T09:16:52.341Z",
+        "updatedAt": "2026-06-24T09:17:36.902Z"
+      }
+    ],
+    "brandStyleguide": [
+      {
+        "id": "cmq1dnnr80000omms19dqpgyv",
+        "status": "COMPLETE",
+        "sourceType": "URL",
+        "sourceUrl": "https://napking.nl/",
+        "sourceFileName": null,
+        "analysisJobId": "job_9c6b5da4-8858-493f-aa9c-d1dc941f6447",
+        "analysisStatus": "COMPLETE",
+        "errorMessage": null,
+        "detectedFrameworks": [
+          "component-screenshots",
+          "component-vision",
+          "visual-ai-analysis",
+          "logo-vision",
+          "multi-page"
+        ],
+        "layoutStyle": "PLAYFUL",
+        "layoutStyleInferred": true,
+        "buttonProfile": [
+          {
+            "role": "primary",
+            "color": "inherit",
+            "border": null,
+            "fontSize": "100%",
+            "paddingX": "0",
+            "paddingY": "0",
+            "selector": "button",
+            "background": "#fff0",
+            "fontFamily": "inherit",
+            "fontWeight": "inherit",
+            "hoverColor": null,
+            "transition": null,
+            "hoverBorder": null,
+            "borderRadius": null,
+            "letterSpacing": "inherit",
+            "textTransform": "none",
+            "hoverTransform": null,
+            "hoverBackground": null
+          }
+        ],
+        "spacingProfile": {
+          "card": {
+            "samples": [],
+            "typical": null
+          },
+          "input": {
+            "samples": [],
+            "typical": null
+          },
+          "button": {
+            "samples": [
+              {
+                "paddingX": "0",
+                "paddingY": "0"
+              },
+              {
+                "paddingX": "calc(1.333em + 2px)",
+                "paddingY": "calc(0.667em + 2px)"
+              }
+            ],
+            "typical": null
+          },
+          "section": {
+            "samples": [],
+            "typical": null
+          },
+          "container": {
+            "samples": [
+              {
+                "paddingX": "1.4rem",
+                "paddingY": null
+              },
+              {
+                "paddingX": "0",
+                "paddingY": null
+              }
+            ],
+            "typical": {
+              "paddingX": "1.4rem",
+              "paddingY": null
+            }
+          }
+        },
+        "elevationProfile": {
+          "samples": [],
+          "dominantCategory": "none"
+        },
+        "radiusProfile": {
+          "card": [],
+          "input": [],
+          "button": [],
+          "section": [],
+          "cardTypical": null,
+          "inputTypical": null,
+          "buttonTypical": null
+        },
+        "motionProfile": {
+          "samples": [],
+          "dominantEasing": null,
+          "dominantCategory": "comfortable",
+          "averageDurationMs": null
+        },
+        "typographyProfile": {
+          "body": {
+            "color": null,
+            "fontSize": null,
+            "fontFamily": "effra",
+            "fontWeight": null,
+            "lineHeight": "inherit",
+            "letterSpacing": null,
+            "textTransform": null,
+            "sourceSelectors": [
+              "body",
+              "html",
+              "p",
+              ".\\[\\&_p\\]\\:mt-0 p",
+              "html :where(.has-border-color)",
+              "html :where([style*=border-color])",
+              "html :where([style*=border-top-color])",
+              "html :where([style*=border-right-color])",
+              "html :where([style*=border-bottom-color])",
+              "html :where([style*=border-left-color])",
+              "html :where([style*=border-width])",
+              "html :where([style*=border-top-width])",
+              "html :where([style*=border-right-width])",
+              "html :where([style*=border-bottom-width])",
+              "html :where([style*=border-left-width])",
+              "html :where(img[class*=wp-image-])",
+              "html :where(.is-position-sticky)",
+              "body .is-layout-flex",
+              "body .is-layout-grid"
+            ]
+          },
+          "button": {
+            "color": "inherit",
+            "fontSize": "100%",
+            "fontFamily": null,
+            "fontWeight": "inherit",
+            "lineHeight": "inherit",
+            "letterSpacing": "inherit",
+            "textTransform": "none",
+            "sourceSelectors": [
+              "button",
+              ".wp-block-button__link)"
+            ]
+          },
+          "display": {
+            "color": null,
+            "fontSize": "inherit",
+            "fontFamily": null,
+            "fontWeight": "inherit",
+            "lineHeight": null,
+            "letterSpacing": null,
+            "textTransform": null,
+            "sourceSelectors": [
+              "h1"
+            ]
+          },
+          "heading": {
+            "color": null,
+            "fontSize": null,
+            "fontFamily": null,
+            "fontWeight": "700",
+            "lineHeight": null,
+            "letterSpacing": null,
+            "textTransform": null,
+            "sourceSelectors": [
+              "h2",
+              "h3"
+            ]
+          },
+          "subheading": {
+            "color": null,
+            "fontSize": null,
+            "fontFamily": null,
+            "fontWeight": "700",
+            "lineHeight": null,
+            "letterSpacing": null,
+            "textTransform": null,
+            "sourceSelectors": [
+              "h4"
+            ]
+          }
+        },
+        "buttonProfileOverride": false,
+        "spacingProfileOverride": false,
+        "elevationProfileOverride": false,
+        "radiusProfileOverride": false,
+        "motionProfileOverride": false,
+        "typographyProfileOverride": false,
+        "designPhilosophy": "Professional hospitality service brand with vibrant blue primary color, generous 24px rounded corners throughout, and clean photography of real restaurant environments — approachable yet trustworthy.",
+        "fixtureSamples": {
+          "ctaLabels": [
+            "Neem contact op",
+            "Over Napking",
+            "Bekijk ons assortiment",
+            "Vraag naar de opties",
+            "Bel of app ons"
+          ],
+          "headlines": [
+            "Voor vlekkeloos horecatextiel en kokskleding",
+            "24/7 voldoende textiel voor jouw restaurant",
+            "Wij leveren het vlekkeloos af",
+            "Van kokskleding tot tafellinnen",
+            "Flexibel bij verhuur"
+          ],
+          "featureTitles": [
+            "Wasserij & reiniging",
+            "Verhuur & verkoop",
+            "Voorraad-beheer",
+            "Weekendservice",
+            "Persoonlijk advies"
+          ],
+          "testimonialQuotes": []
+        },
+        "archetype": "CARETAKER",
+        "archetypeConfidence": "high",
+        "archetypeReasoning": "Napking's volledige brand-DNA draait om service, bescherming en zorgen voor anderen—kernwaarden van het Caretaker-archetype. De purpose ('free hospitality professionals from textile worries'), essence ('Carefree Excellence'), kernwaarde 'Zorgeloosheid', en Story-rol als 'Guide' wijzen unaniem naar een merk dat bestaat om operationele lasten weg te nemen en professionals te beschermen tegen stress. Concrete manifestaties zoals HACCP-compliance, 24/7 inventory management, en weekend service tonen nurture en anticiperende zorg. De legacy-classificatie als 'Caregiver—Service Provider' bevestigt dit, en referentiemerken (Mollie, Coolblue, Volvo) zijn eveneens Caretaker-archetypes.",
+        "logoGuidelines": [
+          "The logo consists of the wordmark 'napking' with the letter 'a' in Ocean Blue (#008ACF) and remaining letters in Deep Charcoal (#1A171B)",
+          "Include the tagline 'horecatextiel wasserij & verhuur' beneath the wordmark in a smaller, lighter weight",
+          "Maintain clear spacing around the logo, especially between the wordmark and tagline",
+          "The logo should be displayed on light backgrounds (white or Soft White #EEEEEE) for optimal contrast",
+          "Preserve the distinctive lowercase styling of the wordmark",
+          "The blue 'a' is a key brand identifier and should always be rendered in Ocean Blue (#008ACF)"
+        ],
+        "logoDonts": [
+          "Don't change the color of the 'a' character — it must remain Ocean Blue (#008ACF)",
+          "Don't use the logo on dark backgrounds without ensuring proper contrast",
+          "Don't separate the wordmark from the tagline in primary brand applications",
+          "Don't alter the letter spacing or font weight of the wordmark",
+          "Don't use gradients or effects on the logo",
+          "Don't display the logo smaller than ensures legibility of the tagline text"
+        ],
+        "logoSavedForAi": false,
+        "colorDonts": [
+          "Don't use Ocean Blue (#008ACF) for large background areas — reserve it for CTAs and accent elements",
+          "Don't combine multiple bright accent colors in the same component — the palette is intentionally restrained",
+          "Don't use Deep Charcoal (#1A171B) and Near Black (#200707) interchangeably — stick to Deep Charcoal for consistency",
+          "Don't apply WhatsApp Green (#25D366) to non-WhatsApp elements — it's reserved for that specific social integration",
+          "Don't use low-contrast gray combinations for text — ensure sufficient contrast with WCAG AA standards",
+          "Don't introduce additional bright colors — the brand identity relies on the Ocean Blue accent against neutral grays"
+        ],
+        "colorsSavedForAi": false,
+        "semanticColors": null,
+        "primaryFontName": "effra",
+        "primaryFontUrl": null,
+        "additionalFonts": [],
+        "typeScale": [
+          {
+            "name": "Hero Heading",
+            "size": "2.089rem",
+            "color": "#1A171B",
+            "level": "H1",
+            "weight": null,
+            "lineHeight": null,
+            "letterSpacing": null
+          },
+          {
+            "name": "Section Heading",
+            "size": "2.25rem",
+            "color": "#1A171B",
+            "level": "H2",
+            "weight": null,
+            "lineHeight": null,
+            "letterSpacing": null
+          },
+          {
+            "name": "Subsection Heading",
+            "size": "2rem",
+            "color": "#1A171B",
+            "level": "H3",
+            "weight": null,
+            "lineHeight": null,
+            "letterSpacing": null
+          },
+          {
+            "name": "Body Text",
+            "size": "1rem",
+            "color": "#1A171B",
+            "level": "Body",
+            "weight": null,
+            "lineHeight": null,
+            "letterSpacing": null
+          },
+          {
+            "name": "Large Body",
+            "size": "1.1rem",
+            "color": "#1A171B",
+            "level": "Body Large",
+            "weight": null,
+            "lineHeight": null,
+            "letterSpacing": null
+          },
+          {
+            "name": "Small Text",
+            "size": "0.813rem",
+            "color": "#313131",
+            "level": "Small",
+            "weight": null,
+            "lineHeight": null,
+            "letterSpacing": null
+          }
+        ],
+        "typographySavedForAi": false,
+        "photographyStyle": {
+          "mood": "OBSERVED: Clean, professional, and approachable. The hero image shows a confident chef in a real kitchen environment — authentic rather than overly styled. Natural lighting, neutral tones, organized workspace conveys reliability and professionalism.",
+          "subjects": "RECOMMENDED: Real restaurant staff in working environments (chefs in kitchens, servers in dining rooms), close-ups of pristine textiles (folded napkins, pressed chef jackets), behind-the-scenes laundry operations showing care and process, hands interacting with textiles to show quality and texture.",
+          "composition": "OBSERVED: Subject centered with arms crossed in confident pose, shallow depth of field with kitchen equipment visible but softly blurred in background. Clean, uncluttered framing. RECOMMENDED: Use environmental portraits that show context without distraction, maintain generous negative space for text overlay, favor horizontal compositions for hero sections."
+        },
+        "photographyGuidelines": [
+          "OBSERVED: Feature real people (staff, chefs) in authentic work settings rather than models in staged scenarios — builds trust and relatability.",
+          "OBSERVED: Use neutral, muted color palettes (whites, grays, natural wood tones) that let the textiles and brand blue stand out.",
+          "OBSERVED: Show organized, clean environments that reinforce the 'vlekkeloos' (spotless) brand promise visually.",
+          "RECOMMENDED: Capture textiles in use (napkins on tables, chefs wearing clean uniforms) rather than only product shots — demonstrates real-world application.",
+          "RECOMMENDED: Include detail shots showing textile quality (fabric texture, crisp folds, embroidery) to support premium positioning.",
+          "RECOMMENDED: Photograph diverse restaurant types (fine dining, casual, cafe) to show service breadth without losing cohesion.",
+          "RECOMMENDED: Use natural or soft artificial lighting — avoid harsh shadows or overly dramatic lighting that feels inconsistent with the straightforward brand tone."
+        ],
+        "illustrationGuidelines": [
+          "RECOMMENDED: Use simple line icons for service features (washing machine, delivery truck, calendar) in brand blue — functional rather than decorative.",
+          "RECOMMENDED: If illustrating processes (textile lifecycle, delivery schedule), use clean infographic style with minimal embellishment.",
+          "RECOMMENDED: Avoid playful or whimsical illustration styles — maintain the professional, reliable tone through visual choices.",
+          "RECOMMENDED: Use illustration sparingly as supporting elements, not primary storytelling — photography should dominate to maintain authenticity."
+        ],
+        "imageryDonts": [
+          "Avoid overly styled, fashion-editorial photography — this is functional B2B service, not luxury lifestyle branding.",
+          "Don't use stock photos of generic 'happy restaurant workers' with forced smiles — authenticity is key to trust.",
+          "Avoid cluttered or chaotic kitchen/restaurant scenes — visual cleanliness reinforces service quality.",
+          "Don't show stained, wrinkled, or imperfect textiles even as 'before' examples — always lead with the spotless result.",
+          "Avoid dramatic, high-contrast black-and-white photography — maintain the approachable, warm tone through color.",
+          "Don't use abstract or conceptual imagery that requires interpretation — be literal and clear about what Napking does."
+        ],
+        "imagerySavedForAi": false,
+        "brandImages": null,
+        "graphicElements": {
+          "usageNotes": "The brand uses generous rounded corners (24px) consistently across buttons and containers. Bright blue (#008ACF) serves as the primary interactive color, with green (#25D366) for WhatsApp integration. Photography features real restaurant/hospitality environments with professional staff.",
+          "brandShapes": [
+            "Rounded rectangles with 24px corner radius",
+            "Circular icon containers",
+            "Soft-edged photo frames"
+          ],
+          "visualDevices": [
+            "Icon+text pairings in circular containers",
+            "Card-based content layouts",
+            "Hero image with text overlay composition",
+            "Language switcher flags in header"
+          ],
+          "decorativeElements": [
+            "Vibrant gradient overlays on interactive elements",
+            "Solid color accent buttons (blue, green)",
+            "Clean white cards on light blue backgrounds"
+          ]
+        },
+        "graphicElementsDonts": [
+          "Avoid sharp corners or angular geometric shapes that conflict with the 24px rounded aesthetic",
+          "Don't use heavy drop shadows or 3D effects; keep shadows subtle or absent",
+          "Avoid mixing gradient buttons with flat buttons in the same context"
+        ],
+        "patternsTextures": {
+          "patterns": [
+            "Solid color backgrounds (light blue #EEEEEE for hero sections)",
+            "Clean white surfaces for content cards"
+          ],
+          "textures": [
+            "Smooth gradients at 135deg angle",
+            "No visible textures or grain; flat color approach"
+          ],
+          "usageNotes": "The brand favors clean, flat color fields over textured backgrounds. Light blue-gray (#EEEEEE) creates soft contrast with white content areas. Gradients are reserved for interactive elements and accent features, not backgrounds.",
+          "backgrounds": [
+            "Light neutral backgrounds (#EEEEEE, #DDDDDD)",
+            "White content areas for readability",
+            "Gradient-filled interactive elements"
+          ]
+        },
+        "iconographyStyle": {
+          "style": "fill",
+          "sizing": "16/20/24/32px",
+          "colorUsage": "White icons on solid color circular backgrounds (#008ACF for primary actions, #25D366 for WhatsApp, varying gradient fills for decorative icons)",
+          "usageNotes": "Icons appear as filled shapes within circular containers. The circular containers use the 24px border-radius consistently. Icon colors are white, placed on vibrant solid or gradient backgrounds for high contrast.",
+          "cornerRadius": "24px",
+          "strokeWeight": "0px"
+        },
+        "iconographyDonts": [
+          "Don't use outlined/stroke-based icons; maintain filled icon style",
+          "Avoid placing icons directly on backgrounds without circular containers",
+          "Don't use icon colors other than white within the circular containers"
+        ],
+        "gradientsEffects": [
+          {
+            "name": "Blue Gradient",
+            "type": "linear",
+            "angle": "135deg",
+            "usage": "Observed in CSS — decorative icon backgrounds",
+            "colors": [
+              "#0693E3",
+              "#0693E3"
+            ]
+          },
+          {
+            "name": "Teal Gradient",
+            "type": "linear",
+            "angle": "135deg",
+            "usage": "Observed in CSS — decorative icon backgrounds",
+            "colors": [
+              "#7ADCB4",
+              "#7ADCB4"
+            ]
+          },
+          {
+            "name": "Orange Gradient",
+            "type": "linear",
+            "angle": "135deg",
+            "usage": "Observed in CSS — decorative icon backgrounds",
+            "colors": [
+              "#FF6900",
+              "#FF6900"
+            ]
+          },
+          {
+            "name": "Yellow Gradient",
+            "type": "linear",
+            "angle": "135deg",
+            "usage": "Observed in CSS — decorative icon backgrounds",
+            "colors": [
+              "#FCB900",
+              "#FCB900"
+            ]
+          }
+        ],
+        "layoutPrinciples": {
+          "gridSystem": "Responsive layout with centered content containers, max-width constraint for readability",
+          "usageNotes": "The layout emphasizes clean separation between sections using background color changes rather than borders. The 8px base unit scales to 24px for most interactive elements and content padding. Vertical rhythm follows 24px increments.",
+          "spacingScale": "8px base unit: 8, 16, 20, 24, 32, 48px",
+          "compositionRules": [
+            "Hero sections use light blue backgrounds with 24px padding on interactive elements",
+            "Buttons maintain 24px border-radius with internal padding of 16-24px",
+            "Icon containers are circular with consistent sizing and spacing",
+            "Navigation uses horizontal spacing of 16-24px between items"
+          ],
+          "whitespacePhilosophy": "Generous spacing between sections and around content blocks; 24px is the primary spacing unit for padding and gaps"
+        },
+        "designLanguageSavedForAi": false,
+        "visualLanguage": {
+          "line": {
+            "borders": "none",
+            "dividers": "none",
+            "decorativeLines": false
+          },
+          "depth": {
+            "overlapping": false,
+            "glassmorphism": false,
+            "dimensionality": "subtle-layers"
+          },
+          "shape": {
+            "primary": "geometric",
+            "symmetry": "strict",
+            "angularity": 3
+          },
+          "space": {
+            "density": "spacious",
+            "sectionSpacing": "generous",
+            "whitespaceRatio": 0.7
+          },
+          "shadow": {
+            "color": "rgba(0,0,0,0.2)",
+            "style": "subtle",
+            "elevation": "low"
+          },
+          "weight": {
+            "overall": "light",
+            "textDensity": "minimal",
+            "ornamentLevel": "none"
+          },
+          "summary": "Napking employs a clean, modern visual language characterized by soft 24px rounded corners throughout, creating an approachable yet professional aesthetic. The design relies on generous whitespace, alternating background colors, and prominent gradient usage rather than borders or heavy shadows to define sections. The vibrant purple accent color (#7A00DF) punctuates an otherwise neutral palette, with subtle elevation through light shadows maintaining a flat-friendly, contemporary feel.",
+          "version": 1,
+          "sourceUrl": "https://napking.nl/",
+          "analyzedAt": "2026-06-05T20:31:47.414Z",
+          "components": {
+            "cardStyle": "Borderless containers with 24px rounded corners, subtle shadow (0 2px 8px rgba(0,0,0,0.2)), white or light backgrounds, generous internal padding (24px+)",
+            "inputStyle": "Clean minimal inputs with 24px rounded corners, likely subtle borders or background differentiation, consistent with overall soft geometric language",
+            "buttonShape": "Rounded rectangles with 24px radius, solid color fills, no borders, medium padding for comfortable touch targets",
+            "spacingSystem": "8px base unit scaling to 24px increments for padding, margins, and vertical rhythm; generous section spacing creates breathing room"
+          },
+          "cornerRadius": {
+            "dominant": "rounded",
+            "radiusPx": 24,
+            "consistency": "uniform"
+          },
+          "promptFragment": "Use 24px border-radius on all interactive elements, cards, and containers for consistent soft rounded corners. Apply subtle shadows: 0 2px 8px rgba(0,0,0,0.2) for low elevation on cards and components. No borders anywhere—use background color changes and gradients to separate sections instead. Spacing follows 8px base grid: use 24px for component padding, 48px for section spacing, 16px for tight element gaps. Buttons are rounded rectangles (24px radius) with solid #7A00DF purple fill and white text. Backgrounds alternate between pure white and light neutral grays with gradient overlays for visual interest. Maintain generous whitespace—aim for 70% empty space ratio. Typography uses Effra font family, clean and minimal text density. No decorative lines, no ornamental elements. Flat-friendly design with subtle layering only. Purple accent color reserved for CTAs and key interactive moments only. Photography should be clean, professional, natural lighting, authentic environments. Strict geometric symmetry in layouts.",
+          "colorApplication": {
+            "accentUsage": "Purple (#7A00DF) used sparingly for CTAs and key interactive elements, maintaining high contrast against neutral backgrounds",
+            "buttonStyle": "Solid fills with vibrant purple (#7A00DF) primary color, white text, 24px border-radius for soft rounded appearance",
+            "gradientPresence": "prominent",
+            "backgroundApproach": "Alternating sections with white and light neutral backgrounds, extensive use of gradients (31 detected) for visual interest and depth without borders"
+          },
+          "heroScreenshotUrl": "https://pub-a72c2a76f55a455cbc44a547e597c130.r2.dev/uploads/media/cmnzy32qq0054b1msasa6pz9b/2026/06/brandstyle-hero-cmq1dnnr80000omms19dqpgyv-1780691524356.png"
+        },
+        "visualLanguageSavedForAi": false,
+        "spacingScale": {
+          "tokens": [
+            {
+              "name": "xs",
+              "value": 2
+            },
+            {
+              "name": "sm",
+              "value": 4
+            },
+            {
+              "name": "md",
+              "value": 7
+            },
+            {
+              "name": "lg",
+              "value": 8
+            },
+            {
+              "name": "xl",
+              "value": 12
+            },
+            {
+              "name": "2xl",
+              "value": 16
+            }
+          ],
+          "gridBase": 8
+        },
+        "cornerRadii": {
+          "tokens": [
+            {
+              "name": "sm",
+              "value": 2
+            },
+            {
+              "name": "md",
+              "value": 4
+            },
+            {
+              "name": "lg",
+              "value": 8
+            }
+          ]
+        },
+        "shadowSystem": {
+          "tokens": [
+            {
+              "name": "subtle",
+              "value": "none}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button",
+              "intensity": "subtle"
+            },
+            {
+              "name": "default",
+              "value": "var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-black\\/20{--tw-shadow-color:rgba(0,0,0,.2)",
+              "intensity": "subtle"
+            },
+            {
+              "name": "bold",
+              "value": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 20px 25px -5px, rgba(0, 0, 0, 0.05) 0px 8px 10px -6px",
+              "intensity": "subtle"
+            },
+            {
+              "name": "elevated",
+              "value": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "intensity": "subtle"
+            }
+          ]
+        },
+        "semanticTokens": {
+          "resolved": {
+            "colors": {
+              "outline": "#C0C6C1",
+              "primary": "#008ACF",
+              "surface": "#EEEEEE",
+              "on-primary": "#000000",
+              "on-surface": "#200707",
+              "surface-variant": "#313131"
+            },
+            "rounded": {
+              "lg": 12,
+              "md": 8,
+              "sm": 4
+            },
+            "spacing": {
+              "md": 16,
+              "sm": 8,
+              "xs": 4
+            },
+            "elevation": {
+              "1": "none}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button",
+              "2": "var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-black\\/20{--tw-shadow-color:rgba(0,0,0,.2)",
+              "3": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+              "4": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 20px 25px -5px, rgba(0, 0, 0, 0.05) 0px 8px 10px -6px"
+            },
+            "typography": {
+              "body-lg": {
+                "fontSize": "1.1rem",
+                "fontFamily": "effra",
+                "fontWeight": 400,
+                "lineHeight": "1.4"
+              },
+              "body-md": {
+                "fontSize": "1rem",
+                "fontFamily": "effra",
+                "fontWeight": 400,
+                "lineHeight": "1.4"
+              },
+              "body-sm": {
+                "fontSize": "0.813rem",
+                "fontFamily": "effra",
+                "fontWeight": 400,
+                "lineHeight": "1.4"
+              },
+              "headline-lg": {
+                "fontSize": "2.089rem",
+                "fontFamily": "effra",
+                "fontWeight": 400,
+                "lineHeight": "1.4"
+              },
+              "headline-md": {
+                "fontSize": "2rem",
+                "fontFamily": "effra",
+                "fontWeight": 400,
+                "lineHeight": "1.4"
+              },
+              "headline-display": {
+                "fontSize": "2.25rem",
+                "fontFamily": "effra",
+                "fontWeight": 400,
+                "lineHeight": "1.4"
+              }
+            },
+            "componentVariants": {
+              "cmq1dr9p1000jommskimvdezs": "button-primary",
+              "cmq1dr9p2000kommsxmlywbp6": "button-primary",
+              "cmq1dr9p2000lomms7oeuwcsc": "button-other",
+              "cmq1dr9p2000nomms5eienbw2": "button-ghost"
+            }
+          },
+          "resolvedAt": "2026-06-05T20:32:04.377Z",
+          "diagnostics": {
+            "source": {
+              "outline": "neutral L=76",
+              "primary": "button-bg 2x",
+              "surface": "neutral L=93",
+              "on-surface": "neutral L=8",
+              "surface-variant": "neutral mid L=19"
+            },
+            "wcagWarnings": [],
+            "unresolvedRoles": []
+          },
+          "resolverVersion": "1.0.0"
+        },
+        "colorPairings": [
+          {
+            "wcag": "AAA",
+            "label": "Tekst op surface",
+            "usage": "surface-pair",
+            "background": "#EEEEEE",
+            "foreground": "#200707",
+            "contrastRatio": 16.53
+          },
+          {
+            "wcag": "AA-large",
+            "label": "Primaire knop",
+            "usage": "button",
+            "background": "#008ACF",
+            "foreground": "#EEEEEE",
+            "contrastRatio": 3.27
+          },
+          {
+            "wcag": "AA",
+            "label": "Primair op donker",
+            "usage": "text-on-surface",
+            "background": "#200707",
+            "foreground": "#008ACF",
+            "contrastRatio": 5.06
+          },
+          {
+            "wcag": "AA-large",
+            "label": "Primair op licht",
+            "usage": "text-on-surface",
+            "background": "#EEEEEE",
+            "foreground": "#008ACF",
+            "contrastRatio": 3.27
+          }
+        ],
+        "observedColorPairs": null,
+        "published": false,
+        "publishedAt": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "createdById": "demo-user-erik-001",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-06-05T20:29:15.908Z",
+        "updatedAt": "2026-06-07T19:30:28.040Z"
+      }
+    ],
+    "styleguideColor": [
+      {
+        "id": "cmq1dr9po000pommsn0vrcv4v",
+        "name": "Deep Charcoal",
+        "hex": "#1A171B",
+        "rgb": "26, 23, 27",
+        "hsl": "285, 8%, 10%",
+        "cmyk": "4%, 15%, 0%, 89%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "headings",
+          "logo"
+        ],
+        "notes": "Primary brand color used extensively in logo text, main headings, and body copy. Appears in the 'napking' wordmark and hero headline.",
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": "high",
+        "detectorSource": "frequency",
+        "sortOrder": 0,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv"
+      },
+      {
+        "id": "cmq1dr9pr000qommsmqsw1x5v",
+        "name": "Ocean Blue",
+        "hex": "#008ACF",
+        "rgb": "0, 138, 207",
+        "hsl": "200, 100%, 41%",
+        "cmyk": "100%, 33%, 0%, 19%",
+        "category": "PRIMARY",
+        "tags": [
+          "cta",
+          "buttons",
+          "interactive",
+          "logo-accent"
+        ],
+        "notes": "Primary accent color used for CTA buttons ('Neem contact op', 'Over Napking'), interactive elements, and the 'a' character in the napking logo. Strong call-to-action presence.",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AA",
+        "confidence": "high",
+        "detectorSource": "frequency",
+        "sortOrder": 1,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv"
+      },
+      {
+        "id": "cmq1dr9pv000rommsnzoxq73b",
+        "name": "Soft White",
+        "hex": "#EEEEEE",
+        "rgb": "238, 238, 238",
+        "hsl": "0, 0%, 93%",
+        "cmyk": "0%, 0%, 0%, 7%",
+        "category": "NEUTRAL",
+        "tags": [
+          "backgrounds",
+          "surfaces"
+        ],
+        "notes": "Very light neutral used for background surfaces and creating subtle contrast against pure white.",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 2,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv"
+      },
+      {
+        "id": "cmq1dr9py000somms80fecwm0",
+        "name": "Charcoal Gray",
+        "hex": "#313131",
+        "rgb": "49, 49, 49",
+        "hsl": "0, 0%, 19%",
+        "cmyk": "0%, 0%, 0%, 81%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "secondary-text"
+        ],
+        "notes": "Dark neutral used for secondary text elements and providing contrast in UI components.",
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 3,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv"
+      },
+      {
+        "id": "cmq1dr9q2000tommsxnuwcyre",
+        "name": "Slate Gray",
+        "hex": "#6B7280",
+        "rgb": "107, 114, 128",
+        "hsl": "220, 9%, 46%",
+        "cmyk": "16%, 11%, 0%, 50%",
+        "category": "NEUTRAL",
+        "tags": [
+          "borders",
+          "muted-text",
+          "usage:border"
+        ],
+        "notes": "Medium gray used for borders and muted text elements, providing visual hierarchy.",
+        "contrastWhite": "AA",
+        "contrastBlack": "Fail",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 4,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv"
+      },
+      {
+        "id": "cmq1dr9q4000uomms48zg811m",
+        "name": "Near Black",
+        "hex": "#200707",
+        "rgb": "32, 7, 7",
+        "hsl": "0, 64%, 8%",
+        "cmyk": "0%, 78%, 78%, 87%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "dark-elements"
+        ],
+        "notes": "Very dark neutral, nearly black, used sparingly for high-contrast text or border elements.",
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 5,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv"
+      },
+      {
+        "id": "cmq1dr9qa000vommsekyoc2u0",
+        "name": "Cool Gray",
+        "hex": "#C0C6C1",
+        "rgb": "192, 198, 193",
+        "hsl": "130, 5%, 76%",
+        "cmyk": "3%, 0%, 3%, 22%",
+        "category": "NEUTRAL",
+        "tags": [
+          "borders",
+          "subtle-elements"
+        ],
+        "notes": "Cool-toned neutral gray used for subtle borders and background elements requiring minimal visual weight.",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": "medium",
+        "detectorSource": "frequency",
+        "sortOrder": 6,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv"
+      }
+    ],
+    "styleguideFont": [
+      {
+        "id": "cmq1dr9os000iomms6y5i49nv",
+        "name": "effra",
+        "role": "UI",
+        "source": "DETECTED",
+        "availability": "ADOBE_FONTS",
+        "fileUrl": null,
+        "fileName": null,
+        "fileType": null,
+        "fileSize": null,
+        "fontFamily": null,
+        "weight": null,
+        "style": null,
+        "sortOrder": 0,
+        "adobeFontsKitId": "yvk1gic",
+        "uploadedById": null,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-06-05T20:32:04.300Z",
+        "updatedAt": "2026-06-05T20:32:04.300Z"
+      }
+    ],
+    "styleguideLogo": [
+      {
+        "id": "cmq1dr9ju000hommstcjz4imr",
+        "variant": "PRIMARY",
+        "fileUrl": "https://pub-a72c2a76f55a455cbc44a547e597c130.r2.dev/uploads/media/cmnzy32qq0054b1msasa6pz9b/2026/06/logo-vision-1780691363808-1780691363808.png",
+        "fileName": "logo-vision-1780691363810.png",
+        "fileType": "png",
+        "fileSize": null,
+        "width": 541,
+        "height": 221,
+        "description": "Wordmark 'napking' with blue accent on the 'a', and tagline 'horecatextiel wasserij & verhuur' below in smaller text. The 'a' in napking features a distinctive blue color while other letters are black.",
+        "sortOrder": 0,
+        "uploadedById": null,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-06-05T20:32:04.122Z",
+        "updatedAt": "2026-06-05T20:32:04.122Z"
+      }
+    ],
+    "styleguideComponent": [
+      {
+        "id": "cmq1dr9p1000jommskimvdezs",
+        "type": "BUTTON",
+        "label": "Primary rounded CTA button — blue",
+        "sourceUrl": null,
+        "screenshotUrl": "https://pub-a72c2a76f55a455cbc44a547e597c130.r2.dev/uploads/media/cmnzy32qq0054b1msasa6pz9b/2026/06/component-button-1780691509543-1-1780691509543.png",
+        "extractedStyles": {
+          "color": "rgb(255, 255, 255)",
+          "border": "0px solid rgb(229, 231, 235)",
+          "display": "flex",
+          "padding": "12px 16px",
+          "fontSize": "17.6px",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 20px 25px -5px, rgba(0, 0, 0, 0.05) 0px 8px 10px -6px",
+          "background": "rgb(0, 138, 207)",
+          "fontWeight": "500",
+          "borderRadius": "12px"
+        },
+        "previewHtml": null,
+        "confidence": 1,
+        "sortOrder": 0,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-06-05T20:32:04.309Z",
+        "updatedAt": "2026-06-05T20:32:04.309Z"
+      },
+      {
+        "id": "cmq1dr9p2000kommsxmlywbp6",
+        "type": "BUTTON",
+        "label": "Square icon button — mobile chip",
+        "sourceUrl": null,
+        "screenshotUrl": "https://pub-a72c2a76f55a455cbc44a547e597c130.r2.dev/uploads/media/cmnzy32qq0054b1msasa6pz9b/2026/06/component-button-1780691515601-1-1780691515601.png",
+        "extractedStyles": {
+          "color": "rgb(255, 255, 255)",
+          "border": "0px solid rgb(229, 231, 235)",
+          "display": "flex",
+          "padding": "12px 16px",
+          "fontSize": "17.6px",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 20px 25px -5px, rgba(0, 0, 0, 0.05) 0px 8px 10px -6px",
+          "background": "rgb(0, 138, 207)",
+          "fontWeight": "700",
+          "borderRadius": "12px"
+        },
+        "previewHtml": null,
+        "confidence": 1,
+        "sortOrder": 1,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-06-05T20:32:04.309Z",
+        "updatedAt": "2026-06-05T20:32:04.309Z"
+      },
+      {
+        "id": "cmq1dr9p2000lomms7oeuwcsc",
+        "type": "BUTTON",
+        "label": "WhatsApp social action button — green",
+        "sourceUrl": null,
+        "screenshotUrl": "https://pub-a72c2a76f55a455cbc44a547e597c130.r2.dev/uploads/media/cmnzy32qq0054b1msasa6pz9b/2026/06/component-button-1780691515643-2-1780691515643.png",
+        "extractedStyles": {
+          "color": "rgb(255, 255, 255)",
+          "border": "0px solid rgb(229, 231, 235)",
+          "display": "flex",
+          "padding": "12px 16px",
+          "fontSize": "17.6px",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 20px 25px -5px, rgba(0, 0, 0, 0.05) 0px 8px 10px -6px",
+          "background": "rgb(37, 211, 102)",
+          "fontWeight": "700",
+          "borderRadius": "12px"
+        },
+        "previewHtml": null,
+        "confidence": 1,
+        "sortOrder": 2,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-06-05T20:32:04.309Z",
+        "updatedAt": "2026-06-05T20:32:04.309Z"
+      },
+      {
+        "id": "cmq1dr9p2000momms3csu3et9",
+        "type": "FORM_INPUT",
+        "label": "Organization name text input — rounded",
+        "sourceUrl": null,
+        "screenshotUrl": "https://pub-a72c2a76f55a455cbc44a547e597c130.r2.dev/uploads/media/cmnzy32qq0054b1msasa6pz9b/2026/06/component-form_input-1780691515777-0-1780691515777.png",
+        "extractedStyles": {
+          "color": "rgb(0, 0, 0)",
+          "border": "2px solid rgb(192, 198, 193)",
+          "display": "inline-block",
+          "padding": "8px",
+          "fontSize": "15px",
+          "background": "rgb(255, 255, 255)",
+          "fontWeight": "400",
+          "borderRadius": "12px"
+        },
+        "previewHtml": null,
+        "confidence": 0.8999999999999999,
+        "sortOrder": 3,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-06-05T20:32:04.309Z",
+        "updatedAt": "2026-06-05T20:32:04.309Z"
+      },
+      {
+        "id": "cmq1dr9p2000nomms5eienbw2",
+        "type": "BUTTON",
+        "label": "Plus icon add button — minimal",
+        "sourceUrl": null,
+        "screenshotUrl": "https://pub-a72c2a76f55a455cbc44a547e597c130.r2.dev/uploads/media/cmnzy32qq0054b1msasa6pz9b/2026/06/component-button-1780691515568-0-1780691515568.png",
+        "extractedStyles": {
+          "color": "rgb(0, 0, 0)",
+          "display": "block",
+          "padding": "0px",
+          "fontSize": "22px",
+          "background": "rgb(255, 255, 255)",
+          "fontWeight": "700",
+          "borderRadius": "2px 2px 0px 0px"
+        },
+        "previewHtml": null,
+        "confidence": 0.6599999999999999,
+        "sortOrder": 4,
+        "styleguideId": "cmq1dnnr80000omms19dqpgyv",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-06-05T20:32:04.309Z",
+        "updatedAt": "2026-06-05T20:32:04.309Z"
+      }
+    ],
+    "fidelityConfig": [
+      {
+        "id": "cmp3tr0ph0006qmmswl4eorpx",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "styleWeight": 0.35,
+        "judgeWeight": 0.45,
+        "ruleWeight": 0.2,
+        "rubricWeights": {
+          "coherence": 0.1,
+          "antiPattern": 0.3,
+          "audienceFit": 0.15,
+          "concreteness": 0.1,
+          "brandRecognition": 0.15,
+          "strategicAnchoring": 0.2
+        },
+        "humanVoiceMode": "BASELINE",
+        "aiLeaningThreshold": 30,
+        "disabledContentTypes": [],
+        "createdAt": "2026-05-13T08:55:36.533Z",
+        "updatedAt": "2026-05-13T08:55:36.533Z"
+      }
+    ],
+    "brandRule": [
+      {
+        "id": "cmpcqgi4300d3zrms8wv9kjny",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "revolutionair",
+        "patternIsRegex": false,
+        "message": "Avoid \"revolutionair\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4500dzzrmszj1f43hc",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "ontdek de magie van",
+        "patternIsRegex": false,
+        "message": "Anti-pattern — never use \"ontdek de magie van\" (Brand Voiceguide).",
+        "severity": "error",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.antiPatterns",
+        "createdAt": "2026-05-19T14:33:22.613Z",
+        "updatedAt": "2026-05-19T14:33:22.613Z"
+      },
+      {
+        "id": "cmpcqgi4300d4zrmsbigbmtm1",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "revolutionairen",
+        "patternIsRegex": false,
+        "message": "Avoid \"revolutionairen\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4500e0zrms7yg6nsqt",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "jouw ultieme partner in",
+        "patternIsRegex": false,
+        "message": "Anti-pattern — never use \"jouw ultieme partner in\" (Brand Voiceguide).",
+        "severity": "error",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.antiPatterns",
+        "createdAt": "2026-05-19T14:33:22.613Z",
+        "updatedAt": "2026-05-19T14:33:22.613Z"
+      },
+      {
+        "id": "cmpcqgi4300d5zrmsaqqjsm6x",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "innovatief",
+        "patternIsRegex": false,
+        "message": "Avoid \"innovatief\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4500e1zrmsfp9obsih",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "wij gaan voor excellentie",
+        "patternIsRegex": false,
+        "message": "Anti-pattern — never use \"wij gaan voor excellentie\" (Brand Voiceguide).",
+        "severity": "error",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.antiPatterns",
+        "createdAt": "2026-05-19T14:33:22.613Z",
+        "updatedAt": "2026-05-19T14:33:22.613Z"
+      },
+      {
+        "id": "cmpcqgi4300d6zrmsyny3ryjb",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "innovatie",
+        "patternIsRegex": false,
+        "message": "Avoid \"innovatie\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4500e2zrmsk8upceor",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "til jouw restaurant naar een hoger niveau",
+        "patternIsRegex": false,
+        "message": "Anti-pattern — never use \"til jouw restaurant naar een hoger niveau\" (Brand Voiceguide).",
+        "severity": "error",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.antiPatterns",
+        "createdAt": "2026-05-19T14:33:22.613Z",
+        "updatedAt": "2026-05-19T14:33:22.613Z"
+      },
+      {
+        "id": "cmpcqgi4300d7zrms254s5tdw",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "innovatieve",
+        "patternIsRegex": false,
+        "message": "Avoid \"innovatieve\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4500e3zrms2xa353d0",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "de nummer 1 keuze voor",
+        "patternIsRegex": false,
+        "message": "Anti-pattern — never use \"de nummer 1 keuze voor\" (Brand Voiceguide).",
+        "severity": "error",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.antiPatterns",
+        "createdAt": "2026-05-19T14:33:22.613Z",
+        "updatedAt": "2026-05-19T14:33:22.613Z"
+      },
+      {
+        "id": "cmpcqgi4300d8zrms13qxpnw8",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "innovaties",
+        "patternIsRegex": false,
+        "message": "Avoid \"innovaties\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4500e4zrms4gsncpkf",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "onze passie is jouw succes",
+        "patternIsRegex": false,
+        "message": "Anti-pattern — never use \"onze passie is jouw succes\" (Brand Voiceguide).",
+        "severity": "error",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.antiPatterns",
+        "createdAt": "2026-05-19T14:33:22.613Z",
+        "updatedAt": "2026-05-19T14:33:22.613Z"
+      },
+      {
+        "id": "cmpcqgi4300d9zrmsg0m1vkua",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "cutting-edge",
+        "patternIsRegex": false,
+        "message": "Avoid \"cutting-edge\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4300dazrmsnyqu1s70",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "cutting-edges",
+        "patternIsRegex": false,
+        "message": "Avoid \"cutting-edges\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4300dbzrms6e9b72jf",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "game-changer",
+        "patternIsRegex": false,
+        "message": "Avoid \"game-changer\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4500e5zrmsx13hx0qg",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "ervaar het verschil",
+        "patternIsRegex": false,
+        "message": "Anti-pattern — never use \"ervaar het verschil\" (Brand Voiceguide).",
+        "severity": "error",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.antiPatterns",
+        "createdAt": "2026-05-19T14:33:22.613Z",
+        "updatedAt": "2026-05-19T14:33:22.613Z"
+      },
+      {
+        "id": "cmpcqgi4300dczrms4cqcb24i",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "game-changeren",
+        "patternIsRegex": false,
+        "message": "Avoid \"game-changeren\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4500e6zrmseteb0zlt",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "laat ons jouw droom waarmaken",
+        "patternIsRegex": false,
+        "message": "Anti-pattern — never use \"laat ons jouw droom waarmaken\" (Brand Voiceguide).",
+        "severity": "error",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.antiPatterns",
+        "createdAt": "2026-05-19T14:33:22.613Z",
+        "updatedAt": "2026-05-19T14:33:22.613Z"
+      },
+      {
+        "id": "cmpcqgi4300ddzrmsbgmkd4m1",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "premium",
+        "patternIsRegex": false,
+        "message": "Avoid \"premium\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4500e7zrmsytm5gtni",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "exclusieve service op maat",
+        "patternIsRegex": false,
+        "message": "Anti-pattern — never use \"exclusieve service op maat\" (Brand Voiceguide).",
+        "severity": "error",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.antiPatterns",
+        "createdAt": "2026-05-19T14:33:22.613Z",
+        "updatedAt": "2026-05-19T14:33:22.613Z"
+      },
+      {
+        "id": "cmpcqgi4300dezrms1syo3085",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "premiumen",
+        "patternIsRegex": false,
+        "message": "Avoid \"premiumen\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4500e8zrmsf3m4lwsx",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "innovatieve oplossingen die werken",
+        "patternIsRegex": false,
+        "message": "Anti-pattern — never use \"innovatieve oplossingen die werken\" (Brand Voiceguide).",
+        "severity": "error",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.antiPatterns",
+        "createdAt": "2026-05-19T14:33:22.613Z",
+        "updatedAt": "2026-05-19T14:33:22.613Z"
+      },
+      {
+        "id": "cmpcqgi4300dfzrmsb8kdfg27",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "luxe",
+        "patternIsRegex": false,
+        "message": "Avoid \"luxe\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4500e9zrmst5ld71q3",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "samen bouwen we aan de toekomst",
+        "patternIsRegex": false,
+        "message": "Anti-pattern — never use \"samen bouwen we aan de toekomst\" (Brand Voiceguide).",
+        "severity": "error",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.antiPatterns",
+        "createdAt": "2026-05-19T14:33:22.613Z",
+        "updatedAt": "2026-05-19T14:33:22.613Z"
+      },
+      {
+        "id": "cmpcqgi4300dgzrmsgnya7bwg",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "luxes",
+        "patternIsRegex": false,
+        "message": "Avoid \"luxes\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4500eazrms5km1w2hy",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "jouw vertrouwde partner sinds jaar en dag",
+        "patternIsRegex": false,
+        "message": "Anti-pattern — never use \"jouw vertrouwde partner sinds jaar en dag\" (Brand Voiceguide).",
+        "severity": "error",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.antiPatterns",
+        "createdAt": "2026-05-19T14:33:22.613Z",
+        "updatedAt": "2026-05-19T14:33:22.613Z"
+      },
+      {
+        "id": "cmpcqgi4300dhzrmsnujhf3vf",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "exclusief",
+        "patternIsRegex": false,
+        "message": "Avoid \"exclusief\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4300dizrmsi9prj45q",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "exclusie",
+        "patternIsRegex": false,
+        "message": "Avoid \"exclusie\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4300djzrmsjdff6opr",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "exclusieve",
+        "patternIsRegex": false,
+        "message": "Avoid \"exclusieve\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4300dkzrmsaq82mpbz",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "exclusies",
+        "patternIsRegex": false,
+        "message": "Avoid \"exclusies\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4300dlzrms4qtvdmdi",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "passie",
+        "patternIsRegex": false,
+        "message": "Avoid \"passie\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4300dmzrmsl8qeu7wp",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "passies",
+        "patternIsRegex": false,
+        "message": "Avoid \"passies\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4300dnzrmsgj67c4jc",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "excellentie",
+        "patternIsRegex": false,
+        "message": "Avoid \"excellentie\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4300dozrmskxvzg8kw",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "excellenties",
+        "patternIsRegex": false,
+        "message": "Avoid \"excellenties\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4400dpzrmsi3tlg57x",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "toonaangevend",
+        "patternIsRegex": false,
+        "message": "Avoid \"toonaangevend\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4400dqzrmsfruqtpzf",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "toonaangevenden",
+        "patternIsRegex": false,
+        "message": "Avoid \"toonaangevenden\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4400drzrms13fuyuno",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "state-of-the-art",
+        "patternIsRegex": false,
+        "message": "Avoid \"state-of-the-art\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4400dszrmset0bie76",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "state-of-the-arten",
+        "patternIsRegex": false,
+        "message": "Avoid \"state-of-the-arten\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4400dtzrmsu0e5y37x",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "next-level",
+        "patternIsRegex": false,
+        "message": "Avoid \"next-level\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4400duzrmshuu6wvxl",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "next-levelen",
+        "patternIsRegex": false,
+        "message": "Avoid \"next-levelen\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4400dvzrmslono2o0v",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "ultiem",
+        "patternIsRegex": false,
+        "message": "Avoid \"ultiem\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4400dwzrmsfrxdkyrg",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "ultiemen",
+        "patternIsRegex": false,
+        "message": "Avoid \"ultiemen\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4400dxzrms4ak1lfq3",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "ongeëvenaard",
+        "patternIsRegex": false,
+        "message": "Avoid \"ongeëvenaard\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      },
+      {
+        "id": "cmpcqgi4400dyzrms2pyoiqxc",
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "ruleType": "FORBIDDEN_WORD",
+        "pattern": "ongeëvenaarden",
+        "patternIsRegex": false,
+        "message": "Avoid \"ongeëvenaarden\" — listed in Brand Voiceguide.wordsWeAvoid.",
+        "severity": "warning",
+        "contentTypeFilter": [],
+        "isActive": true,
+        "source": "auto:voiceguide.wordsWeAvoid",
+        "createdAt": "2026-05-19T14:33:22.611Z",
+        "updatedAt": "2026-05-19T14:33:22.611Z"
+      }
+    ],
+    "workspaceContentTypeThreshold": [],
+    "persona": [
+      {
+        "id": "cmnzy8wgm006kb1msxfkv459y",
+        "name": "David Vermeulen, The Multi-Location Restaurant Manager",
+        "tagline": null,
+        "avatarUrl": "https://pub-a72c2a76f55a455cbc44a547e597c130.r2.dev/uploads/media/cmnzy32qq0054b1msasa6pz9b/2026/06/persona-cmnzy8wgm006kb1msxfkv459y-1782207218081.png",
+        "avatarSource": "AI_GENERATED",
+        "age": "35-50",
+        "gender": "Male",
+        "location": "Randstad region, Netherlands",
+        "occupation": "Operations Manager / Multi-site Restaurant Manager",
+        "education": "Business administration or hospitality management",
+        "income": "€70,000-€110,000",
+        "familyStatus": null,
+        "personalityType": "David is systems-oriented and focused on operational efficiency across multiple locations. He values scalability, consistency, and automation. He's always looking for solutions that reduce complexity and ensure uniform standards across all his restaurants.",
+        "coreValues": [
+          "Operational efficiency",
+          "Consistency across locations",
+          "Scalability",
+          "Process automation",
+          "Cost optimization"
+        ],
+        "interests": [
+          "Restaurant management systems",
+          "Supply chain optimization",
+          "Multi-site operations",
+          "Business analytics",
+          "Hospitality technology"
+        ],
+        "goals": [
+          "Standardize operations across all locations",
+          "Reduce manual inventory management",
+          "Ensure consistent quality at every site",
+          "Scale services up or down based on demand",
+          "Minimize operational disruptions"
+        ],
+        "motivations": [
+          "Streamlining complex operations",
+          "Achieving operational excellence",
+          "Reducing staff workload",
+          "Maintaining brand consistency",
+          "Improving profit margins through efficiency"
+        ],
+        "frustrations": [
+          "Managing textile inventory across multiple locations",
+          "Inconsistent service from suppliers",
+          "Staff time spent on non-core activities",
+          "Unexpected stockouts during busy periods",
+          "Coordinating deliveries across different sites"
+        ],
+        "behaviors": [
+          "Seeks automated and centralized solutions",
+          "Negotiates service agreements for multiple locations",
+          "Monitors KPIs and service level agreements closely",
+          "Prefers single-supplier relationships for simplicity",
+          "Values 24/7 availability and weekend service"
+        ],
+        "strategicImplications": null,
+        "preferredChannels": [
+          "B2B sales representatives",
+          "Professional email",
+          "Industry conferences",
+          "LinkedIn",
+          "Contract negotiations"
+        ],
+        "techStack": null,
+        "quote": "Managing textiles across multiple restaurants used to be a headache. I need a partner who can handle the complexity so my teams can focus on serving guests.",
+        "bio": "David oversees operations for a growing restaurant group in the Randstad. With multiple locations to manage, he's constantly looking for ways to standardize processes and reduce operational complexity. He values partners who can provide consistent, automated solutions that scale with his business.",
+        "buyingTriggers": [
+          "Automated inventory management",
+          "24/7 textile availability",
+          "Flexible subscription models",
+          "Multi-location service capability",
+          "Weekend and 7-day delivery"
+        ],
+        "decisionCriteria": [
+          "Scalability across locations",
+          "Automation and ease of management",
+          "Service reliability and consistency",
+          "Flexible pricing models",
+          "Regional coverage in Randstad",
+          "Quality and hygiene standards"
+        ],
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdById": "demo-user-erik-001",
+        "localeProfileId": "cmr4z54et000d38c9j6h2rq5u",
+        "createdAt": "2026-04-15T11:10:42.262Z",
+        "updatedAt": "2026-07-03T13:33:43.454Z"
+      },
+      {
+        "id": "cmnzy8wge006gb1mse8urspjp",
+        "name": "Marco van der Berg, The Quality-Focused Restaurant Owner",
+        "tagline": null,
+        "avatarUrl": null,
+        "avatarSource": "NONE",
+        "age": "38-52",
+        "gender": "Male",
+        "location": "Randstad region, Netherlands (Amsterdam, Utrecht, Rotterdam, The Hague)",
+        "occupation": "Restaurant Owner / General Manager",
+        "education": "Culinary school or hospitality management degree",
+        "income": "€60,000-€120,000",
+        "familyStatus": null,
+        "personalityType": "Marco is detail-oriented and takes pride in maintaining high standards across every aspect of his restaurant. He values reliability and consistency, knowing that small details like spotless linens contribute to the overall dining experience. He's pragmatic and prefers service providers who understand the hospitality industry's demanding pace.",
+        "coreValues": [
+          "Quality and consistency",
+          "Professional appearance",
+          "Operational efficiency",
+          "Sustainability",
+          "Reliability"
+        ],
+        "interests": [
+          "Culinary trends",
+          "Restaurant operations optimization",
+          "Sustainable business practices",
+          "Hospitality industry networking",
+          "Food safety and hygiene standards"
+        ],
+        "goals": [
+          "Maintain impeccable restaurant standards",
+          "Reduce operational overhead and staff workload",
+          "Ensure consistent quality for guests",
+          "Scale operations during peak seasons",
+          "Meet HACCP and hygiene compliance requirements"
+        ],
+        "motivations": [
+          "Creating memorable dining experiences",
+          "Building a reputable establishment",
+          "Operational peace of mind",
+          "Environmental responsibility",
+          "Staff efficiency and satisfaction"
+        ],
+        "frustrations": [
+          "Unreliable suppliers disrupting service",
+          "Staff time wasted on textile management",
+          "Inconsistent linen quality",
+          "Running out of clean textiles during busy periods",
+          "Balancing quality with cost pressures"
+        ],
+        "behaviors": [
+          "Researches service providers thoroughly before committing",
+          "Values long-term partnerships over one-time deals",
+          "Monitors hygiene and safety compliance closely",
+          "Seeks flexible solutions that adapt to seasonal demand",
+          "Prefers local suppliers in the Randstad region"
+        ],
+        "strategicImplications": null,
+        "preferredChannels": [
+          "Direct sales contact",
+          "Industry referrals and word-of-mouth",
+          "Hospitality trade shows",
+          "Professional networks",
+          "Email communication"
+        ],
+        "techStack": null,
+        "quote": "I need a textile partner I can trust completely—one that understands that in hospitality, every detail matters and there's no room for mistakes.",
+        "bio": "Marco owns a well-regarded restaurant in the Randstad and has built his reputation on attention to detail and consistent quality. He's always looking for reliable partners who can help him maintain his high standards while freeing up his team to focus on what they do best: creating exceptional dining experiences.",
+        "buyingTriggers": [
+          "Guaranteed spotless delivery",
+          "HACCP compliance assurance",
+          "Flexible subscription models",
+          "Weekend and 7-day service availability",
+          "Sustainable textile options at no extra cost"
+        ],
+        "decisionCriteria": [
+          "Service reliability and consistency",
+          "Hygiene and safety standards",
+          "Flexibility to scale up or down",
+          "Quality of textiles",
+          "Local presence and delivery speed",
+          "Sustainability credentials"
+        ],
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdById": "demo-user-erik-001",
+        "localeProfileId": "cmr4z54et000d38c9j6h2rq5u",
+        "createdAt": "2026-04-15T11:10:42.254Z",
+        "updatedAt": "2026-07-03T13:33:43.454Z"
+      },
+      {
+        "id": "cmnzy8wgk006ib1ms25zqt5zj",
+        "name": "Sophie Janssen, The Sustainability-Minded Chef-Owner",
+        "tagline": null,
+        "avatarUrl": null,
+        "avatarSource": "NONE",
+        "age": "32-45",
+        "gender": "Female",
+        "location": "Randstad region, Netherlands",
+        "occupation": "Chef-Owner / Head Chef",
+        "education": "Culinary arts degree",
+        "income": "€55,000-€95,000",
+        "familyStatus": null,
+        "personalityType": "Sophie is passionate about sustainability and ethical business practices. She believes her restaurant should reflect her values, from farm-to-table ingredients to eco-friendly operations. She's innovative and willing to invest in quality solutions that align with her environmental commitments.",
+        "coreValues": [
+          "Environmental sustainability",
+          "Ethical sourcing",
+          "Quality craftsmanship",
+          "Transparency",
+          "Social responsibility"
+        ],
+        "interests": [
+          "Sustainable gastronomy",
+          "Organic and local ingredients",
+          "Eco-friendly business practices",
+          "Fair trade and ethical fashion",
+          "Zero-waste initiatives"
+        ],
+        "goals": [
+          "Run an environmentally responsible restaurant",
+          "Source sustainable textiles and materials",
+          "Reduce operational waste",
+          "Create a cohesive brand identity",
+          "Attract eco-conscious diners"
+        ],
+        "motivations": [
+          "Making a positive environmental impact",
+          "Leading by example in the industry",
+          "Offering premium sustainable products",
+          "Building a values-driven brand",
+          "Supporting ethical suppliers"
+        ],
+        "frustrations": [
+          "Sustainable options being significantly more expensive",
+          "Difficulty finding certified eco-friendly suppliers",
+          "Greenwashing in the hospitality industry",
+          "Limited availability of sustainable chef's clothing",
+          "Balancing sustainability with operational demands"
+        ],
+        "behaviors": [
+          "Actively seeks GOTS, Oeko-Tex, and Fairtrade certifications",
+          "Researches supplier sustainability credentials",
+          "Shares sustainability initiatives on social media",
+          "Prefers long-term partnerships with aligned values",
+          "Willing to pay fair prices for certified sustainable products"
+        ],
+        "strategicImplications": null,
+        "preferredChannels": [
+          "Sustainability-focused networks",
+          "Social media (Instagram, LinkedIn)",
+          "Industry events and workshops",
+          "Email newsletters",
+          "Peer recommendations"
+        ],
+        "techStack": null,
+        "quote": "Sustainability isn't just a trend for me—it's fundamental to how I run my kitchen. I need partners who share that commitment and can deliver quality without compromise.",
+        "bio": "Sophie is a chef-owner who has built her restaurant around sustainable, locally-sourced cuisine. She extends her environmental values to every aspect of her business, including the textiles her team wears and uses. She's looking for suppliers who can match her commitment to quality and sustainability.",
+        "buyingTriggers": [
+          "GOTS, Oeko-Tex, and Fairtrade certifications",
+          "Sustainable textiles at no extra cost",
+          "Premium sustainable chef's clothing brands",
+          "100% electric delivery",
+          "Transparent environmental practices"
+        ],
+        "decisionCriteria": [
+          "Verified sustainability certifications",
+          "Quality and durability of textiles",
+          "Supplier's environmental commitment",
+          "Aesthetic appeal and brand alignment",
+          "Flexibility and service quality",
+          "Cost-effectiveness"
+        ],
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdById": "demo-user-erik-001",
+        "localeProfileId": "cmr4z54et000d38c9j6h2rq5u",
+        "createdAt": "2026-04-15T11:10:42.260Z",
+        "updatedAt": "2026-07-03T13:33:43.454Z"
+      }
+    ],
+    "personaResearchMethod": [
+      {
+        "id": "cmnzy8wgh006hb1msnb49oqs8",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "personaId": "cmnzy8wge006gb1mse8urspjp",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:10:42.254Z",
+        "updatedAt": "2026-04-15T11:10:42.254Z"
+      },
+      {
+        "id": "cmnzy8wgk006jb1mstatsenvw",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "personaId": "cmnzy8wgk006ib1ms25zqt5zj",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:10:42.260Z",
+        "updatedAt": "2026-04-15T11:10:42.260Z"
+      },
+      {
+        "id": "cmnzy8wgp006lb1msq0jzlu3o",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "personaId": "cmnzy8wgm006kb1msxfkv459y",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:10:42.262Z",
+        "updatedAt": "2026-04-15T11:10:42.262Z"
+      }
+    ],
+    "product": [
+      {
+        "id": "cmnzy8wgt006mb1mswkrhqr0z",
+        "name": "Professional Textile Cleaning Service",
+        "slug": "professional-textile-cleaning-service",
+        "description": "HACCP-compliant professional cleaning service for hospitality textiles including chef's clothing, napkins, and table linens. Extensively audited processes ensure spotless, hygienic results delivered with 100% electric vehicles. Weekend service available for maximum flexibility.",
+        "category": "hospitality-travel",
+        "pricingModel": "Pay-per-use / Pool system",
+        "pricingDetails": "Flexible pay-per-use model with pool system options for restaurants",
+        "source": "WEBSITE_URL",
+        "sourceUrl": "https://napking.nl/",
+        "status": "ANALYZED",
+        "features": [
+          "HACCP compliant cleaning processes",
+          "Extensively audited quality control",
+          "100% electric delivery fleet",
+          "Weekend service availability",
+          "7 days a week operation",
+          "Spotless delivery guarantee",
+          "Professional hospitality textile expertise",
+          "Randstad region coverage"
+        ],
+        "benefits": [
+          "Saves valuable time for restaurant staff",
+          "Guaranteed hygiene and food safety compliance",
+          "Spotless, presentation-ready textiles",
+          "Environmentally friendly electric delivery",
+          "Flexible service scheduling including weekends",
+          "Peace of mind with audited processes",
+          "Consistent quality standards",
+          "Reduced operational burden"
+        ],
+        "useCases": [
+          "Daily restaurant linen cleaning",
+          "Chef's clothing maintenance",
+          "Table linen preparation for service",
+          "High-volume event textile cleaning",
+          "HACCP compliance requirements",
+          "Weekend and holiday operations"
+        ],
+        "categoryIcon": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:10:42.269Z",
+        "updatedAt": "2026-04-15T11:10:42.269Z"
+      },
+      {
+        "id": "cmnzy8wgy006nb1ms4ismr0fv",
+        "name": "Sustainable Textile Rental & Sales",
+        "slug": "sustainable-textile-rental-sales",
+        "description": "Rental and sales of high-quality, sustainable hospitality textiles including premium chef's clothing from Chaud Devant and Le Nouveau Chef, and luxurious table linens. All textiles feature GOTS, Oeko-Tex, or Fairtrade certifications at no extra cost, with embroidery and printing customization available.",
+        "category": "hospitality-travel",
+        "pricingModel": "Flexible subscription",
+        "pricingDetails": "Flexible subscription model with options to scale during busy or quiet periods",
+        "source": "WEBSITE_URL",
+        "sourceUrl": "https://napking.nl/",
+        "status": "ANALYZED",
+        "features": [
+          "GOTS certified sustainable materials",
+          "Oeko-Tex certified textiles",
+          "Fairtrade certified products",
+          "Premium brands (Chaud Devant, Le Nouveau Chef)",
+          "Custom embroidery and printing services",
+          "Flexible subscription plans",
+          "Scalable inventory options",
+          "High-quality table linens",
+          "Professional chef's clothing",
+          "Eco-friendly at no extra cost"
+        ],
+        "benefits": [
+          "Sustainable textiles without premium pricing",
+          "Luxurious appearance for restaurant branding",
+          "Scalable during peak and off-peak seasons",
+          "Custom branding through embroidery",
+          "Premium quality materials",
+          "Environmental responsibility",
+          "Flexible commitment levels",
+          "Professional image enhancement"
+        ],
+        "useCases": [
+          "Restaurant uniform programs",
+          "Fine dining table linen service",
+          "Seasonal capacity scaling",
+          "Brand identity through custom textiles",
+          "Sustainable restaurant operations",
+          "Premium chef's clothing for kitchen teams"
+        ],
+        "categoryIcon": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:10:42.274Z",
+        "updatedAt": "2026-04-15T11:10:42.274Z"
+      },
+      {
+        "id": "cmnzy8wh0006ob1mshn9kez4h",
+        "name": "Automated Inventory Management System",
+        "slug": "automated-inventory-management-system",
+        "description": "Complete automated management of restaurant textile inventory ensuring 24/7 availability of clean linens and chef's clothing. The system guarantees sufficient stock at all times without manual effort, with 7-day-a-week service and automated stock replenishment.",
+        "category": "hospitality-travel",
+        "pricingModel": "",
+        "pricingDetails": "",
+        "source": "WEBSITE_URL",
+        "sourceUrl": "https://napking.nl/",
+        "status": "ANALYZED",
+        "features": [
+          "24/7 sufficient textile availability",
+          "Automated stock management system",
+          "7 days a week service",
+          "Intelligent stock replenishment",
+          "No manual inventory tracking required",
+          "Right textiles at the right time",
+          "Integrated with cleaning and rental services"
+        ],
+        "benefits": [
+          "Completely carefree operation",
+          "Never run out of clean textiles",
+          "Eliminates manual inventory management",
+          "Ensures operational continuity",
+          "Reduces staff workload",
+          "Optimized stock levels",
+          "Predictable service delivery",
+          "Peace of mind for restaurant management"
+        ],
+        "useCases": [
+          "Multi-location restaurant operations",
+          "High-volume restaurant inventory",
+          "Seasonal demand fluctuations",
+          "Weekend and holiday operations",
+          "Eliminating stockout situations",
+          "Streamlining textile logistics"
+        ],
+        "categoryIcon": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdAt": "2026-04-15T11:10:42.276Z",
+        "updatedAt": "2026-04-15T11:10:42.276Z"
+      }
+    ],
+    "productImage": [],
+    "productPersona": [],
+    "businessStrategy": [],
+    "focusArea": [],
+    "objective": [],
+    "keyResult": [],
+    "milestone": [],
+    "progressSnapshot": [],
+    "competitor": [
+      {
+        "id": "cmnzy8wh4006pb1mswlroa67w",
+        "name": "Lamme Textile Management",
+        "slug": "lamme-textile-management",
+        "websiteUrl": null,
+        "description": "Parent company of Napking, operating in the broader textile management and laundry services sector across hospitality and healthcare industries.",
+        "tagline": null,
+        "foundingYear": null,
+        "headquarters": null,
+        "employeeRange": null,
+        "logoUrl": null,
+        "valueProposition": "",
+        "targetAudience": "",
+        "differentiators": [],
+        "mainOfferings": [
+          "Textile management services",
+          "Laundry services",
+          "Multi-sector operations"
+        ],
+        "pricingModel": null,
+        "pricingDetails": null,
+        "toneOfVoice": "",
+        "messagingThemes": [],
+        "visualStyleNotes": null,
+        "strengths": [
+          "Broader market presence",
+          "Multi-industry experience",
+          "Established infrastructure"
+        ],
+        "weaknesses": [],
+        "socialLinks": null,
+        "hasBlog": null,
+        "hasCareersPage": null,
+        "competitiveScore": 0,
+        "tier": "DIRECT",
+        "status": "DRAFT",
+        "source": "MANUAL",
+        "lastScrapedAt": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "monitoringEnabled": false,
+        "monitoringFrequency": "WEEKLY_LIGHT",
+        "nextScheduledScanAt": null,
+        "snapshotCount": 0,
+        "unacknowledgedActivityCount": 0,
+        "workspaceId": "cmnzy32qq0054b1msasa6pz9b",
+        "createdById": "demo-user-erik-001",
+        "createdAt": "2026-04-15T11:10:42.280Z",
+        "updatedAt": "2026-06-10T20:17:31.051Z"
+      }
+    ],
+    "competitorProduct": [],
+    "trend": [],
+    "workspaceAiConfig": []
+  },
+  "vectors": {
+    "brandVoiceguide": {
+      "centroidEmbedding": {}
+    }
+  },
+  "localImageRefs": []
+}

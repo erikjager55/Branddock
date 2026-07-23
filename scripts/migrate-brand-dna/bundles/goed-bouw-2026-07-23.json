@@ -1,0 +1,2236 @@
+{
+  "meta": {
+    "version": 1,
+    "sourceWorkspaceId": "cmneamaqw000ig3ms1eam4ga0",
+    "sourceWorkspaceName": "Goed-Bouw",
+    "sourceSlug": "goed-bouw",
+    "sourceContentLanguage": "nl",
+    "note": "Merk-DNA-export (alleen brand foundation; geen content/telemetrie/historie)."
+  },
+  "records": {
+    "brandAsset": [
+      {
+        "id": "cmneamaro000vg3msipw4t9mi",
+        "name": "Transformative Goals",
+        "slug": "transformative-goals",
+        "description": "De transformationele doelen van Goed-bouw: wat opdrachtgevers moeten denken, voelen en doen na contact met het merk.",
+        "category": "STRATEGY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "TRANSFORMATIVE_GOALS",
+        "frameworkData": {
+          "goals": [
+            {
+              "title": "Denken: Betrouwbare partner",
+              "timeframe": "2025-2030",
+              "milestones": [],
+              "description": "Goed-bouw is een aannemer die zijn vak verstaat en zijn afspraken nakomt. Een bedrijf met korte lijnen en mensen die weten wat ze doen. Geen gedoe, geen verrassingen. Gewoon een partner die levert wat is afgesproken en die net zo trots is op het eindresultaat als de opdrachtgever.",
+              "impactDomain": "People",
+              "sdgAlignment": [],
+              "measurableCommitment": "Klanten ervaren Goed-bouw als betrouwbare partner die levert wat is afgesproken."
+            },
+            {
+              "title": "Voelen: Vertrouwen en rust",
+              "timeframe": "2025-2030",
+              "milestones": [],
+              "description": "Goed-bouw geeft een gevoel van vertrouwen. De opdrachtgever weet dat het project in goede handen is. Dat geeft rust. Tegelijk voelt men de betrokkenheid van het team. Dit zijn mensen die er echt voor gaan. Dat maakt samenwerken prettig. Je hoeft niet te controleren. Je kunt bouwen op Goed-Bouw.",
+              "impactDomain": "People",
+              "sdgAlignment": [],
+              "measurableCommitment": "Opdrachtgevers voelen vertrouwen en rust bij de samenwerking met Goed-bouw."
+            },
+            {
+              "title": "Handelen: Heldere afspraken, trots resultaat",
+              "timeframe": "2025-2030",
+              "milestones": [],
+              "description": "De opdrachtgever kiest voor Goed-bouw omdat hij weet wat hij krijgt. Contact opnemen, heldere afspraken maken en daarna draait het gewoon. Bij vragen weet je wie je moet bellen. En aan het einde van het project sta je te kijken naar iets om trots op te zijn.",
+              "impactDomain": "People",
+              "sdgAlignment": [],
+              "measurableCommitment": "Elk project eindigt met een resultaat waar opdrachtgever én team trots op zijn."
+            }
+          ],
+          "mtpNarrative": "Bij Goed-bouw geloven we dat de kwaliteit van een bouwproject staat of valt met de mensen die het maken. Onze ambitie is om een bouwcultuur te creëren waarin vakmanschap, vertrouwen en samenwerking leiden tot projecten waar iedereen trots op is.",
+          "brandIntegration": {
+            "themes": [
+              "Trots op je werk",
+              "Geen gedoe",
+              "Als één team"
+            ],
+            "campaigns": [],
+            "positioningLink": "Goed-bouw positioneert zich als de aannemer waar vakmanschap en mensgerichtheid samenkomen.",
+            "internalActivation": "De transformationele doelen worden intern verankerd via de cultuur van vrijheid, vertrouwen en vakmanschap op de bouwplaats."
+          },
+          "stakeholderImpact": [
+            {
+              "role": "Klanten",
+              "stakeholder": "Opdrachtgevers",
+              "expectedImpact": "Vertrouwen, rust en trots op het eindresultaat."
+            },
+            {
+              "role": "Vakmensen",
+              "stakeholder": "Medewerkers",
+              "expectedImpact": "Vrijheid, eigenaarschap en trots op hun werk."
+            },
+            {
+              "role": "Onderaannemers en leveranciers",
+              "stakeholder": "Partners",
+              "expectedImpact": "Eerlijke afspraken en samenwerking als één team."
+            }
+          ],
+          "authenticityScores": {
+            "clarity": 5,
+            "ambition": 4,
+            "longevity": 4,
+            "integration": 4,
+            "authenticity": 5,
+            "measurability": 3
+          },
+          "massiveTransformativePurpose": "Goed bouwen begint bij mensen die trots zijn op wat ze neerzetten."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-03-31T07:26:06.852Z",
+        "updatedAt": "2026-04-17T10:30:36.078Z"
+      },
+      {
+        "id": "cmneamarr000xg3ms03ubnjpn",
+        "name": "Brand Personality",
+        "slug": "brand-personality",
+        "description": "De persoonlijkheid van Goed-bouw: direct, vakkundig, gedreven, hecht en nuchter. Ruggedness en Competence als primaire Aaker-dimensies.",
+        "category": "PERSONALITY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_PERSONALITY",
+        "frameworkData": {
+          "wordsWeUse": [
+            "aanpakken",
+            "vakmanschap",
+            "trots",
+            "klopt",
+            "team",
+            "afspraken",
+            "gewoon doen",
+            "hecht",
+            "vrijheid",
+            "gedreven"
+          ],
+          "channelTones": {
+            "email": "Helder en to-the-point. Geen marketing-taal. Gewoon wat je moet weten.",
+            "crisis": "Eerlijk en snel. Probleem benoemen, oplossing bieden, afspraak nakomen.",
+            "website": "Direct en informatief. Laat het werk spreken. Korte zinnen, concrete projecten.",
+            "socialMedia": "Behind-the-scenes op de bouwplaats. Trots op het team. Rauw en echt, geen stockfoto's.",
+            "customerSupport": "Persoonlijk en kort. Je spreekt met mensen die het project kennen."
+          },
+          "wordsWeAvoid": [
+            "uniek",
+            "innovatief",
+            "state-of-the-art",
+            "exclusief",
+            "oplossingen",
+            "partnerships",
+            "synergie",
+            "ongeëvenaard"
+          ],
+          "writingSample": "De bouw is een vak vol beloftes. Over planning, kwaliteit en samenwerking. Maar wie ooit iets heeft laten bouwen weet hoe makkelijk die beloftes sneuvelen. Bij Goed-bouw doen we wat we zeggen en nemen we onze verantwoordelijkheid. Zonder gedoe, zonder kleine lettertjes.",
+          "colorDirection": "Donkere, aardse tinten: donkergrijs, zwart, warm hout. Accentkleur: oranje of geel voor de energie en gedrevenheid.",
+          "toneDimensions": {
+            "formalCasual": 3,
+            "funnySerious": 5,
+            "respectfulIrreverent": 3,
+            "enthusiasticMatterOfFact": 4
+          },
+          "dimensionScores": {
+            "sincerity": 4,
+            "competence": 5,
+            "excitement": 3,
+            "ruggedness": 5,
+            "sophistication": 2
+          },
+          "spectrumSliders": {
+            "boldSubtle": 3,
+            "friendlyFormal": 2,
+            "playfulSerious": 5,
+            "eliteAccessible": 6,
+            "abstractConcrete": 6,
+            "modernTraditional": 4,
+            "energeticThoughtful": 3
+          },
+          "imageryDirection": "Echte beelden van de bouwplaats: vakmensen aan het werk, ruw materiaal, teamwork. Geen geposeerde foto's. Warm licht, aardse kleuren.",
+          "primaryDimension": "Ruggedness",
+          "personalityTraits": [
+            {
+              "name": "Direct",
+              "weAreThis": "Eerlijk, helder, geen gedoe.",
+              "description": "We zeggen wat we bedoelen en doen wat we zeggen. Geen omwegen.",
+              "butNeverThat": "Nooit vaag, ontwijkend of wollig."
+            },
+            {
+              "name": "Vakkundig",
+              "weAreThis": "Deskundig, grondig, kwaliteitsgericht.",
+              "description": "We verstaan ons vak en leveren werk waar we achter staan.",
+              "butNeverThat": "Nooit slordig, haastig of \"net voldoende\"."
+            },
+            {
+              "name": "Gedreven",
+              "weAreThis": "Energiek, doortastend, resultaatgericht.",
+              "description": "We halen energie uit uitdagingen en stoppen pas als het klopt.",
+              "butNeverThat": "Nooit passief, afwachtend of lui."
+            },
+            {
+              "name": "Hecht",
+              "weAreThis": "Teamgericht, loyaal, betrokken.",
+              "description": "We zijn een vaste groep die samen bouwt. Geen anoniem bedrijf.",
+              "butNeverThat": "Nooit afstandelijk, onpersoonlijk of inwisselbaar."
+            },
+            {
+              "name": "Nuchter",
+              "weAreThis": "Down-to-earth, geen franje, realistisch.",
+              "description": "We maken het niet mooier dan het is. Gewoon goed bouwen.",
+              "butNeverThat": "Nooit opschepperig, overdreven of pretentieus."
+            }
+          ],
+          "secondaryDimension": "Competence",
+          "typographyDirection": "Stevige, no-nonsense lettertypes. Sans-serif voor koppen (stoer, direct), leesbaar serif of sans voor lopende tekst.",
+          "brandVoiceDescription": "De stem van Goed-bouw is direct, nuchter en vakkundig. We praten zoals we bouwen: geen omwegen, geen smoesjes, gewoon goed werk. De toon is eerlijk en betrokken, nooit afstandelijk of overdreven verkoopachtig.",
+          "toneOfVoicePrinciples": [
+            {
+              "title": "Zeg wat je bedoelt",
+              "description": "Geen wollige zinnen. Geen vakjargon. Kort, helder, raak. Als het in twee zinnen kan, gebruik er dan geen drie."
+            },
+            {
+              "title": "Praat als een vakman, niet als een marketeer",
+              "description": "Wij schrijven zoals mensen op de bouwplaats praten. Herkenbaar, direct en zonder franje. Geen \"oplossingen\" of \"partnerships\", maar gewoon doen wat je zegt."
+            },
+            {
+              "title": "Laat het werk spreken",
+              "description": "Wij schreeuwen niet. Wij bewijzen. Sterke uitspraken onderbouw je met feiten, projecten of mensen."
+            },
+            {
+              "title": "Wees eerlijk, ook als het niet uitkomt",
+              "description": "Een probleem benoem je. Een afspraak kom je na. En als iets niet lukt, zeg je dat direct. Dat is precies waarom mensen voor ons kiezen."
+            }
+          ]
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-03-31T07:26:06.855Z",
+        "updatedAt": "2026-04-17T10:30:41.850Z"
+      },
+      {
+        "id": "cmneamars000zg3ms85kykhz3",
+        "name": "Brand Story",
+        "slug": "brand-story",
+        "description": "Het merkverhaal van Goed-bouw: van gebroken beloftes in de bouw naar een hechte groep vakmensen die pas stoppen als het klopt.",
+        "category": "NARRATIVE",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_STORY",
+        "frameworkData": {
+          "evp": {
+            "beleving": "Een hechte, gedreven club. Selectief gezelschap als kracht. Samenwerken prettig. Je hoeft niet te controleren.",
+            "narrative": "Wij zijn een aannemer voor mensen die écht willen bouwen. We realiseren nieuwbouw, renovatie en transformatieprojecten. Van woningbouw tot villabouw, van grondwerk tot oplevering. Wat ons onderscheidt? De groep mensen die het doet. Wij zijn een hechte, gedreven club die eerlijke afspraken maakt en die nakomt. We geven mensen op de bouwplaats de vrijheid en het vertrouwen om het beste uit zichzelf te halen. En we stoppen pas als het klopt. Het resultaat? Een eindresultaat om trots op te zijn. Voor de opdrachtgever. En voor jezelf. Goed-bouw is niet voor iedereen. Maar als jij iemand bent die trots is op zijn vak en die gas blijft geven totdat het resultaat er staat, dan weet je wat je bij ons krijgt en wat we van je verwachten.",
+            "emotioneel": "Trots op je vak. Vakmanschap als identiteit. Verbinding met de visie en missie van Goed-bouw.",
+            "contractueel": "Eerlijke afspraken die worden nagekomen. Heldere verwachtingen. Je weet wat je krijgt."
+          },
+          "tagline": "Gewoon dóén",
+          "brandRole": "De vakkundige, betrouwbare partner die levert wat is afgesproken — met een team dat er écht voor gaat.",
+          "brandThemes": [
+            "Trots",
+            "Vakmanschap",
+            "Vertrouwen",
+            "Hechtheid",
+            "Aanpakken"
+          ],
+          "originStory": "De bouw is een vak vol beloftes. Over planning, kwaliteit en samenwerking. Maar wie ooit iets heeft laten bouwen weet hoe makkelijk die beloftes sneuvelen.",
+          "proofPoints": [
+            "Hechte, vaste groep vakmensen — geen wisselende ploegen.",
+            "Eerlijke afspraken die worden nagekomen.",
+            "Korte lijnen — je weet wie je moet bellen.",
+            "Van grondwerk tot oplevering, als één team."
+          ],
+          "abtStatement": "De bouw is vol beloftes, MAAR weinig aannemers komen die na. DAAROM werkt Goed-bouw met een hechte groep vakmensen die pas stoppen als het klopt.",
+          "narrativeArc": "De bouw is vol gebroken beloftes → Goed-bouw kiest een andere weg → Een hechte groep vakmensen die aanpakken → Projecten om trots op te zijn.",
+          "worldContext": "De bouwsector wordt gekenmerkt door gebroken beloftes, miscommunicatie en projecten die niet naar verwachting worden opgeleverd. Opdrachtgevers zijn het vertrouwen verloren in aannemers.",
+          "elevatorPitch": "Goed-bouw is een aannemer die werkt met een hechte, gedreven groep vakmensen. Wij maken eerlijke afspraken, geven mensen de vrijheid om het beste uit zichzelf te halen, en stoppen pas als het klopt. Het resultaat? Projecten om trots op te zijn.",
+          "manifestoText": "De bouw is een vak vol beloftes. Over planning, kwaliteit en samenwerking. Maar wie ooit iets heeft laten bouwen weet hoe makkelijk die beloftes sneuvelen. Bij Goed-bouw doen we wat we zeggen en nemen we onze verantwoordelijkheid. Zonder gedoe, zonder kleine lettertjes.\n\nDat kunnen we, omdat we weten wat een project écht maakt: de mensen die het bouwen. Daarom werken we met een hechte groep vakmensen. Mensen die energie halen uit het werk, trots zijn op wat ze neerzetten en pas stoppen als het klopt.\n\nGoed-bouw\nGewoon dóén",
+          "valuesInAction": [
+            "Aanpakken: geen smoesjes, gewoon doen.",
+            "Vakmanschap: werk waar we achter staan.",
+            "Samenwerking: als één team, van begin tot eind.",
+            "Vrijheid: vertrouwen op de mensen die het werk doen.",
+            "Hechtheid: een groep waar je bij wilt horen.",
+            "Gedrevenheid: gas blijven geven."
+          ],
+          "brandMilestones": [],
+          "empathyStatement": "We begrijpen dat bouwen spannend is. Dat je wilt weten waar je aan toe bent. Dat je wilt vertrouwen op de mensen die jouw project realiseren.",
+          "founderMotivation": "De overtuiging dat het succes van een project bepaald wordt door de mensen die het maken. Niet door systemen, niet door processen — maar door vakmensen die trots zijn op wat ze neerzetten.",
+          "emotionalTerritory": [
+            "Trots",
+            "Vertrouwen",
+            "Rust",
+            "Betrokkenheid"
+          ],
+          "audienceAdaptations": {
+            "partners": "Korte lijnen, eerlijke afspraken, samen als één team. Van werkvoorbereiding tot oplevering.",
+            "customers": "Je weet wat je krijgt: een team dat er écht voor gaat en een eindresultaat om trots op te zijn.",
+            "employees": "Wij zijn een aannemer voor mensen die écht willen bouwen. We realiseren nieuwbouw, renovatie en transformatieprojecten. Van woningbouw tot villabouw, van grondwerk tot oplevering. Wat ons onderscheidt? De groep mensen die het doet. Wij zijn een hechte, gedreven club die eerlijke afspraken maakt en die nakomt. We geven mensen op de bouwplaats de vrijheid en het vertrouwen om het beste uit zichzelf te halen. En we stoppen pas als het klopt. Het resultaat? Een eindresultaat om trots op te zijn. Voor de opdrachtgever. En voor jezelf. Goed-bouw is niet voor iedereen. Maar als jij iemand bent die trots is op zijn vak en die gas blijft geven totdat het resultaat er staat, dan weet je wat je bij ons krijgt en wat we van je verwachten.",
+            "investors": ""
+          },
+          "coreBeliefStatement": "Wij geloven dat goed bouwen begint bij mensen die trots zijn op wat ze neerzetten.",
+          "authorityCredentials": "Een hechte groep vakmensen met jarenlange ervaring in nieuwbouw, renovatie en transformatieprojecten — van woningbouw tot utiliteitsbouw.",
+          "keyNarrativeMessages": [
+            "Goed bouwen begint bij mensen die trots zijn op wat ze neerzetten.",
+            "Wij zijn niet voor iedereen — en dat is precies de kracht.",
+            "Eerlijke afspraken. Gewoon nakomen.",
+            "Pas stoppen als het klopt.",
+            "Gewoon dóén."
+          ],
+          "philosophicalProblem": "Waarom is het zo moeilijk om gewoon goed te bouwen? Waarom is betrouwbaarheid in de bouw zo schaars?",
+          "stakesCostOfInaction": "Zonder een betrouwbare partner: vertragingen, budgetoverschrijdingen, frustratie en een eindresultaat waar niemand trots op is.",
+          "customerSuccessVision": "Aan het einde van het project sta je te kijken naar iets om trots op te zijn. Je wist wat je ging krijgen, en dat is precies wat er staat.",
+          "transformationPromise": "Van onzekerheid naar vertrouwen. Van gedoe naar duidelijkheid. Van een bouwproject naar een resultaat om trots op te zijn.",
+          "customerExternalProblem": "Een bouwproject realiseren dat op tijd, binnen budget en naar verwachting wordt opgeleverd.",
+          "customerInternalProblem": "De angst dat je niet kunt vertrouwen op je aannemer. De stress van niet weten wat je krijgt."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-03-31T07:26:06.856Z",
+        "updatedAt": "2026-04-17T10:30:36.083Z"
+      },
+      {
+        "id": "cmneamarx0013g3msgo1g702n",
+        "name": "Social Relevancy",
+        "slug": "social-relevancy",
+        "description": "De maatschappelijke relevantie van Goed-bouw: mens als kernpijler (vrijheid, vakmanschap, hechtheid), eerlijkheid in de bouw als maatschappelijke bijdrage.",
+        "category": "ESG",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "ESG",
+        "frameworkData": {
+          "mens": {
+            "statements": [
+              {
+                "text": "Wij investeren in een cultuur van vrijheid en vertrouwen voor onze vakmensen.",
+                "score": 5,
+                "target": "Behoud van vaste vakmensen door een sterke bedrijfscultuur.",
+                "evidence": "De EVP van Goed-bouw draait om vrijheid, hechtheid en trots op het vak.",
+                "timeline": "Doorlopend"
+              },
+              {
+                "text": "Wij bieden een werkomgeving waar vakmanschap wordt gewaardeerd en mensen trots kunnen zijn op hun werk.",
+                "score": 5,
+                "target": "Medewerkerstevredenheid en -behoud.",
+                "evidence": "Kernwaarden: vakmanschap, aanpakken, gedrevenheid.",
+                "timeline": "Doorlopend"
+              },
+              {
+                "text": "Wij zijn een hechte groep — niet voor iedereen, maar voor wie past bij onze cultuur.",
+                "score": 4,
+                "target": "Een team waar iedereen bij wil horen.",
+                "evidence": "Selectieve werving gebaseerd op cultuurfit, niet alleen competentie.",
+                "timeline": "Doorlopend"
+              }
+            ],
+            "pillarReflection": "Mens is de kern van het merk Goed-bouw. Alles draait om de mensen die het project maken. De EVP (Employee Value Proposition) bevestigt dit: contractueel (eerlijke afspraken), beleving (hechte gedreven club) en emotioneel (trots op je vak)."
+          },
+          "milieu": {
+            "statements": [
+              {
+                "text": "Wij bouwen met aandacht voor materiaalgebruik en afvalreductie op de bouwplaats.",
+                "score": 2,
+                "target": "Bewuster omgaan met materialen en afval.",
+                "evidence": "",
+                "timeline": ""
+              },
+              {
+                "text": "Wij realiseren projecten die voldoen aan geldende duurzaamheidsnormen.",
+                "score": 3,
+                "target": "",
+                "evidence": "Naleving van bouwbesluit en energienormen.",
+                "timeline": ""
+              },
+              {
+                "text": "Wij staan open voor duurzamere bouwmethoden wanneer dit past bij het project.",
+                "score": 2,
+                "target": "",
+                "evidence": "",
+                "timeline": ""
+              }
+            ],
+            "pillarReflection": "Milieu is geen kernthema in de merkpositionering van Goed-bouw, maar als bouwbedrijf zijn we ons bewust van onze impact. We voldoen aan normen en staan open voor verbetering."
+          },
+          "proofPoints": [
+            "Vaste groep vakmensen — lage personeelsverloop.",
+            "Eerlijke afspraken als kernbelofte, niet als marketingpraat.",
+            "Selectieve werving: niet iedereen past bij Goed-bouw.",
+            "EVP gebouwd op emotionele verbinding, niet alleen contractuele voordelen."
+          ],
+          "maatschappij": {
+            "statements": [
+              {
+                "text": "Wij dragen bij aan de kwaliteit van de gebouwde omgeving door vakwerk te leveren.",
+                "score": 4,
+                "target": "Elk project is een resultaat om trots op te zijn.",
+                "evidence": "Projecten in woningbouw, villabouw, appartementen en utiliteitsbouw.",
+                "timeline": "Per project"
+              },
+              {
+                "text": "Wij bewijzen dat eerlijkheid en betrouwbaarheid in de bouw wél mogelijk zijn.",
+                "score": 4,
+                "target": "Bijdragen aan een betrouwbaardere bouwsector.",
+                "evidence": "Merkpositionering gericht op het nakomen van afspraken.",
+                "timeline": "5-10 jaar"
+              },
+              {
+                "text": "Wij bieden vakmensen een werkplek waar ze zich gewaardeerd voelen en kunnen groeien.",
+                "score": 4,
+                "target": "Voorbeeldfunctie als werkgever in de bouw.",
+                "evidence": "Vrijheid, vertrouwen en hechtheid als kernwaarden.",
+                "timeline": "Doorlopend"
+              }
+            ],
+            "pillarReflection": "De maatschappelijke bijdrage van Goed-bouw zit in het bewijzen dat goed bouwen wél kan. Door project voor project te laten zien dat vakmanschap, eerlijkheid en mensgerichtheid samengaan."
+          },
+          "sdgAlignment": [
+            8,
+            11
+          ],
+          "activismLevel": "Silent",
+          "certifications": [],
+          "impactNarrative": "Onze maatschappelijke impact begint bij onze mensen. Door vakmensen vrijheid en vertrouwen te geven, creëren we een werkplek waar mensen groeien en trots zijn op hun werk. Dit leidt tot betere bouwkwaliteit en duurzamere relaties met opdrachtgevers en partners.",
+          "impactStatement": "Goed-bouw draagt bij aan een betere bouwsector door te investeren in mensen, vakmanschap en eerlijke samenwerking.",
+          "keyStakeholders": [
+            "Vakmensen / medewerkers",
+            "Opdrachtgevers",
+            "Onderaannemers en leveranciers",
+            "Lokale gemeenschappen"
+          ],
+          "annualCommitment": "",
+          "activationChannels": [
+            "Projectcommunicatie",
+            "Werving en employer branding",
+            "Bouwplaatscommunicatie"
+          ],
+          "authenticityScores": {
+            "consistency": 5,
+            "walkTheTalk": 5,
+            "transparency": 4,
+            "measurability": 2,
+            "stakeholderTrust": 4,
+            "longTermCommitment": 4
+          },
+          "communicationPrinciples": [
+            "Laat het werk spreken, niet de woorden.",
+            "Wees eerlijk over wat we wel en niet doen.",
+            "Toon de mensen achter het project."
+          ],
+          "antiGreenwashingStatement": "Goed-bouw claimt geen duurzaamheidslabel. We zijn een bouwbedrijf dat investeert in mensen en vakmanschap. Onze maatschappelijke impact zit in hoe we werken, niet in wat we beweren."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-03-31T07:26:06.861Z",
+        "updatedAt": "2026-04-17T10:30:41.858Z"
+      },
+      {
+        "id": "cmneamarn000tg3msjnhn526u",
+        "name": "Brand Archetype",
+        "slug": "brand-archetype",
+        "description": "Creator (70%) / Outlaw (30%) archetype voor corporate communicatie. Omgekeerd voor werving: Outlaw 70% / Creator 30%.",
+        "category": "PERSONALITY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_ARCHETYPE",
+        "frameworkData": {
+          "coreFear": "Middelmatigheid. Werk afleveren dat net voldoende is.",
+          "strategy": "Investeren in een hechte groep vakmensen die de vrijheid en het vertrouwen krijgen om het beste uit zichzelf te halen.",
+          "brandGoal": "Projecten realiseren die getuigen van vakmanschap en waar iedereen trots op is.",
+          "coreDesire": "Iets blijvends neerzetten — vakwerk waar je trots op bent.",
+          "giftTalent": "Het vermogen om met een gedreven team projecten neer te zetten die boven verwachting uitkomen.",
+          "subArchetype": "Outlaw",
+          "weSayNotThat": [],
+          "brandExamples": [
+            "Volvo (Creator: veiligheid en vakmanschap)",
+            "Harley-Davidson (Outlaw: vrijheid en eigenheid)",
+            "Patagonia (Creator + Outlaw: kwaliteit met een rebel edge)"
+          ],
+          "shadowWeakness": "Perfectionisme dat kan leiden tot conflicten met planning en budget. De Outlaw-kant kan leiden tot frictie met gevestigde processen.",
+          "contentStrategy": "Projectverhalen vanuit het perspectief van de vakmensen. Behind-the-scenes content. Testimonials van opdrachtgevers over het vertrouwen en het eindresultaat.",
+          "voiceAdjectives": [],
+          "languagePatterns": "",
+          "primaryArchetype": "Creator",
+          "archetypeInAction": "Corporate communicatie: Creator 70% / Outlaw 30% — focus op vakmanschap, kwaliteit en trots. Wervingscommunicatie: Creator 30% / Outlaw 70% — focus op vrijheid, eigenheid en de rebelse kant van bouwen.",
+          "customerExperience": "Korte lijnen, eerlijke afspraken, één team van werkvoorbereiding tot oplevering. De klant voelt vertrouwen en betrokkenheid.",
+          "marketingExpression": "Beelden van ruw vakwerk in uitvoering, teams op de bouwplaats, trots op het eindresultaat. Toon: direct, eerlijk, geen franje.",
+          "positioningApproach": "De aannemer die niet voor iedereen is, maar die wél levert wat beloofd is — met een team dat er écht voor gaat.",
+          "competitiveLandscape": "In de bouwsector is betrouwbaarheid schaars. Goed-bouw onderscheidt zich door een cultuur van aanpakken, vakmanschap en hechtheid die de meeste aannemers niet bieden.",
+          "storytellingApproach": "Authentiek, vanuit de bouwplaats. Geen gepolijste marketing maar echte verhalen van echte mensen.",
+          "brandVoiceDescription": ""
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-03-31T07:26:06.850Z",
+        "updatedAt": "2026-04-17T10:30:36.082Z"
+      },
+      {
+        "id": "cmneamarg000ng3mszgq9drl2",
+        "name": "Brand Essence",
+        "slug": "brand-essence",
+        "description": "De merkessentie van Goed-bouw: Trots bouwen. Functioneel: betrouwbare realisatie. Emotioneel: vertrouwen en rust.",
+        "category": "CORE",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_ESSENCE",
+        "frameworkData": {
+          "attributes": [
+            "Vakkundig",
+            "Betrouwbaar",
+            "Hecht",
+            "Gedreven",
+            "Direct",
+            "Eerlijk"
+          ],
+          "proofPoints": [
+            "Vaste kern van vakmensen, geen wisselende ploegen.",
+            "Eerlijke afspraken die worden nagekomen.",
+            "Korte lijnen — je weet altijd wie je moet bellen.",
+            "Van grondwerk tot oplevering als één team."
+          ],
+          "discriminator": "Een hechte, vaste groep vakmensen die de vrijheid en het vertrouwen krijgen om het beste uit zichzelf te halen — en die pas stoppen als het klopt.",
+          "audienceInsight": "Opdrachtgevers in de bouw willen één ding: weten waar ze aan toe zijn. Ze zijn het zat om achter hun aannemer aan te moeten zitten en willen een partner die gewoon levert wat is afgesproken.",
+          "emotionalBenefit": "Vertrouwen en rust. De zekerheid dat je project in goede handen is bij mensen die er écht voor gaan.",
+          "essenceNarrative": "De essentie van Goed-bouw is trots: trots op het vak, trots op het team, trots op het resultaat. Alles wat we doen — van de manier waarop we samenwerken tot de kwaliteit die we leveren — is geworteld in die trots.",
+          "essenceStatement": "Trots bouwen.",
+          "validationScores": {
+            "unique": 4,
+            "enduring": 4,
+            "scalable": 3,
+            "authentic": 5,
+            "intangible": 3,
+            "meaningful": 5
+          },
+          "functionalBenefit": "Betrouwbare realisatie van nieuwbouw, renovatie en transformatieprojecten. Eerlijke afspraken die worden nagekomen, korte lijnen en één vast team van begin tot eind.",
+          "selfExpressiveBenefit": "Door te kiezen voor Goed-bouw laat je zien dat je waarde hecht aan kwaliteit, vakmanschap en mensen die hun woord nakomen."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-03-31T07:26:06.844Z",
+        "updatedAt": "2026-04-17T10:30:36.086Z"
+      },
+      {
+        "id": "cmneamari000pg3msvdckus6c",
+        "name": "Brand Promise",
+        "slug": "brand-promise",
+        "description": "De merkbelofte van Goed-bouw: eerlijke afspraken, vakwerk, en een resultaat om trots op te zijn.",
+        "category": "STRATEGY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_PROMISE",
+        "frameworkData": {
+          "proofPoints": [
+            "Vaste kern vakmensen — geen wisselende onderaannemers.",
+            "Korte lijnen: je weet wie je moet bellen.",
+            "Van grondwerk tot oplevering als één team.",
+            "Projecten in woningbouw, villabouw, appartementen en utiliteitsbouw."
+          ],
+          "differentiator": "Een hechte, gedreven groep vakmensen die de vrijheid en het vertrouwen krijgen om het beste uit zichzelf te halen.",
+          "emotionalValue": "Vertrouwen en rust. Je weet dat je project in goede handen is.",
+          "targetAudience": "Opdrachtgevers in nieuwbouw, renovatie en transformatieprojecten: particulieren, projectontwikkelaars en bedrijven die waarde hechten aan betrouwbaarheid en vakmanschap.",
+          "functionalValue": "Betrouwbare oplevering van bouwprojecten: op tijd, volgens afspraak, met korte lijnen en een vast team.",
+          "promiseOneLiner": "Eerlijke afspraken. Vakwerk. Een resultaat om trots op te zijn.",
+          "coreCustomerNeed": "Een aannemer die zijn woord nakomt en projecten oplevert waar je trots op kunt zijn.",
+          "promiseStatement": "Wij leveren wat we afspreken — met een team dat er écht voor gaat.",
+          "onlynessStatement": "Alleen Goed-bouw kan bouwen met een hechte groep vakmensen die eerlijke afspraken nakomt en pas stopt als het klopt, omdat we investeren in een cultuur van vrijheid, vertrouwen en vakmanschap.",
+          "measurableOutcomes": [
+            "Oplevering conform afspraak — in planning en kwaliteit.",
+            "Klanttevredenheid gebaseerd op vertrouwen en samenwerking.",
+            "Behoud van vaste vakmensen door de cultuur van vrijheid en hechtheid."
+          ],
+          "selfExpressiveValue": "Kiezen voor Goed-bouw betekent kiezen voor kwaliteit en integriteit in een sector waar dat niet vanzelfsprekend is."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-03-31T07:26:06.846Z",
+        "updatedAt": "2026-04-17T10:30:36.087Z"
+      },
+      {
+        "id": "cmneamarb000lg3msgsduia5p",
+        "name": "Golden Circle",
+        "slug": "golden-circle",
+        "description": "De Golden Circle van Goed-bouw: WHY (trots op wat je neerzet), HOW (hechte gedreven groep, eerlijke afspraken), WHAT (nieuwbouw, renovatie, transformatie).",
+        "category": "FOUNDATION",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "GOLDEN_CIRCLE",
+        "frameworkData": {
+          "how": {
+            "details": "Door uitdagende projecten aan te gaan met een hechte, gedreven groep. Dat doen we door: eerlijke afspraken te maken en die na te komen — geen gedoe, gewoon duidelijk; de mensen op de bouwplaats de vrijheid en het vertrouwen te geven om het beste uit zichzelf te halen; als één team te werken, van werkvoorbereiding tot oplevering; pas te stoppen als het klopt.",
+            "statement": "Door uitdagende projecten aan te gaan met een hechte, gedreven groep."
+          },
+          "why": {
+            "details": "Wij geloven dat goed bouwen begint bij mensen die trots zijn op wat ze neerzetten. Daarom investeren wij in een cultuur waar vakmanschap, eigenaarschap en samenwerking centraal staan.",
+            "statement": "Wij geloven dat goed bouwen begint bij mensen die trots zijn op wat ze neerzetten."
+          },
+          "what": {
+            "details": "Wij realiseren nieuwbouw, renovatie en transformatieprojecten. Van woningbouw en villabouw tot appartementencomplexen en utiliteitsbouw. Van grondwerk tot oplevering.",
+            "statement": "Wij realiseren nieuwbouw, renovatie en transformatieprojecten."
+          }
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-03-31T07:26:06.839Z",
+        "updatedAt": "2026-04-17T10:30:36.072Z"
+      },
+      {
+        "id": "cmneamaru0011g3msdk206giu",
+        "name": "Core Values",
+        "slug": "core-values",
+        "description": "De 6 kernwaarden van Goed-bouw: Aanpakken (fire), Vakmanschap & Samenwerking (roots), Gedrevenheid & Vrijheid (wings), met Hechtheid als verbindende kracht.",
+        "category": "CULTURE",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRANDHOUSE_VALUES",
+        "frameworkData": {
+          "ownValue": {
+            "name": "Aanpakken",
+            "tagline": "Gewoon doen",
+            "description": "Bij Goed-Bouw pakken we aan. We nemen verantwoordelijkheid, lossen op en gaan door totdat het klopt. Geen omwegen, geen smoesjes. Wat we zeggen, doen we."
+          },
+          "hechtValue": {
+            "name": "Hechtheid",
+            "tagline": "Een groep waar je bij wilt horen",
+            "description": "Wij zijn geen anoniem bedrijf. We zijn een hechte groep mensen die samen bouwen aan iets om trots op te zijn. Dat betekent ook dat je niet altijd bij ons past en dat is precies de kracht van Goed-bouw."
+          },
+          "anchorValue1": {
+            "name": "Vakmanschap",
+            "tagline": "Goed werk begint bij mensen die er trots op zijn",
+            "description": "Wij leveren niet wat net voldoende is. We leveren werk waar we achter staan. Dat vakmanschap zit in de voorbereiding, de uitvoering en de manier waarop we een project opleveren."
+          },
+          "anchorValue2": {
+            "name": "Samenwerking",
+            "tagline": "Hand in hand, van begin tot eind",
+            "description": "Goed bouwen doe je samen. Met het team, met de opdrachtgever en met de partijen om ons heen. Korte lijnen, open communicatie en wederzijds vertrouwen vormen daarvoor de basis."
+          },
+          "valueTension": "De spanning tussen Vrijheid (individuele ruimte) en Hechtheid (de groep). Goed-bouw geeft mensen vrijheid, maar verwacht ook dat je past bij de hechte groep. Je hoort erbij of je hoort er niet bij — en dat is precies de kracht.",
+          "aspirationValue1": {
+            "name": "Gedrevenheid",
+            "tagline": "Gas blijven geven",
+            "description": "Wij halen energie uit de uitdaging. Hoe groter het project, hoe meer wij er de schouders onder zetten. Die drang om door te gaan, tot het resultaat er staat, zit in ons allemaal."
+          },
+          "aspirationValue2": {
+            "name": "Vrijheid",
+            "tagline": "De ruimte om jezelf te zijn",
+            "description": "Bij Goed-Bouw krijgen mensen de ruimte om te handelen, te groeien en zichzelf te zijn. We vertrouwen op de mensen die het werk doen. Die vrijheid maakt ons beter en het werken bij Goed-bouw de moeite waard."
+          }
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-03-31T07:26:06.858Z",
+        "updatedAt": "2026-04-17T10:30:36.081Z"
+      },
+      {
+        "id": "cmneamar1000jg3msjp91yqo2",
+        "name": "Purpose Statement",
+        "slug": "purpose-statement",
+        "description": "Het purpose statement van Goed-bouw: goed bouwen begint bij mensen die trots zijn op wat ze neerzetten.",
+        "category": "PURPOSE",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "PURPOSE_WHEEL",
+        "frameworkData": {
+          "mechanism": "Door een cultuur van vrijheid en vertrouwen creëren we een omgeving waarin vakmensen eigenaarschap nemen en trots zijn op hun werk.",
+          "statement": "Wij geloven dat goed bouwen begint bij mensen die trots zijn op wat ze neerzetten.",
+          "impactType": "Enable Potential",
+          "pressureTest": "Zonder Goed-bouw mist de bouwsector een aannemer die écht investeert in zijn mensen en de vrijheid geeft om vakmanschap centraal te stellen. De sector blijft gevangen in een cultuur van gebroken beloftes en middelmatigheid.",
+          "impactDescription": "Goed-bouw stelt vakmensen in staat het beste uit zichzelf te halen door hen vrijheid, vertrouwen en uitdagende projecten te bieden.",
+          "mechanismCategory": "Empowerment"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-03-31T07:26:06.829Z",
+        "updatedAt": "2026-04-17T10:30:36.088Z"
+      },
+      {
+        "id": "cmneamarl000rg3msdrj860o6",
+        "name": "Mission & Vision",
+        "slug": "mission-statement",
+        "description": "Missie: Wij bouwen voor mensen die trots willen zijn op het resultaat. Visie: Wij geloven in een wereld waarin vakmanschap telt en je op je aannemer kunt bouwen.",
+        "category": "STRATEGY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "MISSION_STATEMENT",
+        "frameworkData": {
+          "forWhom": "Voor opdrachtgevers die waarde hechten aan betrouwbaarheid, vakmanschap en een persoonlijke aanpak — in nieuwbouw, renovatie en transformatieprojecten.",
+          "whatWeDo": "Wij realiseren nieuwbouw, renovatie en transformatieprojecten. Van woningbouw en villabouw tot appartementencomplexen en utiliteitsbouw. Van grondwerk tot oplevering.",
+          "howWeDoIt": "Door uitdagende projecten aan te gaan met een hechte, gedreven groep. Eerlijke afspraken maken en nakomen. Mensen de vrijheid en het vertrouwen geven. Als één team werken. Pas stoppen als het klopt.",
+          "impactGoal": "Het bewijs leveren dat goed bouwen wél kan — door het gewoon te doen.",
+          "timeHorizon": "5-10 jaar",
+          "boldAspiration": "De standaard zetten voor hoe goed bouwen eruitziet: een sector waarin je kunt vertrouwen op je aannemer.",
+          "missionOneLiner": "Gewoon goed bouwen.",
+          "valuesAlignment": "De missie is direct geworteld in de kernwaarden: aanpakken (gewoon doen), vakmanschap (kwaliteit leveren), samenwerking (als één team), gedrevenheid (pas stoppen als het klopt), vrijheid (vertrouwen geven), hechtheid (een groep waar je bij hoort).",
+          "visionStatement": "Wij geloven in een wereld waarin vakmanschap telt en je op je aannemer kunt bouwen.",
+          "missionStatement": "Wij bouwen voor mensen die trots willen zijn op het resultaat.",
+          "successIndicators": [
+            "Klanten bevelen Goed-bouw actief aan op basis van vertrouwen.",
+            "Vakmensen willen bij Goed-bouw werken vanwege de cultuur van vrijheid en hechtheid.",
+            "Projecten worden consistent opgeleverd conform afspraak.",
+            "Goed-bouw wordt herkend als de aannemer die zijn beloftes nakomt."
+          ],
+          "desiredFutureState": "Opdrachtgevers kiezen voor Goed-bouw omdat ze weten dat ze een team krijgen dat er écht voor gaat. Het merk staat synoniem voor betrouwbaar bouwen.",
+          "stakeholderBenefit": "Opdrachtgevers krijgen vertrouwen en een resultaat om trots op te zijn. Medewerkers krijgen vrijheid en een team waar ze bij horen. Partners krijgen eerlijke samenwerking.",
+          "missionVisionTension": "De spanning zit tussen de eenvoud van de missie (\"bouwen voor mensen die trots willen zijn\") en de ambitie van de visie (een wereld waarin je op je aannemer kunt bouwen). Goed-bouw lost dit op door klein te beginnen: project voor project bewijzen dat het anders kan."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-03-31T07:26:06.849Z",
+        "updatedAt": "2026-04-17T10:30:41.856Z"
+      }
+    ],
+    "brandAssetVersion": [],
+    "brandAssetResearchMethod": [
+      {
+        "id": "cmneamar4000kg3msmrgujvgw",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmneamar1000jg3msjp91yqo2",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-03-31T07:26:06.829Z",
+        "updatedAt": "2026-03-31T07:26:06.829Z"
+      },
+      {
+        "id": "cmneamard000mg3ms8zz1ghxv",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmneamarb000lg3msgsduia5p",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-03-31T07:26:06.839Z",
+        "updatedAt": "2026-03-31T07:26:06.839Z"
+      },
+      {
+        "id": "cmneamarh000og3msq38w9u57",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmneamarg000ng3mszgq9drl2",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-03-31T07:26:06.844Z",
+        "updatedAt": "2026-03-31T07:26:06.844Z"
+      },
+      {
+        "id": "cmneamarj000qg3msutrjvivb",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmneamari000pg3msvdckus6c",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-03-31T07:26:06.846Z",
+        "updatedAt": "2026-03-31T07:26:06.846Z"
+      },
+      {
+        "id": "cmneamarl000sg3mskpaoel7b",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmneamarl000rg3msdrj860o6",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-03-31T07:26:06.849Z",
+        "updatedAt": "2026-03-31T07:26:06.849Z"
+      },
+      {
+        "id": "cmneamarn000ug3msdee54vvq",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmneamarn000tg3msjnhn526u",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-03-31T07:26:06.850Z",
+        "updatedAt": "2026-03-31T07:26:06.850Z"
+      },
+      {
+        "id": "cmneamarp000wg3ms333qchsq",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmneamaro000vg3msipw4t9mi",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-03-31T07:26:06.852Z",
+        "updatedAt": "2026-03-31T07:26:06.852Z"
+      },
+      {
+        "id": "cmneamarr000yg3ms925or253",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmneamarr000xg3ms03ubnjpn",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-03-31T07:26:06.855Z",
+        "updatedAt": "2026-03-31T07:26:06.855Z"
+      },
+      {
+        "id": "cmneamart0010g3msm58mvbox",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmneamars000zg3ms85kykhz3",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-03-31T07:26:06.856Z",
+        "updatedAt": "2026-03-31T07:26:06.856Z"
+      },
+      {
+        "id": "cmneamarv0012g3mswx1ywp39",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmneamaru0011g3msdk206giu",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-03-31T07:26:06.858Z",
+        "updatedAt": "2026-03-31T07:26:06.858Z"
+      },
+      {
+        "id": "cmneamary0014g3msq1slxbha",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmneamarx0013g3msgo1g702n",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-03-31T07:26:06.861Z",
+        "updatedAt": "2026-03-31T07:26:06.861Z"
+      }
+    ],
+    "brand": [
+      {
+        "id": "cmr4z54gd000q38c9udmcgg7e",
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-07-03T13:33:43.501Z",
+        "updatedAt": "2026-07-03T13:33:43.501Z"
+      }
+    ],
+    "brandLocaleProfile": [
+      {
+        "id": "cmr4z54gd000r38c9886x5tih",
+        "brandId": "cmr4z54gd000q38c9udmcgg7e",
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "locale": "nl-NL",
+        "isDefault": true,
+        "voiceOverrides": null,
+        "localizedAssets": null,
+        "createdAt": "2026-07-03T13:33:43.501Z",
+        "updatedAt": "2026-07-03T13:33:43.501Z"
+      }
+    ],
+    "brandVoiceguide": [
+      {
+        "id": "cmp6lpiil000227mswtv9b53y",
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "voiceDescription": null,
+        "toneDimensions": null,
+        "contentGuidelines": [
+          "OBSERVED: Lead with action-oriented, concrete language that emphasizes tangible outcomes ('Bouwen aan een stevig fundament', 'Samen sterk in de bouw')",
+          "OBSERVED: Use metaphors rooted in construction and building to communicate values and process ('Een sterk project begint met een goed gesprek')",
+          "OBSERVED: Emphasize partnership and collaboration language throughout ('samen', 'teamwork', 'samenwerking')",
+          "OBSERVED: Balance professional expertise with approachability - mention 'vakmanschap' alongside 'plezier' and 'trots'",
+          "RECOMMENDED: Open each service or project description with a benefit-focused statement before diving into specifics",
+          "RECOMMENDED: Include client testimonials or project outcomes to reinforce the 'resultaat waar je trots op kunt zijn' promise"
+        ],
+        "writingGuidelines": [
+          "OBSERVED: Use predominantly short, declarative sentences (average 10-15 words) for clarity and directness",
+          "OBSERVED: Employ first-person plural 'we/wij' and second-person 'u/je' to create conversational intimacy while maintaining professionalism",
+          "OBSERVED: Mix formal address ('u', 'uw') with informal ('je') depending on context - formal for client-facing, informal for recruitment",
+          "OBSERVED: Lead with verbs and action words ('realiseert', 'bouwen', 'werken', 'luisteren')",
+          "OBSERVED: Use em-dashes for rhythm and to add clarifying details without breaking sentence flow",
+          "OBSERVED: Avoid jargon - use accessible Dutch that any stakeholder can understand ('korte lijnen', 'overzichtelijke bouw')",
+          "RECOMMENDED: Maintain sentence variety with 70% short sentences (under 15 words) and 30% medium-length (15-25 words) for rhythm",
+          "RECOMMENDED: Use active voice exclusively for project descriptions and capabilities",
+          "RECOMMENDED: Include specific project details (locations, client names) to add credibility and concreteness"
+        ],
+        "vocabularyDo": [],
+        "vocabularyDont": [],
+        "voiceSample": null,
+        "writingSamples": [],
+        "wordsWeUse": [],
+        "wordsWeAvoid": [],
+        "channelTones": null,
+        "antiPatterns": [],
+        "examplePhrases": [
+          {
+            "text": "Elk project begint met luisteren - en eindigt met een resultaat waar je trots op kunt zijn.",
+            "type": "do"
+          },
+          {
+            "text": "Een sterk project begint met een goed gesprek.",
+            "type": "do"
+          },
+          {
+            "text": "We werken met plezier aan mooie projecten en zetten samen iets neer om trots op te zijn.",
+            "type": "do"
+          },
+          {
+            "text": "Bij Goed-Bouw geloven we in duidelijke communicatie, vakmanschap en duurzame relaties.",
+            "type": "do"
+          },
+          {
+            "text": "Goed-Bouw is een toonaangevende speler in de bouwsector met jarenlange expertise.",
+            "type": "dont"
+          },
+          {
+            "text": "Onze state-of-the-art methodologie garandeert optimale resultaten.",
+            "type": "dont"
+          },
+          {
+            "text": "Wij bieden een totaalpakket aan bouwgerelateerde diensten.",
+            "type": "dont"
+          }
+        ],
+        "centroidComputedAt": null,
+        "contentLocale": null,
+        "voiceDnaSavedForAi": true,
+        "vocabularySavedForAi": true,
+        "channelTonesSavedForAi": true,
+        "antiPatternsSavedForAi": true,
+        "guidelinesSavedForAi": true,
+        "examplePhrasesSavedForAi": true,
+        "referencesSavedForAi": false,
+        "source": "extracted",
+        "publishedAt": null,
+        "createdAt": "2026-05-15T07:33:47.901Z",
+        "updatedAt": "2026-05-15T07:33:47.901Z",
+        "createdById": null
+      }
+    ],
+    "brandVoice": [],
+    "brandStyleguide": [
+      {
+        "id": "cmo2rovnl00jhb1msqfd4wnq8",
+        "status": "COMPLETE",
+        "sourceType": "URL",
+        "sourceUrl": "https://www.goed-bouw.nl/",
+        "sourceFileName": null,
+        "analysisJobId": "job_4e613e91-1049-4417-be0b-183d74ff487a",
+        "analysisStatus": "COMPLETE",
+        "errorMessage": null,
+        "detectedFrameworks": [],
+        "layoutStyle": "COMMERCIAL",
+        "layoutStyleInferred": false,
+        "buttonProfile": null,
+        "spacingProfile": null,
+        "elevationProfile": null,
+        "radiusProfile": null,
+        "motionProfile": null,
+        "typographyProfile": null,
+        "buttonProfileOverride": false,
+        "spacingProfileOverride": false,
+        "elevationProfileOverride": false,
+        "radiusProfileOverride": false,
+        "motionProfileOverride": false,
+        "typographyProfileOverride": false,
+        "designPhilosophy": null,
+        "fixtureSamples": null,
+        "archetype": null,
+        "archetypeConfidence": null,
+        "archetypeReasoning": null,
+        "logoGuidelines": [
+          "Use the gray RGB logo (171106_logo_GBA_RGB_grijs.webp) as the primary brand mark",
+          "Maintain clear space around the logo equal to the height of the 'G' letterform",
+          "Logo should be displayed on white or light neutral backgrounds for optimal contrast",
+          "The favicon version (cropped-favicon_GBA) can be used for small-scale applications like browser tabs and mobile icons",
+          "Ensure logo is always legible and never smaller than 120px width in digital applications"
+        ],
+        "logoDonts": [
+          "Don't place the gray logo on dark backgrounds without switching to a white version",
+          "Don't stretch, distort, or alter the aspect ratio of the logo",
+          "Don't add effects like shadows, gradients, or outlines to the logo",
+          "Don't use the favicon as the primary logo in full-size applications",
+          "Don't place the logo on busy backgrounds or images that reduce legibility"
+        ],
+        "logoSavedForAi": false,
+        "colorDonts": [
+          "Don't use semantic colors (red, green, amber, cyan) for decorative purposes—reserve them for their functional meanings",
+          "Don't combine multiple semantic colors in the same component as it creates visual confusion",
+          "Don't use the primary navy (#333366) as a text color on colored backgrounds without checking contrast ratios",
+          "Don't use light gray (#E7E7E7) for text—it fails accessibility contrast requirements",
+          "Don't mix warm and cool grays inconsistently—stick to the defined neutral palette for cohesion"
+        ],
+        "colorsSavedForAi": false,
+        "semanticColors": null,
+        "primaryFontName": "var( --e-global-typography-text-font-family )",
+        "primaryFontUrl": null,
+        "additionalFonts": [
+          "var( --e-global-typography-primary-font-family )",
+          "Roboto",
+          "Helvetica Neue",
+          "Arial",
+          "Noto Sans"
+        ],
+        "typeScale": [
+          {
+            "name": "Heading 1",
+            "size": "2.5rem",
+            "color": "#333333",
+            "level": "H1",
+            "weight": "700",
+            "lineHeight": "1.2"
+          },
+          {
+            "name": "Heading 2",
+            "size": "2rem",
+            "color": "#333333",
+            "level": "H2",
+            "weight": "700",
+            "lineHeight": "1.3"
+          },
+          {
+            "name": "Heading 3",
+            "size": "1.75rem",
+            "color": "#333333",
+            "level": "H3",
+            "weight": "600",
+            "lineHeight": "1.4"
+          },
+          {
+            "name": "Heading 4",
+            "size": "1.5rem",
+            "color": "#333333",
+            "level": "H4",
+            "weight": "600",
+            "lineHeight": "1.4"
+          },
+          {
+            "name": "Heading 5",
+            "size": "1.25rem",
+            "color": "#333333",
+            "level": "H5",
+            "weight": "600",
+            "lineHeight": "1.5"
+          },
+          {
+            "name": "Heading 6",
+            "size": "1rem",
+            "color": "#333333",
+            "level": "H6",
+            "weight": "600",
+            "lineHeight": "1.5"
+          },
+          {
+            "name": "Body Text",
+            "size": "1rem",
+            "color": "#333333",
+            "level": "Body",
+            "weight": "400",
+            "lineHeight": "1.6"
+          },
+          {
+            "name": "Small Text",
+            "size": "13px",
+            "color": "#666666",
+            "level": "Small",
+            "weight": "400",
+            "lineHeight": "1.5"
+          },
+          {
+            "name": "Caption",
+            "size": "16px",
+            "color": "#69727D",
+            "level": "Caption",
+            "weight": "400",
+            "lineHeight": "1.4"
+          }
+        ],
+        "typographySavedForAi": false,
+        "photographyStyle": {
+          "mood": "RECOMMENDED: Authentic, grounded, and human-centered. Warm natural lighting that conveys trustworthiness and craftsmanship. Documentary-style realism rather than overly polished corporate imagery. Capture moments of collaboration and pride in work.",
+          "subjects": "Construction teams in action, close-ups of skilled hands working with materials, completed projects showing transformation (before/after), client-builder interactions, team meetings on-site, architectural details showcasing quality craftsmanship, local Dutch construction contexts (Wageningen, Utrecht, De Meern locations)",
+          "composition": "Eye-level perspectives that put viewer on equal footing with subjects. Use of natural frames (doorways, windows, scaffolding) to show progress and transformation. Include environmental context showing Dutch architecture and neighborhoods. Balance wide shots of completed projects with intimate details of craftsmanship."
+        },
+        "photographyGuidelines": [
+          "RECOMMENDED: Feature real team members and actual project sites - avoid stock photography of generic construction scenes",
+          "RECOMMENDED: Capture the 'samen' (together) principle visually - show 2-4 people collaborating in most shots rather than isolated workers",
+          "RECOMMENDED: Use natural, diffused daylight to convey honesty and transparency - avoid dramatic shadows or overly stylized lighting",
+          "RECOMMENDED: Include environmental shots showing the Dutch context and local communities where projects are built",
+          "RECOMMENDED: Show progression and transformation - before/during/after sequences that visualize 'bouwen aan een stevig fundament'",
+          "RECOMMENDED: Photograph tools, materials, and details at close range to emphasize 'vakmanschap' and attention to quality"
+        ],
+        "illustrationGuidelines": [
+          "RECOMMENDED: Use simple line drawings or isometric illustrations for process explanations (planning, execution, completion phases)",
+          "RECOMMENDED: Employ a restrained color palette matching brand identity - likely earth tones, construction oranges, and neutral grays",
+          "RECOMMENDED: Create icons that represent core values: a handshake for partnership, building blocks for foundation, speech bubbles for communication",
+          "RECOMMENDED: Use architectural blueprint-style illustrations sparingly to convey planning and precision without being overly technical"
+        ],
+        "imageryDonts": [
+          "Avoid sterile, corporate stock photos of people in hard hats pointing at clipboards",
+          "Don't use overly dramatic or heroic angles that feel disconnected from the grounded, approachable tone",
+          "Avoid imagery that shows only finished, pristine buildings without human presence or context",
+          "Don't use generic international construction imagery - root all visuals in Dutch context and local projects",
+          "Avoid cold, industrial color grading - maintain warmth and approachability in post-processing",
+          "Don't show solitary workers - this contradicts the 'samen' and teamwork emphasis",
+          "Avoid overly technical or blueprint-heavy imagery that might alienate non-expert clients"
+        ],
+        "imagerySavedForAi": false,
+        "brandImages": null,
+        "graphicElements": {
+          "usageNotes": "The design system combines generous border-radius (30px) on primary containers with subtle 3px rounding on smaller elements. Strong shadows create depth hierarchy, while gradient overlays at 135deg provide visual interest and brand differentiation.",
+          "brandShapes": [
+            "Rounded rectangles with 30px border-radius for primary containers",
+            "Subtle rounded corners (3px) for secondary elements and cards",
+            "Circular or pill-shaped badges for labels and tags"
+          ],
+          "visualDevices": [
+            "Card-based layouts with strong shadow depth",
+            "Gradient-backed content blocks for visual hierarchy",
+            "Color-coded sections using brand palette (#D9534F, #00AFD3, #5CB85C)"
+          ],
+          "decorativeElements": [
+            "Bold gradient overlays (135deg angle) for hero sections",
+            "Deep shadow effects (5px 10px 50px rgba(0,0,0,0.61)) for elevation",
+            "Minimal border accents using brand colors (#c36, #69727d)"
+          ]
+        },
+        "graphicElementsDonts": [
+          "Avoid sharp 0px corners on primary containers — conflicts with the established 30px rounded brand style",
+          "Don't use flat shadows or elevation — the brand relies on bold shadow depth (5px 10px 50px)",
+          "Avoid gradients at angles other than 135deg — breaks visual consistency"
+        ],
+        "patternsTextures": {
+          "patterns": [
+            "Gradient overlays at 135deg angle for section backgrounds",
+            "Minimal line dividers with subtle inset shadows (inset 0 -1px 0 rgba(0,0,0,.102))"
+          ],
+          "textures": [
+            "Smooth linear gradients — no heavy textures or noise",
+            "Clean solid backgrounds with gradient accents"
+          ],
+          "usageNotes": "The brand favors clean, gradient-enhanced backgrounds over textured surfaces. Light neutral bases (#E7E7E7) provide contrast for white cards with strong shadows, while 135deg gradients add visual energy to key sections.",
+          "backgrounds": [
+            "Light neutral (#E7E7E7) base with white content cards",
+            "Gradient-enhanced hero sections using brand color combinations",
+            "Deep shadows for card elevation against light backgrounds"
+          ]
+        },
+        "iconographyStyle": {
+          "style": "line",
+          "sizing": "16/20/24/32px",
+          "colorUsage": "Primary brand colors (#D9534F, #00AFD3, #5CB85C) for active states, #69727D for inactive, #333333 for default",
+          "usageNotes": "Icons follow a line-based style with 1px stroke weight derived from border widths. Corner radius matches the 3px secondary element rounding. Detected font stack includes eicons, suggesting Elementor icon library usage.",
+          "cornerRadius": "3px",
+          "strokeWeight": "1px"
+        },
+        "iconographyDonts": [
+          "Don't use stroke weights heavier than 1px — conflicts with the subtle border aesthetic",
+          "Avoid mixing sharp (0px) and rounded (3px) corner styles within the same icon set",
+          "Don't scale icons outside the 16/20/24/32px system — breaks visual rhythm"
+        ],
+        "gradientsEffects": [
+          {
+            "name": "Blue Gradient",
+            "type": "linear",
+            "angle": "135deg",
+            "usage": "Observed in CSS — Hero sections, primary CTAs",
+            "colors": [
+              "#0693E3",
+              "#00AFD3"
+            ]
+          },
+          {
+            "name": "Green Gradient",
+            "type": "linear",
+            "angle": "135deg",
+            "usage": "Observed in CSS — Success states, positive messaging",
+            "colors": [
+              "#7ADCB4",
+              "#5CB85C"
+            ]
+          },
+          {
+            "name": "Orange Gradient",
+            "type": "linear",
+            "angle": "135deg",
+            "usage": "Observed in CSS — Accent sections, call-to-action elements",
+            "colors": [
+              "#FCB900",
+              "#FF6900"
+            ]
+          },
+          {
+            "name": "Neutral Gradient",
+            "type": "linear",
+            "angle": "135deg",
+            "usage": "Observed in CSS — Subtle backgrounds, low-emphasis sections",
+            "colors": [
+              "#EEEEEE",
+              "#E7E7E7"
+            ]
+          }
+        ],
+        "layoutPrinciples": {
+          "gridSystem": "12-column responsive grid with fluid gutters",
+          "usageNotes": "Layout follows a 5px base unit system with 15px as the primary spacing value. The generous 30px border-radius on containers demands proportional internal padding. Strong shadows require adequate spacing to prevent visual crowding.",
+          "spacingScale": "5px base unit: 5, 10, 15, 20, 25, 30px (median 15px observed)",
+          "compositionRules": [
+            "Content cards use 15px internal padding with 5-6px gaps between nested elements",
+            "Primary containers require 30px border-radius with proportional padding (20-30px minimum)",
+            "Shadow depth (5px 10px 50px) requires 20px+ clearance from adjacent elements",
+            "Gradient sections use full-bleed backgrounds with 30px+ internal padding"
+          ],
+          "whitespacePhilosophy": "Moderate spacing with 15px median padding/margin creates balanced density. Primary containers use 30px border-radius requiring adequate breathing room."
+        },
+        "designLanguageSavedForAi": false,
+        "visualLanguage": {
+          "line": {
+            "borders": "thin",
+            "dividers": "thin",
+            "decorativeLines": false
+          },
+          "depth": {
+            "overlapping": true,
+            "glassmorphism": false,
+            "dimensionality": "layered"
+          },
+          "shape": {
+            "primary": "geometric",
+            "symmetry": "strict",
+            "angularity": 7
+          },
+          "space": {
+            "density": "balanced",
+            "sectionSpacing": "normal",
+            "whitespaceRatio": 0.6
+          },
+          "shadow": {
+            "color": "#000000",
+            "style": "bold",
+            "elevation": "high"
+          },
+          "weight": {
+            "overall": "balanced",
+            "textDensity": "moderate",
+            "ornamentLevel": "subtle"
+          },
+          "summary": "A professional construction/building brand with geometric precision and strong depth hierarchy. The visual language combines subtle 3px corner rounding with bold drop shadows (5px 10px 50px) to create pronounced elevation and layering. Prominent gradient usage adds visual interest while maintaining a grounded, trustworthy aesthetic appropriate for the construction industry.",
+          "version": 1,
+          "sourceUrl": "https://www.goed-bouw.nl/",
+          "analyzedAt": "2026-04-17T10:32:18.156Z",
+          "components": {
+            "cardStyle": "Rectangular containers with 3px corner radius, strong drop shadows (5px 10px 50px rgba(0,0,0,0.61)) for pronounced elevation, clean white backgrounds",
+            "inputStyle": "Minimal styling with thin 1px borders, subtle 3px corner radius, clean and functional appearance",
+            "buttonShape": "Slightly rounded rectangles (3px radius) with gradient fills, bold shadows for depth, solid geometric forms",
+            "spacingSystem": "5px base unit grid with 15px primary spacing increment, 30px for major section breaks, consistent padding ratios"
+          },
+          "cornerRadius": {
+            "dominant": "slightly-rounded",
+            "radiusPx": 3,
+            "consistency": "mixed"
+          },
+          "promptFragment": "Use minimal corner rounding at exactly 3px radius on all containers, cards, and buttons—never sharp corners, never fully rounded. Apply strong, bold drop shadows: 5px 10px 50px rgba(0,0,0,0.61) on elevated cards and primary elements for dramatic depth. Use 1px thin borders in neutral gray where needed for definition. Implement gradients prominently across backgrounds and buttons for visual interest—linear gradients with smooth transitions. Follow strict 5px base unit spacing: 15px for standard gaps between elements, 30px for section breaks, 45px for major divisions. Cards are rectangular with white backgrounds, 3px corners, and heavy shadows creating clear elevation. Buttons are geometric rectangles with 3px radius, gradient fills, and matching shadow depth. Backgrounds alternate between clean white and gradient sections. Maintain generous whitespace (60% ratio) with balanced density—not cramped, not sparse. Strict geometric alignment, no organic shapes. No glassmorphism, no decorative lines. Typography uses Roboto/Proxima Nova with moderate weight. Photography should show authentic construction work with warm natural lighting. DO: Use bold shadows for hierarchy, gradients for visual interest, precise 3px rounding, 5px grid system. DON'T: Use sharp 0px corners, pill shapes, subtle shadows, flat design, decorative flourishes.",
+          "colorApplication": {
+            "accentUsage": "Strategic gradient applications for emphasis on key sections and call-to-action elements",
+            "buttonStyle": "Solid fills with gradient overlays, using primary brand colors with subtle depth effects",
+            "gradientPresence": "prominent",
+            "backgroundApproach": "Clean white base with gradient sections for visual interest and hierarchy separation"
+          }
+        },
+        "visualLanguageSavedForAi": false,
+        "spacingScale": null,
+        "cornerRadii": null,
+        "shadowSystem": null,
+        "semanticTokens": null,
+        "colorPairings": null,
+        "observedColorPairs": null,
+        "published": false,
+        "publishedAt": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "createdById": "demo-user-erik-001",
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-04-17T10:30:28.928Z",
+        "updatedAt": "2026-04-17T10:32:19.496Z"
+      }
+    ],
+    "styleguideColor": [
+      {
+        "id": "cmo2rr7y800jib1msj0klxohp",
+        "name": "Slate Gray",
+        "hex": "#69727D",
+        "rgb": "105, 114, 125",
+        "hsl": "213, 9%, 45%",
+        "cmyk": "16%, 9%, 0%, 51%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "borders",
+          "backgrounds"
+        ],
+        "notes": "Primary neutral used extensively for text, borders, and background elements across the site",
+        "contrastWhite": "AA",
+        "contrastBlack": "Fail",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 0,
+        "styleguideId": "cmo2rovnl00jhb1msqfd4wnq8"
+      },
+      {
+        "id": "cmo2rr7yc00jjb1msdqadu70u",
+        "name": "Alert Red",
+        "hex": "#D9534F",
+        "rgb": "217, 83, 79",
+        "hsl": "2, 64%, 58%",
+        "cmyk": "0%, 62%, 64%, 15%",
+        "category": "SEMANTIC",
+        "tags": [
+          "error",
+          "warning",
+          "alert"
+        ],
+        "notes": "Semantic color for error states, warnings, and alert messages with high visibility",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AA",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 1,
+        "styleguideId": "cmo2rovnl00jhb1msqfd4wnq8"
+      },
+      {
+        "id": "cmo2rr7yf00jlb1ms3plm3ig0",
+        "name": "Deep Rose",
+        "hex": "#CC3366",
+        "rgb": "204, 51, 102",
+        "hsl": "340, 60%, 50%",
+        "cmyk": "0%, 75%, 50%, 20%",
+        "category": "SECONDARY",
+        "tags": [
+          "emphasis",
+          "borders",
+          "backgrounds"
+        ],
+        "notes": "Secondary brand color used for emphasis, borders, and background accents",
+        "contrastWhite": "AA",
+        "contrastBlack": "Fail",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 3,
+        "styleguideId": "cmo2rovnl00jhb1msqfd4wnq8"
+      },
+      {
+        "id": "cmo2rr7yf00jmb1mspliij98l",
+        "name": "Success Green",
+        "hex": "#5CB85C",
+        "rgb": "92, 184, 92",
+        "hsl": "120, 39%, 54%",
+        "cmyk": "50%, 0%, 50%, 28%",
+        "category": "SEMANTIC",
+        "tags": [
+          "success",
+          "confirmation",
+          "positive"
+        ],
+        "notes": "Semantic color indicating success states, confirmations, and positive actions",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 4,
+        "styleguideId": "cmo2rovnl00jhb1msqfd4wnq8"
+      },
+      {
+        "id": "cmo2rr7yg00jnb1msf5abs309",
+        "name": "Charcoal",
+        "hex": "#333333",
+        "rgb": "51, 51, 51",
+        "hsl": "0, 0%, 20%",
+        "cmyk": "0%, 0%, 0%, 80%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "borders",
+          "dark"
+        ],
+        "notes": "Dark neutral for primary text and borders, providing strong contrast",
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 5,
+        "styleguideId": "cmo2rovnl00jhb1msqfd4wnq8"
+      },
+      {
+        "id": "cmo2rr7yh00job1ms45b0422j",
+        "name": "Sky Blue",
+        "hex": "#5BC0DE",
+        "rgb": "91, 192, 222",
+        "hsl": "194, 66%, 61%",
+        "cmyk": "59%, 14%, 0%, 13%",
+        "category": "SEMANTIC",
+        "tags": [
+          "info",
+          "notification",
+          "highlight"
+        ],
+        "notes": "Semantic color for informational messages and notifications",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 6,
+        "styleguideId": "cmo2rovnl00jhb1msqfd4wnq8"
+      },
+      {
+        "id": "cmo2rr7yi00jpb1msipr6l6bx",
+        "name": "Amber",
+        "hex": "#F0AD4E",
+        "rgb": "240, 173, 78",
+        "hsl": "35, 84%, 62%",
+        "cmyk": "0%, 28%, 68%, 6%",
+        "category": "SEMANTIC",
+        "tags": [
+          "warning",
+          "caution",
+          "attention"
+        ],
+        "notes": "Semantic color for warning states and elements requiring user attention",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 7,
+        "styleguideId": "cmo2rovnl00jhb1msqfd4wnq8"
+      },
+      {
+        "id": "cmo2rr7yk00jqb1msx7mnaz9v",
+        "name": "Light Gray",
+        "hex": "#E7E7E7",
+        "rgb": "231, 231, 231",
+        "hsl": "0, 0%, 91%",
+        "cmyk": "0%, 0%, 0%, 9%",
+        "category": "NEUTRAL",
+        "tags": [
+          "background",
+          "divider",
+          "subtle"
+        ],
+        "notes": "Light neutral for backgrounds and subtle dividers",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 8,
+        "styleguideId": "cmo2rovnl00jhb1msqfd4wnq8"
+      },
+      {
+        "id": "cmo2rr7yl00jrb1mssbyg94sr",
+        "name": "Graphite",
+        "hex": "#55595C",
+        "rgb": "85, 89, 92",
+        "hsl": "206, 4%, 35%",
+        "cmyk": "8%, 3%, 0%, 64%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "secondary-text",
+          "background"
+        ],
+        "notes": "Medium-dark neutral for secondary text and background elements",
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 9,
+        "styleguideId": "cmo2rovnl00jhb1msqfd4wnq8"
+      },
+      {
+        "id": "cmo2rr7ym00jsb1ms5935eums",
+        "name": "Medium Gray",
+        "hex": "#666666",
+        "rgb": "102, 102, 102",
+        "hsl": "0, 0%, 40%",
+        "cmyk": "0%, 0%, 0%, 60%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "borders",
+          "muted"
+        ],
+        "notes": "Mid-tone neutral for muted text and borders",
+        "contrastWhite": "AA",
+        "contrastBlack": "Fail",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 10,
+        "styleguideId": "cmo2rovnl00jhb1msqfd4wnq8"
+      },
+      {
+        "id": "cmo2rr7yn00jtb1msfc5zfdx3",
+        "name": "Navy Blue",
+        "hex": "#333366",
+        "rgb": "51, 51, 102",
+        "hsl": "240, 33%, 30%",
+        "cmyk": "50%, 50%, 0%, 60%",
+        "category": "PRIMARY",
+        "tags": [
+          "brand",
+          "primary",
+          "accent"
+        ],
+        "notes": "Primary brand color with deep navy tone, used sparingly for brand identity",
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 11,
+        "styleguideId": "cmo2rovnl00jhb1msqfd4wnq8"
+      },
+      {
+        "id": "cmo2rr7ye00jkb1msytmivmf0",
+        "name": "Bright Cyan",
+        "hex": "#00AFD3",
+        "rgb": "0, 175, 211",
+        "hsl": "190, 100%, 41%",
+        "cmyk": "100%, 17%, 0%, 17%",
+        "category": "ACCENT",
+        "tags": [
+          "links",
+          "interactive",
+          "highlight",
+          "usage:heading-text"
+        ],
+        "notes": "Accent color used primarily for text links and interactive elements",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": null,
+        "detectorSource": null,
+        "sortOrder": 2,
+        "styleguideId": "cmo2rovnl00jhb1msqfd4wnq8"
+      }
+    ],
+    "styleguideFont": [],
+    "styleguideLogo": [],
+    "styleguideComponent": [],
+    "fidelityConfig": [
+      {
+        "id": "cmp2cb4kk0014mhmsndcauohh",
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "styleWeight": 0.35,
+        "judgeWeight": 0.45,
+        "ruleWeight": 0.2,
+        "rubricWeights": {
+          "coherence": 0.1,
+          "antiPattern": 0.3,
+          "audienceFit": 0.15,
+          "concreteness": 0.1,
+          "brandRecognition": 0.15,
+          "strategicAnchoring": 0.2
+        },
+        "humanVoiceMode": "BASELINE",
+        "aiLeaningThreshold": 30,
+        "disabledContentTypes": [],
+        "createdAt": "2026-05-12T07:59:35.396Z",
+        "updatedAt": "2026-05-12T07:59:35.396Z"
+      }
+    ],
+    "brandRule": [],
+    "workspaceContentTypeThreshold": [],
+    "persona": [
+      {
+        "id": "cmnel52k60006j1ms9w3zyjyt",
+        "name": "Wilbert van der Steeg",
+        "tagline": "Vakman op zoek naar zijn plek",
+        "avatarUrl": null,
+        "avatarSource": "NONE",
+        "age": "28",
+        "gender": "Male",
+        "location": "Ede",
+        "occupation": "Bouwvakker / Uitvoerder in de bouw",
+        "education": "MBO",
+        "income": "50000",
+        "familyStatus": "Single",
+        "personalityType": "",
+        "coreValues": [
+          "Vakmanschap",
+          "Eerlijkheid",
+          "Vrijheid",
+          "Trots op je werk",
+          "Samenwerking"
+        ],
+        "interests": [
+          "Bouw en constructie",
+          "Nieuwbouw en renovatieprojecten",
+          "Vakmanschap en ambacht",
+          "Teamdynamiek en werkplekbeleving"
+        ],
+        "goals": [
+          "Een baan vinden bij een bedrijf dat écht bij hem past",
+          "Werken in een hecht team met een sterke cultuur",
+          "Trots kunnen zijn op het eindresultaat van zijn werk",
+          "Groeien als vakman met vrijheid en verantwoordelijkheid"
+        ],
+        "motivations": [
+          "Vakmanschap als persoonlijke identiteit",
+          "Voldoening uit zichtbaar, tastbaar resultaat",
+          "Samenwerken met gedreven collega's",
+          "Vrijheid en vertrouwen op de werkvloer"
+        ],
+        "frustrations": [
+          "Onzekerheid of een nieuwe werkgever écht anders is",
+          "Eerder teleurgesteld door bedrijfsculturen die niet pasten",
+          "Gebrek aan vrijheid of vertrouwen op de werkvloer",
+          "Beloftes die niet worden nagekomen door werkgevers"
+        ],
+        "behaviors": [
+          "Beoordeelt werkgevers op cultuur en mensen, niet alleen op salaris",
+          "Zoekt actief naar signalen van authenticiteit bij een potentiële werkgever",
+          "Werkt hard en door totdat het resultaat klopt",
+          "Hecht waarde aan directe, eerlijke communicatie op de werkvloer"
+        ],
+        "strategicImplications": null,
+        "preferredChannels": [
+          "Instagram",
+          "Facebook"
+        ],
+        "techStack": [],
+        "quote": "Ik wil hard werken voor een resultaat waar ik 's avonds trots op naar huis rij — met mensen die dat gevoel snappen.",
+        "bio": null,
+        "buyingTriggers": [
+          "Authentieke verhalen van huidige medewerkers over de cultuur",
+          "Concrete voorbeelden van vrijheid en vertrouwen op de werkvloer",
+          "Zichtbare trots in opgeleverde projecten en resultaten",
+          "Een selectief en eerlijk wervingsproces dat vakmanschap waardeert"
+        ],
+        "decisionCriteria": [
+          "Kwaliteit en hechtheid van het team",
+          "Mate van vrijheid en autonomie in het werk",
+          "Geloofwaardigheid van de bedrijfscultuur",
+          "Of hij zich kan identificeren met de mensen en het werk"
+        ],
+        "isLocked": true,
+        "lockedById": "demo-user-erik-001",
+        "lockedAt": "2026-04-03T08:38:45.468Z",
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdById": "demo-user-erik-001",
+        "localeProfileId": "cmr4z54gd000r38c9886x5tih",
+        "createdAt": "2026-03-31T12:20:38.837Z",
+        "updatedAt": "2026-07-03T13:33:43.503Z"
+      },
+      {
+        "id": "cmo2rs2ew00k1b1mstilmen4n",
+        "name": "Mark van der Berg, The Commercial Property Developer",
+        "tagline": null,
+        "avatarUrl": null,
+        "avatarSource": "NONE",
+        "age": "42-55",
+        "gender": "Male",
+        "location": "Randstad region, Netherlands",
+        "occupation": "Commercial Property Developer / Project Manager",
+        "education": "Bachelor's or Master's in Real Estate Development or Business Administration",
+        "income": "€80,000-150,000 annually",
+        "familyStatus": null,
+        "personalityType": "Mark is pragmatic, results-oriented, and values straightforward communication. He appreciates partners who deliver on promises without unnecessary complexity. He's experienced enough to know that construction projects require both technical expertise and reliable collaboration.",
+        "coreValues": [
+          "Reliability and accountability",
+          "Clear communication and transparency",
+          "Quality craftsmanship",
+          "Efficient project execution",
+          "Long-term business relationships"
+        ],
+        "interests": [
+          "Commercial real estate trends",
+          "Sustainable building practices",
+          "Urban development",
+          "Project management methodologies",
+          "Dutch construction regulations"
+        ],
+        "goals": [
+          "Complete projects on time and within budget",
+          "Build a portfolio of high-quality commercial properties",
+          "Establish reliable partnerships with construction firms",
+          "Minimize project risks and complications",
+          "Deliver value to investors and tenants"
+        ],
+        "motivations": [
+          "Reputation for delivering quality projects",
+          "Financial success and ROI",
+          "Professional growth and portfolio expansion",
+          "Creating functional spaces for businesses",
+          "Building lasting professional relationships"
+        ],
+        "frustrations": [
+          "Construction delays and budget overruns",
+          "Poor communication from contractors",
+          "Unexpected complications in complex builds",
+          "Contractors who overpromise and underdeliver",
+          "Lack of flexibility when plans need adjustment"
+        ],
+        "behaviors": [
+          "Thoroughly vets construction partners before engagement",
+          "Prefers detailed planning and clear timelines",
+          "Values short communication lines for quick decisions",
+          "Seeks partners with proven track records",
+          "Appreciates no-nonsense, direct business approach"
+        ],
+        "strategicImplications": null,
+        "preferredChannels": [
+          "Professional referrals and networks",
+          "Industry events and trade shows",
+          "Direct business meetings",
+          "Email for detailed project communication",
+          "LinkedIn for professional connections"
+        ],
+        "techStack": null,
+        "quote": "I need a construction partner I can trust to deliver what they promise, without surprises. Clear communication and solid craftsmanship—that's what matters.",
+        "bio": "Mark has been developing commercial properties in the Netherlands for over 15 years. He values partners who combine professional capacity with personal attention, and he's built his reputation on delivering quality projects through reliable collaborations. He believes the best construction partnerships are built on trust and straightforward communication.",
+        "buyingTriggers": [
+          "Proven track record in similar projects",
+          "Clear and detailed project planning capabilities",
+          "Transparent communication style",
+          "Competitive pricing with quality assurance",
+          "Flexibility to handle complex requirements"
+        ],
+        "decisionCriteria": [
+          "Demonstrated expertise in utility construction",
+          "Capacity to handle large-scale projects",
+          "Clear communication and project management",
+          "Competitive pricing and value for money",
+          "References from similar commercial projects"
+        ],
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdById": "demo-user-erik-001",
+        "localeProfileId": "cmr4z54gd000r38c9886x5tih",
+        "createdAt": "2026-04-17T10:32:57.656Z",
+        "updatedAt": "2026-07-03T13:33:43.503Z"
+      },
+      {
+        "id": "cmo2rs2f400k3b1msfhhrxks0",
+        "name": "Sophie Jansen, The Residential Investor",
+        "tagline": null,
+        "avatarUrl": null,
+        "avatarSource": "NONE",
+        "age": "38-50",
+        "gender": "Female",
+        "location": "Utrecht or Gelderland, Netherlands",
+        "occupation": "Real Estate Investor / Property Portfolio Manager",
+        "education": "Bachelor's in Finance or Real Estate",
+        "income": "€70,000-120,000 annually",
+        "familyStatus": null,
+        "personalityType": "Sophie is detail-oriented and financially savvy, with a keen eye for quality and long-term value. She approaches investments methodically and values partners who understand both the financial and practical aspects of residential construction.",
+        "coreValues": [
+          "Quality craftsmanship and durability",
+          "Transparent pricing and planning",
+          "Sustainable building practices",
+          "Trust-based partnerships",
+          "Long-term property value"
+        ],
+        "interests": [
+          "Residential real estate investment",
+          "Interior design and architecture",
+          "Sustainable construction methods",
+          "Dutch housing market trends",
+          "Property value optimization"
+        ],
+        "goals": [
+          "Build a profitable residential property portfolio",
+          "Ensure high-quality construction for tenant satisfaction",
+          "Minimize renovation and maintenance costs",
+          "Work with reliable construction partners",
+          "Create attractive, modern living spaces"
+        ],
+        "motivations": [
+          "Financial returns on property investments",
+          "Creating quality housing for tenants",
+          "Building a reputable property portfolio",
+          "Professional satisfaction from successful projects",
+          "Long-term asset appreciation"
+        ],
+        "frustrations": [
+          "Construction quality issues requiring costly repairs",
+          "Unclear project timelines and budgets",
+          "Contractors who don't understand investor needs",
+          "Delays that impact rental income",
+          "Poor communication during construction"
+        ],
+        "behaviors": [
+          "Conducts thorough due diligence on contractors",
+          "Seeks detailed project proposals and timelines",
+          "Values personal relationships with construction teams",
+          "Prefers flexible partners who can adapt to changes",
+          "Focuses on quality over lowest price"
+        ],
+        "strategicImplications": null,
+        "preferredChannels": [
+          "Professional referrals from other investors",
+          "Real estate investment networks",
+          "Direct consultations and site visits",
+          "Email for project documentation",
+          "Industry publications and websites"
+        ],
+        "techStack": null,
+        "quote": "I invest in properties for the long term, so I need a builder who shares my commitment to quality and craftsmanship. Trust is everything in this business.",
+        "bio": "Sophie has been investing in residential properties for over a decade, building a portfolio of apartments and multi-family units across the Netherlands. She values construction partners who combine professional expertise with a personal touch, and she believes that quality craftsmanship is the foundation of successful property investment.",
+        "buyingTriggers": [
+          "Strong reputation for residential construction",
+          "Demonstrated craftsmanship and attention to detail",
+          "Flexible approach to custom requirements",
+          "Clear communication and project transparency",
+          "Competitive pricing with quality guarantees"
+        ],
+        "decisionCriteria": [
+          "Quality of previous residential projects",
+          "Ability to handle apartments and multi-unit buildings",
+          "Transparent pricing and detailed planning",
+          "Flexibility and personalized service",
+          "Track record of on-time, on-budget delivery"
+        ],
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdById": "demo-user-erik-001",
+        "localeProfileId": "cmr4z54gd000r38c9886x5tih",
+        "createdAt": "2026-04-17T10:32:57.664Z",
+        "updatedAt": "2026-07-03T13:33:43.503Z"
+      },
+      {
+        "id": "cmo2rs2f700k5b1msbjyvxg5s",
+        "name": "Jan Bakker, The Private Villa Owner",
+        "tagline": null,
+        "avatarUrl": null,
+        "avatarSource": "NONE",
+        "age": "48-62",
+        "gender": "Male",
+        "location": "Ede or surrounding areas, Netherlands",
+        "occupation": "Business Owner / Senior Executive",
+        "education": "Higher education or successful entrepreneur",
+        "income": "€150,000+ annually",
+        "familyStatus": null,
+        "personalityType": "Jan is successful and discerning, with high standards for quality and craftsmanship. He values personal relationships and appreciates the Dutch no-nonsense approach to business. He's willing to invest in quality and expects his construction partner to be a trusted advisor throughout the building process.",
+        "coreValues": [
+          "Craftsmanship and attention to detail",
+          "Trust and personal relationships",
+          "Quality over cost",
+          "Dutch work ethic and reliability",
+          "Personalized service"
+        ],
+        "interests": [
+          "Architecture and design",
+          "Luxury home features",
+          "Sustainable building materials",
+          "Landscaping and outdoor living",
+          "Home technology and automation"
+        ],
+        "goals": [
+          "Build a custom dream home or villa",
+          "Work with trustworthy construction professionals",
+          "Ensure high-quality craftsmanship throughout",
+          "Create a personalized living space",
+          "Achieve a smooth, stress-free building process"
+        ],
+        "motivations": [
+          "Creating a legacy home for family",
+          "Expressing personal taste and style",
+          "Achieving quality and comfort",
+          "Working with skilled craftsmen",
+          "Pride in owning a well-built property"
+        ],
+        "frustrations": [
+          "Contractors who don't listen to preferences",
+          "Lack of transparency in costs and timelines",
+          "Poor quality workmanship",
+          "Impersonal, corporate construction firms",
+          "Unexpected issues during construction"
+        ],
+        "behaviors": [
+          "Seeks recommendations from trusted sources",
+          "Values face-to-face meetings and personal relationships",
+          "Expects detailed planning and regular updates",
+          "Willing to pay premium for quality and service",
+          "Appreciates straightforward, honest communication"
+        ],
+        "strategicImplications": null,
+        "preferredChannels": [
+          "Personal referrals from friends and colleagues",
+          "Direct meetings and consultations",
+          "Phone calls for important discussions",
+          "Email for documentation and updates",
+          "Local reputation and word-of-mouth"
+        ],
+        "techStack": null,
+        "quote": "I want to work with people I can trust, who take pride in their craft. This is my dream home, and I need a partner who understands that.",
+        "bio": "Jan is a successful entrepreneur who has decided to build his dream villa. He values the Dutch tradition of quality craftsmanship and straightforward business relationships. He's looking for a construction partner who will treat his project with the same care and attention he would give it himself.",
+        "buyingTriggers": [
+          "Strong reputation for villa construction",
+          "Demonstrated craftsmanship and quality",
+          "Personal connection and trust with builder",
+          "Flexible, personalized approach",
+          "Portfolio of impressive residential projects"
+        ],
+        "decisionCriteria": [
+          "Quality of craftsmanship and materials",
+          "Personal rapport with construction team",
+          "Detailed planning and communication",
+          "Flexibility to accommodate custom requests",
+          "References from previous villa clients"
+        ],
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdById": "demo-user-erik-001",
+        "localeProfileId": "cmr4z54gd000r38c9886x5tih",
+        "createdAt": "2026-04-17T10:32:57.667Z",
+        "updatedAt": "2026-07-03T13:33:43.503Z"
+      }
+    ],
+    "personaResearchMethod": [
+      {
+        "id": "cmnel52ka0007j1msrxtn08au",
+        "method": "AI_EXPLORATION",
+        "status": "COMPLETED",
+        "progress": 100,
+        "completedAt": "2026-03-31T12:24:29.067Z",
+        "artifactsCount": 0,
+        "personaId": "cmnel52k60006j1ms9w3zyjyt",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-03-31T12:20:38.837Z",
+        "updatedAt": "2026-03-31T12:24:29.069Z"
+      },
+      {
+        "id": "cmo2rs2ez00k2b1ms1krktd5p",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "personaId": "cmo2rs2ew00k1b1mstilmen4n",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-04-17T10:32:57.656Z",
+        "updatedAt": "2026-04-17T10:32:57.656Z"
+      },
+      {
+        "id": "cmo2rs2f500k4b1msgt9qnm48",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "personaId": "cmo2rs2f400k3b1msfhhrxks0",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-04-17T10:32:57.664Z",
+        "updatedAt": "2026-04-17T10:32:57.664Z"
+      },
+      {
+        "id": "cmo2rs2f800k6b1mstz5k4o2l",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "personaId": "cmo2rs2f700k5b1msbjyvxg5s",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-04-17T10:32:57.667Z",
+        "updatedAt": "2026-04-17T10:32:57.667Z"
+      }
+    ],
+    "product": [
+      {
+        "id": "cmo2rs2fc00k7b1ms64alcqqa",
+        "name": "Utiliteitsbouw",
+        "slug": "utiliteitsbouw",
+        "description": "Commercial and utility construction services for offices, retail spaces, and other business facilities. Goed-Bouw handles complex building plans with detailed planning, short communication lines, and the capacity to manage large-scale projects while maintaining clear oversight and reliable execution.",
+        "category": "industrial-manufacturing",
+        "pricingModel": null,
+        "pricingDetails": null,
+        "source": "WEBSITE_URL",
+        "sourceUrl": "https://www.goed-bouw.nl/",
+        "status": "ANALYZED",
+        "features": [
+          "Detailed project planning and execution",
+          "Short communication lines for quick decisions",
+          "Large organizational capacity",
+          "Complex building plan management",
+          "Clear project oversight",
+          "Professional project coordination"
+        ],
+        "benefits": [
+          "Reliable and predictable project execution",
+          "Clear overview throughout the construction process",
+          "High-quality commercial building results",
+          "Efficient communication and decision-making",
+          "Professional handling of complex requirements",
+          "Combination of large firm capacity with small firm flexibility"
+        ],
+        "useCases": [
+          "Office building construction",
+          "Retail space development",
+          "Commercial facility construction",
+          "Utility building projects",
+          "Business property development",
+          "Commercial renovation projects"
+        ],
+        "categoryIcon": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-04-17T10:32:57.672Z",
+        "updatedAt": "2026-04-17T10:32:57.672Z"
+      },
+      {
+        "id": "cmo2rs2fh00k8b1msv7w93lh8",
+        "name": "Woningbouw & Villabouw",
+        "slug": "woningbouw-villabouw",
+        "description": "Residential construction services including apartments, standard housing, and luxury villas. Built on a foundation of trust and craftsmanship, Goed-Bouw offers custom planning and a flexible approach to create high-quality living spaces with personalized service and attention to detail.",
+        "category": "real-estate-property",
+        "pricingModel": null,
+        "pricingDetails": null,
+        "source": "WEBSITE_URL",
+        "sourceUrl": "https://www.goed-bouw.nl/",
+        "status": "ANALYZED",
+        "features": [
+          "Custom project planning",
+          "Traditional craftsmanship",
+          "Flexible construction approach",
+          "Apartment building expertise",
+          "Luxury villa construction",
+          "Standard housing development"
+        ],
+        "benefits": [
+          "Trustworthy partnership throughout the project",
+          "High-quality residential living spaces",
+          "Personalized service and attention",
+          "Flexible adaptation to client needs",
+          "Expert craftsmanship and quality",
+          "Reliable residential construction delivery"
+        ],
+        "useCases": [
+          "Luxury villa construction",
+          "Apartment complex development",
+          "Multi-family housing projects",
+          "Custom home building",
+          "Residential property development",
+          "New housing construction"
+        ],
+        "categoryIcon": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-04-17T10:32:57.677Z",
+        "updatedAt": "2026-04-17T10:32:57.677Z"
+      },
+      {
+        "id": "cmo2rs2fj00k9b1ms86j9sd97",
+        "name": "Renovatie & Transformatie",
+        "slug": "renovatie-transformatie",
+        "description": "Renovation and transformation services for existing buildings, upgrading and repurposing structures with detailed execution and quality focus. Goed-Bouw specializes in structural upgrades and building repurposing to modernize facilities while preserving and enhancing property value.",
+        "category": "real-estate-property",
+        "pricingModel": null,
+        "pricingDetails": null,
+        "source": "WEBSITE_URL",
+        "sourceUrl": "https://www.goed-bouw.nl/",
+        "status": "ANALYZED",
+        "features": [
+          "Structural upgrade expertise",
+          "Building repurposing capabilities",
+          "Detailed renovation execution",
+          "Quality-focused approach",
+          "Existing building assessment",
+          "Modernization planning"
+        ],
+        "benefits": [
+          "Sustainable use of existing buildings",
+          "Modernized facilities and spaces",
+          "Preservation and enhancement of property value",
+          "Expert handling of renovation complexities",
+          "Quality upgrades and improvements",
+          "Extended building lifespan"
+        ],
+        "useCases": [
+          "Commercial building renovation",
+          "Residential property transformation",
+          "Office space modernization",
+          "Building repurposing projects",
+          "Structural upgrade projects",
+          "Heritage building renovation"
+        ],
+        "categoryIcon": null,
+        "analysisData": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "workspaceId": "cmneamaqw000ig3ms1eam4ga0",
+        "createdAt": "2026-04-17T10:32:57.679Z",
+        "updatedAt": "2026-04-17T10:32:57.679Z"
+      }
+    ],
+    "productImage": [],
+    "productPersona": [],
+    "businessStrategy": [],
+    "focusArea": [],
+    "objective": [],
+    "keyResult": [],
+    "milestone": [],
+    "progressSnapshot": [],
+    "competitor": [],
+    "competitorProduct": [],
+    "trend": [],
+    "workspaceAiConfig": []
+  },
+  "vectors": {
+    "brandVoiceguide": {
+      "centroidEmbedding": {}
+    }
+  },
+  "localImageRefs": []
+}

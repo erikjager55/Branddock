@@ -1,0 +1,1106 @@
+{
+  "meta": {
+    "version": 1,
+    "sourceWorkspaceId": "cmpp4dxgc001w4ums9sttpg62",
+    "sourceWorkspaceName": "Het Nieuwe Golfen",
+    "sourceSlug": "het-nieuwe-golfen",
+    "sourceContentLanguage": "en",
+    "note": "Merk-DNA-export (alleen brand foundation; geen content/telemetrie/historie)."
+  },
+  "records": {
+    "brandAsset": [
+      {
+        "id": "cmpp4dxig002b4umskosl4ihd",
+        "name": "Brand Personality",
+        "slug": "brand-personality",
+        "description": "Human characteristics of your brand",
+        "category": "PERSONALITY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_PERSONALITY",
+        "frameworkData": null,
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-05-28T06:36:31.336Z",
+        "updatedAt": "2026-05-28T06:36:31.336Z"
+      },
+      {
+        "id": "cmpp4dxik002d4umssuda9ytd",
+        "name": "Brand Story",
+        "slug": "brand-story",
+        "description": "Your brand's past, present and future",
+        "category": "NARRATIVE",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_STORY",
+        "frameworkData": null,
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-05-28T06:36:31.340Z",
+        "updatedAt": "2026-05-28T06:36:31.340Z"
+      },
+      {
+        "id": "cmpp4dxin002f4umskie735zb",
+        "name": "Core Values",
+        "slug": "core-values",
+        "description": "Fundamental beliefs that guide your brand",
+        "category": "CULTURE",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRANDHOUSE_VALUES",
+        "frameworkData": {
+          "ownValue": {
+            "title": "Rational",
+            "tagline": "We don't do anything 'just because'",
+            "behaviors": [
+              "Ground teaching in clear logic",
+              "Explain concepts simply",
+              "Eliminate unnecessary complexity",
+              "Use evidence-based methods"
+            ],
+            "description": "Everything we do is based on logic. If we can't explain something simply, we don't teach it."
+          },
+          "anchorValue1": {
+            "title": "Golf Happiness",
+            "tagline": "Golf should be fun",
+            "behaviors": [
+              "Focus on measurable progress",
+              "Celebrate improvements",
+              "Create enjoyable learning experiences",
+              "Prioritize player satisfaction"
+            ],
+            "description": "Pleasure you deserve because you've gotten better. Progress is the means to get maximum satisfaction from the sport. We want to leave the golf world more enjoyable. For everyone willing to grow."
+          },
+          "anchorValue2": {
+            "title": "Goal-Oriented",
+            "tagline": "Everything revolves around results",
+            "behaviors": [
+              "Set clear, measurable objectives",
+              "Track and demonstrate progress",
+              "Deliver on commitments",
+              "Focus on tangible outcomes"
+            ],
+            "description": "We are pragmatic and results-driven. We make promises you can hold us accountable for."
+          },
+          "valueTension": "Golf Happiness (enjoyment) vs. Goal-Oriented (results) creates productive tension: we believe genuine enjoyment comes FROM achieving results, not despite them. Freedom (autonomy) vs. Rational (structure) balances empowerment with clear methodology.",
+          "aspirationValue1": {
+            "title": "Freedom",
+            "tagline": "We liberate golfers from the burden of traditional and complex theories",
+            "behaviors": [
+              "Simplify complex concepts",
+              "Remove unnecessary technical jargon",
+              "Build player confidence",
+              "Enable autonomous decision-making"
+            ],
+            "description": "We give them back the autonomy to stand over the ball with an empty head and full confidence."
+          },
+          "aspirationValue2": {
+            "title": "Unconventional",
+            "tagline": "We do things fundamentally differently",
+            "behaviors": [
+              "Challenge traditional golf teaching",
+              "Innovate methodologies",
+              "Stand by our approach confidently",
+              "Lead industry change"
+            ],
+            "description": "We dare to be different and swim against the current. We do this because we know it works. We innovate and show you the new way. Through a system that delivers proven results, step by step."
+          }
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-05-28T06:36:31.343Z",
+        "updatedAt": "2026-05-28T06:46:19.895Z"
+      },
+      {
+        "id": "cmpp4dxiq002h4umsg0hyxhpz",
+        "name": "Social Relevancy",
+        "slug": "social-relevancy",
+        "description": "Your brand's societal and environmental impact",
+        "category": "ESG",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "ESG",
+        "frameworkData": null,
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-05-28T06:36:31.346Z",
+        "updatedAt": "2026-05-28T06:36:31.346Z"
+      },
+      {
+        "id": "cmpp4dxh8001x4umsksa03zim",
+        "name": "Purpose Statement",
+        "slug": "purpose-statement",
+        "description": "The reason your organization exists beyond profit",
+        "category": "PURPOSE",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "PURPOSE_WHEEL",
+        "frameworkData": null,
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-05-28T06:36:31.292Z",
+        "updatedAt": "2026-05-28T06:36:31.292Z"
+      },
+      {
+        "id": "cmpp4dxhr001z4ums6lm643da",
+        "name": "Golden Circle",
+        "slug": "golden-circle",
+        "description": "Simon Sinek's WHY → HOW → WHAT framework",
+        "category": "FOUNDATION",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "GOLDEN_CIRCLE",
+        "frameworkData": null,
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-05-28T06:36:31.311Z",
+        "updatedAt": "2026-05-28T06:36:31.311Z"
+      },
+      {
+        "id": "cmpp4dxi700254umsb4g5f9bz",
+        "name": "Mission & Vision",
+        "slug": "mission-statement",
+        "description": "What you do today and where you're headed",
+        "category": "STRATEGY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "MISSION_STATEMENT",
+        "frameworkData": {
+          "forWhom": "Ambitious golfers who want to achieve faster results and experience genuine progress",
+          "whatWeDo": "We facilitate a development community combining methodology, structure, guidance, and community in one personal development journey",
+          "howWeDoIt": "Through the Impact First methodology, a clear development ladder (foundation > development > performance), the ScoreApp for insights, and an engaged community for energy",
+          "impactGoal": "Leave the golf world better – more enjoyable for everyone willing to grow",
+          "timeHorizon": "5-10 years",
+          "boldAspiration": "To make The New Golf the standard approach in the golf world",
+          "missionOneLiner": "We offer golf happiness through a proven system that works",
+          "valuesAlignment": "Freedom from traditional complexity, goal-oriented progress, rational methodology, golf happiness",
+          "visionStatement": "We see a world where a much larger role is reserved for the simplicity of The New Golf. A world without unnecessary frustration and complex theories, where every player can achieve results significantly faster. And where logic leads to maximum playing pleasure. 'The New Golf' is simply the norm.",
+          "missionStatement": "It is our mission to offer golf happiness to as many ambitious players as possible. We do this by facilitating a development community where logic, a groundbreaking technique (Impact First), a clear development ladder (foundation > development > performance), and enjoyment come together. So that everyone can get the maximum out of their potential. Not with isolated lessons, but with a system that works.",
+          "successIndicators": "Number of golfers achieving measurable progress through HNG, community growth, adoption of Impact First methodology across the golf world",
+          "desiredFutureState": "A golf world where logic replaces complexity, where every player has access to a clear development path, and where frustration is replaced by structured progress and genuine enjoyment",
+          "stakeholderBenefit": "Golfers gain autonomy, faster results, and genuine enjoyment. The golf world becomes more accessible and less frustrating for everyone willing to grow.",
+          "missionVisionTension": "Mission focuses on today's community and system; Vision pushes toward industry-wide transformation and becoming the new norm"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-05-28T06:36:31.327Z",
+        "updatedAt": "2026-05-28T06:46:17.978Z"
+      },
+      {
+        "id": "cmpp4dxib00274ums1sks6sgv",
+        "name": "Brand Archetype",
+        "slug": "brand-archetype",
+        "description": "Universal behavior patterns",
+        "category": "PERSONALITY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_ARCHETYPE",
+        "frameworkData": {
+          "coreFear": "Weakness, vulnerability, allowing golfers to remain stuck in traditional complexity",
+          "strategy": "Be as strong and competent as possible while challenging the status quo of traditional golf teaching",
+          "coreDesire": "To prove worth through courageous acts and help golfers transform their game through a revolutionary approach",
+          "shadowWeakness": "Arrogance, always needing to prove ourselves, potentially alienating traditional golf establishment",
+          "contentStrategy": "Lead with proven methodology and measurable results (Hero). Challenge traditional golf teaching complexity (Outlaw). Share success stories of transformation. Provide clear, logical explanations. Position as the guide who has found a better way.",
+          "primaryArchetype": "Hero (70%) + Outlaw (30%)",
+          "marketingExpression": "Confident coach who has rewritten the rules. Empowering language focused on transformation, mastery, and breaking free from outdated methods. Visual identity inspired by performance sports tech (Nike, Lululemon, Pas Normal Studios) – modern, structured, progressive.",
+          "competitiveLandscape": "Traditional golf teaching = complex theories, multiple truths, frustration. HNG = simple logic, one proven method, structured progress. We're the rebel with a system that works, not just a contrarian voice."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-05-28T06:36:31.331Z",
+        "updatedAt": "2026-05-28T06:46:21.106Z"
+      },
+      {
+        "id": "cmpp4dxie00294umsu12ji5by",
+        "name": "Transformative Goals",
+        "slug": "transformative-goals",
+        "description": "Ambitious goals for lasting impact",
+        "category": "STRATEGY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "TRANSFORMATIVE_GOALS",
+        "frameworkData": {
+          "goal1": {
+            "title": "Transform how golfers think, feel, and act",
+            "impact": "Measurable shift from frustrated, stuck golfers to confident, progressing players with genuine enjoyment",
+            "timeline": "Ongoing – measured through community engagement and player progress tracking",
+            "description": "THINK: Golf is actually very logical. Thanks to the Impact First methodology and the HNG development ladder, I finally have a system that works. I know exactly what level I'm at and what my next step is.\n\nFEEL: The New Golf understands me. Thanks to HNG I stand over the ball with confidence; even under pressure. I finally have enjoyment (back) in the game and the satisfaction of real progress.\n\nACT: The New Golf offers me a clear path: from self-insight via the ScoreApp, to my place in the ladder, to measurable progression. I train purposefully, make my golf game a priority, and see the results in my play."
+          },
+          "mtpNarrative": "The traditional golf world keeps players unnecessarily small with complex techniques, different club lengths, and multiple 'truths'. We envision a world where The New Golf's simplicity is the norm – where logic leads to maximum playing pleasure, where every player can achieve results significantly faster, and where frustration is replaced by structured progress and genuine enjoyment.",
+          "brandIntegration": "Every touchpoint reinforces the transformation journey – from ScoreApp assessment to community engagement to visual identity. The development ladder (Foundation > Development > Performance) provides structure. Impact First methodology provides the 'how'. Community provides the energy.",
+          "stakeholderImpact": "Golfers: Faster progress, more enjoyment, clearer path. Golf industry: Modernized approach, reduced complexity. Communities: More engaged, motivated players. HNG: Mission fulfillment and market differentiation.",
+          "authenticityAssessment": "These goals align directly with HNG's core values (Golf Happiness, Freedom, Rational, Goal-Oriented) and archetypal positioning (Hero/Outlaw). The transformation framework is embedded in the ecosystem (ScoreApp → Development Ladder → Impact First → Community).",
+          "massiveTransformativePurpose": "To liberate golfers worldwide from unnecessary complexity and give them back the joy of the game through logic, structure, and proven methodology"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-05-28T06:36:31.334Z",
+        "updatedAt": "2026-05-28T06:46:21.946Z"
+      },
+      {
+        "id": "cmpp4dxi300234umshy8xfa4u",
+        "name": "Brand Promise",
+        "slug": "brand-promise",
+        "description": "Core commitment to your customers",
+        "category": "STRATEGY",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_PROMISE",
+        "frameworkData": {
+          "coreNeed": "A logical, proven system that delivers measurable progress and returns genuine enjoyment to the game",
+          "oneLiner": "A system that works. Not isolated lessons, but real progress.",
+          "proofPoints": [
+            "Impact First methodology (proven technique)",
+            "Three-tier development ladder with clear progression",
+            "ScoreApp for objective self-assessment",
+            "Active development community",
+            "Measurable results tracked through the system"
+          ],
+          "differentiator": "Complete ecosystem (methodology + structure + community + insights) vs. isolated lessons. Impact First technique vs. complex traditional theories. Clear development ladder vs. unclear progress path.",
+          "emotionalValue": "Confidence over the ball, freedom from frustration, satisfaction of genuine progress, enjoyment of the game, feeling understood",
+          "targetAudience": "Ambitious golfers who are frustrated with traditional complexity and want faster, measurable results within their busy lives",
+          "functionalValue": "Impact First methodology, clear development ladder (Foundation > Development > Performance), ScoreApp for personalized insights, structured training system",
+          "promiseStatement": "We promise to give you a clear, logical path to golf happiness through proven methodology, structured progression, and genuine community support – so you can achieve measurable results and rediscover the joy of the game.",
+          "onlynessStatement": "The New Golf is the only golf development system that combines Impact First methodology with a structured development ladder and engaged community to liberate golfers from traditional complexity and deliver measurable progress at every level.",
+          "measurableOutcomes": [
+            "Handicap improvement",
+            "Consistent impact achievement",
+            "Progression through development ladder levels",
+            "Increased playing confidence",
+            "Measurable enjoyment and satisfaction scores"
+          ],
+          "selfExpressiveValue": "Being part of a community that values logic over complexity, results over tradition, innovation over conformity. Becoming a golfer who knows their path and owns their progress."
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-05-28T06:36:31.323Z",
+        "updatedAt": "2026-05-28T06:46:23.695Z"
+      },
+      {
+        "id": "cmpp4dxi000214umsxepdnhtj",
+        "name": "Brand Essence",
+        "slug": "brand-essence",
+        "description": "The heart and soul of your brand",
+        "category": "CORE",
+        "status": "DRAFT",
+        "coveragePercentage": 0,
+        "validatedCount": 0,
+        "artifactCount": 0,
+        "content": null,
+        "aiValidated": false,
+        "workshopValidated": false,
+        "interviewValidated": false,
+        "questionnaireValidated": false,
+        "frameworkType": "BRAND_ESSENCE",
+        "frameworkData": {
+          "attributes": [
+            "Logical",
+            "Empowering",
+            "Structured",
+            "Confident",
+            "Revolutionary",
+            "Performance-focused",
+            "Community-driven",
+            "Results-oriented"
+          ],
+          "proofPoints": [
+            "Impact First methodology eliminates technical complexity",
+            "Development ladder provides clear structure (Foundation > Development > Performance)",
+            "ScoreApp delivers objective self-insight",
+            "Community enables shared growth and motivation",
+            "Proven system delivers measurable results"
+          ],
+          "discriminator": "The only complete golf development ecosystem that replaces traditional complexity with logical simplicity while delivering measurable results through structured progression",
+          "audienceInsight": "Ambitious golfers are frustrated not by golf itself, but by the noise, jargon, and technical chaos of traditional teaching. They want a clear path, logical explanations, and genuine progress – not another isolated lesson or competing 'truth'.",
+          "emotionalBenefit": "Confidence, freedom from frustration, satisfaction of genuine progress, rediscovered joy in the game",
+          "essenceStatement": "Logical liberation leading to golf happiness",
+          "functionalBenefit": "Faster results through proven methodology, clear development path, measurable progression, simplified technique",
+          "selfExpressiveBenefit": "I'm a golfer who values logic over tradition, results over complexity, and continuous improvement over stagnation"
+        },
+        "isLocked": false,
+        "lockedById": null,
+        "lockedAt": null,
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-05-28T06:36:31.320Z",
+        "updatedAt": "2026-05-28T06:46:24.536Z"
+      }
+    ],
+    "brandAssetVersion": [],
+    "brandAssetResearchMethod": [
+      {
+        "id": "cmpp4dxhh001y4ums642xp1p6",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmpp4dxh8001x4umsksa03zim",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-05-28T06:36:31.292Z",
+        "updatedAt": "2026-05-28T06:36:31.292Z"
+      },
+      {
+        "id": "cmpp4dxhw00204umsvfbpjc9m",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmpp4dxhr001z4ums6lm643da",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-05-28T06:36:31.311Z",
+        "updatedAt": "2026-05-28T06:36:31.311Z"
+      },
+      {
+        "id": "cmpp4dxi100224umsjgqydwu7",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmpp4dxi000214umsxepdnhtj",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-05-28T06:36:31.320Z",
+        "updatedAt": "2026-05-28T06:36:31.320Z"
+      },
+      {
+        "id": "cmpp4dxi600244umsgsq5vyhl",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmpp4dxi300234umshy8xfa4u",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-05-28T06:36:31.323Z",
+        "updatedAt": "2026-05-28T06:36:31.323Z"
+      },
+      {
+        "id": "cmpp4dxi900264ums794c68nq",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmpp4dxi700254umsb4g5f9bz",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-05-28T06:36:31.327Z",
+        "updatedAt": "2026-05-28T06:36:31.327Z"
+      },
+      {
+        "id": "cmpp4dxic00284umspc265kba",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmpp4dxib00274ums1sks6sgv",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-05-28T06:36:31.331Z",
+        "updatedAt": "2026-05-28T06:36:31.331Z"
+      },
+      {
+        "id": "cmpp4dxif002a4umsxaidxx7i",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmpp4dxie00294umsu12ji5by",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-05-28T06:36:31.334Z",
+        "updatedAt": "2026-05-28T06:36:31.334Z"
+      },
+      {
+        "id": "cmpp4dxih002c4umsyrvwce94",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmpp4dxig002b4umskosl4ihd",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-05-28T06:36:31.336Z",
+        "updatedAt": "2026-05-28T06:36:31.336Z"
+      },
+      {
+        "id": "cmpp4dxil002e4ums8xq499e8",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmpp4dxik002d4umssuda9ytd",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-05-28T06:36:31.340Z",
+        "updatedAt": "2026-05-28T06:36:31.340Z"
+      },
+      {
+        "id": "cmpp4dxio002g4umsg61ymxgs",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmpp4dxin002f4umskie735zb",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-05-28T06:36:31.343Z",
+        "updatedAt": "2026-05-28T06:36:31.343Z"
+      },
+      {
+        "id": "cmpp4dxir002i4umsvwpf7vp3",
+        "method": "AI_EXPLORATION",
+        "status": "AVAILABLE",
+        "progress": 0,
+        "completedAt": null,
+        "artifactsCount": 0,
+        "brandAssetId": "cmpp4dxiq002h4umsg0hyxhpz",
+        "weight": 0.25,
+        "resultData": null,
+        "workspaceId": null,
+        "createdAt": "2026-05-28T06:36:31.346Z",
+        "updatedAt": "2026-05-28T06:36:31.346Z"
+      }
+    ],
+    "brand": [
+      {
+        "id": "cmr4z54dp000238c9qwac5mlo",
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-07-03T13:33:43.405Z",
+        "updatedAt": "2026-07-03T13:33:43.405Z"
+      }
+    ],
+    "brandLocaleProfile": [
+      {
+        "id": "cmr4z54dq000338c9xghp805b",
+        "brandId": "cmr4z54dp000238c9qwac5mlo",
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "locale": "en-GB",
+        "isDefault": true,
+        "voiceOverrides": null,
+        "localizedAssets": null,
+        "createdAt": "2026-07-03T13:33:43.406Z",
+        "updatedAt": "2026-07-03T13:33:43.406Z"
+      }
+    ],
+    "brandVoiceguide": [
+      {
+        "id": "cmpp4ss7q002u4umszugilhc0",
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "voiceDescription": null,
+        "toneDimensions": null,
+        "contentGuidelines": [
+          "OBSERVED: Content emphasizes the mission: 'Elke dag beter én eenvoudiger golfen' (Every day better and simpler golf)",
+          "OBSERVED: Brand positions itself as a community-driven platform for golfers",
+          "OBSERVED: Use golf-specific terminology authentically (e.g., 'Birdy time!', 'Fore right!')",
+          "RECOMMENDED: Lead with impact-focused messaging ('Impact first' philosophy)",
+          "RECOMMENDED: Emphasize consistency and improvement in golf performance",
+          "RECOMMENDED: Balance professional golf knowledge with accessible, friendly communication"
+        ],
+        "writingGuidelines": [
+          "OBSERVED: Use energetic, motivational phrases like 'Birdy time!' to celebrate achievements",
+          "OBSERVED: Employ Dutch language with clear, direct communication style",
+          "OBSERVED: Incorporate golf terminology naturally and authentically",
+          "RECOMMENDED: Write with enthusiasm and encouragement for golfers at all levels",
+          "RECOMMENDED: Keep language simple and accessible ('eenvoudiger' - simpler)",
+          "RECOMMENDED: Focus on continuous improvement and community support",
+          "RECOMMENDED: Use exclamation marks sparingly but strategically for excitement"
+        ],
+        "vocabularyDo": [],
+        "vocabularyDont": [],
+        "voiceSample": null,
+        "writingSamples": [],
+        "wordsWeUse": [],
+        "wordsWeAvoid": [],
+        "channelTones": null,
+        "antiPatterns": [],
+        "examplePhrases": [
+          {
+            "text": "Birdy time!",
+            "type": "do"
+          },
+          {
+            "text": "Fore right!",
+            "type": "do"
+          },
+          {
+            "text": "Elke dag beter én eenvoudiger golfen",
+            "type": "do"
+          },
+          {
+            "text": "Impact first",
+            "type": "do"
+          },
+          {
+            "text": "Starten op impact levert gegarandeerd meer consistentie op",
+            "type": "do"
+          },
+          {
+            "text": "One length",
+            "type": "do"
+          },
+          {
+            "text": "Overly technical jargon that excludes beginners",
+            "type": "dont"
+          },
+          {
+            "text": "Elitist or exclusionary language about golf skill levels",
+            "type": "dont"
+          }
+        ],
+        "centroidComputedAt": null,
+        "contentLocale": null,
+        "voiceDnaSavedForAi": true,
+        "vocabularySavedForAi": true,
+        "channelTonesSavedForAi": true,
+        "antiPatternsSavedForAi": true,
+        "guidelinesSavedForAi": true,
+        "examplePhrasesSavedForAi": true,
+        "referencesSavedForAi": false,
+        "source": "analyzer",
+        "publishedAt": null,
+        "createdAt": "2026-05-28T06:48:04.310Z",
+        "updatedAt": "2026-05-28T06:48:04.310Z",
+        "createdById": null
+      }
+    ],
+    "brandVoice": [],
+    "brandStyleguide": [
+      {
+        "id": "cmpp4retn002o4umseuncqas5",
+        "status": "COMPLETE",
+        "sourceType": "PDF",
+        "sourceUrl": null,
+        "sourceFileName": "HNG Logo-huisstijl uitwerking.pdf",
+        "analysisJobId": "job_c34adaee-37c0-4deb-8c89-1021c0083645",
+        "analysisStatus": "COMPLETE",
+        "errorMessage": null,
+        "detectedFrameworks": [],
+        "layoutStyle": "PLAYFUL",
+        "layoutStyleInferred": true,
+        "buttonProfile": null,
+        "spacingProfile": null,
+        "elevationProfile": null,
+        "radiusProfile": null,
+        "motionProfile": null,
+        "typographyProfile": null,
+        "buttonProfileOverride": false,
+        "spacingProfileOverride": false,
+        "elevationProfileOverride": false,
+        "radiusProfileOverride": false,
+        "motionProfileOverride": false,
+        "typographyProfileOverride": false,
+        "designPhilosophy": null,
+        "fixtureSamples": null,
+        "archetype": null,
+        "archetypeConfidence": null,
+        "archetypeReasoning": null,
+        "logoGuidelines": [
+          "Logo uses All Round Gothic – Demi as the exclusive logotype font",
+          "All Round Gothic font is ONLY used in the Het Nieuwe Golfen logo, not for other typography",
+          "Logo incorporates the brand's primary color Diepblauw (#150080)",
+          "Maintain proper spacing and proportions when scaling the logo",
+          "Logo represents Het Nieuwe Golfen as a community of golfers with a mission"
+        ],
+        "logoDonts": [
+          "Do not use All Round Gothic font outside of the logo",
+          "Do not alter the logo's color scheme or typography",
+          "Do not distort or disproportionately scale the logo",
+          "Do not recreate or modify the logo design"
+        ],
+        "logoSavedForAi": false,
+        "colorDonts": [
+          "Do not use colors outside the defined brand palette",
+          "Do not use low-contrast color combinations that reduce readability",
+          "Do not overuse accent colors (Felgroen, Bunkerzand, Vurig Oranje) as primary backgrounds",
+          "Do not mix Diepblauw and Helderblauw in ways that create visual confusion"
+        ],
+        "colorsSavedForAi": false,
+        "semanticColors": null,
+        "primaryFontName": "Red Hat Display",
+        "primaryFontUrl": "https://fonts.google.com/specimen/Red+Hat+Display",
+        "additionalFonts": [],
+        "typeScale": [],
+        "typographySavedForAi": false,
+        "photographyStyle": {
+          "mood": "RECOMMENDED: Energetic, authentic, and community-focused with natural outdoor lighting that captures the golf experience",
+          "subjects": "RECOMMENDED: Golfers in action, golf courses showcasing natural beauty, community moments, equipment details, and celebratory achievements",
+          "composition": "RECOMMENDED: Dynamic angles that capture movement and energy, use of natural golf course landscapes, focus on authentic moments rather than staged poses"
+        },
+        "photographyGuidelines": [
+          "RECOMMENDED: Capture authentic moments of golfers improving their game",
+          "RECOMMENDED: Showcase diverse skill levels to reflect the inclusive community",
+          "RECOMMENDED: Use natural outdoor lighting that highlights the golf course environment",
+          "RECOMMENDED: Include both action shots and quieter moments of focus and concentration",
+          "RECOMMENDED: Feature the vibrant greens of golf courses to connect with brand color Felgroen"
+        ],
+        "illustrationGuidelines": [
+          "OBSERVED: Use Bubble Icons set for iconography (custom icons can be added as needed)",
+          "RECOMMENDED: Maintain a friendly, approachable illustration style that matches the community focus",
+          "RECOMMENDED: Use illustrations to simplify complex golf concepts",
+          "RECOMMENDED: Incorporate brand colors into illustrations for consistency",
+          "RECOMMENDED: Keep illustrations clean and modern to align with the 'simpler golf' mission"
+        ],
+        "imageryDonts": [
+          "RECOMMENDED: Avoid overly serious or intimidating golf imagery",
+          "RECOMMENDED: Don't use stock photos that feel generic or disconnected from real golf experiences",
+          "RECOMMENDED: Avoid imagery that suggests golf is only for elite or experienced players",
+          "RECOMMENDED: Don't use dark, moody photography that contradicts the energetic brand tone"
+        ],
+        "imagerySavedForAi": false,
+        "brandImages": null,
+        "graphicElements": {
+          "usageNotes": "Graphic elements should enhance the energetic, community-focused brand while maintaining clarity and simplicity. Use repetition and pattern strategically to create visual interest without overwhelming the message.",
+          "brandShapes": [
+            "RECOMMENDED: Circular elements that reference golf balls and dimples",
+            "RECOMMENDED: Curved lines that suggest golf swing motion and course contours"
+          ],
+          "visualDevices": [
+            "RECOMMENDED: Repeating text patterns as shown in document ('Birdy time!' repetition, 'Impact first' repetition)",
+            "RECOMMENDED: Energetic typographic layouts with overlapping text for emphasis"
+          ],
+          "decorativeElements": [
+            "RECOMMENDED: Subtle dimple patterns referencing golf ball texture (connects to 'Dimpelwit' color name)",
+            "RECOMMENDED: Dynamic swoosh elements suggesting movement and swing paths"
+          ]
+        },
+        "graphicElementsDonts": [
+          "RECOMMENDED: Don't use overly complex or decorative elements that contradict the 'simpler golf' mission",
+          "RECOMMENDED: Avoid traditional, stuffy golf club aesthetics",
+          "RECOMMENDED: Don't create visual clutter that distracts from core messaging"
+        ],
+        "patternsTextures": {
+          "patterns": [
+            "RECOMMENDED: Dimple pattern (golf ball texture) for subtle backgrounds",
+            "RECOMMENDED: Repeating typographic patterns using brand phrases"
+          ],
+          "textures": [
+            "RECOMMENDED: Subtle grass texture for golf course connection",
+            "RECOMMENDED: Clean, minimal textures that don't overpower content"
+          ],
+          "usageNotes": "Patterns and textures should be subtle and support content rather than dominate it. Use golf-related textures sparingly to maintain modern, clean aesthetic while reinforcing brand connection to the sport.",
+          "backgrounds": [
+            "OBSERVED: Waterblauw (#E8F0FF) for soft branded backgrounds",
+            "OBSERVED: Dimpelwit (#F4F7F6) for neutral, clean backgrounds",
+            "RECOMMENDED: Gradient backgrounds using brand blues for depth"
+          ]
+        },
+        "iconographyStyle": {
+          "style": "custom",
+          "sizing": "20/24/32/48px",
+          "colorUsage": "Primary icons in Diepblauw (#150080), accent icons in Felgroen (#21D385) or Vurig Oranje (#FF6B35), neutral icons in Gripgrijs (#323232)",
+          "usageNotes": "OBSERVED: Brand uses Bubble Icons set as foundation. Icons should be friendly and approachable with rounded corners. Custom icons can be added to expand the set while maintaining consistent style. Icons support the community-focused, accessible brand personality.",
+          "cornerRadius": "4px",
+          "strokeWeight": "2px"
+        },
+        "iconographyDonts": [
+          "OBSERVED: Do not deviate from the Bubble Icons style when adding custom icons",
+          "RECOMMENDED: Avoid overly detailed or complex icon designs",
+          "RECOMMENDED: Don't use sharp, angular icons that feel aggressive or technical",
+          "RECOMMENDED: Avoid mixing different icon styles within the same context"
+        ],
+        "gradientsEffects": [
+          {
+            "name": "Primary Blue Gradient",
+            "type": "linear",
+            "angle": "135deg",
+            "usage": "RECOMMENDED: Use for hero sections, headers, and primary brand moments to create depth with brand blues",
+            "colors": [
+              "#150080",
+              "#6666FF"
+            ]
+          },
+          {
+            "name": "Water Sky Gradient",
+            "type": "linear",
+            "angle": "180deg",
+            "usage": "RECOMMENDED: Subtle background gradient for content sections, creates soft branded atmosphere",
+            "colors": [
+              "#E8F0FF",
+              "#F4F7F6"
+            ]
+          },
+          {
+            "name": "Success Gradient",
+            "type": "linear",
+            "angle": "90deg",
+            "usage": "RECOMMENDED: For celebration moments, achievement badges, and success states",
+            "colors": [
+              "#21D385",
+              "#FFD480"
+            ]
+          },
+          {
+            "name": "Energy Gradient",
+            "type": "linear",
+            "angle": "45deg",
+            "usage": "RECOMMENDED: For call-to-action elements and high-energy promotional content",
+            "colors": [
+              "#FF6B35",
+              "#FFD480"
+            ]
+          }
+        ],
+        "layoutPrinciples": {
+          "gridSystem": "RECOMMENDED: 12-column grid with 24px gutters for desktop, 4-column grid with 16px gutters for mobile",
+          "usageNotes": "Layouts should feel modern, energetic, and uncluttered. The 'Impact first' philosophy means leading with bold headlines and clear value propositions. Use the grid system to maintain consistency while allowing for dynamic, engaging compositions that reflect the brand's energetic personality.",
+          "spacingScale": "RECOMMENDED: 8px base unit - 8/16/24/32/48/64/96px for consistent rhythm and breathing room",
+          "compositionRules": [
+            "RECOMMENDED: Lead with impact - place most important content first and prominently",
+            "RECOMMENDED: Use asymmetric layouts to create energy and movement",
+            "RECOMMENDED: Balance energetic typography with calm whitespace",
+            "RECOMMENDED: Create clear visual hierarchy using Red Hat Display weight variations (Black for titles, Medium for subtitles, Regular for body)"
+          ],
+          "whitespacePhilosophy": "RECOMMENDED: Generous whitespace to support 'eenvoudiger' (simpler) brand promise. Let content breathe, avoid cramped layouts. Use whitespace to create focus and hierarchy."
+        },
+        "designLanguageSavedForAi": false,
+        "visualLanguage": null,
+        "visualLanguageSavedForAi": false,
+        "spacingScale": null,
+        "cornerRadii": null,
+        "shadowSystem": null,
+        "semanticTokens": null,
+        "colorPairings": null,
+        "observedColorPairs": null,
+        "published": false,
+        "publishedAt": null,
+        "isLocked": false,
+        "lockedAt": null,
+        "lockedById": null,
+        "createdById": "demo-user-erik-001",
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-05-28T06:47:00.299Z",
+        "updatedAt": "2026-05-28T06:48:04.350Z"
+      }
+    ],
+    "styleguideColor": [
+      {
+        "id": "cmpp4ss7v002v4umsfrlvlmm4",
+        "name": "Diepblauw (Deep Blue)",
+        "hex": "#150080",
+        "rgb": "21, 0, 128",
+        "hsl": "250, 100%, 25%",
+        "cmyk": "84%, 100%, 0%, 50%",
+        "category": "PRIMARY",
+        "tags": [
+          "brand",
+          "primary",
+          "dark"
+        ],
+        "notes": "Primary brand color, deep blue used for main brand identity and logo",
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": "medium",
+        "detectorSource": "pdf-extraction",
+        "sortOrder": 0,
+        "styleguideId": "cmpp4retn002o4umseuncqas5"
+      },
+      {
+        "id": "cmpp4ss7y002w4umsghim6thm",
+        "name": "Helderblauw (Bright Blue)",
+        "hex": "#6666FF",
+        "rgb": "102, 102, 255",
+        "hsl": "240, 100%, 70%",
+        "cmyk": "60%, 60%, 0%, 0%",
+        "category": "PRIMARY",
+        "tags": [
+          "brand",
+          "vibrant",
+          "accent"
+        ],
+        "notes": "Bright blue variant for visual interest and secondary brand applications",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AA",
+        "confidence": "medium",
+        "detectorSource": "pdf-extraction",
+        "sortOrder": 1,
+        "styleguideId": "cmpp4retn002o4umseuncqas5"
+      },
+      {
+        "id": "cmpp4ss80002x4umscxvnz5ns",
+        "name": "Felgroen (Vibrant Green)",
+        "hex": "#21D385",
+        "rgb": "33, 211, 133",
+        "hsl": "154, 73%, 48%",
+        "cmyk": "84%, 0%, 37%, 17%",
+        "category": "ACCENT",
+        "tags": [
+          "success",
+          "golf",
+          "nature"
+        ],
+        "notes": "Vibrant green accent color, evokes golf course and success states",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": "medium",
+        "detectorSource": "pdf-extraction",
+        "sortOrder": 2,
+        "styleguideId": "cmpp4retn002o4umseuncqas5"
+      },
+      {
+        "id": "cmpp4ss83002y4umswiqfh7q4",
+        "name": "Bunkerzand (Bunker Sand)",
+        "hex": "#FFD480",
+        "rgb": "255, 212, 128",
+        "hsl": "40, 100%, 75%",
+        "cmyk": "0%, 17%, 50%, 0%",
+        "category": "ACCENT",
+        "tags": [
+          "warm",
+          "golf",
+          "highlight"
+        ],
+        "notes": "Warm sand yellow accent, references golf bunkers and provides warmth",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": "medium",
+        "detectorSource": "pdf-extraction",
+        "sortOrder": 3,
+        "styleguideId": "cmpp4retn002o4umseuncqas5"
+      },
+      {
+        "id": "cmpp4ss85002z4umsxgutotqe",
+        "name": "Vurig Oranje (Fiery Orange)",
+        "hex": "#FF6B35",
+        "rgb": "255, 107, 53",
+        "hsl": "16, 100%, 60%",
+        "cmyk": "0%, 58%, 79%, 0%",
+        "category": "ACCENT",
+        "tags": [
+          "energy",
+          "call-to-action",
+          "vibrant"
+        ],
+        "notes": "Energetic orange for calls-to-action and dynamic elements",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": "medium",
+        "detectorSource": "pdf-extraction",
+        "sortOrder": 4,
+        "styleguideId": "cmpp4retn002o4umseuncqas5"
+      },
+      {
+        "id": "cmpp4ss8800304umsnsa6fxps",
+        "name": "Gripgrijs (Grip Gray)",
+        "hex": "#323232",
+        "rgb": "50, 50, 50",
+        "hsl": "0, 0%, 20%",
+        "cmyk": "0%, 0%, 0%, 80%",
+        "category": "NEUTRAL",
+        "tags": [
+          "text",
+          "dark",
+          "contrast"
+        ],
+        "notes": "Primary text color and dark neutral for strong contrast",
+        "contrastWhite": "AAA",
+        "contrastBlack": "Fail",
+        "confidence": "medium",
+        "detectorSource": "pdf-extraction",
+        "sortOrder": 5,
+        "styleguideId": "cmpp4retn002o4umseuncqas5"
+      },
+      {
+        "id": "cmpp4ss8a00314umsp0sjvmh0",
+        "name": "Dimpelwit (Dimple White)",
+        "hex": "#F4F7F6",
+        "rgb": "244, 247, 246",
+        "hsl": "160, 16%, 96%",
+        "cmyk": "1%, 0%, 0%, 3%",
+        "category": "NEUTRAL",
+        "tags": [
+          "background",
+          "light",
+          "subtle"
+        ],
+        "notes": "Light neutral background color, subtle off-white for surfaces",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": "medium",
+        "detectorSource": "pdf-extraction",
+        "sortOrder": 6,
+        "styleguideId": "cmpp4retn002o4umseuncqas5"
+      },
+      {
+        "id": "cmpp4ss8i00324umsganslnzc",
+        "name": "Waterblauw (Water Blue)",
+        "hex": "#E8F0FF",
+        "rgb": "232, 240, 255",
+        "hsl": "219, 100%, 95%",
+        "cmyk": "9%, 6%, 0%, 0%",
+        "category": "SECONDARY",
+        "tags": [
+          "background",
+          "tint",
+          "soft"
+        ],
+        "notes": "Soft blue tint for backgrounds and subtle brand presence",
+        "contrastWhite": "Fail",
+        "contrastBlack": "AAA",
+        "confidence": "medium",
+        "detectorSource": "pdf-extraction",
+        "sortOrder": 7,
+        "styleguideId": "cmpp4retn002o4umseuncqas5"
+      }
+    ],
+    "styleguideFont": [
+      {
+        "id": "cmpp4ss74002t4umsg95si4dm",
+        "name": "Red Hat Display",
+        "role": "DISPLAY",
+        "source": "DETECTED",
+        "availability": "GOOGLE_FONTS",
+        "fileUrl": null,
+        "fileName": null,
+        "fileType": null,
+        "fileSize": null,
+        "fontFamily": null,
+        "weight": null,
+        "style": null,
+        "sortOrder": 0,
+        "adobeFontsKitId": null,
+        "uploadedById": null,
+        "styleguideId": "cmpp4retn002o4umseuncqas5",
+        "workspaceId": "cmpp4dxgc001w4ums9sttpg62",
+        "createdAt": "2026-05-28T06:48:04.288Z",
+        "updatedAt": "2026-05-28T06:48:04.288Z"
+      }
+    ],
+    "styleguideLogo": [],
+    "styleguideComponent": [],
+    "fidelityConfig": [],
+    "brandRule": [],
+    "workspaceContentTypeThreshold": [],
+    "persona": [],
+    "personaResearchMethod": [],
+    "product": [],
+    "productImage": [],
+    "productPersona": [],
+    "businessStrategy": [],
+    "focusArea": [],
+    "objective": [],
+    "keyResult": [],
+    "milestone": [],
+    "progressSnapshot": [],
+    "competitor": [],
+    "competitorProduct": [],
+    "trend": [],
+    "workspaceAiConfig": []
+  },
+  "vectors": {
+    "brandVoiceguide": {
+      "centroidEmbedding": {}
+    }
+  },
+  "localImageRefs": []
+}
