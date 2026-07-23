@@ -23,7 +23,7 @@ const bodySchema = z.object({
   contentType: z.string().optional(),
   title: z.string().max(120).optional(),
   campaignId: z.string().optional(),
-  prompt: z.string().min(5),
+  prompt: z.string().min(5).max(10000),
   contextSelection: z
     .object({
       personaIds: z.array(z.string()).optional(),

@@ -19,7 +19,7 @@ import { logApiCall } from '@/lib/api/public/usage';
 export const maxDuration = 120;
 
 const bodySchema = z.object({
-  content: z.string().min(50, 'content needs at least 50 characters for a meaningful score'),
+  content: z.string().min(50, 'content needs at least 50 characters for a meaningful score').max(100000),
 });
 
 export async function POST(request: Request) {

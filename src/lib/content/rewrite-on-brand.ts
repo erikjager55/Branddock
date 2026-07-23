@@ -150,12 +150,12 @@ export async function rewriteOnBrand(input: RewriteOnBrandInput): Promise<Rewrit
   } catch (err) {
     const code = (err as { code?: string }).code;
     if (code === 'CONTEXT_IDS_INVALID') {
-      return { ok: false, code: 'CONTEXT_IDS_INVALID', error: (err as Error).message };
+      return { ok: false, code: 'CONTEXT_IDS_INVALID', error: 'One or more context IDs are invalid' };
     }
     console.warn('[rewrite-on-brand] failed', {
       workspaceId: input.workspaceId,
       message: err instanceof Error ? err.message : String(err),
     });
-    return { ok: false, code: 'GENERATION_FAILED', error: err instanceof Error ? err.message : 'Rewrite failed' };
+    return { ok: false, code: 'GENERATION_FAILED', error: 'Rewrite failed' };
   }
 }

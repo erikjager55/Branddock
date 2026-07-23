@@ -203,10 +203,7 @@ export async function generateVideoClip(input: GenerateVideoInput): Promise<Gene
 
     return { ok: true, deliverableId: target.id, videoUrl: uploadResult.url, prompt: videoPrompt, provider: provider.label };
   } catch (err) {
-    return {
-      ok: false,
-      code: 'GENERATION_FAILED',
-      error: err instanceof Error ? err.message : 'Video generation failed',
-    };
+    console.error('[headless-video]', err instanceof Error ? err.message : err);
+    return { ok: false, code: 'GENERATION_FAILED', error: 'Video generation failed' };
   }
 }
