@@ -69,7 +69,8 @@ const PLATFORMS: { title: string; steps: string[] }[] = [
   {
     title: 'In Claude',
     steps: [
-      'Instellingen → Connectors → connector toevoegen',
+      // Het menu heet sinds 2026 "Customize"; oudere versies tonen "Instellingen".
+      'Customize (of Instellingen) → Connectors → connector toevoegen',
       'Plak de connector-URL en bevestig',
       'Log in met je Branddock-account — je merk reist mee',
     ],
@@ -77,8 +78,10 @@ const PLATFORMS: { title: string; steps: string[] }[] = [
   {
     title: 'In ChatGPT',
     steps: [
-      'Instellingen → Connectors (developer mode) → toevoegen',
-      'Plak dezelfde connector-URL',
+      // Developer mode verhuist tussen versies: Connectors → Geavanceerd, of
+      // Beveiliging en inloggen. Daarom benoemd, niet als vast pad opgeschreven.
+      'Zet Developer mode aan in Instellingen',
+      'Connectors → toevoegen → plak dezelfde connector-URL',
       'Log in met je Branddock-account — klaar',
     ],
   },
@@ -87,7 +90,7 @@ const PLATFORMS: { title: string; steps: string[] }[] = [
     steps: [
       'Maak een API-key aan in Settings → API & Connectors',
       'Gebruik de key als Bearer-token op dezelfde URL',
-      'De key is merk-vergrendeld — ideaal voor n8n en servers',
+      'De key is merk-vergrendeld en ontsluit als enige het inladen van merkdata',
     ],
   },
 ];

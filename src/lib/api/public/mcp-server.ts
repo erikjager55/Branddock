@@ -826,7 +826,18 @@ type _ImportKeysExtraInSchema = AssertNever<
   Exclude<keyof ImportSchemaPayload, keyof BrandImportPayload>
 >;
 
+/**
+ * Alléén op de API-key-route. Dit is de enige tool die bestaand merk-DNA
+ * overschrijft, en over de OAuth-connector is de aanroeper doorgaans zelf
+ * eigenaar van zijn workspace — een rol-check beschermt daar dus niemand. Een
+ * key is een bewuste, per-merk vergrendelde handeling (Settings → API &
+ * Connectors); dat is het juiste toegangsniveau voor een schrijf-op-merk-DNA.
+ * Gevolg: in Claude/ChatGPT is de tool niet zichtbaar en dus ook niet
+ * aanroepbaar — geen "vul mijn merkprofiel even aan" dat er echt één overschrijft.
+ */
 function registerImportTool(server: McpServer, ctx: PublicMcpContext): void {
+  if (ctx.authVia !== 'api_key') return;
+
   server.registerTool(
     'import_brand_data',
     {
@@ -852,9 +863,12 @@ function registerImportTool(server: McpServer, ctx: PublicMcpContext): void {
 // ─── Public API ──────────────────────────────────────────────
 
 /**
- * Bouwt een verse McpServer met de 18 publieke brand-tools, gebonden aan de
+ * Bouwt een verse McpServer met de publieke brand-tools, gebonden aan de
  * auth-context (bd_live-key óf OAuth-token — zie PublicMcpContext). Eén
  * server per request (stateless) — de route sluit hem na afhandeling weer.
+ *
+ * Toolset per auth-vorm: 17 tools over de OAuth-connector (claude.ai/ChatGPT),
+ * 18 met een API-key — `import_brand_data` is key-only, zie registerImportTool.
  */
 export function createPublicMcpServer(ctx: PublicMcpContext): McpServer {
   const server = new McpServer({
