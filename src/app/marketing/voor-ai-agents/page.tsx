@@ -260,8 +260,11 @@ export default function GuardrailsPage() {
         <h2 className="text-gray-900 mb-2">Voor developers: API, webhooks &amp; n8n</h2>
         <p className="text-gray-600 mb-6 max-w-2xl">
           Dezelfde merklaag, machine-to-machine. Authenticatie via merk-vergrendelde API-keys
-          (aanmaken in Settings → API &amp; Connectors; de key zie je één keer) of OAuth voor
-          agents. Lezen en scoren is gratis; genereren kost dezelfde credits als in het platform.
+          (aanmaken in Settings → API &amp; Connectors; de key zie je één keer — behandel 'm als
+          een wachtwoord en trek 'm in bij twijfel) of OAuth voor agents. Lezen en scoren is
+          gratis; genereren kost dezelfde credits als in het platform — en die vallen altijd op
+          de workspace van de key, dus de merkeigenaar betaalt z'n eigen verbruik. Voor bureaus:
+          één key per klant-workspace houdt elke klant netjes op z'n eigen creditpot.
         </p>
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div className="rounded-xl border border-gray-200 bg-white p-5">
@@ -273,7 +276,8 @@ export default function GuardrailsPage() {
             <p className="text-sm text-gray-600 mt-3">
               Naast context: <code className="text-xs">/score</code>,{' '}
               <code className="text-xs">/generate</code>, SEO-, webpagina-, beeld- en
-              video-endpoints — dezelfde 17 capabilities als de MCP-tools hierboven.
+              video-endpoints — dezelfde merkfuncties als de MCP-connector (17 tools; met een
+              API-key komt daar het inladen van merkdata bij).
             </p>
           </div>
           <div className="rounded-xl border border-gray-200 bg-white p-5">
