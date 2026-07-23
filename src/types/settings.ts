@@ -113,7 +113,13 @@ export interface TeamMemberItem {
   avatar: string | null;
   isActive: boolean;
   joinedAt: string;
-  /** Leeg = alle workspaces; alleen gevuld voor gescopede member/viewer-leden. */
+  /**
+   * Is dit lid beperkt tot `workspaceIds`? Zo niet, dan is het onbeperkt en
+   * zegt een lege lijst "alle workspaces". Mét de vlag zegt een lege lijst
+   * juist "geen enkele" — die staat ontstaat als de laatste toegekende
+   * workspace is verwijderd.
+   */
+  workspaceScoped?: boolean;
   workspaceIds: string[];
 }
 
@@ -161,6 +167,12 @@ export interface UpdateMemberWorkspaceAccessRequest {
 export interface ResendInviteResponse {
   success: boolean;
   newExpiresAt: string;
+  /**
+   * False wanneer de vervaldatum wél is verlengd maar de mail niet de deur
+   * uit ging. De UI moet dit tonen — anders meldt de knop stil succes terwijl
+   * de genodigde niets ontvangt (precies de bug die deze route had).
+   */
+  emailSent?: boolean;
 }
 
 // ─── Team Permissions ───────────────────────────────────────

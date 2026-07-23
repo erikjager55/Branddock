@@ -41,7 +41,13 @@ export async function resolveWorkspaceId(): Promise<string | null> {
       .activeOrganizationId as string | undefined;
 
     if (activeOrgId) {
-      const workspace = await getWorkspaceForOrganization(activeOrgId);
+      // userId meegeven: zonder dat koos deze stap de OUDSTE workspace van de
+      // organisatie zonder ACL-check, waardoor een workspace-gescopet lid
+      // buiten zijn scope landde.
+      const workspace = await getWorkspaceForOrganization(
+        activeOrgId,
+        session.user.id,
+      );
       if (workspace) return workspace.id;
     }
 

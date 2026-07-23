@@ -67,6 +67,28 @@ async function targetForWorkspace(
   return { workspaceId: ws.id, workspaceName: ws.name, ownerUserId: owner.userId };
 }
 
+/**
+ * Waarschuw als de doel-workspace een andere contenttaal heeft dan de bron.
+ * De `Workspace`-rij migreert bewust niet mee (het is de doel-workspace zelf),
+ * dus zonder deze check landt bv. Nederlands merk-DNA stil in een Engelse
+ * workspace: de settings-UI toont dan een andere taal dan de generatie gebruikt.
+ * Gebeurde bij Better Brands (#411) en opnieuw bij Adullam (2026-07-22).
+ */
+async function warnOnLanguageMismatch(bundle: BrandDnaBundle, target: Target): Promise<void> {
+  const source = bundle.meta.sourceContentLanguage;
+  if (!source) return; // bundle van vóór dit meta-veld
+  const ws = await prisma.workspace.findUnique({
+    where: { id: target.workspaceId },
+    select: { contentLanguage: true },
+  });
+  if (!ws || ws.contentLanguage === source) return;
+  console.warn(
+    `[import] LET OP: contenttaal verschilt — bron '${source}', doel '${ws.contentLanguage}'. ` +
+      `Workspace.contentLanguage migreert NIET mee; zet de contenttaal na de import in de app op '${source}', ` +
+      'anders toont de UI een andere taal dan de generatie gebruikt.',
+  );
+}
+
 /** Resolve doel-workspace + owner-user via workspace-id, -slug of owner-email. */
 async function resolveTarget(flags: Flags): Promise<Target> {
   // Workspace-id is de enige eenduidige sleutel: namen mogen dubbel voorkomen
@@ -271,6 +293,7 @@ async function main(): Promise<void> {
   const host = dbHost();
   console.log(`[import] DB-host=${host}`);
   console.log(`[import] bron=${bundle.meta.sourceWorkspaceName} → doel=${target.workspaceName} (${target.workspaceId}), owner=${target.ownerUserId}`);
+  await warnOnLanguageMismatch(bundle, target);
 
   await assertFresh(target.workspaceId, flags.force);
 

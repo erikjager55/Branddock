@@ -39,7 +39,12 @@ export async function createWorkspace(data: {
 
 export async function deleteWorkspace(
   workspaceId: string,
-): Promise<{ success: boolean; deleted: { id: string; name: string } }> {
+): Promise<{
+  success: boolean;
+  deleted: { id: string; name: string };
+  /** Leden die na deze verwijdering geen enkele workspace meer kunnen openen. */
+  strandedMembers?: string[];
+}> {
   const res = await fetch('/api/workspaces', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },

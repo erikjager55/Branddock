@@ -43,7 +43,7 @@ const navigation = {
       products: 'Products & Services',
       competitors: 'Competitors',
       'media-library': 'Media Library',
-      'ai-trainer': 'AI Trainer',
+      'ai-trainer': 'Style Studio',
       'ai-studio': 'AI Studio',
       trends: 'Trend Radar',
       knowledge: 'Knowledge Library',

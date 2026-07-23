@@ -82,6 +82,8 @@ const ns = {
     profileCount_other: '{{count}} profielen',
   },
   workspaces: {
+    strandedWarning:
+      'Let op: {{members}} had alleen toegang tot deze workspace en kan nu geen enkele workspace meer openen. Pas hun workspace-toegang aan in Team.',
     heading: 'Workspaces',
     description:
       'Beheer de workspaces in je organisatie. Elke workspace heeft eigen brand assets, persona’s, campagnes en andere data.',

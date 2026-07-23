@@ -403,6 +403,42 @@ export const auth = betterAuth({
           },
         },
       },
+      /**
+       * De tweede deur naar hetzelfde lidmaatschap.
+       *
+       * De app accepteert uitnodigingen via `/api/organization/invite/accept`,
+       * maar deze plugin exposeert daarnaast zijn eigen `accept-invitation` op
+       * dezelfde tabellen. Die kent `Invitation.workspaceIds` niet en maakt dus
+       * een lid met een LEGE ACL aan — en leeg betekent onbeperkt
+       * (`workspace-resolver.ts`). Zonder deze hooks is de workspace-scoping
+       * dus te omzeilen door de plugin-route te gebruiken.
+       */
+      organizationHooks: {
+        /**
+         * De plugin-route wordt volledig geblokkeerd, niet nagebouwd.
+         *
+         * Eerst geprobeerd om in `afterAcceptInvitation` de ACL-rijen alsnog
+         * te schrijven, maar dat kán niet fail-closed: de plugin commit het
+         * lidmaatschap in `runWithTransaction` (crud-invites.mjs:291-324) en
+         * roept de after-hook pas daarná aan (:339). Een fout in die hook —
+         * of een workspace die tussen de twee hooks verdwijnt — laat dan een
+         * lid met NUL ACL-rijen achter, en nul betekent onbeperkt. De
+         * before-hook draait wél vóór elke schrijfactie (:280), dus daar
+         * weigeren is het enige punt waar niets half blijft staan.
+         *
+         * Nabouwen is bovendien een verliezende strategie: deze plugin-route
+         * kent `workspaceIds` niet, slaat rol-arrays komma-gescheiden op en
+         * gaat langs onze seat-limiet, rol-verzoening en landings-cookie.
+         * Alle uitnodigingen lopen daarom via `/invite/accept` →
+         * `POST /api/organization/invite/accept`.
+         */
+        beforeAcceptInvitation: async () => {
+          throw new APIError("BAD_REQUEST", {
+            message:
+              "Accept invitations via /invite/accept — this endpoint does not apply workspace scoping",
+          });
+        },
+      },
     }),
     /**
      * MCP OAuth-provider (OAuth-connect-fase publieke MCP-server).

@@ -98,9 +98,11 @@ export function TeamMemberRow({ member }: TeamMemberRowProps) {
       {/* Workspace access */}
       <td className="py-3 px-4">
         <span className="text-sm text-gray-600">
-          {supportsScoping && member.workspaceIds.length > 0
-            ? t('workspaceAccess.columnCount', { count: member.workspaceIds.length })
-            : t('workspaceAccess.columnAll')}
+          {!supportsScoping || !member.workspaceScoped
+            ? t('workspaceAccess.columnAll')
+            : member.workspaceIds.length > 0
+              ? t('workspaceAccess.columnCount', { count: member.workspaceIds.length })
+              : t('workspaceAccess.columnNone')}
         </span>
       </td>
 

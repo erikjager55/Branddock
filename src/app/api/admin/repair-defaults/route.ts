@@ -17,17 +17,33 @@ import { requireDeveloper } from '@/lib/developer-access';
 import { MEDIUM_ENRICHMENT_DEFAULTS } from '@/lib/seed-data/medium-enrichment';
 import { diagnoseAnchors, repairAnchors } from '@/lib/content-locale/repair-anchors';
 
+/**
+ * Leden met ACL-rijen die de `workspaceScoped`-vlag nog missen. Zolang dit
+ * getal niet 0 is, leest de app die leden als onbeperkt.
+ */
+async function diagnoseWorkspaceScoping() {
+  const [needsBackfill, alreadyScoped] = await Promise.all([
+    prisma.organizationMember.count({
+      where: { workspaceScoped: false, workspaceAccess: { some: {} } },
+    }),
+    prisma.organizationMember.count({ where: { workspaceScoped: true } }),
+  ]);
+  return { needsBackfill, alreadyScoped };
+}
+
 export async function GET() {
   const session = await requireDeveloper();
   if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const [mediumEnrichment, contentLocaleAnchors] = await Promise.all([
+  const [mediumEnrichment, contentLocaleAnchors, workspaceScoping] = await Promise.all([
     prisma.mediumEnrichment.count({ where: { workspaceId: null } }),
     diagnoseAnchors(),
+    diagnoseWorkspaceScoping(),
   ]);
   return NextResponse.json({
     mediumEnrichment: { inDb: mediumEnrichment, expected: MEDIUM_ENRICHMENT_DEFAULTS.length },
     contentLocaleAnchors,
+    workspaceScoping,
   });
 }
 
@@ -68,12 +84,24 @@ export async function POST() {
   // bestaande profiel-locale.
   const anchors = await repairAnchors();
 
+  // Backfill `OrganizationMember.workspaceScoped` (2026-07-22). Bestaande
+  // gescopete leden zijn herkenbaar aan hun ACL-rijen; zonder deze vlag zou
+  // de nieuwe fail-closed-lezing ze als ONBEPERKT blijven zien. Alleen
+  // false → true op leden die aantoonbaar rijen hebben; nooit andersom, dus
+  // idempotent en veilig te herhalen.
+  const scopingBackfill = await prisma.organizationMember.updateMany({
+    where: { workspaceScoped: false, workspaceAccess: { some: {} } },
+    data: { workspaceScoped: true },
+  });
+
   console.log(`[admin/repair-defaults] mediumEnrichment: created=${created} updated=${updated} by ${session.user.email}`);
   if (anchors.details.length > 0) {
     console.log(`[admin/repair-defaults] contentLocaleAnchors: ${anchors.details.join(' | ')}`);
   }
+  console.log(`[admin/repair-defaults] workspaceScoped backfill: ${scopingBackfill.count} leden`);
   return NextResponse.json({
     mediumEnrichment: { created, updated },
     contentLocaleAnchors: anchors,
+    workspaceScoping: { backfilled: scopingBackfill.count },
   });
 }

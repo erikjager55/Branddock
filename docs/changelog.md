@@ -37,6 +37,63 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 444. "Lege ACL = onbeperkt" wegwerkt — expliciete `workspaceScoped`-vlag + sweep over alle lezers
+
+⚠️ **Deploy-volgorde**: nieuwe kolom `OrganizationMember.workspaceScoped`. Neon-push én backfill horen direct achter elkaar, vóór/bij de deploy — anders is elk gescopet lid tijdelijk onbeperkt. SQL + alternatief (`POST /api/admin/repair-defaults`) staan bovenaan de [task-file](../tasks/done/workspace-scoping-fail-open.md). Zonder de kolom 500't élk geauthenticeerd request.
+
+Vervolg op #443. `WorkspaceMemberAccess` beperkt een member/viewer tot bepaalde workspaces, maar "nul rijen" werd overal gelezen als **onbeperkt** — een fail-open default die op drie manieren toesloeg: een verwijderde workspace cascadeerde de laatste rij weg (lid werd stil onbeperkt), de team-UI met alles uitgevinkt wiste alle rijen (bedoeld als "geen toegang", gaf toegang tot álles), en elk pad dat per ongeluk geen rijen schreef deed hetzelfde. De nieuwe vlag maakt "beperkt tot niets" uitdrukbaar: `true` = uitsluitend de gekoppelde rijen, `false` = onbeperkt; owner/admin bypassen de ACL sowieso.
+
+De review legde bloot dat #440 alléén de resolver had omgezet. Vier andere lezers stonden nog op de oude telling en zijn meegenomen: `canActInWorkspace` (acting identity voor agent-runs, untrusted webhook-payload), `getWorkspaceUsers` (notificatie-fan-out), de workspaces-lijst, `POST /api/workspace/switch` en de publieke MCP/REST-`brand-resolver` (3 plekken). Verder: invite-accept keek naar `aclCount` i.p.v. de vlag en sloot daarmee juist een gestrand lid voorgoed buiten; workspace-delete meldt nu welke leden zonder workspace achterblijven (tot in de UI); de team-tabel toont "Geen toegang" i.p.v. "Alle"; en `repair-defaults` kreeg een idempotente backfill met diagnose.
+
+Bewezen: na het verwijderen van zijn énige workspace geeft `hasWorkspaceAccess` voor dat lid **false** (was `true`), lege-ACL-leden ongewijzigd, backfill 2 → 0, `strandedMembers` correct gerapporteerd, Playwright `invite-accept` 6/6 en `permissions` 19/19 inclusief een nieuwe scoping-test.
+
+- Task: [tasks/done/workspace-scoping-fail-open.md](../tasks/done/workspace-scoping-fail-open.md)
+- ADR: `-`
+- Gotcha: zie de 2026-07-22-entry over fail-open defaults
+- Commit: `ff4cc5e1`
+
+### 443. Workspace-scoping écht afdwingen — ACL-blinde resolver, tweede deur, rol/seats, tokensterkte
+
+Vervolg op #442, dat gescopete uitnodigingen voor het eerst accepteerbaar maakte en daarmee blootlegde dat de scoping uit PR #220 **adviserend** was. Zes punten gesloten. (1) **De workspace-resolutie is ACL-bewust**: `getWorkspaceForOrganization` koos de *oudste* workspace van de organisatie zonder ACL-check en `getExplicitWorkspace` valideerde de cookie alleen op org-lidmaatschap — een gescopet lid dat zijn cookie wiste of vervalste las dus data buiten zijn scope, op een pad dat ~398 API-routes vertrouwen. Nieuwe gedeelde `accessibleWorkspaceIds`/`firstAccessibleWorkspace` spiegelen exact de regels van `hasWorkspaceAccess` (owner/admin bypassen; lege ACL = onbeperkt), zodat owners, admins en leden met lege ACL ongewijzigd gedrag houden. (2) **Tweede deur dicht**: de Better-Auth-organization-plugin exposeert een eigen `accept-invitation` op dezelfde tabellen die `workspaceIds` niet kent en dus een lid met nul ACL-rijen (= onbeperkt) aanmaakte; die route wordt nu in `beforeAcceptInvitation` geweigerd — bewust blokkeren i.p.v. nabouwen, omdat een `after`-hook per definitie ná de commit draait en dus niet fail-closed kán zijn. (3) **Rolverzoening** bij her-uitnodigen, met een vers-heidscheck (een 7 dagen oude mail overschrijft geen bewust gewijzigde rol) en een laatste-actieve-owner-guard. (4) **Seat-limiet** wordt nu ook bij accepteren gecheckt. (5) **CSPRNG-tokens** (`randomBytes(32)`) i.p.v. de `cuid()`-default, plus een per-IP rate-limit op het accept-endpoint. (6) **Playwright-spec** over zes takken van de accept-pagina (6/6 groen).
+
+Bewezen met echte runs: gewiste én vervalste cookie landen binnen de scope, lege-ACL-leden ongewijzigd, plugin-deur geeft 400 en laat géén half lidmaatschap achter (uitnodiging blijft `pending`), rol member→viewer verzoend, token 43 tekens base64url, e-mail genormaliseerd.
+
+- Task: [tasks/done/invite-acl-hardening.md](../tasks/done/invite-acl-hardening.md)
+- ADR: `-`
+- Gotcha: "leeg = onbeperkt" is fail-open + een `after`-hook kan niet fail-closed zijn (2026-07-22)
+- Commit: `9822c04c`
+
+### 442. Uitnodigingsflow gerepareerd — dode accept-link, verkeerde naam in de mail, resend die niets verstuurde
+
+Eriks test-uitnodiging legde drie bugs bloot. (1) **De accept-link was dood**: de invite-mail linkt sinds dag één naar `/invite/accept?token=…`, maar die pagina heeft **nooit bestaan** (`git log --diff-filter=D` leeg) — de enige handler was de gelijknamige POST-**API**-route, die een GET vanuit een mailclient niet beantwoordt. Élke uitnodiging ooit liep dus dood op een 404; tweede vindplaats van exact de klasse die `reset-password` eerder trof. Gebouwd als zelfstandige client-page naar dat patroon (dus zonder `AuthGate`/`App.tsx` te raken), die alle zes endpoint-takken naar schermen vertaalt en het hoofdpad afhandelt dat ontbrak: een genodigde **zonder** account meldt zich inline aan met het uitgenodigde adres vastgezet. Na accepteren wordt de uitgenodigde organisatie expliciet actief gezet — zonder dat landt een net-aangemelde genodigde in zijn eigen lege auto-org van `provisionNewUser`. NL/EN via `?lang=` uit de mail. (2) **De mail noemde altijd de organisatie**: `Invitation.workspaceIds` (PR #220) werd nergens gebruikt, dus een uitnodiging voor één workspace las "Erik Jager's Brand" i.p.v. de workspace. Nieuwe gedeelde helper `resolveInviteTargetName` (één workspace → workspace-naam; nul of meerdere → organisatie) voor mail, accept-respons én resend; template-veld hernoemd `organizationName` → `targetName` zodat tsc elke call-site dwong mee te gaan — ving direct een vergeten vindplaats in `scripts/emailit-smoke-test.ts`. (3) **"Opnieuw versturen" verstuurde niets**: de route verzette alleen `expiresAt`; nu rendert en verstuurt hij de mail daadwerkelijk (fail-soft, de verlenging blijft staan als mail faalt). Browser-smoke: alle zes takken groen, aanmelden→lid→juiste org actief bewezen, 0 onverwachte console-errors.
+
+**Review-ronde (4 passes, 7 subagents) legde nog vier defecten in het nieuwe pad bloot**, alle gefixt en gesmoked: (a) **hoofdlettergevoelig e-mailadres** — Better Auth lowercaset bij sign-up, wij sloegen verbatim op, dus een uitnodiging aan `Naam@Domein.nl` maakte een account op `naam@domein.nl` en liep daarna eeuwig op 403 vast, met de enige uitwegknop als lus (nu genormaliseerd + hoofdletterongevoelig vergeleken voor legacy-rijen); (b) **fail-open bij een verwijderde workspace** — nul ACL-rijen betekent ONBEPERKT (`workspace-resolver.ts:103`), dus een uitnodiging voor één inmiddels verwijderde workspace gaf toegang tot álle workspaces; nu fail-closed vóór de sessiecheck; (c) **de token-strip (tegen een PostHog-lek via `$current_url`) maakte de "uitloggen en opnieuw"-knop dood** — de reload landde op "link niet geldig"; token nu in `sessionStorage` + expliciete navigatie; (d) **ingetrokken uitnodigingen** meldden "al gebruikt" (twee spellingen in dezelfde tabel: onze `cancelled`, Better Auth's `canceled`/`rejected`). Verder: `code`-contract i.p.v. regex op Engelse fouttekst, P2002-race, workspace-cookie op alle succespaden, resend-cooldown, en het `emailSent`/`WORKSPACE_GONE`-signaal naar de UI. Zes takken browser-gesmoked, 0 hydration-warnings, 0 console-errors.
+
+**Bewust NIET meegenomen** (documented in de task-file, vragen om Eriks besluit): de ACL-blinde `resolveWorkspaceId`/`getExplicitWorkspace`, de parallelle Better-Auth-accept-endpoint op dezelfde tabellen, rolverzoening bij her-uitnodigen, seat-limiet bij accepteren, cuid-tokens + rate-limiting, en e2e-dekking.
+
+- Task: [tasks/done/invite-flow-fixes.md](../tasks/done/invite-flow-fixes.md)
+- ADR: `-`
+- Gotcha: mail-link naar een nooit-gebouwde landing (2026-07-22, tweede vindplaats)
+- Commit: `dd7a5524`
+
+### 441. Training-terminologie opgeruimd na de Stijlstudio-hernoeming
+
+Sluitstuk van #439: de UI sprak nog overal over "getrainde modellen" terwijl er sinds #227 niets meer getraind wordt. **Levende teksten herschreven** (NL+EN): canvas-blok trained-style (laadtekst, lege staat, "Getraind model" → "Stijlmodel", stijlsterkte-hint verwijst nu naar de referentiestijl i.p.v. "het getrainde onderwerp"), de bron-chip "Getraind" → "Stijlmodel", de generator-omschrijving ("fine-tuned brand model" → stijlmodel), en in de Stijlstudio zelf de selectie-hint, de minimum-eis, de notitie-placeholder en "Trainingssamples" → "Voorbeeldbeelden". De curatietips heetten "Curatietips voor sterke LoRA-training" en bevatten een inmiddels onjuist advies over trainingsdata vs inferentiemodel — herschreven naar referentieset-taal. **Dode sleutels verwijderd**: de secties `shared`, `training`, `trainingModal` en `trainingStatus` (0 verwijzingen; hun componenten sneuvelden in #227) plus `detail.trainingFailedAlert`. **Bijvangst**: de statistiek-kaart "Training" telde een status die niets meer zet en stond dus permanent op 0 — nu "Concept"/"Draft" met de `draft`-waarde die de API al meestuurde. NL/EN-sleutelpariteit geverifieerd (274/274 en 371/371).
+
+- Task: `-` (sluitstuk hernoeming #439)
+
+### 440. Migratie-import waarschuwt bij contenttaal-verschil
+
+De `Workspace`-rij migreert bewust niet mee in een merk-DNA-bundel (het ís de doel-workspace), dus `Workspace.contentLanguage` bleef bij een klant-migratie stil op de oude waarde staan: Nederlands merk-DNA landde in een Engelse workspace, waarna de settings-UI een andere taal toonde dan de generatie gebruikte. Twee keer geraakt — Better Brands (#411) en Adullam (2026-07-22). De export legt de bron-contenttaal nu vast in `meta.sourceContentLanguage`; de import vergelijkt die met de doel-workspace en waarschuwt bij verschil, in dry-run én echte run, met de instructie om de taal na afloop in de app om te zetten. Bundles van vóór dit veld slaan de check stil over. Bewezen op de echte Adullam-bundle: `nl` → Engelse doel-workspace geeft de waarschuwing, `nl` → `nl` zwijgt.
+
+- Task: `-` (preventie n.a.v. de Adullam-migratie, #437)
+
+### 439. "AI Trainer" hernoemd naar Stijlstudio (app + website)
+
+Besluit Erik na de geslaagde hertest: sinds de #227-ombouw wordt er niets meer getraind (≥3 referentiebeelden → direct genereren), dus de naam dekte de lading niet meer. **NL: Stijlstudio · EN: Style Studio** — alle gebruikerszichtbare plekken om: sidebar-navigatie (beide locales), paginakop, "Terug naar…"-knoppen (3×), showcase-label, module-registry in `design-tokens.ts` en het credit-label op de marketing-pricingpagina. Twee bijvangsten: (1) de paginakop en de knop "Create Model" stonden **hardcoded in het Engels** — nu via i18n (`consistent-models.page.*`), dus de pagina is eindelijk tweetalig; (2) de canvas-hint stuurde gebruikers nog naar "train eerst een Consistent AI Model" — herschreven naar de werkelijkheid (stijlmodel maken met minimaal 3 referentiebeelden). Interne sleutels, routes en API-paden (`ai-trainer`, `/media/trainer`, `/api/consistent-models`) bewust ongewijzigd: geen gebruikerswinst, wel gebroken bladwijzers. Code-commentaren meegetrokken zodat de oude naam nergens meer rondslingert.
+
+- Task: `-` (naamsbesluit Erik 2026-07-22, restpunt uit de trainer-ombouw #227)
+
 ### 438. MCP write-tool `import_brand_data` + werkbestand-flow + Adullam-import
 
 Publieke MCP-tool (18e) die merkonderdelen idempotent in een merk laadt: de 11 brand assets (frameworkData per canonieke slug, deep-merge, auto-versioning incl. pre-import snapshot), brand voice (incl. BrandRule-sync), personas, producten, concurrenten, Trend Radar-trends en kennisbronnen. Gedeelde service `importBrandData()` met volledige tweede-deur-pariteit (plan-limits, trial-lock, rol-gate op workspace-settings, locale-anker-sync, researchMethods-provisioning, cache-invalidatie) en isLocked-respect op elk pad. Invulbaar werkbestand-template (`docs/templates/werkbestand-merkonderdelen.md`) + gevuld Adullam-importscript. Vijf review-rondes (10 subagents) doorlopen; alle CRITICAL/WARNING-bevindingen gefixt. Gebouwd in een Cowork-sessie op branch `claude/branddock-merkonderdelen-werkbestand-o2tmfs`; hier gemerged nadat de halve merge in de main-worktree was afgerond (entry hernummerd 433 → 438 wegens collisie met #433-#437).

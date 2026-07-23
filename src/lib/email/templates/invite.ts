@@ -4,11 +4,17 @@ import type { EmailLocale } from '../email-locale';
 export interface InviteEmailVars {
   recipientEmail: string;
   inviterName: string;
-  organizationName: string;
+  /**
+   * Waar de ontvanger voor is uitgenodigd: de workspace-naam bij precies één
+   * workspace, anders de organisatie. Altijd via `resolveInviteTargetName` —
+   * hiervóór stond hier onvoorwaardelijk de organisatienaam, waardoor een
+   * uitnodiging voor één workspace "Erik Jager's Brand" toonde.
+   */
+  targetName: string;
   role: string;
   acceptUrl: string;
   expiresAt: Date;
-  /** E-mailtaal; voor bestaande ontvangers hun voorkeur, anders die van de uitnodiger. */
+  /** E-mailtaal; bepaald door `resolveEmailLocale` (voorkeur-rij, anders 'en'). */
   locale?: EmailLocale;
 }
 
@@ -54,6 +60,11 @@ const STRINGS = {
   },
 } as const;
 
+const ROLE_LABELS: Record<EmailLocale, Record<string, string>> = {
+  en: { owner: 'owner', admin: 'admin', member: 'member', viewer: 'viewer' },
+  nl: { owner: 'eigenaar', admin: 'beheerder', member: 'lid', viewer: 'kijker' },
+};
+
 export function renderInviteEmail(vars: InviteEmailVars): { subject: string; html: string; text: string } {
   const locale: EmailLocale = vars.locale ?? 'en';
   const s = STRINGS[locale];
@@ -64,8 +75,11 @@ export function renderInviteEmail(vars: InviteEmailVars): { subject: string; htm
   );
 
   const inviter = escape(vars.inviterName);
-  const org = escape(vars.organizationName);
-  const role = escape(vars.role);
+  const org = escape(vars.targetName);
+  // Rol vertalen zodat de NL-mail niet "als member" zegt terwijl de
+  // accept-pagina "als lid" toont.
+  const roleLabel = ROLE_LABELS[locale][vars.role] ?? vars.role;
+  const role = escape(roleLabel);
 
   const body = `
     <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#334155;">
@@ -81,14 +95,14 @@ export function renderInviteEmail(vars: InviteEmailVars): { subject: string; htm
   `;
 
   const html = renderLayout({
-    title: s.title(vars.organizationName),
-    preheader: s.preheader(vars.inviterName, vars.role),
+    title: s.title(vars.targetName),
+    preheader: s.preheader(vars.inviterName, roleLabel),
     body,
     footerNote: s.footer(vars.recipientEmail),
   });
 
   const text = [
-    s.textIntro(vars.inviterName, vars.organizationName, vars.role),
+    s.textIntro(vars.inviterName, vars.targetName, roleLabel),
     '',
     `${s.textAccept} ${vars.acceptUrl}`,
     '',
@@ -97,5 +111,5 @@ export function renderInviteEmail(vars: InviteEmailVars): { subject: string; htm
     '— Branddock',
   ].join('\n');
 
-  return { subject: s.subject(vars.inviterName, vars.organizationName), html, text };
+  return { subject: s.subject(vars.inviterName, vars.targetName), html, text };
 }

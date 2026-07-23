@@ -101,6 +101,48 @@ test.describe('Workspace Permissions', () => {
       await setActiveOrg(page, 'branddock-agency');
     });
 
+    /**
+     * Workspace-scoping wordt écht afgedwongen (2026-07-22). De seed geeft dit
+     * lid `workspaceScoped: true` met één ACL-rij, terwijl de organisatie er
+     * meer heeft. Vóór die vlag besliste "heeft dit lid ACL-rijen?" — en werd
+     * nul rijen als ONBEPERKT gelezen, waardoor scoping stil verdween zodra de
+     * laatste toegekende workspace verdween.
+     */
+    test('scoped member sees only their own workspaces and cannot switch to others', async ({
+      page,
+    }) => {
+      const mine = await page.request.get('/api/workspaces');
+      expect(mine.ok()).toBe(true);
+      const myWorkspaces: Array<{ id: string }> = (await mine.json()).workspaces ?? [];
+      expect(myWorkspaces.length).toBeGreaterThan(0);
+
+      // Wat de org écht heeft, via de owner.
+      await page.request.post('/api/auth/sign-in/email', {
+        headers: { origin: 'http://localhost:3001' },
+        data: { email: TEST_USERS.owner.email, password: TEST_USERS.owner.password },
+      });
+      await setActiveOrg(page, 'branddock-agency');
+      const all: Array<{ id: string }> = (await (await page.request.get('/api/workspaces')).json())
+        .workspaces ?? [];
+
+      const mineIds = new Set(myWorkspaces.map((w) => w.id));
+      const forbidden = all.find((w) => !mineIds.has(w.id));
+      expect(all.length).toBeGreaterThan(myWorkspaces.length);
+      expect(forbidden).toBeDefined();
+
+      // Terug als lid: de niet-toegekende workspace moet geweigerd worden.
+      await page.request.post('/api/auth/sign-in/email', {
+        headers: { origin: 'http://localhost:3001' },
+        data: { email: TEST_USERS.member.email, password: TEST_USERS.member.password },
+      });
+      await setActiveOrg(page, 'branddock-agency');
+      const switched = await page.request.post('/api/workspace/switch', {
+        headers: { origin: 'http://localhost:3001' },
+        data: { workspaceId: forbidden!.id },
+      });
+      expect(switched.status()).toBe(403);
+    });
+
     test('member can list organization members', async ({ page }) => {
       const response = await page.request.get('/api/organization/members');
       expect(response.ok()).toBe(true);

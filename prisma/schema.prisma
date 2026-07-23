@@ -75,6 +75,21 @@ model OrganizationMember {
   role     String  @default("member")
   isActive Boolean @default(true)
 
+  /// Is dit lid beperkt tot specifieke workspaces?
+  ///
+  /// Bestaat omdat "geen WorkspaceMemberAccess-rijen" tot 2026-07-22 als
+  /// ONBEPERKT werd gelezen — een fail-open default die op drie plekken
+  /// toesloeg: een verwijderde workspace cascadeerde de laatste ACL-rij weg
+  /// (lid werd onbeperkt), de team-UI met alles uitgevinkt wiste alle rijen
+  /// (bedoeld als "geen toegang", gaf toegang tot álles), en elk pad dat per
+  /// ongeluk nul rijen schreef deed hetzelfde.
+  ///
+  /// Met deze vlag is "beperkt tot niets" een uitdrukbare staat:
+  /// `true` = uitsluitend de gekoppelde workspaceAccess-rijen (leeg = geen
+  /// enkele), `false` = onbeperkt binnen de organisatie. Owner/admin
+  /// bypassen de ACL sowieso.
+  workspaceScoped Boolean @default(false)
+
   userId         String
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organizationId String

@@ -58,13 +58,16 @@ export async function GET() {
       },
       select: {
         role: true,
+        workspaceScoped: true,
         workspaceAccess: { select: { workspaceId: true } },
       },
     });
+    // `workspaceScoped` beslist, niet het aantal rijen: een gescopet lid met
+    // nul rijen hoort een LEGE lijst te zien, niet de hele organisatie.
     const restrictedIds =
       membership &&
       !["owner", "admin"].includes(membership.role) &&
-      membership.workspaceAccess.length > 0
+      membership.workspaceScoped
         ? membership.workspaceAccess.map((wa) => wa.workspaceId)
         : null;
 
@@ -381,14 +384,45 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Wie houdt er ná deze verwijdering geen enkele workspace over? De
+    // `WorkspaceMemberAccess`-rijen cascaderen mee, en sinds
+    // `OrganizationMember.workspaceScoped` betekent "gescopet met nul rijen"
+    // terecht GEEN toegang (daarvóór: onbeperkt — stille rechten-escalatie).
+    // Fail-closed is nu correct, maar zo'n lid staat wel met lege handen; de
+    // beheerder hoort dat te zien in plaats van het later te ontdekken.
+    const scopedMembers = await prisma.organizationMember.findMany({
+      where: {
+        organizationId: activeOrgId,
+        workspaceScoped: true,
+        workspaceAccess: { some: { workspaceId } },
+      },
+      select: {
+        id: true,
+        user: { select: { email: true } },
+        _count: { select: { workspaceAccess: true } },
+      },
+    });
+    const strandedMembers = scopedMembers
+      .filter((m) => m._count.workspaceAccess <= 1)
+      .map((m) => m.user.email);
+
     // Delete workspace (cascade deletes all related data)
     await prisma.workspace.delete({
       where: { id: workspaceId },
     });
 
+    if (strandedMembers.length > 0) {
+      console.warn("[DELETE /api/workspaces] leden zonder workspace na verwijdering", {
+        workspaceId,
+        members: strandedMembers,
+      });
+    }
+
     return NextResponse.json({
       success: true,
       deleted: { id: workspace.id, name: workspace.name },
+      /** Leden die hierdoor geen enkele workspace meer kunnen openen. */
+      strandedMembers,
     });
   } catch (error) {
     console.error("[DELETE /api/workspaces]", error);

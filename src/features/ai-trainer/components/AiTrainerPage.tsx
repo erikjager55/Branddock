@@ -1,6 +1,7 @@
 'use client';
 
 import { Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { PageShell, PageHeader } from '@/components/ui/layout';
 import { Button } from '@/components/shared';
 import { ConsistentModelsContent } from '@/features/consistent-models/components/ConsistentModelsPage';
@@ -10,20 +11,21 @@ interface AiTrainerPageProps {
   onNavigateToModelDetail: (id: string, status?: string) => void;
 }
 
-/** AI Trainer page — train models and define brand styles */
+/** Stijlstudio page — capture brand styles from reference images */
 export function AiTrainerPage({ onNavigateToModelDetail }: AiTrainerPageProps) {
+  const { t } = useTranslation('consistent-models');
   const { openCreateModal } = useConsistentModelStore();
 
   return (
     <PageShell>
       <PageHeader
         moduleKey="ai-trainer"
-        title="AI Trainer"
-        subtitle="Train models and define brand styles"
+        title={t('page.title')}
+        subtitle={t('page.subtitle')}
         actions={
           <Button onClick={() => openCreateModal()} className="gap-2">
             <Plus className="h-4 w-4" />
-            Create Model
+            {t('page.createModel')}
           </Button>
         }
       />
