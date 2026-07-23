@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 446. API-sectie website: credit-toerekening + key-hygiëne verduidelijkt
+
+De developer-sectie op `voor-ai-agents` legde de merk-vergrendelde API-key wel uit (aanmaken, curl, endpoints, "genereren kost dezelfde credits"), maar liet de vraag onbeantwoord die commercieel het meest telt: **wie betaalt die credits?** Toegevoegd: credits vallen altijd op de workspace van de key, dus de merkeigenaar betaalt z'n eigen verbruik — en voor bureaus houdt één key per klant-workspace elke klant op z'n eigen creditpot (klopt met de meter: key → workspace → org-pool, geverifieerd in de code). Plus een key-hygiëne-regel (behandel als wachtwoord, intrekken bij twijfel). Bijvangst: de REST-kaart claimde "dezelfde 17 capabilities als de MCP-tools" — gecorrigeerd naar de actuele stand (connector 17 tools, met een API-key komt `import_brand_data` erbij → 18; smoke #445). Puur copy op één pagina; geen gedragswijziging. **Terzijde geverifieerd**: `PUBLIC_API_ENABLED` staat al aan op prod (`/api/v1/brand-context` → 401, `/api/mcp` → 401, niet 404), dus de API + connector die deze sectie beschrijft leven al — er viel niets te activeren.
+
+- Task: `-` (copy-verduidelijking n.a.v. vraag Erik)
+
 ### 445. Connector-pilot hardening — `import_brand_data` key-only + refresh-token 60d
 
 Twee wijzigingen die de publieke MCP-connector klaarmaken voor de 6-weekse pilot. (1) **`import_brand_data` alleen nog op de API-key-route** (early return zodra `authVia !== 'api_key'`): het is de enige tool die bestaand merk-DNA overschrijft, en over de OAuth-connector is de aanroeper doorgaans zélf workspace-eigenaar — een rol-check beschermt daar dus niemand. Een API-key is een bewuste, per-merk vergrendelde handeling en daarmee het juiste toegangsniveau. Netto: **17 tools over OAuth** (claude.ai/ChatGPT), **18 met een key**. (2) **Refresh-token 7d → 60d** (`refreshTokenExpiresIn`): het token roteert alleen bij gebruik, dus 7 dagen betekent dat een tester die de connector een week niet aanraakt stil moet herkoppelen; 60d dekt een pilot-ronde plus marge. Bewust niet langer — er is (nog) geen intrek-knop, dus de expiry is de enige bovengrens op een verweesd token. Nieuwe in-memory smoke (`scripts/smoke-tests/mcp-connector-toolset.ts`, geen DB/netwerk) borgt de 17-vs-18-splitsing; marketing-connectorstappen bijgewerkt (Claude "Customize", ChatGPT developer-mode). Gebouwd in een parallelle sessie; hier afgerond + gemerged.
