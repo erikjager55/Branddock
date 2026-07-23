@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 445. Connector-pilot hardening — `import_brand_data` key-only + refresh-token 60d
+
+Twee wijzigingen die de publieke MCP-connector klaarmaken voor de 6-weekse pilot. (1) **`import_brand_data` alleen nog op de API-key-route** (early return zodra `authVia !== 'api_key'`): het is de enige tool die bestaand merk-DNA overschrijft, en over de OAuth-connector is de aanroeper doorgaans zélf workspace-eigenaar — een rol-check beschermt daar dus niemand. Een API-key is een bewuste, per-merk vergrendelde handeling en daarmee het juiste toegangsniveau. Netto: **17 tools over OAuth** (claude.ai/ChatGPT), **18 met een key**. (2) **Refresh-token 7d → 60d** (`refreshTokenExpiresIn`): het token roteert alleen bij gebruik, dus 7 dagen betekent dat een tester die de connector een week niet aanraakt stil moet herkoppelen; 60d dekt een pilot-ronde plus marge. Bewust niet langer — er is (nog) geen intrek-knop, dus de expiry is de enige bovengrens op een verweesd token. Nieuwe in-memory smoke (`scripts/smoke-tests/mcp-connector-toolset.ts`, geen DB/netwerk) borgt de 17-vs-18-splitsing; marketing-connectorstappen bijgewerkt (Claude "Customize", ChatGPT developer-mode). Gebouwd in een parallelle sessie; hier afgerond + gemerged.
+
+- Task: `-` (connector-pilot, actiepunt #18)
+
 ### 444. "Lege ACL = onbeperkt" wegwerkt — expliciete `workspaceScoped`-vlag + sweep over alle lezers
 
 ⚠️ **Deploy-volgorde**: nieuwe kolom `OrganizationMember.workspaceScoped`. Neon-push én backfill horen direct achter elkaar, vóór/bij de deploy — anders is elk gescopet lid tijdelijk onbeperkt. SQL + alternatief (`POST /api/admin/repair-defaults`) staan bovenaan de [task-file](../tasks/done/workspace-scoping-fail-open.md). Zonder de kolom 500't élk geauthenticeerd request.
