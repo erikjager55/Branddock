@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { generateWebPage } from '@/lib/content/headless-webpage';
 import { isPublicApiEnabled, requireApiKey } from '@/lib/api/public/auth';
+import { enforceCreditsForAction } from '@/lib/stripe/enforcement';
 import { logApiCall } from '@/lib/api/public/usage';
 
 export const maxDuration = 120;
@@ -55,6 +56,9 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid body', details: parsed.error.flatten() }, { status: 400 });
   }
+
+  const blocked = await enforceCreditsForAction(auth.workspaceId, 'short', 1);
+  if (blocked) return blocked;
 
   const startedAt = Date.now();
   const result = await generateWebPage({ workspaceId: auth.workspaceId, ...parsed.data });
