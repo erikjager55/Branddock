@@ -141,7 +141,10 @@ async function runTool(
     return result;
   } catch (err) {
     await log(resolved.workspaceId, false);
-    return errorResult(err instanceof Error ? err.message : 'Tool execution failed');
+    // H2 (audit): rauwe err.message (bv. Prisma-schema-details) niet naar de
+    // client — server-side loggen, generieke tool-error terug.
+    console.error(`[mcp:${tool}]`, err instanceof Error ? err.message : err);
+    return errorResult('Tool execution failed');
   }
 }
 
@@ -189,6 +192,7 @@ function registerBrandTools(server: McpServer, ctx: PublicMcpContext): void {
         content: z
           .string()
           .min(50, 'content needs at least 50 characters for a meaningful score')
+          .max(100000)
           .describe('De te beoordelen tekst (platte tekst, minimaal 50 tekens)'),
         ...brandParam,
       },
@@ -227,10 +231,10 @@ const generateSchema = z.object({
     .describe('Bestaande campagne-id; zonder wordt de "Quick Content"-campagne gebruikt'),
   brief: z
     .object({
-      objective: z.string().optional().describe('Doel van het content-item'),
-      keyMessage: z.string().optional().describe('Kernboodschap'),
-      toneDirection: z.string().optional().describe('Toon-richting'),
-      callToAction: z.string().optional().describe('Call-to-action'),
+      objective: z.string().max(2000).optional().describe('Doel van het content-item'),
+      keyMessage: z.string().max(2000).optional().describe('Kernboodschap'),
+      toneDirection: z.string().max(2000).optional().describe('Toon-richting'),
+      callToAction: z.string().max(2000).optional().describe('Call-to-action'),
     })
     .describe('Content-brief — bij genereren is minimaal objective of keyMessage vereist'),
   contextSelection: z
@@ -320,7 +324,7 @@ function registerRewriteTool(server: McpServer, ctx: PublicMcpContext): void {
         'bericht (intent "reply") — ideaal voor mails, comments en bestaande copy. Ephemeral: er ' +
         'wordt NIETS opgeslagen in Branddock (geen content-item). Kost 1 credit per aanroep.',
       inputSchema: {
-        content: z.string().min(20).describe('De tekst om te herschrijven, of het bericht om te beantwoorden'),
+        content: z.string().min(20).max(50000).describe('De tekst om te herschrijven, of het bericht om te beantwoorden'),
         intent: z.enum(['rewrite', 'reply']).optional().describe('"rewrite" (default) of "reply"'),
         instruction: z.string().optional().describe('Vrije sturing, bijv. "korter", "formeler", "benadruk duurzaamheid"'),
         personaIds: z.array(z.string()).optional().describe('Doelgroep-personas (ids via list_personas)'),
@@ -346,6 +350,7 @@ const strategyGenerateSchema = z.object({
   briefing: z
     .string()
     .min(30, 'briefing needs at least 30 characters')
+    .max(20000)
     .describe('Vrije-tekst campagne-brief: aanleiding, doelgroep, kernboodschap, wensen (minimaal 30 tekens)'),
   campaignGoalType: z
     .string()
@@ -937,7 +942,7 @@ function registerSpecializedChainTools(server: McpServer, ctx: PublicMcpContext)
         deliverableId: z.string().optional().describe('Bestaand deliverable; zonder wordt er een aangemaakt'),
         title: z.string().max(120).optional(),
         campaignId: z.string().optional(),
-        primaryKeyword: z.string().min(1).describe('Het primaire zoekwoord'),
+        primaryKeyword: z.string().min(1).max(200).describe('Het primaire zoekwoord'),
         funnelStage: z.enum(['awareness', 'consideration', 'decision']),
         secondaryKeywordHints: z.array(z.string()).optional(),
         contextSelection: chainContextSelection,
@@ -996,7 +1001,7 @@ function registerSpecializedChainTools(server: McpServer, ctx: PublicMcpContext)
         'publiceerbaar in Branddock. Types: landing-page, product-page, faq-page, comparison-page, ' +
         'microsite. Kost 5 credits bij AI-vulling.',
       inputSchema: {
-        prompt: z.string().min(5).describe('Free-text brief voor de pagina'),
+        prompt: z.string().min(5).max(10000).describe('Free-text brief voor de pagina'),
         contentType: z.string().optional().describe('Web-page-type (default landing-page)'),
         deliverableId: z.string().optional(),
         title: z.string().max(120).optional(),

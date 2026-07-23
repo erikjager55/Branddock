@@ -132,17 +132,14 @@ export async function startSeoGeneration(input: StartSeoInput): Promise<StartSeo
         }
       } else if (event.event === 'error') {
         const data = (event.data ?? {}) as Record<string, unknown>;
-        const message = typeof data.message === 'string' ? data.message : 'SEO enqueue failed';
-        return { ok: false, code: 'ENQUEUE_FAILED', error: message };
+        console.error('[headless-seo] orchestrator error', data.message);
+        return { ok: false, code: 'ENQUEUE_FAILED', error: 'SEO generation failed' };
       }
     }
     return { ok: false, code: 'ENQUEUE_FAILED', error: 'Orchestrator finished without queueing a SEO job' };
   } catch (err) {
-    return {
-      ok: false,
-      code: 'ENQUEUE_FAILED',
-      error: err instanceof Error ? err.message : 'SEO enqueue failed',
-    };
+    console.error('[headless-seo]', err instanceof Error ? err.message : err);
+    return { ok: false, code: 'ENQUEUE_FAILED', error: 'SEO enqueue failed' };
   }
 }
 

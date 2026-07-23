@@ -26,10 +26,10 @@ const bodySchema = z.object({
   title: z.string().max(120).optional(),
   campaignId: z.string().optional(),
   brief: z.object({
-    objective: z.string().optional(),
-    keyMessage: z.string().optional(),
-    toneDirection: z.string().optional(),
-    callToAction: z.string().optional(),
+    objective: z.string().max(2000).optional(),
+    keyMessage: z.string().max(2000).optional(),
+    toneDirection: z.string().max(2000).optional(),
+    callToAction: z.string().max(2000).optional(),
   }),
   contextSelection: z
     .object({

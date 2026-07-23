@@ -337,10 +337,7 @@ export async function generateBrandImage(
 
     return { ok: true, image: mapGeneratedImage(image as unknown as Record<string, unknown>) };
   } catch (err) {
-    return {
-      ok: false,
-      code: 'GENERATION_FAILED',
-      error: err instanceof Error ? err.message : 'Image generation failed',
-    };
+    console.error('[headless-image]', err instanceof Error ? err.message : err);
+    return { ok: false, code: 'GENERATION_FAILED', error: 'Image generation failed' };
   }
 }

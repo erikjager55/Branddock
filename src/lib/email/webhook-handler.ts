@@ -77,7 +77,6 @@ export function verifyEmailitSignature(
 export function normaliseWebhookEvent(
   payload: Record<string, unknown>,
 ): EmailitWebhookEvent | null {
-  const rawType = typeof payload.event === 'string' ? payload.event.toLowerCase() : '';
   const mapped: Record<string, EmailitEventType> = {
     delivered: 'delivered',
     bounce: 'bounced',
@@ -94,20 +93,28 @@ export function normaliseWebhookEvent(
     rejected: 'failed',
   };
 
+  // Emailit stuurt het type als `type: "email.bounced"` met de eigenlijke data
+  // onder `data.object`; een plattere/oudere vorm gebruikt `event` op top-level.
+  // Defensief: lees beide vormen, en neem het segment ná de laatste punt zodat
+  // "email.bounced" → "bounced" mapt. Exacte veldnamen binnen data.object nog te
+  // bevestigen met een echte delivery (audit 2026-07-23); daarom meerdere
+  // kandidaten per veld i.p.v. één gok.
+  const typeSource = typeof payload.type === 'string'
+    ? payload.type
+    : typeof payload.event === 'string' ? payload.event : '';
+  const rawType = (typeSource.toLowerCase().split('.').pop() ?? '');
   const type = mapped[rawType];
   if (!type) return null;
 
-  const emailId = typeof payload.email_id === 'string'
-    ? payload.email_id
-    : typeof payload.id === 'string' ? payload.id : '';
+  const dataObject = (payload.data as { object?: Record<string, unknown> } | undefined)?.object;
+  const src: Record<string, unknown> = dataObject ?? payload;
+  const pick = (obj: Record<string, unknown>, key: string): string =>
+    typeof obj[key] === 'string' ? (obj[key] as string) : '';
+  const first = (...vals: string[]): string => vals.find((v) => v.length > 0) ?? '';
 
-  const recipient = typeof payload.recipient === 'string'
-    ? payload.recipient
-    : typeof payload.to === 'string' ? payload.to : '';
-
-  const occurredAt = typeof payload.occurred_at === 'string'
-    ? payload.occurred_at
-    : typeof payload.timestamp === 'string' ? payload.timestamp : new Date().toISOString();
+  const emailId = first(pick(src, 'email_id'), pick(src, 'id'), pick(payload, 'email_id'), pick(payload, 'id'));
+  const recipient = first(pick(src, 'email'), pick(src, 'recipient'), pick(src, 'to'), pick(payload, 'recipient'), pick(payload, 'to'));
+  const occurredAt = first(pick(src, 'occurred_at'), pick(payload, 'occurred_at'), pick(payload, 'timestamp')) || new Date().toISOString();
 
   if (!emailId || !recipient) return null;
 
@@ -116,7 +123,7 @@ export function normaliseWebhookEvent(
     type,
     recipient,
     occurredAt,
-    tags: (payload.tags as Record<string, string> | undefined) ?? undefined,
-    metadata: (payload.metadata as Record<string, unknown> | undefined) ?? undefined,
+    tags: (src.tags as Record<string, string> | undefined) ?? (payload.tags as Record<string, string> | undefined),
+    metadata: (src.metadata as Record<string, unknown> | undefined) ?? (payload.metadata as Record<string, unknown> | undefined),
   };
 }

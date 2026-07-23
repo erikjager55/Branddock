@@ -21,7 +21,7 @@ import { logApiCall } from '@/lib/api/public/usage';
 export const maxDuration = 60;
 
 const bodySchema = z.object({
-  briefing: z.string().min(30, 'briefing needs at least 30 characters'),
+  briefing: z.string().min(30, 'briefing needs at least 30 characters').max(20000),
   campaignGoalType: z.string().min(1),
   campaignTitle: z.string().max(120).optional(),
   personaIds: z.array(z.string()).optional(),

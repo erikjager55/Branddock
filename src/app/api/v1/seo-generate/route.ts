@@ -26,10 +26,10 @@ const bodySchema = z.object({
   campaignId: z.string().optional(),
   brief: z
     .object({
-      objective: z.string().optional(),
-      keyMessage: z.string().optional(),
-      toneDirection: z.string().optional(),
-      callToAction: z.string().optional(),
+      objective: z.string().max(2000).optional(),
+      keyMessage: z.string().max(2000).optional(),
+      toneDirection: z.string().max(2000).optional(),
+      callToAction: z.string().max(2000).optional(),
     })
     .optional(),
   contextSelection: z
@@ -41,7 +41,7 @@ const bodySchema = z.object({
     })
     .optional(),
   seoInput: z.object({
-    primaryKeyword: z.string().min(1),
+    primaryKeyword: z.string().min(1).max(200),
     funnelStage: z.enum(['awareness', 'consideration', 'decision']),
     secondaryKeywordHints: z.array(z.string()).optional(),
     competitorUrls: z.array(z.string()).optional(),
