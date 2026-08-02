@@ -72,5 +72,6 @@ Definieer en publiceer het open bestandsformaat `brand.md` (zo geeft elk merk zi
 # Notes
 
 - Aanleiding + marktonderbouwing: `docs/reports/concurrentieanalyse-2026-08-02.md` §4.2 en §6 (aanbeveling 2)
+- Wereldwijd lanceringsplan (golven, kanalen, KPI's, Erik-gates): `docs/marketing/brand-md-launch-plan-2026-08-02.md` — stuurt wat er ná de merge gebeurt
 - Oorspronkelijke scope-omschrijving: `docs/reports/100k-plan-fasering-2026-07-20.md` Fase 4
 - Strategische fit: "je betaalt voor wat je maakt, niet voor dat wij je merk kennen" — een open merkbestand is de geloofwaardige verlenging daarvan; Frontify kan dit model moeilijk volgen
