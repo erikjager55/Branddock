@@ -23,7 +23,7 @@ De markt convergeert op "machine-readable brand context voor AI-agents" (Frontif
 
 Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referentie-implementatie, met een compatibel **"full profile"** als superset (veldmapping: launch-plan Bijlage A). Zes onderdelen:
 
-1. **Serializer** merk-DNA → brand.md: kern (Strategy/Voice/Visual, upstream-conform) + full-profile-secties (`## Audience`/personas, `## Products & Services`, `## Channel Tones`, gestructureerde `## Guardrails`) + frontmatter-blokken `provenance:`, `validation:`, `locales:`. Publiek profiel bevat nóóit concurrenten/OKR's/trends (die alleen in het extended/private profiel achter MCP-auth).
+1. **Emitter i.p.v. nieuwe serializer** — hergebruik de bestaande design-system-exportlaag: nieuwe `brandmd`-emitter naast `designmd`/`brand-brief` in `src/lib/export/design-system/emitters/`, geregistreerd in het Export Format Registry (`export-formats.ts`), op het bestaande canonieke `DesignSystemModel` + resolver. Kern (Strategy/Voice/Visual, upstream-conform) + full-profile-secties (`## Audience`/personas, `## Products & Services`, `## Channel Tones`, gestructureerde `## Guardrails`) + frontmatter-blokken `provenance:`, `validation:`, `locales:`. Publiek profiel bevat nóóit concurrenten/OKR's/trends (die alleen in het extended/private profiel achter MCP-auth).
 2. **Workspace-export**: UI-knop + REST-endpoint + MCP-tool; levende versie met gevulde `validation:`/`provenance:` (canonical-URL = de lead-loop).
 3. **Gratis generator**: website-URL → brand.md via de bestaande scan-pipeline, zonder account (rate-limited, e-mail-gate na N runs); niet-zekere velden gemarkeerd `unvalidated`.
 4. **Validator** (npm CLI + web): valideert upstream v0.2-kern én full profile; basis voor de "brand.md ready"-badge.
@@ -47,11 +47,14 @@ Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referenti
 
 # Bestanden die ik aanraak
 
-> Definitieve file-set vaststellen in plan-mode; verwachte ankers:
+> Geconcretiseerd 2026-08-03 na inventarisatie van de bestaande exportlaag (die er al grotendeels ligt):
 
-- `src/lib/` — serializer merk-DNA → brand.md kern + full profile (hergebruik context-registry / Dynamic Context System)
-- Website-scan-route (bestaande scan-pipeline) — generator-variant zonder workspace
-- MCP-server + REST v1 (`docs/adr/2026-07-17-public-brand-api.md`-oppervlak) — nieuwe read-only tool/endpoint + extended profiel achter auth
+- `src/lib/export/design-system/emitters/brandmd.ts` — **nieuw**: de brand.md-emitter (kern v0.2 + full profile), naar het patroon van `designmd.ts` (deterministisch, snapshot-getest); public/private-variant als parameter
+- `src/lib/export/design-system/canonical.ts` + `resolver.ts` — uitbreiden waar het model velden mist die brand.md nodig heeft (o.a. persona-JTBD, channel tones, `validation:`-status uit `BrandAsset.status`/coverage, `provenance:`)
+- `src/features/brandstyle/utils/export-formats.ts` — registry-entry `brandmd` (label "brand.md", consumers: elke AI-agent/Claude/ChatGPT/Cursor/n8n, status ready) + UI-ordening: brand.md wordt het primaire markdown-formaat
+- `src/app/api/export/design-system/[format]/route.ts` — format `brandmd` toevoegen (zelfde endpoint-conventie)
+- Website-scan-route (bestaande scan-pipeline) — generator-variant zonder workspace, zelfde emitter met `unvalidated`-markers op onzekere velden
+- MCP-server + REST v1 (`docs/adr/2026-07-17-public-brand-api.md`-oppervlak) — read-only tool/endpoint die dezelfde emitter-output serveert; extended/private profiel alleen achter auth
 - Marketing-site — landingspagina + full-profile-docs
 - Nieuw klein package voor de validator (npm)
 
@@ -87,6 +90,10 @@ Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referenti
 - Directory + badge-programma (launch-plan golf 2, pas bij >50 bestanden)
 
 # Notes
+
+- **Bestaande exportlaag (inventarisatie 2026-08-03)** — de fundering ligt er al: Export Format Registry met 7 formaten waaronder werkende `designmd`- (Google Stitch) en `brand-brief`-emitters ("AGENTS.md-style, om als BRAND.md in je repo-root te droppen" — feitelijk een proto-brand.md met 12 assets + personas + concurrenten), canoniek `DesignSystemModel` + resolver + linter, brand-kit-ZIP ("Claude Design compatible"), workspace-JSON-export. De brand.md-emitter is dus een inpas-klus in een bewezen patroon, geen greenfield.
+- **Productbeslissing bij bouw**: relatie brand-brief ↔ brand.md. Aanbeveling: brand.md wordt het primaire/standaard markdown-formaat (publiek profiel, standaard-conform, zónder concurrenten); brand-brief blijft bestaan als "extended agent brief" voor privégebruik (bevat wél concurrenten — mag nooit de publieke variant worden) en verwijst in zijn header naar brand.md. Later evt. samenvoegen.
+- **`validation:` is direct vulbaar**: `BrandAsset.status` + coverage-% en de F-VAL-infrastructuur leveren de statussen zonder nieuw werk — de levende-implementatie-claim is dag één waar.
 
 - **Strategie + golfplan + veldmapping**: `docs/marketing/brand-md-launch-plan-2026-08-02.md` (v2, 2026-08-03) — Bijlage A is de bouwspecificatie voor de serializer
 - Aanleiding + marktonderbouwing: `docs/reports/concurrentieanalyse-2026-08-02.md` §4.2 en §6 (aanbeveling 2)
