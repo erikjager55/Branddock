@@ -3,7 +3,7 @@
 > **Datum**: 2026-08-02 · **Herzien**: 2026-08-03 (**v2 — omarm-strategie**) · **Status**: concept ter besluitvorming (Erik-gates in §9)
 > **Hoort bij**: [`tasks/brand-md-open-standaard.md`](../../tasks/brand-md-open-standaard.md) (de bouw) · [`docs/reports/concurrentieanalyse-2026-08-02.md`](../reports/concurrentieanalyse-2026-08-02.md) (de waarom) · [`docs/reports/100k-plan-fasering-2026-07-20.md`](../reports/100k-plan-fasering-2026-07-20.md) Fase 4 (de oorsprong) · [`docs/marketing/launch-wig-besluit.md`](launch-wig-besluit.md) (de hoofdboodschap waar dit onder valt)
 >
-> **Wat er in v2 veranderde**: onderzoek op 2026-08-03 wees uit dat `brand.md` al bestáát als open standaard (Caio Pizzol, thebrand.md, spec v0.2 draft, MIT — zie §3). v1 ging uit van een eigen standaard-claim; v2 kiest **omarmen + compatibele superset**: Branddock wordt de referentie-implementatie van de bestaande standaard in plaats van de lanceerder van een nieuwe. §3, §4, §5, §7 en §9 zijn herzien; Bijlage A (veldmapping) is nieuw.
+> **Wat er in v2 veranderde**: onderzoek op 2026-08-03 wees uit dat `brand.md` al bestáát als open standaard (Caio Pizzol, thebrand.md, spec v0.2 draft, MIT — zie §3). v1 ging uit van een eigen standaard-claim; v2 kiest **omarmen + compatibele superset**: Branddock wordt de referentie-implementatie van de bestaande standaard in plaats van de lanceerder van een nieuwe. §3, §4, §5, §7 en §9 zijn herzien; Bijlage A (veldmapping) is nieuw. **Aanvulling 2026-08-03b**: bouw sluit aan op de bestaande design-system-exportlaag (zie noot bij §4) — brand.md wordt een emitter in het bestaande Export Format Registry.
 
 ---
 
@@ -69,12 +69,16 @@ Geen standaard-domeinen meer nodig. Nog wél schaars en zinvol: de npm-naam voor
 
 ## 4. Launch-assets (bouwlijst)
 
+> **Bouwfundament (inventarisatie 2026-08-03)**: de exportlaag bestaat al — een Export Format Registry met 7 design-system-formaten, werkende `designmd`- (Google Stitch) en `brand-brief`-emitters (die laatste is feitelijk een proto-brand.md: "AGENTS.md-style, om als BRAND.md in je repo-root te droppen", incl. assets/personas/concurrenten), een canoniek `DesignSystemModel` + resolver + linter, en de endpoint-conventie `/api/export/design-system/[format]`. brand.md wordt dus een **nieuwe emitter in een bewezen patroon**, geen greenfield; `validation:` is dag één vulbaar uit `BrandAsset.status` + coverage. Details: task-file §Bestanden.
+>
+> **Productbeslissing daarbij (Erik, bij bouw)**: brand.md wordt het primaire markdown-exportformaat (publiek profiel, standaard-conform, zónder concurrenten); `brand-brief` blijft de "extended agent brief" voor privégebruik (bevat wél concurrenten — mag nooit de publieke variant worden) en verwijst in zijn header naar brand.md.
+
 | # | Asset | Golf | Notitie |
 |---|---|---|---|
 | 1 | **Full-profile-documentatie** (≤2 pag.): kern v0.2 + onze extensies, conformance-tekst, 3-5 voorbeeldbestanden van herkenbare merken | 0 | Geen eigen spec — documentatie van een compatibel profiel (Bijlage A) |
 | 2 | **Validator** (CLI + web): valideert upstream v0.2-kern én full profile; npm-pakket + "brand.md ready"-badge | 0 | De nuttigste tool in het ecosysteem = de zwaartepunt-maker |
-| 3 | **Gratis generator**: website-URL → brand.md-superset via bestaande scan-pipeline (rate-limited, e-mail-gate na N runs) | 0 | Dé vrije positie; hun generator vereist plugin + interview |
-| 4 | Workspace-export (UI-knop + REST + MCP) — levende versie met `validation:`/`provenance:` gevuld | 0 | Het commerciële hart: bestand → levend fundament |
+| 3 | **Gratis generator**: website-URL → brand.md-superset via bestaande scan-pipeline (rate-limited, e-mail-gate na N runs) | 0 | Dé vrije positie; hun generator vereist plugin + interview. Zelfde `brandmd`-emitter als de export — één codebron voor beide smaken |
+| 4 | Workspace-export (UI-knop + REST + MCP) — levende versie met `validation:`/`provenance:` gevuld | 0 | Het commerciële hart: bestand → levend fundament. Implementatie: `brandmd`-emitter in het bestaande Export Format Registry (naast DESIGN.md/brand-brief), zelfde endpoint-conventie |
 | 5 | Landingspagina EN (+ NL): uitleg, generator-CTA, "works with"-rij, link naar upstream spec | 0 | Ruimhartig linken naar thebrand.md — omarmen moet zichtbaar zijn |
 | 6 | **Upstream-PR-pakket**: Audience-sectie, `provenance:`, gestructureerde guardrails | 0-1 | Volgorde van algemene nuttigheid; vergezeld van werkende tooling |
 | 7 | Eigen consumers dag 1: MCP-tool serveert; Claude Skill, browser-extensie en n8n-nodes lezen full profile; "paste in any chat"-instructie | 0 | De anti-llms.txt-maatregel |
@@ -177,6 +181,8 @@ Dit plan vervángt niets: het is de uitvoeringsverdieping van €100k-plan Fase 
 ## Bijlage A — Veldmapping: Branddock merk-DNA → brand.md full profile
 
 **Compatibiliteitsregel**: de kern (frontmatter-basisvelden + Strategy/Voice/Visual) volgt upstream v0.2 letterlijk; alle Branddock-uitbreidingen zijn additieve secties of nieuwe frontmatter-blokken die bestaande parsers negeren. Elk gegenereerd bestand valideert tegen de upstream-kern.
+
+**Implementatienoot**: de mapping wordt gerealiseerd als `brandmd`-emitter op het bestaande canonieke `DesignSystemModel` (patroon van de `designmd`-emitter: deterministisch, snapshot-getest), met een publiek/privaat-parameter. `validation:` komt uit `BrandAsset.status` + coverage; `provenance:`/canonical-URL uit de workspace. Canonical/resolver worden alleen uitgebreid waar velden ontbreken (persona-JTBD, channel tones).
 
 ### Past in de bestaande kern (v0.2)
 
