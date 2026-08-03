@@ -118,7 +118,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 
 | ID | Titel | Effort | Status |
 |---|---|---|---|
-| [`brand-md-open-standaard`](tasks/brand-md-open-standaard.md) | `brand.md` als open standaard: publieke spec + workspace-export (UI/REST/MCP) + gratis generator (website-URL → `brand.md` via bestaande scan) + landingspagina | ±2d | open — **Erik-gate vooraf**: naamgeving/positionering-akkoord (publieke standaard-claim, €100k-plan Fase 4-gate). Aanleiding: [`concurrentieanalyse-2026-08-02`](docs/reports/concurrentieanalyse-2026-08-02.md) — race met Frontify MCP om de brand-context-laag voor AI-agents |
+| [`brand-md-open-standaard`](tasks/brand-md-open-standaard.md) | `brand.md` **omarmen** (de standaard bleek al te bestaan: thebrand.md / gh:caiopizzol, v0.2 draft, MIT, minimale tractie — ontdekt 2026-08-03): referentie-implementatie via gratis generator (URL → brand.md full profile), workspace-export (UI/REST/MCP), validator + upstream-PR's | ±2-3d | open — **Erik-gate**: akkoord omarm-strategie + outreach maintainer. Plan (v2, incl. veldmapping): [`brand-md-launch-plan`](docs/marketing/brand-md-launch-plan-2026-08-02.md); aanleiding: [`concurrentieanalyse-2026-08-02`](docs/reports/concurrentieanalyse-2026-08-02.md) |
 
 **Track A — Quality + Validation** (main branch)
 
