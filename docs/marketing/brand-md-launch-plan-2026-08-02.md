@@ -3,7 +3,7 @@
 > **Datum**: 2026-08-02 · **Herzien**: 2026-08-03 (**v2 — omarm-strategie**) · **Status**: concept ter besluitvorming (Erik-gates in §9)
 > **Hoort bij**: [`tasks/brand-md-open-standaard.md`](../../tasks/brand-md-open-standaard.md) (de bouw) · [`docs/reports/concurrentieanalyse-2026-08-02.md`](../reports/concurrentieanalyse-2026-08-02.md) (de waarom) · [`docs/reports/100k-plan-fasering-2026-07-20.md`](../reports/100k-plan-fasering-2026-07-20.md) Fase 4 (de oorsprong) · [`docs/marketing/launch-wig-besluit.md`](launch-wig-besluit.md) (de hoofdboodschap waar dit onder valt)
 >
-> **Wat er in v2 veranderde**: onderzoek op 2026-08-03 wees uit dat `brand.md` al bestáát als open standaard (Caio Pizzol, thebrand.md, spec v0.2 draft, MIT — zie §3). v1 ging uit van een eigen standaard-claim; v2 kiest **omarmen + compatibele superset**: Branddock wordt de referentie-implementatie van de bestaande standaard in plaats van de lanceerder van een nieuwe. §3, §4, §5, §7 en §9 zijn herzien; Bijlage A (veldmapping) is nieuw. **Aanvulling 2026-08-03b**: bouw sluit aan op de bestaande design-system-exportlaag (zie noot bij §4) — brand.md wordt een emitter in het bestaande Export Format Registry.
+> **Wat er in v2 veranderde**: onderzoek op 2026-08-03 wees uit dat `brand.md` al bestáát als open standaard (Caio Pizzol, thebrand.md, spec v0.2 draft, MIT — zie §3). v1 ging uit van een eigen standaard-claim; v2 kiest **omarmen + compatibele superset**: Branddock wordt de referentie-implementatie van de bestaande standaard in plaats van de lanceerder van een nieuwe. §3, §4, §5, §7 en §9 zijn herzien; Bijlage A (veldmapping) is nieuw. **Aanvulling 2026-08-03b**: bouw sluit aan op de bestaande design-system-exportlaag (zie noot bij §4) — brand.md wordt een emitter in het bestaande Export Format Registry. **Aanvulling 2026-08-03c (user-besluit)**: funnel scan → claim → trial → abonnement uitgewerkt in §4b.
 
 ---
 
@@ -79,6 +79,7 @@ Geen standaard-domeinen meer nodig. Nog wél schaars en zinvol: de npm-naam voor
 | 2 | **Validator** (CLI + web): valideert upstream v0.2-kern én full profile; npm-pakket + "brand.md ready"-badge | 0 | De nuttigste tool in het ecosysteem = de zwaartepunt-maker |
 | 3 | **Gratis generator**: website-URL → brand.md-superset via bestaande scan-pipeline (rate-limited, e-mail-gate na N runs) | 0 | Dé vrije positie; hun generator vereist plugin + interview. Zelfde `brandmd`-emitter als de export — één codebron voor beide smaken |
 | 4 | Workspace-export (UI-knop + REST + MCP) — levende versie met `validation:`/`provenance:` gevuld | 0 | Het commerciële hart: bestand → levend fundament. Implementatie: `brandmd`-emitter in het bestaande Export Format Registry (naast DESIGN.md/brand-brief), zelfde endpoint-conventie |
+| 4b | **Claim-flow**: elke generator-run bewaart een claimbaar draft-profiel (TTL ~90d); accountactivatie materialiseert het naar een voor-ingevulde workspace | 0-1 | De brug van bestand naar product — funnel in §4b |
 | 5 | Landingspagina EN (+ NL): uitleg, generator-CTA, "works with"-rij, link naar upstream spec | 0 | Ruimhartig linken naar thebrand.md — omarmen moet zichtbaar zijn |
 | 6 | **Upstream-PR-pakket**: Audience-sectie, `provenance:`, gestructureerde guardrails | 0-1 | Volgorde van algemene nuttigheid; vergezeld van werkende tooling |
 | 7 | Eigen consumers dag 1: MCP-tool serveert; Claude Skill, browser-extensie en n8n-nodes lezen full profile; "paste in any chat"-instructie | 0 | De anti-llms.txt-maatregel |
@@ -87,6 +88,26 @@ Geen standaard-domeinen meer nodig. Nog wél schaars en zinvol: de npm-naam voor
 | 10 | Directory "who has a brand.md" + badge-programma | 2 | Pas bij >50 bestanden |
 | 11 | WordPress-plugin "serve your brand.md" | 2 | Kandidaat-Mintlify-moment; Eriks eigen WP-omgevingen als showcase |
 | 12 | "State of brand.md"-rapport (generator-data) | 3 | Terugkerende PR-motor |
+
+---
+
+## 4b. De funnel: gratis bestand → levend merk → abonnement (user-besluit 2026-08-03)
+
+> Richting bepaald door Erik: de scan-informatie landt in Branddock en de funnel loopt van gratis download naar abonnement. Vrijwel alle mechaniek bestaat al live — het nieuwe stuk is de claim-brug.
+
+| Stap | Gebruiker | Product | Bestaande mechaniek |
+|---|---|---|---|
+| 1. Scan | Plakt URL, ziet resultaat | Scan-output bewaard als **claimbaar draft-profiel** (géén workspace; TTL ~90 dagen) | Scan-pipeline; 0-credit per pricing-ADR |
+| 2. Gratis download | Downloadt brand.md zonder account | Bestand bevat `provenance:` + claim-URL + per veld `unvalidated` | `brandmd`-emitter; rate-limit + e-mail-gate op herhaalruns |
+| 3. Wijzigen/verversen → activeren | Wil gaten vullen of verversen → "Claim dit merk" | Account + gratis trial; draft materialiseert naar **voor-ingevulde workspace** — onboarding in minuten i.p.v. lege intake | Reverse trial 28d no-card + FREE 300 credits (live) |
+| 4. Meer doen | Ontdekt MCP-koppeling, agents, trend-radar, F-VAL, content | Trial-credits dekken het proeven; brand.md krijgt gevulde `validation:` + canonical-URL | Credit-model Fase 0-6 (live) |
+| 5. Abonnement | Loopt tegen dag-28 read-only-lock of credit-plafond aan | Starter €39 / Growth €89 / Agency €299 + top-up | Fase 4-lock + tiers (live) |
+
+**Ontwerpregels:**
+- **Downloaden blijft écht gratis en accountloos** — de viraliteit sterft als stap 2 een muur wordt; de e-mail-gate zit op herhaalruns, niet op de eerste.
+- **Géén workspace per anonieme run** — een HN-piek zou duizenden spook-workspaces creëren en het multi-tenant-model vereist een owner. Draft-profiel met TTL; materialisatie pas bij activatie.
+- **De wijzig-trigger zit ín het bestand**: "X van Y velden unvalidated — claim & complete on Branddock" + de generatiedatum als ververs-reden. Het bestand verkoopt zijn eigen upgrade.
+- **Merk-eigendom**: iedereen kan elke URL scannen, ook andermans merk. Claimen ≠ eigendomsbewijs — acceptabel voor de trial (het betreft publieke website-informatie), mits drafts nooit publiek vindbaar zijn en de claim-link alleen bestaat in het gegenereerde bestand en de e-mail van de aanvrager. Domein-verificatie pas bij directory/badge (golf 2).
 
 ---
 
@@ -155,7 +176,7 @@ Open standaarden lanceren niet per land maar via wereldwijde internet-kanalen; *
 ## 8. Meetfundament
 
 Aansluiten op de KPI-boom uit €100k-plan Fase 1. Events dag 1:
-`brandmd_generator_run` (+ bron-URL-domein), `brandmd_download`, `brandmd_export` (per workspace), `brandmd_mcp_fetch` (server-side — direct meetbare *consumptie*), `brandmd_referral_visit` (via `provenance:`-canonical), `signup_source=brandmd`, plus `brandmd_validator_run` (npm/web). Wekelijkse review; Remi neemt het blok mee in het weekrapport zodra de events lopen.
+`brandmd_generator_run` (+ bron-URL-domein), `brandmd_download`, `brandmd_export` (per workspace), `brandmd_mcp_fetch` (server-side — direct meetbare *consumptie*), `brandmd_referral_visit` (via `provenance:`-canonical), `signup_source=brandmd`, `brandmd_validator_run` (npm/web), plus de funnel-events `brandmd_claim_started` en `brandmd_claim_completed` (draft → workspace) — de conversie per funnel-stap uit §4b is daarmee volledig meetbaar. Wekelijkse review; Remi neemt het blok mee in het weekrapport zodra de events lopen.
 
 ---
 

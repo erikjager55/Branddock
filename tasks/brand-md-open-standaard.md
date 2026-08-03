@@ -3,7 +3,7 @@ id: brand-md-open-standaard
 title: brand.md omarmen — referentie-implementatie + full profile + gratis generator
 fase: launch
 priority: now
-effort: ±2-3 dagen (herzien v2; excl. Eriks strategie-akkoord + outreach)
+effort: ±3-4 dagen (v2 + claim-flow; excl. Eriks strategie-akkoord + outreach)
 owner: claude-code
 status: open
 created: 2026-08-02
@@ -21,7 +21,7 @@ De markt convergeert op "machine-readable brand context voor AI-agents" (Frontif
 
 # Voorstel
 
-Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referentie-implementatie, met een compatibel **"full profile"** als superset (veldmapping: launch-plan Bijlage A). Zes onderdelen:
+Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referentie-implementatie, met een compatibel **"full profile"** als superset (veldmapping: launch-plan Bijlage A). Zeven onderdelen:
 
 1. **Emitter i.p.v. nieuwe serializer** — hergebruik de bestaande design-system-exportlaag: nieuwe `brandmd`-emitter naast `designmd`/`brand-brief` in `src/lib/export/design-system/emitters/`, geregistreerd in het Export Format Registry (`export-formats.ts`), op het bestaande canonieke `DesignSystemModel` + resolver. Kern (Strategy/Voice/Visual, upstream-conform) + full-profile-secties (`## Audience`/personas, `## Products & Services`, `## Channel Tones`, gestructureerde `## Guardrails`) + frontmatter-blokken `provenance:`, `validation:`, `locales:`. Publiek profiel bevat nóóit concurrenten/OKR's/trends (die alleen in het extended/private profiel achter MCP-auth).
 2. **Workspace-export**: UI-knop + REST-endpoint + MCP-tool; levende versie met gevulde `validation:`/`provenance:` (canonical-URL = de lead-loop).
@@ -29,6 +29,7 @@ Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referenti
 4. **Validator** (npm CLI + web): valideert upstream v0.2-kern én full profile; basis voor de "brand.md ready"-badge.
 5. **Landingspagina** (EN + NL): uitleg, generator-CTA, full-profile-documentatie, ruimhartige links naar de upstream-spec.
 6. **Upstream-PR-pakket** (met werkende tooling als bewijs): Audience-sectie, `provenance:`, gestructureerde guardrails.
+7. **Claim-flow (funnel-besluit 2026-08-03, launch-plan §4b)**: elke generator-run bewaart een claimbaar draft-profiel (TTL ~90d, nooit publiek vindbaar); accountactivatie (reverse trial, bestaat al) materialiseert het draft naar een voor-ingevulde workspace. Wijzig-CTA met `unvalidated`-telling in het bestand zelf.
 
 # Acceptatiecriteria
 
@@ -37,6 +38,7 @@ Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referenti
 - [ ] Full-profile-documentatie online (≤2 pag.) met conformance-tekst + minimaal 2 voorbeeldbestanden
 - [ ] Iedere workspace kan exporteren als full-profile brand.md (UI-knop + REST-endpoint + MCP-tool), met gevulde `validation:` en `provenance:` incl. canonical-URL
 - [ ] Gratis generator: website-URL in → brand.md uit, zonder account verplicht (rate-limited), onzekere velden `unvalidated`
+- [ ] Claim-flow werkt: run → draft-profiel → activatie → voor-ingevulde workspace (brand-DNA uit de scan aanwezig, content-locale-anker gezet); draft-TTL-opruiming draait
 - [ ] Validator gepubliceerd (npm + web) en gebruikt in CI van de generator
 - [ ] Publiek/privaat-scheiding afgedwongen: publiek profiel bevat geen concurrenten/OKR's/trends
 - [ ] Upstream-PR's #1-#3 ingediend (accept is geen criterium — buiten onze controle)
@@ -54,6 +56,8 @@ Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referenti
 - `src/features/brandstyle/utils/export-formats.ts` — registry-entry `brandmd` (label "brand.md", consumers: elke AI-agent/Claude/ChatGPT/Cursor/n8n, status ready) + UI-ordening: brand.md wordt het primaire markdown-formaat
 - `src/app/api/export/design-system/[format]/route.ts` — format `brandmd` toevoegen (zelfde endpoint-conventie)
 - Website-scan-route (bestaande scan-pipeline) — generator-variant zonder workspace, zelfde emitter met `unvalidated`-markers op onzekere velden
+- Prisma-schema — nieuw draft-profiel-model (bv. `GeneratedBrandProfile`) + TTL-cleanup-cron; ⚠️ schema-delta → handmatige Neon `prisma db push` bij deploy (memory `neon-schema-push-on-deploy`)
+- Onboarding/provisioning-pad — materialisatie draft → workspace, incl. content-locale-anker (les uit #411)
 - MCP-server + REST v1 (`docs/adr/2026-07-17-public-brand-api.md`-oppervlak) — read-only tool/endpoint die dezelfde emitter-output serveert; extended/private profiel alleen achter auth
 - Marketing-site — landingspagina + full-profile-docs
 - Nieuw klein package voor de validator (npm)
@@ -80,6 +84,7 @@ Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referenti
 - **Gratis generator wordt scrape-doelwit / kostenlek** → rate-limiting + bestaande scan-pipeline (geen nieuwe AI-kosten-paden) + fail-fast caps; Apify-fallback alleen waar de gewone scrape faalt
 - **Kwaliteitsrisico**: magere scan → mager bestand → `validation: unvalidated` per veld + zichtbaar upgrade-pad naar workspace
 - **Privacy/moat-lek**: publiek/privaat-scheiding is acceptatiecriterium; review-checklist in de PR
+- **Spook-data/AVG bij drafts**: niet-geclaimde profielen van andermans merk → TTL ~90d, nooit publiek vindbaar, alleen publieke website-extractie (geen PII), claim-link alleen in bestand/e-mail van de aanvrager
 
 # Out of scope
 
@@ -96,6 +101,7 @@ Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referenti
 - **`validation:` is direct vulbaar**: `BrandAsset.status` + coverage-% en de F-VAL-infrastructuur leveren de statussen zonder nieuw werk — de levende-implementatie-claim is dag één waar.
 
 - **Strategie + golfplan + veldmapping**: `docs/marketing/brand-md-launch-plan-2026-08-02.md` (v2, 2026-08-03) — Bijlage A is de bouwspecificatie voor de serializer
+- **Funnel (user-besluit 2026-08-03)**: scan → gratis download → claim/trial → meer doen → abonnement — launch-plan §4b, incl. ontwerpregels (draft-TTL, geen spook-workspaces, merk-eigendom-nuance)
 - Aanleiding + marktonderbouwing: `docs/reports/concurrentieanalyse-2026-08-02.md` §4.2 en §6 (aanbeveling 2)
 - Oorspronkelijke scope-omschrijving: `docs/reports/100k-plan-fasering-2026-07-20.md` Fase 4 (v1, achterhaald op het punt van de eigen standaard-claim)
 - Strategische fit: "je betaalt voor wat je maakt, niet voor dat wij je merk kennen" — een open merkbestand is de geloofwaardige verlenging daarvan; dat het formaat niet van ons is, versterkt het neutraliteits-argument richting tool-bouwers
