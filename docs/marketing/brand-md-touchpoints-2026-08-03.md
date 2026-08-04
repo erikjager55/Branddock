@@ -2,6 +2,7 @@
 
 > **Datum**: 2026-08-03 · **v2 zelfde dag**: aangescherpt na campagne-onderzoek (zie §Onderzoek) — nieuwe elementen: Brand Score als grader-mechaniek, herziene gate-architectuur (bestand vrij / rapport achter e-mail), gedefinieerd activatie-event met 10-minuten- en 48-uurs-regel, concurrent-scan-hook, benchmarks per funnel-stap, en per touchpoint expliciete must-do's en don'ts.
 > **Hoort bij**: [`brand-md-launch-plan-2026-08-02.md`](brand-md-launch-plan-2026-08-02.md) §4b (funnel) en [`tasks/brand-md-open-standaard.md`](../../tasks/brand-md-open-standaard.md) (bouw).
+> **Uitvoeringslaag**: per touchpoint de gedragsstrategie + concrete copy-/contentvoorzet staat in [`brand-md-touchpoint-content-2026-08-03.md`](brand-md-touchpoint-content-2026-08-03.md).
 
 ---
 

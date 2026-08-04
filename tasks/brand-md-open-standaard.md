@@ -119,6 +119,7 @@ Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referenti
 
 - **Strategie + golfplan + veldmapping**: `docs/marketing/brand-md-launch-plan-2026-08-02.md` (v2, 2026-08-03) — Bijlage A is de bouwspecificatie voor de serializer
 - **Funnel (user-besluit 2026-08-03)**: scan → gratis download → claim/trial → meer doen → abonnement — launch-plan §4b, incl. ontwerpregels (draft-TTL, geen spook-workspaces, merk-eigendom-nuance)
+- **Gedragsstrategie + copy-voorzet per touchpoint**: `docs/marketing/brand-md-touchpoint-content-2026-08-03.md` — de copy-bron voor de bouw (resultaatpagina, bestand-regels, claim-pagina, lock-scherm, CLI-slotregel) + strategie-index; alle klant-copy bij bouw door F-VAL halen
 - **Touchpoint-strategie (v2, na campagne-onderzoek)**: `docs/marketing/brand-md-touchpoints-2026-08-03.md` — aangescherpte journey met Brand Score, herziene gate-architectuur, gedefinieerd activatie-event (≤10 min/≤48 u), funnel-targets per stap en must/don'ts per touchpoint; bouwimpact-sectie benoemt wat buiten deze task valt (nurture-mails, vul-de-gaten-onboarding, aha-moment, agency-detectie → follow-up-task, gated op funnel-data)
 - Aanleiding + marktonderbouwing: `docs/reports/concurrentieanalyse-2026-08-02.md` §4.2 en §6 (aanbeveling 2)
 - Oorspronkelijke scope-omschrijving: `docs/reports/100k-plan-fasering-2026-07-20.md` Fase 4 (v1, achterhaald op het punt van de eigen standaard-claim)
