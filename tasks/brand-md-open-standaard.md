@@ -56,7 +56,7 @@ Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referenti
 - `src/features/brandstyle/utils/export-formats.ts` — registry-entry `brandmd` (label "brand.md", consumers: elke AI-agent/Claude/ChatGPT/Cursor/n8n, status ready) + UI-ordening: brand.md wordt het primaire markdown-formaat
 - `src/app/api/export/design-system/[format]/route.ts` — format `brandmd` toevoegen (zelfde endpoint-conventie)
 - Website-scan-route (bestaande scan-pipeline) — generator-variant zonder workspace, zelfde emitter met `unvalidated`-markers op onzekere velden
-- Prisma-schema — nieuw draft-profiel-model (bv. `GeneratedBrandProfile`) + TTL-cleanup-cron; ⚠️ schema-delta → handmatige Neon `prisma db push` bij deploy (memory `neon-schema-push-on-deploy`)
+- Prisma-schema — nieuw draft-profiel-model (`GeneratedBrandProfile`: payload+versie, gerenderd bestand, gehasht claim-token, TTL/status — zie §Ontwerp claim-borging) + TTL-cleanup-cron; ⚠️ schema-delta → handmatige Neon `prisma db push` bij deploy (memory `neon-schema-push-on-deploy`)
 - Onboarding/provisioning-pad — materialisatie draft → workspace, incl. content-locale-anker (les uit #411)
 - MCP-server + REST v1 (`docs/adr/2026-07-17-public-brand-api.md`-oppervlak) — read-only tool/endpoint die dezelfde emitter-output serveert; extended/private profiel alleen achter auth
 - Marketing-site — landingspagina + full-profile-docs
@@ -93,6 +93,19 @@ Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referenti
 - Witlabel-klantrapport (€100k-plan Fase 5) · agent-LP's/EN-site-breed (Fase 3/8)
 - brand.md-*import*-flow (andermans bestand als workspace-seed) — kandidaat-follow-up, past goed bij de omarm-strategie
 - Directory + badge-programma (launch-plan golf 2, pas bij >50 bestanden)
+
+# Ontwerp claim-borging (2026-08-03 — antwoord op "hoe wordt de scan geborgd?")
+
+**Principe: het draft-profiel bewaart de gestructureerde tussenvorm, niet (alleen) het gerenderde bestand.** Het brand.md is de view; het payload is de bron. Materialiseren = domeinrecords schrijven, niet markdown terugparsen.
+
+1. **`GeneratedBrandProfile`-record** per generator-run:
+   - `payload Json` — scan-output in de vorm die de bestaande modules consumeren (styleguide-profielen als `buttonProfile`/`typographyProfile`, voice-extractie, strategie-samenvatting, gedetecteerde producten) + `payloadVersion` (gepind schema; oude drafts blijven materialiseerbaar na code-wijzigingen, fallback = gratis re-scan)
+   - gerenderde `brand.md` (identieke re-download), `sourceUrl` + genormaliseerd domein, optionele `email`, `createdAt`/`expiresAt` (TTL ~90d), `status` DRAFT/CLAIMED/EXPIRED
+   - `claimToken`: CSPRNG én gehasht opgeslagen (zelfde les als de invite-tokens, #443), single-use
+   - media-artefacten (logo's, screenshots) naar R2 onder een draft-prefix; TTL-cron ruimt record + R2 + token samen op
+2. **Claim-pad**: claim-URL (token) staat in het bestand (`provenance:`) en in de e-mail van de aanvrager → login/registratie (Better Auth) → `provisionNewUser` → org + workspace → **materialisatie via dezelfde domein-schrijfpaden als de UI** (tweede-deur-principe + verplichte cache-invalidatie): `BrandStyleguide` (status DRAFT, `sourceUrl` gevuld → re-scan werkt meteen), `BrandVoiceguide`-concept, `BrandAssets` op unvalidated, content-locale-anker (les #411). Token vervalt bij claim; idempotent (dubbele klik → zelfde workspace). Hing er een e-mail aan de run, dan alleen claimbaar via dat adres.
+3. **Versheid**: bij claim van een oud draft → keuze "materialiseer dit draft" of "scan opnieuw"; de bestaande per-veld override-vlaggen op `BrandStyleguide` (scraper mag overschrijven tenzij user-set) regelen precies dit re-scrape-gedrag al.
+4. **Borging/AVG**: drafts nooit publiek vindbaar of opsombaar; alleen publieke website-data (geen PII behalve de opt-in e-mail); rate-limits per IP én per doeldomein; TTL-verwijdering is volledig (payload + artefacten + token).
 
 # Notes
 
