@@ -103,6 +103,8 @@ Geen standaard-domeinen meer nodig. Nog wél schaars en zinvol: de npm-naam voor
 | 4. Meer doen | Ontdekt MCP-koppeling, agents, trend-radar, F-VAL, content | Trial-credits dekken het proeven; brand.md krijgt gevulde `validation:` + canonical-URL | Credit-model Fase 0-6 (live) |
 | 5. Abonnement | Loopt tegen dag-28 read-only-lock of credit-plafond aan | Starter €39 / Growth €89 / Agency €299 + top-up | Fase 4-lock + tiers (live) |
 
+> **Touchpoint-uitwerking**: elk contactmoment van deze funnel (per fase: taak, kanaal, boodschap, trigger, meting) staat in [`brand-md-touchpoints-2026-08-03.md`](brand-md-touchpoints-2026-08-03.md).
+
 **Ontwerpregels:**
 - **Downloaden blijft écht gratis en accountloos** — de viraliteit sterft als stap 2 een muur wordt; de e-mail-gate zit op herhaalruns, niet op de eerste.
 - **Géén workspace per anonieme run** — een HN-piek zou duizenden spook-workspaces creëren en het multi-tenant-model vereist een owner. Draft-profiel met TTL; materialisatie pas bij activatie.
