@@ -80,6 +80,7 @@ Geen standaard-domeinen meer nodig. Nog wél schaars en zinvol: de npm-naam voor
 | 3 | **Gratis generator**: website-URL → brand.md-superset via bestaande scan-pipeline (rate-limited, e-mail-gate na N runs) | 0 | Dé vrije positie; hun generator vereist plugin + interview. Zelfde `brandmd`-emitter als de export — één codebron voor beide smaken |
 | 4 | Workspace-export (UI-knop + REST + MCP) — levende versie met `validation:`/`provenance:` gevuld | 0 | Het commerciële hart: bestand → levend fundament. Implementatie: `brandmd`-emitter in het bestaande Export Format Registry (naast DESIGN.md/brand-brief), zelfde endpoint-conventie |
 | 4b | **Claim-flow**: elke generator-run bewaart een claimbaar draft-profiel (TTL ~90d); accountactivatie materialiseert het naar een voor-ingevulde workspace | 0-1 | De brug van bestand naar product — funnel in §4b |
+| 4c | **Leads-dashboard** (admin, user-verzoek 2026-08-03): per-lead-statusladder Scanned→Paid + funnel-conversies vs. de touchpoint-targets | 0 | Vanaf dag 1 — de funnel is alleen te optimaliseren als het lek zichtbaar is; DB-gedreven, developer-gated |
 | 5 | Landingspagina EN (+ NL): uitleg, generator-CTA, "works with"-rij, link naar upstream spec | 0 | Ruimhartig linken naar thebrand.md — omarmen moet zichtbaar zijn |
 | 6 | **Upstream-PR-pakket**: Audience-sectie, `provenance:`, gestructureerde guardrails | 0-1 | Volgorde van algemene nuttigheid; vergezeld van werkende tooling |
 | 7 | Eigen consumers dag 1: MCP-tool serveert; Claude Skill, browser-extensie en n8n-nodes lezen full profile; "paste in any chat"-instructie | 0 | De anti-llms.txt-maatregel |
@@ -178,7 +179,7 @@ Open standaarden lanceren niet per land maar via wereldwijde internet-kanalen; *
 ## 8. Meetfundament
 
 Aansluiten op de KPI-boom uit €100k-plan Fase 1. Events dag 1:
-`brandmd_generator_run` (+ bron-URL-domein), `brandmd_download`, `brandmd_export` (per workspace), `brandmd_mcp_fetch` (server-side — direct meetbare *consumptie*), `brandmd_referral_visit` (via `provenance:`-canonical), `signup_source=brandmd`, `brandmd_validator_run` (npm/web), plus de funnel-events `brandmd_claim_started` en `brandmd_claim_completed` (draft → workspace) — de conversie per funnel-stap uit §4b is daarmee volledig meetbaar. Wekelijkse review; Remi neemt het blok mee in het weekrapport zodra de events lopen.
+`brandmd_generator_run` (+ bron-URL-domein), `brandmd_download`, `brandmd_export` (per workspace), `brandmd_mcp_fetch` (server-side — direct meetbare *consumptie*), `brandmd_referral_visit` (via `provenance:`-canonical), `signup_source=brandmd`, `brandmd_validator_run` (npm/web), plus de funnel-events `brandmd_claim_started` en `brandmd_claim_completed` (draft → workspace) — de conversie per funnel-stap uit §4b is daarmee volledig meetbaar. Wekelijkse review; Remi neemt het blok mee in het weekrapport zodra de events lopen. **Het leads-dashboard (asset 4c) is de primaire leesplek**: per-lead-statusladder + funnel-conversies vs. de targets uit de touchpoint-strategie, DB-gedreven (PostHog blijft de event-laag ernaast).
 
 ---
 
