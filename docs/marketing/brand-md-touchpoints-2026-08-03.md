@@ -61,8 +61,9 @@
 | 1.3 | Het bestand | De virale drager | Exact 3 functionele regels: claim-URL, unvalidated-telling, datum | Marketing-copy; tracking-links die het bestand verdacht maken |
 | 1.4 | **Share-moment** (nieuw) | Trots-resultaat benutten | "Deel je score"-kaart (beeld + link), direct na de score getoond — het moment waarop delen intrinsiek is (viral-loop-les) | Delen vragen vóór het resultaat; incentives voor delen (voelt als schema) |
 | 1.5 | **Concurrent-hook** (nieuw) | Tweede run + kwalificatie | "Benieuwd hoe [categorie]-concurrenten scoren? Scan er één" → e-mail-gate valt hier natuurlijk | Concurrent-scores tonen zonder dat de gebruiker die scan zelf deed |
+| 1.6 | **Use-it-moment** (v2.1) | Eerste toepassing ≤60 s na download | Direct na download een "How to use it"-paneel: tabs per tool (Claude / ChatGPT / Cursor / any chat) met copy-paste-recept + 30-sec-clip; zelfde content als de publieke **use-hub** (`/brandmd/use`), waar de derde bestand-regel ook naar linkt — de tutorial werkt dus óók voor wie geen e-mail achterliet én voor ontvangers van andermans bestand | Tutorial achter e-mail zetten; de gebruiker met een bestand maar zonder plan laten vertrekken |
 
-**Target**: run→download ≥ 60%; run→e-mail ≥ 25% (grader-genre-norm: gate op de rapport-laag converteert hoog omdat de waarde al bewezen is).
+**Target**: run→download ≥ 60%; run→e-mail ≥ 25% (grader-genre-norm: gate op de rapport-laag converteert hoog omdat de waarde al bewezen is). **Nieuw (1.6)**: download→use-paneel-interactie ≥ 40% — de proxy voor "weet wat hij ermee moet".
 
 ## Fase 2 — Post-download lifecycle (opt-in; max 4 mails + 1 TTL)
 
