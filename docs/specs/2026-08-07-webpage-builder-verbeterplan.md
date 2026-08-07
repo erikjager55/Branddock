@@ -148,6 +148,23 @@ Fase D:    alles data-/gate-gedreven
 
 **Effort-samenvatting**: Fase 0 ≈ 1,5-2d · Fase A ≈ 7-10d · Fase B ≈ 23-31d · P-vervolg ≈ 13-20d · Fase C ≈ 17-23d.
 
+### 6.1 Doorgroeipad — van campagnepagina's naar een eenvoudige website (user-vraag 2026-08-07)
+
+Een "eenvoudige website" (home, over-ons, diensten/product, FAQ, contact, evt. blog) is in dit model **geen nieuw product maar een dunne laag bovenop wat dit plan al bouwt**: een website = verzameling gepubliceerde pagina's onder één host (bestaat: `<workspace>.branddock.app/*` + per-workspace sitemap/robots/llms.txt) + gedeelde chrome + domein. De markt bevestigt de schaalbaarheid van het model: Gamma bouwt multi-page sites uit hetzelfde kaarten-model, Relume genereert complete sites uit sectie-patronen. Wat er t.z.t. bij moet (post-launch, eigen discovery — géén onderdeel van dit plan):
+
+- **Site-laag per workspace**: homepage-pointer (root-pad → pagina; vandaag heeft de subdomein-root géén afhandeling, `host-router.ts:103-106`), menu-/nav-model (gepubliceerde pagina's + labels + volgorde), footer-config, favicon/meta-defaults, 404-pagina.
+- **Nieuwe paginatypes** via de bestaande W-methode: homepage, over-ons/team, diensten-overzicht, contact (contact leunt op P3-forms). Blog bestaat de facto al: long-form GEO-artikelen publiceren door dezelfde keten.
+- **Gedeelde chrome**: BrandNav/Footer voeden vanuit het site-menu-model i.p.v. per-pagina props; nav-/thema-wijziging → batch-republish van geraakte pagina's (zelfde primitief als de token-freeze-republish uit P2).
+
+**Vangrails die de komende taken nú moeten respecteren** (goedkoop nu, duur later):
+1. **E1/P2**: de render-loop/compiler neemt site-chrome (nav/footer) als aparte input naast de sectie-tree — niet hardwired per pagina.
+2. **P1**: `PagePublish` groepeert op workspace (bestaat al als as); geen aanname "1 pagina = 1 eiland"; reserveer het homepage-pointer-concept (root-slug) in het model.
+3. **P2**: de batch-republish-primitief generiek bouwen (thema-wijziging én nav-wijziging zijn dezelfde operatie).
+4. **Slugs**: plat houden, maar geneste paden niet blokkeren in validatie/routing.
+5. **BrandNav-links** als data (verwijzingen naar pagina's) modelleren zodra het menu-model er is — tot die tijd geen vrije-tekst-URL's dieper verankeren.
+
+**Wat dit spoor bewust nooit wordt**: een generieke vrije-vorm websitebuilder of webshop (Webflow-terrein). Het onderzoek laat zien dat het constrained sectie+token-model voor MKB-merksites juist het sterkere product is; mocht de ambitie ooit verder reiken, dan is dat een aparte productbeslissing met eigen discovery.
+
 ---
 
 ## 7. Meting & go/no-go's
