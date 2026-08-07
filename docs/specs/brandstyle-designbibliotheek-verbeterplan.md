@@ -207,9 +207,10 @@ meter: van velden naar een samenhangende, bruikbare, meeneembare bibliotheek.
 
 ## 4. Verbeterplan
 
-Zes werkstromen, geordend op leverage. W1 is de keystone (zelfde rol als provenance in het
+Zeven werkstromen, geordend op leverage. W1 is de keystone (zelfde rol als provenance in het
 governed-token-plan): de andere stromen leveren er hun output aan. W6 bundelt de output van
 W1–W4 tot het eindproduct dat de pariteit met Claude Design (§3.1) daadwerkelijk levert.
+W7 borgt de architectuur waarmee de bibliotheek ook toekomstige features bedient (zie §5).
 
 ### W1 — Brand Manifest: één gecureerd, tweeledig eindproduct *(keystone)*
 
@@ -226,10 +227,14 @@ representaties uit dezelfde bron:
    gepromoveerd van export-optie naar kern-artefact met eigen DB-veld + regeneratie bij
    sectie-wijziging.
 
-- **Scope**: nieuw veld `BrandStyleguide.brandManifest Json?` (+ `manifestGeneratedAt`),
-  generator in `src/lib/brandstyle/manifest-builder.ts` (deterministische assemblage uit
-  bestaande velden — géén extra AI-call nodig voor v1), injectie in `brand-context.ts` (manifest
-  eerst, veld-concatenatie als fallback), digest-view in de brandstyle-UI.
+- **Scope**: nieuw veld `BrandStyleguide.brandManifest Json?` (+ `manifestGeneratedAt` +
+  `manifestVersion Int` — zie W7 voor het versie-contract), generator in
+  `src/lib/brandstyle/manifest-builder.ts` (deterministische assemblage uit bestaande velden —
+  géén extra AI-call nodig voor v1), injectie in `brand-context.ts` (manifest eerst,
+  veld-concatenatie als fallback), digest-view in de brandstyle-UI. Het manifest assembleert
+  óók de voice-kant: `BrandVoiceguide.voiceBaseline1Pager` + vocabulaire — één bibliotheek,
+  niet twee losse guides. Harde regels komen in v1 uit de bestaande `*Donts`-velden
+  (gestructureerd zodra W2 landt).
 - **Formaat-conventies** (naar DESIGN.md-model, §1.3 M5/M6): token + regel + *rationale* in één
   document; state-token-varianten (`primary-active`, `primary-disabled`) waar geobserveerd; een
   **Iteration Guide**-blok met instructies aan de consumerende agent; en een verplichte
@@ -245,9 +250,12 @@ representaties uit dezelfde bron:
 
 - Nieuw model `StyleguideRule` (per sectie): `kind: DO | DONT | HARD_RULE`, titel, beschrijving,
   optioneel visueel voorbeeld (asset-ref), optioneel **afdwingbare constraint** (gestructureerd:
-  bv. `{ property: 'gradient', allowed: false }` of een testbare tekstregel), `source:
-  observed | recommended | user`. Migratie: bestaande `*Donts`-arrays worden geïmporteerd als
-  `DONT`-records met `source: observed`.
+  bv. `{ property: 'gradient', allowed: false }` of een testbare tekstregel), `source` in
+  hetzelfde vocabulaire als de token-provenance (`scraped/logo/override/archetype/preset/
+  fallback` — géén tweede begrippenkader naast `token-provenance.ts`), en **`severity:
+  BLOCKING | ADVISORY`**: blocking-regels stoppen autonome publicatie (Brandclaw-gate, §5),
+  advisory-regels wegen mee in F-VAL. Migratie: bestaande `*Donts`-arrays worden geïmporteerd
+  als `DONT`-records met `source: scraped`, `severity: ADVISORY`.
 - AI-fase 3 (Design Language) en de Visual Language-analyzer krijgen de opdracht om per vage
   kwalificatie 2-3 concrete, testbare regels mee te genereren (de "operationaliseer vaagheid"-les).
 - Doorvoer: harde regels → W1-manifest → F-VAL rules-pijler (20%) en de Puck-renderers
@@ -362,6 +370,45 @@ ui_kit/              ← de W4 Brand Preview-pagina als statische HTML met fixtu
 - **Effort**: ~5-8 dagen, ná W1 en (deels) W4. **Out-of-scope**: DesignSync-achtige tweeweg-sync
   met externe tools; de bundle is een export, geen sync-doel.
 
+### W7 — Brand Engine-contract: één accessor, channel-views, versies & evals
+
+Borgt dat élke toekomstige feature de bibliotheek op dezelfde manier consumeert — de
+architectuurconsequentie van de review in §5. Vier onderdelen:
+
+1. **Eén accessor als verplicht consumptiepad.** Nieuwe module `src/lib/brand-library/` met
+   `getBrandLibrary(workspaceId, { view, version? })`. Alle consumers — `brand-context.ts`,
+   `canvas-context.ts`, `prompt-engine.ts`, `alignment/scanner.ts`, `trend-radar/researcher.ts`,
+   de Puck-renderers en alle export-emitters — migreren van directe `BrandStyleguide`-veldreads
+   naar deze accessor. Direct veldgebruik buiten de module wordt een lint-regel. Dit voorkomt
+   structureel de klasse bugs uit `gotchas.md:380` (canvas-context las `photographyStyle` langs
+   de save-for-AI-gate om): gates, provenance-filtering en marker-stripping zitten op één plek.
+2. **Channel-views als projecties.** Een view is een selectie + compressie van het canonieke
+   model voor één consumptiedoel: `copy` (voice, vocabulaire, regels), `web` (tokens,
+   designSystem, componenten), `image` (palet, photography-DNA, compositie, imagery-don'ts),
+   `video` (motion, imagery, scrims), `audio` (voice-DNA, pacing — ElevenLabs), `social` /
+   `email` (subset web + copy). Elke view declareert welke manifest-onderdelen hij nodig heeft;
+   een nieuw kanaal (toekomstige feature) = een nieuwe view-definitie, géén nieuwe DB-velden of
+   ad-hoc veldreads. Views zijn budget-bewust: de image-view is ~10× kleiner dan het volledige
+   manifest.
+3. **Versie-contract + stamping.** `manifestVersion` bumpt bij elke publicatie/wijziging; elk
+   gegenereerd artefact (canvas-deliverable, LP, campagne-content) slaat de gebruikte
+   `manifestVersion` op. Daarmee wordt drift auditbaar ("deze campagne is gemaakt met palet v3,
+   huidige bibliotheek is v5") en kan een toekomstige autonome loop (Brandclaw) reageren op
+   version-bumps i.p.v. te pollen — de bestaande `invalidateCache` blijft het korte-termijn-
+   mechanisme, het versienummer is het contract.
+4. **Golden-set evals.** De ontbrekende Validation-laag uit het governed-token-plan: 3-5
+   referentie-workspaces (DTS Ede, Zwarthout, LINFI, één page-builder-site) met vastgelegde
+   verwachte kernwaarden (primary, fonts, ≥N componenten, regels) als fixture-test. De
+   W6-pariteitstest wordt hier een herhaalbare eval i.p.v. een eenmalige check; draait bij
+   elke wijziging aan extractor, resolver of manifest-builder.
+
+- **Acceptatie**: (1) `grep` op `prisma.brandStyleguide` buiten `src/lib/brand-library/` en de
+  brandstyle-API-routes levert 0 consumers op; (2) een image-generatie-call ontvangt de
+  image-view (geen voice-tekst, geen componenten-data); (3) een canvas-deliverable toont met
+  welke bibliotheek-versie hij gegenereerd is; (4) de golden-set-eval draait groen in CI.
+- **Effort**: ~6-10 dagen (grootste deel: consumer-migratie + evals). Kan direct na W1 starten;
+  de accessor kan het manifest en de views incrementeel gaan serveren.
+
 ### Volgorde & samenhang
 
 ```
@@ -371,14 +418,17 @@ W3 Provenance ┼──────► voeden het manifest en F-VAL
 W4 Preview ───┘
 W5 Levend systeem ───► houdt alles actueel (parallel aan W2-W4 te starten)
 W6 Brand Kit Bundle ─► assembleert W1+W3+W4 tot het Claude Design-pariteits-eindproduct
+W7 Brand Engine ─────► contract + views + versies + evals — draagt alle toekomstige features
 ```
 
 Aanbevolen eerste sprint: **W1 + W3** (samen ~2 weken) — grootste zichtbare kwaliteitssprong
-voor zowel gebruiker als AI-output, zonder nieuwe extractie-risico's. W2 daarna (raakt F-VAL),
-W4/W5 parallel of erna; W6 als afronder zodra W1 en de W4-specimens er zijn — de §3.1-tabel
-plus de pariteitstest zijn daarvoor de definition-of-done. De open fasen uit het
-analyzer-improvement-plan (A2-A4, C, D) blijven het extractie-spoor; dit plan is het
-curatie-/presentatie-/consumptie-spoor daarbovenop.
+voor zowel gebruiker als AI-output, zonder nieuwe extractie-risico's. **W7 direct daarna** (of
+deels parallel): hoe eerder het consumptiecontract er ligt, hoe minder consumers er later
+gemigreerd hoeven te worden — elke feature die vóór W7 nog direct velden leest is toekomstige
+migratie-schuld. W2 daarna (raakt F-VAL), W4/W5 parallel of erna; W6 als afronder zodra W1 en
+de W4-specimens er zijn — de §3.1-tabel plus de pariteitstest zijn daarvoor de
+definition-of-done. De open fasen uit het analyzer-improvement-plan (A2-A4, C, D) blijven het
+extractie-spoor; dit plan is het curatie-/presentatie-/consumptie-spoor daarbovenop.
 
 ### Doorkijkje naar het render-spoor (Pad C / LP-fidelity)
 
@@ -392,16 +442,78 @@ komt in plaats van uit een archetype-preset. Dat patroon (plan → generiekheids
 is direct inzetbaar in de LP-generatie- en auto-iterate-flow en sluit aan op F-VAL als
 critique-stap.
 
-### Expliciet out-of-scope
+### Expliciet out-of-scope (deels belegd in fase 2, §5.3)
 
-- Multi-brand modes / sub-brand-theming (Figma-modes-patroon) — waardevol voor agencies,
-  maar pas na de basis; apart idea-draft waard.
-- Publieke deel-/portal-functionaliteit (Frontify-portal) — post-launch.
+- Multi-brand modes / sub-brand-theming (Figma-modes-patroon) — fase 2; W1/W7 mogen het
+  datamodel niet blokkeren (zie §5.2 scenario 4).
+- Publieke deel-/portal-functionaliteit (Frontify-portal) — post-launch; de servebare
+  bibliotheek staat in fase 2.
 - Volledige Storybook-achtige componentdocumentatie — het `StyleguideComponent`-model volstaat
   voorlopig.
-- De Voiceguide-mirror gelijktrekken (review/snapshot/lock ontbreken daar) — bekend, apart.
+- De Voiceguide-mirror gelijktrekken (review/snapshot/lock ontbreken daar) — fase 2, §5.3.
 
-## 5. Bronnen
+## 5. Review & toekomstvastheid — de bibliotheek als Brand Engine
+
+Slotreview van dit plan (2026-08-07), met als toetsvraag: *functioneert de bibliotheek ook
+optimaal wanneer Branddock er in de toekomst heel anders mee gaat werken?* De eerdere
+werkstromen maken betere artefacten; deze sectie borgt dat die artefacten élke toekomstige
+consument kunnen dragen.
+
+### 5.1 Review-bevindingen op het plan zelf
+
+| # | Bevinding | Verwerkt in |
+|---|---|---|
+| R1 | **Consumptie-architectuur ontbrak.** W1-W6 verbeteren wat er úít komt, maar elke consumer las nog steeds zelf velden — precies de bugklasse van `gotchas.md:380` (ungated `photographyStyle` in canvas-context). Elke nieuwe feature zou dat patroon herhalen. | W7.1 (accessor + lint-regel) |
+| R2 | **Het manifest was web/tekst-centrisch.** Branddock genereert ook beeld (DALL-E/FLUX), video (Kling/Veo), audio (ElevenLabs brand voices) en LoRA-modellen; één monolithisch manifest in élke call is óf te groot óf mist kanaalspecifieke context. | W7.2 (channel-views) |
+| R3 | **Regels hadden geen handhavingsniveau.** Voor een mens-in-de-loop volstaat "advies"; een autonome loop heeft een onderscheid nodig tussen regels die publicatie blokkeren en regels die alleen scoren. | W2 (`severity: BLOCKING/ADVISORY`) |
+| R4 | **Geen feedback-loop.** F-VAL-overtredingen, user-overrides en review-feedback zijn signalen over de kwaliteit van de bibliotheek zelf, maar stroomden nergens terug. | §5.3 fase 2 (curatie-suggesties) |
+| R5 | **Geen versie-/event-contract.** Consumers konden niet weten mét welke versie van de bibliotheek content gemaakt is, en autonome processen konden alleen pollen. | W7.3 (versie + stamping) |
+| R6 | **Geen herhaalbare validatie.** De Validation-laag stond al als ❌ in het governed-token-plan; dit plan voegde generatie-stappen toe zonder regressie-vangnet, en de W6-pariteitstest was eenmalig. | W7.4 (golden-set evals) |
+| R7 | **Twee begrippenkaders voor herkomst.** W2 introduceerde `observed/recommended/user` naast het bestaande `TokenSource`-vocabulaire uit `token-provenance.ts`. | W2 (geünificeerd) |
+| R8 | **Voice en style bleven twee werelden.** Het manifest assembleerde alleen de styleguide; de Voiceguide (mirror zonder review/snapshot/lock) bleef buiten beeld terwijl elke serieuze consument beide nodig heeft. | W1 (voice-1-pager in manifest); mirror-gelijktrekking blijft apart werk |
+
+### 5.2 Toekomstscenario's waartegen dit plan is getoetst
+
+1. **Brandclaw — de autonome marketing-loop** (strategische richting). Agents genereren en
+   publiceren zonder mens per stap. De bibliotheek wordt dan van "context" tot **policy**: de
+   blocking-regels (W2) zijn de vangrails, het versie-contract (W7.3) is het signaal om te
+   hergenereren, en de manifest-injectie (W1) is de enige merkbron. Zonder die drie is een
+   autonome loop óf off-brand óf permanent om toestemming vragend.
+2. **Nieuwe generatie-kanalen.** Video-campagnes, TTS/voice-content, LoRA-getrainde consistente
+   beeldmodellen, social-formats. Elk kanaal consumeert een andere doorsnede van hetzelfde merk
+   — de channel-views (W7.2) maken een nieuw kanaal een view-definitie i.p.v. een verbouwing.
+3. **Extern agent-ecosysteem.** De markt beweegt naar "the brand layer for AI agents"
+   (Brandfetch, Frontify, Brand Context Protocol): klanten zullen de bibliotheek buiten
+   Branddock willen gebruiken — in hun eigen Claude Code-sessies, hun CMS, hun tooling. De
+   Brand Kit Bundle (W6) is daarvoor de statische vorm; een servebare vorm staat in fase 2.
+4. **Agency/multi-brand.** AGENCY-organisaties met sub-brands, campagne-thema's en seizoens-
+   varianten. Bouwen blijft out-of-scope, maar het datamodel mag het niet blokkeren: nieuwe
+   code in W1/W7 sleutelt op het styleguide-record (niet hard op "één per workspace"), zodat
+   een toekomstig `(workspace, brandProfile, mode)`-model een migratie is, geen herbouw — het
+   Figma collections+modes-patroon uit §2.
+5. **Schaal en kosten.** Meer workspaces × meer kanalen × autonome frequentie = context-budget
+   wordt schaars. Views (W7.2) zijn daarom compressies, en de accessor is het punt waar later
+   selectieve retrieval (alleen de relevante bibliotheek-delen per taak) kan worden toegevoegd
+   zonder één consumer te wijzigen.
+
+### 5.3 Fase 2 — na de zeven werkstromen
+
+Bewust ná de basis, maar hier vastgelegd zodat de werkstromen er niet mee in conflict komen:
+
+- **Feedback-loop → curatie-suggesties** (R4): log per generatie welke regels overtreden/
+  gecorrigeerd werden en welke tokens de gebruiker overschreef; toon in het kalibratie-paneel
+  "regel X wordt in 80% van generaties overtreden — te streng geformuleerd of verkeerd
+  geëxtraheerd?". De bibliotheek leert van haar eigen gebruik.
+- **Brand Library als service** (R7/scenario 3): het W1-manifest en de W7-views read-only
+  serveerbaar buiten de app (API-key of MCP-server per workspace), zodat externe agents de
+  bibliotheek als bron kunnen gebruiken. Beveiligingsprincipe uit §1.3 M7 geldt onverkort:
+  wat geserveerd wordt is data, geen instructies.
+- **Multi-brand modes** (scenario 4): `(workspace, brandProfile, mode)`-dimensie in het
+  canonical model; sub-brands en dark-mode als modes op dezelfde tokens.
+- **Voiceguide-mirror gelijktrekken** (R8): review/snapshot/lock + `VOICEGUIDE`-enum, zodat
+  beide helften van de bibliotheek dezelfde governance hebben.
+
+## 6. Bronnen
 
 **Intern**: `docs/experiments/DTS Ede Design System/` (README.md, SKILL.md, colors_and_type.css,
 preview/, ui_kits/) · `docs/audits/2026-06-05-brandstyle-result-audit.md` ·
