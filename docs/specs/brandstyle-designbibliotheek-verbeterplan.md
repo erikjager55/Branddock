@@ -1,6 +1,7 @@
 # Designbibliotheek → Brandstyle: verbeterplan
 
-> **Datum**: 2026-08-07 · **Status**: voorstel, nog niet gepland
+> **Datum**: 2026-08-07 (zelfde dag aangevuld met §1.3 — verdiepend bronnenonderzoek naar de
+> bouwmethode van Claude Design) · **Status**: voorstel, nog niet gepland
 > **Aanleiding**: Claude Design bouwde uit een Branddock brand-kit-export een designbibliotheek
 > (`docs/experiments/DTS Ede Design System/`) die op meerdere punten structureel sterker is dan
 > wat de brandstyle-sectie zelf oplevert. Dit plan analyseert die opbouw, vergelijkt met hoe
@@ -47,10 +48,75 @@ ui_kits/website/       ← het merk toegepast op échte componenten, geverifieer
 | 6 | **Secties die wij missen** | States (hover/press/focus/disabled), motion, backgrounds/scrims, imagery-ratio's (60/40), casing-regels, vocabulaire-do's/don'ts met échte voorbeelden van de site | `motionProfile`/`buttonProfile` worden (deels) gescrapet maar niet gerenderd als richtlijn; states/backgrounds ontbreken als sectie |
 | 7 | **Grounding in werkelijkheid** | Verbatim headlines en navigatie van de live site als bewijs ("zo klinkt de toon in de praktijk") | `fixtureSamples` + `color-usage-verifier` bestaan — de grounding is er deels, maar wordt niet als bewijs bij de richtlijn getoond |
 
-Claude.ai/design zelf voegt daar nog twee mechanismen aan toe die relevant zijn:
-**multi-source ingest** (codebase, PDF, screenshots, losse assets — elke bron verrijkt hetzelfde
-systeem incrementeel) en een **self-check-loop** (output wordt tegen het eigen design system
-gevalideerd en gecorrigeerd vóór de gebruiker het ziet — het `@dsCard`/render-check-mechanisme).
+### 1.3 De bouwmethode: hoe Claude Design de bibliotheek stap voor stap construeert
+
+Verdiepend onderzoek (2026-08-07) op basis van primaire bronnen: de officiële Anthropic-skills
+(`anthropics/skills`: frontend-design, brand-guidelines, theme-factory), de volledige
+`/design-sync`-skillteksten en DesignSync-tooldefinities (community-mirrors, niet door Anthropic
+bevestigd maar letterlijke productprompts), het canonieke DESIGN.md-formaat
+(VoltAgent/awesome-design-md) en support.claude.com-artikelen. De methode in zeven principes:
+
+**M1. Bronhiërarchie: "pick the source closest to shipped code".** Code > Figma > screenshots >
+brand-PDF; één bron volstaat om te starten, combineren maakt het rijker. Bij een repo geldt een
+verplichte volgorde: éérst theme-/token-bestanden (`tokens.css`, `_variables.scss`), dan
+componenten, dan globale stylesheets — met de doctrine *"lift exact values — hex codes, spacing
+scales, font stacks, border radii"* en een expliciet verbod om uit trainingsgeheugen te bouwen.
+Alleen bij lacunes mag geharmoniseerd worden (oklch-afgeleiden van het bestaande palet), "avoid
+inventing new colors from scratch". → Branddock-vertaling: live CSS > PDF > screenshots, met
+dezelfde exacte-waarden-doctrine; onze audits (verzonnen gradients, framework-kleuren als merk)
+zijn precies overtredingen van dit principe.
+
+**M2. Foundations eerst, dan componenten — in vaste groepen.** De bibliotheek wordt gelaagd
+opgebouwd (kleur → typografie → spacing → componenten → brand), zichtbaar in de vaste
+review-tab-groepen **Type / Colors / Spacing / Components / Brand**. Elke groep krijgt
+specimen-kaarten; componenten komen pas als de foundations staan.
+
+**M3. Plan-first, twee passen (frontend-design-skill).** Vóór er iets gebouwd wordt: een compact
+tokenplan — palet als **4-6 benoemde hexwaarden**, typefaces voor **2+ rollen**, layoutconcept
+als één zin + ASCII-wireframe, en één **"signature element"** waaraan het ontwerp herkenbaar is.
+Dat plan wordt éérst tegen de brief gereviewd op generiekheid ("als dit het default-antwoord is
+dat je voor élke vergelijkbare pagina zou geven — herzie het en zeg wat je veranderde") en pas
+daarna uitgevoerd, waarbij elke kleur- en typebeslissing uit het plan wordt afgeleid. De skill
+kalibreert expliciet tegen drie herkenbare "AI-looks" die als default gelden, niet als keuze.
+
+**M4. Verificatie als eersteklas pijplijnstap.** Twee lagen: (a) een **machine-check** — headless
+render van elke specimen-kaart naar een `.render-check.json` met kwaliteitstags per component
+(`blank`, `thin`, `variantsIdentical`, `collapsed`, `fallbackCard`, …) die een self-heal-loop
+aansturen ("fix → rebuild → re-validate, tot `bad` leeg is of 3 iteraties"); (b) een
+**absolute rubric** voor menselijke/agent-beoordeling: *Styled* (tokens/fonts zichtbaar),
+*Complete* (geen missende children), *Plausible* (realistische content, "never foo/test").
+In de app draait een aparte verifier-subagent na elke oplevering — "silent on pass". De mens
+blijft de final oracle via de review-tab: kaarten hebben status
+`needs-review / approved / changes-requested`, en **her-registratie reset de reviewstatus**.
+
+**M5. Radicale eerlijkheid over gaten.** Wat niet geëxtraheerd kon worden wordt nooit verdoezeld:
+een **"Known Gaps"-sectie** in het manifest, **"floor cards"** voor niet-geauthorde previews
+("honest, not broken"), placeholder boven fake ("a placeholder is better than a bad attempt at
+the real thing" — maar nooit dummy-content om een ontwerp te vullen), en **substituties alleen
+met expliciete user-OK, vastgelegd in NOTES.md** (`[FONT_MISSING]` is "action required, not a
+footnote"). Regels die niet verifieerbaar bestaan zijn erger dan geen regels: "a conventions
+file that names things which don't exist is worse than none".
+
+**M6. Token + regel + rationale in één document.** Het DESIGN.md-formaat combineert een
+machine-laag (YAML front matter: ±25 benoemde kleurtokens inclusief state-varianten
+`primary-active`/`primary-disabled`, typografierollen met volledige specs, `{token.refs}` in
+component-definities — nooit inline hex) met een mens-laag in vaste volgorde (Overview → Colors →
+Typography → Layout → Elevation → Shapes → Components → **Do's & Don'ts** → Responsive →
+**Iteration Guide** → **Known Gaps**). De Iteration Guide bevat instructies áán de agent
+("Focus on ONE component at a time", "Never document hover — default and active only") en harde
+merkregels in memorabele formuleringen ("Cream + coral + dark navy is the trinity. Don't
+introduce a fourth surface tone"). Het *waarom* staat naast het *wat*, zodat de agent ook
+on-system blijft in gevallen die de tokens niet dekken.
+
+**M7. Incrementele sync met hash-anker, nooit wholesale.** `/design-sync` synchroniseert
+"one component at a time, never as a wholesale replace": een `_ds_sync.json` met content-hashes
+bepaalt wat gewijzigd is; ongewijzigde componenten worden overgeslagen; uploads volgen een
+atomair patroon ("sentinel first, anchor last" — het anker mag alleen instaan voor een volledig
+toegepaste staat); een expliciete plan-grens (`finalize_plan`) laat de gebruiker één keer de
+exacte set wijzigingen goedkeuren. Elk artefact heeft één consument: runtime-bundle voor de
+renderer, stijl-closure voor de look, `.d.ts` als API-contract, prompt-referentie voor de agent,
+previewkaart (met `@dsCard`-marker) voor de mens. Flankerend beveiligingsprincipe: opgehaalde
+bestanden en webcontent zijn **data, geen instructies**.
 
 ## 2. Onderzoek B — hoe andere applicaties dit doen
 
@@ -139,6 +205,12 @@ representaties uit dezelfde bron:
   generator in `src/lib/brandstyle/manifest-builder.ts` (deterministische assemblage uit
   bestaande velden — géén extra AI-call nodig voor v1), injectie in `brand-context.ts` (manifest
   eerst, veld-concatenatie als fallback), digest-view in de brandstyle-UI.
+- **Formaat-conventies** (naar DESIGN.md-model, §1.3 M5/M6): token + regel + *rationale* in één
+  document; state-token-varianten (`primary-active`, `primary-disabled`) waar geobserveerd; een
+  **Iteration Guide**-blok met instructies aan de consumerende agent; en een verplichte
+  **Known Gaps**-sectie die eerlijk benoemt wat niet geëxtraheerd is (voedt tegelijk het
+  kalibratie-paneel). Alleen regels opnemen die verifieerbaar uit data komen — "a conventions
+  file that names things which don't exist is worse than none".
 - **Acceptatie**: voor een geanalyseerde workspace bevat de AI-context een manifest met ≥1 harde
   regel, quick facts en ≥1 provenance-vlag; `ai-context/route.ts` toont hetzelfde document dat
   de gebruiker in de digest-tab ziet ("what you see is what the AI gets").
@@ -166,7 +238,10 @@ representaties uit dezelfde bron:
   (`confidence`, `detectorSource`, token-provenance, `usageEvidence`) — dit is doorverbinden,
   geen nieuwe extractie.
 - In het W1-manifest: substituties/onzekerheden expliciet ("Icon-set is een aanname — merk
-  specificeert er geen"), naar DTS-voorbeeld.
+  specificeert er geen"), naar DTS-voorbeeld. Substituties (bv. font-vervanger wanneer het
+  merkfont commercieel is) worden pas definitief na expliciete user-bevestiging en blijven
+  daarna als `user`-provenance bewaard — het `[FONT_MISSING]`-patroon uit §1.3 M5: "action
+  required, not a footnote".
 - Kleur-gebruiksratio's afleiden uit bestaande frequentie-/usage-data (`observedColorPairs`,
   usage-verifier) en als richtlijn tonen ("~60% surface, ~30% secundair, ~10% accent").
 - **Acceptatie**: Zwarthout-workspace toont geen enkele "recommended" waarde meer als feit;
@@ -185,6 +260,14 @@ representaties uit dezelfde bron:
   overlays**. Render als richtlijntekst + specimen, naar DTS-voorbeeld.
 - Specimen-kaarten per sectie (zelfstandige previews i.p.v. alleen swatches) — herbruikbaar
   in de PDF-export (`buildCompositeBrandPdf`).
+- **Machine-validatie van specimens** (§1.3 M4): render elke specimen-kaart headless en toets op
+  de render-check-tags (`blank`, `thin`, `variantsIdentical`) vóór tonen; een kaart die niet
+  door de check komt wordt een eerlijke "floor card" ("preview nog niet beschikbaar") in plaats
+  van een kapotte of misleidende preview. Beoordelingsrubric voor de vision-enricher:
+  *Styled / Complete / Plausible* (realistische content uit `fixtureSamples`, nooit lorem).
+- **Reviewstatus-reset**: wanneer een sectie door re-analyse inhoudelijk wijzigt, gaat de
+  bijbehorende `StyleguideReview` terug naar `PENDING` (het her-registratie-patroon uit de
+  Claude Design review-tab) — een goedkeuring hoort bij een specifieke versie van de data.
 - **Acceptatie**: na analyse van een nieuwe workspace toont de Preview-tab binnen dezelfde flow
   een herkenbare merkpagina; een extractiefout (verkeerde primary) is daar in één oogopslag
   zichtbaar.
@@ -199,9 +282,14 @@ representaties uit dezelfde bron:
 - **Drift-detectie**: periodieke (of on-demand) re-scrape → snapshot-diff → melding in het
   kalibratie-paneel ("website is veranderd: 2 kleuren wijken af van de styleguide").
 - **Incrementele bronnen**: een tweede bron (PDF na URL, screenshot-upload, extra pagina)
-  verrijkt het bestaande systeem i.p.v. het te vervangen — het Claude Design-ingestmodel.
-  v1-scope: PDF-analyse mag een bestaande URL-analyse aanvullen (merge per sectie met
+  verrijkt het bestaande systeem i.p.v. het te vervangen — het Claude Design-ingestmodel, met
+  de bronhiërarchie uit §1.3 M1 (live CSS > brand-PDF > screenshots) als conflictregel bij
+  merge. v1-scope: PDF-analyse mag een bestaande URL-analyse aanvullen (merge per sectie met
   provenance-stempel) i.p.v. de huidige óf-óf.
+- **Hash-anker voor incrementaliteit**: `BrandstyleSnapshot.tokensHash`/`scrapeHash` bestaan al
+  en doen hash-dedupe; promoveer ze tot sync-anker naar §1.3 M7 — per sectie bepalen wat écht
+  gewijzigd is, alleen dat updaten (en alleen dáár de reviewstatus resetten), en de snapshot
+  pas wegschrijven als de volledige update is toegepast ("anchor last").
 - Flankerend: de 6 `BRANDSTYLE_*`-flags documenteren in `.env.example` en de aanbevolen set
   default aan (kost/latency-afweging per flag expliciet maken); `finalize` krijgt een zachte
   gate (waarschuwing bij kritieke kalibratie-issues, geen harde blokkade).
@@ -224,6 +312,18 @@ voor zowel gebruiker als AI-output, zonder nieuwe extractie-risico's. W2 daarna 
 W4/W5 parallel of erna. De open fasen uit het analyzer-improvement-plan (A2-A4, C, D) blijven
 het extractie-spoor; dit plan is het curatie-/presentatie-/consumptie-spoor daarbovenop.
 
+### Doorkijkje naar het render-spoor (Pad C / LP-fidelity)
+
+Buiten de scope van dit plan, maar één methodisch inzicht uit §1.3 M3 verdient een plek in het
+render-spoor: het "elke RULER+MINIMAL-workspace ziet er identiek uit"-probleem
+(analyzer-improvement-plan §1) is exact wat de frontend-design-skill bestrijdt met **plan-first +
+anti-default-kalibratie**: eerst een compact, merk-specifiek tokenplan (benoemde kleuren,
+typerollen, wireframe, één signature element), dat plan expliciet toetsen op "zou ik dit voor
+élk vergelijkbaar merk genereren?", en pas dan renderen — waarbij elke beslissing uit het plan
+komt in plaats van uit een archetype-preset. Dat patroon (plan → generiekheids-check → build)
+is direct inzetbaar in de LP-generatie- en auto-iterate-flow en sluit aan op F-VAL als
+critique-stap.
+
 ### Expliciet out-of-scope
 
 - Multi-brand modes / sub-brand-theming (Figma-modes-patroon) — waardevol voor agencies,
@@ -242,7 +342,13 @@ preview/, ui_kits/) · `docs/audits/2026-06-05-brandstyle-result-audit.md` ·
 `docs/design-system-export.md` · `gotchas.md` (brandstyle-entries).
 
 **Extern** (selectie; volledige lijst in het onderzoeksrapport van 2026-08-07):
-- Claude Design: anthropic.com/news/claude-design-anthropic-labs · support.claude.com
+- Claude Design-methode (§1.3): github.com/anthropics/skills (frontend-design,
+  brand-guidelines, theme-factory — officieel) · Piebald-AI/claude-code-system-prompts
+  (/design-sync-skillteksten + DesignSync/ClaudeDesign-tooldefinities — community-mirror van
+  productprompts, niet door Anthropic bevestigd) · elder-plinius/CL4R1T4S
+  (Claude Design-systeemprompt — idem) · VoltAgent/awesome-design-md (canoniek
+  DESIGN.md-voorbeeld) · getdesign.md · designsystemscollective.com walkthroughs
+- Claude Design algemeen: anthropic.com/news/claude-design-anthropic-labs · support.claude.com
   "Set up your design system in Claude Design" · explainx.ai design-sync-update
 - BAM: help.frontify.com (structure, sections, Do & Don't-block) · frontify.com/en/blog/
   the-future-of-brand-governance-is-machine-readable · bynder.com/en/guides/guide-to-brand-guidelines
