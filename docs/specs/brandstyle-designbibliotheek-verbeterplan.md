@@ -181,10 +181,35 @@ De gaps, gerangschikt naar de onderzoekslessen:
 | **G8. Zware extractie staat default uit.** Alle 6 `BRANDSTYLE_*`-flags default uit én ontbreken in `.env.example` — een out-of-the-box analyse draait zonder multi-page, headless, screenshots en vision. | `analysis-engine.ts`; gotchas |
 | **G9. Publish zonder gate.** `finalize/route.ts:13-15` publiceert expliciet zonder completeness-check en wist reviews; de publish-gate in `brand-context.ts` maakt de kwaliteit van dat moment dus bepalend voor álle AI-output. | code-observatie |
 
+### 3.1 Output-vergelijking: wat Claude Design oplevert vs. wat Branddock oplevert
+
+Directe vergelijking per artefact, met de DTS Ede-bibliotheek als benchmark (gegenereerd uit
+nota bene een *Branddock-export*) tegen wat de brandstyle-sectie nu produceert (UI-tabs,
+export-emitters in `src/lib/export/design-system/emitters/`, PDF-export, AI-context).
+Verdict: ✅ pariteit · 🟡 gedeeltelijk · ❌ ontbreekt.
+
+| # | Claude Design-output (DTS Ede) | Branddock-equivalent nu | Verdict |
+|---|---|---|---|
+| 1 | **README.md** — samenhangend merkboek-digest: quick facts-tabel, voice met casing-regels en vocabulaire-tabel (mét verbatim voorbeelden van de site als bewijs), visual foundations incl. states/motion/backgrounds, iconografie, alles met *waarom* | 9 losse UI-tabs met velden; geen samenhangend leesbaar document; bewijs (frequenties, verbatim content) wordt niet bij richtlijnen getoond | ❌ |
+| 2 | **SKILL.md** — agent-manifest: quick facts, harde regels ("Never invent accent colors"), geflagde substituties, gebruiksinstructie ("copy assets out / become an expert") | `brand-brief.ts`-export (194 regels prose, alle merkonderdelen) — maar zonder quick facts-tabel, zonder harde regels als categorie, zonder substituties/provenance, en alleen op afroep als download — niet wat `getBrandContext` injecteert | 🟡 |
+| 3 | **colors_and_type.css** — wérkende CSS: raw palette → semantische rollen (`--bg-page`, `--fg1`), volledige `@font-face`-ladder met gelicenseerde bestanden, type-/spacing-scales | `shadcn.ts`/`tailwind.ts` emitters leveren CSS-variabelen uit `semanticTokens`; geen `@font-face` naar de geüploade fontbestanden, geen gebundelde bruikbare stylesheet | 🟡 |
+| 4 | **fonts/** — echte fontbestanden (weight-ladder) meegeleverd | `StyleguideFont` mét file-upload en `availability` bestaat — maar exports bundelen de bestanden niet mee | 🟡 |
+| 5 | **assets/** — logo-bestanden | `StyleguideLogo` met 6 varianten | ✅ |
+| 6 | **preview/** — 17 zelfstandige specimen-kaarten (colors, type-stack/-scale/-banner, spacing, radii-shadows, buttons, form, badges, news-card, voice, imagery, logo, cover) | Swatch-grids en component-screenshots ín de app; geen zelfstandige specimen-kaarten, niet exporteerbaar, geen voice/imagery/spacing-specimens | ❌ |
+| 7 | **ui_kits/website/** — het merk toegepast op een complete voorbeeldpagina met échte content van de live site ("represents the brand book's *intent*") | Geen equivalent in de brandstyle-sectie; `fixtureSamples` (echte headlines/CTA's) bestaat maar wordt er niet voor gebruikt | ❌ |
+| 8 | **Inhoudelijke dekking**: states (hover/press/focus/disabled), motion-durations, backgrounds/scrims, imagery-ratio's (60/40), tracking/letter-spacing-regels | `buttonProfile`/`motionProfile` worden (deels) gescrapet maar nergens als richtlijn gerenderd of geëxporteerd | ❌ |
+| 9 | **DESIGN.md-conventies**: state-tokens, `{token.refs}`, Iteration Guide, Known Gaps | `designmd.ts` volgt de canonieke sectievolgorde (frontmatter → colors → … → do's/don'ts) — mist state-tokens, Iteration Guide en Known Gaps | 🟡 |
+
+De kern: Branddock heeft vrijwel alle *data* (soms rijker dan wat Claude Design uit de PDF
+haalde — 6 logo-varianten, confidence per kleur, WCAG-paren, snapshots), maar assembleert die
+niet tot de *artefacten* die Claude Design standaard oplevert. Het verschil zit in de laatste
+meter: van velden naar een samenhangende, bruikbare, meeneembare bibliotheek.
+
 ## 4. Verbeterplan
 
-Vijf werkstromen, geordend op leverage. W1 is de keystone (zelfde rol als provenance in het
-governed-token-plan): de andere stromen leveren er hun output aan.
+Zes werkstromen, geordend op leverage. W1 is de keystone (zelfde rol als provenance in het
+governed-token-plan): de andere stromen leveren er hun output aan. W6 bundelt de output van
+W1–W4 tot het eindproduct dat de pariteit met Claude Design (§3.1) daadwerkelijk levert.
 
 ### W1 — Brand Manifest: één gecureerd, tweeledig eindproduct *(keystone)*
 
@@ -297,6 +322,46 @@ representaties uit dezelfde bron:
   een gewijzigde site-primary levert een zichtbare drift-melding op.
 - **Effort**: ~5-8 dagen.
 
+### W6 — Output-pariteit: de Brand Kit Bundle
+
+Sluit de negen gaten uit §3.1 door de bestaande data te assembleren tot dezelfde set artefacten
+die Claude Design oplevert — één samenhangende, meeneembare designbibliotheek per workspace.
+Grotendeels assemblage van wat er al is; de AI-inzet beperkt zich tot de digest-teksten.
+
+**Deliverable: de Brand Kit Bundle** — één export (zip + los te downloaden onderdelen, naast de
+bestaande emitters) met exact de DTS Ede-anatomie:
+
+```
+README.md            ← merkboek-digest (§3.1 #1): quick facts, per sectie richtlijn + bewijs
+SKILL.md             ← agent-manifest (= W1-manifest, geëxporteerd; §3.1 #2)
+DESIGN.md            ← bestaande designmd-emitter + state-tokens, Iteration Guide, Known Gaps (#9)
+tokens.css           ← werkende stylesheet: raw palette → semantische rollen + @font-face
+                       naar de meegeleverde fontbestanden (#3)
+tokens.json          ← bestaande DTCG-emitter (ongewijzigd)
+fonts/               ← geüploade StyleguideFont-bestanden, volledige ladder (#4)
+assets/              ← StyleguideLogo-varianten (#5, bestaat al in brand-kit-export)
+preview/             ← specimen-kaarten per groep uit W4, als zelfstandige HTML-bestanden (#6)
+ui_kit/              ← de W4 Brand Preview-pagina als statische HTML met fixtureSamples (#7)
+```
+
+- **Scope**: nieuwe bundel-assembler in `src/lib/export/brand-kit-bundle/` die de bestaande
+  canonical-model-resolver, emitters, W1-manifest en W4-specimens hergebruikt; route
+  `api/export/brand-kit-bundle`; download-knop in `StyleguideHeader` naast de bestaande
+  export-dropdown. README-digest-teksten via één AI-call met de exacte-waarden-doctrine
+  (§1.3 M1) — alle waarden komen uit de DB, de AI formuleert alleen de doorlopende tekst en
+  markeert per claim de bron (observed/recommended, uit W3).
+- **Inhoudelijke dekking (#8)**: states/motion/backgrounds-richtlijnen renderen zodra
+  `buttonProfile`/`motionProfile` gevuld zijn; leeg → eerlijk in Known Gaps (§1.3 M5), nooit
+  verzonnen.
+- **Acceptatie — de pariteitstest**: (1) genereer de bundle voor de DTS Ede-workspace en
+  vergelijk artefact-voor-artefact met `docs/experiments/DTS Ede Design System/` — elk van de
+  negen rijen uit §3.1 scoort ✅ of heeft een expliciete Known Gap; (2) geef de bundle als enige
+  context aan een verse Claude Code-sessie met de opdracht "bouw een on-brand pagina" — het
+  resultaat gebruikt de juiste kleuren, fonts en regels zonder aanvullende vragen; (3) alle
+  specimen-kaarten passeren de render-check uit W4 (geen `blank`/`thin`).
+- **Effort**: ~5-8 dagen, ná W1 en (deels) W4. **Out-of-scope**: DesignSync-achtige tweeweg-sync
+  met externe tools; de bundle is een export, geen sync-doel.
+
 ### Volgorde & samenhang
 
 ```
@@ -305,12 +370,15 @@ W2 Regels ────┐
 W3 Provenance ┼──────► voeden het manifest en F-VAL
 W4 Preview ───┘
 W5 Levend systeem ───► houdt alles actueel (parallel aan W2-W4 te starten)
+W6 Brand Kit Bundle ─► assembleert W1+W3+W4 tot het Claude Design-pariteits-eindproduct
 ```
 
 Aanbevolen eerste sprint: **W1 + W3** (samen ~2 weken) — grootste zichtbare kwaliteitssprong
 voor zowel gebruiker als AI-output, zonder nieuwe extractie-risico's. W2 daarna (raakt F-VAL),
-W4/W5 parallel of erna. De open fasen uit het analyzer-improvement-plan (A2-A4, C, D) blijven
-het extractie-spoor; dit plan is het curatie-/presentatie-/consumptie-spoor daarbovenop.
+W4/W5 parallel of erna; W6 als afronder zodra W1 en de W4-specimens er zijn — de §3.1-tabel
+plus de pariteitstest zijn daarvoor de definition-of-done. De open fasen uit het
+analyzer-improvement-plan (A2-A4, C, D) blijven het extractie-spoor; dit plan is het
+curatie-/presentatie-/consumptie-spoor daarbovenop.
 
 ### Doorkijkje naar het render-spoor (Pad C / LP-fidelity)
 
