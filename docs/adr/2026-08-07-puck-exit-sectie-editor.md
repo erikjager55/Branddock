@@ -78,7 +78,8 @@ In de context van **de webpage-builder voor de 5 Puck-content-types, waar een fo
 
 # Notes
 
-- **Uitvoering**: exit-spoor E1-E3 met effort en volgorde in `docs/specs/2026-08-07-webpage-builder-verbeterplan.md` §5 (v2). Elke E-stap een eigen task-file + worktree conform CLAUDE.md.
+- **Marktonderzoek 2026-08-07 bevestigt en verzwaart dit besluit** (`docs/reports/webpage-bouw-en-publicatie-marktonderzoek-2026-08-07.md`, 4 sporen / ~20 producten): (a) het sectie+token-model is overal het winnende bouwmodel — zelfs code-generatoren (Lovable, v0) dwingen hun AI door token-regels, en alle platform-AI-features genereren binnen een constrained design-system, nooit vrije HTML; (b) de registry-als-contract (stabiele type-id's + typed schema's) is het convergente patroon bij Builder/Makeswift/Plasmic/Storyblok en dubbelt als AI-tool-definitie; (c) **E1's render-loop krijgt een tweede, zwaardere rol als compiler-kern**: zonder Pucks `<Render>` op het publieke pad wordt compile-to-static-bij-publish (het Webflow/Framer-kamp) bereikbaar — de 18 componenten zijn daar al server-safe voor gebouwd. Zie verbeterplan v3 Spoor P.
+- **Uitvoering**: exit-spoor E1-E3 met effort en volgorde in `docs/specs/2026-08-07-webpage-builder-verbeterplan.md` §5 (v3). Elke E-stap een eigen task-file + worktree conform CLAUDE.md.
 - **Supersede-mechaniek bij acceptatie**: dit ADR herziet uitsluitend beslissing 2 van `2026-05-22-landing-page-builder-architectuur`; bij acceptatie krijgt dat ADR een verwijzende aantekening in Notes (geen volledige `superseded`-status — beslissingen 1/3/4/5 blijven geldig).
 - **Nieuwe re-evaluation-triggers**:
   1. Pilot-klanten eisen aantoonbaar vrije-vorm/nested layouts (buiten de sectie-patronen om) → heroverweeg een generieke editor op dat moment, met deze footprint-meting als startpunt.
