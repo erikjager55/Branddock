@@ -207,10 +207,28 @@ meter: van velden naar een samenhangende, bruikbare, meeneembare bibliotheek.
 
 ## 4. Verbeterplan
 
-Zeven werkstromen, geordend op leverage. W1 is de keystone (zelfde rol als provenance in het
-governed-token-plan): de andere stromen leveren er hun output aan. W6 bundelt de output van
-W1–W4 tot het eindproduct dat de pariteit met Claude Design (§3.1) daadwerkelijk levert.
-W7 borgt de architectuur waarmee de bibliotheek ook toekomstige features bedient (zie §5).
+Zeven werkstromen, geordend op leverage, voorafgegaan door een verplichte validatie-spike.
+W1 is de keystone (zelfde rol als provenance in het governed-token-plan): de andere stromen
+leveren er hun output aan. W6 bundelt de output van W1–W4 tot het eindproduct dat de pariteit
+met Claude Design (§3.1) daadwerkelijk levert. W7 borgt de architectuur waarmee de bibliotheek
+ook toekomstige features bedient (zie §5).
+
+### Stap 0 — validatie-spike (verplicht, vóór sprint 1)
+
+De kernaanname van dit hele plan — *manifest-injectie verbetert de kwaliteit van AI-output
+meetbaar* — is aannemelijk maar onbewezen. Valideer die vóór er twee weken in W1 gaat:
+
+- **Opzet** (~1 dag): bouw het Brand Manifest voor één workspace **handmatig** (de DTS
+  Ede-workspace ligt klaar, inclusief de door Claude Design gemaakte referentie in
+  `docs/experiments/`); draai 3-5 representatieve generatie-opdrachten (LP-sectie,
+  social-post, image-prompt) tweemaal — één keer met de huidige veld-concatenatie als context,
+  één keer met het manifest — en beoordeel met F-VAL plus eigen ogen.
+- **Beslisregel**: duidelijk verschil → W1 doorzetten zoals gespecificeerd, en de spike-output
+  bewaren als eerste golden-set-fixture voor W7.4. Klein of geen verschil → eerst uitzoeken
+  wáár de kwaliteit dan wél lekt (waarschijnlijk extractie — het analyzer-spoor) voordat er in
+  presentatie wordt geïnvesteerd; dit plan schuift dan op, het extractie-spoor naar voren.
+- **Bijvangst**: het handgemaakte manifest ís het ontwerp-voorbeeld voor `manifest-builder.ts`,
+  en het mét/zonder-verschil is direct bruikbaar als productbewijs richting klanten.
 
 ### W1 — Brand Manifest: één gecureerd, tweeledig eindproduct *(keystone)*
 
@@ -421,7 +439,8 @@ W6 Brand Kit Bundle ─► assembleert W1+W3+W4 tot het Claude Design-pariteits-
 W7 Brand Engine ─────► contract + views + versies + evals — draagt alle toekomstige features
 ```
 
-Aanbevolen eerste sprint: **W1 + W3** (samen ~2 weken) — grootste zichtbare kwaliteitssprong
+Aanbevolen volgorde: eerst **Stap 0** (de spike, ~1 dag — go/no-go voor de rest), dan als
+eerste sprint **W1 + W3** (samen ~2 weken) — grootste zichtbare kwaliteitssprong
 voor zowel gebruiker als AI-output, zonder nieuwe extractie-risico's. **W7 direct daarna** (of
 deels parallel): hoe eerder het consumptiecontract er ligt, hoe minder consumers er later
 gemigreerd hoeven te worden — elke feature die vóór W7 nog direct velden leest is toekomstige
@@ -472,6 +491,15 @@ consument kunnen dragen.
 | R7 | **Twee begrippenkaders voor herkomst.** W2 introduceerde `observed/recommended/user` naast het bestaande `TokenSource`-vocabulaire uit `token-provenance.ts`. | W2 (geünificeerd) |
 | R8 | **Voice en style bleven twee werelden.** Het manifest assembleerde alleen de styleguide; de Voiceguide (mirror zonder review/snapshot/lock) bleef buiten beeld terwijl elke serieuze consument beide nodig heeft. | W1 (voice-1-pager in manifest); mirror-gelijktrekking blijft apart werk |
 
+**Grenzen van dit onderzoek** (voor de lezer die het plan weegt): het echte Claude
+Design-project was in deze omgeving niet live te inspecteren (design-login vereist een
+interactieve sessie) — de review-tab-UX is gereconstrueerd uit documentatie en productprompts;
+de `/design-sync`- en systeemprompt-teksten komen uit community-mirrors (hoge betrouwbaarheid,
+niet door Anthropic bevestigd); en het plan is niet getoetst bij eindgebruikers — het
+optimaliseert naar Claude Design-pariteit en agent-consumptie, niet naar gevalideerde
+klantbehoeften. Stap 0 vangt de belangrijkste inhoudelijke aanname af; een klantgesprek over
+de Brand Kit Bundle (W6) vóór de bouw ervan is de goedkoopste toets voor de rest.
+
 ### 5.2 Toekomstscenario's waartegen dit plan is getoetst
 
 1. **Brandclaw — de autonome marketing-loop** (strategische richting). Agents genereren en
@@ -512,6 +540,33 @@ Bewust ná de basis, maar hier vastgelegd zodat de werkstromen er niet mee in co
   canonical model; sub-brands en dark-mode als modes op dezelfde tokens.
 - **Voiceguide-mirror gelijktrekken** (R8): review/snapshot/lock + `VOICEGUIDE`-enum, zodat
   beide helften van de bibliotheek dezelfde governance hebben.
+
+### 5.4 Voorbij pariteit — leapfrog-kansen
+
+De werkstromen mikken op "minimaal gelijk aan Claude Design" (§3.1). Deze vijf ideeën gaan
+daar voorbij — dingen die Claude Design zelf níet doet en die Branddock zouden onderscheiden.
+Bewust géén werkstromen: ze horen op tafel bij fase 2-besluiten, na Stap 0 en de basis.
+
+1. **Fidelity-selftest van de bibliotheek.** Screenshot de W4-preview en laat een vision-judge
+   die vergelijken met de live-site-screenshots die de scraper al maakt (`page-screenshotter`).
+   Output: een score "hoe goed reproduceert onze bibliotheek dit merk?" per workspace. Dit
+   sluit de extractie-loop: fouten worden meetbaar in plaats van toevallig zichtbaar, en de
+   score is de natuurlijke KPI voor het hele extractie-spoor.
+2. **Brand component-kit als output.** Het `ui_kits`-idee doorgetrokken: naast specimens een
+   herbruikbare component-set (HTML/React: knop, kaart, form, nav, footer) per merk in de
+   Brand Kit Bundle — van "documentatie van het merk" naar "bouwmateriaal van het merk".
+   Raakvlak: `tasks/_drafts/idea-brand-domain-specific-components.md`.
+3. **Interactieve refinement-UX.** Inline commentaar of correctie-sliders per element in de
+   preview (het Claude Design-patroon uit §2) in plaats van alleen per-sectie thumbs up/down —
+   curatie wordt dan aanwijzen ("deze knop, niet die kleur") in plaats van beschrijven.
+4. **Brand Library Quality Score.** Eén zichtbaar cijfer per workspace: compleetheid ×
+   provenance-confidence × eval-pass (W7.4) × fidelity-selftest (#1). Stuurt gebruikers naar
+   de juiste curatie-actie en is tegelijk een product-/upsell-haak ("jouw bibliotheek staat
+   op 61% — dit zijn de drie grootste gaten").
+5. **Visuele stijl-embedding.** De Voiceguide heeft al een `centroidEmbedding` voor toon; een
+   visueel equivalent (embedding over screenshots/palet/typografie) maakt F-VAL's
+   visual-brand-fit-dimensie (Pad C, dimensie 8) automatisch scoorbaar en opent
+   similarity-search over merken heen.
 
 ## 6. Bronnen
 
