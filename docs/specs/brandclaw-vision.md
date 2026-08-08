@@ -1,184 +1,158 @@
-# Brandclaw-visie — het zelflerende merkteam
+# Brandclaw-visie — het marketing-organisme
 
-> **Status**: voorstel (toekomstvisie, ambitie-verhoging) — ter bespreking met Erik.
-> **Datum**: 2026-08-08.
-> **Context**: dit bestand was aangekondigd in `docs/specs/_README.md` (migratie visie-deel uit `docs/archive/old-lists/BRANDCLAW-ROADMAP.md`) maar nooit geschreven. Deze versie vervangt de archief-visie niet 1-op-1: hij absorbeert het eindbeeld daaruit, verwerkt de herijking van `docs/reports/p36-brandclaw-herijking-2026-07-17.md`, en vergroot de ambitie op twee assen: **autonomie** en **zelflerend**.
-> **Onderbouwing**: codebase-audit van de agents/Brandclaw-motor (2026-08-08) + docs-sweep van alle learning-loop-, autonomie- en gate-documentatie + extern onderzoek naar state-of-the-art zelflerende agent-systemen.
+> **Status**: voorstel v2 (toekomstvisie) — herschreven na richting-feedback Erik (2026-08-08): meer databron-integratie en -fusie, inzichten → strategieën, geen vaste agent-catalogus maar een organisch geheel waarin agents ontstaan wanneer nodig, actieradius tot buiten het platform, en eigen initiëring.
+> **Datum**: 2026-08-08 (v2; v1 in git-historie van dit bestand).
+> **Context**: dit bestand was aangekondigd in `docs/specs/_README.md` maar bestond niet. Het absorbeert het archief-eindbeeld (`docs/archive/old-lists/BRANDCLAW-ROADMAP.md` §F), de P3.6-herijking en de bevindingen van de code/docs-audit van 2026-08-08.
 
 ---
 
 ## 1. De kern in één zin
 
-**Brandclaw wordt het eerste marketingplatform dat aantoonbaar je merk léért: elk mensbesluit en elke gepubliceerde uitkomst maakt de agents meetbaar beter, en autonomie is geen instelling maar een status die agents per taak verdienen met hun track-record.**
+**Brandclaw is één zelf-initiërend marketing-organisme dat alles hoort wat er over en rond het merk gebeurt, die signalen samensmeedt tot strategieën, zichzelf de specialisten geeft die elke strategie nodig heeft, handelt binnen én buiten het platform, en met elk resultaat aantoonbaar beter wordt — een lean, mean marketing machine met het merk-DNA als onvervreemdbare identiteit en de mens als bestuurder.**
 
-De bestaande differentiatie-claim ("onze agents bewijzen dat hun werk on-brand is" — F-VAL) krijgt daarmee een tweede, zwaardere verdieping die niemand kan kopiëren zonder jaren aan loop-data: **"onze agents bewijzen dat ze je merk leren."**
-
----
-
-## 2. Waarom nu — wat het onderzoek zegt
-
-### 2.1 De bouwstenen zijn af, maar de lus is open
-
-De audit van 2026-08-08 bevestigt de P3.6-conclusie ("Brandclaw is een orkestratie-project") en scherpt hem aan: de loop is rond gemáákt (BC-1 draait), maar hij is **niet gesloten**. Concreet:
-
-| Wat er is | Wat er aantoonbaar ontbreekt |
-|---|---|
-| 10 agents op één motor, propose→confirm, artefacten, scheduling, inbox | Accept/reject wordt alleen als timestamp opgeslagen — **geen enkele agent leest ooit terug wat de mens besloot of waarom** |
-| pgvector `AgentMemory` met decay, confidence, access-reinforcement | Memory-write vereist dubbele menselijke actie → in de praktijk vrijwel leeg; recall is opt-in modelgedrag, geen gegarandeerde injectie; decay-job wordt nooit geënqueued |
-| `LearningEvent`, `AICallTrace`, `ContentFidelityScore`, diff/edit-classificatie draaien in productie | Capture zonder terugkoppeling — het learning-loop-plan zei het zelf al: "agent-loops die zelfstandig optimaliseren" is bewust buiten scope gehouden |
-| F-VAL scoort elke content-output | Een lage score verandert niets aan prompt, model, tool-keuze of geheugen van de agent — meetpunt, geen leersignaal |
-| `AgentRun.totalCostUsd`, PostHog-events, `AdMetricSnapshot` | Geen budget-model, geen hard-stop, geen kill-switch, geen generieke proposal-cap; `AgentMemoryType.OUTCOME` bestaat als enum-lid zonder één schrijver |
-| NodeType-enum met 4 loop-rollen | 3 van de 4 (`campaign_builder`, `measurement_eval`, `optimization`) zijn lege enum-leden |
-
-De leerlus is dus **asymmetrisch gebouwd: waarnemen is af, leren bestaat nog niet.** Dat is geen achterstand — het is precies de volgorde die de eigen gates voorschreven. Maar het betekent dat de volgende ambitie-sprong niet "meer agents" is, maar **de lus sluiten**.
-
-### 2.2 De werkelijke bottleneck is signaal-schaarste
-
-De gedocumenteerde faalpaden (Gartner: >40% agentic-projecten geannuleerd vóór 2027; Deloitte: kosten-onvoorspelbaarheid + onbewezen waarde) zijn afgedekt met gates. Maar de pilots onthullen een faalpad dat de plannen niet voorzagen: **leer-infrastructuur zonder data om van te leren**. Layer-3-regression: 0 rejected/edited-events. Vera-triggers: 0 `IN_REVIEW`-transities in 8 weken. Iris: ships-dormant. Een zelflerend systeem dat wacht op organisch signaal leert nooit. De visie moet signaal-acquisitie daarom als eersteklas doel behandelen, niet als bijproduct.
-
-### 2.3 De markt bevestigt de richting én het gat
-
-Extern onderzoek (zie §10): het bewezen gebruikspatroon is draft→approve (91-97% van marketeers redigeert AI-output), auto-publish boven de comfortgrens is een gedocumenteerde flop-categorie, en tegelijk is "self-improving loops" hét onderscheid tussen 2026-agents en 2024-automation — memory-gedreven agents laten meetbare kwaliteitswinst zien, en gesloten optimalisatielussen (meten → leren → herallokeren) zijn de norm aan het worden in performance-marketing. Niemand combineert echter **merk-DNA + fidelity-bewijs + verdiende autonomie + per-merk-leren**. Dat kwadrant is open.
+Niet "een set agents met een goedkeurings-inbox", maar een levend systeem. Agents zijn geen product-features; het zijn tijdelijke organen die het organisme laat ontstaan wanneer een strategie erom vraagt — en weer oplost wanneer het werk gedaan is of de les geleerd.
 
 ---
 
-## 3. Het eindbeeld (horizon ~2029)
+## 2. Vijf breuken met de huidige opzet
 
-Een workspace-eigenaar opent maandagochtend Brandclaw:
+De audit van 2026-08-08 laat zien dat de huidige lijn (10 vaste agents, propose→confirm, BC-trap) een solide motor heeft opgeleverd — maar de visie erboven was te klein. Vijf bewuste breuken:
 
-- **Bo** heeft het weekend gedraaid binnen zijn verdiende envelope: 4 LinkedIn-posts en 1 blog gepubliceerd (autonomie-tier "bounded" voor die twee types — verdiend na 14 weken 90%+ accept-rate), 2 voorstellen buiten de envelope staan in de inbox.
-- De **weekdigest** opent niet met "wat ik heb gedaan" maar met "wat ik heb geléérd": "Carrousels met een vraag-hook presteren 2,3× beter bij persona 'Operations Manager' — ik heb dit als playbook-regel voorgesteld; 3 memories geconsolideerd; F-VAL-drempel voor case-studies met 2 punten verhoogd op basis van jullie edits."
-- Het **trust-dashboard** toont per agent het track-record: accept-rate-trend, F-VAL-verloop, outcome-uplift per cyclus, kosten binnen budget, incidenten (0). Naast elke autonomie-schuif staat het bewijs waarom die stand gerechtvaardigd is — of wat er nog ontbreekt om een trede hoger te mogen.
-- De **retro-agent** heeft afgelopen vrijdag de cyclus geëvalueerd: 2 hypothesen bevestigd, 1 verworpen, playbook bijgewerkt, en één experiment voorgesteld voor komende week ("test langere captions bij persona X — confidence LOW, dus alleen als voorstel").
-- Elke geleerde les is **inspecteerbaar, cureerbaar en verwijderbaar** — het merkgeheugen is van de klant, niet van het model.
-
-De mens is geen operator meer maar **bestuurder**: hij keurt geen individuele posts goed, hij bestuurt envelopes, leest lessen, en corrigeert richting. Menselijke minuten per gepubliceerd on-brand item dalen elke maand — en het systeem kan die daling bewijzen.
+1. **Van modules naar zenuwstelsel.** Databronnen (F-VAL-scores, ad-snapshots, competitor-scans, trends, PostHog) bestaan nu als losse silo's die elk door één agent worden bekeken. Er komt één **Signaalweb**: elke bron — intern én extern — voedt dezelfde graph, en inzichten ontstaan juist op de krúispunten van bronnen.
+2. **Van inzichten naar strategie-synthese.** De huidige agents rapporteren observaties. Het organisme krijgt een **Strategiekamer** die inzichten combineert tot concurrerende strategie-hypothesen met verwachte impact, kosten en confidence — en die als portfolio beheert.
+3. **Van catalogus naar genesis.** De 10 persona's zijn geen grens meer. Een strategie wordt een **missie**; het organisme stelt per missie zelf het team samen — bestaande specialisten hergebruiken, of een nieuwe laten ontstaan. Agents ontstaan, bewijzen zich, worden geïnstitutionaliseerd als playbook, of verdwijnen.
+4. **Van platform-acties naar wereld-acties.** De actieradius stopt niet bij de eigen database of zelfs de gekoppelde kanalen. Het organisme mag adviseren én (binnen mandaat) regelen dat er buiten het platform iets gebeurt: een telemarketingbureau inschakelen, een panel-onderzoek inkopen, data verwerven die het mist.
+5. **Van reageren naar initiëren.** Niets in het organisme wacht op een prompt of een weekschema als de wereld daar geen aanleiding toe geeft — en andersom: als de wereld wél beweegt, beweegt het organisme, ongevraagd. Eigen initiëring is de default, niet de uitzondering.
 
 ---
 
-## 4. De vijf pijlers
+## 3. Anatomie van het organisme
 
-### Pijler 1 — Sluit de lus: elk mensbesluit is een leersignaal
+### 3.1 De zintuigen — het Signaalweb
 
-Elke accept, reject en edit wordt een gestructureerd feedback-record dat agents bij hun volgende run **gegarandeerd** meekrijgen:
+Eén open, uitbreidbare waarnemingslaag. Alles wat het organisme kan waarnemen wordt een **Signal** in één graph, gekoppeld aan de merk-entiteiten die er al zijn (persona's, producten, kanalen, concurrenten, campagnes, brand assets):
 
-- **Feedback-ledger**: `dismissReason` + optionele vrije-tekst-reden op élk artefact/proposal (nu alleen op `StrategyObservation`, ongebruikt). Eén klik, geen frictie — maar wat er is wordt teruggevoerd.
-- **Edits als soft-signaal**: de bestaande diff/edit-classificatie (`src/lib/learning-loop/edit-classifier.ts`) wordt teruggekoppeld: `editDistance > 0.20` op een agent-output = impliciete correctie, automatisch als OUTCOME-memory geschreven.
-- **Automatische memory-vorming**: het dubbel-menselijk-gegate `remember_agent_memory` blijft voor agent-inzichten, maar **feitelijke outcomes** (voorstel geaccepteerd/afgewezen/geëdit, F-VAL-score, publicatiestatus) worden systeem-geschreven — dat zijn feiten, geen agent-meningen, dus geen confirm nodig. `AgentMemoryType.OUTCOME` krijgt eindelijk zijn schrijver.
-- **Deterministische memory-injectie**: top-N relevante memories worden in de system-prompt geïnjecteerd in plaats van via opt-in `recall_agent_memory` gehoopt. Recall-tool blijft voor diepere vragen.
+- **Interne bronnen** (bestaan al, worden gefuseerd): F-VAL/fidelity-trends, content-productie, edits & rejects, campagne-stand, alignment-scans, Ada's ad-snapshots, competitor-events, trend-radar.
+- **Gekoppelde systemen**: GA4/PostHog, social-platforms, e-mail/CRM (HubSpot), Ads-accounts, e-commerce, reviews, search console — via native connectors én een generieke **MCP-client-laag**, zodat elke bron die een MCP- of API-oppervlak heeft aansluitbaar is zonder eigen bouwwerk per bron.
+- **De buitenwereld**: nieuws, markt- en sectorsignalen, merkvermeldingen, concurrent-bewegingen (Exa/scraping/feeds).
+- **De mensenwereld**: sales-notities, klantgesprekken, geüploade documenten, meeting-verslagen — alles wat de klant erin wil gooien wordt signaal.
 
-### Pijler 2 — Verdiende autonomie: de trust-ladder
+Twee eigenschappen maken dit een zenuwstelsel in plaats van een data-lake:
 
-Dit is de ambitie-verhoging die consistent blijft met de eigen governance-lijn (die over tijd bewust strénger werd — geen auto-confirm-sluiproutes). De herformulering: **autonomie is niet het doel maar het gevolg van aantoonbaar leren.**
+- **Fusie**: entity-resolution over bronnen heen — dezelfde campagne, persona of concurrent herkend in ads-data, web-analytics én CRM, zodat een inzicht als "persona X klikt wel maar converteert alleen na een telefonisch contactmoment" überhaupt kán bestaan. Dit is het CDP-principe (unified data layer + identity graph), maar dan merk-centrisch in plaats van alleen klant-centrisch.
+- **Zelfkennis over blinde vlekken**: het organisme weet welke zintuigen het mist en maakt daar werk van. "Zonder web-analytics ben ik half blind — koppel GA4" is een actie-item dat het zelf agendeert; en als een vraag niet uit bestaande bronnen te beantwoorden is, is *data verwerven* een legitieme actie (zie 3.5).
 
-- Autonomie wordt granulair: per **agent × taaktype × workspace**, niet één platte schuif. Tiers: `suggest` → `auto_publish_approved` (BC-2) → `bounded` (BC-3) → `bounded+experiment` (BC-4+).
-- Een tier wordt nooit stilzwijgend actief: het systeem **solliciteert** — "Bo heeft 12 weken ≥90% accept-rate op LinkedIn-posts, gemiddeld F-VAL 84, 0 incidenten. Envelope voorstellen: max 4/week, alleen linkedin-post, F-VAL ≥ 80, budget €X." De mens zet aan.
-- **Automatische de-escalatie**: incident (off-brand-publicatie, budget-touch, F-VAL-dip onder drempel, accept-rate-val) → tier zakt automatisch één trede en de eigenaar hoort waarom. Vertrouwen is verdiend én verliesbaar.
-- Harde randen blijven onaantastbaar: kill-switch per workspace en platform-breed, budget-hard-stop, generieke server-afgedwongen proposal-caps (nu alleen Ada's lokale constante), digest-plicht, geen auto-confirm-na-tijd — ooit.
+### 3.2 Het wereldbeeld
 
-### Pijler 3 — Van genereren naar experimenteren
+Uit het Signaalweb onderhoudt het organisme een continu bijgewerkt **wereldbeeld van merk-in-markt**: wat weten we, hoe zeker zijn we ervan, wat is er sinds vorige week veranderd, en wat begrijpen we nog niet. Technisch bouwt dit op wat er ligt (immutable `DataSnapshot`s, pgvector, versioned observations) — het verschil is dat het één samenhangend, bevraagbaar beeld wordt in plaats van per-agent-queries. Het wereldbeeld is ook het product-oppervlak: de klant kijkt in het hoofd van zijn marketing-machine.
 
-Content wordt hypothese. De loop wordt een experimenteermachine:
+### 3.3 De Strategiekamer — van inzicht naar strategie
 
-- Elke loop-cyclus formuleert expliciete hypothesen ("vraag-hooks werken voor persona X"), genereert varianten, en **bandit-allocatie** verdeelt publicatie-aandacht: winnaars krijgen meer, verliezers sterven snel (multi-armed bandit i.p.v. klassiek A/B — sneller lerend bij klein volume, cruciaal voor MKB-workspaces).
-- **Outcome-attributie**: gepubliceerde items worden teruggekoppeld aan de run/het voorstel dat ze voortbracht (`AgentOutcome`: proposal → deliverable → publicatie → performance uit PostHog/GA4/social/Ads). De Measurement-node uit het archiefontwerp krijgt hiermee zijn concrete vorm.
-- De **retro-agent** (de Evaluation-node, herboren): een wekelijkse systeem-run die de cyclus evalueert — hypothesen bevestigen/verwerpen, memories consolideren tot lessen (Reflexion-patroon: talige zelfreflectie in persistent geheugen), en het playbook bijwerken. Dit is tevens de memory-consolidatie die nu ontbreekt (dedupe, samenvatting, promotie van herhaalde observaties; decay-job eindelijk geactiveerd).
+Het denkende centrum, en het directe antwoord op "inzichten combineren naar strategieën":
 
-### Pijler 4 — Het merk-playbook: gedistilleerde, cureerbare kennis
+1. **Inzicht-vorming**: signalen uit verschillende bronnen kruisen → inzichten met evidence en confidence (de bestaande two-reasons-toets blijft de lat).
+2. **Strategie-synthese**: inzichten combineren tot **strategie-hypothesen** — niet "maak een LinkedIn-post" maar "persona X wordt bereikt maar converteert niet; de data wijst op een vertrouwensdrempel; drie kandidaat-strategieën: (a) case-study-programma, (b) webinar-reeks, (c) outbound-belcampagne via een extern bureau — met per kandidaat verwachte impact, kosten, doorlooptijd, benodigde zintuigen en confidence."
+3. **Portfolio-management**: strategieën concurreren om budget en aandacht. Het organisme draait meerdere strategieën tegelijk, meet ze als experimenten, verschuift inzet naar wat werkt (bandit-allocatie op strategie-niveau, niet alleen op content-varianten) en stopt wat niet werkt — expliciet, met een geleerde les als restwaarde.
 
-Losse memories zijn ruis; gedistilleerde lessen zijn kapitaal. Naar het Voyager-skill-library-patroon:
+Hiermee worden de lege enum-leden `campaign_builder`, `measurement_eval` en `optimization` niet drie losse nodes, maar functies van één kamer: bouwen, meten en optimaliseren zijn fasen van elke strategie in het portfolio.
 
-- Bevestigde patronen promoveren van memory → **playbook-regel**: een leesbaar, per-workspace document ("wat werkt voor dit merk") dat agents als context krijgen en dat de mens kan lezen, bewerken en verwijderen.
-- Dit volgt het bestaande governance-principe uit de localization-draft: geleerde kennis die de pipeline stuurt hoort in **cureerbare merk-data**, niet onzichtbaar in agent-geheugen. De agent stelt playbook-regels voor; de mens (of een verdiend tier) bekrachtigt.
-- Playbook-regels voeden óók F-VAL: een geleerde regel kan een workspace-specifiek fidelity-criterium worden — het merkbewijs wordt scherper naarmate het systeem langer draait. Dit activeert het al geplande `fval-iteratie-3` (data-gedreven pillar-weight-re-tuning) als terugkerend zelfkalibratie-mechanisme in plaats van eenmalige exercitie.
-- Zelfde mechaniek op systeemniveau: de prompt-registry (bestaat, mét usage-dashboard) plus `agentVersion`/`promptVersion`-stempels (bestaan) maken **prompt-A/B over cycli** mogelijk — de lessen verbeteren niet alleen wát agents weten maar hoe ze redeneren.
+### 3.4 Missies en genesis — agents ontstaan, bestaan niet
 
-### Pijler 5 — Bewijsbare autonomie als product én claim
+Een goedgekeurde (of binnen mandaat zelf-gestarte) strategie wordt een **missie**. Het organisme stelt per missie het team samen:
 
-Governance wordt geen rem maar het verkoopbare oppervlak:
+- Een agent is een **instantie van (missie, context, tools, model, budget)** — configuratie op de bestaande motor (`runAgentLoop`), geen nieuwe code per agent. De huidige code-registry evolueert van "de catalogus" naar een **template-bank**: beproefde specialist-profielen waaruit het organisme put.
+- **Genesis**: vraagt een missie om een specialisme dat er niet is (een B2B-outbound-strateeg, een webinar-producent, een marktonderzoek-begeleider), dan stelt het organisme een nieuw agent-profiel samen uit tools + prompt + context en laat het zich bewijzen op de missie. Dit is het "agent factory"-patroon dat in agent-onderzoek inmiddels standaard wordt (on-the-fly samengestelde sub-agents in plaats van vaste rollen).
+- **Levenscyclus**: ontstaan → bewijzen (elke output blijft F-VAL-gevalideerd en ge-audit) → institutionaliseren (een profiel dat herhaald werkt wordt template; zijn werkwijze wordt playbook) → verdwijnen. Geen agent is heilig; **lessen zijn van het organisme, agents zijn vergankelijk**. Het geheugen (pgvector, playbooks) hangt daarom aan workspace + missietype, niet aan de individuele agent.
+- **Persona's blijven als gezicht, niet als grens.** Ada, Bo en Vera zijn waardevolle, herkenbare gezichten voor terugkerende functies — de UX-laag. Onder water zijn ook zij instanties van de motor, en naast hen ontstaan naamloze of nieuw-gedoopte specialisten wanneer het werk daarom vraagt.
 
-- **Trust-dashboard** per agent: track-record, kosten, incidenten, geleerde lessen, autonomie-status + het bewijs erachter. De bestaande audit-fundamenten (immutable `DataSnapshot`, versioned runs, toolCallTrace) zijn hier al voor ontworpen — ze krijgen een gezicht.
-- De marketing-lijn evolueert met de werkelijkheid mee, conform het wig-besluit ("autopilot pas claimen als het waar is"): eerst *"een AI-marketingteam dat je merk écht kent — en dat kan bewijzen"*, daarna *"— en dat aantoonbaar elke week beter wordt"*, en pas bij BC-3+ *"— en dat je met bewijs autonomie kunt geven."*
-- Dit lost ook het signaal-schaarste-probleem deels op als moat: hoe langer een klant draait, hoe meer het platform over zíjn merk geleerd heeft — **switching cost wordt geleerd kapitaal**, niet lock-in.
+### 3.5 De actieradius — vier ringen
 
----
+Het organisme handelt zo ver als zijn mandaat reikt, in vier ringen:
 
-## 5. Architectuur-delta's (op hoofdlijnen)
-
-Alles additief op de bestaande motor; geen herbouw. Indicatief, definitieve besluiten per ADR:
-
-| Delta | Bouwt op |
-|---|---|
-| `AgentFeedback` (reden bij dismiss/reject, edit-koppeling) + `agent_output_dismissed`-event | bestaand confirm-pad, `edit-classifier.ts` |
-| `AgentOutcome` (proposal → publicatie → performance-attributie) | `LearningEvent`, `AICallTrace`, PostHog, `AdMetricSnapshot` |
-| Systeem-geschreven OUTCOME-memories + deterministische memory-injectie + consolidatie/decay-job in de cron | `AgentMemory` (pgvector), `MEMORY_DECAY`-handler (bestaat, nooit geënqueued) |
-| `WorkspaceAgentConfig` (autonomie-tier per agent × taaktype) + `AgentBudget` (hard-stop) + generieke proposal-cap + kill-switch | BC-2/BC-3-fasering, `AgentSchedule.enabled`, advisory-lock-lane |
-| Retro-agent als systeem-run (Evaluation-node) + `measurement_eval`-node op de bestaande orchestrator | lege NodeType-enum-leden, `runAgentLoop` |
-| Bandit-allocatie op deliverable-varianten + hypothese-veld op loop-proposals | Bo's loop, bestaande variant-generatie |
-| `BrandPlaybook` (cureerbare regels, propose→confirm) + koppeling naar F-VAL-criteria | `BrandLocaleProfile`-governance-patroon, `fidelity-config` |
-| Trust-dashboard (agent-detail-uitbreiding) | `AgentRun`-metrics, pilot-metrics-queries |
-| Strategy Analyst uit zijn dood-eind-pad: naar de catalogus, op `AgentRun`/`AgentArtifact` | convergentie-epic item 1 (bestaand plan) |
-
----
-
-## 6. Fasering — de bestaande trap verlengd
-
-De BC-trap blijft; er komen treden bij. Elke trede houdt zijn gate; geen enkele gate wordt versoepeld.
-
-| Trede | Wat | Gate |
+| Ring | Actie-type | Voorbeelden |
 |---|---|---|
-| **BC-1** ✅ | Loop met mens-goedkeuring (Bo) | — (done 2026-07-18) |
-| **BC-1.5** *(nieuw — kan nú, geen autonomie-risico)* | Lus sluiten aan de leerkant: feedback-ledger, systeem-OUTCOME-memories, memory-injectie, decay-job aan, generieke caps + budget-hard-stop + kill-switch | Geen — dit is leren + veiligheid, geen autonomie |
-| **BC-2** | Goedgekeurd = gepubliceerd; outcome-attributie start (publicatie = meetbaar signaal) | P3.5-kanaal + credentials (bestaand) |
-| **BC-2.5** *(nieuw)* | Retro-agent + hypothesen + bandit-varianten; trust-dashboard v1; eerste playbook-regels (propose-only) | ≥4 weken BC-2-outcome-data |
-| **BC-3** | Bounded autonomy — nu **verdiend** per agent × taaktype o.b.v. track-record, met automatische de-escalatie | De bestaande 4 go-criteria + go-besluit Erik (ongewijzigd) |
-| **BC-4** *(nieuw)* | Zelfkalibratie: F-VAL-re-tuning op outcomes, prompt-A/B over cycli, experiment-autonomie binnen envelope | BC-3 ≥ een kwartaal incidentvrij bij ≥5 workspaces |
-| **BC-5** *(nieuw — jaar-2-ambitie uit het learning-loop-plan)* | Cross-workspace patronen binnen segment (strikt opt-in, geanonimiseerd): "wat werkt in jouw branche" als koud-start-versneller voor nieuwe workspaces | Apart privacy/opt-in-ADR + expliciet go-besluit |
+| **1. Eigen platform** | maken en beheren | content, campagnes, strategie-documenten, merkbewaking |
+| **2. Gekoppelde systemen** | uitvoeren via connectors/MCP | publiceren, ads bijsturen, e-mails versturen, CRM-taken aanmaken, landingspagina's plaatsen |
+| **3. De mensenwereld** | adviseren → laten uitvoeren | "schakel een telemarketingbureau in voor persona X" — inclusief shortlist van bureaus, briefing-pakket, belscript on-brand, doellijst en meetplan; een influencer briefen; drukwerk of een beurs-stand regelen; later (binnen mandaat): de opdracht daadwerkelijk uitzetten en de terugkoppeling als signaal binnenhalen |
+| **4. Data-acquisitie** | waarnemen als actie | een klantpanel of survey uitzetten, interviews plannen, een dataset of tool-koppeling aanschaffen, een concierge-test draaien — omdat het wereldbeeld een gat heeft dat geld waard is om te dichten |
 
-**Volgorde-rationale**: BC-1.5 vóór BC-2 — de leerlus moet dicht zijn vóórdat het publicatievolume stijgt, anders verdampt het kostbaarste signaal (vroege outcomes) onopgeslagen. Het is bovendien het antwoord op signaal-schaarste: accept/reject/edit-signaal bestaat nú al bij elke inbox-interactie en wordt vandaag weggegooid.
+Ring 3 is de kern van "buiten de eigen omgeving": een advies van het organisme is nooit een losse zin maar een **uitvoerbaar pakket** — wie, wat, waarom (evidence uit het Signaalweb), verwachte uitkomst, kosten, en hoe het resultaat teruggemeten wordt. Eerst doet de mens de handeling; naarmate vertrouwen groeit kan het organisme de opdracht zelf uitzetten binnen een budget-mandaat. Agentic procurement (RFQ's, offertes vergelijken, leveranciers voordragen binnen guardrails) is in de markt al realiteit — Brandclaw past het toe op marketing-diensten.
 
----
+### 3.6 Geheugen en leren — organisme-breed
 
-## 7. Noordster en meetbaarheid
+De leerlus uit visie-v1 blijft integraal, maar wordt organisme-breed in plaats van per-agent:
 
-**Noordster**: *menselijke minuten per gepubliceerd on-brand item, dalend per maand per workspace* — het enige getal dat autonomie én leren én waarde tegelijk meet.
+- **Elk mensbesluit is leersignaal**: accepts, rejects (met reden), edits (edit-distance als impliciete correctie) — automatisch teruggevoerd, niet alleen geregistreerd.
+- **Elke uitkomst is leersignaal**: publicatie → performance → attributie terug naar de missie en strategie die het voortbracht. Ook ring-3-acties: het belresultaat van het bureau is net zo goed een outcome als een CTR.
+- **De retro-functie**: periodiek en na elke missie evalueert het organisme zichzelf — hypothesen bevestigd/verworpen, memories geconsolideerd tot lessen, playbooks bijgewerkt, template-bank verrijkt (Reflexion-patroon: talige zelfreflectie in persistent geheugen).
+- **Het merk-playbook**: gedistilleerde, cureerbare lessen per workspace — leesbaar, bewerkbaar, verwijderbaar door de klant. Geleerde regels kunnen F-VAL-criteria worden: het merkbewijs wordt scherper naarmate de machine langer draait. Geleerd kapitaal is de switching cost.
 
-Ondersteunend, per workspace op het trust-dashboard:
-1. **Accept-rate-trend** per agent per taaktype (leert het systeem wat de mens wil?)
-2. **F-VAL-verloop** van agent-output over cycli (wordt het on-brand-er zonder menselijke correctie?)
-3. **Outcome-uplift per cyclus** (presteren publicaties beter dan de vorige cyclus / de vanilla-baseline?)
-4. **Verdiende autonomie-graad** (aandeel gepubliceerde items zonder per-item-goedkeuring, binnen envelope, zonder incident)
-5. **Kosten per geaccepteerd item** (Deloitte-faalpad, permanent bewaakt)
+### 3.7 Identiteit en geweten — waarom dit geen los kanon wordt
 
-Elke metric heeft al een databron in productie; geen enkele vergt nieuwe capture — alleen terugkoppeling.
+De ambitie groeit; de grenzen blijven hard, en worden juist het product:
 
----
-
-## 8. Wat we expliciet NIET doen
-
-De strenger-geworden lijn blijft de lijn:
-
-- **Geen auto-confirm-sluiproutes** — geen "auto-approve na X dagen", geen batch-confirm-all als default, geen confidence-gestuurde auto-approve buiten een verdiende, expliciet aangezette envelope (het 48u-timeout-ontwerp uit het archief blijft verworpen).
-- **Geen budget-autonomie op advertising** — Ada signaleert, mens beslist over geld. Ook in BC-4.
-- **Geen onzichtbaar leren** — elke les die gedrag stuurt is inspecteerbaar en verwijderbaar (playbook-principe). Geen model-finetuning op klantdata in deze horizon.
-- **Geen cross-workspace-leren zonder opt-in** — BC-5 is gated achter een eigen privacy-ADR; merkgeheugen is van de klant.
-- **Geen autonomie-marketing vóór de werkelijkheid** — het wig-besluit blijft van kracht; elke claim volgt op bewijs.
-- **Geen nieuwe orchestrator-frameworks** — de eigen motor (ADR 2026-05-08, Alt D verworpen) volstaat aantoonbaar; de treden hierboven zijn orkestratie en schema-werk, geen platform-wissel.
+- **Merk-DNA + F-VAL is de identiteit, geen filter achteraf.** Het organisme kán niet off-brand handelen: elke output, ook een belscript voor een extern bureau, gaat door dezelfde fidelity-poort.
+- **Mandaten in plaats van vrijheid**: autonomie is per workspace × ring × missietype begrensd (budget, volume, types, F-VAL-ondergrens) en wordt **verdiend** met track-record — en bij een incident automatisch teruggeschroefd. De verdiende-autonomie-ladder uit v1 blijft, maar hangt aan missietypes in plaats van aan vaste agents.
+- **Volledige auditability**: elke actie herleidbaar tot signalen, inzicht, strategie en mandaat (de bestaande DataSnapshot/versioning-fundamenten, nu end-to-end).
+- **Kill-switch en budget-hard-stop** op elk niveau; geen auto-confirm-sluiproutes; cross-workspace-leren alleen opt-in.
+- **De mens verschuift van operator naar bestuurder**: geen per-item-goedkeuring als eindbeeld, maar sturen op strategieën, mandaten en lessen.
 
 ---
 
-## 9. Open besluiten (voor Erik)
+## 4. De groeistadia — van luisterend object naar lean, mean marketing machine
 
-1. **BC-1.5 als eerstvolgende Brandclaw-increment?** Het is autonomie-risicovrij en maakt elk later increment waardevoller. Kandidaat om vóór BC-2 te trekken.
-2. **Convergentie-epic herijken op deze fasering** — `tasks/agents-brandclaw-convergentie.md` dekt items die hier in BC-1.5/BC-2.5/BC-3 landen; de go/no-go-gate van dat epic blijft, maar de indeling verschuift.
-3. **Systeem-geschreven memories zonder confirm** — feiten (outcomes) wél, agent-inzichten níet: akkoord met die scheidslijn? Dit raakt het huidige propose-only-memory-principe en verdient een eigen ADR.
-4. **Noordster bekrachtigen** — "menselijke minuten per gepubliceerd on-brand item" als de metric waarop Brandclaw wordt afgerekend.
-5. **Dit document canoniek maken** — bij akkoord: verwijzing vanuit `roadmap.md` en het convergentie-epic; de archief-roadmap blijft archief.
+Zes stadia, elk met een eigen belofte aan de klant. De bestaande BC-treden mappen erin; geen bestaande gate wordt versoepeld.
+
+| Stadium | Het organisme… | Klant-belofte | Bevat |
+|---|---|---|---|
+| **1. Luisteraar** | hoort alles: zintuigen gekoppeld, Signaalweb + wereldbeeld live, benoemt eigen blinde vlekken | "Het ziet wat ik niet zie" | signaalweb-foundation, MCP-client-laag, gap-detectie |
+| **2. Duider** | verklaart: cross-source-inzichten, eerste strategie-hypothesen als advies | "Het begrijpt waaróm" | Strategiekamer v1, leerlus dicht (feedback + outcomes) |
+| **3. Tester** | probeert: missies, experimenten, varianten, eerste genesis van specialisten; publiceert binnen goedkeuring | "Het bewijst wat werkt" | BC-2, bandit-allocatie, retro-functie, template-bank |
+| **4. Bewijzer** | verdient: track-record per missietype, mandaten binnen envelopes, ring-3-adviezen als uitvoerbare pakketten | "Het verdient mijn vertrouwen" | BC-3 (bestaande go-criteria), trust-dashboard, playbooks |
+| **5. Operator** | draait: portfolio van strategieën grotendeels zelfstandig, ring-2 volledig, ring-3 binnen opdracht-mandaat, data-acquisitie op eigen initiatief | "Het draait mijn marketing" | zelfkalibratie (F-VAL-re-tuning, prompt-evolutie), budget-mandaten ring 3/4 |
+| **6. Machine** | initieert: signaleert kansen, formuleert strategieën, stelt teams samen, handelt binnen én buiten het platform, en wordt daar meetbaar elke cyclus beter in — de mens bestuurt op doelen en budget | "Lean, mean marketing machine" | volwaardig zelf-initiërend portfolio-management; opt-in segment-leren als koud-start-versneller |
+
+**Volgorde-rationale**: stadium 1-2 eerst — de Strategiekamer is maar zo goed als het Signaalweb eronder, en de leerlus moet dicht zijn vóórdat volume en autonomie groeien (het kostbaarste signaal ontstaat vroeg en wordt vandaag weggegooid). Genesis (stadium 3) vóór brede autonomie (4-5): eerst laten zien dat ontstane specialisten zich bewijzen onder dezelfde F-VAL/audit-tucht, dan pas mandaten verruimen.
 
 ---
 
-## 10. Bronnen
+## 5. Architectuur-richting (op hoofdlijnen, alles op de bestaande motor)
 
-**Intern** (belangrijkste): `docs/reports/p36-brandclaw-herijking-2026-07-17.md` · `docs/adr/2026-05-08-brandclaw-agent-architectuur.md` · `docs/adr/2026-07-05-agents-architectuur.md` · `docs/archive/implementatieplannen/IMPLEMENTATIEPLAN-LEARNING-LOOP.md` · `docs/archive/old-lists/BRANDCLAW-ROADMAP.md` (§F) · `docs/reports/agents-diepte-analyse-en-plan-2026-07-05.md` · `docs/reports/agents-marktonderzoek-en-uitbreidingsadvies-2026-07-14.md` · `docs/marketing/launch-wig-besluit.md` · `docs/specs/content-test-improvement-plan.md` · `tasks/agents-brandclaw-convergentie.md` · `tasks/done/bc1-loop-pilot.md` · codebase-audit `src/lib/agents/**`, `src/lib/brandclaw/**`, `src/lib/learning-loop/**` (2026-08-08).
+| Nieuw | Bouwt op |
+|---|---|
+| `Signal` + `SourceAdapter`-registry + entity-resolution (merk-graph) | DataSnapshot, bestaande query-tools, Prisma/pgvector |
+| Generieke MCP-client-laag voor externe bronnen én ring-2-acties | bestaande connector-aanpak (P3.5), tool-registry |
+| `Insight` en `StrategyHypothesis` (evidence, confidence, verwachte impact/kosten) + portfolio-stand | StrategyObservation-shape, two-reasons-toets |
+| `Mission` + `AgentInstance` (missie, context, tools, model, budget) — registry wordt template-bank; `AgentDefinition` van code naar data | `runAgentLoop`, agent-loop-guards, artifact-contract |
+| Ring-3-artefact "uitvoerbaar pakket" (briefing, shortlist, meetplan) + opdracht-mandaat-model | proposal→confirm-flow, F-VAL-poort |
+| Gap-detectie + data-acquisitie-acties (survey, panel, koppeling) | Research Hub / validation-bundles (bestaand product!), Exa |
+| Feedback-ledger, outcome-attributie, retro-run, playbook, verdiende mandaten, trust-dashboard | (ongewijzigd uit v1 — zie git-historie voor detail) |
 
-**Extern** (state-of-the-art, geraadpleegd 2026-08-08): Reflexion/verbal self-reflection en memory-gedreven self-improving loops als productiepatroon; Voyager-stijl skill-libraries als persistente, cureerbare geleerde vaardigheden; Mem0/agent-memory-frameworks met meetbare kwaliteitswinst (~26% boven kale vector-recall); multi-armed-bandit-allocatie voor content-varianten (o.a. LOLA, LLM-assisted online learning); closed-loop optimalisatie als 2026-norm in performance-marketing; agentic-AI-governance met autonomie-tiers en HITL-gates (IAPP three-tiered guardrails; FINRA 2026: autonomy/scope-creep/auditability als kernrisico's). URL-lijst in de sessie-samenvatting bij dit document.
+Wat er níet komt: geen extern orchestrator-framework (ADR 2026-05-08 Alt D blijft verworpen — genesis is configuratie op de eigen motor), geen model-finetuning op klantdata in deze horizon, geen autonomie zonder verdiend en expliciet aangezet mandaat.
+
+---
+
+## 6. Noordster
+
+**Zelfgedragen marketingwaarde**: het aandeel van de gerealiseerde marketing-uitkomst (gewogen naar outcome, niet naar volume) dat het organisme zelf initieerde én uitvoerde zonder menselijke correctie — per workspace, stijgend per cyclus, zonder incident.
+
+Ondersteunend: idee→gevalideerd-marktresultaat-doorlooptijd (daalt per stadium), accept-rate-trend, F-VAL-verloop zonder correctie, kosten per gerealiseerde uitkomst, dekkingsgraad van het Signaalweb (hoeveel blinde vlekken resteren).
+
+---
+
+## 7. Open besluiten (voor Erik)
+
+1. **Ambitieniveau als workspace-instelling**: elke klant kiest zijn stadium-plafond (sommige klanten willen een Duider, andere een Machine). Akkoord dat het product alle stadia bedient in plaats van iedereen naar 6 te duwen?
+2. **Ring-3-mandaat-grens**: waar ligt de eerste lijn — advies-met-pakket altijd, opdracht-uitzetten pas na welk track-record en tot welk budget?
+3. **Genesis-tucht**: mag het organisme zelf nieuwe agent-profielen instantiëren binnen een missie-budget (voorstel), of blijft elke nieuwe specialist een menselijke goedkeuring (strenger)?
+4. **Volgorde**: Signaalweb-foundation + leerlus-dicht als eerstvolgende Brandclaw-increment (stadium 1-2), vóór verdere autonomie-treden?
+5. **Naamgeving en frame**: "het organisme" intern versus wat de klant ziet — één Brandclaw-entiteit met gezichten, of blijven de persona's het primaire frame?
+6. **Dit document canoniek maken** en het convergentie-epic + roadmap erop herijken.
+
+---
+
+## 8. Bronnen
+
+**Intern**: `docs/reports/p36-brandclaw-herijking-2026-07-17.md` · `docs/adr/2026-05-08-brandclaw-agent-architectuur.md` · `docs/adr/2026-07-05-agents-architectuur.md` · `docs/archive/old-lists/BRANDCLAW-ROADMAP.md` (§F) · `docs/archive/implementatieplannen/IMPLEMENTATIEPLAN-LEARNING-LOOP.md` · `docs/reports/agents-marktonderzoek-en-uitbreidingsadvies-2026-07-14.md` · `tasks/agents-brandclaw-convergentie.md` · `tasks/_drafts/idea-competitive-intelligence-loop.md` · codebase-audit `src/lib/agents/**`, `src/lib/brandclaw/**`, `src/lib/learning-loop/**` (2026-08-08).
+
+**Extern** (geraadpleegd 2026-08-08): dynamische sub-agent-creatie / agent-factory-patronen (AOrchestra: on-the-fly executors uit instructie+context+tools+model; LangChain Dynamic Subagents; agent-swarm-RL), unified data layer / identity-resolution als fusie-principe (CDP-architectuur), Reflexion-stijl zelfreflectie en memory-frameworks voor productie-agents, multi-armed-bandit-allocatie voor content- en strategie-experimenten, agentic procurement (RFQ/vendor-selectie binnen guardrails) als precedent voor ring-3-acties, en agentic-governance-kaders met autonomie-tiers en HITL-gates. URL-lijst in de sessie-samenvatting bij deze revisie.
