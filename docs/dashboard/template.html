@@ -1,142 +1,121 @@
 <title>Branddock — Overzicht</title>
 <style>
   :root{
-    --ground:#FAFCFB; --surface:#FFFFFF; --ink:#26332F; --ink-2:#5C6E68; --ink-3:#93A39D;
-    --line:#E7EFEC; --accent:#199C85; --accent-soft:#EAF6F2; --accent-ink:#0E7361;
-    --amber:#A87E2F; --amber-soft:#F8F1E2; --rest:#8595A0; --rest-soft:#EEF2F4;
+    --ground:#FBFCFB; --ink:#2A3531; --ink-2:#66756F; --ink-3:#A3AFAA;
+    --line:#ECF1EF; --accent:#177E6C; --amber:#9A7B3A;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --ground:#121816; --surface:#1A2220; --ink:#E9F0ED; --ink-2:#A9BAB4; --ink-3:#6E7F79;
-      --line:#27322E; --accent:#3BC9AC; --accent-soft:#1B332D; --accent-ink:#8AE4CE;
-      --amber:#D9B06A; --amber-soft:#332915; --rest:#8C9CA8; --rest-soft:#212A30;
+      --ground:#141918; --ink:#E6EDEA; --ink-2:#9FAEA8; --ink-3:#65736D;
+      --line:#242C29; --accent:#57C0A9; --amber:#C9A96B;
     }
   }
   :root[data-theme="dark"]{
-    --ground:#121816; --surface:#1A2220; --ink:#E9F0ED; --ink-2:#A9BAB4; --ink-3:#6E7F79;
-    --line:#27322E; --accent:#3BC9AC; --accent-soft:#1B332D; --accent-ink:#8AE4CE;
-    --amber:#D9B06A; --amber-soft:#332915; --rest:#8C9CA8; --rest-soft:#212A30;
+    --ground:#141918; --ink:#E6EDEA; --ink-2:#9FAEA8; --ink-3:#65736D;
+    --line:#242C29; --accent:#57C0A9; --amber:#C9A96B;
   }
   *{box-sizing:border-box}
   body{margin:0; background:var(--ground); color:var(--ink);
-    font:16.5px/1.7 -apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:820px; margin:0 auto; padding:72px 28px 96px; display:flex; flex-direction:column; gap:72px}
-  h1{font-family:Charter,Georgia,"Times New Roman",serif; font-weight:500; font-size:clamp(28px,4.5vw,38px); line-height:1.2; margin:0 0 10px; letter-spacing:-.01em; text-wrap:balance}
-  h2{font-family:Charter,Georgia,"Times New Roman",serif; font-weight:500; font-size:23px; margin:0 0 6px; letter-spacing:-.005em}
-  .sub{color:var(--ink-2); max-width:60ch; margin:0}
-  .stil{color:var(--ink-3); font-size:13.5px}
-  section{display:flex; flex-direction:column; gap:18px}
-  .sechead p{margin:4px 0 0; color:var(--ink-2); font-size:15px; max-width:62ch}
+    font:17px/1.85 Charter,Georgia,"Times New Roman",serif}
+  .wrap{max-width:620px; margin:0 auto; padding:96px 26px 110px; display:flex; flex-direction:column; gap:64px}
+  h1{font-weight:500; font-size:clamp(26px,4.5vw,33px); line-height:1.3; margin:0 0 18px; letter-spacing:-.01em; text-wrap:balance}
+  h2{font-weight:500; font-size:20px; margin:0 0 12px; letter-spacing:-.005em}
+  p{margin:0; max-width:58ch}
+  .zacht{color:var(--ink-2)}
+  .stil{color:var(--ink-3); font-size:13px; font-family:-apple-system,"Segoe UI",sans-serif}
+  em{font-style:italic}
+  a{color:var(--accent); text-decoration:none}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:3px}
 
-  .dotrow{display:flex; flex-wrap:wrap; gap:10px 26px; padding:4px 0}
-  .dot{display:flex; align-items:baseline; gap:9px; font-size:15px; color:var(--ink-2)}
-  .dot i{width:8px; height:8px; border-radius:50%; flex:none; transform:translateY(-1px)}
-  .dot.ok i{background:var(--accent)} .dot.warn i{background:var(--amber)}
-  .dot b{color:var(--ink); font-weight:600}
+  details{border:0}
+  summary{cursor:pointer; list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary .krul{display:inline-block; width:1em; color:var(--ink-3); transition:transform .2s ease}
+  details[open]>summary .krul{transform:rotate(90deg)}
+  @media (prefers-reduced-motion: reduce){ summary .krul{transition:none} }
 
-  .stappen{display:flex; flex-direction:column}
-  .stap{display:flex; gap:22px; padding:18px 0; border-top:1px solid var(--line); align-items:baseline}
-  .stap:first-child{border-top:none}
-  .stap .n{font-family:Charter,Georgia,serif; font-size:22px; color:var(--ink-3); flex:none; width:26px; text-align:center}
-  .stap .t{font-weight:600; font-size:16.5px}
-  .stap .d{color:var(--ink-2); font-size:15px; margin-top:3px; max-width:58ch}
-  .woord{display:inline-block; font-size:13px; padding:2px 12px; border-radius:999px; white-space:nowrap; font-weight:550; margin-left:10px; vertical-align:middle}
-  .w-groen{background:var(--accent-soft); color:var(--accent-ink)}
-  .w-amber{background:var(--amber-soft); color:var(--amber)}
-  .w-grijs{background:var(--rest-soft); color:var(--rest)}
+  .stap{padding:14px 0; border-top:1px solid var(--line)}
+  .stap:first-of-type{border-top:none}
+  .stap summary{display:flex; gap:14px; align-items:baseline}
+  .stap .nr{color:var(--ink-3); font-size:15px; width:1.2em; flex:none; text-align:right}
+  .stap .tt{flex:1}
+  .stap .bij{color:var(--amber); font-size:14px; font-style:italic; white-space:nowrap}
+  .stap .uitleg{margin:8px 0 2px 2.6em; color:var(--ink-2); font-size:15.5px}
 
-  .baan{display:flex; flex-direction:column; gap:2px}
-  .baan>.bhead{padding:0 0 10px}
-  .baan>.bhead .waarom{color:var(--ink-3); font-size:14px}
-  details.item{border-top:1px solid var(--line)}
-  details.item:last-child{border-bottom:1px solid var(--line)}
-  details.item>summary{display:flex; gap:16px; padding:14px 6px; cursor:pointer; list-style:none; align-items:baseline}
-  details.item>summary::-webkit-details-marker{display:none}
-  details.item>summary:hover, details.item[open]>summary{background:var(--surface); border-radius:10px}
-  details.item>summary .tt{flex:1; min-width:0}
-  details.item>summary .tt .naam{font-weight:600; font-size:15.5px}
-  details.item>summary .tt .oms{color:var(--ink-2); font-size:14px; margin-top:1px}
-  .itembody{padding:8px 6px 22px; display:flex; flex-direction:column; gap:12px; font-size:14.5px; color:var(--ink-2)}
-  .itembody .zacht{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px 15px}
-  .itembody .zacht b{color:var(--ink); font-weight:600}
-  .itembody .techniek{font-size:13px; color:var(--ink-3)}
-  .itembody .techniek span{margin-right:16px}
-  button.copy{align-self:flex-start; font:550 14px/1 -apple-system,"Segoe UI",sans-serif; padding:10px 16px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--accent-ink); cursor:pointer}
-  button.copy:hover{border-color:var(--accent); background:var(--accent-soft)}
-  button.copy:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-  .copyhint{font-size:13px; color:var(--ink-3)}
+  .baan{border-top:1px solid var(--line); padding:16px 0}
+  .baan:first-of-type{border-top:none}
+  .baan>summary{display:flex; align-items:baseline; gap:12px}
+  .baan>summary .naam{font-weight:500; font-size:18px}
+  .baan>summary .tel{color:var(--ink-3); font-size:14px}
+  .baan .waarom{margin:6px 0 0 1em; color:var(--ink-2); font-size:15px}
+  .items{margin:14px 0 4px 1em; display:flex; flex-direction:column}
+  details.item{padding:9px 0; border-top:1px solid var(--line)}
+  details.item>summary{display:flex; gap:10px; align-items:baseline}
+  details.item>summary .tt{flex:1; font-size:15.5px}
+  details.item>summary .st{color:var(--ink-3); font-size:13.5px; font-style:italic; white-space:nowrap}
+  details.item>summary .st.bij{color:var(--amber)}
+  .itembody{margin:10px 0 8px 1em; display:flex; flex-direction:column; gap:12px; font-size:15px; color:var(--ink-2)}
+  .itembody .kader{border-left:2px solid var(--line); padding-left:14px}
+  .itembody .kader b{color:var(--ink); font-weight:600}
+  button.copy{align-self:flex-start; font:500 14px/1 -apple-system,"Segoe UI",sans-serif; padding:9px 16px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--accent); cursor:pointer}
+  button.copy:hover{border-color:var(--accent)}
+  .techniek{font-size:12.5px; color:var(--ink-3); font-family:ui-monospace,Menlo,monospace}
 
-  .koers{display:flex; flex-direction:column; gap:6px}
-  .fase-lijn{display:flex; flex-wrap:wrap; gap:8px 6px; align-items:center; color:var(--ink-2); font-size:15px}
-  .fase-lijn .f{padding:5px 13px; border:1px solid var(--line); border-radius:999px; background:var(--surface); white-space:nowrap}
-  .fase-lijn .f.nu{border-color:var(--accent); color:var(--accent-ink); font-weight:600}
-  .fase-lijn .pijl{color:var(--ink-3)}
-  .koers p{margin:8px 0 0; color:var(--ink-2); font-size:15px; max-width:62ch}
+  .voorjou{display:flex; flex-direction:column}
+  .voorjou .punt{padding:11px 0; border-top:1px solid var(--line); font-size:16px}
+  .voorjou .punt:first-child{border-top:none}
+  .voorjou .punt .rest{color:var(--ink-2); font-size:15px}
 
-  .vragenlijst{display:flex; flex-direction:column; gap:10px}
-  .vraagkaart{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 18px; font-size:15px; color:var(--ink-2)}
-  .vraagkaart b{color:var(--ink); font-weight:600}
-
-  .slot{border-top:1px solid var(--line); padding-top:26px; display:flex; flex-direction:column; gap:20px}
-  .slot .adem{font-family:Charter,Georgia,serif; font-size:19px; line-height:1.6; color:var(--ink); max-width:56ch}
-  details.netjes summary{cursor:pointer; color:var(--ink-3); font-size:13.5px; list-style:none}
-  details.netjes summary::-webkit-details-marker{display:none}
-  details.netjes summary:hover{color:var(--ink-2)}
-  details.netjes ul{margin:10px 0 0; padding-left:18px; font-size:13.5px; color:var(--ink-3); display:flex; flex-direction:column; gap:4px}
-  footer{color:var(--ink-3); font-size:12.5px}
-  a{color:var(--accent-ink)}
-  :focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .slotzin{font-size:19px; line-height:1.8; max-width:52ch}
+  .voetnoot summary{color:var(--ink-3); font-size:13px; font-family:-apple-system,"Segoe UI",sans-serif}
+  .voetnoot ul{margin:10px 0 0; padding-left:18px; font-size:13px; color:var(--ink-3); font-family:-apple-system,"Segoe UI",sans-serif; display:flex; flex-direction:column; gap:3px}
+  footer{color:var(--ink-3); font-size:12px; font-family:-apple-system,"Segoe UI",sans-serif}
 </style>
 
 <div class="wrap">
+
   <header>
-    <h1>Waar Branddock staat,<br>en wat nu telt</h1>
-    <p class="sub">Eén rustige pagina. Bovenaan wat er draait en wat de volgende stappen zijn; daaronder al het werk, geordend naar wat het voor het bedrijf doet. Klik op een taak om erover door te praten.</p>
-    <p class="stil" id="meta" style="margin-top:14px"></p>
+    <h1>Waar Branddock staat, en wat nu telt</h1>
+    <p class="zacht" id="draait"></p>
+    <p class="stil" id="meta" style="margin-top:16px"></p>
   </header>
 
   <section>
-    <div class="sechead"><h2>Wat er draait</h2></div>
-    <div class="dotrow" id="live"></div>
+    <h2>Nu</h2>
+    <p class="zacht" style="margin-bottom:10px">Vijf stappen, in deze volgorde. Klik voor de achtergrond.</p>
+    <div id="pad"></div>
   </section>
 
   <section>
-    <div class="sechead"><h2>De volgende stappen</h2>
-      <p>In deze volgorde. Eerst omzet en gebruik, dan leren, dan opruimen.</p></div>
-    <div class="stappen" id="pad"></div>
-  </section>
-
-  <section style="gap:44px" id="banen">
-    <div class="sechead"><h2>Al het werk</h2>
-      <p>Drie banen. Open een taak voor de achtergrond, de openstaande vragen en een knop om er in een gesprek dieper op in te gaan.</p></div>
+    <h2>Het werk</h2>
+    <p class="zacht" style="margin-bottom:10px">Alles ligt in drie banen. Open een baan als je wilt kijken; open een taak om erover door te praten.</p>
+    <div id="banen"></div>
   </section>
 
   <section>
-    <div class="sechead"><h2>De koers</h2></div>
-    <div class="koers">
-      <div class="fase-lijn" id="fasen"></div>
-      <p>Brandclaw groeit in zes stappen van een systeem dat <em>luistert</em> naar een machine die je marketing <em>draait</em> — en elke stap moet eerst vertrouwen verdienen voordat de volgende mag. De volledige visie staat in <a href="#" onclick="return false" title="docs/specs/brandclaw-vision.md">het visie-document</a>; eerstvolgende: de leerlus sluiten, zodat alles wat jij goedkeurt of afwijst vanaf nu meetelt.</p>
-    </div>
+    <h2>De koers</h2>
+    <p class="zacht">Brandclaw groeit in zes stappen — van <em>luisteraar</em>, via <em>duider</em>, <em>tester</em>, <em>bewijzer</em> en <em>operator</em>, naar een machine die je marketing draait. Elke stap verdient eerst vertrouwen voordat de volgende mag. De eerstvolgende beweging: de leerlus sluiten, zodat alles wat je goedkeurt of afwijst vanaf nu meetelt.</p>
   </section>
 
   <section>
-    <div class="sechead"><h2>Voor jou</h2>
-      <p>Beslissingen die alleen jij kunt nemen. Al het andere kan wachten of loopt al.</p></div>
-    <div class="vragenlijst" id="voorjou"></div>
-    <details class="netjes" id="strategisch-slot" style="margin-top:6px">
-      <summary>Strategische keuzes voor een rustig moment</summary>
+    <h2>Voor jou</h2>
+    <p class="zacht" style="margin-bottom:10px">De beslissingen die alleen jij kunt nemen. De rest loopt, of rust.</p>
+    <div class="voorjou" id="voorjou"></div>
+    <details class="voetnoot" style="margin-top:16px">
+      <summary>Strategische keuzes, voor een rustig moment</summary>
       <ul id="besl-strat"></ul>
     </details>
   </section>
 
-  <div class="slot">
-    <p class="adem" id="advies"></p>
-    <details class="netjes" id="syncslot" hidden>
+  <section style="gap:22px; display:flex; flex-direction:column">
+    <p class="slotzin" id="advies"></p>
+    <details class="voetnoot" id="syncslot" hidden>
       <summary id="synckop"></summary>
       <ul id="synclijst"></ul>
     </details>
     <footer id="foot"></footer>
-  </div>
+  </section>
+
 </div>
 
 <script>
@@ -145,36 +124,32 @@ const $ = (id) => document.getElementById(id);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+const ok = D.liveStand.filter((c) => c.tone === "ok").map((c) => c.k);
+const warn = D.liveStand.filter((c) => c.tone === "warn").map((c) => `${c.k.toLowerCase()} (${c.v.toLowerCase()})`);
+$("draait").innerHTML =
+  `${esc(ok.join(", ").replace(/, ([^,]*)$/, " en $1"))} draaien.` +
+  (warn.length ? ` Wat nog wacht: ${esc(warn.join(" en "))}.` : "");
+$("meta").textContent = `Bijgewerkt ${D.peildatum} · ${D.openCount} taken open · ${D.doneCount} afgerond`;
+
+D.kritiekPad.forEach((s, i) => {
+  const d = el("details", "stap");
+  const sum = el("summary");
+  sum.append(el("span", "nr", String(i + 1) + "."), el("span", "tt", esc(s.t)),
+    el("span", "bij", s.pillType === "erik" ? "bij jou" : ""));
+  d.append(sum, el("p", "uitleg", esc(s.d)));
+  $("pad").append(d);
+});
+
 const BAAN = {
-  A: { naam: "Nu afmaken", waarom: "Het werk richting launch en eerste omzet — gewoon doen." },
+  A: { naam: "Nu afmaken", waarom: "Het werk richting launch en eerste omzet." },
   B: { naam: "Maakt Branddock slimmer", waarom: "Het werk dat het platform laat leren en bewijzen — hier zit de blijvende waarde." },
   C: { naam: "Bewust in rust", waarom: "Wacht op bewijs, gebruik of een besluit. Niets hier vraagt nu aandacht." },
 };
 const STATUS = {
-  open: ["staat open", "groen"], "in-progress": ["loopt", "groen"], done: ["afgerond", "grijs"],
-  blocked: ["geparkeerd", "grijs"], onbekend: ["status onbekend", "grijs"], tracker: ["overzicht", "grijs"],
-  "deels done": ["deels afgerond", "groen"], "aan te maken": ["nog aan te maken", "amber"], "wacht op go": ["wacht op jou", "amber"],
+  open: "staat open", "in-progress": "loopt", done: "afgerond", blocked: "rust",
+  onbekend: "", tracker: "overzicht", "deels done": "deels afgerond",
+  "aan te maken": "nog aan te maken", "wacht op go": "wacht op jou",
 };
-function statusWoord(it) {
-  let [w, t] = STATUS[it.status] || [it.status, "grijs"];
-  if (it.pillType === "erik") t = "amber";
-  if (it.pillType === "gate" || it.pillType === "block") t = "grijs";
-  return `<span class="woord w-${t}">${esc(w)}</span>`;
-}
-
-$("meta").textContent = `Bijgewerkt ${D.peildatum} · ${D.openCount} taken open · ${D.doneCount} afgerond`;
-
-for (const c of D.liveStand) {
-  $("live").append(el("div", "dot " + (c.tone === "warn" ? "warn" : "ok"), `<i></i><span><b>${esc(c.k)}</b> — ${esc(c.v)}</span>`));
-}
-
-D.kritiekPad.forEach((s, i) => {
-  const w = s.pillType === "erik" ? `<span class="woord w-amber">bij jou</span>` : `<span class="woord w-groen">kan gebouwd worden</span>`;
-  const stap = el("div", "stap");
-  stap.append(el("span", "n", String(i + 1)),
-    el("span", "", `<span class="t">${esc(s.t)}</span>${w}<div class="d">${esc(s.d)}</div>`));
-  $("pad").append(stap);
-});
 
 function startPrompt(it) {
   const bron = it.virtueel ? (it.bron || "docs/specs/brandclaw-vision.md") : it.bron;
@@ -184,45 +159,40 @@ function startPrompt(it) {
 for (const k of ["A", "B", "C"]) {
   const items = D.items.filter((i) => i.klasse === k);
   if (!items.length) continue;
-  const baan = el("div", "baan");
-  const head = el("div", "bhead");
-  head.append(el("h2", "", esc(BAAN[k].naam) + ` <span class="stil" style="font-size:15px">· ${items.length}</span>`),
-    el("div", "waarom", esc(BAAN[k].waarom)));
-  baan.append(head);
+  const baan = el("details", "baan");
+  const sum = el("summary");
+  sum.append(el("span", "krul", "›"), el("span", "naam", esc(BAAN[k].naam)),
+    el("span", "tel", items.length + (items.length === 1 ? " taak" : " taken")));
+  baan.append(sum, el("p", "waarom", esc(BAAN[k].waarom)));
+  const lijst = el("div", "items");
   for (const it of items) {
     const d = el("details", "item");
-    const sum = el("summary");
-    sum.append(el("span", "tt", `<div class="naam">${esc(it.titel)}</div><div class="oms">${esc(it.oms)}</div>`),
-      el("span", "", statusWoord(it)));
+    const isum = el("summary");
+    const bijJou = it.pillType === "erik" || it.vragen.length > 0;
+    isum.append(el("span", "tt", esc(it.titel)),
+      el("span", "st" + (bijJou ? " bij" : ""), esc(bijJou ? "wacht op jou" : (STATUS[it.status] ?? it.status))));
     const body = el("div", "itembody");
-    if (it.gate) body.append(el("div", "zacht", `<b>Waarom dit rust:</b> ${esc(it.gate)}`));
-    for (const v of it.vragen) body.append(el("div", "zacht", `<b>Vraag aan jou:</b> ${esc(v)}`));
+    body.append(el("p", "", esc(it.oms)));
+    if (it.gate) body.append(el("div", "kader", `<b>Waarom dit rust:</b> ${esc(it.gate)}`));
+    for (const v of it.vragen) body.append(el("div", "kader", `<b>Vraag aan jou:</b> ${esc(v)}`));
     const btn = el("button", "copy", "Praat hierover door met Claude");
     btn.addEventListener("click", async () => {
       try { await navigator.clipboard.writeText(startPrompt(it)); btn.textContent = "Gekopieerd — plak dit in een nieuw gesprek"; }
-      catch { btn.textContent = "Kopiëren lukte niet — tekst staat hieronder"; body.append(el("div", "copyhint", esc(startPrompt(it)))); }
+      catch { btn.textContent = "Kopiëren lukte niet — tekst staat hieronder"; body.append(el("p", "techniek", esc(startPrompt(it)))); }
       setTimeout(() => (btn.textContent = "Praat hierover door met Claude"), 4500);
     });
-    body.append(btn, el("span", "copyhint", "Kopieert een startbericht met alle context van dit item, voor een nieuw Claude-gesprek."));
-    const tech = el("div", "techniek");
-    tech.append(el("span", "", esc(it.id)));
-    if (it.effort) tech.append(el("span", "", "inschatting " + esc(it.effort)));
-    tech.append(el("span", "", esc(it.virtueel ? "voorstel — nog geen taakbestand" : it.bron)));
-    body.append(tech);
-    d.append(sum, body);
-    baan.append(d);
+    body.append(btn);
+    body.append(el("p", "techniek", esc(it.id) + (it.effort ? ` · ${it.effort}` : "") + " · " + esc(it.virtueel ? "voorstel" : it.bron)));
+    d.append(isum, body);
+    lijst.append(d);
   }
+  baan.append(lijst);
   $("banen").append(baan);
 }
 
-["Luisteraar", "Duider", "Tester", "Bewijzer", "Operator", "Machine"].forEach((f, i, a) => {
-  $("fasen").append(el("span", "f" + (i === 0 ? " nu" : ""), esc(f)));
-  if (i < a.length - 1) $("fasen").append(el("span", "pijl", "→"));
-});
-
 for (const b of D.besluiten.direct) {
   const [kop, ...rest] = b.split(" — ");
-  $("voorjou").append(el("div", "vraagkaart", `<b>${esc(kop)}</b>${rest.length ? " — " + esc(rest.join(" — ")) : ""}`));
+  $("voorjou").append(el("div", "punt", `${esc(kop)}${rest.length ? ` <span class="rest">— ${esc(rest.join(" — "))}</span>` : ""}`));
 }
 for (const b of D.besluiten.strategisch) $("besl-strat").append(el("li", "", esc(b)));
 
@@ -233,6 +203,5 @@ if (D.docSync.length) {
   $("synckop").textContent = `Opruimpunten voor een volgende sessie (${D.docSync.length})`;
   for (const s of D.docSync) $("synclijst").append(el("li", "", esc(s.replace(/`/g, ""))));
 }
-
-$("foot").textContent = `Automatisch samengesteld op ${D.gegenereerd} uit de taakbestanden. Bijwerken: zie docs/dashboard/README.md.`;
+$("foot").textContent = `Automatisch samengesteld op ${D.gegenereerd} uit de taakbestanden. Bijwerken: docs/dashboard/README.md.`;
 </script>
