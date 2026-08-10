@@ -1,0 +1,251 @@
+<title>Branddock — Roadmap & Taken</title>
+<style>
+  :root{
+    --ground:#F8FBFA; --surface:#FFFFFF; --ink:#152220; --ink-2:#4A5D58; --ink-3:#7C8E89;
+    --line:#DCE7E3; --accent:#0E9C84; --accent-soft:#E2F4EF; --accent-ink:#0B6D5D;
+    --warn:#A9720D; --warn-soft:#F7EEDA; --crit:#B4483E; --crit-soft:#F8E7E4;
+    --frozen:#5E7186; --frozen-soft:#E9EEF3; --done:#3E7D53; --done-soft:#E4F0E7;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#101715; --surface:#18211F; --ink:#E7F0ED; --ink-2:#A8BAB4; --ink-3:#71837D;
+      --line:#2A3733; --accent:#2BD3B4; --accent-soft:#173B34; --accent-ink:#7FE7D2;
+      --warn:#E0AE4C; --warn-soft:#3A2F16; --crit:#E58579; --crit-soft:#41211D;
+      --frozen:#93A6BA; --frozen-soft:#232C35; --done:#7FC393; --done-soft:#1E3326;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#101715; --surface:#18211F; --ink:#E7F0ED; --ink-2:#A8BAB4; --ink-3:#71837D;
+    --line:#2A3733; --accent:#2BD3B4; --accent-soft:#173B34; --accent-ink:#7FE7D2;
+    --warn:#E0AE4C; --warn-soft:#3A2F16; --crit:#E58579; --crit-soft:#41211D;
+    --frozen:#93A6BA; --frozen-soft:#232C35; --done:#7FC393; --done-soft:#1E3326;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--ink);
+    font:16px/1.55 -apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1060px; margin:0 auto; padding:48px 28px 80px; display:flex; flex-direction:column; gap:44px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .eyebrow{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:600}
+  h1{font-size:clamp(26px,4vw,34px); line-height:1.15; margin:6px 0 4px; letter-spacing:-.015em; text-wrap:balance}
+  h2{font-size:20px; margin:0; letter-spacing:-.01em}
+  .sub{color:var(--ink-2); max-width:68ch; margin:0}
+  header .meta{display:flex; gap:18px; flex-wrap:wrap; margin-top:14px; color:var(--ink-3); font-size:13px}
+  header .meta b{color:var(--ink); font-weight:600}
+  section{display:flex; flex-direction:column; gap:14px}
+  .sechead{display:flex; flex-direction:column; gap:4px}
+  .sechead p{margin:0; color:var(--ink-2); font-size:14.5px; max-width:76ch}
+  .live{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px}
+  .live .cell{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:12px 14px}
+  .live .k{font-size:12px; color:var(--ink-3); font-family:ui-monospace,Menlo,monospace; letter-spacing:.06em; text-transform:uppercase}
+  .live .v{font-size:15px; font-weight:650; margin-top:3px}
+  .live .v.ok{color:var(--done)} .live .v.warn{color:var(--warn)}
+  .path{display:flex; flex-direction:column; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface)}
+  .step{display:grid; grid-template-columns:52px 1fr auto; gap:14px; align-items:baseline; padding:14px 18px; border-top:1px solid var(--line)}
+  .step:first-child{border-top:none}
+  .step .n{font-family:ui-monospace,Menlo,monospace; font-weight:700; color:var(--accent); font-size:15px}
+  .step .t{font-weight:650} .step .d{color:var(--ink-2); font-size:14px; margin-top:2px}
+  .pill{display:inline-block; font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.08em; padding:3px 9px; border-radius:999px; white-space:nowrap; font-weight:600}
+  .p-erik{background:var(--warn-soft); color:var(--warn)}
+  .p-open{background:var(--accent-soft); color:var(--accent-ink)}
+  .p-gate{background:var(--frozen-soft); color:var(--frozen)}
+  .p-block{background:var(--crit-soft); color:var(--crit)}
+  .p-deels{background:var(--done-soft); color:var(--done)}
+  .klas{border:1px solid var(--line); border-radius:10px; background:var(--surface); overflow:hidden}
+  .klas>.head{display:flex; gap:12px; align-items:baseline; padding:14px 18px; border-bottom:1px solid var(--line); flex-wrap:wrap}
+  .klas .tag{font-family:ui-monospace,Menlo,monospace; font-weight:700; font-size:13px; padding:2px 8px; border-radius:6px}
+  .tag-a{background:var(--accent-soft); color:var(--accent-ink)}
+  .tag-b{background:var(--done-soft); color:var(--done)}
+  .tag-c{background:var(--frozen-soft); color:var(--frozen)}
+  .klas .head h2{font-size:16px} .klas .head .why{color:var(--ink-3); font-size:13px}
+  details.item{border-bottom:1px solid var(--line)}
+  details.item:last-child{border-bottom:none}
+  details.item>summary{display:grid; grid-template-columns:minmax(180px,270px) 1fr auto; gap:14px; padding:10px 18px; cursor:pointer; list-style:none; align-items:baseline}
+  details.item>summary::-webkit-details-marker{display:none}
+  details.item>summary:hover{background:color-mix(in srgb, var(--accent-soft) 40%, transparent)}
+  details.item>summary .id{font-family:ui-monospace,Menlo,monospace; font-size:13px; color:var(--ink)}
+  details.item>summary .oms{color:var(--ink-2); font-size:14px}
+  details.item[open]>summary{background:color-mix(in srgb, var(--accent-soft) 40%, transparent)}
+  .itembody{padding:6px 18px 16px; display:flex; flex-direction:column; gap:10px; font-size:14px}
+  .itembody .rij{display:flex; gap:14px; flex-wrap:wrap; color:var(--ink-3); font-size:13px}
+  .itembody .rij b{color:var(--ink-2); font-weight:600}
+  .itembody .vraag{background:var(--warn-soft); border-radius:8px; padding:9px 12px; color:var(--ink-2)}
+  .itembody .vraag b{color:var(--warn)}
+  .itembody .gatebox{background:var(--frozen-soft); border-radius:8px; padding:9px 12px; color:var(--ink-2)}
+  .itembody .gatebox b{color:var(--frozen)}
+  button.copy{align-self:flex-start; font:600 13px/1 -apple-system,"Segoe UI",sans-serif; padding:8px 14px; border-radius:8px; border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent-ink); cursor:pointer}
+  button.copy:hover{background:var(--accent); color:var(--surface)}
+  button.copy:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .copyhint{font-size:12.5px; color:var(--ink-3)}
+  .stadia{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px}
+  .stadium{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:12px 13px}
+  .stadium .nr{font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--accent); font-weight:700; letter-spacing:.1em}
+  .stadium .nm{font-weight:650; font-size:14.5px; margin:2px 0}
+  .stadium .pr{font-size:12.5px; color:var(--ink-3); font-style:italic}
+  .twocol{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  @media (max-width:760px){.twocol{grid-template-columns:1fr} details.item>summary{grid-template-columns:1fr auto} details.item>summary .oms{grid-column:1 / -1}}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px 18px}
+  .card h3{margin:0 0 8px; font-size:15px}
+  .card ol,.card ul{margin:0; padding-left:20px; color:var(--ink-2); font-size:14px; display:flex; flex-direction:column; gap:5px}
+  .card li b{color:var(--ink); font-weight:600}
+  .card .note{margin:10px 0 0; font-size:12.5px; color:var(--ink-3)}
+  .advies{background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius:10px; padding:18px 20px}
+  .advies p{margin:0; font-size:15px} .advies b{color:var(--accent-ink)}
+  .syncbox{background:var(--crit-soft); border:1px solid color-mix(in srgb, var(--crit) 30%, var(--line)); border-radius:10px; padding:14px 18px}
+  .syncbox h3{margin:0 0 6px; font-size:14px; color:var(--crit)}
+  .syncbox ul{margin:0; padding-left:20px; font-size:13.5px; color:var(--ink-2); display:flex; flex-direction:column; gap:3px}
+  footer{color:var(--ink-3); font-size:12.5px; border-top:1px solid var(--line); padding-top:16px}
+  a{color:var(--accent-ink)}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Branddock · peildatum <span id="peildatum"></span></div>
+    <h1>Roadmap &amp; taken — het leidende dashboard</h1>
+    <p class="sub">Gegenereerd uit de task-files + stuurdata (<span class="mono">scripts/dev/dashboard-build.mjs</span>). Klik een taak open voor detail, open vragen en een start-prompt om erover door te praten.</p>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <div id="syncslot"></div>
+
+  <section>
+    <div class="sechead"><div class="eyebrow">A · Waar we staan</div><h2>Live-stand</h2></div>
+    <div class="live" id="live"></div>
+  </section>
+
+  <section>
+    <div class="sechead"><div class="eyebrow">B · Kritiek pad</div><h2>De stappen die er nu toe doen</h2>
+      <p>Volgorde is betekenisvol: eerst omzet en gebruik, dan de lus, dan opruimen.</p></div>
+    <div class="path" id="pad"></div>
+  </section>
+
+  <section>
+    <div class="sechead"><div class="eyebrow">C · Alle open taken</div><h2 id="takenkop"></h2>
+      <p><b>A</b> is nu cruciaal (ook al is het in de toekomstvisie vergankelijk), <b>B</b> versterkt een van de drie moats (merk-graph · bewijs · leerlus), <b>C</b> is bevroren of gegate totdat het adoptie-getal beweegt. <span class="copyhint">Klik een rij voor detail + doorpraat-prompt.</span></p></div>
+    <div id="klassen" style="display:flex; flex-direction:column; gap:14px"></div>
+  </section>
+
+  <section>
+    <div class="sechead"><div class="eyebrow">D · De Brandclaw-lijn</div><h2>Van visie naar bouw</h2>
+      <p>Visie v3 (<span class="mono">docs/specs/brandclaw-vision.md</span>): het marketing-organisme met zes groeistadia, drie moats en per onderdeel eerst een functioneel ontwerp.</p></div>
+    <div class="stadia">
+      <div class="stadium"><div class="nr">STADIUM 1</div><div class="nm">Luisteraar</div><div class="pr">"het ziet wat ik niet zie"</div></div>
+      <div class="stadium"><div class="nr">STADIUM 2</div><div class="nm">Duider</div><div class="pr">"het begrijpt waaróm"</div></div>
+      <div class="stadium"><div class="nr">STADIUM 3</div><div class="nm">Tester</div><div class="pr">"het bewijst wat werkt"</div></div>
+      <div class="stadium"><div class="nr">STADIUM 4</div><div class="nm">Bewijzer</div><div class="pr">"het verdient vertrouwen"</div></div>
+      <div class="stadium"><div class="nr">STADIUM 5</div><div class="nm">Operator</div><div class="pr">"het draait mijn marketing"</div></div>
+      <div class="stadium"><div class="nr">STADIUM 6</div><div class="nm">Machine</div><div class="pr">"lean, mean marketing machine"</div></div>
+    </div>
+    <div class="twocol">
+      <div class="card"><h3>Uitvoerings-stand (BC-trap)</h3><ul>
+        <li><b>BC-1</b> weekloop met goedkeuring (Bo) — <b>done</b> 18 jul</li>
+        <li><b>BC-1.5</b> leerlus dicht — <b>voorstel, kan nu</b> (kritiek-pad stap 4)</li>
+        <li><b>BC-2</b> goedgekeurd = gepubliceerd — wacht op P3.5-kanaal + credentials</li>
+        <li><b>BC-3</b> bounded autonomy — go-besluit Erik (4 criteria)</li>
+        <li><b>BC-4/5</b> zelfkalibratie · segment-leren — later, eigen gates</li></ul></div>
+      <div class="card"><h3>Ontwerp-agenda (visie §10 — te schrijven, wacht op go)</h3><ol>
+        <li><b>Signaalweb-spec</b> — voorwaarde stadium 1–2</li>
+        <li><b>Interpretatie-methodologie</b> — voorwaarde stadium 1–2</li>
+        <li>Strategie-synthese-kader</li><li>Missie- &amp; genesis-ontwerp</li>
+        <li>Actieradius- &amp; mandaat-ontwerp</li><li>Geheugen- &amp; leerlus-ontwerp</li>
+        <li>Cockpit- &amp; merk-laag-ontwerp</li></ol>
+        <p class="note">Elk document beantwoordt vier vaste vragen: gebruikerskant · bestaand · ontbrekend · te ontwerpen.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead"><div class="eyebrow">E · Besluiten bij Erik</div><h2>Wat alleen jij kunt beslissen</h2></div>
+    <div class="twocol">
+      <div class="card"><h3>Direct spelend</h3><ul id="besl-direct"></ul></div>
+      <div class="card"><h3>Strategisch (uit visie v3, §11)</h3><ul id="besl-strat"></ul></div>
+    </div>
+  </section>
+
+  <section><div class="advies"><p><b>Het plan in één regel:</b> <span id="advies"></span></p></div></section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const D = __DASHBOARD_DATA__;
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+$("peildatum").textContent = D.peildatum;
+$("meta").innerHTML =
+  `<span>Fase: <b>${esc(D.fase)}</b></span><span>Afgerond: <b>${D.doneCount} taken</b></span>` +
+  `<span>Open: <b>${D.openCount} taken</b> + voorstellen</span>`;
+$("takenkop").textContent = `${D.items.length} items, geordend naar wat ze voor het bedrijf doen`;
+
+for (const c of D.liveStand) {
+  const cell = el("div", "cell");
+  cell.append(el("div", "k", esc(c.k)), el("div", "v " + (c.tone || ""), esc(c.v)));
+  $("live").append(cell);
+}
+
+D.kritiekPad.forEach((s, i) => {
+  const step = el("div", "step");
+  step.append(el("span", "n", String(i + 1)),
+    el("span", "", `<span class="t">${esc(s.t)}</span><div class="d">${esc(s.d)}</div>`),
+    el("span", "pill p-" + s.pillType, esc(s.pill)));
+  $("pad").append(step);
+});
+
+function startPrompt(it) {
+  const bron = it.virtueel ? (it.bron || "docs/specs/brandclaw-vision.md") : it.bron;
+  return `Lees CLAUDE.md, gotchas.md en START_HERE.md. Ik wil doorpraten over "${it.titel}" (${bron}${it.virtueel ? " — nog geen task-file" : ""}). Geef eerst een korte samenvatting van dit item, de actuele status en de open vragen${it.vragen.length ? ` (o.a.: ${it.vragen.join(" | ")})` : ""}. Stel me daarna 3 gerichte verdiepingsvragen zodat we samen tot een besluit of aanpak komen. Werk het dashboard bij als we iets besluiten (docs/dashboard/README.md).`;
+}
+
+for (const k of ["A", "B", "C"]) {
+  const items = D.items.filter((i) => i.klasse === k);
+  const box = el("div", "klas");
+  const head = el("div", "head");
+  head.append(el("span", "tag tag-" + k.toLowerCase(), "KLASSE " + k),
+    el("h2", "", esc(D.klassen[k].naam)), el("span", "why", esc(D.klassen[k].why)));
+  box.append(head);
+  for (const it of items) {
+    const d = el("details", "item");
+    const sum = el("summary");
+    sum.append(el("span", "id", esc(it.id)), el("span", "oms", esc(it.oms)),
+      el("span", "pill p-" + it.pillType, esc(it.status)));
+    const body = el("div", "itembody");
+    const rij = el("div", "rij");
+    rij.append(el("span", "", `<b>Titel:</b> ${esc(it.titel)}`));
+    if (it.effort) rij.append(el("span", "", `<b>Effort:</b> ${esc(it.effort)}`));
+    if (it.fase) rij.append(el("span", "", `<b>Fase:</b> ${esc(it.fase)}`));
+    rij.append(el("span", "", `<b>Bron:</b> <span class="mono">${esc(it.virtueel ? (it.bron || "—") + " (voorstel)" : it.bron)}</span>`));
+    body.append(rij);
+    if (it.gate) body.append(el("div", "gatebox", `<b>Gate:</b> ${esc(it.gate)}`));
+    for (const v of it.vragen) body.append(el("div", "vraag", `<b>Open vraag:</b> ${esc(v)}`));
+    const btn = el("button", "copy", "Kopieer start-prompt voor doorpraten");
+    btn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(startPrompt(it)); btn.textContent = "Gekopieerd — plak in een nieuwe Claude-sessie"; }
+      catch { btn.textContent = "Kopiëren geblokkeerd — selecteer hieronder"; body.append(el("div", "copyhint mono", esc(startPrompt(it)))); }
+      setTimeout(() => (btn.textContent = "Kopieer start-prompt voor doorpraten"), 4000);
+    });
+    body.append(btn, el("span", "copyhint", "Opent het gesprek met alle context van dit item in een nieuwe Claude Code-sessie."));
+    d.append(sum, body);
+    box.append(d);
+  }
+  $("klassen").append(box);
+}
+
+for (const b of D.besluiten.direct) $("besl-direct").append(el("li", "", esc(b)));
+for (const b of D.besluiten.strategisch) $("besl-strat").append(el("li", "", esc(b)));
+$("advies").textContent = D.advies;
+
+if (D.docSync.length) {
+  const box = el("div", "syncbox");
+  box.append(el("h3", "", `Doc-sync-afwijkingen (${D.docSync.length}) — automatisch gedetecteerd`));
+  const ul = el("ul");
+  for (const s of D.docSync) ul.append(el("li", "", esc(s).replace(/`([^`]+)`/g, '<span class="mono">$1</span>')));
+  box.append(ul);
+  $("syncslot").append(box);
+}
+
+$("foot").innerHTML =
+  `Gegenereerd ${esc(D.gegenereerd)} door <span class="mono">scripts/dev/dashboard-build.mjs</span> uit ` +
+  `<span class="mono">tasks/*.md</span> (feiten) + <span class="mono">docs/dashboard/stuurdata.json</span> (redactie). ` +
+  `Ritueel &amp; spelregels: <span class="mono">docs/dashboard/README.md</span>.`;
+</script>
