@@ -5,6 +5,15 @@
 
 ---
 
+## ⭐ Dashboard is leidend (besluit Erik 2026-08-10)
+
+**Voor "wat doen we nu en in welke volgorde" is het dashboard leidend**, niet de secties hieronder:
+`docs/dashboard/branddock-dashboard.html` (bron) · gepubliceerd op https://claude.ai/code/artifact/10805dd2-ff12-4fe0-8f07-5b7f24e9e576
+
+Ritueel + spelregels: `docs/dashboard/README.md`. Kern: elke sessie die iets afrondt of besluit werkt het dashboard bij en herpubliceert naar **dezelfde** artifact-URL; klasse-verschuivingen (A/B/C) alleen met reden. De stand hieronder is detail/historie.
+
+---
+
 ## Huidige fase
 
 **Pre-launch → launch-fase — peildatum 2026-07-12.** **`vercel-deployment` ✅ LIVE + `stripe-billing-live` ✅ LIVE** — app én billing draaien op productie (`branddock-7y9n.vercel.app`, main=production, Vercel Pro+Fluid); **beide harde launch-blockers zijn weg**. Stripe live-billing is volledig go-live (checkout→PRO / cancel→FREE getest, webhook 9 events enabled, Customer Portal, Vercel-env `BILLING_ENABLED=true`). **`pilot-onboarding-better-brands` is ✅ afgesloten** (BB live op prod, PR #95) en **credits draaien LIVE in pilotmodus** (sinds 2026-07-10, top-up dicht). Het kritieke pad richting betalende klanten is nu **het credit-model afronden tot betaling-aan** (Fase 4-rest + Fase 5 + launch-checklist). In juni landden twee grote feature-clusters op `main`: de **web-page-builder (Puck) + GEO/SEO long-form** (Fase 1-3 + alle followups) en de **Knowledge Library / Deep Research** + knowledge-context-laag. De GEO/SEO-arc, de bijbehorende LP-render-bugfixes én het brandstyle-kalibratie-paneel zijn nu **volledig afgerond en gemerged**.

@@ -188,7 +188,8 @@ TOKEN_ENCRYPTION_KEY=<voor OAuth tokens — back up zorgvuldig>
 | Vraag | Bestand |
 |---|---|
 | Wat moet ik vandaag doen? | `START_HERE.md` |
-| Open werk + prioritering | `roadmap.md` |
+| **Wat is nu leidend (prioritering + kritiek pad)?** | `docs/dashboard/` — dashboard is leidend sinds 2026-08-10, elke sessie bijwerken + herpubliceren (zie `docs/dashboard/README.md`) |
+| Open werk + prioritering (detail/historie) | `roadmap.md` |
 | Actieve taak details | `tasks/<id>.md` |
 | Wat is gebouwd? | `docs/changelog.md` |
 | Architecturale beslissingen | `docs/adr/` |

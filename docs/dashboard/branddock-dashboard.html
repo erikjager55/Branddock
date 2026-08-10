@@ -1,0 +1,276 @@
+<title>Branddock — Roadmap & Taken</title>
+<style>
+  :root{
+    --ground:#F8FBFA; --surface:#FFFFFF; --ink:#152220; --ink-2:#4A5D58; --ink-3:#7C8E89;
+    --line:#DCE7E3; --accent:#0E9C84; --accent-soft:#E2F4EF; --accent-ink:#0B6D5D;
+    --warn:#A9720D; --warn-soft:#F7EEDA; --crit:#B4483E; --crit-soft:#F8E7E4;
+    --frozen:#5E7186; --frozen-soft:#E9EEF3; --done:#3E7D53; --done-soft:#E4F0E7;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#101715; --surface:#18211F; --ink:#E7F0ED; --ink-2:#A8BAB4; --ink-3:#71837D;
+      --line:#2A3733; --accent:#2BD3B4; --accent-soft:#173B34; --accent-ink:#7FE7D2;
+      --warn:#E0AE4C; --warn-soft:#3A2F16; --crit:#E58579; --crit-soft:#41211D;
+      --frozen:#93A6BA; --frozen-soft:#232C35; --done:#7FC393; --done-soft:#1E3326;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#101715; --surface:#18211F; --ink:#E7F0ED; --ink-2:#A8BAB4; --ink-3:#71837D;
+    --line:#2A3733; --accent:#2BD3B4; --accent-soft:#173B34; --accent-ink:#7FE7D2;
+    --warn:#E0AE4C; --warn-soft:#3A2F16; --crit:#E58579; --crit-soft:#41211D;
+    --frozen:#93A6BA; --frozen-soft:#232C35; --done:#7FC393; --done-soft:#1E3326;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font:16px/1.55 -apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:48px 28px 80px; display:flex; flex-direction:column; gap:44px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .eyebrow{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:600}
+  h1{font-size:clamp(26px,4vw,34px); line-height:1.15; margin:6px 0 4px; letter-spacing:-.015em; text-wrap:balance}
+  h2{font-size:20px; margin:0; letter-spacing:-.01em}
+  .sub{color:var(--ink-2); max-width:68ch; margin:0}
+  header .meta{display:flex; gap:18px; flex-wrap:wrap; margin-top:14px; color:var(--ink-3); font-size:13px}
+  header .meta b{color:var(--ink); font-weight:600}
+  section{display:flex; flex-direction:column; gap:14px}
+  .sechead{display:flex; flex-direction:column; gap:4px}
+  .sechead p{margin:0; color:var(--ink-2); font-size:14.5px; max-width:76ch}
+
+  /* live-stand strip */
+  .live{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px}
+  .live .cell{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:12px 14px}
+  .live .k{font-size:12px; color:var(--ink-3); font-family:ui-monospace,Menlo,monospace; letter-spacing:.06em; text-transform:uppercase}
+  .live .v{font-size:15px; font-weight:650; margin-top:3px}
+  .live .v.ok{color:var(--done)}
+  .live .v.off{color:var(--warn)}
+
+  /* kritiek pad */
+  .path{display:flex; flex-direction:column; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface)}
+  .step{display:grid; grid-template-columns:52px 1fr auto; gap:14px; align-items:baseline; padding:14px 18px; border-top:1px solid var(--line)}
+  .step:first-child{border-top:none}
+  .step .n{font-family:ui-monospace,Menlo,monospace; font-weight:700; color:var(--accent); font-size:15px}
+  .step .t{font-weight:650}
+  .step .d{color:var(--ink-2); font-size:14px; margin-top:2px}
+  .pill{display:inline-block; font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.08em; padding:3px 9px; border-radius:999px; white-space:nowrap; font-weight:600}
+  .p-erik{background:var(--warn-soft); color:var(--warn)}
+  .p-open{background:var(--accent-soft); color:var(--accent-ink)}
+  .p-gate{background:var(--frozen-soft); color:var(--frozen)}
+  .p-block{background:var(--crit-soft); color:var(--crit)}
+  .p-deels{background:var(--done-soft); color:var(--done)}
+
+  /* klasse-tabellen */
+  .klas{border:1px solid var(--line); border-radius:10px; background:var(--surface); overflow:hidden}
+  .klas>.head{display:flex; gap:12px; align-items:baseline; padding:14px 18px; border-bottom:1px solid var(--line)}
+  .klas .tag{font-family:ui-monospace,Menlo,monospace; font-weight:700; font-size:13px; padding:2px 8px; border-radius:6px}
+  .tag-a{background:var(--accent-soft); color:var(--accent-ink)}
+  .tag-b{background:var(--done-soft); color:var(--done)}
+  .tag-c{background:var(--frozen-soft); color:var(--frozen)}
+  .klas .head .why{color:var(--ink-3); font-size:13px}
+  .tblwrap{overflow-x:auto}
+  table{width:100%; border-collapse:collapse; font-size:14px}
+  th{font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); text-align:left; font-weight:600; padding:10px 18px 8px; border-bottom:1px solid var(--line)}
+  td{padding:9px 18px; border-bottom:1px solid var(--line); vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td.id{font-family:ui-monospace,Menlo,monospace; font-size:13px; white-space:nowrap; color:var(--ink)}
+  td.oms{color:var(--ink-2); min-width:260px}
+  td.st{white-space:nowrap}
+
+  /* brandclaw-lijn */
+  .stadia{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px}
+  .stadium{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:12px 13px}
+  .stadium .nr{font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--accent); font-weight:700; letter-spacing:.1em}
+  .stadium .nm{font-weight:650; font-size:14.5px; margin:2px 0}
+  .stadium .pr{font-size:12.5px; color:var(--ink-3); font-style:italic}
+  .twocol{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  @media (max-width:760px){.twocol{grid-template-columns:1fr}}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px 18px}
+  .card h3{margin:0 0 8px; font-size:15px}
+  .card ol,.card ul{margin:0; padding-left:20px; color:var(--ink-2); font-size:14px; display:flex; flex-direction:column; gap:5px}
+  .card li b{color:var(--ink); font-weight:600}
+  .card .note{margin:10px 0 0; font-size:12.5px; color:var(--ink-3)}
+
+  /* advies */
+  .advies{background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius:10px; padding:18px 20px}
+  .advies p{margin:0; font-size:15px; color:var(--ink)}
+  .advies b{color:var(--accent-ink)}
+  footer{color:var(--ink-3); font-size:12.5px; border-top:1px solid var(--line); padding-top:16px}
+  a{color:var(--accent-ink)}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Branddock · peildatum 10 aug 2026</div>
+  <h1>Roadmap &amp; taken — het totale overzicht</h1>
+  <p class="sub">Eén pagina met de werkelijke stand: wat live is, wat het kritieke pad is, alle open taken geordend naar wat ze voor het bedrijf doen, en de Brandclaw-lijn daarboven.</p>
+  <div class="meta">
+    <span>Fase: <b>launch</b> (app, billing &amp; pilot draaien live)</span>
+    <span>Afgerond: <b>164 taken</b></span>
+    <span>Open: <b>38 taken</b> + 24 idea-drafts</span>
+  </div>
+</header>
+
+<section>
+  <div class="sechead">
+    <div class="eyebrow">A · Waar we staan</div>
+    <h2>Live-stand</h2>
+  </div>
+  <div class="live">
+    <div class="cell"><div class="k">App (Vercel)</div><div class="v ok">Live</div></div>
+    <div class="cell"><div class="k">Stripe billing</div><div class="v ok">Live</div></div>
+    <div class="cell"><div class="k">Credits</div><div class="v off">Pilotmodus — top-up dicht</div></div>
+    <div class="cell"><div class="k">Pilot Better Brands</div><div class="v ok">Live</div></div>
+    <div class="cell"><div class="k">Agents</div><div class="v ok">10 live (+ Bo's weekloop)</div></div>
+    <div class="cell"><div class="k">Prod-workspaces</div><div class="v ok">8 gemigreerd (#453)</div></div>
+    <div class="cell"><div class="k">i18n</div><div class="v ok">en ↔ nl</div></div>
+    <div class="cell"><div class="k">Omzet</div><div class="v off">€0 — wacht op TOPUP</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sechead">
+    <div class="eyebrow">B · Kritiek pad</div>
+    <h2>De vijf stappen die er nu toe doen</h2>
+    <p>Volgorde is betekenisvol: 1 ontgrendelt omzet, 2–3 leveren het gebruik en de leerdata waar alles op wacht, 4 zorgt dat die data niet langer verdampt, 5 bewaakt de focus.</p>
+  </div>
+  <div class="path">
+    <div class="step"><span class="n">1</span><span><span class="t">TOPUP aanzetten + één echte betaal-smoke</span><div class="d">Technisch klaar; puur jouw schakelmoment. Het enige item met directe omzet-impact.</div></span><span class="pill p-erik">wacht op Erik</span></div>
+    <div class="step"><span class="n">2</span><span><span class="t">Pilot-adoptie tot een getal maken</span><div class="d">Doel: ≥3 workspaces met wekelijks ≥3 geaccepteerde agent-runs. Wekelijkse cadans, reject-redenen noteren. De 8 gemigreerde workspaces zijn het cohort.</div></span><span class="pill p-erik">menswerk + cadans</span></div>
+    <div class="step"><span class="n">3</span><span><span class="t">Onboarding-test met 3 externe gebruikers</span><div class="d">Laatste validatie vóór werven; testers moeten nog geworven worden.</div></span><span class="pill p-erik">wacht op Erik</span></div>
+    <div class="step"><span class="n">4</span><span><span class="t">Leerlus dichtmaken (BC-1.5)</span><div class="d">Dismiss-redenen + events, systeem-geschreven outcome-memories, memory-injectie, generieke caps. Klein bouwwerk, geen autonomie-risico — vanaf dan telt elk pilot-gebruik op.</div></span><span class="pill p-open">bouw — voorstel</span></div>
+    <div class="step"><span class="n">5</span><span><span class="t">Roadmap saneren + bewijs-poort repareren</span><div class="d">Roadmap is een logboek geworden; NOW herschrijven naar de echte fase. Plus <span class="mono">golden-set-gate-decouple</span>: een bewijs-poort die 4/5 nachten rood staat wordt genegeerd.</div></span><span class="pill p-open">½ dag</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="sechead">
+    <div class="eyebrow">C · Alle open taken</div>
+    <h2>38 taken, geordend naar wat ze voor het bedrijf doen</h2>
+    <p>Drie klassen: <b>A</b> is nu cruciaal (ook al is het in de toekomstvisie vergankelijk), <b>B</b> versterkt een van de drie moats (merk-graph · bewijs · leerlus), <b>C</b> is bevroren of gegate totdat het adoptie-getal beweegt.</p>
+  </div>
+
+  <div class="klas">
+    <div class="head"><span class="tag tag-a">KLASSE A</span><h2 style="font-size:16px">Nu cruciaal — gewoon afbouwen</h2><span class="why">de brug waar de moats overheen moeten</span></div>
+    <div class="tblwrap"><table>
+      <tr><th>Taak</th><th>Wat</th><th>Status</th></tr>
+      <tr><td class="id">billing-entitlements-f1 → pricing-f4</td><td class="oms">Vier billing-fase-taken richting betaling-aan (entitlements, UX, UI, pricing)</td><td class="st"><span class="pill p-open">open</span></td></tr>
+      <tr><td class="id">marketing-homepage-v2 + composition-v2/h4</td><td class="oms">Marketing-site vernieuwing + compositie-werk — conversie-driver voor launch</td><td class="st"><span class="pill p-open">open</span></td></tr>
+      <tr><td class="id">onboarding-flow-test</td><td class="oms">Flow-validatie met 3 externe testers (= kritiek-pad stap 3)</td><td class="st"><span class="pill p-erik">testers werven</span></td></tr>
+      <tr><td class="id">content-chain-accessor</td><td class="oms">Content-keten structureel leeg voor 11 web-page/long-form-types; 21 kruisingen. Fase 1 veilig; fase 2 wacht op 2 productbesluiten</td><td class="st"><span class="pill p-erik">2 besluiten</span></td></tr>
+      <tr><td class="id">workspaces-online-migratie</td><td class="oms">Rijk gevulde lokale workspaces naar prod — 8 gemigreerd (#453)</td><td class="st"><span class="pill p-deels">deels done</span></td></tr>
+      <tr><td class="id">golden-set-gate-decouple</td><td class="oms">Altijd-rode nightly-gate loskoppelen zodat bewijs weer telt (ook moat-werk)</td><td class="st"><span class="pill p-open">zonder eigenaar</span></td></tr>
+      <tr><td class="id">security-residual-hardening</td><td class="oms">Rest-scope audit (CSP-enforce-flip, L4/L6/L9, Zod-sweep) — HIGH-items al gemerged</td><td class="st"><span class="pill p-open">open</span></td></tr>
+      <tr><td class="id">guard-hooks-hardening</td><td class="oms">Session-guard-gaten (o.a. gelijktijdige merges) — raakt jouw veiligheidsnet</td><td class="st"><span class="pill p-erik">akkoord nodig</span></td></tr>
+      <tr><td class="id">workspace-scoped-invites · org-limit-override-ui · credit-admin-owner-lookup · trainer-refs-ombouw · web-page-builder-acceptance-rest · kpi-fase0</td><td class="oms">Kleinere afronders: invite/ACL-nasleep, admin-tooling, acceptance-staart, KPI-fundament (kpi-fase0 is tevens leerlus-voer)</td><td class="st"><span class="pill p-open">open</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="klas">
+    <div class="head"><span class="tag tag-b">KLASSE B</span><h2 style="font-size:16px">Moat-werk — ondervertegenwoordigd</h2><span class="why">versterkt merk-graph, bewijs of leerlus</span></div>
+    <div class="tblwrap"><table>
+      <tr><th>Taak</th><th>Wat</th><th>Status</th></tr>
+      <tr><td class="id">leerlus-dicht (BC-1.5)</td><td class="oms">Feedback-ledger + outcome-memories + caps — <b>staat nog nergens als taak</b>; voorstel uit de visie (= kritiek-pad stap 4)</td><td class="st"><span class="pill p-open">aan te maken</span></td></tr>
+      <tr><td class="id">content-test-regression-7B</td><td class="oms">Layer-3 zelflerende regressie op echte reject/edit-events</td><td class="st"><span class="pill p-gate">data-gated — 0 events</span></td></tr>
+      <tr><td class="id">mcp-external-data-enrichment-research</td><td class="oms">Externe MCP-bronnen inlezen — eerste stap richting Signaalweb</td><td class="st"><span class="pill p-open">open</span></td></tr>
+      <tr><td class="id">ontwerp-agenda 1–7</td><td class="oms">Zeven functionele ontwerpen uit visie §10 (Signaalweb-spec, Interpretatie-methodologie, …) — per onderdeel eerst denken, dan bouwen</td><td class="st"><span class="pill p-erik">wacht op go</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="klas">
+    <div class="head"><span class="tag tag-c">KLASSE C</span><h2 style="font-size:16px">Bevroren / gegate — dicht tot adoptie beweegt</h2><span class="why">meer oppervlak verdunt het schaarse signaal</span></div>
+    <div class="tblwrap"><table>
+      <tr><th>Taak</th><th>Wat</th><th>Gate</th></tr>
+      <tr><td class="id">research-stack (3 taken)</td><td class="oms">Exa/S2 in trend-radar, Marco-web-signalen, GEO-research-backed stats</td><td class="st"><span class="pill p-gate">bevriezen</span></td></tr>
+      <tr><td class="id">brand-mention-monitor</td><td class="oms">10e agent (merkvermeldingen op Exa)</td><td class="st"><span class="pill p-gate">Fase-0-gated</span></td></tr>
+      <tr><td class="id">agent-vera-triggers</td><td class="oms">Event-getriggerde brand-review</td><td class="st"><span class="pill p-gate">Fase 0: 0 events in 8 wk</span></td></tr>
+      <tr><td class="id">publishgate-second-opinion · power-user-shortcuts · video-chain · validate-brand-domain-fit · seo-pipeline-speedup</td><td class="oms">Allemaal netjes gegate op pilot-evidence, categorie-re-enable of deploy-meting</td><td class="st"><span class="pill p-gate">evidence-gated</span></td></tr>
+      <tr><td class="id">geo-seo-followup-later · i18n-ai-translation-pipeline · multi-market-enterprise · agents-brandclaw-convergentie</td><td class="oms">Post-launch buckets en blocked epics (convergentie: go/no-go op 3 pilot-datapunten)</td><td class="st"><span class="pill p-block">blocked / later</span></td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section>
+  <div class="sechead">
+    <div class="eyebrow">D · De Brandclaw-lijn</div>
+    <h2>Van visie naar bouw — de laag boven de takenlijst</h2>
+    <p>Visie v3 (<span class="mono">docs/specs/brandclaw-vision.md</span>): het marketing-organisme met zes groeistadia, drie moats en per onderdeel eerst een functioneel ontwerp.</p>
+  </div>
+  <div class="stadia">
+    <div class="stadium"><div class="nr">STADIUM 1</div><div class="nm">Luisteraar</div><div class="pr">"het ziet wat ik niet zie"</div></div>
+    <div class="stadium"><div class="nr">STADIUM 2</div><div class="nm">Duider</div><div class="pr">"het begrijpt waaróm"</div></div>
+    <div class="stadium"><div class="nr">STADIUM 3</div><div class="nm">Tester</div><div class="pr">"het bewijst wat werkt"</div></div>
+    <div class="stadium"><div class="nr">STADIUM 4</div><div class="nm">Bewijzer</div><div class="pr">"het verdient vertrouwen"</div></div>
+    <div class="stadium"><div class="nr">STADIUM 5</div><div class="nm">Operator</div><div class="pr">"het draait mijn marketing"</div></div>
+    <div class="stadium"><div class="nr">STADIUM 6</div><div class="nm">Machine</div><div class="pr">"lean, mean marketing machine"</div></div>
+  </div>
+  <div class="twocol">
+    <div class="card">
+      <h3>Uitvoerings-stand (BC-trap)</h3>
+      <ul>
+        <li><b>BC-1</b> weekloop met goedkeuring (Bo) — <b>done</b> 18 jul</li>
+        <li><b>BC-1.5</b> leerlus dicht — <b>voorstel, kan nu</b> (kritiek-pad stap 4)</li>
+        <li><b>BC-2</b> goedgekeurd = gepubliceerd — wacht op P3.5-kanaal + credentials</li>
+        <li><b>BC-3</b> bounded autonomy — go-besluit Erik (4 criteria)</li>
+        <li><b>BC-4/5</b> zelfkalibratie · segment-leren — later, eigen gates</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Ontwerp-agenda (visie §10 — te schrijven, wacht op go)</h3>
+      <ol>
+        <li><b>Signaalweb-spec</b> — voorwaarde stadium 1–2</li>
+        <li><b>Interpretatie-methodologie</b> — voorwaarde stadium 1–2</li>
+        <li>Strategie-synthese-kader</li>
+        <li>Missie- &amp; genesis-ontwerp</li>
+        <li>Actieradius- &amp; mandaat-ontwerp</li>
+        <li>Geheugen- &amp; leerlus-ontwerp</li>
+        <li>Cockpit- &amp; merk-laag-ontwerp</li>
+      </ol>
+      <p class="note">Elk document beantwoordt vier vaste vragen: gebruikerskant · bestaand · ontbrekend · te ontwerpen.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sechead">
+    <div class="eyebrow">E · Besluiten bij Erik</div>
+    <h2>Wat alleen jij kunt beslissen</h2>
+  </div>
+  <div class="twocol">
+    <div class="card">
+      <h3>Direct spelend</h3>
+      <ul>
+        <li><b>TOPUP-timing</b> — de omzet-schakelaar (kritiek-pad 1)</li>
+        <li><b>Content-accessor fase 2</b> — 2 productkeuzes (Library-stoplicht + Claw-antwoord bij ongekozen variant)</li>
+        <li><b>Guard-hooks</b> — akkoord op wijziging veiligheidsnet</li>
+        <li><b>Vera go/no-go + Ada-kalibratie + CSP-flip</b> — gebundelde afhechting (stond gepland ±28 jul)</li>
+        <li><b>Go ontwerp-agenda</b> — start Signaalweb-spec + Interpretatie-methodologie</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Strategisch (uit visie v3, §11)</h3>
+      <ul>
+        <li>Ambitieniveau per workspace (stadium-plafond per klant)</li>
+        <li>Ring-3-mandaatgrens (advies → opdracht: vanaf welk track-record/budget)</li>
+        <li>Genesis-tucht (zelf agents instantiëren binnen missie-budget, of per stuk goedkeuren)</li>
+        <li>Outcome-pricing als bestemming bekrachtigen</li>
+        <li>Moat-toets opnemen in het prioriteringskader naast RICE</li>
+        <li>Visie-document canoniek maken + roadmap/epics erop herijken</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="advies">
+    <p><b>Het plan in één regel:</b> knop om (TOPUP) · lijst opruimen (roadmap-sanering) · gebruik aanjagen (adoptie-getal) · lus dichten (BC-1.5) · rest bevriezen tot het signaal beweegt. Klasse A bouwt intussen gewoon door — dat is de brug, ook al is hij in de toekomstvisie vergankelijk.</p>
+  </div>
+</section>
+
+<footer>
+  Samengesteld 2026-08-10 uit <span class="mono">roadmap.md</span> (peildatum 14 jul) · <span class="mono">START_HERE.md</span> (22 jul) · <span class="mono">tasks/</span> incl. <span class="mono">open-acties-2026-07-23</span> · <span class="mono">docs/specs/brandclaw-vision.md</span> v3 + §10 · codebase-audit &amp; extern onderzoek van deze sessie. Roadmap zelf is 4 weken stale — sanering is kritiek-pad stap 5.
+</footer>
+
+</div>
