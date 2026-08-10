@@ -1,7 +1,7 @@
 # Brandclaw-visie — het marketing-organisme
 
 > **Status**: voorstel v3 (toekomstvisie) — v2 aangescherpt met de uitkomsten van het software-toekomst-onderzoek (2026-08-08): twee gezichten (bestemming én onzichtbare laag), outcome-gebaseerd business-model, moat-discipline (graph + bewijs + leerlus boven features), en F-VAL als zelfstandig product.
-> **Datum**: 2026-08-08 (v3; v1/v2 in git-historie van dit bestand).
+> **Datum**: 2026-08-08 (v3; v1/v2 in git-historie van dit bestand). **Aanvulling 2026-08-10**: §10 functioneel-ontwerp-agenda toegevoegd (besluit Erik — per onderdeel eerst een functioneel ontwerp langs vast vier-vragen-stramien, dan pas bouwen).
 > **Context**: dit bestand was aangekondigd in `docs/specs/_README.md` maar bestond niet. Het absorbeert het archief-eindbeeld (`docs/archive/old-lists/BRANDCLAW-ROADMAP.md` §F), de P3.6-herijking, het agent-ecosysteem-doc (`docs/marketing/p34-agent-ecosysteem-distributie.md` — vanaf v3 geïntegreerd, geen los eindbeeld meer) en de bevindingen van de code/docs-audit + het externe onderzoek van 2026-08-08.
 
 ---
@@ -187,7 +187,34 @@ Wat er níet komt: geen extern orchestrator-framework (ADR 2026-05-08 Alt D blij
 
 ---
 
-## 10. Open besluiten (voor Erik)
+## 10. Functioneel-ontwerp-agenda — per onderdeel eerst denken, dan bouwen
+
+> Toegevoegd 2026-08-10 (besluit Erik). De visie zegt *wat* elk onderdeel doet; vóór de bouw van een onderdeel moet er een **functioneel ontwerp** liggen dat zegt *hoe* — geen enkel stadium-increment start zonder het bijbehorende ontwerp-document.
+
+Elk ontwerp-document beantwoordt dezelfde vier vragen:
+
+1. **Gebruikerskant** — wat kan de gebruiker er concreet mee (inbrengen, zien, sturen, corrigeren), en wat krijgt hij ervoor terug?
+2. **Bestaand** — welke bouwstenen liggen er al in code/product (hergebruik vóór nieuwbouw)?
+3. **Ontbrekend** — wat is er aantoonbaar niet, gestaafd aan de codebase?
+4. **Te ontwerpen** — de werkingsprincipes: methodologie, regels, datamodel, grenzen, kalibratie.
+
+De agenda (volgorde = bouwvolgorde van de stadia; status: allemaal **te schrijven, wacht op go**):
+
+| # | Ontwerp-document | Dekt onderdeel | Kern-vragen die het moet beantwoorden |
+|---|---|---|---|
+| 1 | **Signaalweb-spec** | §3.1 zintuigen | Vier inbreng-routes (koppelen/uploaden/doorsturen/vertellen); entity-mapping bij inname; teruggave aan de gebruiker ("dit deed ik met je data"); gap-detectie als uitnodiging (generalisatie van het brandstyle-kalibratiepaneel); consent/begrenzing per bron |
+| 2 | **Interpretatie-methodologie** | §3.2 wereldbeeld + §3.3 Strategiekamer (analyse-helft) | Signaal-taxonomie (soorten, gewicht, veroudering); entity-resolution over bronnen; regels voor inzicht-vorming (correlatie→causaliteit, minimale data-eisen per uitspraaktype, attributie-vensters — kritisch bij MKB-volumes); deterministisch-eerst-principe; kalibratie (elke uitspraak is een toetsbare voorspelling). Bouwt op: two-reasons-toets, diff-rules+classifier-patroon, edit-classifier |
+| 3 | **Strategie-synthese-kader** | §3.3 Strategiekamer (synthese-helft) | Van inzichten naar concurrerende strategie-hypothesen; weging impact/kosten/confidence; koppeling met de bestaande behavioral-science-frameworks (Byron Sharp, Cialdini, EAST — zitten al in de campagne-pipeline, nooit met analyse verbonden); portfolio-regels (starten/opschalen/stoppen) |
+| 4 | **Missie- & genesis-ontwerp** | §3.4 | Missie-levenscyclus; agent-instantie-model (missie, context, tools, model, budget); template-bank-beheer; bewijs-criteria voor institutionalisering; wat de gebruiker ziet en stuurt (team-samenstelling zichtbaar? veto?) |
+| 5 | **Actieradius- & mandaat-ontwerp** | §3.5 + §3.7 mandaten | Het "uitvoerbaar pakket"-formaat per ring-3-actietype; mandaat-model per ring × missietype; verdien- en de-escalatieregels; kill-switch/budget-hard-stop-gedrag; wat de gebruiker per mandaat ziet en instelt |
+| 6 | **Geheugen- & leerlus-ontwerp** | §3.6 | Feedback-ledger (welke signalen, welke frictie voor de gebruiker); outcome-attributie-regels; consolidatie/retro-mechaniek; playbook-formaat (leesbaar, bewerkbaar, verwijderbaar); scheidslijn systeem-geschreven feiten vs. confirm-plichtige inzichten |
+| 7 | **Cockpit- & merk-laag-ontwerp** | §4 twee gezichten | Wat hoort minimaal in de cockpit (wereldbeeld, portfolio, mandaten, trust, playbook); MCP-tool-surface van gezicht 2 (welke tools, welke auth, welke gratis staffel); hoe gezicht-2-gebruik het Signaalweb voedt |
+
+Werkwijze per document: feature-discovery-flow (feature-planner → technical-planner) met dit vier-vragen-stramien, eindigend in een spec in `docs/specs/` + waar nodig een ADR. Documenten 1-2 zijn de eerste (voorwaarde voor stadium 1-2); de rest volgt het stadium dat hem nodig heeft.
+
+---
+
+## 11. Open besluiten (voor Erik)
 
 1. **Ambitieniveau als workspace-instelling**: elke klant kiest zijn stadium-plafond (sommige klanten willen een Duider, andere een Machine). Akkoord dat het product alle stadia bedient in plaats van iedereen naar 6 te duwen?
 2. **Ring-3-mandaat-grens**: waar ligt de eerste lijn — advies-met-pakket altijd, opdracht-uitzetten pas na welk track-record en tot welk budget?
@@ -201,7 +228,7 @@ Wat er níet komt: geen extern orchestrator-framework (ADR 2026-05-08 Alt D blij
 
 ---
 
-## 11. Bronnen
+## 12. Bronnen
 
 **Intern**: `docs/reports/p36-brandclaw-herijking-2026-07-17.md` · `docs/adr/2026-05-08-brandclaw-agent-architectuur.md` · `docs/adr/2026-07-05-agents-architectuur.md` · `docs/adr/2026-07-17-public-brand-api.md` · `docs/marketing/p34-agent-ecosysteem-distributie.md` · `docs/archive/old-lists/BRANDCLAW-ROADMAP.md` (§F) · `docs/archive/implementatieplannen/IMPLEMENTATIEPLAN-LEARNING-LOOP.md` · `docs/reports/agents-marktonderzoek-en-uitbreidingsadvies-2026-07-14.md` · `tasks/agents-brandclaw-convergentie.md` · `tasks/_drafts/idea-competitive-intelligence-loop.md` · codebase-audit `src/lib/agents/**`, `src/lib/brandclaw/**`, `src/lib/learning-loop/**` (2026-08-08).
 
