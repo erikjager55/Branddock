@@ -4,7 +4,27 @@
 > **Aanleiding**: user-feedback: *"de regels per type website zijn goed, maar de editor voelt te statisch — nieuwe tools bouwen puur op prompts en de design-library"* + user-voorstel **van Puck afstappen** + user-vraag naar marktonderzoek bouw/publicatie ("hier valt meer uit te halen").
 > **Scope**: de content-items die webpagina's bevatten (`landing-page`, `product-page`, `faq-page`, `comparison-page`, `microsite` + long-form GEO via `isPuckRenderable`).
 > **Onderbouwing**: code-audit van de volledige keten + footprint-meting Puck-gebruik + **marktonderzoek over ~20 producten in 4 sporen** — zie [`docs/reports/webpage-bouw-en-publicatie-marktonderzoek-2026-08-07.md`](../reports/webpage-bouw-en-publicatie-marktonderzoek-2026-08-07.md). Hoofdconclusie daaruit: het sectie+token-bouwmodel dat Branddock al heeft ís het winnende model; de onbenutte waarde zit aan de **publiceer-kant** (statisch compileren, versies/rollback, formulieren, meting, kanalen).
-> **Verhouding tot bestaande besluiten**: ADR [`2026-08-07-puck-exit-sectie-editor`](../adr/2026-08-07-puck-exit-sectie-editor.md) (**status: proposed**) herziet beslissing 2 (editor-stack) van ADR `2026-05-22-landing-page-builder-architectuur`; de overige beslissingen daaruit én de edit-architectuur (verplichte diff-preview + locks) blijven van kracht. `tasks/web-page-builder-acceptance-rest.md` wordt geabsorbeerd (bundle-restpunt vervalt bij E1/P2). Task `web-page-builder-v2-custom-domains` blijft de custom-domain-drager (P7).
+> **Verhouding tot bestaande besluiten**: ADR [`2026-08-07-puck-exit-sectie-editor`](../adr/2026-08-07-puck-exit-sectie-editor.md) (**status: accepted**, 2026-08-12) herziet beslissing 2 (editor-stack) van ADR `2026-05-22-landing-page-builder-architectuur`; de overige beslissingen daaruit én de edit-architectuur (verplichte diff-preview + locks) blijven van kracht. `tasks/web-page-builder-acceptance-rest.md` wordt geabsorbeerd (bundle-restpunt vervalt bij E1/P2). Task `web-page-builder-v2-custom-domains` blijft de custom-domain-drager (P7).
+
+---
+
+## Uitvoeringsstatus (2026-08-12)
+
+Volledig uitgevoerd op user-opdracht ("voer het plan volledig uit"), branch `claude/puck-editor-improvement-y9ep4x`, ~24 commits. Per spoor:
+
+| Spoor | Status | Kern |
+|---|---|---|
+| **Fase 0** — P0 ISR-fix + hygiëne | ✅ done | `/p/[workspace]/[slug]` (path-params, ISR werkt weer), legacy-redirect, wees-code-sanering |
+| **E1-E3** — Puck-exit | ✅ done | Eigen `PageRender` (byte-pariteit bewezen), `SectionEditor` (3-koloms, kernel-guards, undo), `@puckeditor/core` volledig verwijderd (23 packages) |
+| **A2-A4** — prompt + gratis edit-laag | ✅ done | Promptveld → strict-rewrite, inline tekst-edit, sectie-hover-toolbar op de `section-edit-tools`-kernel |
+| **B1-B5** — conversational editing | ✅ done | Claw chat-dock met `update_landing_page_structure` (dry-run proposals), streaming-generatie, select-and-tell (`targetField`), variant-merge, type-aware quality |
+| **P1-P4, P6** — publiceren als product | ✅ done | `PagePublish`-versies + pointer-rollback, compile-to-static (`compiledHtml`-artifact, token-freeze), `LeadForm` + `/api/f/[formId]` + webhooks (safeFetch), beacon-analytics + stats-UI, deterministische publish-gate (placeholder/verplichte-secties-blockers) |
+| **C1-C3** — design-library generatief | ✅ done | `section-patterns.ts`-registry (archetype-gefilterd), "Wissel layout"-popover, generator kiest `layoutPatterns` per sectie (gevalideerd, `.catch`-degradatie) |
+| **C4** — pattern-mining | ⏸ gated | Vereist `validate-brand-domain-component-fit`-pilotvalidatie (§5 Fase C) |
+| **P5** — WordPress-kanaal | ⏸ gated | Gate: ≥2 pilot-klanten vragen erom (§5 P-vervolg) |
+| **Fase D** — A/B, scheduled, multi-page | ⏸ gated | Post-pilot go/no-go op meetdata (§7) |
+
+**Deploy-notities**: ⚠️ `prisma db push` op Neon vereist (nieuw: `PagePublish` incl. `compiledHtml`, `LandingPage.livePublishId`, `FormSubmission`, `PageEvent`). Turnstile op het form-endpoint is een gedocumenteerde follow-up (honeypot + timing + rate-limit zit erin). ADR's: `2026-08-07-puck-exit-sectie-editor`, `2026-08-12-compile-to-static-publish`, `2026-08-12-generative-pattern-choice` (alle accepted). Smoke-suite uitgebreid t/m phase55 (~2000 asserts); task-files per deeltaak in `tasks/` (E-/A-/B-/C-/P-reeks).
 
 ---
 
