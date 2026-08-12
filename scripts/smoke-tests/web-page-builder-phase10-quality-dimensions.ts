@@ -13,11 +13,18 @@
  *  - Objection: judge-category-count injection (1-2/3-4/5+ = 40/70/100)
  *  - Composite-gewichten 20/15/15/15/20/15 correct toegepast
  *  - shouldAutoIterate trigger bij composite < 70
+ *  - B5 evaluatePageQualityForType: landing-page → dimensies-pad,
+ *    product-page/onbekend/null → generieke fallback, shape-compatibiliteit
+ *    met het PageQualityResult-contract van de routes
  *
  * Run: npx tsx scripts/smoke-tests/web-page-builder-phase10-quality-dimensions.ts
  */
 
 import { evaluateLandingPageQuality } from "../../src/lib/landing-pages/landing-page-quality";
+import {
+  evaluatePageQuality,
+  evaluatePageQualityForType,
+} from "../../src/lib/landing-pages/page-quality";
 import type { PuckLikeData } from "../../src/lib/landing-pages/puck-data-flatten";
 
 let pass = 0;
@@ -371,6 +378,67 @@ group("Signals propagated");
   assert("signals.distinctCtas reflects deduped", result.signals.distinctCtas.length === 1);
   assert("signals.faqItemCount counts items", result.signals.faqItemCount === 5);
   assert("signals.components incl. BrandHero", (result.signals.components.BrandHero ?? 0) > 0);
+}
+
+group("B5 — evaluatePageQualityForType dispatch");
+{
+  // landing-page → 6-dimensie-pad, score = LP-composite
+  const tree = buildCompleteTree();
+  const typed = evaluatePageQualityForType(tree, "landing-page");
+  const lpDirect = evaluateLandingPageQuality({ data: tree });
+  assert(
+    "landing-page → dimensies-pad (evaluator + dimensions aanwezig)",
+    typed.evaluator === "landing-page-dimensions" && typed.dimensions !== undefined,
+  );
+  assert(
+    "landing-page → score = LP-composite",
+    typed.score === lpDirect.composite,
+    `score=${typed.score} composite=${lpDirect.composite}`,
+  );
+  assert(
+    "landing-page → dimensions.heroClarity doorgegeven",
+    typed.dimensions?.heroClarity === lpDirect.dimensions.heroClarity,
+  );
+}
+{
+  // product-page bewust generiek (zie page-quality.ts JSDoc: anatomie/social-
+  // proof/objection misfiren op de canonieke product-tree); onbekend + null idem
+  const tree = buildCompleteTree();
+  const heuristic = evaluatePageQuality(tree);
+  const productResult = evaluatePageQualityForType(tree, "product-page");
+  assert(
+    "product-page → generieke fallback (score = heuristic, geen dimensions)",
+    productResult.evaluator === "generic-heuristic"
+      && productResult.score === heuristic.score
+      && productResult.dimensions === undefined,
+  );
+  assert(
+    "onbekend type → generieke fallback",
+    evaluatePageQualityForType(tree, "webinar").evaluator === "generic-heuristic",
+  );
+  assert(
+    "null contentType → generieke fallback",
+    evaluatePageQualityForType(tree, null).evaluator === "generic-heuristic",
+  );
+}
+{
+  // Shape-compatibiliteit: beide paden leveren het PageQualityResult-contract
+  // (score/threshold/thresholdMet/signals) dat auto-iterate + strict-rewrite verwachten
+  const tree = buildCompleteTree();
+  for (const contentType of ["landing-page", null] as const) {
+    const r = evaluatePageQualityForType(tree, contentType);
+    assert(
+      `shape-compat (${contentType ?? "generic"}): score/threshold/signals-contract`,
+      typeof r.score === "number"
+        && r.threshold === 70
+        && typeof r.thresholdMet === "boolean"
+        && typeof r.signals.wordCount === "number"
+        && r.signals.hasHero === true
+        && r.signals.hasCta === true
+        && r.signals.hasProof === true
+        && (r.signals.components.BrandHero ?? 0) > 0,
+    );
+  }
 }
 
 // ─── Resultaat ─────────────────────────────────────────

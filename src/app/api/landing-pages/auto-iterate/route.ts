@@ -4,9 +4,9 @@ import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
 import { parseJsonBody } from '@/lib/api/parse-json-body';
 import { withAi } from '@/lib/ai/middleware';
 import {
-  evaluatePageQuality,
+  evaluatePageQualityForType,
   evaluatePageQualityViaFVAL,
-  type PageQualityResult,
+  type MaybeTypeAwarePageQualityResult,
 } from '@/lib/landing-pages/page-quality';
 import { wordCount, type PuckLikeData } from '@/lib/landing-pages/puck-data-flatten';
 import { anthropicClient } from '@/lib/ai/anthropic-client';
@@ -29,10 +29,14 @@ import { prisma } from '@/lib/prisma';
  *  - status=proposal: proposedPuckData + score-before + score-projected
  *  - status=error: AI failed or judge couldn't compute
  *
- * Quality-judge: MVP uses the page-quality heuristic stub
- * (lib/landing-pages/page-quality.ts). Production wires the existing
- * F-VAL pipeline (style + judge + rules composite) — same shape, just
- * a different evaluator function.
+ * Quality-judge (B5 — lp-quality-dimensions-live): type-aware dispatch via
+ * evaluatePageQualityForType — landing-page deliverables scoren op de 6
+ * LP-dimensies (deterministisch, 0 AI-calls), overige types op de generieke
+ * 5-signal heuristic. contentType komt uit een cheap deliverable-select
+ * (fail-soft → generic). Het F-VAL deep-path (3-pillar composite) blijft
+ * opt-in via AUTO_ITERATE_DEEP_SCORE=1 — same shape, different evaluator.
+ * Proposal/skipped responses dragen additief `dimensions` (de breakdown)
+ * zodat de diff-modal later kan tonen WAAROM.
  */
 
 interface RequestBody {
@@ -40,10 +44,12 @@ interface RequestBody {
   brandVoiceTone?: string | null;
   brandName?: string | null;
   /**
-   * Optional — when supplied + the deliverable exists, swap the heuristic
-   * page-quality stub for the real F-VAL judge composite (3-pillar
-   * style + judge + rules). Falls back to heuristic when the deliverable
-   * lookup fails or the F-VAL run returns null (insufficient signal).
+   * Optional — drives (1) type-aware scoring: het contentType van de
+   * deliverable bepaalt of de 6 LP-dimensies of de generieke heuristic
+   * scoort (B5); en (2) met AUTO_ITERATE_DEEP_SCORE=1 de swap naar het
+   * F-VAL judge composite (3-pillar style + judge + rules). Falls back to
+   * the generic heuristic when absent, the lookup fails, or the F-VAL run
+   * returns null (insufficient signal).
    */
   deliverableId?: string;
 }
@@ -83,7 +89,10 @@ export async function POST(request: NextRequest) {
   if (!parsed.ok) return parsed.response;
   const body = parsed.data as unknown as RequestBody;
 
-  const judgement = await scoreWithFvalOrFallback(body);
+  // B5 — contentType éénmalig resolven (cheap select, fail-soft naar generic)
+  // zodat before- én projected-score dezelfde type-aware evaluator gebruiken.
+  const contentType = await resolveDeliverableContentType(body.deliverableId);
+  const judgement = await scoreWithFvalOrFallback(body, contentType);
   // 2026-05-28 UX-fix: skip de 'already_passing' gate WANNEER we de
   // heuristic-only mode draaien. De heuristic scoort bijna altijd 70/70
   // (gate-grade), wat betekende dat user de knop op een 'goede' page
@@ -98,6 +107,9 @@ export async function POST(request: NextRequest) {
       score: judgement.score,
       threshold: judgement.threshold,
       signals: judgement.signals,
+      // B5 additief — alleen aanwezig op het LP-dimensie-pad (undefined
+      // wordt door JSON.stringify weggelaten; bestaande consumers ongemoeid).
+      dimensions: judgement.dimensions,
     });
   }
 
@@ -209,7 +221,7 @@ export async function POST(request: NextRequest) {
     // Opt-in via env AUTO_ITERATE_PROJECTED_SCORE=1 voor strict-mode.
     const wantProjected = process.env.AUTO_ITERATE_PROJECTED_SCORE === '1';
     const projected = wantProjected
-      ? await scoreWithFvalOrFallback({ ...body, puckData: proposedTree })
+      ? await scoreWithFvalOrFallback({ ...body, puckData: proposedTree }, contentType)
       : null;
 
     // Hard guard alleen wanneer projected scoring expliciet opt-in: voorkomt
@@ -237,6 +249,11 @@ export async function POST(request: NextRequest) {
       threshold: judgement.threshold,
       proposedPuckData: proposedTree,
       signals: judgement.signals,
+      // B5 additief — dimensie-breakdown van de before-score (en projected
+      // wanneer berekend) zodat de diff-modal later kan tonen WAAROM.
+      // undefined-velden vallen weg in JSON; bestaande consumers ongemoeid.
+      dimensions: judgement.dimensions,
+      dimensionsProjected: projected?.dimensions,
       tokens: { input: result.inputTokens, output: result.outputTokens },
     });
   } catch (err) {
@@ -270,10 +287,13 @@ function parseJsonContent(content: string): unknown {
  * AUTO_ITERATE_DEEP_SCORE=1 wanneer kwaliteits-fidelity boven snelheid
  * gaat (admin/QA-context).
  */
-async function scoreWithFvalOrFallback(body: RequestBody): Promise<PageQualityResult> {
+async function scoreWithFvalOrFallback(
+  body: RequestBody,
+  contentType: string | null,
+): Promise<MaybeTypeAwarePageQualityResult> {
   const useDeepScore = process.env.AUTO_ITERATE_DEEP_SCORE === '1';
   if (!body.deliverableId || !useDeepScore) {
-    return evaluatePageQuality(body.puckData);
+    return evaluatePageQualityForType(body.puckData, contentType);
   }
   try {
     const deliverable = await prisma.deliverable.findUnique({
@@ -284,7 +304,7 @@ async function scoreWithFvalOrFallback(body: RequestBody): Promise<PageQualityRe
         campaign: { select: { workspaceId: true } },
       },
     });
-    if (!deliverable) return evaluatePageQuality(body.puckData);
+    if (!deliverable) return evaluatePageQualityForType(body.puckData, contentType);
 
     const workspaceId = deliverable.campaign.workspaceId;
     const ctx = await assembleCanvasContext(deliverable.id, workspaceId);
@@ -341,6 +361,27 @@ async function scoreWithFvalOrFallback(body: RequestBody): Promise<PageQualityRe
     });
   } catch (err) {
     console.warn('[auto-iterate] FVAL judge failed, using heuristic fallback', err);
-    return evaluatePageQuality(body.puckData);
+    return evaluatePageQualityForType(body.puckData, contentType);
+  }
+}
+
+/**
+ * B5 — resolve het content-type van de deliverable voor type-aware scoring.
+ * Fail-soft: geen deliverableId, onbekende deliverable of DB-fout → null,
+ * waarna evaluatePageQualityForType op de generieke heuristic terugvalt.
+ */
+async function resolveDeliverableContentType(
+  deliverableId: string | undefined,
+): Promise<string | null> {
+  if (!deliverableId) return null;
+  try {
+    const deliverable = await prisma.deliverable.findUnique({
+      where: { id: deliverableId },
+      select: { contentType: true },
+    });
+    return deliverable?.contentType ?? null;
+  } catch (err) {
+    console.warn('[auto-iterate] contentType lookup failed — generic heuristic fallback', err);
+    return null;
   }
 }
