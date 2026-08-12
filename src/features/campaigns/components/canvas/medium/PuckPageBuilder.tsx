@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
-import { Puck, Render, type Data } from '@puckeditor/core';
+import { Puck } from '@puckeditor/core';
+import { PageRender } from '@/lib/landing-pages/page-render';
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import '@puckeditor/core/puck.css';
-import { Loader2, Shield, Wand2, Layout, X, ScanEye } from 'lucide-react';
+import { Loader2, Shield, Wand2, Layout, X, ScanEye, Sparkles } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
@@ -146,11 +148,15 @@ export function PuckPageBuilder({
     scoreBefore: number;
     scoreProjected: number;
     threshold: number;
-    source: 'auto-iterate';
+    source: 'auto-iterate' | 'strict-rewrite';
   };
   const [pagePending, setPagePending] = useState<PagePending | null>(null);
-  const [pageBusy, setPageBusy] = useState<null | 'auto-iterate' | 'fidelity-check'>(null);
+  const [pageBusy, setPageBusy] = useState<null | 'auto-iterate' | 'fidelity-check' | 'strict-rewrite'>(null);
   const [pageError, setPageError] = useState<string | null>(null);
+  // A2 (verbeterplan v3) — vrij promptveld op paginaniveau. Bedraadt de al
+  // bestaande strict-rewrite-route ("never skips") die sinds Phase 6 zonder
+  // UI-knop stond; het voorstel loopt door dezelfde PageDiffPreviewModal.
+  const [promptText, setPromptText] = useState('');
   // Fase D — fidelity-result tonen na judge-call. Reset bij data-change zodat
   // stale-result niet blijft hangen wanneer user de page edit.
   const [fidelityResult, setFidelityResult] = useState<{
@@ -429,6 +435,67 @@ export function PuckPageBuilder({
     }
   }, [puckData, contextStack, deliverableId, pageLocked, t]);
 
+  /** A2 — vrije gebruikersinstructie → strict-rewrite-voorstel → diff-modal.
+   *  Anders dan auto-iterate skipt dit nooit: de gebruiker vroeg expliciet
+   *  om een wijziging, dus er komt altijd een voorstel (of een nette fout). */
+  const handlePromptRewrite = useCallback(async () => {
+    const instruction = promptText.trim();
+    if (instruction.length < 3) {
+      setPageError(t('pageBuilder.promptTooShort'));
+      return;
+    }
+    if (pageLocked) {
+      setPageError(t('pageErrors.lockedForAi'));
+      return;
+    }
+    setPageError(null);
+    setPageBusy('strict-rewrite');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3 * 60 * 1000);
+    try {
+      const res = await fetch('/api/landing-pages/strict-rewrite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          puckData,
+          instruction,
+          brandVoiceTone: contextStack?.brand?.brandToneOfVoice ?? null,
+          brandName: contextStack?.brand?.brandName ?? null,
+        }),
+        signal: controller.signal,
+      });
+      const json = (await res.json()) as
+        | { status: 'proposal'; score: number; scoreProjected: number; threshold: number; proposedPuckData: SpikeData }
+        | { status: 'error'; error?: string }
+        | { status?: undefined; error?: string };
+      if (!res.ok || json.status !== 'proposal' || !json.proposedPuckData?.content?.length) {
+        setPageError(('error' in json && json.error) ? json.error : t('pageBuilder.promptFailed'));
+        return;
+      }
+      setPagePending({
+        current: puckData,
+        proposed: json.proposedPuckData,
+        scoreBefore: typeof json.score === 'number' ? json.score : 0,
+        scoreProjected:
+          typeof json.scoreProjected === 'number'
+            ? json.scoreProjected
+            : (typeof json.score === 'number' ? json.score : 0),
+        threshold: typeof json.threshold === 'number' ? json.threshold : 70,
+        source: 'strict-rewrite',
+      });
+      setPromptText('');
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        setPageError(t('pageErrors.timeout'));
+      } else {
+        setPageError(err instanceof Error ? err.message : t('pageBuilder.promptFailed'));
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      setPageBusy(null);
+    }
+  }, [promptText, puckData, contextStack, pageLocked, t]);
+
   /** Fase D — fidelity-check: vergelijk LP-hero side-by-side met bron-
    *  website hero-screenshot. Geeft een verdict (excellent/good/fair/poor)
    *  + mismatches zodat user direct ziet of de gegenereerde LP visueel
@@ -536,6 +603,43 @@ export function PuckPageBuilder({
         />
       </div>
 
+      {/* A2 — vrij promptveld: het primaire edit-pad naast de vaste acties.
+          Enter of de knop dient in; het voorstel opent de bestaande
+          PageDiffPreviewModal met source='strict-rewrite'. */}
+      <form
+        className="flex items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void handlePromptRewrite();
+        }}
+      >
+        <div className="relative flex-1">
+          <Sparkles className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={promptText}
+            onChange={(e) => setPromptText(e.target.value)}
+            placeholder={pageLocked ? t('pageBuilder.promptLockedPlaceholder') : t('pageBuilder.promptPlaceholder')}
+            disabled={pageBusy !== null || pageLocked}
+            aria-label={t('pageBuilder.promptAria')}
+            className="w-full rounded-full border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-gray-50"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={pageBusy !== null || pageLocked || promptText.trim().length < 3}
+          title={pageLocked ? t('pageBuilder.promptLockedPlaceholder') : t('pageBuilder.promptSubmitTitle')}
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 transition-opacity"
+        >
+          {pageBusy === 'strict-rewrite' ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Wand2 className="h-4 w-4" />
+          )}
+          {pageBusy === 'strict-rewrite' ? t('pageBuilder.promptRunning') : t('pageBuilder.promptSubmit')}
+        </button>
+      </form>
+
       {/* Fase D — fidelity-result banner. Verdict-bucket bepaalt kleur:
           excellent=emerald, good=teal, fair=amber, poor=red. */}
       {fidelityResult ? (
@@ -593,7 +697,7 @@ export function PuckPageBuilder({
 
       {/* Page-render — flat op de pagina-achtergrond, geen kader/wrapper-bg
           zodat de preview naadloos in het Step 3 layout zit. */}
-      <Render config={config} data={puckData} />
+      <PageRender config={config} data={puckData} />
 
       {pagePending ? (
         <PageDiffPreviewModal

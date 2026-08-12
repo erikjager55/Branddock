@@ -17,7 +17,8 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import fs from "node:fs";
 import path from "node:path";
-import { Render, type Data } from "@puckeditor/core";
+import { PageRender } from "../../src/lib/landing-pages/page-render";
+import type { PageData as Data } from "../../src/lib/landing-pages/page-data";
 import { chromium } from "playwright";
 import { buildSpikePuckConfig } from "../../src/features/campaigns/components/canvas/medium/puck-config";
 import { extractBrandTokensFromContext } from "../../src/lib/landing-pages/brand-tokens";
@@ -62,7 +63,7 @@ async function main() {
 
   const config = buildSpikePuckConfig(ctx);
   const body = renderToStaticMarkup(
-    React.createElement(Render as React.ComponentType<{ config: typeof config; data: Data }>, {
+    React.createElement(PageRender as React.ComponentType<{ config: typeof config; data: Data }>, {
       config,
       data: puckData,
     }),

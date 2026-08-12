@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
 import { judgeVisualBrandFit } from "@/lib/landing-pages/visual-brand-fit-judge";
-import type { Data } from "@puckeditor/core";
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 
 /**
  * POST /api/landing-pages/[deliverableId]/visual-brand-fit-check

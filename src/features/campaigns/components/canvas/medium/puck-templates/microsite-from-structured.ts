@@ -25,7 +25,7 @@
  * navLabels nooit twee secties hetzelfde DOM-id geven.
  */
 
-import type { Data } from "@puckeditor/core";
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import type { CanvasContextStack } from "@/lib/ai/canvas-context";
 import type { SpikePuckProps } from "../puck-config";
 import type { MicrositeVariantContent, MicrositeChapter } from "@/lib/landing-pages/page-type-schemas";

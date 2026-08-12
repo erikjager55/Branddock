@@ -19,7 +19,7 @@
  *   - ImpactStats → optioneel FeatureGrid (4-columns) met stat-values
  */
 
-import type { Data } from "@puckeditor/core";
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import type { CanvasContextStack } from "@/lib/ai/canvas-context";
 import type { SpikePuckProps } from "../puck-config";
 import type { LandingPageVariantContent } from "@/lib/landing-pages/variant-schema";

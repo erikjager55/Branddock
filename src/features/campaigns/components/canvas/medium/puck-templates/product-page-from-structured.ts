@@ -20,7 +20,7 @@
  * schema heeft features als array i.p.v. {items}).
  */
 
-import type { Data } from "@puckeditor/core";
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import type { CanvasContextStack } from "@/lib/ai/canvas-context";
 import type { SpikePuckProps } from "../puck-config";
 import type { ProductPageVariantContent } from "@/lib/landing-pages/page-type-schemas";

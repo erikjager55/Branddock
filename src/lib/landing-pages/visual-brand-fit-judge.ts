@@ -17,7 +17,7 @@
  * redistribueren.
  */
 import type { CanvasContextStack } from "../ai/canvas-context";
-import type { Data } from "@puckeditor/core";
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 
 export interface VisualBrandFitInput {
   /** Pre-captured screenshot buffer. Wanneer absent + puckData/ctx aanwezig:

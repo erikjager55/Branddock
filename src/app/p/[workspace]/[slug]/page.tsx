@@ -1,7 +1,8 @@
 import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Render, type Data } from '@puckeditor/core';
+import { PageRender } from '@/lib/landing-pages/page-render';
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import { prisma } from '@/lib/prisma';
 import { resolvePublishedPage } from '@/lib/landing-pages/publish-page';
 import { buildSpikePuckConfig, type SpikePuckProps } from '@/features/campaigns/components/canvas/medium/puck-config';
@@ -138,7 +139,7 @@ export default async function PublishedPage({ params }: Props) {
           }}
         />
       ) : null}
-      <Render config={config} data={data} />
+      <PageRender config={config} data={data} />
     </>
   );
 }

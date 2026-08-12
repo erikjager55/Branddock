@@ -15,7 +15,7 @@
  * Werkt op puck-component-array — pure functie, geen renderer dependency.
  */
 
-import type { Data } from "@puckeditor/core";
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 
 export type ColorBudgetCategory = "dominant" | "secondary" | "accent";
 

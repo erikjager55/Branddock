@@ -6,7 +6,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import fs from "fs";
-import { Render } from "@puckeditor/core";
+import { PageRender } from "../../src/lib/landing-pages/page-render";
 import { prisma } from "../../src/lib/prisma";
 import { extractBrandTokensFromStyleguide } from "../../src/lib/landing-pages/brand-tokens";
 import { buildSpikePuckConfig } from "../../src/features/campaigns/components/canvas/medium/puck-config";
@@ -36,7 +36,7 @@ async function main() {
   const brandTokens = extractBrandTokensFromStyleguide(styleguide, { adobeFontsKitId: styleguide?.workspace?.adobeFontsKitId ?? null });
   const ctx = { brandTokens, personas: [], brand: { brandName: "Zwarthout" }, deliverableTypeId: "landing-page" } as unknown as CanvasContextStack;
   const config = buildSpikePuckConfig(ctx);
-  const body = renderToStaticMarkup(React.createElement(Render, { config, data: pd } as never));
+  const body = renderToStaticMarkup(React.createElement(PageRender, { config, data: pd } as never));
   const puckCss = fs.readFileSync("node_modules/@puckeditor/core/dist/Render-3OV4N4MT.css", "utf8");
   const html = `<!doctype html><html lang="nl"><head><meta charset="utf-8"/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sen:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap"/>

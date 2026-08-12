@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Loader2, Sparkles, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon, Pencil,
 } from 'lucide-react';
-import { Render } from '@puckeditor/core';
+import { PageRender } from '@/lib/landing-pages/page-render';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { generateCanvasVisual, generateFeatureVisuals } from '../../../api/canvas.api';
 import { variantToPuckDataFromStructured } from '../medium/variant-to-puck-data';
@@ -1288,7 +1288,7 @@ function VariantPuckPreview({
           }}
         >
           <style dangerouslySetInnerHTML={{ __html: buildA11yStyleBlock(brand) }} />
-          <Render config={config} data={puckData} />
+          <PageRender config={config} data={puckData} />
         </div>
       </div>
     </div>

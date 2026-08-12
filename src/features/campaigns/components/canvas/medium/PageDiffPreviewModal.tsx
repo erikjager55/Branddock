@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Render, type Config, type Data } from '@puckeditor/core';
+import type { Config } from '@puckeditor/core';
+import { PageRender } from '@/lib/landing-pages/page-render';
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import { X, Check, AlertTriangle, ArrowRight } from 'lucide-react';
 import type { SpikePuckProps } from './puck-config';
 import {
@@ -348,7 +350,7 @@ function PreviewPane({
           const safeData = (data as { root?: unknown }).root
             ? data
             : ({ ...data, root: { props: {} } } as SpikeData);
-          return <Render config={config} data={safeData} />;
+          return <PageRender config={config} data={safeData} />;
         })()}
       </div>
     </div>
