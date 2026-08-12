@@ -12,24 +12,40 @@ import {
  * POST /api/landing-pages/component-edit
  *
  * Component-level AI rewrite for the web-page builder. Takes a Puck
- * component instance + an instruction-id (shorten / formal / casual /
- * alternatives), asks Claude to rewrite ONLY the text fields, returns
- * proposed-props + character-level edit-distance for the diff-preview.
+ * component instance + EITHER an instruction-id (shorten / formal /
+ * casual / alternatives) OR a free-text `instruction` (A4 section-prompt,
+ * verbeterplan 2026-08-07 §5 Fase B), asks Claude to rewrite ONLY the
+ * text fields, returns proposed-props + character-level edit-distance
+ * for the diff-preview.
  *
  * Phase 5 changes vs spike:
  *  - instructionId references the central registry (ai-edit-instructions)
- *    rather than a free-text instruction so prompts are version-controlled
+ *    so the 4 preset prompts stay version-controlled
  *  - locked: clients pass it; route returns 423 (Locked) without an AI call
  *    so we never waste tokens on a component the user wants left alone
  *  - TEXT_FIELDS_BY_TYPE covers all 8 components (FeatureGrid + PricingTable
  *    + FAQ + Footer flatten their array-fields into newline-joined strings
  *    so Claude can rewrite without violating the array shape)
+ *
+ * A4 changes (lp-preview-editing):
+ *  - free-text `instruction` (trimmed, 3-2000 chars) is accepted as an
+ *    alternative to instructionId; it becomes the prompt directive through
+ *    the same sanitized template as the presets (strict-rewrite pattern)
+ *  - deliverableId + componentId are accepted as provenance from the
+ *    section hover-toolbar; the rewrite itself stays stateless
  */
 
 interface RequestBody {
   componentType: string;
   currentProps: Record<string, unknown>;
-  instructionId: AiInstructionId;
+  /** Preset from the instruction registry — mutually exclusive with `instruction`. */
+  instructionId?: string;
+  /** Free-text user instruction (A4) — trimmed, 3-2000 chars. */
+  instruction?: string;
+  /** Provenance from the section hover-toolbar (A4) — not required server-side. */
+  deliverableId?: string;
+  /** Section id the edit targets — provenance only, props travel in currentProps. */
+  componentId?: string;
   /** Lock-state read from puckData.metadata.locked by the caller. */
   locked?: boolean;
   brandVoiceTone?: string | null;
@@ -74,13 +90,30 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!isValidInstructionId(body.instructionId ?? '')) {
-    return NextResponse.json(
-      { error: 'instructionId must be one of shorten | formal | casual | alternatives' },
-      { status: 400 },
-    );
+  // A4: één van beide instructie-vormen — preset (register) óf vrije tekst.
+  // Preset wint wanneer beide meekomen zodat chips deterministisch blijven.
+  const freeInstruction = typeof body.instruction === 'string' ? body.instruction.trim() : '';
+  let promptDirective: string;
+  let appliedInstructionId: AiInstructionId | null = null;
+  if (typeof body.instructionId === 'string' && body.instructionId.length > 0) {
+    if (!isValidInstructionId(body.instructionId)) {
+      return NextResponse.json(
+        { error: 'instructionId must be one of shorten | formal | casual | alternatives' },
+        { status: 400 },
+      );
+    }
+    const preset = getInstruction(body.instructionId);
+    promptDirective = preset.promptDirective;
+    appliedInstructionId = preset.id;
+  } else {
+    if (freeInstruction.length < 3 || freeInstruction.length > 2000) {
+      return NextResponse.json(
+        { error: 'instruction must be 3-2000 characters after trimming, or pass a valid instructionId' },
+        { status: 400 },
+      );
+    }
+    promptDirective = freeInstruction;
   }
-  const instruction = getInstruction(body.instructionId);
 
   const textFields = TEXT_FIELDS_BY_TYPE[body.componentType];
   if (!textFields) {
@@ -104,7 +137,7 @@ export async function POST(request: NextRequest) {
   }
 
   const userPrompt = [
-    `Instruction: ${instruction.promptDirective}`,
+    `Instruction: ${promptDirective}`,
     body.brandName ? `Brand: ${body.brandName}` : '',
     body.brandVoiceTone ? `Tone of voice: ${body.brandVoiceTone}` : '',
     '',
@@ -148,7 +181,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       proposedProps,
       editDistance,
-      instructionId: instruction.id,
+      /** Preset-id wanneer een chip is gebruikt; null bij vrije tekst. */
+      instructionId: appliedInstructionId,
       tokens: { input: result.inputTokens, output: result.outputTokens },
     });
   } catch (err) {

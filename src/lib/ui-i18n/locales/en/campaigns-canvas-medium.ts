@@ -164,6 +164,7 @@ const ns = {
     activeHint:
       'Live preview with brand tokens from your BrandStyleguide. Use ‘Edit layout’ to reorder components, or the page actions for page-level AI improvements.',
     configured: 'Web-page builder configured',
+    chatWithPage: 'Chat with your page',
   },
   imageField: {
     pickerLoadError: 'The image picker could not be loaded.',
@@ -250,6 +251,23 @@ const ns = {
     dragHint: 'Drag components · reorder · ESC or ‘Close editor’ to return',
     closeEditorAria: 'Close — back to preview',
     closeEditor: 'Close editor',
+    sectionMoveUp: 'Move section up',
+    sectionMoveDown: 'Move section down',
+    sectionDuplicate: 'Duplicate section',
+    sectionRemove: 'Remove section',
+    sectionRemoveConfirm: 'Remove this {{type}} section?',
+    sectionRemoveRequired:
+      'The last {{type}} section is required for this page type and cannot be removed.',
+    sectionRemoveLocked: 'This section is locked — unlock it first to remove it.',
+    sectionLock: 'Lock section',
+    sectionUnlock: 'Unlock section',
+    sectionAiPrompt: 'AI edit on this section',
+    sectionPromptPlaceholder: 'Describe what to change in this section…',
+    sectionPromptSubmit: 'Apply',
+    sectionPromptRunning: 'Rewriting…',
+    sectionPromptLocked: 'Section is locked — unlock it to edit with AI.',
+    sectionPromptFailed: 'Section rewrite failed — please try again.',
+    sectionPromptClose: 'Close section prompt',
   },
   pageErrors: {
     lockedForAi: 'Page is locked — unlock first to allow AI iterations.',

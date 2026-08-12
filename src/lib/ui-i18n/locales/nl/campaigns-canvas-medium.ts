@@ -163,6 +163,7 @@ const ns = {
     activeHint:
       'Live voorbeeld met merktokens uit je BrandStyleguide. Gebruik ‘Layout bewerken’ om componenten te herordenen, of de pagina-acties voor AI-verbeteringen op paginaniveau.',
     configured: 'Webpagina-bouwer geconfigureerd',
+    chatWithPage: 'Chat met je pagina',
   },
   imageField: {
     pickerLoadError: 'De afbeeldingskiezer kon niet worden geladen.',
@@ -249,6 +250,23 @@ const ns = {
     dragHint: 'Sleep componenten · herorden · ESC of ‘Editor sluiten’ om terug te gaan',
     closeEditorAria: 'Sluiten — terug naar voorbeeld',
     closeEditor: 'Editor sluiten',
+    sectionMoveUp: 'Sectie omhoog',
+    sectionMoveDown: 'Sectie omlaag',
+    sectionDuplicate: 'Sectie dupliceren',
+    sectionRemove: 'Sectie verwijderen',
+    sectionRemoveConfirm: 'Deze {{type}}-sectie verwijderen?',
+    sectionRemoveRequired:
+      'De laatste {{type}}-sectie is verplicht voor dit paginatype en kan niet verwijderd worden.',
+    sectionRemoveLocked: 'Deze sectie is vergrendeld — ontgrendel eerst om te verwijderen.',
+    sectionLock: 'Sectie vergrendelen',
+    sectionUnlock: 'Sectie ontgrendelen',
+    sectionAiPrompt: 'AI-bewerking op deze sectie',
+    sectionPromptPlaceholder: 'Beschrijf wat je in deze sectie wilt aanpassen…',
+    sectionPromptSubmit: 'Pas toe',
+    sectionPromptRunning: 'Bezig met herschrijven…',
+    sectionPromptLocked: 'Sectie is vergrendeld — ontgrendel om met AI te bewerken.',
+    sectionPromptFailed: 'Sectie-herschrijving mislukt — probeer opnieuw.',
+    sectionPromptClose: 'Sectieprompt sluiten',
   },
   pageErrors: {
     lockedForAi: 'Pagina is vergrendeld — ontgrendel eerst om AI-iteraties toe te staan.',

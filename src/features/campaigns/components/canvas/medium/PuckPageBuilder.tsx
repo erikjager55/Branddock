@@ -17,6 +17,7 @@ import { preserveHeroVisual } from './hero-visual-preserve';
 import { generateCanvasVisual } from '../../../api/canvas.api';
 import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
+import { PreviewEditingLayer } from './PreviewEditingLayer';
 import { useBrandFontLoader } from './useBrandFontLoader';
 import { buildA11yStyleBlock } from '@/lib/landing-pages/a11y-styles';
 import { TokenProvenancePanel } from './TokenProvenancePanel';
@@ -67,6 +68,9 @@ export function PuckPageBuilder({
   const { t } = useTranslation('campaigns-canvas-medium');
   const contextStack = useCanvasStore((s) => s.contextStack);
   const deliverableId = useCanvasStore((s) => s.deliverableId);
+  // Content-type van de deliverable (bv. 'landing-page') — stuurt de
+  // verplichte-sectie-guard in de PreviewEditingLayer (A4).
+  const contentType = useCanvasStore((s) => s.contentType);
   const { data: isDeveloper } = useDeveloperAccess();
   const hydratedPuckData = (contextStack?.puckData ?? null) as SpikeData | null;
 
@@ -696,8 +700,20 @@ export function PuckPageBuilder({
       ) : null}
 
       {/* Page-render — flat op de pagina-achtergrond, geen kader/wrapper-bg
-          zodat de preview naadloos in het Step 3 layout zit. */}
-      <PageRender config={config} data={puckData} />
+          zodat de preview naadloos in het Step 3 layout zit. De
+          PreviewEditingLayer (A3+A4) levert sectie-hover-toolbar + inline
+          tekst-edit; mutaties lopen via handlePuckChange (bestaand
+          debounced-autosave-pad — geen eigen persistentie). */}
+      <PreviewEditingLayer
+        puckData={puckData}
+        contentType={contentType}
+        config={config}
+        deliverableId={deliverableId}
+        pageLocked={pageLocked}
+        onChange={handlePuckChange}
+      >
+        <PageRender config={config} data={puckData} />
+      </PreviewEditingLayer>
 
       {pagePending ? (
         <PageDiffPreviewModal
