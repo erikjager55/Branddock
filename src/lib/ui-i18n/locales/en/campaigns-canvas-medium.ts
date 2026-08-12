@@ -268,6 +268,13 @@ const ns = {
     sectionPromptLocked: 'Section is locked — unlock it to edit with AI.',
     sectionPromptFailed: 'Section rewrite failed — please try again.',
     sectionPromptClose: 'Close section prompt',
+    elementAi: 'AI on this field',
+    elementPromptPlaceholder: 'What should change about this text?',
+    elementApply: 'Apply with AI',
+    elementAccept: 'Accept',
+    elementReject: 'Reject',
+    elementFailed: 'Field rewrite failed — please try again.',
+    elementNoChange: 'The AI proposed no change for this field.',
   },
   pageErrors: {
     lockedForAi: 'Page is locked — unlock first to allow AI iterations.',

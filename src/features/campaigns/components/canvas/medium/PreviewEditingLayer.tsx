@@ -14,6 +14,7 @@ import type { Config } from '@puckeditor/core';
 import {
   ArrowDown,
   ArrowUp,
+  Check,
   Copy,
   Loader2,
   Lock,
@@ -143,6 +144,20 @@ interface SectionProposal {
   editDistance: number;
 }
 
+/** B3 — anker voor element-level AI: het actieve inline-edit-veld. */
+interface ElementAiTarget {
+  /** Volledig tree-pad (`content[i].props.headline`). */
+  path: string;
+  /** Top-level propnaam — het `targetField` voor de route. */
+  field: string;
+  sectionId: string;
+  sectionType: string;
+  /** Container-relatieve positie voor de zwevende UI. */
+  top: number;
+  left: number;
+  currentValue: string;
+}
+
 /**
  * Interactielaag over de Step 3-`<PageRender>`-preview (A3+A4, verbeterplan
  * 2026-08-07 §5 Fase B):
@@ -193,6 +208,17 @@ export function PreviewEditingLayer({
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [proposal, setProposal] = useState<SectionProposal | null>(null);
+  // ── B3: element-level select-and-tell ──────────────────────────
+  // Tijdens een inline-edit toont een ✨-affordance naast het veld; die
+  // schakelt om naar een element-promptbar (targetField-call) met een
+  // compacte voor/na-bevestiging — de verfijning van A4's sectie-prompt
+  // naar veldniveau (verbeterplan §5 B3).
+  const [inlineEditTarget, setInlineEditTarget] = useState<ElementAiTarget | null>(null);
+  const [elementPromptTarget, setElementPromptTarget] = useState<ElementAiTarget | null>(null);
+  const [elementPromptText, setElementPromptText] = useState('');
+  const [elementBusy, setElementBusy] = useState(false);
+  const [elementError, setElementError] = useState<string | null>(null);
+  const [elementProposal, setElementProposal] = useState<(ElementAiTarget & { proposed: string }) | null>(null);
 
   const clearHover = useCallback(() => {
     setHovered(null);
@@ -432,6 +458,7 @@ export function PreviewEditingLayer({
       const session = editingRef.current;
       if (!session) return;
       editingRef.current = null;
+      setInlineEditTarget(null);
       const { el } = session;
       el.removeEventListener('keydown', session.onKeyDown);
       el.removeEventListener('blur', session.onBlur);
@@ -501,6 +528,31 @@ export function PreviewEditingLayer({
       } catch {
         // Select-all is nice-to-have; focus alleen is voldoende.
       }
+      // B3-anker: alleen top-level string-props (geneste array-paden vallen
+      // buiten het targetField-contract van de route). Container-relatief
+      // gepositioneerd naast het veld.
+      try {
+        const rel = path.replace(/^content\[\d+\]\.props\./, '');
+        const isTopLevel = !rel.includes('.') && !rel.includes('[');
+        const sectionEl = el.closest('[data-section-id]');
+        const sectionId = sectionEl?.getAttribute('data-section-id') ?? '';
+        const sectionType = sectionEl?.getAttribute('data-section-type') ?? '';
+        const container = containerRef.current?.getBoundingClientRect();
+        if (isTopLevel && sectionId && sectionType && container) {
+          const r = el.getBoundingClientRect();
+          setInlineEditTarget({
+            path,
+            field: rel,
+            sectionId,
+            sectionType,
+            top: r.top - container.top,
+            left: Math.min(r.right - container.left + 8, container.width - 140),
+            currentValue: original,
+          });
+        }
+      } catch {
+        // Geen anker = geen affordance; inline edit werkt gewoon door.
+      }
     },
     [finishInlineEdit],
   );
@@ -515,6 +567,7 @@ export function PreviewEditingLayer({
         e.preventDefault();
       }
       if (pageLocked || popoverOpen || aiBusy || proposal !== null) return;
+      if (elementPromptTarget !== null || elementProposal !== null || elementBusy) return;
       if (editingRef.current) return;
       if (overlayRef.current?.contains(e.target)) return;
       try {
@@ -535,8 +588,79 @@ export function PreviewEditingLayer({
         // Nooit throwen op onverwachte DOM — geen match, geen edit.
       }
     },
-    [pageLocked, popoverOpen, aiBusy, proposal, startInlineEdit],
+    [pageLocked, popoverOpen, aiBusy, proposal, elementPromptTarget, elementProposal, elementBusy, startInlineEdit],
   );
+
+  // ── B3: element-AI submit + accept ─────────────────────────────
+  const submitElementAi = useCallback(async () => {
+    const target = elementPromptTarget;
+    const instruction = elementPromptText.trim();
+    if (!target || elementBusy || instruction.length < 3) return;
+    const tree = dataRef.current;
+    const idx = sectionContentIndex(tree, target.sectionId);
+    if (idx < 0) {
+      setElementPromptTarget(null);
+      return;
+    }
+    setElementBusy(true);
+    setElementError(null);
+    try {
+      const res = await fetch('/api/landing-pages/component-edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deliverableId,
+          componentId: target.sectionId,
+          componentType: target.sectionType,
+          currentProps: tree.content[idx].props,
+          targetField: target.field,
+          instruction,
+          locked: isComponentLocked(tree as unknown as LockableTree, target.sectionId),
+        }),
+      });
+      const json = (await res.json().catch(() => null)) as {
+        proposedProps?: Record<string, string>;
+        error?: string;
+      } | null;
+      if (res.status === 423) {
+        setElementError(t('pageBuilder.sectionPromptLocked'));
+        return;
+      }
+      const proposed = json?.proposedProps?.[target.field];
+      if (!res.ok || typeof proposed !== 'string' || proposed.trim().length === 0) {
+        setElementError(json?.error ?? t('pageBuilder.elementFailed'));
+        return;
+      }
+      if (proposed.trim() === target.currentValue.trim()) {
+        setElementError(t('pageBuilder.elementNoChange'));
+        return;
+      }
+      setElementProposal({ ...target, proposed: proposed.trim() });
+      setElementPromptTarget(null);
+      setElementPromptText('');
+    } catch (err) {
+      setElementError(err instanceof Error ? err.message : t('pageBuilder.elementFailed'));
+    } finally {
+      setElementBusy(false);
+    }
+  }, [elementPromptTarget, elementPromptText, elementBusy, deliverableId, t]);
+
+  const acceptElementProposal = useCallback(() => {
+    const p = elementProposal;
+    if (!p) return;
+    // Live-guard (zelfde semantiek als de inline-commit): is het veld
+    // intussen door een andere flow gewijzigd, pas dan niets toe.
+    const liveValue = readPath(dataRef.current, p.path);
+    if (typeof liveValue === 'string' && liveValue.trim() === p.currentValue.trim()) {
+      const result = setSectionProps(asTree(dataRef.current), p.sectionId, { [p.field]: p.proposed });
+      if (result.ok) {
+        const next = asData(result.data);
+        dataRef.current = next;
+        onChange(next);
+      }
+    }
+    setElementProposal(null);
+  }, [elementProposal, onChange]);
 
   const showToolbar = !pageLocked && hovered !== null && toolbarPos !== null;
 
@@ -549,6 +673,102 @@ export function PreviewEditingLayer({
       onClick={handleClick}
     >
       {children}
+
+      {/* B3 — ✨-affordance tijdens inline edit: onMouseDown-preventDefault
+          voorkomt dat de blur van het contentEditable-veld eerst commit. */}
+      {inlineEditTarget && !elementPromptTarget && !elementProposal ? (
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            const target = inlineEditTarget;
+            finishInlineEdit(false);
+            setElementPromptTarget(target);
+            setElementPromptText('');
+            setElementError(null);
+          }}
+          style={{ position: 'absolute', top: inlineEditTarget.top, left: inlineEditTarget.left, zIndex: 40 }}
+          className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-white px-2.5 py-1 text-xs font-medium text-teal-700 shadow-md hover:bg-teal-50"
+        >
+          <Sparkles className="h-3 w-3" />
+          {t('pageBuilder.elementAi')}
+        </button>
+      ) : null}
+
+      {/* B3 — element-promptbar op het veld-anker. */}
+      {elementPromptTarget ? (
+        <form
+          style={{ position: 'absolute', top: elementPromptTarget.top, left: Math.max(8, elementPromptTarget.left - 260), zIndex: 40, width: 300 }}
+          className="rounded-lg border border-gray-200 bg-white p-2 shadow-xl"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submitElementAi();
+          }}
+        >
+          <div className="flex items-center gap-1.5">
+            <input
+              autoFocus
+              type="text"
+              value={elementPromptText}
+              onChange={(e) => setElementPromptText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setElementPromptTarget(null);
+              }}
+              placeholder={t('pageBuilder.elementPromptPlaceholder')}
+              disabled={elementBusy}
+              className="min-w-0 flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs focus:border-teal-300 focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={elementBusy || elementPromptText.trim().length < 3}
+              className="inline-flex items-center rounded-full bg-teal-600 p-1.5 text-white hover:bg-teal-700 disabled:opacity-50"
+              title={t('pageBuilder.elementApply')}
+            >
+              {elementBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+            </button>
+            <button
+              type="button"
+              onClick={() => setElementPromptTarget(null)}
+              className="inline-flex items-center rounded-full border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50"
+              aria-label={t('pageBuilder.sectionPromptClose')}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          {elementError ? <p className="mt-1 text-xs text-red-600">{elementError}</p> : null}
+        </form>
+      ) : null}
+
+      {/* B3 — compacte voor/na-bevestiging op veldniveau. */}
+      {elementProposal ? (
+        <div
+          style={{ position: 'absolute', top: elementProposal.top, left: Math.max(8, elementProposal.left - 300), zIndex: 40, width: 340 }}
+          className="space-y-2 rounded-lg border border-teal-200 bg-white p-3 shadow-xl"
+        >
+          <p className="text-xs text-gray-400 line-through" style={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+            {elementProposal.currentValue}
+          </p>
+          <p className="text-sm text-gray-900">{elementProposal.proposed}</p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={acceptElementProposal}
+              className="inline-flex items-center gap-1 rounded-full bg-teal-600 px-3 py-1 text-xs font-medium text-white hover:bg-teal-700"
+            >
+              <Check className="h-3 w-3" />
+              {t('pageBuilder.elementAccept')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setElementProposal(null)}
+              className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50"
+            >
+              <X className="h-3 w-3" />
+              {t('pageBuilder.elementReject')}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {showToolbar ? (
         <div

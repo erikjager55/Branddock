@@ -46,6 +46,9 @@ interface RequestBody {
   deliverableId?: string;
   /** Section id the edit targets — provenance only, props travel in currentProps. */
   componentId?: string;
+  /** B3 element-level: rewrite ONLY this top-level text field (must be in
+   *  the component's text-field set); other fields come back unchanged. */
+  targetField?: string;
   /** Lock-state read from puckData.metadata.locked by the caller. */
   locked?: boolean;
   brandVoiceTone?: string | null;
@@ -129,6 +132,28 @@ export async function POST(request: NextRequest) {
     if (typeof value === 'string') currentTextProps[key] = value;
   }
 
+  // B3: element-scoped rewrite — valideer het doelveld tegen de per-type
+  // allowlist en tegen de aangeleverde props zodat het model exact één veld
+  // te zien krijgt en de rest gegarandeerd onaangeroerd terugkomt.
+  const targetField = typeof body.targetField === 'string' ? body.targetField : null;
+  if (targetField !== null) {
+    if (!textFields.includes(targetField)) {
+      return NextResponse.json(
+        { error: `targetField "${targetField}" is not a text field of ${body.componentType}` },
+        { status: 400 },
+      );
+    }
+    if (typeof currentTextProps[targetField] !== 'string' || currentTextProps[targetField].length === 0) {
+      return NextResponse.json(
+        { error: `targetField "${targetField}" has no current text value` },
+        { status: 400 },
+      );
+    }
+  }
+  const promptTextProps = targetField !== null
+    ? { [targetField]: currentTextProps[targetField] }
+    : currentTextProps;
+
   if (Object.keys(currentTextProps).length === 0) {
     return NextResponse.json(
       { error: 'No text fields to edit on the supplied props' },
@@ -138,11 +163,12 @@ export async function POST(request: NextRequest) {
 
   const userPrompt = [
     `Instruction: ${promptDirective}`,
+    targetField !== null ? `Rewrite ONLY the field "${targetField}" — it is the single key below.` : '',
     body.brandName ? `Brand: ${body.brandName}` : '',
     body.brandVoiceTone ? `Tone of voice: ${body.brandVoiceTone}` : '',
     '',
     'Current props (JSON):',
-    JSON.stringify(currentTextProps, null, 2),
+    JSON.stringify(promptTextProps, null, 2),
     '',
     'Return rewritten props as JSON with the same keys.',
   ]
@@ -168,6 +194,12 @@ export async function POST(request: NextRequest) {
 
     const proposedProps: Record<string, string> = {};
     for (const key of textFields) {
+      // B3: buiten het doelveld komt álles ongewijzigd terug — het model
+      // heeft die velden niet eens gezien (promptTextProps is gescoped).
+      if (targetField !== null && key !== targetField) {
+        if (typeof currentTextProps[key] === 'string') proposedProps[key] = currentTextProps[key];
+        continue;
+      }
       const value = parsed[key];
       if (typeof value === 'string' && value.trim().length > 0) {
         proposedProps[key] = value.trim();
@@ -183,6 +215,8 @@ export async function POST(request: NextRequest) {
       editDistance,
       /** Preset-id wanneer een chip is gebruikt; null bij vrije tekst. */
       instructionId: appliedInstructionId,
+      /** B3: echo van het element-doelveld (null = component-brede edit). */
+      targetField,
       tokens: { input: result.inputTokens, output: result.outputTokens },
     });
   } catch (err) {

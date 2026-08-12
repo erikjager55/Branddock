@@ -267,6 +267,13 @@ const ns = {
     sectionPromptLocked: 'Sectie is vergrendeld — ontgrendel om met AI te bewerken.',
     sectionPromptFailed: 'Sectie-herschrijving mislukt — probeer opnieuw.',
     sectionPromptClose: 'Sectieprompt sluiten',
+    elementAi: 'AI op dit veld',
+    elementPromptPlaceholder: 'Wat moet er anders aan deze tekst?',
+    elementApply: 'Pas toe met AI',
+    elementAccept: 'Accepteer',
+    elementReject: 'Wijs af',
+    elementFailed: 'Veld-herschrijving mislukt — probeer opnieuw.',
+    elementNoChange: 'De AI stelde geen wijziging voor op dit veld.',
   },
   pageErrors: {
     lockedForAi: 'Pagina is vergrendeld — ontgrendel eerst om AI-iteraties toe te staan.',
