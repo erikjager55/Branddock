@@ -181,6 +181,40 @@ function registerBrandTools(server: McpServer, ctx: PublicMcpContext): void {
   );
 
   server.registerTool(
+    'get_brand_md',
+    {
+      title: 'Get brand.md file',
+      description:
+        'Het merk als brand.md-bestand (open standaard, v0.2-kern + Branddock full profile): ' +
+        'strategy, voice, visual, audience, products, guardrails — met validation- en ' +
+        'provenance-frontmatter uit de levende workspace. profile=public is het deelbare bestand ' +
+        '(zonder concurrenten); profile=extended voegt Market Context toe en is alleen voor eigen ' +
+        'gebruik — deel dat bestand nooit. Gratis.',
+      inputSchema: {
+        profile: z
+          .enum(['public', 'extended'])
+          .optional()
+          .describe("'public' (default, deelbaar) of 'extended' (incl. Market Context — privé)"),
+        ...brandParam,
+      },
+      annotations: { title: 'Get brand.md file', ...READ_TOOL },
+    },
+    async ({ brand, profile }) =>
+      runTool(ctx, 'get_brand_md', 'read', brand, async (workspaceId) => {
+        const { buildDesignSystemModel } = await import('@/lib/export/design-system/resolver');
+        const { emitBrandMd } = await import('@/lib/export/design-system/emitters/brandmd');
+        const { appBaseUrl, BRAND_MD_USE_HUB_PATH } = await import('@/lib/brandmd/constants');
+        const model = await buildDesignSystemModel(workspaceId);
+        const base = appBaseUrl();
+        const file = emitBrandMd(model, {
+          profile: profile ?? 'public',
+          useHubUrl: base ? `${base}${BRAND_MD_USE_HUB_PATH}` : undefined,
+        });
+        return { result: { content: [{ type: 'text', text: file }] } };
+      }),
+  );
+
+  server.registerTool(
     'score_against_brand',
     {
       title: 'Score content against brand',
