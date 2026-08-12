@@ -116,7 +116,9 @@ export default async function PublishedPage({ params }: Props) {
   }
 
   const ctx = await assembleCanvasContext(deliverableContext.deliverableId, resolved.workspaceId);
-  const config = buildSpikePuckConfig(ctx);
+  // P3: workspaceId in de config zodat een LeadForm ook op het
+  // runtime-fallback-pad (pre-P2-publishes) een werkend formId-action heeft.
+  const config = buildSpikePuckConfig(ctx, { workspaceId: resolved.workspaceId });
   const data = resolved.puckData as SpikeData;
 
   // JSON-LD: Product/Service (product-page), FAQPage (faq-page), BlogPosting +

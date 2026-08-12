@@ -397,6 +397,22 @@ const ns = {
     previewError: 'Failed to load version preview',
     previewSections: 'Sections ({{count}})',
     previewEmpty: 'No sections in this snapshot.',
+    stats: {
+      title: 'Measurement (30 days)',
+      loading: 'Loading page stats…',
+      loadError: 'Failed to load page stats',
+      views: 'views',
+      leads: 'leads',
+      conversion: 'conversion',
+      last7Summary: 'last 7 days: {{views}} views · {{leads}} leads',
+      empty: 'No published pages to measure yet.',
+    },
+    leads: {
+      title: 'Leads ({{count}})',
+      loading: 'Loading leads…',
+      loadError: 'Failed to load leads',
+      empty: 'No form submissions yet — add a form section to capture leads.',
+    },
   },
 
   lp: {

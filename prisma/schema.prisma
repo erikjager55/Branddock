@@ -307,6 +307,10 @@ model Workspace {
   landingPages   LandingPage[]
   domainMappings DomainMapping[]
 
+  // P3/P4 forms + first-party meting (verbeterplan §Fase P)
+  formSubmissions FormSubmission[]
+  pageEvents      PageEvent[]
+
   // Agent memory (4.3 — pgvector)
   agentMemories AgentMemory[]
 
@@ -6752,6 +6756,9 @@ model LandingPage {
   livePublish   PagePublish?        @relation("LivePublish", fields: [livePublishId], references: [id])
   publishes     PagePublish[]       @relation("PagePublishes")
 
+  /// P4 first-party meting — events (views/conversies) op deze pagina.
+  pageEvents PageEvent[]
+
   @@unique([workspaceId, locale, slug])
   @@index([workspaceId, status])
   @@index([deliverableId])
@@ -6816,6 +6823,55 @@ enum SslStatus {
   PROVISIONING
   ACTIVE
   FAILED
+}
+
+/**
+ * P3 lead-capture (verbeterplan §Fase P) — één submission van een publieke
+ * LeadForm-sectie via `POST /api/f/[formId]`. `formId` is samengesteld als
+ * `<workspaceId>:<formKey>` (formKey = gesaneerde sectie-instance-id, zie
+ * `src/lib/landing-pages/lead-form.ts`) zodat het publieke endpoint de
+ * workspace zonder extra lookup-tabel kan resolven. `landingPageId` is een
+ * bewust FK-loze referentie: submissions zijn lead-data en moeten een
+ * pagina-delete overleven; hij is null wanneer de bron niet herleidbaar is
+ * (zip-/WP-export). AVG: `data` bevat persoonsgegevens — retentie- en
+ * verwerkersafspraken in `tasks/lp-forms-leads.md`.
+ */
+model FormSubmission {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  landingPageId String?
+  formId        String
+  /// Ingevulde velden als { veldnaam-slug: waarde }; interne velden (_hp/_ts/_src) worden er vóór opslag uitgefilterd.
+  data          Json
+  sourceUrl     String?
+  createdAt     DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, formId, createdAt])
+}
+
+/**
+ * P4 first-party meting (verbeterplan §Fase P) — cookieloos event per
+ * gepubliceerde pagina via `POST /api/t` (sendBeacon). Bewust géén IP, géén
+ * user-agent, géén fingerprint en een tot origin+pad geschoonde referrer
+ * (AVG: geen persoonsgegevens in dit model). `kind`:
+ * 'view' | 'form_submit' | 'cta_click' (laatste gereserveerd).
+ */
+model PageEvent {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  landingPageId String
+  kind          String
+  path          String?
+  referrer      String?
+  createdAt     DateTime @default(now())
+
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  landingPage LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+
+  @@index([landingPageId, kind, createdAt])
+  @@index([workspaceId, createdAt])
 }
 
 // ─── Publieke Brand-API (ADR 2026-07-17-public-brand-api) ────────────────────

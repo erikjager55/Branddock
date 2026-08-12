@@ -51,6 +51,67 @@ export function buildFontLinks(tokens: BrandTokens | null | undefined): string {
   );
 }
 
+// ─── P3/P4 runtime-script (beacon + form-enhancement) ────────
+
+/** Bevat de sectie-tree een LeadForm? Bepaalt of het form-deel mee-compileert. */
+function hasLeadFormSection(puckData: RenderablePageData): boolean {
+  return Array.isArray(puckData?.content)
+    && puckData.content.some((item) => item?.type === 'LeadForm');
+}
+
+/**
+ * P4 view-beacon: leidt workspaceSlug + pagina-slug af uit `location`
+ * (subdomein-vorm `<ws>.branddock.app/<slug>` of pad-vorm `/p/<ws>/<slug>`)
+ * en stuurt cookieloos één 'view'-event naar `/api/t` via sendBeacon
+ * (JSON-string → text/plain, geen preflight). Zelfde-origin werkt op
+ * subdomeinen omdat `/api` in de middleware passthrough is (host-router).
+ */
+const VIEW_BEACON_SNIPPET = [
+  "var d=document,L=location,pn=L.pathname,w='',s='';",
+  "if(pn.lastIndexOf('/p/',0)===0){var a=pn.split('/');w=a[2]||'';s=a[3]||''}",
+  "else{var hn=L.hostname,di=hn.indexOf('.');w=di>0?hn.slice(0,di):'';s=pn.replace(/^\\/+|\\/+$/g,'')}",
+  "function t(k){if(!w||!s)return;try{var b=JSON.stringify({w:decodeURIComponent(w),s:decodeURIComponent(s),k:k,r:d.referrer||''});",
+  "if(navigator.sendBeacon)navigator.sendBeacon('/api/t',b);else fetch('/api/t',{method:'POST',body:b,keepalive:true}).catch(function(){})}catch(e){}}",
+  "t('view');",
+].join('');
+
+/**
+ * P3 progressive enhancement: ververs `_ts` naar load-tijd (het gecompileerde
+ * artifact bevriest de render-timestamp, waardoor de timing-guard anders leeg
+ * draait), vul `_src` met de echte pagina-URL, en intercepteer submits →
+ * fetch-POST → success-blok inline tonen zonder page-reload. Bij een fout
+ * valt hij terug op de native no-JS-submit (303-redirect + `:target`).
+ * Bewust GEEN client-side 'form_submit'-beacon: `/api/f` logt het PageEvent
+ * server-side — één betrouwbare conversieteller, geen dubbeltelling.
+ */
+const FORM_ENHANCE_SNIPPET = [
+  "function init(){var fs=d.querySelectorAll('form[data-lp-form]');for(var i=0;i<fs.length;i++)(function(f){",
+  "var ts=f.querySelector('input[name=\"_ts\"]');if(ts)ts.value=String(Date.now());",
+  "var sr=f.querySelector('input[name=\"_src\"]');if(sr)sr.value=L.href;",
+  "f.addEventListener('submit',function(ev){ev.preventDefault();",
+  "var b=f.querySelector('[type=\"submit\"]');if(b)b.disabled=true;",
+  "fetch(f.getAttribute('action')||'',{method:'POST',body:new FormData(f),redirect:'manual'}).then(function(r){",
+  "if(r.ok||r.type==='opaqueredirect'){var ok=d.getElementById(f.getAttribute('data-lp-success')||'');",
+  "if(ok){ok.style.display='block';if(ok.scrollIntoView)ok.scrollIntoView({block:'center'})}f.style.display='none'}",
+  "else{if(b)b.disabled=false;f.submit()}",
+  "}).catch(function(){if(b)b.disabled=false;f.submit()})});",
+  "})(fs[i])}",
+  "if(d.readyState==='loading')d.addEventListener('DOMContentLoaded',init);else init();",
+].join('');
+
+/**
+ * Eén klein inline vanilla-script voor het publish-artifact (P3+P4): altijd de
+ * view-beacon; het form-enhancement-deel alleen wanneer de pagina een LeadForm
+ * bevat. Geen framework, geen externe hosts (CSP-veilig), < 2KB. Exported
+ * zodat de smoke-suite de shape kan bewaken.
+ */
+export function buildPageRuntimeScript(opts: { withForms: boolean }): string {
+  const parts = opts.withForms
+    ? `${VIEW_BEACON_SNIPPET}${FORM_ENHANCE_SNIPPET}`
+    : VIEW_BEACON_SNIPPET;
+  return `<script>(function(){${parts}})();</script>`;
+}
+
 export interface CompilePageInput {
   puckData: RenderablePageData;
   /** Config uit buildSpikePuckConfig(ctx) — de aanroeper bezit de context. */
@@ -88,6 +149,11 @@ export async function compilePageArtifact({ puckData, config, brandTokens, jsonL
   const jsonLdBlock = jsonLd
     ? `<script type="application/ld+json">${serializeJsonLdForHtml(jsonLd)}</script>`
     : '';
-  const html = `${jsonLdBlock}${buildFontLinks(brandTokens)}${a11y}${body}`;
+  // P3/P4: runtime-script vóór de body (DOMContentLoaded-guard voor de
+  // forms) zodat het artifact op de render-body blijft eindigen — de
+  // phase51-pariteits-invariant. Beacon altijd; form-enhancement alleen
+  // wanneer de tree een LeadForm bevat.
+  const runtime = buildPageRuntimeScript({ withForms: hasLeadFormSection(puckData) });
+  const html = `${jsonLdBlock}${buildFontLinks(brandTokens)}${a11y}${runtime}${body}`;
   return { html, bytes: Buffer.byteLength(html, 'utf8') };
 }

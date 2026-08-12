@@ -15,6 +15,8 @@ import {
   Send,
   ShieldAlert,
   AlertTriangle,
+  BarChart3,
+  Inbox,
 } from 'lucide-react';
 import { Modal } from '@/components/shared';
 import { isValidSlug } from '@/lib/landing-pages/publish-page';
@@ -71,9 +73,57 @@ interface GateDto {
   warnings: number;
 }
 
+// P4 lp-page-analytics — shape van GET /api/landing-pages/[deliverableId]/stats.
+interface PageStatsDto {
+  landingPageId: string;
+  slug: string;
+  views7: number;
+  leads7: number;
+  views30: number;
+  leads30: number;
+}
+
+interface StatsResponse {
+  pages: PageStatsDto[];
+}
+
+// P3 lp-forms-leads — shape van GET /api/landing-pages/[deliverableId]/submissions.
+interface SubmissionDto {
+  id: string;
+  formId: string;
+  data: Record<string, unknown>;
+  sourceUrl: string | null;
+  createdAt: string;
+}
+
+interface SubmissionsResponse {
+  total: number;
+  recent: SubmissionDto[];
+}
+
 export const webPublishKeys = {
   publishes: (deliverableId: string) => ['web-page-publishes', deliverableId] as const,
+  stats: (deliverableId: string) => ['web-page-stats', deliverableId] as const,
+  submissions: (deliverableId: string) => ['web-page-submissions', deliverableId] as const,
 };
+
+/**
+ * Compacte lead-preview: de eerste e-mail-achtige waarde uit de submission,
+ * anders de eerste niet-lege stringwaarde. Fail-soft op onverwachte shapes.
+ */
+function submissionPreview(data: Record<string, unknown>): string {
+  const values = Object.values(data).filter(
+    (v): v is string => typeof v === 'string' && v.trim().length > 0,
+  );
+  const email = values.find((v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()));
+  return (email ?? values[0] ?? '—').slice(0, 80);
+}
+
+/** Conversie-label: leads/views als percentage; zonder views geen ratio. */
+function conversionLabel(views: number, leads: number): string {
+  if (views <= 0) return '—';
+  return `${((leads / views) * 100).toFixed(1)}%`;
+}
 
 /**
  * Slugify a deliverable title into a publish-slug default that passes
@@ -134,6 +184,34 @@ export function WebPagePublishPanel({ deliverableId }: WebPagePublishPanelProps)
         throw new Error(err.error ?? t('webPublish.loadError'));
       }
       return (await res.json()) as PublishesResponse;
+    },
+    enabled: Boolean(deliverableId),
+  });
+
+  // P4 — views/leads/conversie per pagina (first-party, cookieloos).
+  const statsQuery = useQuery({
+    queryKey: webPublishKeys.stats(deliverableId),
+    queryFn: async (): Promise<StatsResponse> => {
+      const res = await fetch(`/api/landing-pages/${deliverableId}/stats`);
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(err.error ?? t('webPublish.stats.loadError'));
+      }
+      return (await res.json()) as StatsResponse;
+    },
+    enabled: Boolean(deliverableId),
+  });
+
+  // P3 — leads (form-submissions): totaal + laatste 5.
+  const submissionsQuery = useQuery({
+    queryKey: webPublishKeys.submissions(deliverableId),
+    queryFn: async (): Promise<SubmissionsResponse> => {
+      const res = await fetch(`/api/landing-pages/${deliverableId}/submissions`);
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(err.error ?? t('webPublish.leads.loadError'));
+      }
+      return (await res.json()) as SubmissionsResponse;
     },
     enabled: Boolean(deliverableId),
   });
@@ -488,6 +566,94 @@ export function WebPagePublishPanel({ deliverableId }: WebPagePublishPanelProps)
                     ))}
                   </ul>
                 ))
+            )}
+          </div>
+
+          {/* P4 — first-party meting: views / leads / conversie per pagina. */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">
+              <BarChart3 className="h-3.5 w-3.5" />
+              {t('webPublish.stats.title')}
+            </div>
+            {statsQuery.isLoading && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t('webPublish.stats.loading')}
+              </div>
+            )}
+            {statsQuery.isError && (
+              <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                {statsQuery.error instanceof Error ? statsQuery.error.message : t('webPublish.stats.loadError')}
+              </div>
+            )}
+            {statsQuery.data && (
+              statsQuery.data.pages.length === 0 ? (
+                <p className="text-sm text-gray-500">{t('webPublish.stats.empty')}</p>
+              ) : (
+                <ul className="divide-y divide-gray-100 rounded-md border border-gray-100">
+                  {statsQuery.data.pages.map((page) => (
+                    <li key={page.landingPageId} className="space-y-1 px-3 py-2">
+                      <p className="truncate text-xs font-medium text-gray-500">/{page.slug}</p>
+                      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+                        <span className="text-gray-900">
+                          <span className="font-semibold tabular-nums">{page.views30}</span>{' '}
+                          <span className="text-xs text-gray-500">{t('webPublish.stats.views')}</span>
+                        </span>
+                        <span className="text-gray-900">
+                          <span className="font-semibold tabular-nums">{page.leads30}</span>{' '}
+                          <span className="text-xs text-gray-500">{t('webPublish.stats.leads')}</span>
+                        </span>
+                        <span className="text-gray-900">
+                          <span className="font-semibold tabular-nums">{conversionLabel(page.views30, page.leads30)}</span>{' '}
+                          <span className="text-xs text-gray-500">{t('webPublish.stats.conversion')}</span>
+                        </span>
+                        <span className="text-[11px] text-gray-400">
+                          {t('webPublish.stats.last7Summary', { views: page.views7, leads: page.leads7 })}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )
+            )}
+          </div>
+
+          {/* P3 — leads: totaal + de laatste 5 submissions. */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">
+              <Inbox className="h-3.5 w-3.5" />
+              {t('webPublish.leads.title', { count: submissionsQuery.data?.total ?? 0 })}
+            </div>
+            {submissionsQuery.isLoading && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t('webPublish.leads.loading')}
+              </div>
+            )}
+            {submissionsQuery.isError && (
+              <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                {submissionsQuery.error instanceof Error ? submissionsQuery.error.message : t('webPublish.leads.loadError')}
+              </div>
+            )}
+            {submissionsQuery.data && (
+              submissionsQuery.data.recent.length === 0 ? (
+                <p className="text-sm text-gray-500">{t('webPublish.leads.empty')}</p>
+              ) : (
+                <ul className="divide-y divide-gray-100 rounded-md border border-gray-100">
+                  {submissionsQuery.data.recent.map((submission) => (
+                    <li key={submission.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
+                      <span className="min-w-0 flex-1 truncate text-sm text-gray-900">
+                        {submissionPreview(submission.data)}
+                      </span>
+                      <span className="text-xs tabular-nums text-gray-500">
+                        {versionDate(submission.createdAt)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )
             )}
           </div>
         </>

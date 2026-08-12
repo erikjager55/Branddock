@@ -26,6 +26,14 @@ import { isNoOpBorder, isTransparentBackground, isWeakButtonBackground } from '@
 import { isClearedImage } from '../../../lib/feature-visual-preserve';
 import { pxFromCssValue } from '@/lib/landing-pages/brand-tokens-v4-mappers';
 import { isScrapedOrigin, type TokenProvenance } from '@/lib/landing-pages/token-provenance';
+import {
+  buildLeadFormId,
+  leadFormFieldName,
+  leadFormSuccessAnchorId,
+  LEAD_FORM_HONEYPOT_FIELD,
+  LEAD_FORM_SOURCE_FIELD,
+  LEAD_FORM_TIMESTAMP_FIELD,
+} from '@/lib/landing-pages/lead-form';
 import { PuckImageField } from './PuckImageField';
 // W4 — AnchorNav heeft hooks (scroll-spy) en leeft daarom in een eigen
 // 'use client'-bestand; deze server-safe config rendert hem met uitsluitend
@@ -376,6 +384,39 @@ export type HighlightCardsProps = {
   active?: boolean;
 };
 
+/** P3 lp-forms-leads — input-types van een LeadForm-veld ('phone' rendert als type=tel). */
+export type LeadFormFieldType = 'text' | 'email' | 'phone' | 'textarea';
+export type LeadFormFieldDef = {
+  label: string;
+  fieldType: LeadFormFieldType;
+  required: boolean;
+};
+/**
+ * P3 lp-forms-leads — brand-gestyled leadformulier. Rendert een plain
+ * `<form method="POST" action="/api/f/<formId>">` met honeypot (`_hp`),
+ * render-timestamp (`_ts`) en bron-URL (`_src`) hidden fields; native
+ * HTML-validatie (required/type=email) — werkt ZONDER JavaScript
+ * (no-JS-first, ADR 2026-08-12 besluit 5). De success-state is een verborgen
+ * blok dat via CSS `:target` zichtbaar wordt (303-redirect met fragment) of
+ * via het progressive-enhancement-script in het publish-artifact.
+ * `webhookUrl`/`notifyEmail` zijn config-props: het endpoint leest ze uit de
+ * GEPUBLICEERDE snapshot — nooit uit de request.
+ */
+export type LeadFormProps = {
+  heading: string;
+  sub: string;
+  buttonLabel: string;
+  successMessage: string;
+  fields: LeadFormFieldDef[];
+  /** Optionele webhook (Zapier/CRM) — server-side ge-POST met safeFetch, 5s timeout, fire-and-forget. */
+  webhookUrl?: string;
+  /** Optioneel e-mailadres voor lead-notificaties (fire-and-forget via Emailit). */
+  notifyEmail?: string;
+  bandTone?: SectionBandTone;
+  /** Optioneel DOM-anker (zoals BrandCTA.anchorId) — geen Puck-field. */
+  anchorId?: string;
+};
+
 export type SpikePuckProps = {
   BrandHero: SpikeBrandHeroProps;
   BrandCTA: SpikeBrandCtaProps;
@@ -395,6 +436,7 @@ export type SpikePuckProps = {
   HighlightCards: HighlightCardsProps;
   ComparisonTable: ComparisonTableProps;
   Listicle: ListicleProps;
+  LeadForm: LeadFormProps;
 };
 
 // ─── Config builder ──────────────────────────────────────────
@@ -420,6 +462,12 @@ export function buildSpikePuckConfig(
      *  de panel-scrollcontainer onder de app-toolbar en oogt de nav als een
      *  zwevende strook. Niet-sticky = de nav scrollt gewoon mee in de preview. */
     stickyNav?: boolean;
+    /** P3 lp-forms-leads: workspace-id voor het samengestelde LeadForm-formId
+     *  (`<workspaceId>:<sectionId>` → `action="/api/f/…"`). Alleen de
+     *  publish-compile en de publieke runtime-fallback geven hem mee; zonder
+     *  workspaceId rendert de LeadForm inert (action="#", button type=button)
+     *  zodat de editor-preview nooit echte submissions maakt. */
+    workspaceId?: string | null;
   },
 ): Config<SpikePuckProps> {
   const stickyNav = opts?.stickyNav ?? true;
@@ -450,6 +498,7 @@ export function buildSpikePuckConfig(
       HighlightCards: highlightCardsComponent(tokens),
       ComparisonTable: comparisonTableComponent(tokens),
       Listicle: listicleComponent(tokens),
+      LeadForm: leadFormComponent(tokens, opts?.workspaceId ?? null),
     },
   };
 }
@@ -2186,6 +2235,242 @@ function faqComponent(tokens: BrandTokens) {
           ))}
         </div>
       </section>
+      );
+    },
+  };
+}
+
+/**
+ * LeadForm (P3 lp-forms-leads) — brand-gestyled leadformulier, no-JS-first.
+ * Server-safe render (geen hooks): een plain `<form method="POST">` naar
+ * `/api/f/<workspaceId>:<sectionId>` met honeypot/_ts/_src hidden fields en
+ * native HTML-validatie. Success-state zonder React/JS via CSS `:target`
+ * (het endpoint 303-redirect naar `…?submitted=1#<success-id>`); het
+ * enhancement-script in het publish-artifact toont hetzelfde blok inline.
+ * Button volgt tokens.button via resolveCtaVisual — zelfde bron + caps als
+ * de BrandCTA zodat de submit-knop 1-op-1 de Components-tab-button volgt.
+ */
+function leadFormComponent(tokens: BrandTokens, workspaceId: string | null) {
+  const ds = tokens.designSystem;
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+  const { button: btn, sectionRhythm, motion } = tokens;
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const tbr = tokens.typographyByRole;
+
+  const fieldTypeOptions = [
+    { label: 'Text', value: 'text' },
+    { label: 'Email', value: 'email' },
+    { label: 'Phone', value: 'phone' },
+    { label: 'Textarea', value: 'textarea' },
+  ];
+
+  return {
+    fields: {
+      heading: { type: 'text' as const },
+      sub: { type: 'textarea' as const },
+      fields: {
+        type: 'array' as const,
+        arrayFields: {
+          label: { type: 'text' as const },
+          fieldType: { type: 'select' as const, options: fieldTypeOptions },
+          required: {
+            type: 'select' as const,
+            options: [
+              { label: 'Optional', value: false },
+              { label: 'Required', value: true },
+            ],
+          },
+        },
+        defaultItemProps: { label: 'Field', fieldType: 'text' as const, required: false },
+        getItemSummary: (item: LeadFormFieldDef) => item.label || 'Field',
+      },
+      buttonLabel: { type: 'text' as const },
+      successMessage: { type: 'textarea' as const },
+      webhookUrl: { type: 'text' as const },
+      notifyEmail: { type: 'text' as const },
+    },
+    defaultProps: {
+      heading: 'Get in touch',
+      sub: 'Leave your details and we will get back to you.',
+      buttonLabel: 'Send',
+      successMessage: 'Thanks — we received your message and will be in touch soon.',
+      fields: [
+        { label: 'Name', fieldType: 'text' as const, required: false },
+        { label: 'Email', fieldType: 'email' as const, required: true },
+        { label: 'Message', fieldType: 'textarea' as const, required: false },
+      ],
+      webhookUrl: '',
+      notifyEmail: '',
+    },
+    render: ({ heading, sub, buttonLabel, successMessage, fields, bandTone, anchorId, id }: LeadFormProps & { id?: string }) => {
+      const sectionBg = sectionBandBg(tokens, bandTone);
+      const mutedColor = readableTextColor(tokens.surfaceMuted, sectionBg, tokens.onSurface);
+      const labelColor = readableTextColor(tokens.onSurface, sectionBg, tokens.onSurface);
+      const borderColor = resolveOnColor(tokens.surfaceBorder, sectionBg, { fallback: tokens.onSurface, minRatio: 1.3 });
+      const inputRadius = Math.min(10, constraints.maxRadiusPx);
+
+      // Live-modus alleen met een workspace-gebonden formId (publish-compile +
+      // publieke runtime-route). Editor-/screenshot-preview rendert inert:
+      // action="#" + type=button — nooit echte submissions vanuit de builder.
+      const sectionId = typeof id === 'string' && id.length > 0 ? id : '';
+      const isLive = Boolean(workspaceId && sectionId);
+      const formAction = isLive ? `/api/f/${buildLeadFormId(workspaceId as string, sectionId)}` : '#';
+      const successId = leadFormSuccessAnchorId(sectionId || 'preview');
+
+      const ctaVisual = resolveCtaVisual(tokens.button, sectionBg, tokens.brand, tokens.onBrand);
+      const buttonStyle: React.CSSProperties & Record<`--${string}`, string> = {
+        display: 'inline-block',
+        background: ctaVisual.background,
+        color: ctaVisual.color,
+        fontFamily: tokens.button.fontFamily ?? bodyFont,
+        fontWeight: btn.fontWeight,
+        fontSize: Math.min(btn.fontSize, CTA_FONT_SIZE_CAP),
+        padding: `${Math.min(btn.paddingY, CTA_PADDING_Y_CAP)}px ${Math.min(btn.paddingX, CTA_PADDING_X_CAP)}px`,
+        borderRadius: Math.min(btn.radiusPx, constraints.maxRadiusPx),
+        border: ctaVisual.border,
+        textTransform: btn.textTransform,
+        letterSpacing: btn.letterSpacing,
+        cursor: 'pointer',
+        width: 'fit-content',
+        maxWidth: '380px',
+        textAlign: 'center',
+        transition: tokens.button.transition ?? `all ${motion.transitionDuration} ${motion.easing}`,
+        ...(tokens.button.hoverBackground ? { '--lp-btn-hover-bg': tokens.button.hoverBackground } : {}),
+        ...(tokens.button.hoverColor ? { '--lp-btn-hover-color': tokens.button.hoverColor } : {}),
+      };
+
+      const inputStyle: React.CSSProperties = {
+        width: '100%',
+        boxSizing: 'border-box',
+        padding: '12px 14px',
+        fontSize: 15,
+        fontFamily: bodyFont,
+        color: tokens.onSurface,
+        background: tokens.surface,
+        border: `1px solid ${borderColor}`,
+        borderRadius: inputRadius,
+      };
+
+      const items = Array.isArray(fields) ? fields : [];
+
+      return (
+        <section
+          id={anchorId?.trim() ? anchorId : undefined}
+          tabIndex={anchorId?.trim() ? -1 : undefined}
+          style={{
+            padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
+            fontFamily: bodyFont,
+            background: sectionBg,
+            scrollMarginTop: anchorId?.trim() ? 80 : undefined,
+            outline: anchorId?.trim() ? 'none' : undefined,
+          }}
+        >
+          <div style={{ maxWidth: 560, margin: '0 auto' }}>
+            {heading && heading.trim().length > 0 ? (
+              <h2
+                style={{
+                  fontFamily: headingFont,
+                  fontSize: tbr.heading.fontSize ?? ds.typography.heading.sizes[Math.max(0, ds.typography.heading.sizes.length - 2)] ?? 28,
+                  fontWeight: tbr.heading.fontWeight ?? (ds.typography.heading.weights[0] ?? 600),
+                  lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
+                  letterSpacing: tbr.heading.letterSpacing ?? undefined,
+                  color: safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg),
+                  margin: '0 0 8px',
+                  textAlign: 'center',
+                }}
+              >
+                {heading}
+              </h2>
+            ) : null}
+            {sub && sub.trim().length > 0 ? (
+              <p style={{ margin: '0 0 28px', fontSize: 16, lineHeight: 1.6, color: mutedColor, textAlign: 'center' }}>
+                {sub}
+              </p>
+            ) : null}
+            {/* No-JS success-state: het endpoint redirect naar #<successId>;
+                :target maakt het blok zichtbaar. Het enhancement-script zet
+                inline display:block (inline wint van de id-selector). */}
+            <style>{`#${successId}{display:none}#${successId}:target{display:block}`}</style>
+            <form
+              method="POST"
+              action={formAction}
+              data-lp-form="1"
+              data-lp-success={successId}
+              style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+            >
+              {/* Honeypot: mensen zien/tabben dit veld nooit; bots vullen het. */}
+              <div aria-hidden="true" style={{ position: 'absolute', left: -9999, width: 1, height: 1, overflow: 'hidden' }}>
+                <label>
+                  Leave this field empty
+                  <input type="text" name={LEAD_FORM_HONEYPOT_FIELD} tabIndex={-1} autoComplete="off" defaultValue="" />
+                </label>
+              </div>
+              <input type="hidden" name={LEAD_FORM_TIMESTAMP_FIELD} defaultValue={String(Date.now())} />
+              <input type="hidden" name={LEAD_FORM_SOURCE_FIELD} defaultValue="" />
+              {items.map((field, i) => {
+                const name = leadFormFieldName(field.label ?? '', i);
+                const inputId = `${successId}-f${i}`;
+                const labelText = field.required ? `${field.label} *` : field.label;
+                return (
+                  <div key={`${name}-${i}`}>
+                    <label
+                      htmlFor={inputId}
+                      style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: labelColor }}
+                    >
+                      {labelText}
+                    </label>
+                    {field.fieldType === 'textarea' ? (
+                      <textarea
+                        id={inputId}
+                        name={name}
+                        required={field.required || undefined}
+                        rows={4}
+                        className="lp-interactive"
+                        style={inputStyle}
+                      />
+                    ) : (
+                      <input
+                        id={inputId}
+                        name={name}
+                        type={field.fieldType === 'email' ? 'email' : field.fieldType === 'phone' ? 'tel' : 'text'}
+                        required={field.required || undefined}
+                        className="lp-interactive"
+                        style={inputStyle}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+              <button
+                type={isLive ? 'submit' : 'button'}
+                className="lp-interactive lp-btn"
+                aria-label={buttonLabel}
+                style={{ ...buttonStyle, marginInline: 'auto', marginTop: 8 }}
+              >
+                {buttonLabel}
+              </button>
+            </form>
+            <div
+              id={successId}
+              role="status"
+              style={{
+                marginTop: 16,
+                padding: '14px 16px',
+                borderRadius: inputRadius,
+                background: tokens.brandSubtle,
+                color: readableTextColor(tokens.onSurface, tokens.brandSubtle, tokens.onSurface),
+                fontSize: 15,
+                lineHeight: 1.5,
+                textAlign: 'center',
+              }}
+            >
+              {successMessage}
+            </div>
+          </div>
+        </section>
       );
     },
   };

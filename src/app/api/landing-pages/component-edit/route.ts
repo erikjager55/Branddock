@@ -61,6 +61,9 @@ const TEXT_FIELDS_BY_TYPE: Record<string, string[]> = {
   Testimonial: ['quote', 'author'],
   RichText: ['content'],
   Footer: ['companyName', 'tagline'],
+  // P3 lp-forms-leads: alleen de copy-velden; fields/webhookUrl/notifyEmail
+  // zijn config en blijven buiten de AI-rewrite.
+  LeadForm: ['heading', 'sub', 'buttonLabel', 'successMessage'],
 };
 
 const SYSTEM_PROMPT = `You are a brand-aware copywriter helping users edit text inside a visual page builder.

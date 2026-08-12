@@ -76,6 +76,7 @@ export const SECTION_TYPE_IDS = [
   'HighlightCards',
   'ComparisonTable',
   'Listicle',
+  'LeadForm',
 ] as const;
 
 export type SectionTypeId = (typeof SECTION_TYPE_IDS)[number];

@@ -136,7 +136,9 @@ export async function POST(request: NextRequest) {
     // nooit breken; zonder artifact valt de route terug op runtime-render.
     try {
       const ctx = await assembleCanvasContext(deliverable.id, workspaceId);
-      const config = buildSpikePuckConfig(ctx);
+      // P3: workspaceId in de config zodat LeadForm-secties hun formId
+      // (`<workspaceId>:<sectionId>`) in het bevroren artifact bakken.
+      const config = buildSpikePuckConfig(ctx, { workspaceId });
       const jsonLd = await buildPageJsonLdForDeliverable(deliverable.id, workspaceId, ctx);
       const artifact = await compilePageArtifact({
         puckData: puckData as unknown as RenderablePageData,

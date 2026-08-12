@@ -395,6 +395,22 @@ const ns = {
     previewError: 'Versie-preview laden mislukt',
     previewSections: 'Secties ({{count}})',
     previewEmpty: 'Geen secties in deze snapshot.',
+    stats: {
+      title: 'Meting (30 dagen)',
+      loading: 'Paginastatistieken laden…',
+      loadError: 'Paginastatistieken laden mislukt',
+      views: 'views',
+      leads: 'leads',
+      conversion: 'conversie',
+      last7Summary: 'laatste 7 dagen: {{views}} views · {{leads}} leads',
+      empty: 'Nog geen gepubliceerde pagina\'s om te meten.',
+    },
+    leads: {
+      title: 'Leads ({{count}})',
+      loading: 'Leads laden…',
+      loadError: 'Leads laden mislukt',
+      empty: 'Nog geen formulier-inzendingen — voeg een formulier-sectie toe om leads te vangen.',
+    },
   },
 
   lp: {
