@@ -155,6 +155,64 @@ export function setSectionProps(
   return { ok: true, data: next };
 }
 
+/** Eén structurele operatie (B1-chat-tool + batch-toepassingen). */
+export interface StructureOperation {
+  op: 'add' | 'remove' | 'move' | 'duplicate';
+  sectionId?: string;
+  type?: string;
+  afterSectionId?: string | null;
+  direction?: 'up' | 'down';
+}
+
+export type ApplyStructureResult =
+  | { ok: true; data: EditableTree; summaries: string[] }
+  | { ok: false; reason: string; opIndex: number };
+
+/**
+ * Pas een batch structurele operaties sequentieel toe (alles-of-niets):
+ * faalt één operatie op een guard, dan wordt níets toegepast en komt de
+ * reden + operatie-index terug — de aanroeper (chat-tool/UI) kan gericht
+ * uitleggen wat er niet mag. Summaries zijn NL en user-toonbaar.
+ */
+export function applyStructureOperations(
+  data: EditableTree,
+  contentType: string | null | undefined,
+  operations: StructureOperation[],
+): ApplyStructureResult {
+  let current = data;
+  const summaries: string[] = [];
+  for (let i = 0; i < operations.length; i++) {
+    const op = operations[i];
+    let result: SectionEditResult;
+    switch (op.op) {
+      case 'add':
+        result = addSection(current, {
+          type: op.type ?? '',
+          afterSectionId: op.afterSectionId ?? null,
+        });
+        if (result.ok) summaries.push(`Sectie toegevoegd: ${op.type}${op.afterSectionId ? ` (na ${op.afterSectionId})` : ''}`);
+        break;
+      case 'remove':
+        result = removeSection(current, contentType, op.sectionId ?? '');
+        if (result.ok) summaries.push(`Sectie verwijderd: ${op.sectionId}`);
+        break;
+      case 'move':
+        result = moveSection(current, op.sectionId ?? '', op.direction ?? 'up');
+        if (result.ok) summaries.push(`Sectie ${op.direction === 'down' ? 'omlaag' : 'omhoog'} verplaatst: ${op.sectionId}`);
+        break;
+      case 'duplicate':
+        result = duplicateSection(current, op.sectionId ?? '');
+        if (result.ok) summaries.push(`Sectie gedupliceerd: ${op.sectionId}`);
+        break;
+    }
+    if (!result.ok) {
+      return { ok: false, reason: result.reason, opIndex: i };
+    }
+    current = result.data;
+  }
+  return { ok: true, data: current, summaries };
+}
+
 /**
  * Voeg een sectie toe (na `afterSectionId`, of aan het einde). Weigert
  * onbekende sectie-types — het registry-contract is de vocabulaire.

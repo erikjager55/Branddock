@@ -994,13 +994,25 @@ export const readTools: ClawToolDefinition[] = [
         };
       }
       const fields = collectEditableTextFields(puckData);
+      // B1: sectie-overzicht (id/type/volgorde/lock) — het adresboek voor
+      // structurele edits via update_landing_page_structure.
+      const tree = puckData as { content?: Array<{ type?: string; props?: Record<string, unknown> }> };
+      const sections = (Array.isArray(tree.content) ? tree.content : []).map((item, index) => ({
+        index,
+        type: typeof item?.type === 'string' ? item.type : 'Unknown',
+        id: typeof item?.props?.id === 'string' ? (item.props.id as string) : null,
+        locked: item?.props && typeof item.props === 'object'
+          ? Boolean((item.props as { metadata?: { locked?: boolean } }).metadata?.locked)
+          : false,
+      }));
       return {
         deliverableId: deliverable.id,
         title: deliverable.title,
         contentType: deliverable.contentType,
+        sections,
         fields,
         count: fields.length,
-        tip: 'Propose targeted edits via update_landing_page_content using these exact paths. Text only — never change layout, structure, images, or links.',
+        tip: 'Text edits: update_landing_page_content with these exact paths. Structure (add/remove/move/duplicate sections): update_landing_page_structure with the section ids above. After adding a section, re-read and fill its placeholder copy immediately.',
       };
     },
   },

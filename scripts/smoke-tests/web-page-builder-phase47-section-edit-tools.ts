@@ -4,6 +4,7 @@
  */
 import {
   addSection,
+  applyStructureOperations,
   canRemoveSection,
   duplicateSection,
   moveSection,
@@ -81,6 +82,30 @@ console.log('\n4. setSectionProps + addSection');
   const add = addSection(t, { type: 'StatsBlock', afterSectionId: 'hero-1' });
   assert('addSection na hero', add.ok && add.data.content[1].type === 'StatsBlock');
   assert('addSection krijgt id', add.ok && typeof add.data.content[1].props?.id === 'string');
+}
+
+
+// ─── Batch-operaties (B1 update_landing_page_structure-kernel) ──
+{
+  console.log('\n5. applyStructureOperations (batch, alles-of-niets)');
+  const t = makeTree();
+  const batch = applyStructureOperations(t, 'landing-page', [
+    { op: 'add', type: 'StatsBlock', afterSectionId: 'hero-1' },
+    { op: 'move', sectionId: 'cta-1', direction: 'up' },
+  ]);
+  if (batch.ok) {
+    assert('batch toegepast', true);
+  } else { assert('batch toegepast', false); }
+  const failing = applyStructureOperations(t, 'landing-page', [
+    { op: 'add', type: 'StatsBlock' },
+    { op: 'remove', sectionId: 'hero-1' },
+  ]);
+  if (!failing.ok && failing.reason === 'required' && failing.opIndex === 1) {
+    assert('alles-of-niets: guard-fail geeft reason+opIndex', true);
+  } else { assert('alles-of-niets: guard-fail geeft reason+opIndex', false); }
+  if (t.content.length === 3) {
+    assert('input ongemuteerd na batch', true);
+  } else { assert('input ongemuteerd na batch', false); }
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
