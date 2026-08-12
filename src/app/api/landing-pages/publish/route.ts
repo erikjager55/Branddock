@@ -10,6 +10,11 @@ import { buildGeoOptimizationAnalysis } from '@/lib/landing-pages/geo-analysis';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { runPublishGate } from '@/lib/landing-pages/publish-gate';
+import { compilePageArtifact } from '@/lib/landing-pages/static-compile';
+import { buildPageJsonLdForDeliverable } from '@/lib/landing-pages/page-json-ld-server';
+import { assembleCanvasContext } from '@/lib/ai/canvas-context';
+import { buildSpikePuckConfig } from '@/features/campaigns/components/canvas/medium/puck-config';
+import type { RenderablePageData } from '@/lib/landing-pages/page-render';
 
 /**
  * POST /api/landing-pages/publish
@@ -126,12 +131,37 @@ export async function POST(request: NextRequest) {
       },
     );
 
+    // P2 compile-to-static (ADR 2026-08-12): bevries HTML + tokens van deze
+    // versie in het artifact. Fail-soft — een compile-fout mag de publish
+    // nooit breken; zonder artifact valt de route terug op runtime-render.
+    try {
+      const ctx = await assembleCanvasContext(deliverable.id, workspaceId);
+      const config = buildSpikePuckConfig(ctx);
+      const jsonLd = await buildPageJsonLdForDeliverable(deliverable.id, workspaceId, ctx);
+      const artifact = await compilePageArtifact({
+        puckData: puckData as unknown as RenderablePageData,
+        config,
+        brandTokens: ctx.brandTokens,
+        jsonLd,
+      });
+      await prisma.pagePublish.update({
+        where: { id: result.publishId },
+        data: { compiledHtml: artifact.html },
+      });
+    } catch (err) {
+      console.warn(
+        '[landing-pages/publish] compile-to-static faalde (runtime-fallback blijft):',
+        err instanceof Error ? err.message : err,
+      );
+    }
+
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { slug: true },
     });
     // P0 ISR-fix: on-demand revalidation is het primaire verversmechanisme
     // van de statisch gecachte render-route (pad-params; fallback-TTL 7d).
+    // Ná de artifact-write zodat de verse cache-vulling het artifact ziet.
     if (workspace?.slug) {
       revalidatePath(`/p/${workspace.slug}/${body.slug}`);
     }

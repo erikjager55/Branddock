@@ -6769,6 +6769,10 @@ model PagePublish {
   landingPageId String
   version       Int
   puckData      Json
+  /// P2 compile-to-static (ADR 2026-08-12): bevroren HTML-artifact van deze
+  /// versie (tokens gefixeerd op publish-moment). Null = artifact ontbreekt
+  /// (pre-P2-publish of compile-fout) → runtime-fallback-pad in /p.
+  compiledHtml  String?
   publishedById String?
   createdAt     DateTime @default(now())
 

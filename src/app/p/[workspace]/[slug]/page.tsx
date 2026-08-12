@@ -7,9 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { resolvePublishedPage } from '@/lib/landing-pages/publish-page';
 import { buildSpikePuckConfig, type SpikePuckProps } from '@/features/campaigns/components/canvas/medium/puck-config';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
-import { getVariantSchemaForType, type PageVariantContent } from '@/lib/landing-pages/page-type-schemas';
-import { buildPageJsonLd, flavorFromProduct } from '@/lib/landing-pages/page-json-ld';
-import { resolveAuthorProfile } from '@/lib/landing-pages/author-profile';
+import { buildPageJsonLdForDeliverable, serializeJsonLdForHtml } from '@/lib/landing-pages/page-json-ld-server';
 import type { SeoChecklist } from '@/lib/ai/seo-pipeline.types';
 import { seoChecklistToMetadata } from '@/lib/landing-pages/page-metadata';
 
@@ -101,6 +99,14 @@ export default async function PublishedPage({ params }: Props) {
     notFound();
   }
 
+  // P2 (ADR 2026-08-12): bevroren artifact van de live versie — geen
+  // context-assembly, geen config-build, geen render; JSON-LD + styles +
+  // fonts zitten ín het artifact. Rollback serveert automatisch de bevroren
+  // staat van díe versie. Zonder artifact: runtime-fallback hieronder.
+  if (resolved.compiledHtml) {
+    return <div dangerouslySetInnerHTML={{ __html: resolved.compiledHtml }} />;
+  }
+
   const deliverableContext = await prisma.landingPage.findFirst({
     where: { workspaceId: resolved.workspaceId, slug },
     select: { deliverableId: true },
@@ -131,77 +137,10 @@ export default async function PublishedPage({ params }: Props) {
           // Escape HTML-significante tekens: JSON.stringify escaped `<`/`>`/`&` niet,
           // dus AI-/user-content met `</script>` kan anders uit het <script>-element
           // breken (stored XSS op de publieke pagina). Zie security-audit 2026-06-26 H2.
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(jsonLd)
-              .replace(/</g, "\\u003c")
-              .replace(/>/g, "\\u003e")
-              .replace(/&/g, "\\u0026")
-          }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLdForHtml(jsonLd) }}
         />
       ) : null}
       <PageRender config={config} data={data} />
     </>
   );
-}
-
-/**
- * Bouwt de JSON-LD voor een gepubliceerd deliverable uit de gepersisteerde
- * settings.structuredVariant (faq → FAQPage, product → Product/Service, geoArticle
- * → BlogPosting). Fail-soft: elke afwijking (geen variant, ander content-type,
- * schema-mismatch) geeft null → geen script-tag. BlogPosting-dates komen uit de
- * LandingPage-metadata (publish/update-tijd); inLanguage + author (E-E-A-T) uit
- * de workspace (contentLanguage + authorProfile).
- */
-async function buildPageJsonLdForDeliverable(
-  deliverableId: string,
-  workspaceId: string,
-  ctx: Awaited<ReturnType<typeof assembleCanvasContext>>,
-): Promise<Record<string, unknown> | null> {
-  const deliverable = await prisma.deliverable.findUnique({
-    where: { id: deliverableId },
-    select: { contentType: true, settings: true },
-  });
-  if (!deliverable) return null;
-  const settings =
-    deliverable.settings && typeof deliverable.settings === 'object' && !Array.isArray(deliverable.settings)
-      ? (deliverable.settings as Record<string, unknown>)
-      : {};
-  const rawVariant = settings.structuredVariant;
-  if (!rawVariant || typeof rawVariant !== 'object') return null;
-
-  const parsed = getVariantSchemaForType(deliverable.contentType).safeParse(rawVariant);
-  if (!parsed.success) return null;
-
-  // Freshness-datums voor BlogPosting uit de LandingPage-snapshot (system-sourced,
-  // niet uit de AI-variant). Alleen relevant voor geoArticle; fail-soft.
-  const landingPage = await prisma.landingPage.findFirst({
-    where: { deliverableId },
-    select: { publishedAt: true, updatedAt: true },
-  });
-
-  // E-E-A-T + taal uit de workspace (Fase 3). contentLanguage is system-sourced
-  // (ISO 639-1); authorProfile (Json) wordt defensief gevalideerd → Person|null.
-  // Fail-soft: dit zit op het publieke render-pad van ÁLLE gepubliceerde pagina's;
-  // mocht de additieve authorProfile-kolom in een omgeving (nog) niet ge-db-pusht
-  // zijn, mag de query de paginarender niet laten crashen.
-  let workspace: { contentLanguage: string; authorProfile: unknown } | null = null;
-  try {
-    workspace = await prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { contentLanguage: true, authorProfile: true },
-    });
-  } catch (err) {
-    console.warn('[p/[workspace]/[slug]] workspace author/lang fetch faalde (genegeerd):', err instanceof Error ? err.message : err);
-  }
-
-  const product = ctx.products[0] ?? null;
-  return buildPageJsonLd(parsed.data as PageVariantContent, {
-    brandName: ctx.brand?.brandName ?? null,
-    imageUrl: product?.images?.find((img) => /^https?:\/\//i.test(img.url))?.url ?? null,
-    flavor: flavorFromProduct(product),
-    datePublished: landingPage?.publishedAt?.toISOString() ?? null,
-    dateModified: landingPage?.updatedAt?.toISOString() ?? null,
-    inLanguage: workspace?.contentLanguage ?? null,
-    author: resolveAuthorProfile(workspace?.authorProfile),
-  });
 }

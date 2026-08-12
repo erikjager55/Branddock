@@ -41,7 +41,7 @@ interface LandingPageClient {
     }) => Promise<{
       puckData: unknown;
       status: string;
-      livePublish?: { puckData: unknown } | null;
+      livePublish?: { puckData: unknown; compiledHtml?: string | null } | null;
     } | null>;
   };
 }
@@ -130,6 +130,8 @@ export interface PublishPageResult {
   publishedAt: Date;
   /** Versienummer van de zojuist aangemaakte PagePublish-snapshot (additief). */
   version: number;
+  /** Id van de PagePublish-rij — P2 compile-to-static schrijft er het artifact op (additief). */
+  publishId: string;
 }
 
 /**
@@ -171,7 +173,7 @@ export async function publishLandingPage(
   }
 
   const publishedAt = new Date();
-  const { record, version } = await prisma.$transaction(async (tx) => {
+  const { record, version, publishId } = await prisma.$transaction(async (tx) => {
     const record = await tx.landingPage.upsert({
       where: {
         workspaceId_locale_slug: {
@@ -218,7 +220,7 @@ export async function publishLandingPage(
       data: { livePublishId: publish.id },
     });
 
-    return { record, version: publish.version };
+    return { record, version: publish.version, publishId: publish.id };
   });
 
   return {
@@ -227,6 +229,7 @@ export async function publishLandingPage(
     status: 'PUBLISHED',
     publishedAt: record.publishedAt ?? publishedAt,
     version,
+    publishId,
   };
 }
 
@@ -244,7 +247,7 @@ export async function resolvePublishedPage(
   prisma: LandingPageClient & WorkspaceClient,
   workspaceSlug: string,
   pageSlug: string,
-): Promise<{ workspaceId: string; puckData: unknown } | null> {
+): Promise<{ workspaceId: string; puckData: unknown; compiledHtml: string | null } | null> {
   const workspace = await prisma.workspace.findUnique({
     where: { slug: workspaceSlug },
     select: { id: true },
@@ -259,7 +262,7 @@ export async function resolvePublishedPage(
     select: {
       puckData: true,
       status: true,
-      livePublish: { select: { puckData: true } },
+      livePublish: { select: { puckData: true, compiledHtml: true } },
     },
   });
   if (!page || page.status !== 'PUBLISHED') return null;
@@ -267,6 +270,9 @@ export async function resolvePublishedPage(
   return {
     workspaceId: workspace.id,
     puckData: page.livePublish?.puckData ?? page.puckData,
+    // P2 (ADR 2026-08-12): bevroren artifact van de live versie; null =
+    // pre-P2-publish of compile-fout → runtime-fallback in de route.
+    compiledHtml: page.livePublish?.compiledHtml ?? null,
   };
 }
 
