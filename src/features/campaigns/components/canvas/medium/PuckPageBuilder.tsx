@@ -2,11 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createPortal } from 'react-dom';
-import { Puck } from '@puckeditor/core';
 import { PageRender } from '@/lib/landing-pages/page-render';
 import type { PageData as Data } from '@/lib/landing-pages/page-data';
-import '@puckeditor/core/puck.css';
 import { Loader2, Shield, Wand2, Layout, X, ScanEye, Sparkles } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
@@ -18,13 +15,14 @@ import { generateCanvasVisual } from '../../../api/canvas.api';
 import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
 import { PreviewEditingLayer } from './PreviewEditingLayer';
+import { SectionEditor } from './SectionEditor';
 import { useBrandFontLoader } from './useBrandFontLoader';
 import { buildA11yStyleBlock } from '@/lib/landing-pages/a11y-styles';
 import { TokenProvenancePanel } from './TokenProvenancePanel';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
 // Page-level lock is stored op `puckData.root.props.locked` (boolean).
 // Per-component lock-utils (component-lock.ts) blijven beschikbaar voor
-// de fullscreen Puck-editor (sidebar metadata) — niet meer in default-view.
+// de sectie-editor + PreviewEditingLayer — niet meer in default-view.
 
 type SpikeData = Data<SpikePuckProps>;
 
@@ -51,10 +49,11 @@ function withSectionBands(data: SpikeData): SpikeData {
  * Strict-rewrite / Generate-from-prompt) blijft voor structurele iteraties.
  *
  * Layout:
- *  - Full-width `<Render>` van puckData = hoofd-view (preview-first)
+ *  - Full-width `<PageRender>` van puckData = hoofd-view (preview-first)
  *  - Floating action-buttons rechtsboven: lock-toggle + "Bewerk layout"
  *  - Page-level toolbar onderaan (3 page-AI actions)
- *  - Fullscreen Puck editor modal voor drag-drop / Blocks-library / properties
+ *  - Eigen fullscreen {@link SectionEditor} (E2, ADR 2026-08-07-puck-exit-
+ *    sectie-editor) voor sectie-lijst / toevoegen / props / undo-redo
  *
  * Data-flow (ongewijzigd sinds Phase 1):
  *  - Hydrate uit `contextStack.puckData` (server-loaded)
@@ -307,9 +306,9 @@ export function PuckPageBuilder({
       // niet alsnog muteren. Locked = bevries de hele content-tree.
       const currentRoot = (data.root?.props ?? {}) as Record<string, unknown>;
       if (currentRoot.locked === true) return;
-      // Puck's onChange filtert props die niet in component.fields staan → de
-      // bandTone (geen editor-field) wordt gestript en sectie-reorders breken de
-      // ritmiek. Her-toepassen na elke editor-mutatie houdt de bands correct.
+      // bandTone is geen editor-field: sectie-reorders/adds wijzigen de
+      // base/alt-afwisseling. Her-toepassen na elke editor-mutatie houdt de
+      // band-ritmiek correct (deterministisch + idempotent).
       const banded = withSectionBands(data);
       // Synchroon (niet wachten op de effect-flush): de self-heal-completion
       // leest puckDataRef om een verse user-pick te respecteren — het
@@ -730,9 +729,10 @@ export function PuckPageBuilder({
       ) : null}
 
       {editorOpen ? (
-        <FullscreenEditorModal
+        <SectionEditor
           config={config}
           data={puckData}
+          contentType={contentType}
           onChange={handlePuckChange}
           onClose={() => setEditorOpen(false)}
         />
@@ -832,147 +832,3 @@ function LockToggle({
   );
 }
 
-/**
- * Fullscreen modal die de volledige `<Puck>` editor opent (drag-drop /
- * Blocks-library / properties-panel) voor power-user layout-werk. Verstopt
- * achter de "Bewerk layout" knop zodat de preview-first default-view
- * uncluttered blijft.
- *
- * Implementation-keuze: React.createPortal naar `document.body` ipv
- * inline-render in de Step 3 React-tree — voorkomt stacking-context-trap
- * waar `fixed inset-0` constrained werd tot een transformed parent in
- * Branddock's app-shell (bug 2026-05-25: Sluit-editor topbar onzichtbaar
- * + Confirm-Continue knop nog steeds zichtbaar bij open editor).
- *
- * UI-keuze: ipv aparte slate-900 topbar BOVEN Puck, vervangen we Puck's
- * default Publish-knop via `overrides.headerActions` met een Branddock-
- * primary pill "Sluit editor". Dit consolideert tot één header (Puck's
- * eigen, met viewport-toggles + zoom + undo/redo behouden) en haalt
- * Puck's Publish-knop weg (we hebben eigen `/api/landing-pages/publish`).
- *
- * Theming: CSS-variable overrides op de wrapper-div mappen Puck's
- * `--puck-color-azure-*` blauw-palet naar Branddock primary cyan tones,
- * zodat selection-outlines, focus-rings, en hover-states matchen met
- * de rest van de app.
- */
-function FullscreenEditorModal({
-  config,
-  data,
-  onChange,
-  onClose,
-}: {
-  config: ReturnType<typeof buildSpikePuckConfig>;
-  data: SpikeData;
-  onChange: (data: SpikeData) => void;
-  onClose: () => void;
-}) {
-  const { t } = useTranslation('campaigns-canvas-medium');
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
-
-  // BEWUST GEEN body-scroll-lock hier (Playwright-diagnose 2026-06-10): Puck
-  // spiegelt de parent-`<body>`-attributen (incl. inline style) de preview-
-  // iframe in — een `document.body.style.overflow = 'hidden'` belandt dan als
-  // inline style op de iframe-body en maakt de pagina-preview onscrollbaar
-  // ("pagina zelf scrollt niet"). Een lock is hier ook onnodig: Branddock's
-  // app-shell scrollt via inner containers (h-full overflow-auto), nooit via
-  // body, dus er is geen scroll-bleed achter de fixed overlay.
-  //
-  // Wél defensief OPRUIMEN bij mount: een vóór de editor verkregen modal-lock
-  // (keyboard-pad: Tab uit een open modal → Enter op "Bewerk layout") zou
-  // anders alsnog one-shot de iframe in gespiegeld worden. De iframe laadt
-  // async, dus dit effect wint die race; shared Modal's release zet later
-  // hooguit nogmaals '' (no-op).
-  useEffect(() => {
-    if (document.body.style.overflow) {
-      document.body.style.overflow = '';
-    }
-  }, []);
-
-  if (typeof window === 'undefined') return null;
-
-  return createPortal(
-    <div
-      style={{
-        // Inline-style fixed-positioning + max z-index om Tailwind-JIT-
-        // compile issues (`z-[10000]` werd niet altijd opgepikt) en
-        // stacking-context-traps van Branddock's app-chrome (z-30 sticky
-        // top-nav + sidebar) te bypassen. Max int32 = 2147483647 garandeert
-        // dat geen ander element ooit boven dit modal komt te liggen.
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 2147483647,
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#ffffff',
-        // Map Puck's azure-blauw accent-palette → Branddock primary cyan
-        // (#1FD1B2 + darker hover). Geldt voor selection-outlines, focus-
-        // rings, button-bg, en hover-tints binnen de Puck-editor.
-        ['--puck-color-azure-04' as string]: '#1FD1B2',
-        ['--puck-color-azure-05' as string]: '#0DAFA0',
-        ['--puck-color-azure-11' as string]: '#e8faf7',
-        ['--puck-color-azure-12' as string]: '#f0fdfa',
-      } as React.CSSProperties}
-    >
-      {/* Puck's eigen CSS zet `._PuckLayout_ { height: 100dvh }` (hardcoded,
-          geen var) — met onze topbar erboven groeit de editor dan ~50px
-          voorbij het viewport. Gevolg: de onderste strook van sidebars +
-          canvas wordt door `overflow: hidden` afgekapt en is onbereikbaar,
-          en er valt niets te scrollen omdat Puck intern denkt dat alles past
-          (Playwright-diagnose 2026-06-10: sidebar scrollHeight==clientHeight
-          terwijl de velden visueel afgekapt waren). Scoped override: laat de
-          layout de beschikbare wrapper-hoogte volgen. `[class*="_PuckLayout_"]`
-          matcht alléén de layout-root — header/nav/inner gebruiken een
-          `-`-suffix in de CSS-module-naam, modifiers een `--`. */}
-      <style>{`
-        .bd-puck-editor-fit .Puck { height: 100%; }
-        .bd-puck-editor-fit [class*="_PuckLayout_"] { height: 100%; }
-      `}</style>
-      {/* Branddock-style topbar ABOVE Puck — guarantees that "Close editor"
-          is always visible at viewport-top, independent of Puck's own
-          header-layout or any CSS conflicts. */}
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-5 py-3 shadow-sm">
-        <div className="flex items-center gap-2">
-          <Layout className="h-4 w-4 text-gray-600" />
-          <span className="text-sm font-semibold text-gray-900">{t('pageBuilder.layoutEditor')}</span>
-          <span className="ml-2 text-xs text-gray-500">
-            {t('pageBuilder.dragHint')}
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t('pageBuilder.closeEditorAria')}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 transition-opacity"
-        >
-          <X className="h-4 w-4" />
-          {t('pageBuilder.closeEditor')}
-        </button>
-      </div>
-      <div className="bd-puck-editor-fit" style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-        <Puck
-          config={config}
-          data={data}
-          onChange={onChange}
-          overrides={{
-            // Vervang Puck's default Publish-knop met een lege fragment —
-            // we hebben eigen `/api/landing-pages/publish` flow buiten de
-            // editor. De close-knop zit in onze eigen topbar hierboven.
-            // Fragment ipv null omdat Puck's RenderFunc een ReactElement
-            // verwacht (geen null).
-            headerActions: () => <></>,
-          }}
-        />
-      </div>
-    </div>,
-    document.body,
-  );
-}
