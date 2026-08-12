@@ -98,12 +98,15 @@ export async function POST(request: NextRequest) {
       },
     );
 
-    revalidatePath(`/p/${body.slug}`);
-
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { slug: true },
     });
+    // P0 ISR-fix: on-demand revalidation is het primaire verversmechanisme
+    // van de statisch gecachte render-route (pad-params; fallback-TTL 7d).
+    if (workspace?.slug) {
+      revalidatePath(`/p/${workspace.slug}/${body.slug}`);
+    }
     const url = workspace?.slug
       ? `https://${workspace.slug}.branddock.app/${body.slug}`
       : `https://branddock.app/p/${body.slug}`;

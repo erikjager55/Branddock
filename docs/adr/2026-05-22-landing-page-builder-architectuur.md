@@ -255,6 +255,13 @@ Dual-render van twee Puck-trees in page-level diff-preview is non-triviaal voor 
 
 # Notes
 
+> **Aantekening 2026-08-12**: beslissing 2 (editor-stack: Puck) is herzien door
+> ADR [`2026-08-07-puck-exit-sectie-editor`](2026-08-07-puck-exit-sectie-editor.md)
+> (accepted) — re-evaluation-trigger 4 ("editor te dev-oriented") werd geraakt en
+> een footprint-audit + marktonderzoek wezen naar een eigen sectie-editor +
+> render-loop op het ongewijzigde JSON-model. Beslissingen 1/3/4/5 (Canvas-
+> integratie, Vercel-hosting, CNAME-domains, persistentie) blijven van kracht.
+
 **Re-evaluation triggers** (wanneer deze ADR herzien moet worden):
 
 1. **Puck-project stagnatie**: als release-cadens stopt of breaking changes maintainability verstoren, evalueer fork of switch naar GrapesJS / build-from-scratch.

@@ -227,17 +227,17 @@ function testHostRouter(): void {
     {
       host: 'my-ws.branddock.app',
       path: '/spring-launch',
-      expected: '/p/spring-launch?workspace=my-ws',
+      expected: '/p/my-ws/spring-launch',
     },
     {
       host: 'my-ws.lvh.me:3000',
       path: '/about-us',
-      expected: '/p/about-us?workspace=my-ws',
+      expected: '/p/my-ws/about-us',
     },
     {
       host: 'WS.BRANDDOCK.APP',
       path: '/Slug-1',
-      expected: '/p/Slug-1?workspace=ws',
+      expected: '/p/ws/Slug-1',
     },
   ];
   for (const { host, path, expected } of rewrites) {
