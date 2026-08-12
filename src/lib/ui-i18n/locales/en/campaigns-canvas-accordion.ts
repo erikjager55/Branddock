@@ -354,6 +354,35 @@ const ns = {
     },
   },
 
+  // P1 versioned publishes — WebPagePublishPanel (Step 4, Puck-renderable types)
+  webPublish: {
+    title: 'Web page publishing',
+    liveBadge: 'Live · v{{version}}',
+    loading: 'Loading publish status…',
+    loadError: 'Failed to load publish status',
+    retry: 'Retry',
+    slugLabel: 'URL slug',
+    slugPlaceholder: 'my-page',
+    slugInvalid: 'Use lowercase letters, digits and single hyphens — no leading or trailing hyphen.',
+    publish: 'Publish',
+    publishing: 'Publishing…',
+    publishError: 'Publish failed',
+    versionsTitle: 'Publish versions',
+    versionLabel: 'v{{version}}',
+    live: 'Live',
+    noVersions: 'Not published yet — publishing creates version 1.',
+    view: 'View',
+    restore: 'Restore this version',
+    restoreConfirm: 'Restore version {{version}}? The live URL will serve this snapshot again.',
+    rollbackError: 'Restore failed',
+    previewTitle: 'Version {{version}}',
+    previewPublishedAt: 'Published {{date}}',
+    previewLoading: 'Loading version…',
+    previewError: 'Failed to load version preview',
+    previewSections: 'Sections ({{count}})',
+    previewEmpty: 'No sections in this snapshot.',
+  },
+
   lp: {
     errors: {
       saveHeroImage: 'Failed to save hero image',

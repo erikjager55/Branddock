@@ -95,6 +95,8 @@ export async function POST(request: NextRequest) {
         slug: body.slug,
         locale,
         puckData: puckData as never,
+        // P1 versioned publishes — audit-veld op de PagePublish-snapshot.
+        publishedById: session.user.id,
       },
     );
 

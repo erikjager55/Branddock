@@ -352,6 +352,35 @@ const ns = {
     },
   },
 
+  // P1 versioned publishes — WebPagePublishPanel (Stap 4, Puck-renderbare types)
+  webPublish: {
+    title: 'Webpagina publiceren',
+    liveBadge: 'Live · v{{version}}',
+    loading: 'Publicatiestatus laden…',
+    loadError: 'Publicatiestatus laden mislukt',
+    retry: 'Opnieuw proberen',
+    slugLabel: 'URL-slug',
+    slugPlaceholder: 'mijn-pagina',
+    slugInvalid: 'Gebruik kleine letters, cijfers en losse koppeltekens — niet beginnen of eindigen met een koppelteken.',
+    publish: 'Publiceer',
+    publishing: 'Publiceren…',
+    publishError: 'Publiceren mislukt',
+    versionsTitle: 'Publicatieversies',
+    versionLabel: 'v{{version}}',
+    live: 'Live',
+    noVersions: 'Nog niet gepubliceerd — publiceren maakt versie 1 aan.',
+    view: 'Bekijk',
+    restore: 'Herstel deze versie',
+    restoreConfirm: 'Versie {{version}} herstellen? De live URL serveert deze snapshot dan weer.',
+    rollbackError: 'Herstellen mislukt',
+    previewTitle: 'Versie {{version}}',
+    previewPublishedAt: 'Gepubliceerd {{date}}',
+    previewLoading: 'Versie laden…',
+    previewError: 'Versie-preview laden mislukt',
+    previewSections: 'Secties ({{count}})',
+    previewEmpty: 'Geen secties in deze snapshot.',
+  },
+
   lp: {
     errors: {
       saveHeroImage: 'Hero-afbeelding opslaan mislukt',
