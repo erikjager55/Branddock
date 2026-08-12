@@ -40,6 +40,10 @@ import { runFidelityScoring } from "@/lib/brand-fidelity/fidelity-runner";
 import { detectAiTells } from "@/lib/brand-fidelity/ai-tell-detector";
 import { ensureBrandArchetype } from "@/lib/landing-pages/ensure-archetype";
 import { ensureLayoutStyle } from "@/lib/landing-pages/ensure-layout-style";
+import {
+  sanitizeVariantLayoutPatterns,
+  variantLayoutPatterns,
+} from "@/lib/landing-pages/pattern-choice";
 import { trackAICallStart, trackAICallComplete } from "@/lib/learning-loop/call-tracker";
 import { isPuckRenderable } from "@/lib/landing-pages/webpage-types";
 import { invalidateCache } from "@/lib/api/cache";
@@ -128,6 +132,9 @@ interface VariantPostProcessArgs {
   humanVoiceMode: HumanVoiceMode;
   generationModel: string | undefined;
   brandVocabulary: string[];
+  /** C3 — server-side archetype (ensureBrandArchetype) voor de pattern-
+   *  hervalidatie na tell-rewrite/silent-iterate (die parsen opnieuw). */
+  archetype: string | null;
 }
 
 /**
@@ -220,7 +227,12 @@ async function applyStrictTellRewrite(
     slot,
     rw.decisionReason,
   );
-  return { ...r, variant: rw.variant };
+  // C3 — de rewrite herparset het LP-schema; hervalideer de pattern-keys
+  // zodat een rewrite-hallucinatie de archetype-/minItems-filter niet omzeilt.
+  return {
+    ...r,
+    variant: sanitizeVariantLayoutPatterns(rw.variant, a.contentType, a.archetype),
+  };
 }
 
 /**
@@ -306,7 +318,11 @@ async function applySilentIterate(
         scored.result.compositeScore,
         rescored.result.compositeScore,
       );
-      return { ...r, variant: parsedRw.data };
+      // C3 — zelfde hervalidatie als bij de STRICT tell-rewrite (herparse-pad).
+      return {
+        ...r,
+        variant: sanitizeVariantLayoutPatterns(parsedRw.data, a.contentType, a.archetype),
+      };
     }
     return r;
   } catch (err) {
@@ -336,6 +352,7 @@ interface GenerationResponsePayload {
 async function persistVariantOptions(args: {
   deliverableId: string;
   workspaceId: string;
+  contentType: string;
   existingSettings: Record<string, unknown>;
   results: GenerationResult[];
   count: number;
@@ -347,6 +364,20 @@ async function persistVariantOptions(args: {
   const variantLabels = results.map((r) => r.angleLabel ?? null);
   const totalInputTokens = results.reduce((s, r) => s + r.inputTokens, 0);
   const totalOutputTokens = results.reduce((s, r) => s + r.outputTokens, 0);
+
+  // C3 §7 — pattern-spreiding-meting: compacte log per gegenereerde variant
+  // zodat de monocultuur-drempel (>80% zelfde pattern per sectie-type = C3
+  // bijstellen) uit server-logs te meten is; het dashboard is post-pilot.
+  results.forEach((r, i) => {
+    console.info(
+      "[pattern-choice]",
+      JSON.stringify({
+        type: args.contentType,
+        variant: i,
+        keys: variantLayoutPatterns(r.variant),
+      }),
+    );
+  });
 
   await prisma.deliverable.update({
     where: { id: args.deliverableId },
@@ -620,6 +651,7 @@ export async function POST(
     humanVoiceMode,
     generationModel,
     brandVocabulary,
+    archetype: archetypeResult.archetype,
   };
 
   // B2 — SSE-modus-detectie: `?stream=1` (canoniek) of Accept-header.
@@ -638,6 +670,7 @@ export async function POST(
         persistVariantOptions({
           deliverableId,
           workspaceId,
+          contentType: deliverable.contentType,
           existingSettings,
           results,
           count,
@@ -679,6 +712,7 @@ export async function POST(
   const payload = await persistVariantOptions({
     deliverableId,
     workspaceId,
+    contentType: deliverable.contentType,
     existingSettings,
     results,
     count,

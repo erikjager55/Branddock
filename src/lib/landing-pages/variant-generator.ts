@@ -47,6 +47,10 @@ import {
   type PageVariantContent,
 } from "./page-type-schemas";
 import { sanitizeLongFormGeoVariant } from "./sanitize-geo-sources";
+import {
+  buildLayoutPatternPromptBlock,
+  sanitizeVariantLayoutPatterns,
+} from "./pattern-choice";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -323,6 +327,9 @@ function buildSharedStyleBlocks(opts: SystemPromptOpts): string {
 
 function buildSystemPrompt(opts: SystemPromptOpts): string {
   const styleBlocks = buildSharedStyleBlocks(opts);
+  // C3 — generatieve pattern-keuze: archetype-gefilterd LAYOUT-PATTERNS-blok
+  // (ADR 2026-08-12-generative-pattern-choice). Leeg blok = prompt byte-identiek.
+  const patternBlock = buildLayoutPatternPromptBlock("landing-page", opts.archetype);
   // DTS C6 — sectie-blueprint hint uit render-constraints (alleen wanneer archetype gezet)
   // Maakt sectie-density consistent per merk (RULER 5 secties tight, SAGE 8 editorial)
   let blueprintBlock = '';
@@ -421,7 +428,7 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
     "primaryCta": string (MOET IDENTIEK zijn aan hero.primaryCta, single-CTA discipline)
   }
 }
-
+${patternBlock}
 # KRITISCHE REGELS (overtreding = automatic rejection)
 1. **Single-CTA discipline**: finalCta.primaryCta MOET letterlijk identiek zijn aan hero.primaryCta. Geen synoniemen, geen variatie. Alle CTA's op de pagina drijven naar dezelfde actie.
 2. **Headline = descriptief, max 60 tekens**: na 5 seconden moet de lezer exact weten WAT je verkoopt. Noem het product + de differentiator (descriptieve kern + emotionele register), geen vage benefit-slogan. Geen "Welkom bij..." of "De #1 oplossing voor...".
@@ -611,7 +618,7 @@ Genereer een complete FAQ-pagina als **gestructureerd JSON** volgens het schema 
   },
   "closingCta": { "heading": string (zachte vervolgstap-belofte), "ctaLabel": string (max 48 tekens) }
 }
-
+${buildLayoutPatternPromptBlock("faq-page", opts.archetype)}
 # KRITISCHE REGELS (overtreding = automatic rejection)
 1. **Antwoord-eerst (AEO)**: de EERSTE zin van elk antwoord beantwoordt de vraag volledig en zelfstandig leesbaar (40-60 woorden kern); daarna pas toelichting. Het antwoord moet citeerbaar zijn zonder de vraag erbij.
 2. **Klanttaal**: vragen geformuleerd zoals een klant ze zou typen, niet zoals het bedrijf erover praat. Front-load het kernwoord ("Retourneren: hoe werkt het?").
@@ -659,7 +666,7 @@ Genereer een complete product/service-pagina als **gestructureerd JSON** volgens
     "secondaryCta": string | optional (zelfde tweede koopmodus als de hero)
   }
 }
-
+${buildLayoutPatternPromptBlock("product-page", opts.archetype)}
 # KRITISCHE REGELS (overtreding = automatic rejection)
 1. **Single-CTA discipline**: finalCta.primaryCta letterlijk identiek aan hero.primaryCta.
 2. **Outcome boven categorie**: de headline beschrijft wat de klant BEREIKT; de subline maakt het geloofwaardig.
@@ -714,7 +721,7 @@ CHAPTER = {
   "stat": { "value": string (groot cijfer in merkstijl), "context": string (1 regel context) } | optional (ALLEEN cijfers uit de context),
   "quote": { "text": string, "attribution": string (functie-aanduiding, geen verzonnen naam) } | optional
 }
-
+${buildLayoutPatternPromptBlock("microsite", opts.archetype)}
 # KRITISCHE REGELS (overtreding = automatic rejection)
 1. **Storytelling-arc**: heroManifest stelt de these; story bewijst de aanleiding; impact/community verdiepen; join sluit af met actie. Elke sectie-kop vertelt de arc verder; de navLabels samen lezen als een verhaal.
 2. **Zelfstandige hero**: de meerderheid scrollt niet ver; heroManifest moet de hele campagne alleen kunnen dragen.
@@ -964,8 +971,11 @@ function extractJsonBlock(text: string): string | null {
  * de-em-dash + dynamische brand-voorbeelden (was ongeversioneerd).
  * 2.1.0 = GEO/SEO Fase 3: canonieke buildGeoDirective() ingebed in de long-form
  * GEO-prompt (gedeeld met de GEO-polish-stage zodat de paden niet driften).
+ * 2.2.0 = C3 generatieve pattern-keuze: LAYOUT-PATTERNS-blok (per-sectie
+ * layout-keys, archetype-gefilterd, + variatie-directief) in de LP/faq/
+ * product/microsite-prompts; `layoutPatterns` additief in de schemas.
  */
-export const LP_VARIANT_PROMPT_VERSION = "2.1.0";
+export const LP_VARIANT_PROMPT_VERSION = "2.2.0";
 
 export interface GenerationResult {
   /** LP-shape voor landing-page/comparison-page; type-eigen shape (W1) voor
@@ -1041,8 +1051,17 @@ export async function generateLandingPageVariant(
     );
   }
 
+  // C3 — server-side pattern-validatie ná parse: Zod bewaakt alleen de vorm;
+  // het archetype-/minItems-filter is dynamisch. Ongeldige keys → 'default'
+  // (warn, geen fail) zodat een layout-hallucinatie nooit een variant kost.
+  const variant = sanitizeVariantLayoutPatterns(
+    parse.data,
+    params.contentType,
+    params.archetype ?? null,
+  );
+
   return {
-    variant: parse.data,
+    variant,
     inputTokens: response.inputTokens,
     outputTokens: response.outputTokens,
     retried: false,

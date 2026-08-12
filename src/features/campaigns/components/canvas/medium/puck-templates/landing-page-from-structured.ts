@@ -24,6 +24,7 @@ import type { CanvasContextStack } from "@/lib/ai/canvas-context";
 import type { SpikePuckProps } from "../puck-config";
 import type { LandingPageVariantContent } from "@/lib/landing-pages/variant-schema";
 import { assignBrandImagesToVariant } from "@/lib/landing-pages/brand-images";
+import { patternProp } from "@/lib/landing-pages/pattern-choice";
 
 type SpikeData = Data<SpikePuckProps>;
 type PuckInstance = { type: string; props: Record<string, unknown> };
@@ -67,6 +68,8 @@ function heroSection(v: LandingPageVariantContent, ctx: CanvasContextStack | nul
 function trustStripSection(v: LandingPageVariantContent): PuckInstance {
   // MVP-workaround: FeatureGrid met logo-labels.
   // v2: dedicated TrustStrip-component (spec §4a v2-task).
+  // C3: bewust GEEN patternKey — layoutPatterns.features stuurt de échte
+  // features-sectie, niet deze workaround-grid.
   // P10: een badge-check-icon geeft de trust-items een herkenbaar credibility-
   // signaal i.p.v. kale tekst (de FeatureGrid rendert anders een lege icon-slot).
   const features = v.trust.items.map((item) => ({
@@ -104,7 +107,13 @@ function featuresSection(v: LandingPageVariantContent): PuckInstance {
   if (hasImages) return instance("FeatureSplit", { features });
   const columns: "2" | "3" | "4" =
     features.length >= 4 ? "4" : features.length === 2 ? "2" : "3";
-  return instance("FeatureGrid", { columns, features });
+  // C3 — gevalideerde generator-keuze (alleen op de FeatureGrid-tak:
+  // FeatureSplit heeft geen patterns in SECTION_PATTERNS).
+  return instance("FeatureGrid", {
+    columns,
+    features,
+    ...patternProp("FeatureGrid", v.layoutPatterns?.features),
+  });
 }
 
 function testimonialSections(
@@ -119,6 +128,7 @@ function testimonialSections(
       quote: `"${t.quote}"`,
       author,
       personaId,
+      ...patternProp("Testimonial", v.layoutPatterns?.testimonial),
     });
   });
 }
@@ -136,7 +146,10 @@ function impactStatsSection(
     value: s.value,
     label: s.label,
   }));
-  return instance("StatsBlock", { items });
+  return instance("StatsBlock", {
+    items,
+    ...patternProp("StatsBlock", v.layoutPatterns?.stats),
+  });
 }
 
 function pricingSection(v: LandingPageVariantContent): PuckInstance | null {
@@ -151,7 +164,10 @@ function pricingSection(v: LandingPageVariantContent): PuckInstance | null {
 }
 
 function faqSection(v: LandingPageVariantContent): PuckInstance {
-  return instance("FAQ", { items: v.faq.items });
+  return instance("FAQ", {
+    items: v.faq.items,
+    ...patternProp("FAQ", v.layoutPatterns?.faq),
+  });
 }
 
 function finalCtaSection(
@@ -170,6 +186,7 @@ function finalCtaSection(
     personaId,
     riskReducer: v.finalCta.riskReducer,
     heading: v.finalCta.heading,
+    ...patternProp("BrandCTA", v.layoutPatterns?.finalCta),
   });
 }
 

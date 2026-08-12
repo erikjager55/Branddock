@@ -29,6 +29,7 @@ import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import type { CanvasContextStack } from "@/lib/ai/canvas-context";
 import type { SpikePuckProps } from "../puck-config";
 import type { MicrositeVariantContent, MicrositeChapter } from "@/lib/landing-pages/page-type-schemas";
+import { patternProp } from "@/lib/landing-pages/pattern-choice";
 import { resolveCtaHref, assignSectionBands } from "./landing-page-from-structured";
 import { instance, taglineFromSubline, footerInstance, slugifyAnchor, type PuckInstance } from "./from-structured-shared";
 
@@ -77,11 +78,13 @@ function fillChapterImages(chapter: MicrositeChapter, pool: string[]): Microsite
   return used > 0 ? { ...chapter, blocks } : chapter;
 }
 
-/** Eén hoofdstuk → StoryChapter (geankerd) + optioneel StatsBlock + Testimonial. */
+/** Eén hoofdstuk → StoryChapter (geankerd) + optioneel StatsBlock + Testimonial.
+ *  C3: `quotePatternKey` (layoutPatterns.quote) stuurt álle hoofdstuk-citaten. */
 function chapterSections(
   chapter: MicrositeChapter,
   anchorId: string,
   personaId: string,
+  quotePatternKey: string | undefined,
 ): PuckInstance[] {
   const sections: PuckInstance[] = [
     instance("StoryChapter", {
@@ -108,6 +111,7 @@ function chapterSections(
         quote: `"${chapter.quote.text}"`,
         author: chapter.quote.attribution,
         personaId,
+        ...patternProp("Testimonial", quotePatternKey),
       }),
     );
   }
@@ -187,7 +191,9 @@ export function buildMicrositeTemplateFromStructured(
       eyebrow: "",
     }),
     ...(highlightCards ? [highlightCards] : []),
-    ...chapters.flatMap((chapter, i) => chapterSections(chapter, slugs[i], personaId)),
+    ...chapters.flatMap((chapter, i) =>
+      chapterSections(chapter, slugs[i], personaId, variant.layoutPatterns?.quote),
+    ),
     instance("BrandCTA", {
       label: variant.join.primaryCta,
       href: resolveCtaHref(ctx),
@@ -197,6 +203,7 @@ export function buildMicrositeTemplateFromStructured(
         .join(" — "),
       heading: variant.join.heading,
       anchorId: joinSlug,
+      ...patternProp("BrandCTA", variant.layoutPatterns?.join),
     }),
     footerInstance(ctx, taglineFromSubline(variant.heroManifest.subline)),
   ];
