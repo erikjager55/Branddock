@@ -25,6 +25,8 @@ export const DRAFT_PAYLOAD_VERSION = 1;
  *  tegen scrape-misbruik. */
 export const GENERATOR_MAX_RUNS_PER_IP_PER_DAY = 10;
 export const GENERATOR_MAX_RUNS_PER_DOMAIN_PER_DAY = 5;
+/** Kosten-backstop onafhankelijk van header-spoofing: totaalplafond per dag. */
+export const GENERATOR_MAX_RUNS_GLOBAL_PER_DAY = 500;
 
 export function appBaseUrl(): string | undefined {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL;

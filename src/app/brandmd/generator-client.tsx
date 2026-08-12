@@ -119,10 +119,13 @@ export function GeneratorClient() {
     if (!result) return;
     const blob = new Blob([result.file], { type: 'text/markdown;charset=utf-8' });
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    const blobUrl = URL.createObjectURL(blob);
+    a.href = blobUrl;
     a.download = result.fileName;
     a.click();
-    URL.revokeObjectURL(a.href);
+    // Niet synchroon revoken: Firefox/Safari hebben de blob-URL dan soms nog
+    // niet gelatcht en de download faalt stil.
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
     setDownloaded(true);
     void fetch('/api/brandmd/track', {
       method: 'POST',

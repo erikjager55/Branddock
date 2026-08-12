@@ -24,6 +24,7 @@ import {
   DRAFT_PAYLOAD_VERSION,
   GENERATOR_MAX_RUNS_PER_IP_PER_DAY,
   GENERATOR_MAX_RUNS_PER_DOMAIN_PER_DAY,
+  GENERATOR_MAX_RUNS_GLOBAL_PER_DAY,
   appBaseUrl,
   claimUrl,
   BRAND_MD_USE_HUB_PATH,
@@ -109,9 +110,16 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('[POST /api/brandmd/generate]', error);
-    const message = error instanceof Error ? error.message : 'Scan failed';
-    // safeFetch/SSRF-weigeringen en HTTP-fouten netjes terug naar de UI.
-    const isClientish = /HTTP \d|unsafe|blocked|valid|resolve|timeout|abort/i.test(message);
+    const message = error instanceof Error ? error.message : '';
+    // Whitelist van fout-vormen die wij zélf produceren (scan/safeFetch/
+    // timeout) — al het andere blijft een generieke 500, zodat interne
+    // fouten (bv. Prisma-validatiemeldingen) nooit naar anonieme clients
+    // lekken.
+    const isClientish =
+      message.length < 160 &&
+      /^Site returned HTTP \d|^Please enter|unsafe (url|redirect)|not allowed|timed? ?out|aborted/i.test(
+        message,
+      );
     return NextResponse.json(
       { error: isClientish ? `We couldn't scan that site: ${message}` : 'Scan failed — please try again' },
       { status: isClientish ? 422 : 500 },
@@ -121,10 +129,20 @@ export async function POST(request: NextRequest) {
 
 async function enforceRateLimits(ipHash: string, domain: string): Promise<NextResponse | null> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const [byIp, byDomain] = await Promise.all([
+  const [byIp, byDomain, total] = await Promise.all([
     prisma.generatedBrandProfile.count({ where: { requestIpHash: ipHash, createdAt: { gte: since } } }),
     prisma.generatedBrandProfile.count({ where: { domain, createdAt: { gte: since } } }),
+    prisma.generatedBrandProfile.count({ where: { createdAt: { gte: since } } }),
   ]);
+  // Kosten-backstop die niet op headers leunt: x-forwarded-for is (deels)
+  // client-controleerbaar, dus het totaalplafond begrenst de AI-uitgaven
+  // ook bij IP-spoofing of ontbrekende proxy-headers.
+  if (total >= GENERATOR_MAX_RUNS_GLOBAL_PER_DAY) {
+    return NextResponse.json(
+      { error: 'The generator is at capacity today — please try again tomorrow', code: 'RATE_LIMIT_GLOBAL' },
+      { status: 429 },
+    );
+  }
   if (byIp >= GENERATOR_MAX_RUNS_PER_IP_PER_DAY) {
     return NextResponse.json(
       { error: 'Daily scan limit reached — try again tomorrow', code: 'RATE_LIMIT_IP' },
@@ -141,10 +159,12 @@ async function enforceRateLimits(ipHash: string, domain: string): Promise<NextRe
 }
 
 function hashIp(request: NextRequest): string {
-  const ip =
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    request.headers.get('x-real-ip') ??
-    'unknown';
+  // x-real-ip wordt door Vercel gezet en is niet client-prependbaar; de
+  // laatste x-forwarded-for-entry is de proxy-toegevoegde hop. De globale
+  // backstop hierboven vangt omgevingen waar geen van beide betrouwbaar is.
+  const forwarded = request.headers.get('x-forwarded-for');
+  const lastForwarded = forwarded?.split(',').at(-1)?.trim();
+  const ip = request.headers.get('x-real-ip') ?? lastForwarded ?? 'unknown';
   const salt = process.env.BETTER_AUTH_SECRET ?? 'brandmd';
   return sha256(`${ip}:${salt}`);
 }

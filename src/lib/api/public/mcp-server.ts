@@ -204,7 +204,7 @@ function registerBrandTools(server: McpServer, ctx: PublicMcpContext): void {
         const { buildDesignSystemModel } = await import('@/lib/export/design-system/resolver');
         const { emitBrandMd } = await import('@/lib/export/design-system/emitters/brandmd');
         const { appBaseUrl, BRAND_MD_USE_HUB_PATH } = await import('@/lib/brandmd/constants');
-        const model = await buildDesignSystemModel(workspaceId);
+        const model = await buildDesignSystemModel(workspaceId, { includeBrandMd: true });
         const base = appBaseUrl();
         const file = emitBrandMd(model, {
           profile: profile ?? 'public',

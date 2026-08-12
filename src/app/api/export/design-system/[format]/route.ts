@@ -41,7 +41,7 @@ const FORMATS: Record<string, FormatSpec> = {
     contentType: 'text/markdown; charset=utf-8',
     extension: 'brand.md',
     async render(workspaceId) {
-      const model = await buildDesignSystemModel(workspaceId);
+      const model = await buildDesignSystemModel(workspaceId, { includeBrandMd: true });
       // Workspace-export = publiek profiel (deelbaar); het extended profiel
       // (incl. Market Context) is alleen via MCP achter auth beschikbaar.
       return emitBrandMd(model, {

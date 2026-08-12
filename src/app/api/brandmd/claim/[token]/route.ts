@@ -189,10 +189,11 @@ export async function POST(_req: NextRequest, context: RouteContext) {
       await tx.brandStyleguide.create({
         data: {
           workspaceId: ws.id,
+          createdById: session.user.id,
           status: 'DRAFT',
           sourceType: 'URL',
           sourceUrl: payload.sourceUrl,
-        } as never,
+        },
       });
 
       for (const persona of payload.audience) {
@@ -220,8 +221,10 @@ export async function POST(_req: NextRequest, context: RouteContext) {
         });
       }
 
-      await tx.generatedBrandProfile.update({
-        where: { id: profile.id },
+      // Single-use-garantie onder concurrency: alleen de transactie die de
+      // DRAFT→CLAIMED-flip wint mag door; de verliezer rolt volledig terug.
+      const flipped = await tx.generatedBrandProfile.updateMany({
+        where: { id: profile.id, status: 'DRAFT' },
         data: {
           status: 'CLAIMED',
           claimedAt: new Date(),
@@ -229,6 +232,9 @@ export async function POST(_req: NextRequest, context: RouteContext) {
           claimedWorkspaceId: ws.id,
         },
       });
+      if (flipped.count === 0) {
+        throw new AlreadyClaimedError();
+      }
 
       return ws;
     });
@@ -240,8 +246,17 @@ export async function POST(_req: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ workspaceId: workspace.id, slug: workspace.slug }, { status: 201 });
   } catch (error) {
+    if (error instanceof AlreadyClaimedError) {
+      return NextResponse.json({ error: 'This draft was already claimed' }, { status: 409 });
+    }
     console.error('[POST /api/brandmd/claim]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+class AlreadyClaimedError extends Error {
+  constructor() {
+    super('draft already claimed');
   }
 }
 

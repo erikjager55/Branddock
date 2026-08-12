@@ -45,8 +45,16 @@ import type {
 
 // ─── Public entry ─────────────────────────────────────
 
+export interface BuildModelOptions {
+  /** Bouw de brand.md-extensie mee (4 extra queries). Alleen nodig voor de
+   *  brandmd-emitter (UI-export, REST v1, MCP) — andere formaten lezen 'm
+   *  niet en betalen er zonder deze vlag ook niet voor. */
+  includeBrandMd?: boolean;
+}
+
 export async function buildDesignSystemModel(
   workspaceId: string,
+  options: BuildModelOptions = {},
 ): Promise<DesignSystemModel> {
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
@@ -80,29 +88,32 @@ export async function buildDesignSystemModel(
 
   const tokens = await ensureSemanticTokens(styleguide);
 
-  const [brandAssets, personas, competitors, brandAssetStatuses, products, contentLanguage, locales] =
-    await Promise.all([
-      fetchBrandAssetSummaries(workspaceId),
-      fetchPersonaSummaries(workspaceId),
-      fetchCompetitorSummaries(workspaceId),
+  const [brandAssets, personas, competitors] = await Promise.all([
+    fetchBrandAssetSummaries(workspaceId),
+    fetchPersonaSummaries(workspaceId),
+    fetchCompetitorSummaries(workspaceId),
+  ]);
+
+  const extensions = buildExtensions(styleguide, voiceguide, brandAssets, personas, competitors);
+  if (options.includeBrandMd) {
+    const [brandAssetStatuses, products, contentLanguage, locales] = await Promise.all([
       fetchBrandAssetStatuses(workspaceId),
       fetchProductSummaries(workspaceId),
       fetchContentLanguage(workspaceId),
       fetchContentLocales(workspaceId),
     ]);
-
-  const extensions = buildExtensions(styleguide, voiceguide, brandAssets, personas, competitors);
-  extensions.brandMd = buildBrandMdExtension({
-    workspaceSlug: workspace.slug,
-    styleguide,
-    voiceguide,
-    brandAssetStatuses,
-    products,
-    contentLanguage,
-    locales,
-    voice: extensions.voice,
-    personasCount: personas.length,
-  });
+    extensions.brandMd = buildBrandMdExtension({
+      workspaceSlug: workspace.slug,
+      styleguide,
+      voiceguide,
+      brandAssetStatuses,
+      products,
+      contentLanguage,
+      locales,
+      voice: extensions.voice,
+      personasCount: personas.length,
+    });
+  }
 
   return {
     meta: {

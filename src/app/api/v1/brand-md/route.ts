@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
   const startedAt = Date.now();
   try {
-    const model = await buildDesignSystemModel(auth.workspaceId);
+    const model = await buildDesignSystemModel(auth.workspaceId, { includeBrandMd: true });
     const base = appBaseUrl();
     const file = emitBrandMd(model, {
       profile,

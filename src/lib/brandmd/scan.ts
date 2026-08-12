@@ -104,8 +104,33 @@ async function fetchBounded(url: string, maxBytes: number): Promise<string> {
   if (!res.ok) {
     throw new Error(`Site returned HTTP ${res.status}`);
   }
-  const buf = await res.arrayBuffer();
-  return new TextDecoder('utf-8', { fatal: false }).decode(buf.slice(0, maxBytes));
+  // Incrementeel lezen en afkappen op maxBytes — arrayBuffer() zou een
+  // gigantische/streamende body eerst volledig in serverless-geheugen trekken.
+  const reader = res.body?.getReader();
+  if (!reader) return '';
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  try {
+    while (received < maxBytes) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        chunks.push(value);
+        received += value.byteLength;
+      }
+    }
+  } finally {
+    await reader.cancel().catch(() => undefined);
+  }
+  const merged = new Uint8Array(Math.min(received, maxBytes));
+  let offset = 0;
+  for (const chunk of chunks) {
+    const room = merged.length - offset;
+    if (room <= 0) break;
+    merged.set(room >= chunk.byteLength ? chunk : chunk.subarray(0, room), offset);
+    offset += Math.min(chunk.byteLength, room);
+  }
+  return new TextDecoder('utf-8', { fatal: false }).decode(merged);
 }
 
 async function fetchStylesheets(pageUrl: string, html: string): Promise<string> {
@@ -226,28 +251,17 @@ async function extractBrandSignals(
   };
   if (!text || text.length < 100) return empty;
 
-  const result = await anthropicClient.createChatCompletion(
-    [
-      {
-        role: 'system',
-        content:
-          'You extract brand identity signals from website copy for a brand.md file. ' +
-          'Only state what the text supports — never invent facts. Where the text is thin, omit the field. ' +
-          'Respond with ONLY a JSON object, no markdown fences, matching: ' +
-          '{"brandName": string, "tagline": string?, "language": "en"|"nl"|"de"|"fr"|"es"|"it"|"pt", ' +
-          '"strategy": {"purpose": string?, "positioning": string?, "personality": string?, "promise": string?}, ' +
-          '"voice": {"description": string?, "tonalRules": string[], "wordsWeUse": string[], "wordsWeAvoid": string[]}, ' +
-          '"audience": [{"name": string, "description": string}], ' +
-          '"products": [{"name": string, "description": string}]} ' +
-          'Keep every string under 300 characters; max 5 items per array. wordsWeUse = distinctive vocabulary that appears in the copy; wordsWeAvoid may be empty.',
-      },
-      {
-        role: 'user',
-        content: `Site title: ${title}\nMeta description: ${description ?? '(none)'}\n\nVisible copy:\n${text}`,
-      },
-    ],
-    { maxTokens: 1400, temperature: 0.2 },
-  );
+  let result: { content: string };
+  try {
+    result = await callExtractionModel(title, description, text);
+  } catch (err) {
+    // Fail-soft: AI-uitval (outage, timeout, max_tokens-throw) mag de scan
+    // niet doden — kleuren/fonts/meta zijn al binnen; eerlijk mager draft.
+    console.warn('[brandmd/scan] AI extraction failed (degrading to thin draft)', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return empty;
+  }
 
   try {
     const raw = result.content.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
@@ -275,6 +289,35 @@ async function extractBrandSignals(
     // AI-output onparsebaar → eerlijk mager draft i.p.v. harde fout.
     return empty;
   }
+}
+
+async function callExtractionModel(
+  title: string,
+  description: string | undefined,
+  text: string,
+): Promise<{ content: string }> {
+  return anthropicClient.createChatCompletion(
+    [
+      {
+        role: 'system',
+        content:
+          'You extract brand identity signals from website copy for a brand.md file. ' +
+          'Only state what the text supports — never invent facts. Where the text is thin, omit the field. ' +
+          'Respond with ONLY a JSON object, no markdown fences, matching: ' +
+          '{"brandName": string, "tagline": string?, "language": "en"|"nl"|"de"|"fr"|"es"|"it"|"pt", ' +
+          '"strategy": {"purpose": string?, "positioning": string?, "personality": string?, "promise": string?}, ' +
+          '"voice": {"description": string?, "tonalRules": string[], "wordsWeUse": string[], "wordsWeAvoid": string[]}, ' +
+          '"audience": [{"name": string, "description": string}], ' +
+          '"products": [{"name": string, "description": string}]} ' +
+          'Keep every string under 300 characters; max 5 items per array. wordsWeUse = distinctive vocabulary that appears in the copy; wordsWeAvoid may be empty.',
+      },
+      {
+        role: 'user',
+        content: `Site title: ${title}\nMeta description: ${description ?? '(none)'}\n\nVisible copy:\n${text}`,
+      },
+    ],
+    { maxTokens: 1400, temperature: 0.2 },
+  );
 }
 
 // ─── Payload → DesignSystemModel (hergebruik emitter + score) ─────────

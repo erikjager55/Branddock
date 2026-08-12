@@ -266,10 +266,18 @@ function renderChannelTones(md: BrandMdExtension | undefined): string {
 }
 
 function renderGuardrails(model: DesignSystemModel, md: BrandMdExtension | undefined): string {
-  const doRules = md?.guardrails.do ?? [];
-  const dontRules = md?.guardrails.dont ?? [];
-  const prose = model.prose.dosDonts ?? [];
-  if (!doRules.length && !dontRules.length && !prose.length) return '';
+  // Prose-dosDonts ("Do: x" / "Don't: y") meenemen in de gestructureerde
+  // lijsten — anders kan de sectie-guard slagen terwijl beide lijsten leeg
+  // zijn en er een kale kop wordt geëmit.
+  const proseDo: string[] = [];
+  const proseDont: string[] = [];
+  for (const entry of model.prose.dosDonts ?? []) {
+    if (entry.startsWith('Do: ')) proseDo.push(entry.slice(4));
+    else if (entry.startsWith("Don't: ")) proseDont.push(entry.slice(7));
+  }
+  const doRules = [...new Set([...(md?.guardrails.do ?? []), ...proseDo])];
+  const dontRules = [...new Set([...(md?.guardrails.dont ?? []), ...proseDont])];
+  if (!doRules.length && !dontRules.length) return '';
   const lines: string[] = ['## Guardrails', ''];
   if (doRules.length) {
     lines.push('### Do', '');
@@ -309,15 +317,19 @@ function renderMarketContext(model: DesignSystemModel): string {
 // ─── YAML-helpers ─────────────────────────────────────
 
 function yamlString(value: string): string {
+  // Newlines/control-chars kunnen uit meta-descriptions of AI-output komen —
+  // die zouden de frontmatter over meerdere fysieke regels breken en elke
+  // regel-gebaseerde parser (incl. onze eigen validator) misleiden.
+  const sanitized = value.replace(/[\r\n]+/g, ' ').replace(/[\u0000-\u001F\u007F]/g, '').trim();
   // Quote alles behalve simpele tokens — voorkomt YAML-edge-cases bij
   // merknamen met dubbele punten, quotes of leading specials. Numeriek
   // ogende waarden ("0.2") altijd quoten zodat ze strings blijven.
   if (
-    /^[A-Za-z0-9][A-Za-z0-9 _.\-]*$/.test(value) &&
-    !/^(true|false|null|~|yes|no)$/i.test(value) &&
-    !/^[\d.]+$/.test(value)
+    /^[A-Za-z0-9][A-Za-z0-9 _.\-]*$/.test(sanitized) &&
+    !/^(true|false|null|~|yes|no)$/i.test(sanitized) &&
+    !/^[\d.]+$/.test(sanitized)
   ) {
-    return value;
+    return sanitized;
   }
-  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+  return `"${sanitized.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
