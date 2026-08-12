@@ -110,3 +110,43 @@ export function defaultFooter(_f: FilledFields, ctx: CanvasContextStack | null) 
     ],
   });
 }
+
+// C1 anatomie-componenten (LP-spec §4a) — additief: geen starter-template
+// neemt ze op (generatie-opname is C3); de factories dienen "Sectie
+// toevoegen" in de sectie-editor. Copy bevat bewust het woord "placeholder"
+// (anti-fabricatie-regel hierboven + publish-gate-scan).
+
+export function defaultTrustStrip() {
+  return instance('TrustStrip', {
+    metric: '',
+    items: [
+      { label: 'Customer name placeholder' },
+      { label: 'Customer name placeholder' },
+      { label: 'Customer name placeholder' },
+      { label: 'Customer name placeholder' },
+    ],
+  });
+}
+
+export function defaultPainBullets() {
+  return instance('PainBullets', {
+    heading: 'Pain question placeholder',
+    bullets: [
+      { text: 'Pain point placeholder', icon: 'clock' },
+      { text: 'Pain point placeholder', icon: 'flame' },
+      { text: 'Pain point placeholder', icon: 'circle' },
+    ],
+    bridge: 'Bridge to the solution placeholder',
+  });
+}
+
+export function defaultImpactStats() {
+  return instance('ImpactStats', {
+    heading: 'Results placeholder',
+    items: [
+      { value: '0+', label: 'Outcome placeholder' },
+      { value: '0%', label: 'Outcome placeholder' },
+      { value: '0x', label: 'Outcome placeholder' },
+    ],
+  });
+}

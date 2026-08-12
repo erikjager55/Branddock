@@ -22,9 +22,12 @@ import {
   defaultFaq,
   defaultFeatureGrid,
   defaultFooter,
+  defaultImpactStats,
+  defaultPainBullets,
   defaultPricingTable,
   defaultRichText,
   defaultTestimonial,
+  defaultTrustStrip,
   type FilledFields,
 } from './puck-templates/template-helpers';
 
@@ -39,6 +42,8 @@ import {
  */
 export interface SectionFieldMeta {
   type: string;
+  /** Config-eigen veld-label (bv. het C1-`patternKey`-veld) — wint van {@link humanizeFieldKey}. */
+  label?: string;
   options?: ReadonlyArray<{ label: string; value: string | number | boolean }>;
   arrayFields?: Record<string, SectionFieldMeta>;
   defaultItemProps?: Record<string, unknown>;
@@ -80,6 +85,8 @@ const PREVIEW_SKIP_KEYS: ReadonlySet<string> = new Set([
   'href',
   'ctaHref',
   'columns',
+  // C1 — layout-patroon-key ('default'/'bento'/…) is config, geen copy.
+  'patternKey',
 ]);
 
 function isUrlLike(value: string): boolean {
@@ -207,7 +214,9 @@ export function fieldsToPanelModel(
   const panel: PanelField[] = [];
   for (const [key, meta] of Object.entries(configFields)) {
     if (!meta || typeof meta !== 'object') continue;
-    const base = { key, label: humanizeFieldKey(key) };
+    // Config-eigen label wint (C1 patternKey draagt bv. 'Layout-patroon');
+    // zonder label blijft de gehumaniseerde key het gedrag.
+    const base = { key, label: meta.label ?? humanizeFieldKey(key) };
     switch (meta.type) {
       case 'text':
       case 'textarea':
@@ -265,10 +274,10 @@ type SectionFactory = (
 ) => { type: string; props: Record<string, unknown> };
 
 /**
- * Factory-dispatch per sectie-type. Alleen de 8 types met een bestaande
- * default<Component>-factory in template-helpers; de overige 10 vallen
- * terug op de registry-defaultProps uit puck-config (zie
- * {@link addDefaultsForType}).
+ * Factory-dispatch per sectie-type. Alleen de types met een bestaande
+ * default<Component>-factory in template-helpers (8 MVP-types + de 3
+ * C1-anatomie-types); de overige vallen terug op de registry-defaultProps
+ * uit puck-config (zie {@link addDefaultsForType}).
  */
 const FACTORY_BY_TYPE: Record<string, SectionFactory> = {
   BrandHero: (f) => defaultBrandHero(f),
@@ -279,6 +288,13 @@ const FACTORY_BY_TYPE: Record<string, SectionFactory> = {
   PricingTable: (f) => defaultPricingTable(f),
   RichText: (f) => defaultRichText(f),
   Footer: (f, ctx) => defaultFooter(f, ctx),
+  // C1 anatomie-componenten (LP-spec §4a) — placeholder-copy bevat bewust
+  // het woord "placeholder" (publish-gate anti-fabricatie-scan). FilledFields
+  // draagt (nog) geen trust-/pain-/impact-velden, dus de factories nemen
+  // geen fields-argument (C3 voegt de generatie-mapping toe).
+  TrustStrip: () => defaultTrustStrip(),
+  PainBullets: () => defaultPainBullets(),
+  ImpactStats: () => defaultImpactStats(),
 };
 
 /**

@@ -182,6 +182,10 @@ function testPuckConfig(): void {
     'Listicle',
     // P3 lp-forms-leads — brand-gestyled leadformulier (no-JS-first)
     'LeadForm',
+    // C1 — anatomie-componenten (LP-spec §4a): trust-strip, pijnpunten, impact-stats
+    'TrustStrip',
+    'PainBullets',
+    'ImpactStats',
   ];
 
   // Afgeleid van `expected` zodat de assert zowel ontbrekende als EXTRA

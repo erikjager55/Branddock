@@ -14,6 +14,13 @@ import {
 } from '@/lib/landing-pages/brand-tokens';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import { getRenderConstraints } from '@/lib/landing-pages/render-constraints';
+// C1 — sectie-patroonbibliotheek: per-type layout-varianten gekozen via de
+// instance-prop `patternKey`; 'default'/afwezig/onbekend = het bestaande
+// render-pad (byte-compatibel met alle gepersisteerde puckData).
+import {
+  patternFieldOptions,
+  resolveSectionPatternKey,
+} from '@/lib/landing-pages/section-patterns';
 import { readableTextColor, resolveOnColor, isCardContextMismatch, reserveAccentForHeading, contrastRatio, safeHeadingColor, normalizeColorToHex, blackOrWhiteFor } from '@/lib/landing-pages/wcag';
 
 import {
@@ -215,6 +222,8 @@ export type SpikeBrandCtaProps = {
    *  BrandNav-links (#join) hierheen scrollen. Geen Puck-field (zoals
    *  bandTone): door de builder gezet, niet door de user te editen. */
   anchorId?: string;
+  /** C1 — layout-patroon ('default' | 'split' | 'card'); afwezig/onbekend = default. */
+  patternKey?: string;
 };
 
 export type FeatureItem = {
@@ -236,6 +245,8 @@ export type FeatureGridProps = {
   columns: '2' | '3' | '4';
   features: FeatureItem[];
   bandTone?: SectionBandTone;
+  /** C1 — layout-patroon ('default' | 'alternating' | 'bento'); afwezig/onbekend = default. */
+  patternKey?: string;
 };
 /** P7 FeatureSplit — editorial A-B-A-B; zelfde items, geen columns. */
 export type FeatureSplitProps = {
@@ -247,6 +258,8 @@ export type TestimonialProps = {
   quote: string;
   author: string;
   personaId: string;
+  /** C1 — layout-patroon ('default' | 'wall' | 'spotlight'); afwezig/onbekend = default. */
+  patternKey?: string;
 };
 
 export type PricingTier = {
@@ -273,6 +286,8 @@ export type FAQProps = {
   /** W3 faq-page — optioneel DOM-anker voor de categorie-sprongnavigatie.
    *  Geen Puck-field (zoals bandTone/anchorId elders). */
   anchorId?: string;
+  /** C1 — layout-patroon ('default' | 'two-column'); afwezig/onbekend = default. */
+  patternKey?: string;
 };
 
 /** W2 product-page — specificatie-rij (label/waarde). */
@@ -338,6 +353,8 @@ export type StatsItem = {
 export type StatsBlockProps = {
   items: StatsItem[];
   bandTone?: SectionBandTone;
+  /** C1 — layout-patroon ('default' | 'cards'); afwezig/onbekend = default. */
+  patternKey?: string;
 };
 
 export type BrandNavLink = { label: string; href: string };
@@ -417,6 +434,39 @@ export type LeadFormProps = {
   anchorId?: string;
 };
 
+/** C1 anatomie (LP-spec §4a sectie 2) — trust-strip: klantnamen/logo-labels
+ *  + optionele metric-regel, direct onder de hero. MVP rendert tekst-labels
+ *  (logo-namen); een echte logo-beeldrij is een latere uitbreiding. */
+export type TrustStripItem = { label: string };
+export type TrustStripProps = {
+  items: TrustStripItem[];
+  /** Optionele metric-regel ("4,8/5 uit 1.200 reviews") vóór de labels. */
+  metric?: string;
+  bandTone?: SectionBandTone;
+};
+
+/** C1 anatomie (LP-spec §4a sectie 3) — probleem-articulatie: pijn-heading +
+ *  3-5 frustratie-bullets (Lucide-icoon) + bridging-zin naar de oplossing. */
+export type PainBulletItem = { text: string; icon?: string };
+export type PainBulletsProps = {
+  heading: string;
+  bullets: PainBulletItem[];
+  /** Bridging-zin naar de oplossing (spec: "pijn benoemen vóór oplossing"). */
+  bridge?: string;
+  bandTone?: SectionBandTone;
+};
+
+/** C1 anatomie (LP-spec §4a sectie 5) — impact-stats: 2-4 kwantitatieve
+ *  RESULTATEN (outcome-framing) met groot cijfer + label en optionele
+ *  sectiekop. Verwant aan StatsBlock (merk-cijfers als accent-beat) maar
+ *  bewust een eigen type: social-proof-bewijs met kop, altijd op de band. */
+export type ImpactStatItem = { value: string; label: string };
+export type ImpactStatsProps = {
+  heading?: string;
+  items: ImpactStatItem[];
+  bandTone?: SectionBandTone;
+};
+
 export type SpikePuckProps = {
   BrandHero: SpikeBrandHeroProps;
   BrandCTA: SpikeBrandCtaProps;
@@ -437,6 +487,9 @@ export type SpikePuckProps = {
   ComparisonTable: ComparisonTableProps;
   Listicle: ListicleProps;
   LeadForm: LeadFormProps;
+  TrustStrip: TrustStripProps;
+  PainBullets: PainBulletsProps;
+  ImpactStats: ImpactStatsProps;
 };
 
 // ─── Config builder ──────────────────────────────────────────
@@ -499,6 +552,9 @@ export function buildSpikePuckConfig(
       ComparisonTable: comparisonTableComponent(tokens),
       Listicle: listicleComponent(tokens),
       LeadForm: leadFormComponent(tokens, opts?.workspaceId ?? null),
+      TrustStrip: trustStripComponent(tokens),
+      PainBullets: painBulletsComponent(tokens),
+      ImpactStats: impactStatsComponent(tokens),
     },
   };
 }
@@ -541,8 +597,68 @@ function statsBlockComponent(tokens: BrandTokens) {
   const numberFontWeight = tbr.display.fontWeight ?? 400;
   const numberLineHeight = tbr.display.lineHeight ?? '1.0';
 
+  /** Cijfer + label — gedeelde typografie voor het cards-pattern. */
+  const statNumberStyle = (numberColor: string): React.CSSProperties => ({
+    fontFamily: headingFont,
+    fontSize: (() => {
+      const max = typeof numberFontSize === 'number' ? numberFontSize : parseFloat(String(numberFontSize)) || 64;
+      return responsiveSize(40, max);
+    })(),
+    fontWeight: numberFontWeight,
+    lineHeight: numberLineHeight,
+    color: numberColor,
+    marginBottom: 12,
+  });
+  const statLabelStyle = (labelColor: string): React.CSSProperties => ({
+    fontFamily: ds.typography.label.fontFamily,
+    fontSize: tokens.text.banner.fontSize,
+    fontWeight: tokens.text.banner.weight,
+    letterSpacing: tokens.text.banner.letterSpacing,
+    textTransform: tokens.text.banner.textTransform,
+    color: labelColor,
+    opacity: 0.85,
+  });
+
+  /** C1 'cards' — elk cijfer in een eigen omkaderde kaart (registry sluit
+   *  RULER uit: flat-typografie-esthetiek, geen losse kaartjes). */
+  const renderStatsCards = (
+    items: StatsItem[],
+    colors: { bg: string; number: string; label: string; border: string },
+  ) => (
+    <section
+      style={{
+        background: colors.bg,
+        padding: `${tokens.sectionRhythm.sectionPaddingY}px ${responsivePaddingX(tokens.sectionRhythm.sectionPaddingX)}`,
+        fontFamily: bodyFont,
+      }}
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 20, maxWidth: constraints.maxContentWidth, margin: '0 auto' }}>
+        {items.map((item, i) => (
+          <div
+            key={i}
+            style={{
+              textAlign: 'center',
+              padding: '32px 20px',
+              background: useDarkBg ? 'rgba(255,255,255,0.06)' : tokens.surface,
+              border: `1px solid ${colors.border}`,
+              borderRadius: Math.min(12, constraints.maxRadiusPx),
+            }}
+          >
+            <div style={statNumberStyle(colors.number)}>{item.value}</div>
+            <div style={statLabelStyle(colors.label)}>{item.label}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
   return {
     fields: {
+      patternKey: {
+        type: 'select' as const,
+        label: 'Layout-patroon',
+        options: patternFieldOptions('StatsBlock'),
+      },
       items: {
         type: 'array' as const,
         arrayFields: {
@@ -554,13 +670,14 @@ function statsBlockComponent(tokens: BrandTokens) {
       },
     },
     defaultProps: {
+      patternKey: 'default',
       items: [
         { value: '500+', label: 'Customers' },
         { value: '99%', label: 'Satisfaction' },
         { value: '24/7', label: 'Support' },
       ],
     },
-    render: ({ items, bandTone }: StatsBlockProps) => {
+    render: ({ items, bandTone, patternKey }: StatsBlockProps) => {
       // Band-ritmiek: donker-merk houdt z'n donkere band; een licht-merk krijgt
       // bij 'alt' de subtiele tint. Alle kleuren resolven tegen de échte band-bg.
       const effBg = useDarkBg ? darkBg : sectionBandBg(tokens, bandTone);
@@ -569,6 +686,10 @@ function statsBlockComponent(tokens: BrandTokens) {
         : resolveOnColor(tokens.brand, effBg, { fallback: tokens.onSurface, minRatio: 3.0 });
       const effLabelColor = useDarkBg ? '#FFFFFF' : readableTextColor(tokens.surfaceMuted, effBg, tokens.onSurface);
       const effBorderColor = useDarkBg ? 'rgba(255,255,255,0.15)' : resolveOnColor(tokens.surfaceBorder, effBg, { fallback: tokens.onSurface, minRatio: 1.3 });
+      // C1 — pattern-dispatch vóór het default-pad (byte-compat bij 'default').
+      if (resolveSectionPatternKey('StatsBlock', patternKey) === 'cards') {
+        return renderStatsCards(items, { bg: effBg, number: effNumberColor, label: effLabelColor, border: effBorderColor });
+      }
       return (
       <section
         style={{
@@ -1210,8 +1331,145 @@ function brandCtaComponent(
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
   const tbr = tokens.typographyByRole;
 
+  /**
+   * CTA-knop — gedeeld tussen de banner- (default), split- en card-patterns.
+   * Identieke JSX als vóór C1 (was een inline IIFE in de banner-render):
+   * stijl uit tokens.button (= Components-tab-button), outline behoudt z'n
+   * rand, filled valt bij blendende fill terug op de merk-accent; zelfde
+   * caps als de hero-CTA → pixel-consistent.
+   */
+  const renderCtaButton = (label: string, href: string, surfaceBehind: string) => {
+    const ctaVisual = resolveCtaVisual(tokens.button, surfaceBehind, tokens.brand, tokens.onBrand);
+    // Cap letterSpacing voor lange CTA-labels (3px × 30 char = 90px extra).
+    const labelLength = (label ?? '').length;
+    const capLetterSpacing = labelLength > 20 ? '0.1em' : btn.letterSpacing;
+    const ctaStyle: React.CSSProperties & Record<`--${string}`, string> = {
+      display: 'inline-block',
+      background: ctaVisual.background,
+      color: ctaVisual.color,
+      fontFamily: tokens.button.fontFamily ?? bodyFont,
+      fontWeight: btn.fontWeight,
+      fontSize: Math.min(btn.fontSize, CTA_FONT_SIZE_CAP),
+      textDecoration: 'none',
+      padding: `${Math.min(btn.paddingY, CTA_PADDING_Y_CAP)}px ${Math.min(btn.paddingX, CTA_PADDING_X_CAP)}px`,
+      borderRadius: Math.min(btn.radiusPx, constraints.maxRadiusPx),
+      border: ctaVisual.border,
+      textTransform: btn.textTransform,
+      letterSpacing: capLetterSpacing,
+      transition: tokens.button.transition
+        ?? `all ${motion.transitionDuration} ${motion.easing}`,
+      ...(tokens.button.hoverBackground
+        ? { '--lp-btn-hover-bg': tokens.button.hoverBackground }
+        : {}),
+      ...(tokens.button.hoverColor
+        ? { '--lp-btn-hover-color': tokens.button.hoverColor }
+        : {}),
+    };
+    return (
+      <a
+        href={href}
+        className="lp-interactive lp-btn"
+        aria-label={label}
+        style={{
+          ...ctaStyle,
+          // Cap CTA-button breedte zodat hij niet als balk verschijnt.
+          // 380px is breed genoeg voor lange labels (5-7 woorden),
+          // smal genoeg om visueel als 'compact CTA' te lezen i.p.v.
+          // een full-width balk. width:fit-content garandeert dat
+          // padding/letterSpacing de natural-width kunnen vormen
+          // BINNEN de max-cap.
+          width: 'fit-content',
+          maxWidth: '380px',
+          // Center-align tekst voor wanneer label wraps
+          textAlign: 'center',
+          // Whitespace-nowrap voor labels die NET binnen 380px passen
+          whiteSpace: labelLength <= 24 ? 'nowrap' : 'normal',
+          // marginInline auto zodat button blijft centreren in
+          // de centered section ondanks max-width
+          marginInline: 'auto',
+        }}
+      >
+        {label}
+      </a>
+    );
+  };
+
+  interface CtaRenderCtx {
+    label: string;
+    href: string;
+    heading?: string;
+    riskReducer?: string;
+    personaName: string | null;
+    anchorId?: string;
+  }
+
+  const ctaSectionStyle = (anchorId?: string): React.CSSProperties => ({
+    padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
+    fontFamily: bodyFont,
+    background: tokens.surface,
+    scrollMarginTop: anchorId?.trim() ? 80 : undefined,
+    outline: anchorId?.trim() ? 'none' : undefined,
+  });
+
+  const ctaHeadingStyle = (bg: string): React.CSSProperties => ({
+    fontFamily: headingFont,
+    fontSize: tbr.heading.fontSize ?? ds.typography.heading.sizes[ds.typography.heading.sizes.length - 1] ?? 32,
+    fontWeight: tbr.heading.fontWeight ?? (ds.typography.heading.weights[0] ?? 600),
+    lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
+    letterSpacing: tbr.heading.letterSpacing ?? undefined,
+    color: safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, bg),
+    margin: 0,
+  });
+
+  /** C1 'split' — zelfde gebrande panel, maar tekst links en knop rechts. */
+  const renderSplit = (c: CtaRenderCtx, panelBg: string, onPanelMuted: string) => (
+    <section id={c.anchorId?.trim() ? c.anchorId : undefined} tabIndex={c.anchorId?.trim() ? -1 : undefined} style={ctaSectionStyle(c.anchorId)}>
+      <div style={{ maxWidth: 960, margin: '0 auto', background: panelBg, borderRadius: Math.min(20, constraints.maxRadiusPx), padding: 'clamp(32px, 5vw, 56px) clamp(24px, 5vw, 56px)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 32, textAlign: 'left' }}>
+        <div style={{ flex: '1 1 320px', minWidth: 260, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {c.heading && c.heading.trim().length > 0 ? (
+            <h2 style={{ ...ctaHeadingStyle(panelBg), maxWidth: 560 }}>{c.heading}</h2>
+          ) : null}
+          {c.personaName ? (
+            <p style={{ fontSize: 14, color: onPanelMuted, margin: 0, fontStyle: 'italic' }}>Voor: {c.personaName}</p>
+          ) : null}
+          {c.riskReducer && c.riskReducer.trim().length > 0 ? (
+            <p style={{ margin: 0, fontSize: 13, color: onPanelMuted, fontFamily: bodyFont }}>{c.riskReducer}</p>
+          ) : null}
+        </div>
+        <div style={{ flexShrink: 0 }}>{renderCtaButton(c.label, c.href, panelBg)}</div>
+      </div>
+    </section>
+  );
+
+  /** C1 'card' — omkaderde surface-kaart (border-only, past elk archetype)
+   *  i.p.v. de brand-tint-panel; gecentreerd. */
+  const renderCard = (c: CtaRenderCtx) => {
+    const cardMuted = readableTextColor(tokens.surfaceMuted, tokens.surface, tokens.onSurface);
+    return (
+      <section id={c.anchorId?.trim() ? c.anchorId : undefined} tabIndex={c.anchorId?.trim() ? -1 : undefined} style={ctaSectionStyle(c.anchorId)}>
+        <div style={{ maxWidth: 720, margin: '0 auto', background: tokens.surface, border: `1px solid ${tokens.surfaceBorder}`, borderRadius: Math.min(20, constraints.maxRadiusPx), padding: 'clamp(40px, 6vw, 64px) clamp(24px, 5vw, 48px)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: `${ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24}px` }}>
+          {c.heading && c.heading.trim().length > 0 ? (
+            <h2 style={{ ...ctaHeadingStyle(tokens.surface), maxWidth: 560 }}>{c.heading}</h2>
+          ) : null}
+          {c.personaName ? (
+            <p style={{ fontSize: 14, color: cardMuted, margin: 0, fontStyle: 'italic' }}>Voor: {c.personaName}</p>
+          ) : null}
+          {renderCtaButton(c.label, c.href, tokens.surface)}
+          {c.riskReducer && c.riskReducer.trim().length > 0 ? (
+            <p style={{ margin: 0, fontSize: 13, color: cardMuted, fontFamily: bodyFont }}>{c.riskReducer}</p>
+          ) : null}
+        </div>
+      </section>
+    );
+  };
+
   return {
     fields: {
+      patternKey: {
+        type: 'select' as const,
+        label: 'Layout-patroon',
+        options: patternFieldOptions('BrandCTA'),
+      },
       label: { type: 'text' as const },
       href: { type: 'text' as const },
       personaId: { type: 'select' as const, options: personaOptions },
@@ -1219,13 +1477,14 @@ function brandCtaComponent(
       heading: { type: 'text' as const },
     },
     defaultProps: {
+      patternKey: 'default',
       label: 'Start your trial',
       href: '#',
       personaId: '',
       riskReducer: '',
       heading: '',
     },
-    render: ({ label, href, personaId, riskReducer, heading, anchorId }: SpikeBrandCtaProps) => {
+    render: ({ label, href, personaId, riskReducer, heading, anchorId, patternKey }: SpikeBrandCtaProps) => {
       const persona = personas.find((p) => p.id === personaId);
       // CTA-redesign: een CONTAINED gebrande panel i.p.v. losse tekst+knop op
       // een leeg wit vlak. Donker-merk → donkere cinematische panel; anders een
@@ -1238,6 +1497,20 @@ function brandCtaComponent(
       const onPanelMuted = isDarkPanel
         ? 'rgba(255,255,255,0.72)'
         : readableTextColor(tokens.surfaceMuted, panelBg, tokens.onSurface);
+      // C1 — pattern-dispatch vóór het default-pad ('default'/afwezig/onbekend
+      // valt door naar de ongewijzigde banner-render, byte-compat).
+      const pattern = resolveSectionPatternKey('BrandCTA', patternKey);
+      if (pattern === 'split' || pattern === 'card') {
+        const ctx: CtaRenderCtx = {
+          label,
+          href,
+          heading,
+          riskReducer,
+          personaName: persona?.name ?? null,
+          anchorId,
+        };
+        return pattern === 'split' ? renderSplit(ctx, panelBg, onPanelMuted) : renderCard(ctx);
+      }
       return (
         <section
           id={anchorId?.trim() ? anchorId : undefined}
@@ -1294,65 +1567,9 @@ function brandCtaComponent(
           ) : null}
           {/* CTA-knop draagt ALTIJD de merk-accent (P8 "this is where I act") —
               op de gebrande panel popt de accent (geen vibrant→charcoal-
-              downgrade meer; de panel-bg levert het contrast). */}
-          {(() => {
-            // CTA-stijl uit tokens.button (= Components-tab-button): outline behoudt
-            // z'n rand (Better Brands), filled valt bij blendende fill terug op de
-            // merk-accent. Eén bron + dezelfde caps als de hero-CTA → consistent.
-            const ctaVisual = resolveCtaVisual(tokens.button, panelBg, tokens.brand, tokens.onBrand);
-            // Cap letterSpacing voor lange CTA-labels (3px × 30 char = 90px extra).
-            const labelLength = (label ?? '').length;
-            const capLetterSpacing = labelLength > 20 ? '0.1em' : btn.letterSpacing;
-            const ctaStyle: React.CSSProperties & Record<`--${string}`, string> = {
-              display: 'inline-block',
-              background: ctaVisual.background,
-              color: ctaVisual.color,
-              fontFamily: tokens.button.fontFamily ?? bodyFont,
-              fontWeight: btn.fontWeight,
-              fontSize: Math.min(btn.fontSize, CTA_FONT_SIZE_CAP),
-              textDecoration: 'none',
-              padding: `${Math.min(btn.paddingY, CTA_PADDING_Y_CAP)}px ${Math.min(btn.paddingX, CTA_PADDING_X_CAP)}px`,
-              borderRadius: Math.min(btn.radiusPx, constraints.maxRadiusPx),
-              border: ctaVisual.border,
-              textTransform: btn.textTransform,
-              letterSpacing: capLetterSpacing,
-              transition: tokens.button.transition
-                ?? `all ${motion.transitionDuration} ${motion.easing}`,
-              ...(tokens.button.hoverBackground
-                ? { '--lp-btn-hover-bg': tokens.button.hoverBackground }
-                : {}),
-              ...(tokens.button.hoverColor
-                ? { '--lp-btn-hover-color': tokens.button.hoverColor }
-                : {}),
-            };
-            return (
-              <a
-                href={href}
-                className="lp-interactive lp-btn"
-                aria-label={label}
-                style={{
-                  ...ctaStyle,
-                  // Cap CTA-button breedte zodat hij niet als balk verschijnt.
-                  // 380px is breed genoeg voor lange labels (5-7 woorden),
-                  // smal genoeg om visueel als 'compact CTA' te lezen i.p.v.
-                  // een full-width balk. width:fit-content garandeert dat
-                  // padding/letterSpacing de natural-width kunnen vormen
-                  // BINNEN de max-cap.
-                  width: 'fit-content',
-                  maxWidth: '380px',
-                  // Center-align tekst voor wanneer label wraps
-                  textAlign: 'center',
-                  // Whitespace-nowrap voor labels die NET binnen 380px passen
-                  whiteSpace: labelLength <= 24 ? 'nowrap' : 'normal',
-                  // marginInline auto zodat button blijft centreren in
-                  // de centered section ondanks max-width
-                  marginInline: 'auto',
-                }}
-              >
-                {label}
-              </a>
-            );
-          })()}
+              downgrade meer; de panel-bg levert het contrast). Sinds C1 een
+              gedeelde helper (renderCtaButton) — identieke JSX/output. */}
+          {renderCtaButton(label, href, panelBg)}
           {riskReducer && riskReducer.trim().length > 0 ? (
             <p
               style={{
@@ -1427,8 +1644,92 @@ function featureGridComponent(tokens: BrandTokens, provenance?: TokenProvenance)
   const headingWeight = tbr.heading.fontWeight ?? ds.typography.heading.weights[0] ?? 600;
   const bodySize = tbr.body.fontSize ?? ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 1)] ?? 15;
 
+  const featureHeadingStyle = (bg: string): React.CSSProperties => ({
+    fontFamily: headingFont,
+    fontSize: headingSize,
+    fontWeight: headingWeight,
+    lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
+    letterSpacing: tbr.heading.letterSpacing ?? undefined,
+    textTransform: tbr.heading.textTransform ?? undefined,
+    margin: '0 0 8px',
+    color: resolveOnColor(reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface), bg, { fallback: tokens.onSurface, minRatio: 3.0 }),
+  });
+  const featureBodyStyle = (bg: string): React.CSSProperties => ({
+    color: resolveOnColor(tbr.body.color ?? tokens.surfaceMuted, bg, { fallback: tokens.onSurface }),
+    fontSize: bodySize,
+    fontWeight: tbr.body.fontWeight ?? undefined,
+    lineHeight: tbr.body.lineHeight ?? undefined,
+    letterSpacing: tbr.body.letterSpacing ?? undefined,
+    textTransform: tbr.body.textTransform ?? undefined,
+    margin: 0,
+  });
+
+  /** C1 'alternating' — editorial A-B-A-B rijen (FeatureSplit-stijl-ideeën):
+   *  beeld (of icoon-vlak) en tekst om-en-om, alleen whitespace + typografie. */
+  const renderAlternating = (features: FeatureItem[], sectionBg: string) => {
+    const radius = Math.min(elevation.cardBorderRadius, constraints.maxRadiusPx);
+    return (
+      <section style={{ padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`, background: sectionBg, fontFamily: bodyFont }}>
+        <div style={{ maxWidth: constraints.maxContentWidth, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 64 }}>
+          {features.map((f, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: i % 2 === 1 ? 'row-reverse' : 'row', gap: 48, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ flex: '1 1 320px', minWidth: 280 }}>
+                {f.imageUrl && !isClearedImage(f.imageUrl) ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- zelfde rationale als FeatureSplit: render draait óók buiten Next image-pipeline
+                  <img src={f.imageUrl} alt={f.title} loading="lazy" style={{ display: 'block', width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: radius }} />
+                ) : (
+                  <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: radius, background: tokens.surfaceMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <IconBlock name={f.icon ?? ''} color={tokens.brand} size={Math.round(iconography.sizeDefault * 1.5)} strokeWeight={iconography.strokeWeight} />
+                  </div>
+                )}
+              </div>
+              <div style={{ flex: '1 1 320px', minWidth: 280 }}>
+                <h3 style={{ ...featureHeadingStyle(sectionBg), margin: '0 0 12px' }}>{f.title}</h3>
+                <p style={{ ...featureBodyStyle(sectionBg), maxWidth: '40em' }}>{f.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  /** C1 'bento' — asymmetrisch raster: eerste feature als volle-breedte
+   *  hero-tegel, de rest als shadow-cards (archetype-filter in de registry
+   *  borgt dat alleen shadow-tolerante merken dit kunnen kiezen). */
+  const renderBento = (features: FeatureItem[], sectionBg: string) => {
+    const radius = Math.min(Math.max(elevation.cardBorderRadius, 12), constraints.maxRadiusPx);
+    const shadow = elevation.cardShadow !== 'none' ? elevation.cardShadow : '0 8px 24px rgba(0,0,0,0.08)';
+    const tile = (f: FeatureItem, i: number, large: boolean) => (
+      <div key={i} className="lp-card" style={{ gridColumn: large ? '1 / -1' : undefined, display: 'flex', flexDirection: large ? 'row' : 'column', flexWrap: large ? 'wrap' : undefined, alignItems: large ? 'center' : undefined, gap: large ? 32 : 0, padding: `${sectionRhythm.cardPaddingY}px ${sectionRhythm.cardPaddingX}px`, borderRadius: radius, background: tokens.surface, boxShadow: shadow }}>
+        {f.imageUrl && !isClearedImage(f.imageUrl) ? (
+          // eslint-disable-next-line @next/next/no-img-element -- zelfde rationale als de default-grid-render
+          <img src={f.imageUrl} alt={f.title} loading="lazy" style={{ display: 'block', width: large ? 'min(360px, 100%)' : '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: Math.min(radius, constraints.maxRadiusPx), marginBottom: large ? 0 : 16 }} />
+        ) : (
+          <IconBlock name={f.icon ?? ''} color={tokens.brand} size={Math.round(iconography.sizeDefault * (large ? 1.5 : 1))} strokeWeight={iconography.strokeWeight} wrapperStyle={{ marginBottom: large ? 0 : 12 }} />
+        )}
+        <div style={{ flex: large ? '1 1 280px' : undefined, minWidth: large ? 240 : undefined }}>
+          <h3 style={featureHeadingStyle(tokens.surface)}>{f.title}</h3>
+          <p style={featureBodyStyle(tokens.surface)}>{f.description}</p>
+        </div>
+      </div>
+    );
+    return (
+      <section style={{ padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`, background: sectionBg, fontFamily: bodyFont }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap, maxWidth: constraints.maxContentWidth, margin: '0 auto' }}>
+          {features.map((f, i) => tile(f, i, i === 0))}
+        </div>
+      </section>
+    );
+  };
+
   return {
     fields: {
+      patternKey: {
+        type: 'select' as const,
+        label: 'Layout-patroon',
+        options: patternFieldOptions('FeatureGrid'),
+      },
       columns: {
         type: 'select' as const,
         options: [
@@ -1454,6 +1755,7 @@ function featureGridComponent(tokens: BrandTokens, provenance?: TokenProvenance)
       },
     },
     defaultProps: {
+      patternKey: 'default',
       columns: '3' as const,
       features: [
         { title: 'Snel', description: 'In minuten opgezet, niet weken.', icon: 'zap' },
@@ -1461,7 +1763,7 @@ function featureGridComponent(tokens: BrandTokens, provenance?: TokenProvenance)
         { title: 'Schaalbaar', description: 'Groeit mee met je business.', icon: 'trending-up' },
       ],
     },
-    render: ({ features, bandTone }: FeatureGridProps) => {
+    render: ({ features, bandTone, patternKey }: FeatureGridProps) => {
       // #8 bg-depth — voor FeatureGrid section. Texture matched
       // archetype: JESTER/CREATOR krijgen rich, MINIMAL subtle, etc.
       const depthLevel = pickBackgroundDepth(tokens.archetype, tokens.layoutStyle);
@@ -1470,6 +1772,11 @@ function featureGridComponent(tokens: BrandTokens, provenance?: TokenProvenance)
       // Band-ritmiek: bandTone bepaalt base (surface) vs alt (subtiele tint);
       // sectionBandBg prefereert een gescrapete secondarySurface bij 'alt'.
       const featureGridBg = sectionBandBg(tokens, bandTone);
+      // C1 — pattern-dispatch vóór het default-pad; 'default'/afwezig/onbekend
+      // valt door naar de ongewijzigde render (byte-compat met bestaande data).
+      const pattern = resolveSectionPatternKey('FeatureGrid', patternKey);
+      if (pattern === 'alternating') return renderAlternating(features, featureGridBg);
+      if (pattern === 'bento') return renderBento(features, featureGridBg);
       return (
       <section
         style={{
@@ -1823,19 +2130,101 @@ function testimonialComponent(
   const rawQuoteSize = tbr.heading.fontSize
     ?? ds.typography.heading.sizes[Math.min(ds.typography.heading.sizes.length - 1, 1)] ?? 24;
   const quoteSize = Math.min(rawQuoteSize, 28);
+  // C1 — alleen voor de pattern-varianten (default-pad gebruikt dit niet).
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+
+  /** Avatar voor de pattern-varianten (foto of initiaal-cirkel, schaalbaar). */
+  const patternAvatar = (displayName: string, avatarUrl: string | null, initial: string, size: number) =>
+    avatarUrl ? (
+      // eslint-disable-next-line @next/next/no-img-element -- zelfde rationale als de default-render (buiten Next image-pipeline)
+      <img src={avatarUrl} alt={displayName} width={size} height={size} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${tokens.surface}`, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+    ) : (
+      <div aria-hidden="true" style={{ width: size, height: size, borderRadius: '50%', background: tokens.brand, color: tokens.onBrand, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: headingFont, fontSize: Math.round(size * 0.4), fontWeight: 600, flexShrink: 0 }}>
+        {initial}
+      </div>
+    );
+
+  interface TestimonialRenderCtx {
+    quote: string;
+    author: string;
+    displayName: string;
+    personaSuffix: string;
+    avatarUrl: string | null;
+    initial: string;
+    /** De band-/panel-bg waar de quote op staat (scraped QUOTE_BLOCK-aware). */
+    quoteBg: string;
+  }
+
+  /** C1 'wall' — card-presentatie (testimonial-wand-esthetiek), links
+   *  uitgelijnd en compacter. NB: de props dragen 1 quote → dit rendert 1
+   *  wall-card; een echte multi-quote wand vraagt een quotes-array (C3). */
+  const renderWall = (c: TestimonialRenderCtx) => {
+    const quoteColor = resolveOnColor(reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface), c.quoteBg, { fallback: tokens.onSurface, minRatio: 3.0 });
+    const mutedColor = readableTextColor(tokens.surfaceMuted, c.quoteBg, tokens.onSurface);
+    return (
+      <section style={{ background: tokens.surface, padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`, fontFamily: bodyFont }}>
+        <div style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 24 }}>
+          <figure style={{ margin: 0, background: c.quoteBg, border: `1px solid ${tokens.surfaceBorder}`, borderRadius: Math.min(16, constraints.maxRadiusPx), padding: '28px', textAlign: 'left' }}>
+            <blockquote style={{ margin: '0 0 16px', fontFamily: headingFont, fontSize: Math.min(quoteSize, 20), fontStyle: 'italic', lineHeight: 1.5, color: quoteColor }}>
+              {c.quote}
+            </blockquote>
+            <figcaption style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {patternAvatar(c.displayName, c.avatarUrl, c.initial, 40)}
+              <cite style={{ fontStyle: 'normal', fontSize: 13, color: mutedColor, fontFamily: ds.typography.label.fontFamily, letterSpacing: ds.typography.label.letterSpacing, textTransform: ds.typography.label.textTransform ?? 'none' }}>
+                {c.author}
+                {c.personaSuffix}
+              </cite>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+    );
+  };
+
+  /** C1 'spotlight' — oversized editorial pull-quote + auteur-blok. */
+  const renderSpotlight = (c: TestimonialRenderCtx) => {
+    const quoteColor = resolveOnColor(reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface), c.quoteBg, { fallback: tokens.onSurface, minRatio: 3.0 });
+    const mutedColor = readableTextColor(tokens.surfaceMuted, c.quoteBg, tokens.onSurface);
+    const spotlightSize = Math.min(tbr.display.fontSize ?? 40, 44);
+    return (
+      <section style={{ background: c.quoteBg, padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`, textAlign: 'center', fontFamily: bodyFont }}>
+        <div style={{ maxWidth: 880, margin: '0 auto' }}>
+          <div aria-hidden="true" style={{ fontFamily: headingFont, fontSize: 64, lineHeight: 1, color: quoteColor, opacity: 0.35 }}>
+            {'“'}
+          </div>
+          <blockquote style={{ margin: '0 auto 28px', maxWidth: 780, fontFamily: headingFont, fontSize: responsiveSize(26, spotlightSize), fontWeight: tbr.display.fontWeight ?? tbr.heading.fontWeight ?? 500, lineHeight: 1.3, letterSpacing: tbr.heading.letterSpacing ?? undefined, color: quoteColor }}>
+            {c.quote}
+          </blockquote>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+            {patternAvatar(c.displayName, c.avatarUrl, c.initial, 64)}
+            <cite style={{ fontStyle: 'normal', fontSize: 14, color: mutedColor, fontFamily: ds.typography.label.fontFamily, letterSpacing: ds.typography.label.letterSpacing, textTransform: ds.typography.label.textTransform ?? 'none' }}>
+              {c.author}
+              {c.personaSuffix}
+            </cite>
+          </div>
+        </div>
+      </section>
+    );
+  };
 
   return {
     fields: {
+      patternKey: {
+        type: 'select' as const,
+        label: 'Layout-patroon',
+        options: patternFieldOptions('Testimonial'),
+      },
       quote: { type: 'textarea' as const },
       author: { type: 'text' as const },
       personaId: { type: 'select' as const, options: personaOptions },
     },
     defaultProps: {
+      patternKey: 'default',
       quote: '"Branddock doubled our launch speed."',
       author: 'Happy customer',
       personaId: '',
     },
-    render: ({ quote, author, personaId }: TestimonialProps) => {
+    render: ({ quote, author, personaId, patternKey }: TestimonialProps) => {
       const persona = personas.find((p) => p.id === personaId);
       const displayName = persona?.name ?? author;
       const avatarUrl = persona?.avatarUrl ?? null;
@@ -1858,6 +2247,21 @@ function testimonialComponent(
         : (testimonialBg === tokens.surface ? `1px solid ${tokens.surfaceBorder}` : 'none');
       const quoteCustomPadding = quoteBlock?.padding ?? null;
       const quoteCustomRadius = quoteBlock?.borderRadius ?? null;
+      // C1 — pattern-dispatch vóór het default-pad ('default'/afwezig/onbekend
+      // valt door naar de ongewijzigde render, byte-compat met bestaande data).
+      const pattern = resolveSectionPatternKey('Testimonial', patternKey);
+      if (pattern === 'wall' || pattern === 'spotlight') {
+        const ctx: TestimonialRenderCtx = {
+          quote,
+          author,
+          displayName,
+          personaSuffix: persona && persona.name !== author ? ` · ${persona.name}` : '',
+          avatarUrl,
+          initial,
+          quoteBg: testimonialBg,
+        };
+        return pattern === 'wall' ? renderWall(ctx) : renderSpotlight(ctx);
+      }
       // Scraped QUOTE_BLOCK padding is COMPONENT-level (bv. 24px 32px op de
       // blockquote-wrapper). Section padding is veel groter (80-128px). Pas
       // scraped padding toe op de inner wrapper, niet op de section zelf,
@@ -2146,8 +2550,88 @@ function faqComponent(tokens: BrandTokens) {
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   const tbr = tokens.typographyByRole;
+  // C1 — alleen voor het two-column-pattern (default-pad gebruikt dit niet).
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+
+  /** Eén Q&A-item — zelfde styling als het default-accordeon. */
+  const renderFaqEntry = (item: FaqItem, i: number, sectionBg: string, borderColor: string) => (
+    <details key={i} style={{ borderBottom: `1px solid ${borderColor}`, padding: '16px 0' }}>
+      <summary
+        style={{
+          fontFamily: headingFont,
+          fontSize: tbr.subheading.fontSize ?? 18,
+          fontWeight: tbr.subheading.fontWeight ?? tbr.heading.fontWeight
+            ?? (ds.typography.heading.weights[0] ?? 600),
+          lineHeight: tbr.subheading.lineHeight ?? undefined,
+          letterSpacing: tbr.subheading.letterSpacing ?? undefined,
+          textTransform: tbr.subheading.textTransform ?? undefined,
+          color: safeHeadingColor(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg),
+          cursor: 'pointer',
+        }}
+      >
+        {item.question}
+      </summary>
+      <p
+        style={{
+          marginTop: 8,
+          color: readableTextColor(tbr.body.color ?? tokens.surfaceMuted, sectionBg, tokens.onSurface),
+          fontSize: tbr.body.fontSize ?? 15,
+          lineHeight: tbr.body.lineHeight ?? undefined,
+        }}
+      >
+        {item.answer}
+      </p>
+    </details>
+  );
+
+  /** C1 'two-column' — dezelfde accordeon-items in een 2-koloms grid (breder
+   *  contentvlak); layout-only, dus archetype-neutraal. */
+  const renderTwoColumn = (
+    p: { items: FaqItem[]; heading?: string; anchorId?: string },
+    sectionBg: string,
+    borderColor: string,
+  ) => (
+    <section
+      id={p.anchorId?.trim() ? p.anchorId : undefined}
+      tabIndex={p.anchorId?.trim() ? -1 : undefined}
+      style={{
+        padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
+        fontFamily: bodyFont,
+        background: sectionBg,
+        scrollMarginTop: p.anchorId?.trim() ? 80 : undefined,
+        outline: p.anchorId?.trim() ? 'none' : undefined,
+      }}
+    >
+      <div style={{ maxWidth: Math.min(1080, constraints.maxContentWidth), margin: '0 auto' }}>
+        {p.heading && p.heading.trim().length > 0 ? (
+          <h2
+            style={{
+              fontFamily: headingFont,
+              fontSize: tbr.heading.fontSize ?? ds.typography.heading.sizes[Math.max(0, ds.typography.heading.sizes.length - 2)] ?? 28,
+              fontWeight: tbr.heading.fontWeight ?? (ds.typography.heading.weights[0] ?? 600),
+              lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
+              letterSpacing: tbr.heading.letterSpacing ?? undefined,
+              color: safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg),
+              margin: '0 0 24px',
+            }}
+          >
+            {p.heading}
+          </h2>
+        ) : null}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', columnGap: 48, alignItems: 'start' }}>
+          {p.items.map((item, i) => renderFaqEntry(item, i, sectionBg, borderColor))}
+        </div>
+      </div>
+    </section>
+  );
+
   return {
     fields: {
+      patternKey: {
+        type: 'select' as const,
+        label: 'Layout-patroon',
+        options: patternFieldOptions('FAQ'),
+      },
       items: {
         type: 'array' as const,
         arrayFields: {
@@ -2159,16 +2643,21 @@ function faqComponent(tokens: BrandTokens) {
       },
     },
     defaultProps: {
+      patternKey: 'default',
       items: [
         { question: 'How does it work?', answer: 'Very simple.' },
         { question: 'What does it cost?', answer: 'See pricing.' },
       ],
     },
-    render: ({ items, bandTone, heading, anchorId }: FAQProps) => {
+    render: ({ items, bandTone, heading, anchorId, patternKey }: FAQProps) => {
       // Band-ritmiek: 'alt' geeft een subtiele tint; alle tekst/borders resolven
       // tegen déze bg i.p.v. de hardcoded surface (anders breekt contrast).
       const sectionBg = sectionBandBg(tokens, bandTone);
       const borderColor = resolveOnColor(tokens.surfaceBorder, sectionBg, { fallback: tokens.onSurface, minRatio: 1.3 });
+      // C1 — pattern-dispatch vóór het default-pad (byte-compat bij 'default').
+      if (resolveSectionPatternKey('FAQ', patternKey) === 'two-column') {
+        return renderTwoColumn({ items, heading, anchorId }, sectionBg, borderColor);
+      }
       return (
       <section
         id={anchorId?.trim() ? anchorId : undefined}
@@ -3293,6 +3782,290 @@ function highlightCardsComponent(tokens: BrandTokens) {
                 <ArrowDown aria-hidden="true" style={{ width: 16, height: 16, color: accent, marginTop: 'auto' }} />
               </a>
             ))}
+          </div>
+        </section>
+      );
+    },
+  };
+}
+
+/**
+ * TrustStrip (C1, LP-spec §4a sectie 2) — compacte vertrouwensband direct
+ * onder de hero: optionele metric-regel ("4,8/5 uit 1.200 reviews") +
+ * klantnaam-/logo-labels in label-typografie. Bewust laag en rustig
+ * (cognitieve drempel verlagen vóór de scroll, geen eigen sectie-drama);
+ * MVP rendert tekst-labels — een beeldrij met echte logo's is later werk.
+ */
+function trustStripComponent(tokens: BrandTokens) {
+  const ds = tokens.designSystem;
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  return {
+    fields: {
+      metric: { type: 'text' as const },
+      items: {
+        type: 'array' as const,
+        arrayFields: {
+          label: { type: 'text' as const },
+        },
+        defaultItemProps: { label: 'Klantnaam placeholder' },
+        getItemSummary: (item: TrustStripItem) => item.label || 'Label',
+      },
+    },
+    defaultProps: {
+      metric: '',
+      items: [
+        { label: 'Klantnaam placeholder' },
+        { label: 'Klantnaam placeholder' },
+        { label: 'Klantnaam placeholder' },
+        { label: 'Klantnaam placeholder' },
+      ],
+    },
+    render: ({ items, metric, bandTone }: TrustStripProps) => {
+      const sectionBg = sectionBandBg(tokens, bandTone);
+      const metricColor = resolveOnColor(tokens.onSurface, sectionBg, { fallback: tokens.onSurface, minRatio: 4.5 });
+      const labelColor = readableTextColor(tokens.surfaceMuted, sectionBg, tokens.onSurface);
+      const borderColor = resolveOnColor(tokens.surfaceBorder, sectionBg, { fallback: tokens.onSurface, minRatio: 1.3 });
+      return (
+        <section
+          style={{
+            background: sectionBg,
+            borderTop: `1px solid ${borderColor}`,
+            borderBottom: `1px solid ${borderColor}`,
+            // Bewust compact (geen volle sectie-padding): de strip is een
+            // band tussen hero en eerste sectie, geen eigen hoofdstuk.
+            padding: `28px ${responsivePaddingX(tokens.sectionRhythm.sectionPaddingX)}`,
+            fontFamily: bodyFont,
+          }}
+        >
+          <div
+            style={{
+              maxWidth: constraints.maxContentWidth,
+              margin: '0 auto',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'center',
+              columnGap: 40,
+              rowGap: 12,
+            }}
+          >
+            {metric && metric.trim().length > 0 ? (
+              <span style={{ fontSize: 14, fontWeight: 600, color: metricColor }}>{metric}</span>
+            ) : null}
+            {items.map((item, i) => (
+              <span
+                key={i}
+                style={{
+                  fontFamily: ds.typography.label.fontFamily,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  letterSpacing: ds.typography.label.letterSpacing || '0.08em',
+                  textTransform: ds.typography.label.textTransform ?? 'uppercase',
+                  color: labelColor,
+                  opacity: 0.8,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {item.label}
+              </span>
+            ))}
+          </div>
+        </section>
+      );
+    },
+  };
+}
+
+/**
+ * PainBullets (C1, LP-spec §4a sectie 3) — probleem-articulatie: pijn als
+ * vraag/stelling (heading), 3-5 frustratie-bullets met Lucide-icoon en een
+ * bridging-zin die naar de oplossing wijst ("pijn benoemen vóór oplossing",
+ * reciprocity-fundament). Links uitgelijnd, smalle leesbreedte.
+ */
+function painBulletsComponent(tokens: BrandTokens) {
+  const ds = tokens.designSystem;
+  const { sectionRhythm, iconography } = tokens;
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const tbr = tokens.typographyByRole;
+  const bodySize = tbr.body.fontSize ?? ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 1)] ?? 16;
+  return {
+    fields: {
+      heading: { type: 'text' as const },
+      bullets: {
+        type: 'array' as const,
+        arrayFields: {
+          text: { type: 'textarea' as const },
+          icon: { type: 'text' as const },
+        },
+        defaultItemProps: { text: 'Pijnpunt placeholder', icon: 'circle' },
+        getItemSummary: (item: PainBulletItem) => item.text || 'Pijnpunt',
+      },
+      bridge: { type: 'text' as const },
+    },
+    defaultProps: {
+      heading: 'Herkenbaar? placeholder-vraag',
+      bullets: [
+        { text: 'Pijnpunt placeholder', icon: 'clock' },
+        { text: 'Pijnpunt placeholder', icon: 'flame' },
+        { text: 'Pijnpunt placeholder', icon: 'circle' },
+      ],
+      bridge: 'Brug naar de oplossing placeholder',
+    },
+    render: ({ heading, bullets, bridge, bandTone }: PainBulletsProps) => {
+      const sectionBg = sectionBandBg(tokens, bandTone);
+      const headingColor = safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg);
+      const textColor = resolveOnColor(tbr.body.color ?? tokens.onSurface, sectionBg, { fallback: tokens.onSurface });
+      const bridgeColor = resolveOnColor(tokens.brand, sectionBg, { fallback: tokens.onSurface, minRatio: 4.5 });
+      return (
+        <section
+          style={{
+            background: sectionBg,
+            padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
+            fontFamily: bodyFont,
+          }}
+        >
+          <div style={{ maxWidth: 720, margin: '0 auto' }}>
+            <h2
+              style={{
+                fontFamily: headingFont,
+                fontSize: tbr.heading.fontSize ?? ds.typography.heading.sizes[Math.max(0, ds.typography.heading.sizes.length - 2)] ?? 28,
+                fontWeight: tbr.heading.fontWeight ?? (ds.typography.heading.weights[0] ?? 600),
+                lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
+                letterSpacing: tbr.heading.letterSpacing ?? undefined,
+                color: headingColor,
+                margin: '0 0 28px',
+              }}
+            >
+              {heading}
+            </h2>
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {bullets.map((b, i) => (
+                <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                  <span style={{ flexShrink: 0, width: 28, display: 'flex', justifyContent: 'center' }}>
+                    <IconBlock
+                      name={b.icon ?? ''}
+                      color={bridgeColor}
+                      size={Math.min(iconography.sizeDefault, 22)}
+                      strokeWeight={iconography.strokeWeight}
+                    />
+                  </span>
+                  <span style={{ fontSize: bodySize, lineHeight: tbr.body.lineHeight ?? 1.6, color: textColor }}>
+                    {b.text}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {bridge && bridge.trim().length > 0 ? (
+              <p style={{ margin: '28px 0 0', fontSize: bodySize, lineHeight: 1.6, fontWeight: 600, color: bridgeColor }}>
+                {bridge}
+              </p>
+            ) : null}
+          </div>
+        </section>
+      );
+    },
+  };
+}
+
+/**
+ * ImpactStats (C1, LP-spec §4a sectie 5) — kwantitatieve RESULTATEN als
+ * social proof: optionele sectiekop + 2-4 grote cijfers met outcome-label.
+ * Verwant aan StatsBlock (merk-cijfer-beat) maar bewust een eigen type:
+ * dit is bewijsvoering mét kop op de sectie-band, geen dark accent-band.
+ */
+function impactStatsComponent(tokens: BrandTokens) {
+  const ds = tokens.designSystem;
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+  const { sectionRhythm } = tokens;
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const tbr = tokens.typographyByRole;
+  return {
+    fields: {
+      heading: { type: 'text' as const },
+      items: {
+        type: 'array' as const,
+        arrayFields: {
+          value: { type: 'text' as const },
+          label: { type: 'text' as const },
+        },
+        defaultItemProps: { value: '0+', label: 'Resultaat placeholder' },
+        getItemSummary: (item: ImpactStatItem) => `${item.value} ${item.label}`,
+      },
+    },
+    defaultProps: {
+      heading: 'Resultaten placeholder',
+      items: [
+        { value: '0+', label: 'Resultaat placeholder' },
+        { value: '0%', label: 'Resultaat placeholder' },
+        { value: '0x', label: 'Resultaat placeholder' },
+      ],
+    },
+    render: ({ heading, items, bandTone }: ImpactStatsProps) => {
+      const sectionBg = sectionBandBg(tokens, bandTone);
+      const headingColor = safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg);
+      const numberColor = resolveOnColor(tokens.brand, sectionBg, { fallback: tokens.onSurface, minRatio: 3.0 });
+      const labelColor = readableTextColor(tokens.surfaceMuted, sectionBg, tokens.onSurface);
+      return (
+        <section
+          style={{
+            background: sectionBg,
+            padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
+            fontFamily: bodyFont,
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ maxWidth: constraints.maxContentWidth, margin: '0 auto' }}>
+            {heading && heading.trim().length > 0 ? (
+              <h2
+                style={{
+                  fontFamily: headingFont,
+                  fontSize: tbr.heading.fontSize ?? ds.typography.heading.sizes[Math.max(0, ds.typography.heading.sizes.length - 2)] ?? 28,
+                  fontWeight: tbr.heading.fontWeight ?? (ds.typography.heading.weights[0] ?? 600),
+                  lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
+                  letterSpacing: tbr.heading.letterSpacing ?? undefined,
+                  color: headingColor,
+                  margin: '0 0 40px',
+                }}
+              >
+                {heading}
+              </h2>
+            ) : null}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 32 }}>
+              {items.map((item, i) => (
+                <div key={i}>
+                  <div
+                    style={{
+                      fontFamily: headingFont,
+                      fontSize: responsiveSize(36, Math.min(tbr.display.fontSize ?? 56, 64)),
+                      fontWeight: tbr.display.fontWeight ?? 600,
+                      lineHeight: tbr.display.lineHeight ?? '1.05',
+                      color: numberColor,
+                      marginBottom: 10,
+                    }}
+                  >
+                    {item.value}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: ds.typography.label.fontFamily,
+                      fontSize: 14,
+                      color: labelColor,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {item.label}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       );

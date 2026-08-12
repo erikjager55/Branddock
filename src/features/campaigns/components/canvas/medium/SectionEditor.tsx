@@ -41,6 +41,11 @@ import {
   type EditableTree,
 } from '@/lib/landing-pages/section-edit-tools';
 import { isComponentLocked } from '@/lib/landing-pages/component-lock';
+import {
+  patternLabelFor,
+  resolveSectionPatternKey,
+  SECTION_PATTERN_PROP,
+} from '@/lib/landing-pages/section-patterns';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { buildSpikePuckConfig, SpikePuckProps } from './puck-config';
 import {
@@ -80,6 +85,16 @@ function asData(tree: EditableTree): SpikeData {
 function sectionIdOf(item: { props?: { id?: string } } | undefined): string | null {
   const id = item?.props?.id;
   return typeof id === 'string' && id.length > 0 ? id : null;
+}
+
+/**
+ * C2 — NL-label van het actieve layout-patroon voor de lijst-badge; null bij
+ * 'default' (geen badge — alleen afwijkingen zijn het signaleren waard).
+ */
+function sectionPatternBadge(item: { type: string; props?: Record<string, unknown> }): string | null {
+  const key = resolveSectionPatternKey(item.type, item.props?.[SECTION_PATTERN_PROP]);
+  if (key === 'default') return null;
+  return patternLabelFor(item.type, key) ?? key;
 }
 
 /** Ctrl/Cmd+Z mag native input-undo niet kapen — editable targets overslaan. */
@@ -695,6 +710,8 @@ function SectionList({
       {content.map((item, index) => {
         const id = sectionIdOf(item) ?? `${item.type}-${index}`;
         const { preview } = sectionListLabel(item as { type: string; props?: Record<string, unknown> });
+        // C2 — badge bij een niet-default layout-patroon (leesbaarheid).
+        const patternBadge = sectionPatternBadge(item as { type: string; props?: Record<string, unknown> });
         const isSelected = id === selectedId;
         const isDropTarget = dropIndex === index && draggedId !== null && draggedId !== id;
         return (
@@ -743,12 +760,22 @@ function SectionList({
                 onClick={() => onSelect(id)}
                 className="min-w-0 flex-1 text-left"
               >
-                <span
-                  className={`block text-xs font-semibold ${
-                    isSelected ? 'text-emerald-700' : 'text-gray-700'
-                  }`}
-                >
-                  {typeLabelFor(item.type)}
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span
+                    className={`truncate text-xs font-semibold ${
+                      isSelected ? 'text-emerald-700' : 'text-gray-700'
+                    }`}
+                  >
+                    {typeLabelFor(item.type)}
+                  </span>
+                  {patternBadge ? (
+                    <span
+                      title={t('pageBuilder.patterns.badgeTitle', { label: patternBadge })}
+                      className="shrink-0 rounded-full bg-teal-50 px-1.5 py-0.5 text-[10px] font-medium text-teal-700"
+                    >
+                      {patternBadge}
+                    </span>
+                  ) : null}
                 </span>
                 {preview ? (
                   <span className="block truncate text-[11px] text-gray-400">{preview}</span>

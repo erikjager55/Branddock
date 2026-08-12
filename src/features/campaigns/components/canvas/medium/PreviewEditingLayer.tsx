@@ -16,6 +16,7 @@ import {
   ArrowUp,
   Check,
   Copy,
+  LayoutGrid,
   Loader2,
   Lock,
   Sparkles,
@@ -38,7 +39,16 @@ import {
 import { isComponentLocked, toggleComponentLock } from '@/lib/landing-pages/component-lock';
 import { listInstructions, type AiInstruction } from '@/lib/landing-pages/ai-edit-instructions';
 import { readPath } from '@/lib/landing-pages/puck-text-fields';
+import {
+  listPatternOptions,
+  resolveSectionPatternKey,
+  SECTION_PATTERN_PROP,
+  sectionHasPatterns,
+  sectionPatternItemCount,
+  type SectionPatternOption,
+} from '@/lib/landing-pages/section-patterns';
 import { deepSet } from '@/lib/utils/deep-set';
+import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { SpikePuckProps } from './puck-config';
 import { findEditableTextPath, sectionContentIndex } from './preview-edit-matching';
 import { ComponentDiffPreviewModal } from './ComponentDiffPreviewModal';
@@ -188,6 +198,12 @@ export function PreviewEditingLayer({
   children,
 }: PreviewEditingLayerProps) {
   const { t, i18n } = useTranslation('campaigns-canvas-medium');
+  // C2 — brand-archetype voor de pattern-kiezer. Bron: contextStack.brandTokens
+  // .archetype (de geclassificeerde Jung-archetype uit de brand-tokens-laag,
+  // zelfde stack waar buildSpikePuckConfig zijn tokens uit haalt); de layer
+  // leest hem uit de canvas-store zoals de SectionEditor dat ook doet.
+  const contextStack = useCanvasStore((s) => s.contextStack);
+  const brandArchetype = contextStack?.brandTokens?.archetype ?? null;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const editingRef = useRef<InlineEditSession | null>(null);
@@ -204,6 +220,8 @@ export function PreviewEditingLayer({
   const [hovered, setHovered] = useState<{ id: string; type: string } | null>(null);
   const [toolbarPos, setToolbarPos] = useState<{ top: number; right: number } | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  // C2 — "Wissel layout"-popover (deterministisch, geen AI-call).
+  const [patternPopoverOpen, setPatternPopoverOpen] = useState(false);
   const [promptText, setPromptText] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -224,6 +242,7 @@ export function PreviewEditingLayer({
     setHovered(null);
     setToolbarPos(null);
     setPopoverOpen(false);
+    setPatternPopoverOpen(false);
   }, []);
 
   const refreshToolbarPos = useCallback((sectionId: string) => {
@@ -299,7 +318,7 @@ export function PreviewEditingLayer({
   // ── A4: hover-tracking ─────────────────────────────────────────
   const handleMouseOver = useCallback(
     (e: ReactMouseEvent<HTMLDivElement>) => {
-      if (pageLocked || popoverOpen) return;
+      if (pageLocked || popoverOpen || patternPopoverOpen) return;
       if (!(e.target instanceof Element)) return;
       if (overlayRef.current?.contains(e.target)) return;
       const sectionEl = e.target.closest('[data-section-id]');
@@ -310,13 +329,13 @@ export function PreviewEditingLayer({
       setHovered({ id, type: sectionEl.getAttribute('data-section-type') ?? '' });
       refreshToolbarPos(id);
     },
-    [pageLocked, popoverOpen, hovered, refreshToolbarPos],
+    [pageLocked, popoverOpen, patternPopoverOpen, hovered, refreshToolbarPos],
   );
 
   const handleMouseLeave = useCallback(() => {
-    if (popoverOpen || aiBusy) return;
+    if (popoverOpen || patternPopoverOpen || aiBusy) return;
     clearHover();
-  }, [popoverOpen, aiBusy, clearHover]);
+  }, [popoverOpen, patternPopoverOpen, aiBusy, clearHover]);
 
   // ── A4: structurele operaties via de section-edit-tools-kernel ─
   const applyResult = useCallback(
@@ -371,6 +390,35 @@ export function PreviewEditingLayer({
     dataRef.current = next;
     onChange(next);
   }, [hovered, onChange]);
+
+  // ── C2: "Wissel layout" — deterministische pattern-swap (geen AI-call) ─
+  const hoveredSection = hoveredIndex >= 0 ? puckData.content[hoveredIndex] : null;
+  const patternOptions = useMemo<SectionPatternOption[]>(() => {
+    if (!hovered || !sectionHasPatterns(hovered.type)) return [];
+    const itemCount = sectionPatternItemCount(
+      hovered.type,
+      (hoveredSection?.props ?? null) as Record<string, unknown> | null,
+    );
+    return listPatternOptions(hovered.type, brandArchetype, itemCount);
+  }, [hovered, hoveredSection, brandArchetype]);
+  const activePatternKey = hovered
+    ? resolveSectionPatternKey(
+        hovered.type,
+        (hoveredSection?.props as Record<string, unknown> | undefined)?.[SECTION_PATTERN_PROP],
+      )
+    : 'default';
+
+  const handlePatternPick = useCallback(
+    (key: string) => {
+      if (!hovered) return;
+      // Instant via de kernel (lock-guard inbegrepen) → bestaand autosave-pad.
+      applyResult(
+        setSectionProps(asTree(dataRef.current), hovered.id, { [SECTION_PATTERN_PROP]: key }),
+      );
+      setPatternPopoverOpen(false);
+    },
+    [hovered, applyResult],
+  );
 
   // ── A4: sectie-AI-edit (vrije prompt + preset-chips) ───────────
   const submitSectionAi = useCallback(
@@ -566,7 +614,7 @@ export function PreviewEditingLayer({
       if (anchor && containerRef.current?.contains(anchor) && !overlayRef.current?.contains(anchor)) {
         e.preventDefault();
       }
-      if (pageLocked || popoverOpen || aiBusy || proposal !== null) return;
+      if (pageLocked || popoverOpen || patternPopoverOpen || aiBusy || proposal !== null) return;
       if (elementPromptTarget !== null || elementProposal !== null || elementBusy) return;
       if (editingRef.current) return;
       if (overlayRef.current?.contains(e.target)) return;
@@ -588,7 +636,7 @@ export function PreviewEditingLayer({
         // Nooit throwen op onverwachte DOM — geen match, geen edit.
       }
     },
-    [pageLocked, popoverOpen, aiBusy, proposal, elementPromptTarget, elementProposal, elementBusy, startInlineEdit],
+    [pageLocked, popoverOpen, patternPopoverOpen, aiBusy, proposal, elementPromptTarget, elementProposal, elementBusy, startInlineEdit],
   );
 
   // ── B3: element-AI submit + accept ─────────────────────────────
@@ -808,11 +856,25 @@ export function PreviewEditingLayer({
               onClick={handleToggleSectionLock}
               tone={sectionLocked ? 'active' : 'default'}
             />
+            {/* C2 — "Wissel layout": alleen voor sectie-types mét patterns;
+                deterministische swap via de kernel, geen AI-call. */}
+            {sectionHasPatterns(hovered.type) ? (
+              <ToolbarIconButton
+                icon={LayoutGrid}
+                label={t('pageBuilder.patterns.button')}
+                onClick={() => {
+                  setPopoverOpen(false);
+                  setPatternPopoverOpen((open) => !open);
+                }}
+                disabled={sectionLocked}
+              />
+            ) : null}
             <ToolbarIconButton
               icon={Sparkles}
               label={t('pageBuilder.sectionAiPrompt')}
               onClick={() => {
                 setAiError(null);
+                setPatternPopoverOpen(false);
                 setPopoverOpen((open) => !open);
               }}
               disabled={sectionLocked}
@@ -836,6 +898,14 @@ export function PreviewEditingLayer({
                 setPopoverOpen(false);
                 setAiError(null);
               }}
+            />
+          ) : null}
+          {patternPopoverOpen ? (
+            <PatternSwapPopover
+              options={patternOptions}
+              activeKey={activePatternKey}
+              onPick={handlePatternPick}
+              onClose={() => setPatternPopoverOpen(false)}
             />
           ) : null}
         </div>
@@ -886,6 +956,86 @@ function ToolbarIconButton({
     >
       <Icon className="h-4 w-4" />
     </button>
+  );
+}
+
+/**
+ * C2 — popover onder de sectie-toolbar: de brand-toegestane layout-patronen
+ * van dit sectie-type (registry-labels zijn NL — geen i18n-dubbel). Klik =
+ * instant `setSectionProps({ patternKey })` via de kernel, geen AI-call.
+ * Patterns die op content-eisen stranden (minItems) staan uitgegrijsd mét
+ * reden; archetype-vreemde patterns zijn hier al weggefilterd.
+ */
+function PatternSwapPopover({
+  options,
+  activeKey,
+  onPick,
+  onClose,
+}: {
+  options: SectionPatternOption[];
+  activeKey: string;
+  onPick: (key: string) => void;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation('campaigns-canvas-medium');
+  return (
+    <div
+      className="mt-1 w-64 rounded-lg border border-gray-200 bg-white p-2 shadow-lg"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation();
+          onClose();
+        }
+      }}
+    >
+      <div className="mb-1.5 flex items-center justify-between px-1">
+        <span className="text-xs font-semibold text-gray-700">
+          {t('pageBuilder.patterns.popoverTitle')}
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t('pageBuilder.sectionPromptClose')}
+          className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <ul className="space-y-0.5">
+        {options.map(({ definition, enabled, disabledReason }) => {
+          const isActive = definition.key === activeKey;
+          const reason =
+            disabledReason === 'min-items'
+              ? t('pageBuilder.patterns.minItems', { count: definition.minItems ?? 0 })
+              : null;
+          return (
+            <li key={definition.key}>
+              <button
+                type="button"
+                disabled={!enabled}
+                title={reason ?? definition.label}
+                onClick={() => onPick(definition.key)}
+                className={`flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
+                  isActive
+                    ? 'bg-emerald-50 font-medium text-emerald-700'
+                    : 'text-gray-700 hover:bg-gray-50'
+                } disabled:cursor-not-allowed disabled:opacity-40`}
+              >
+                <span className="min-w-0">
+                  <span className="block truncate">{definition.label}</span>
+                  {reason ? (
+                    <span className="block truncate text-[10px] text-gray-400">{reason}</span>
+                  ) : null}
+                </span>
+                {isActive ? (
+                  <Check aria-label={t('pageBuilder.patterns.active')} className="h-3.5 w-3.5 shrink-0" />
+                ) : null}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 

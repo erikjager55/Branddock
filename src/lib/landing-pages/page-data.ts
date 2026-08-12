@@ -77,6 +77,12 @@ export const SECTION_TYPE_IDS = [
   'ComparisonTable',
   'Listicle',
   'LeadForm',
+  // C1 — anatomie-componenten (LP-spec §4a): trust-strip, probleem-
+  // articulatie en impact-stats. Additief: geen starter-template neemt ze
+  // op (generatie-opname is C3), maar editor + AI-tools kennen ze.
+  'TrustStrip',
+  'PainBullets',
+  'ImpactStats',
 ] as const;
 
 export type SectionTypeId = (typeof SECTION_TYPE_IDS)[number];

@@ -64,6 +64,11 @@ const TEXT_FIELDS_BY_TYPE: Record<string, string[]> = {
   // P3 lp-forms-leads: alleen de copy-velden; fields/webhookUrl/notifyEmail
   // zijn config en blijven buiten de AI-rewrite.
   LeadForm: ['heading', 'sub', 'buttonLabel', 'successMessage'],
+  // C1 anatomie-componenten: alleen top-level string-copy (array-items als
+  // bullets/items vallen buiten dit route-contract; patternKey is config).
+  TrustStrip: ['metric'],
+  PainBullets: ['heading', 'bridge'],
+  ImpactStats: ['heading'],
 };
 
 const SYSTEM_PROMPT = `You are a brand-aware copywriter helping users edit text inside a visual page builder.
