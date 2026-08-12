@@ -7,6 +7,7 @@
 // (pre-seeding zichtbaar maken — de +30-50%-activatie-les).
 // =============================================================
 
+import Link from 'next/link';
 import { use, useCallback, useEffect, useState } from 'react';
 import { ArrowRight, Check, Loader2, ShieldCheck } from 'lucide-react';
 
@@ -135,9 +136,9 @@ export default function BrandMdClaimPage({ params }: { params: Promise<{ token: 
             {needsLogin && (
               <div className="mt-4 rounded-lg border p-4 text-sm" style={{ borderColor: '#26354D', color: '#9FB0C3' }}>
                 You need a (free) account first.{' '}
-                <a href="/" className="font-medium underline underline-offset-2" style={{ color: PRIMARY }}>
+                <Link href="/" className="font-medium underline underline-offset-2" style={{ color: PRIMARY }}>
                   Sign in or create one
-                </a>
+                </Link>
                 , then open this claim link again — it stays yours.
               </div>
             )}
@@ -160,13 +161,13 @@ export default function BrandMdClaimPage({ params }: { params: Promise<{ token: 
               Your brand DNA from the scan is pre-filled — complete the open fields and generate
               your first on-brand content.
             </p>
-            <a
+            <Link
               href="/"
               className="mt-6 inline-flex items-center gap-2 rounded-lg px-6 py-3 font-semibold"
               style={{ backgroundColor: PRIMARY, color: '#06251F' }}
             >
               Open your workspace <ArrowRight className="h-5 w-5" />
-            </a>
+            </Link>
           </div>
         )}
       </div>
