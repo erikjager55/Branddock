@@ -10,7 +10,6 @@ import {
   type ReactNode,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Config } from '@puckeditor/core';
 import {
   ArrowDown,
   ArrowUp,
@@ -27,6 +26,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { PageData as Data } from '@/lib/landing-pages/page-data';
+import type { SectionLibraryConfig } from '@/lib/landing-pages/section-config';
 import {
   canRemoveSection,
   duplicateSection,
@@ -64,7 +64,7 @@ export interface PreviewEditingLayerProps {
   puckData: SpikeData;
   /** Deliverable content-type (bv. 'landing-page') — stuurt de verplichte-sectie-guard. */
   contentType: string | null;
-  config: Config<SpikePuckProps>;
+  config: SectionLibraryConfig<SpikePuckProps>;
   deliverableId: string | null;
   /** Page-level lock (root.props.locked) — verbergt de toolbar en bevriest inline edit. */
   pageLocked: boolean;

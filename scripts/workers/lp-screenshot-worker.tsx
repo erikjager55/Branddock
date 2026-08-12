@@ -3,11 +3,10 @@
  *
  * WAAROM een apart proces: de route-handler draait in Next's server/RSC-laag
  * waar `react` een andere build is dan de copy waar `react-dom/server` zijn
- * hooks-dispatcher op zet. Hook-gebruikende componenten (Puck `Render`)
- * crashen daar met "Cannot read properties of null (reading 'useMemo')".
- * Onder een kale Node/tsx-run bestaat er maar één React-copy en werkt
- * `renderToStaticMarkup` gewoon — zelfde patroon als
- * scripts/dev/render-lp-screenshot.tsx (de visuele verificatie-harness).
+ * dispatcher op zet — `renderToStaticMarkup` is daar onbetrouwbaar. Onder een
+ * kale Node/tsx-run bestaat er maar één React-copy en werkt het gewoon;
+ * bovendien houdt het proces de Playwright-launch buiten de server-runtime.
+ * Zelfde patroon als scripts/dev/render-lp-screenshot.tsx.
  *
  * Aanroep:  tsx scripts/workers/lp-screenshot-worker.tsx <payload.json> <out.png>
  * Payload:  { puckData, ctx, options? } — zie lp-screenshotter.ts
@@ -16,7 +15,6 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import fs from "node:fs";
-import path from "node:path";
 import { PageRender } from "../../src/lib/landing-pages/page-render";
 import type { PageData as Data } from "../../src/lib/landing-pages/page-data";
 import { chromium } from "playwright";
@@ -40,18 +38,6 @@ const DEFAULT_VIEWPORT_WIDTH = 1280;
 const DEFAULT_VIEWPORT_HEIGHT = 800;
 const DEFAULT_MAX_HEIGHT = 4500;
 const RENDER_TIMEOUT_MS = 15_000;
-
-/** Puck's Render-CSS heeft een content-hash in de filename — zoek hem op. */
-function readPuckRenderCss(): string {
-  const dist = path.join(process.cwd(), "node_modules/@puckeditor/core/dist");
-  try {
-    const hashed = fs.readdirSync(dist).find((f) => /^Render-.*\.css$/.test(f));
-    if (hashed) return fs.readFileSync(path.join(dist, hashed), "utf8");
-    return fs.readFileSync(path.join(dist, "index.css"), "utf8");
-  } catch {
-    return "";
-  }
-}
 
 async function main() {
   const [payloadPath, outPath] = process.argv.slice(2);
@@ -78,7 +64,6 @@ async function main() {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>${readPuckRenderCss()}</style>
 <style>${a11yCss}</style>
 <style>
   *, *::before, *::after { box-sizing: border-box; }

@@ -1,249 +1,90 @@
 # Web-page builder — component author guide
 
-Hoe je een nieuw brand-aware Puck-component toevoegt aan de Branddock
-landing-page builder. Volgt het patroon van de 11 bestaande components
-in `puck-config.tsx`:
+> **Doc-sync 2026-08-12** (E3, ADR `2026-08-07-puck-exit-sectie-editor`): de
+> builder draait volledig op de eigen render-/editor-stack — `@puckeditor/core`
+> is verwijderd. Deze gids beschrijft de actuele architectuur + het recept om
+> een sectie-component toe te voegen.
 
-| # | Component | Bron |
-|---|---|---|
-| 1 | `BrandHero` | MVP Phase 2 |
-| 2 | `BrandCTA` | MVP Phase 2 |
-| 3 | `FeatureGrid` | MVP Phase 2 |
-| 4 | `Testimonial` | MVP Phase 2 |
-| 5 | `PricingTable` | MVP Phase 2 |
-| 6 | `FAQ` | MVP Phase 2 |
-| 7 | `Footer` | MVP Phase 2 |
-| 8 | `RichText` | MVP Phase 2 |
-| 9 | `StickyCtaBar` | DTS C9 (commit `39171432`) |
-| 10 | `StatsBlock` | DTS C8/9 (auto-iterate skip-projected) |
-| 11 | `BrandNav` | LP design batches |
+## Architectuur in één oogopslag
 
-Doelgroep: Branddock-developer die de builder wil uitbreiden met een
-nieuw component-type. Werk in `branddock-feat-web-page-builder-canvas`
-worktree of opvolger.
+```
+medium/
+├── puck-config.tsx              # Component-registry: 22 sectie-types + fields-metadata + render-functies
+│                                #   (naam is historisch; het is de eigen registry — geen Puck)
+├── puck-templates/              # Per-type starter- + from-structured-builders (naam idem historisch)
+├── PuckPageBuilder.tsx          # Step 3-hoofdview: preview-first PageRender + prompt-veld (A2)
+│                                #   + page-acties (auto-iterate/brand-fit/lock) + editor-opening
+├── PreviewEditingLayer.tsx      # A3 inline tekst-edit · A4 sectie-hover-toolbar (kernel-guards)
+│                                #   · B3 element-AI (targetField) · C2 pattern-swap-popover
+├── SectionEditor.tsx            # E2 fullscreen drie-koloms editor (lijst+DnD / live preview / props)
+├── SectionPropsPanel.tsx        # Props-paneel op fields-metadata (arrays recursief, custom → PuckImageField)
+├── section-editor-model.ts      # Hook-vrije model-helpers (labels, panel-model, add-defaults, DnD→moves)
+├── preview-edit-matching.ts     # A3-matching: DOM-tekst → exact veld-pad
+└── variant-to-puck-data.ts      # Step 2 structured variant → sectie-tree (shape-dispatch per type)
 
----
-
-## 5-stappenplan voor een nieuw component
-
-### 1. Definieer de props-type (`puck-config.tsx`)
-
-Voeg bovenaan `puck-config.tsx` een prop-interface toe:
-
-```ts
-export type StatBlockProps = {
-  label: string;
-  value: string;
-  trend: 'up' | 'down' | 'flat';
-};
+src/lib/landing-pages/
+├── page-data.ts                 # PageData + SECTION_TYPE_IDS (stabiel registry-contract) + shape-validatie
+├── page-render.tsx              # Hook-vrije render-loop (RSC + client) met data-section-id-provenance
+├── section-config.ts            # Minimale structurele registry-typering (consumenten-contract)
+├── section-edit-tools.ts        # DE mutatie-kernel: move/duplicate/remove/setProps/add + batch
+│                                #   (guards: verplichte secties per type, locks, vocabulaire)
+├── section-patterns.ts          # C1 pattern-registry (per sectie-type; archetype- + minItems-gefilterd)
+├── static-compile.ts            # P2: publish-artifact (HTML+fonts+a11y+JSON-LD+runtime-script)
+└── publish-gate.ts              # P6: deterministische merkvalidatie vóór elke publish
 ```
 
-Voeg het toe aan `SpikePuckProps`:
+**Datamodel**: `Deliverable.settings.puckData` (draft, naam historisch) →
+`PagePublish`-versies met `livePublishId`-pointer (P1) + bevroren
+`compiledHtml`-artifact (P2). Alle edit-paden — toolbar, editor, Claw-chat
+(B1: `update_landing_page_structure`), AI-routes — muteren via
+`section-edit-tools`; er is geen tweede waarheid.
 
-```ts
-export type SpikePuckProps = {
-  BrandHero: SpikeBrandHeroProps;
-  // ... bestaande components
-  StatBlock: StatBlockProps;
-};
-```
+## Sectie-component toevoegen (5 stappen)
 
-### 2. Schrijf de component-builder-functie
+1. **Props-type + component-functie** in `puck-config.tsx` — conventies:
+   - `<lowercaseName>Component(tokens)`; brand-tokens via closure, nooit als prop.
+   - **RSC-safe**: geen hooks/handlers/'use client' in render-functies (de
+     registry draait server-side voor `/p/*`, de artifact-compiler én de
+     screenshotter). Interactie = apart client-eiland met no-JS-fallback
+     (patroon: `AnchorNavClient`, LeadForm's `:target`-success).
+   - Inline `style={{…}}` (Tailwind-4-purge) · Lucide, geen emoji.
+   - Fallback-copy MOET het woord "placeholder" bevatten (anti-fabricatie —
+     de publish-gate blokkeert er hard op).
+2. **Registreren**: `SECTION_TYPE_IDS` in `page-data.ts` (stabiel id — nooit
+   hernoemen zonder migratie) + `components:`-entry in `buildSpikePuckConfig`.
+   Phase46 bewaakt dat beide lijsten synchroon blijven.
+3. **AI-tekstvelden** (optioneel): `TEXT_FIELDS_BY_TYPE` in
+   `api/landing-pages/component-edit/route.ts` (sectie-prompt + element-AI)
+   en — voor inline-edit op nieuwe leaf-keys — `COPY_KEYS` in
+   `lib/landing-pages/puck-text-fields.ts`.
+4. **Default-factory** (optioneel) in `puck-templates/template-helpers.ts` —
+   de "Sectie toevoegen"-drawer (E2) en de chat-tool vallen anders terug op
+   de registry-`defaultProps`.
+5. **Patterns** (optioneel, C1): varianten in `section-patterns.ts` +
+   pattern-renders in de component (key `'default'` = bestaand gedrag,
+   byte-compatibel); de swap-UI en het props-paneel volgen automatisch.
 
-Onder de bestaande `richTextComponent` voeg toe:
-
-```tsx
-function statBlockComponent(tokens: BrandTokens) {
-  return {
-    fields: {
-      label: { type: 'text' as const },
-      value: { type: 'text' as const },
-      trend: {
-        type: 'select' as const,
-        options: [
-          { label: 'Stijgend', value: 'up' },
-          { label: 'Dalend', value: 'down' },
-          { label: 'Stabiel', value: 'flat' },
-        ],
-      },
-    },
-    defaultProps: {
-      label: 'Metric',
-      value: '100',
-      trend: 'flat' as const,
-    },
-    render: ({ label, value, trend }: StatBlockProps) => (
-      <div
-        style={{
-          padding: 24,
-          textAlign: 'center',
-          fontFamily: tokens.bodyFont,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: tokens.headingFont,
-            fontSize: 36,
-            color: tokens.primaryHex,
-            fontWeight: 700,
-          }}
-        >
-          {value}
-        </div>
-        <div style={{ color: tokens.neutralHex, fontSize: 14 }}>
-          {label}
-          {trend === 'up' ? ' ↑' : trend === 'down' ? ' ↓' : ''}
-        </div>
-      </div>
-    ),
-  };
-}
-```
-
-**Convention**:
-- Component-functie heet `<lowercaseName>Component(tokens)`.
-- Brand-tokens via closure-capture — nooit als prop (Puck's field-types
-  ondersteunen geen complex-object inputs schoon).
-- Inline styling via `style={{...}}` (Tailwind 4 purge issue + custom
-  per-component sizing). Geen utility-classes.
-- Persona/Product-pickers: gebruik `type: 'select'` met
-  `personaOptions` array (niet `type: 'external'` — bug in Puck v0.21.2,
-  zie `docs/audits/puck-external-field-typing-issue.md`).
-
-### 3. Registreer in `buildSpikePuckConfig`
-
-In het `components: { ... }` object onderaan:
-
-```tsx
-return {
-  components: {
-    BrandHero: brandHeroComponent(tokens),
-    // ... bestaande
-    StatBlock: statBlockComponent(tokens),
-  },
-};
-```
-
-### 4. Voeg toe aan AI-text-fields registry (optioneel)
-
-Als je component tekstvelden heeft die door component-level AI-edit
-(shorten/formal/casual/alternatives) bewerkbaar moeten zijn, voeg toe
-aan `TEXT_FIELDS_BY_TYPE` in `src/app/api/landing-pages/component-edit/route.ts`:
-
-```ts
-const TEXT_FIELDS_BY_TYPE: Record<string, string[]> = {
-  BrandHero: ['headline', 'sub', 'ctaLabel'],
-  // ... bestaande
-  StatBlock: ['label'], // value + trend zijn config, geen rewrite
-};
-```
-
-Alleen velden in deze lijst worden door de Claude-rewrite endpoint
-aangeroepen. Config-velden (select / number) blijven onaangeroerd.
-
-### 5. Voeg toe aan template(s) (optioneel)
-
-Als je component standaard in een per-type template moet zitten, voeg
-toe aan `puck-templates/<type>.ts` + `template-helpers.ts`:
-
-```ts
-// template-helpers.ts
-export function defaultStatBlock(_f: FilledFields) {
-  return instance('StatBlock', {
-    label: 'Tevreden klanten',
-    value: '500+',
-    trend: 'up',
-  });
-}
-
-// puck-templates/landing-page.ts (bv. tussen FeatureGrid en CTA)
-export function buildLandingPageTemplate(filled, ctx) {
-  return {
-    root: { props: {} },
-    content: [
-      defaultBrandHero(filled),
-      defaultFeatureGrid(filled),
-      defaultStatBlock(filled),  // ← nieuw
-      defaultBrandCta(filled, ctx),
-      defaultFaq(filled),
-      defaultFooter(filled, ctx),
-    ],
-  } as SpikeData;
-}
-```
-
----
-
-## Smoke-test toevoegen
-
-Phase-2 smoke (`scripts/smoke-tests/web-page-builder-phase2.ts`) heeft
-een `expected` array van component-names — voeg `'StatBlock'` toe + een
-render-check in `testRenderInjections`:
-
-```ts
-{
-  name: 'StatBlock',
-  props: { label: 'Klanten', value: '500+', trend: 'up' },
-  expectedSubstrings: ['Klanten', '500+', tokens.primaryHex],
-},
-```
-
-Run de suite:
-```bash
-npm run smoke:web-page-builder
-```
-
-Alle 40+ phase-smokes moeten groen blijven (totaal vandaag ~1500
-assertions over phase1-phase39+). De Puck-component-test-suite is
-zelfstandig runnable per phase:
-
-```bash
-# Specifieke phase
-npx tsx scripts/smoke-tests/web-page-builder-phase2.ts
-
-# Alle phases in batch
-ls scripts/smoke-tests/web-page-builder-phase*.ts | xargs -I {} npx tsx {}
-```
-
----
+**Smoke**: voeg je component toe aan de `expected`-lijst + render-check in
+`scripts/smoke-tests/web-page-builder-phase2.ts` en draai
+`npm run smoke:web-page-builder` (chain t/m phase54; ~1900 assertions).
 
 ## Wat te vermijden
 
 | Fout | Reden |
 |---|---|
-| `style={{ minHeight: 0 }}` ipv `min-h-0` class | Tailwind 4 purge weert deze; inline-styling is workaround per CLAUDE.md |
-| Brand-tokens lezen via React context | `buildSpikePuckConfig` doet al closure-capture — geen extra hook nodig |
-| `<img>` zonder `loading="lazy"` | Render-route is ISR-cached; alle off-screen images moeten lazy |
-| Tailwind utility-classes in render | Render moet werken in zowel Puck-editor als publieke Render-route; bundle bevat geen Tailwind-runtime |
-| `any` type in props | TypeScript strict — gebruik discriminated-union of `unknown` |
-| `external` field-type voor pickers | Bug in Puck v0.21.2; gebruik `select` of vraag een wrap-component aan |
+| Hooks/'use client' in render-functies | Breekt `/p/*`, artifact-compile en screenshotter (RSC-pad) |
+| Tailwind-klassen in renders | Publieke render heeft geen Tailwind-runtime; purge-gaten |
+| Brand-tokens als prop | Closure-capture is het contract (`buildSpikePuckConfig`) |
+| Sectie-type-id hernoemen | Gepersisteerde trees breken — registry-id's zijn stabiel (ADR E3) |
+| Muteren buiten `section-edit-tools` om | Guards (verplichte secties/locks) zijn anders omzeilbaar |
+| Echte copy als fallback | Publish-gate rekent op herkenbare "placeholder"-markering |
+| `any` | Strict TS — `unknown` + narrowing |
 
----
+## Cross-refs
 
-## Bestand-overzicht
-
-```
-medium/
-├── puck-config.tsx              # Component registry + render functions
-├── puck-templates/              # Per-type starter trees
-│   ├── index.ts                 # resolveTemplateBuilder dispatcher
-│   ├── template-helpers.ts      # default<Component> factories
-│   ├── landing-page.ts          # 5-component starter
-│   ├── product-page.ts          # 6-component starter
-│   ├── faq-page.ts              # 4-component starter
-│   ├── comparison-page.ts       # 6-component starter
-│   └── microsite.ts             # 7-component starter
-├── PuckPageBuilder.tsx          # Main component (Step 3 Medium-renderer)
-├── ComponentDiffPreviewModal.tsx # Component-level diff-preview (Laag 2)
-├── PageDiffPreviewModal.tsx     # Page-level diff-preview (Laag 3)
-└── variant-to-puck-data.ts      # Step 2 → SpikeData seed-mapper
-```
-
-Cross-refs:
-- ADR: [`docs/adr/2026-05-22-landing-page-builder-architectuur.md`](../../../../../../docs/adr/2026-05-22-landing-page-builder-architectuur.md)
-- MVP task: [`tasks/web-page-builder-canvas-step-mvp.md`](../../../../../../tasks/web-page-builder-canvas-step-mvp.md)
-- Brand-tokens util: [`src/lib/landing-pages/brand-tokens.ts`](../../../../../lib/landing-pages/brand-tokens.ts)
-- AI-instruction registry: [`src/lib/landing-pages/ai-edit-instructions.ts`](../../../../../lib/landing-pages/ai-edit-instructions.ts)
-- DTS content-quality (C1-C11 alle items done): [`docs/specs/dts-content-quality-improvements.md`](../../../../../../docs/specs/dts-content-quality-improvements.md)
-- Brandstyle-analyzer pipeline-plan (referentie, niet 1-op-1 uitgevoerd): [`docs/specs/brandstyle-analyzer-improvement-plan.md`](../../../../../../docs/specs/brandstyle-analyzer-improvement-plan.md)
-- Plan zippy-twirling-feigenbaum (2026-05-29): `~/.claude/plans/zippy-twirling-feigenbaum.md`
+- ADR's: `2026-08-07-puck-exit-sectie-editor` (accepted) ·
+  `2026-08-12-compile-to-static-publish` · `2026-05-22-landing-page-builder-architectuur`
+  (beslissingen 1/3/4/5 nog van kracht; beslissing 2 herzien)
+- Plan: `docs/specs/2026-08-07-webpage-builder-verbeterplan.md` (v3) +
+  marktonderzoek `docs/reports/webpage-bouw-en-publicatie-marktonderzoek-2026-08-07.md`
+- Task-files: `tasks/page-render-own-loop.md` e.v. (E-/A-/B-/C-/P-reeks, 2026-08-12)

@@ -63,8 +63,7 @@ async function main() {
   }
   const config = buildSpikePuckConfig(ctx);
   const body = renderToStaticMarkup(React.createElement(PageRender, { config, data: pd } as never));
-  const puckCss = fs.readFileSync("node_modules/@puckeditor/core/dist/Render-3OV4N4MT.css", "utf8");
-  const html = `<!doctype html><html lang="nl"><head><meta charset="utf-8"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sen:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap"/><style>${puckCss}</style><style>${buildA11yStyleBlock(brandTokens.brand)}</style><style>*{box-sizing:border-box}html,body{margin:0;padding:0}img{max-width:100%}</style></head><body>${body}</body></html>`;
+  const html = `<!doctype html><html lang="nl"><head><meta charset="utf-8"/><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sen:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap"/><style>${buildA11yStyleBlock(brandTokens.brand)}</style><style>*{box-sizing:border-box}html,body{margin:0;padding:0}img{max-width:100%}</style></head><body>${body}</body></html>`;
   fs.writeFileSync(`/tmp/lp-${SLUG}.html`, html);
   console.log(`WROTE /tmp/lp-${SLUG}.html — ${styleguide?.workspace?.name} — dark:${brandTokens.hasDarkSections} surface:${brandTokens.surface} secondarySurface:${brandTokens.secondarySurface} brandSubtle:${brandTokens.brandSubtle} darkSectionBg:${brandTokens.darkSectionBg}`);
   if (REBUILD) {

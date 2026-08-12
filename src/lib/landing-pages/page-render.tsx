@@ -46,18 +46,6 @@ interface PageRenderProps {
   withSectionMarkers?: boolean;
 }
 
-/**
- * Stub voor de `puck`-prop die Pucks Render aan elke sectie meegaf. Geen
- * enkele Branddock-sectie gebruikt hem (geverifieerd: 0 hits op `puck.`/
- * `editMode` in puck-config.tsx), maar meegeven houdt het aanroep-contract
- * identiek voor de pariteits-overgang; verdwijnt definitief bij E3-opruiming.
- */
-const PUCK_COMPAT_STUB = {
-  isEditing: false,
-  dragRef: null,
-  metadata: {},
-} as const;
-
 export function PageRender({ config, data, withSectionMarkers = true }: PageRenderProps) {
   const content = Array.isArray(data?.content) ? data.content : [];
   return (
@@ -76,7 +64,6 @@ export function PageRender({ config, data, withSectionMarkers = true }: PageRend
         const rendered = definition.render({
           ...props,
           id: sectionId,
-          puck: PUCK_COMPAT_STUB,
         } as never);
         if (!withSectionMarkers) {
           return <FragmentWithKey key={sectionId}>{rendered}</FragmentWithKey>;

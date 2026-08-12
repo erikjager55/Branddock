@@ -5,7 +5,6 @@
 // the server". Client-importers (PuckPageBuilder e.a.) zitten al achter een
 // hogere 'use client'-boundary; interactieve fields (PuckImageField)
 // declareren hun eigen boundary.
-import type { Config } from '@puckeditor/core';
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -522,7 +521,7 @@ export function buildSpikePuckConfig(
      *  zodat de editor-preview nooit echte submissions maakt. */
     workspaceId?: string | null;
   },
-): Config<SpikePuckProps> {
+) {
   const stickyNav = opts?.stickyNav ?? true;
   const tokens: BrandTokens = ctx?.brandTokens ?? extractBrandTokensFromContext(ctx?.brand);
   const personas = ctx?.personas ?? [];
