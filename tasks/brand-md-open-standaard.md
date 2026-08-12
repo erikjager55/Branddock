@@ -5,7 +5,7 @@ fase: launch
 priority: now
 effort: ±4-5 dagen (v2 + claim-flow + leads-dashboard; excl. Eriks strategie-akkoord + outreach)
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-08-02
 completed: -
 related-adr: docs/adr/2026-07-17-public-brand-api.md
@@ -111,6 +111,12 @@ Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referenti
 2. **Claim-pad**: claim-URL (token) staat in het bestand (`provenance:`) en in de e-mail van de aanvrager → login/registratie (Better Auth) → `provisionNewUser` → org + workspace → **materialisatie via dezelfde domein-schrijfpaden als de UI** (tweede-deur-principe + verplichte cache-invalidatie): `BrandStyleguide` (status DRAFT, `sourceUrl` gevuld → re-scan werkt meteen), `BrandVoiceguide`-concept, `BrandAssets` op unvalidated, content-locale-anker (les #411). Token vervalt bij claim; idempotent (dubbele klik → zelfde workspace). Hing er een e-mail aan de run, dan alleen claimbaar via dat adres.
 3. **Versheid**: bij claim van een oud draft → keuze "materialiseer dit draft" of "scan opnieuw"; de bestaande per-veld override-vlaggen op `BrandStyleguide` (scraper mag overschrijven tenzij user-set) regelen precies dit re-scrape-gedrag al.
 4. **Borging/AVG**: drafts nooit publiek vindbaar of opsombaar; alleen publieke website-data (geen PII behalve de opt-in e-mail); rate-limits per IP én per doeldomein; TTL-verwijdering is volledig (payload + artefacten + token).
+
+# Uitvoeringsstand (autonome sessie 2026-08-03)
+
+**Gebouwd en gecommit** (changelog #454): onderdelen 1 (emitter), 2 (export UI/REST/MCP), 3 (generator + Brand Score + gate-architectuur), 4 (validator, npm-klaar), 5 (landingspagina + use-hub als App Router-pagina's), 7 (claim-flow + draft-borging + TTL-cron) en 8 (leads-dashboard). Onderdeel 6 (upstream-PR's) staat klaar als tekstpakket — indienen is een Erik-actie.
+
+**Afgevinkt kan pas na deploy**: Neon `prisma db push` (GeneratedBrandProfile + enum), deploy-smokes (generator end-to-end op prod, claim → workspace, dashboard-ladder), ANTHROPIC_API_KEY-afhankelijke scan op prod. Lokale gates groen: tsc 0, eslint nieuwe bestanden 0, emitter-smoke, validator-selftest + kruisvalidatie.
 
 # Notes
 
