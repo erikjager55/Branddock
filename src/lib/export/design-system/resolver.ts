@@ -36,6 +36,11 @@ import type {
   BrandFoundationAssetSummary,
   PersonaSummary,
   CompetitorSummary,
+  ProductSummary,
+  ChannelToneSummary,
+  BrandMdExtension,
+  BrandMdSectionKey,
+  SectionValidation,
 } from './canonical';
 
 // ─── Public entry ─────────────────────────────────────
@@ -58,17 +63,46 @@ export async function buildDesignSystemModel(
     }),
     prisma.brandVoiceguide.findUnique({
       where: { workspaceId },
-      select: { contentGuidelines: true, writingGuidelines: true, examplePhrases: true },
+      select: {
+        contentGuidelines: true,
+        writingGuidelines: true,
+        examplePhrases: true,
+        voiceDescription: true,
+        wordsWeUse: true,
+        wordsWeAvoid: true,
+        vocabularyDo: true,
+        vocabularyDont: true,
+        channelTones: true,
+        updatedAt: true,
+      },
     }),
   ]);
 
   const tokens = await ensureSemanticTokens(styleguide);
 
-  const [brandAssets, personas, competitors] = await Promise.all([
-    fetchBrandAssetSummaries(workspaceId),
-    fetchPersonaSummaries(workspaceId),
-    fetchCompetitorSummaries(workspaceId),
-  ]);
+  const [brandAssets, personas, competitors, brandAssetStatuses, products, contentLanguage, locales] =
+    await Promise.all([
+      fetchBrandAssetSummaries(workspaceId),
+      fetchPersonaSummaries(workspaceId),
+      fetchCompetitorSummaries(workspaceId),
+      fetchBrandAssetStatuses(workspaceId),
+      fetchProductSummaries(workspaceId),
+      fetchContentLanguage(workspaceId),
+      fetchContentLocales(workspaceId),
+    ]);
+
+  const extensions = buildExtensions(styleguide, voiceguide, brandAssets, personas, competitors);
+  extensions.brandMd = buildBrandMdExtension({
+    workspaceSlug: workspace.slug,
+    styleguide,
+    voiceguide,
+    brandAssetStatuses,
+    products,
+    contentLanguage,
+    locales,
+    voice: extensions.voice,
+    personasCount: personas.length,
+  });
 
   return {
     meta: {
@@ -87,7 +121,7 @@ export async function buildDesignSystemModel(
     elevation: buildElevationMap(tokens?.resolved.elevation),
     components: buildComponentTokens(tokens),
     prose: buildProse(styleguide),
-    extensions: buildExtensions(styleguide, voiceguide, brandAssets, personas, competitors),
+    extensions,
   };
 }
 
@@ -424,6 +458,202 @@ async function fetchCompetitorSummaries(workspaceId: string): Promise<Competitor
     positioning: c.valueProposition ?? undefined,
     differentiators: c.differentiators ?? [],
   }));
+}
+
+// ─── brand.md full profile ────────────────────────────
+
+interface BrandAssetStatusRow {
+  status: string;
+  coveragePercentage: number;
+  updatedAt: Date;
+}
+
+async function fetchBrandAssetStatuses(workspaceId: string): Promise<BrandAssetStatusRow[]> {
+  return prisma.brandAsset.findMany({
+    where: { workspaceId },
+    select: { status: true, coveragePercentage: true, updatedAt: true },
+  });
+}
+
+async function fetchProductSummaries(workspaceId: string): Promise<ProductSummary[]> {
+  const products = await prisma.product.findMany({
+    where: { workspaceId, status: { not: 'ARCHIVED' } },
+    select: {
+      name: true,
+      category: true,
+      description: true,
+      features: true,
+      benefits: true,
+      useCases: true,
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+  return products.map((p) => ({
+    name: p.name,
+    category: p.category ?? undefined,
+    description: p.description ? truncate(p.description, 280) : undefined,
+    features: (p.features ?? []).slice(0, 6),
+    benefits: (p.benefits ?? []).slice(0, 6),
+    useCases: (p.useCases ?? []).slice(0, 6),
+  }));
+}
+
+async function fetchContentLanguage(workspaceId: string): Promise<string> {
+  const ws = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { contentLanguage: true },
+  });
+  return ws?.contentLanguage ?? 'en';
+}
+
+async function fetchContentLocales(workspaceId: string): Promise<string[]> {
+  // BrandLocaleProfile-locales naast de workspace-default; faalt stil naar [].
+  try {
+    const brand = await prisma.brand.findFirst({
+      where: { workspaceId },
+      select: { localeProfiles: { select: { locale: true } } },
+    });
+    return (brand?.localeProfiles ?? []).map((p) => p.locale);
+  } catch {
+    return [];
+  }
+}
+
+function buildBrandMdExtension(input: {
+  workspaceSlug: string;
+  styleguide: unknown;
+  voiceguide: unknown;
+  brandAssetStatuses: BrandAssetStatusRow[];
+  products: ProductSummary[];
+  contentLanguage: string;
+  locales: string[];
+  voice: VoiceExtension | undefined;
+  personasCount: number;
+}): BrandMdExtension {
+  const vg = (input.voiceguide ?? {}) as Record<string, unknown>;
+  const sg = (input.styleguide ?? {}) as Record<string, unknown>;
+
+  const wordsWeUse = dedupeStrings([
+    ...asStringArray(vg.wordsWeUse),
+    ...asStringArray(vg.vocabularyDo),
+  ]);
+  const wordsWeAvoid = dedupeStrings([
+    ...asStringArray(vg.wordsWeAvoid),
+    ...asStringArray(vg.vocabularyDont),
+  ]);
+
+  const guardrailsDo = dedupeStrings([
+    ...(input.voice?.doSayPhrases ?? []),
+    ...asStringArray(sg.logoGuidelines),
+  ]);
+  const guardrailsDont = dedupeStrings([
+    ...(input.voice?.dontSayPhrases ?? []),
+    ...wordsWeAvoid.map((w) => `Avoid the word/phrase "${w}"`),
+    ...asStringArray(sg.imageryDonts),
+  ]);
+
+  const locales = dedupeStrings([input.contentLanguage, ...input.locales]);
+
+  return {
+    language: input.contentLanguage,
+    locales,
+    voiceDescription: asStringOrUndefined(vg.voiceDescription),
+    wordsWeUse,
+    wordsWeAvoid,
+    channelTones: parseChannelTones(vg.channelTones),
+    products: input.products,
+    guardrails: { do: guardrailsDo, dont: guardrailsDont },
+    validation: buildSectionValidation(
+      input.brandAssetStatuses,
+      vg,
+      sg,
+      input.products,
+      input.personasCount,
+    ),
+    provenance: {
+      generatedBy: 'Branddock',
+      canonicalUrl: buildCanonicalUrl(input.workspaceSlug),
+    },
+  };
+}
+
+function buildCanonicalUrl(workspaceSlug: string): string | undefined {
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL;
+  if (!base) return undefined;
+  return `${base.replace(/\/$/, '')}/b/${workspaceSlug}/brand.md`;
+}
+
+function parseChannelTones(raw: unknown): ChannelToneSummary[] {
+  // BrandVoiceguide.channelTones — Json met per kanaal een tone-omschrijving.
+  // Twee vormen in het wild: { linkedin: "..." } en [{ channel, tone }].
+  if (Array.isArray(raw)) {
+    return raw
+      .filter(
+        (e): e is { channel: string; tone: string } =>
+          !!e &&
+          typeof e === 'object' &&
+          typeof (e as Record<string, unknown>).channel === 'string' &&
+          typeof (e as Record<string, unknown>).tone === 'string',
+      )
+      .map((e) => ({ channel: e.channel, tone: e.tone }));
+  }
+  if (raw && typeof raw === 'object') {
+    return Object.entries(raw as Record<string, unknown>)
+      .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim().length > 0)
+      .map(([channel, tone]) => ({ channel, tone }));
+  }
+  return [];
+}
+
+function buildSectionValidation(
+  assetStatuses: BrandAssetStatusRow[],
+  vg: Record<string, unknown>,
+  sg: Record<string, unknown>,
+  products: ProductSummary[],
+  personasCount: number,
+): Partial<Record<BrandMdSectionKey, SectionValidation>> {
+  const out: Partial<Record<BrandMdSectionKey, SectionValidation>> = {};
+
+  // Strategy: gevalideerd wanneer minstens één asset VALIDATED is; score =
+  // gemiddelde coverage over alle assets (bestaande, echte data — geen gok).
+  if (assetStatuses.length > 0) {
+    const validated = assetStatuses.filter((a) => a.status === 'VALIDATED');
+    const avgCoverage = Math.round(
+      assetStatuses.reduce((sum, a) => sum + (a.coveragePercentage ?? 0), 0) / assetStatuses.length,
+    );
+    const latest = assetStatuses.reduce(
+      (max, a) => (a.updatedAt > max ? a.updatedAt : max),
+      assetStatuses[0].updatedAt,
+    );
+    out.strategy = {
+      status: validated.length > 0 ? 'validated' : 'unvalidated',
+      score: avgCoverage,
+      date: latest.toISOString().slice(0, 10),
+    };
+  } else {
+    out.strategy = { status: 'unvalidated' };
+  }
+
+  const vgUpdated = vg.updatedAt instanceof Date ? vg.updatedAt.toISOString().slice(0, 10) : undefined;
+  out.voice = {
+    status:
+      asStringArray(vg.wordsWeUse).length > 0 || asStringOrUndefined(vg.voiceDescription)
+        ? 'validated'
+        : 'unvalidated',
+    date: vgUpdated,
+  };
+
+  out.visual = {
+    status: sg.status === 'COMPLETE' ? 'validated' : 'unvalidated',
+  };
+
+  out.audience = { status: personasCount > 0 ? 'validated' : 'unvalidated' };
+  out.products = { status: products.length > 0 ? 'validated' : 'unvalidated' };
+  return out;
+}
+
+function dedupeStrings(list: string[]): string[] {
+  return [...new Set(list.map((s) => s.trim()).filter((s) => s.length > 0))];
 }
 
 // ─── Helpers ──────────────────────────────────────────
