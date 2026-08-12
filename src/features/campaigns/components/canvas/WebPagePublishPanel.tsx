@@ -13,6 +13,8 @@ import {
   Eye,
   CheckCircle2,
   Send,
+  ShieldAlert,
+  AlertTriangle,
 } from 'lucide-react';
 import { Modal } from '@/components/shared';
 import { isValidSlug } from '@/lib/landing-pages/publish-page';
@@ -53,6 +55,20 @@ interface PreviewState {
   version: number;
   createdAt: string;
   sectionTypes: string[];
+}
+
+// P6 publish-gate — shape van `gate` in de publish-route-responses.
+interface GateFindingDto {
+  severity: 'blocker' | 'warning';
+  code: string;
+  message: string;
+}
+
+interface GateDto {
+  ok: boolean;
+  findings: GateFindingDto[];
+  blockers: number;
+  warnings: number;
 }
 
 export const webPublishKeys = {
@@ -128,18 +144,32 @@ export function WebPagePublishPanel({ deliverableId }: WebPagePublishPanelProps)
   const slug = slugInput ?? defaultSlug;
   const slugIsValid = isValidSlug(slug);
 
+  // P6 — publish-gate-bevindingen uit de dry-run (of een geweigerde publish).
+  const [gate, setGate] = useState<GateDto | null>(null);
+  const [gateChecking, setGateChecking] = useState(false);
+  const [gateError, setGateError] = useState<string | null>(null);
+
   const publishMutation = useMutation({
-    mutationFn: async (publishSlug: string) => {
+    mutationFn: async (input: { publishSlug: string; acknowledgeWarnings: boolean }) => {
       const res = await fetch('/api/landing-pages/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deliverableId, slug: publishSlug }),
+        body: JSON.stringify({
+          deliverableId,
+          slug: input.publishSlug,
+          acknowledgeWarnings: input.acknowledgeWarnings,
+        }),
       });
-      const body = (await res.json().catch(() => ({}))) as { error?: string; url?: string };
-      if (!res.ok) throw new Error(body.error ?? t('webPublish.publishError'));
+      const body = (await res.json().catch(() => ({}))) as { error?: string; url?: string; gate?: GateDto };
+      if (!res.ok) {
+        // Server hercheckt de gate altijd — toon verse bevindingen bij weigering.
+        if (body.gate) setGate(body.gate);
+        throw new Error(body.error ?? t('webPublish.publishError'));
+      }
       return body;
     },
     onSuccess: () => {
+      setGate(null);
       // Route zet de deliverable op PUBLISHED — canvas-store + lijst-caches
       // mee-syncen zodat statusbanner en Content Library niet stale zijn.
       setApprovalState({
@@ -169,11 +199,42 @@ export function WebPagePublishPanel({ deliverableId }: WebPagePublishPanelProps)
     },
   });
 
-  const busy = publishMutation.isPending || rollbackMutation.isPending;
+  const busy = publishMutation.isPending || rollbackMutation.isPending || gateChecking;
 
-  const handlePublish = () => {
+  /**
+   * P6 twee-fasen-publish: (1) dry-run gate → blockers stoppen hard,
+   * warnings vragen expliciete bevestiging; (2) schone gate of bevestigde
+   * warnings → echte publish (server hercheckt altijd).
+   */
+  const handlePublish = async (acknowledgeWarnings = false) => {
     if (!slugIsValid || busy) return;
-    publishMutation.mutate(slug);
+    if (!acknowledgeWarnings) {
+      setGate(null);
+      setGateError(null);
+      setGateChecking(true);
+      try {
+        const res = await fetch('/api/landing-pages/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deliverableId, slug, dryRun: true }),
+        });
+        const body = (await res.json().catch(() => ({}))) as { gate?: GateDto; error?: string };
+        if (!res.ok || !body.gate) {
+          throw new Error(body.error ?? t('webPublish.gate.checkFailed'));
+        }
+        if (body.gate.findings.length > 0) {
+          setGate(body.gate);
+          return; // blockers: hard stop; warnings: user bevestigt via de banner
+        }
+      } catch (err) {
+        setGate(null);
+        setGateError(err instanceof Error ? err.message : t('webPublish.gate.checkFailed'));
+        return;
+      } finally {
+        setGateChecking(false);
+      }
+    }
+    publishMutation.mutate({ publishSlug: slug, acknowledgeWarnings });
   };
 
   const handleRollback = (version: PublishVersionDto) => {
@@ -282,22 +343,73 @@ export function WebPagePublishPanel({ deliverableId }: WebPagePublishPanelProps)
               </div>
               <button
                 type="button"
-                onClick={handlePublish}
+                onClick={() => void handlePublish()}
                 disabled={!slugIsValid || busy}
                 className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {publishMutation.isPending ? (
+                {publishMutation.isPending || gateChecking ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Send className="h-4 w-4" />
                 )}
-                {publishMutation.isPending ? t('webPublish.publishing') : t('webPublish.publish')}
+                {gateChecking
+                  ? t('webPublish.gate.checking')
+                  : publishMutation.isPending
+                    ? t('webPublish.publishing')
+                    : t('webPublish.publish')}
               </button>
             </div>
             {!slugIsValid && slug.length > 0 && (
               <p className="text-xs text-red-600">{t('webPublish.slugInvalid')}</p>
             )}
           </div>
+
+          {/* P6 — publish-gate-bevindingen: blockers stoppen hard (rood),
+              warnings tonen een expliciete "Toch publiceren"-bevestiging. */}
+          {gateError && (
+            <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              {gateError}
+            </div>
+          )}
+          {gate && gate.findings.length > 0 && (
+            <div
+              className={`space-y-2 rounded-md border p-3 text-sm ${
+                gate.blockers > 0 ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'
+              }`}
+              role="alert"
+            >
+              <p className={`font-medium ${gate.blockers > 0 ? 'text-red-800' : 'text-amber-800'}`}>
+                {gate.blockers > 0 ? t('webPublish.gate.blockedTitle') : t('webPublish.gate.warningTitle')}
+              </p>
+              <ul className="space-y-1">
+                {gate.findings.map((finding, i) => (
+                  <li key={`${finding.code}-${i}`} className="flex items-start gap-2">
+                    {finding.severity === 'blocker' ? (
+                      <ShieldAlert className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600" />
+                    ) : (
+                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+                    )}
+                    <span className={finding.severity === 'blocker' ? 'text-red-700' : 'text-amber-700'}>
+                      {t(`webPublish.gate.codes.${finding.code}`, { defaultValue: finding.message })}
+                      <span className="block text-xs opacity-70">{finding.message}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {gate.blockers === 0 && (
+                <button
+                  type="button"
+                  onClick={() => void handlePublish(true)}
+                  disabled={busy}
+                  className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-white px-4 py-1.5 text-sm font-medium text-amber-800 shadow-sm transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Send className="h-4 w-4" />
+                  {t('webPublish.gate.publishAnyway')}
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Mutation errors (verplicht) */}
           {mutationError && (

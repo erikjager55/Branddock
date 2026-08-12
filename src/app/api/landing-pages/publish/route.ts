@@ -9,6 +9,7 @@ import { longFormGeoVariantSchema } from '@/lib/landing-pages/page-type-schemas'
 import { buildGeoOptimizationAnalysis } from '@/lib/landing-pages/geo-analysis';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { runPublishGate } from '@/lib/landing-pages/publish-gate';
 
 /**
  * POST /api/landing-pages/publish
@@ -24,6 +25,10 @@ import { cacheKeys } from '@/lib/api/cache-keys';
 interface PublishBody {
   deliverableId: string;
   slug: string;
+  /** P6 publish-gate: alleen checks draaien, niets persisten. */
+  dryRun?: boolean;
+  /** P6: user heeft de warnings gezien en publiceert bewust door. */
+  acknowledgeWarnings?: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -80,6 +85,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: 'No puckData on deliverable — open the builder + edit before publishing' },
       { status: 422 },
+    );
+  }
+
+  // P6 publish-gate (verbeterplan v3): deterministische merk-/integriteits-
+  // checks vóór élke publish. Blockers weigeren altijd (anti-fabricatie:
+  // template-placeholder-copy mag nooit live); warnings vereisen expliciete
+  // bevestiging via de twee-fasen-flow (dryRun → bevestigen → publish).
+  const gate = runPublishGate({ puckData, contentType: deliverable.contentType });
+  if (body.dryRun === true) {
+    return NextResponse.json({ gate });
+  }
+  if (!gate.ok) {
+    return NextResponse.json(
+      { error: 'Publish geblokkeerd door de publish-gate', gate },
+      { status: 422 },
+    );
+  }
+  if (gate.warnings > 0 && body.acknowledgeWarnings !== true) {
+    return NextResponse.json(
+      { error: 'Publish-gate heeft waarschuwingen — bevestig om door te publiceren', gate },
+      { status: 409 },
     );
   }
 
