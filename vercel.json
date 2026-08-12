@@ -1,5 +1,7 @@
 {
-  "regions": ["fra1"],
+  "regions": [
+    "fra1"
+  ],
   "crons": [
     {
       "path": "/api/cron/run-jobs",
@@ -28,6 +30,10 @@
     {
       "path": "/api/cron/refresh-ad-tokens",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/brandmd-draft-cleanup",
+      "schedule": "30 4 * * *"
     }
   ],
   "functions": {

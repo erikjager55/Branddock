@@ -6856,3 +6856,68 @@ model WebhookEndpoint {
 
   @@index([workspaceId])
 }
+
+// =============================================================
+// brand.md generator — claimbare draft-profielen (task
+// brand-md-open-standaard, launch-plan §4b + §Ontwerp claim-borging).
+// Draft = gestructureerde scan-tussenvorm + gerenderd bestand; nooit
+// publiek vindbaar; TTL-opruiming via cron brandmd-draft-cleanup.
+// =============================================================
+
+model GeneratedBrandProfile {
+  id String @id @default(cuid())
+
+  sourceUrl String
+  /// Genormaliseerd domein (zonder www/poort) — lead-aggregatie + rate-limit
+  domain String
+
+  /// Gestructureerde scan-output in de vorm die materialisatie consumeert
+  payload        Json
+  /// Gepind schema-versienummer — oude drafts blijven materialiseerbaar
+  payloadVersion Int  @default(1)
+
+  /// Gerenderd brand.md zoals gedownload (identieke re-download)
+  fileContent String @db.Text
+  brandName   String
+
+  /// Brand Score (0-100) + uitleg per dimensie — deterministisch berekend
+  score          Int?
+  scoreBreakdown Json?
+
+  /// Opt-in e-mail (rapport-laag / tweede scan) — enige PII in dit model
+  email String?
+
+  /// SHA-256 van het CSPRNG-claim-token (les invite-arc #443) — single-use
+  claimTokenHash String @unique
+
+  status GeneratedProfileStatus @default(DRAFT)
+
+  // Funnel-statusladder (leads-dashboard is DB-gedreven, niet PostHog)
+  downloadedAt    DateTime?
+  emailCapturedAt DateTime?
+  claimedAt       DateTime?
+  activatedAt     DateTime?
+
+  claimedByUserId    String?
+  claimedWorkspaceId String?
+
+  /// SHA-256(ip + salt) — rate-limiting zonder ruwe IP-opslag
+  requestIpHash String?
+
+  createdAt DateTime @default(now())
+  /// TTL (~90d) — cron verwijdert record + eventuele artefacten + token
+  expiresAt DateTime
+
+  @@index([domain])
+  @@index([status])
+  @@index([email])
+  @@index([expiresAt])
+  @@index([requestIpHash, createdAt])
+  @@index([domain, createdAt])
+}
+
+enum GeneratedProfileStatus {
+  DRAFT
+  CLAIMED
+  EXPIRED
+}
