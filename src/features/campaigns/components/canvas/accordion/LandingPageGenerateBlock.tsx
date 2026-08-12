@@ -4,7 +4,9 @@ import React, { useState, useMemo, useCallback, useEffect, useRef, useContext, c
 import { useTranslation } from 'react-i18next';
 import {
   Loader2, Sparkles, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon, Pencil,
+  AlertTriangle, X, Check,
 } from 'lucide-react';
+import type { DiffMergeData, PuckMergeConflict } from '@/lib/landing-pages/diff-merge';
 import { PageRender } from '@/lib/landing-pages/page-render';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { generateCanvasVisual, generateFeatureVisuals } from '../../../api/canvas.api';
@@ -48,10 +50,15 @@ interface LandingPageGenerateBlockProps {
  *
  * Vier weergaven:
  *  1. Briefing incompleet → amber-banner + Step 1-link (geen auto-trigger)
- *  2. Genereren bezig → spinner met "30-90 sec" ETA
+ *  2. Genereren bezig → B2 (lp-streaming-generation): SSE-stream toont elke
+ *     variant-kaart zodra diens `variant_complete` binnenkomt, open slots als
+ *     skeleton met shimmer; JSON-fallback houdt de "30-90 sec"-spinner
  *  3. Genereer-error → ErrorBanner + "Probeer opnieuw"
  *  4. Klaar → N variant-cards naast elkaar + "Kies deze variant" knoppen
  *           + na keuze: hero-visual-knop + "Bevestig & ga naar editor"
+ *           + B4 (lp-variant-merge): "Structuur verversen" + confirm-modal —
+ *             handmatige Puck-edits overleven refresh én variantwissel via
+ *             de three-way merge (threeWayMergePuckData, keep-mine default)
  */
 
 // P3a — N-variant ondersteuning (1-4). Per-variant accent + fallback-label.
@@ -70,6 +77,149 @@ const ACCENT_HEX: Record<VariantAccent, { border: string; ring: string; tagBg: s
   blue:    { border: '#60a5fa', ring: '#dbeafe', tagBg: '#dbeafe', tagText: '#1e40af', cardBorder: '#bfdbfe' },
   amber:   { border: '#fbbf24', ring: '#fef3c7', tagBg: '#fef3c7', tagText: '#92400e', cardBorder: '#fde68a' },
 };
+
+// ─── B2: named-SSE parsing voor de streaming-generatie ─────────────────
+// Zelfde frame-parser als useCanvasOrchestration (niet geëxporteerd daar):
+// "event: xxx\ndata: {...}\n\n" + heartbeat-comments overslaan.
+
+interface ParsedSSEEvent {
+  event: string;
+  data: string;
+}
+
+function parseNamedSSE(buffer: string): { events: ParsedSSEEvent[]; remainder: string } {
+  const events: ParsedSSEEvent[] = [];
+  const blocks = buffer.split('\n\n');
+  const remainder = blocks.pop() ?? '';
+  for (const block of blocks) {
+    if (!block.trim()) continue;
+    if (block.trim().startsWith(':')) continue; // heartbeat
+    let eventName = 'message';
+    let data = '';
+    for (const line of block.split('\n')) {
+      if (line.startsWith('event: ')) {
+        eventName = line.slice(7).trim();
+      } else if (line.startsWith('data: ')) {
+        data += (data ? '\n' : '') + line.slice(6);
+      } else if (line.startsWith('data:')) {
+        data += (data ? '\n' : '') + line.slice(5);
+      }
+    }
+    if (data) events.push({ event: eventName, data });
+  }
+  return { events, remainder };
+}
+
+/** Response-payload van generate-structured-variant (JSON-body én all_complete-event). */
+interface GenerationResponsePayload {
+  variants: PageVariantContent[];
+  variantLabels?: (string | null)[];
+  deliveredCount?: number;
+  requestedCount?: number;
+}
+
+/**
+ * Consumeer de B2 SSE-stream. `all_complete`/`error` zijn terminaal en worden
+ * als resultaat teruggegeven; alle andere events gaan door `onEvent`.
+ * `sawEvent` laat de caller transport-falen (stream stierf vóór het eerste
+ * event → veilige JSON-fallback) onderscheiden van een mid-stream-fout
+ * (géén fallback — de server kan al gegenereerd/gepersisteerd hebben).
+ */
+async function consumeGenerationStream(
+  res: Response,
+  onEvent: (event: string, data: Record<string, unknown>) => void,
+): Promise<{
+  payload: GenerationResponsePayload | null;
+  errorEvent: Record<string, unknown> | null;
+  sawEvent: boolean;
+}> {
+  const reader = res.body?.getReader();
+  if (!reader) return { payload: null, errorEvent: null, sawEvent: false };
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let payload: GenerationResponsePayload | null = null;
+  let errorEvent: Record<string, unknown> | null = null;
+  let sawEvent = false;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const { events, remainder } = parseNamedSSE(buffer);
+      buffer = remainder;
+      for (const ev of events) {
+        sawEvent = true;
+        let parsed: Record<string, unknown>;
+        try {
+          parsed = JSON.parse(ev.data) as Record<string, unknown>;
+        } catch {
+          continue;
+        }
+        if (ev.event === 'all_complete') {
+          payload = parsed as unknown as GenerationResponsePayload;
+        } else if (ev.event === 'error') {
+          errorEvent = parsed;
+        } else {
+          onEvent(ev.event, parsed);
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return { payload, errorEvent, sawEvent };
+}
+
+// ─── B4: merge-preview types (regenerate-puck-data { merge: true }) ─────
+
+interface MergePreviewResponse {
+  merge: boolean;
+  merged: DiffMergeData;
+  conflicts: PuckMergeConflict[];
+  incoming: DiffMergeData;
+  baselineUsed: boolean;
+  /** Was er al puckData? Zonder baseline (pre-B4) is verversen dan destructief. */
+  hadPuckData?: boolean;
+  editedSectionCount: number;
+  refreshedSectionCount: number;
+}
+
+/**
+ * B4 — heeft deze preview expliciete bevestiging nodig? Ja bij conflicten of
+ * te bewaren edits, én bij een pre-B4 pagina (geen baseline → edits
+ * ondetecteerbaar) die al puckData heeft: dan is de refresh feitelijk een
+ * overwrite en hoort de modal (met noBaseline-waarschuwing) te verschijnen.
+ * Alleen een verse pagina zonder puckData mag zonder modal door.
+ */
+function mergeNeedsConfirmation(preview: MergePreviewResponse): boolean {
+  return (
+    (preview.conflicts?.length ?? 0) > 0
+    || (preview.editedSectionCount ?? 0) > 0
+    || (preview.baselineUsed === false && preview.hadPuckData === true)
+  );
+}
+
+interface PendingMergeState {
+  merged: DiffMergeData;
+  conflicts: PuckMergeConflict[];
+  incoming: DiffMergeData;
+  baselineUsed: boolean;
+  editedSectionCount: number;
+  refreshedSectionCount: number;
+  /** Choose-flow: de gekozen variant die ná bevestiging gepromoot wordt. */
+  chosen: PageVariantContent | null;
+  /** Choose-flow: na toepassen doorschakelen naar Step 3. */
+  advanceAfter: boolean;
+}
+
+/** Streaming-voortgang per slot (B2) — voedt de per-variant kaarten/skeletons. */
+interface StreamProgressState {
+  count: number;
+  variants: (PageVariantContent | null)[];
+  labels: (string | null)[];
+  failed: boolean[];
+  started: boolean[];
+}
 
 export function LandingPageGenerateBlock({
   deliverableId,
@@ -142,6 +292,15 @@ export function LandingPageGenerateBlock({
   const [errorType, setErrorType] = useState<AIErrorType | null>(null);
   const [visualError, setVisualError] = useState<string | null>(null);
   const [partialDelivery, setPartialDelivery] = useState<{ delivered: number; requested: number } | null>(null);
+  // B2 — per-slot streaming-voortgang: gevulde slots renderen als kaart, de
+  // rest als skeleton met shimmer. null = geen actieve stream (JSON-pad).
+  const [streamProgress, setStreamProgress] = useState<StreamProgressState | null>(null);
+  // B4 — merge-preview die op gebruikersbevestiging wacht (confirm-modal).
+  const [pendingMerge, setPendingMerge] = useState<PendingMergeState | null>(null);
+  const [isRefreshingStructure, setIsRefreshingStructure] = useState(false);
+  const [isApplyingMerge, setIsApplyingMerge] = useState(false);
+  const [structureRefreshMsg, setStructureRefreshMsg] = useState<string | null>(null);
+  const [structureRefreshError, setStructureRefreshError] = useState<string | null>(null);
   // ImageSourcePanel state (Step 2 parity): user kiest image-source vóór
   // hero-visual aan deliverable hangt. Default 'generate' want dat is de
   // meest-gebruikte flow. Bij asset-selectie roept persistHeroImage aan.
@@ -183,7 +342,10 @@ export function LandingPageGenerateBlock({
         await fetch(`/api/studio/${deliverableId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ settings: { structuredVariant: updated, puckData } }),
+          // B4: dit is een volledige re-seed uit de variant → baseline mee
+          // (invariant "puckDataBaseline = laatst geseedde tree" voor de
+          // three-way structure-refresh-merge).
+          body: JSON.stringify({ settings: { structuredVariant: updated, puckData, puckDataBaseline: puckData } }),
         });
       }
       window.dispatchEvent(
@@ -343,6 +505,61 @@ export function LandingPageGenerateBlock({
     ],
   );
 
+  /**
+   * Gedeelde afronding van een generatie (JSON-body óf all_complete-event):
+   * options + labels naar de store, keuze resetten, partial-delivery-banner,
+   * en de fire-and-forget F-VAL scoring per variant. Track 5 — user ziet
+   * variants direct; per-variant fidelity-score volgt ~20s later via
+   * store-update zodat klikken op variant B ook diens score toont. Geen
+   * await — variant-keuze mag niet blokkeren op scoring-latency.
+   */
+  const applyGenerationResponse = useCallback((data: GenerationResponsePayload) => {
+    setStructuredVariantOptions(data.variants);
+    setVariantLabels(Array.isArray(data.variantLabels) ? data.variantLabels : null);
+    // Reset chosen variant zodat user-keuze opnieuw moet plaatsvinden
+    setStructuredVariant(null);
+    // Partial delivery: 1 van 2 variants gelukt — banner tonen
+    if (
+      typeof data.requestedCount === 'number'
+      && typeof data.deliveredCount === 'number'
+      && data.deliveredCount < data.requestedCount
+    ) {
+      setPartialDelivery({ delivered: data.deliveredCount, requested: data.requestedCount });
+    } else {
+      setPartialDelivery(null);
+    }
+    data.variants.forEach((v, i) => void scoreVariantFidelity(v, i));
+  }, [scoreVariantFidelity, setStructuredVariant, setStructuredVariantOptions]);
+
+  /** B2 — routeert de niet-terminale stream-events naar de per-slot voortgang. */
+  const handleStreamEvent = useCallback((event: string, data: Record<string, unknown>) => {
+    const index = typeof data.index === 'number' ? data.index : -1;
+    if (index < 0) return;
+    setStreamProgress((prev) => {
+      if (!prev || index >= prev.count) return prev;
+      if (event === 'variant_started') {
+        const started = [...prev.started];
+        started[index] = true;
+        const labels = [...prev.labels];
+        if (typeof data.label === 'string' && data.label.trim()) labels[index] = data.label;
+        return { ...prev, started, labels };
+      }
+      if (event === 'variant_complete' && data.variant && typeof data.variant === 'object') {
+        const variants = [...prev.variants];
+        variants[index] = data.variant as PageVariantContent;
+        const labels = [...prev.labels];
+        if (typeof data.label === 'string' && data.label.trim()) labels[index] = data.label;
+        return { ...prev, variants, labels };
+      }
+      if (event === 'variant_failed') {
+        const failed = [...prev.failed];
+        failed[index] = true;
+        return { ...prev, failed };
+      }
+      return prev;
+    });
+  }, []);
+
   const handleGenerate = useCallback(async (countArg: number = 2) => {
     // Guard: bare onClick={handleGenerate} zou een MouseEvent doorgeven → coerce.
     const count = typeof countArg === 'number' && countArg >= 1 && countArg <= 4 ? countArg : 2;
@@ -355,48 +572,94 @@ export function LandingPageGenerateBlock({
     setError(null);
     setErrorUnavailable(false);
     resetFidelityScore();
+    setStreamProgress(null);
     try {
-      const res = await fetch(
-        `/api/landing-pages/${deliverableId}/generate-structured-variant`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userPrompt: builtPrompt,
-            includeProblem,
-            includePricing,
+      const requestBody = JSON.stringify({
+        userPrompt: builtPrompt,
+        includeProblem,
+        includePricing,
+        count,
+      });
+
+      // B2 (lp-streaming-generation) — SSE-pad eerst: variant-kaarten
+      // verschijnen zodra hun `variant_complete` binnenkomt i.p.v. één
+      // 30-90s spinner. Fallback naar het bestaande JSON-pad ALLEEN bij
+      // transport-falen vóór de server antwoordde (fetch-reject) of een
+      // stream die stierf vóór het eerste event — een echte API-fout of
+      // mid-stream-fout wordt niet dubbel gegenereerd (kosten!).
+      let fallbackToJson = false;
+      let serverResponded = false;
+      try {
+        const streamRes = await fetch(
+          `/api/landing-pages/${deliverableId}/generate-structured-variant?stream=1`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+            body: requestBody,
+          },
+        );
+        serverResponded = true;
+        if (!streamRes.ok) {
+          throw await errorFromResponse(streamRes, `HTTP ${streamRes.status}`);
+        }
+        const contentType = streamRes.headers.get('content-type') ?? '';
+        if (contentType.includes('text/event-stream') && streamRes.body) {
+          setStreamProgress({
             count,
-          }),
-        },
-      );
-      if (!res.ok) {
-        throw await errorFromResponse(res, `HTTP ${res.status}`);
+            variants: Array.from({ length: count }, () => null),
+            labels: Array.from({ length: count }, () => null),
+            failed: Array.from({ length: count }, () => false),
+            started: Array.from({ length: count }, () => false),
+          });
+          const { payload, errorEvent, sawEvent } = await consumeGenerationStream(
+            streamRes,
+            handleStreamEvent,
+          );
+          if (payload) {
+            applyGenerationResponse(payload);
+          } else if (errorEvent) {
+            const message = typeof errorEvent.message === 'string'
+              ? errorEvent.message
+              : t('lp.errors.generationFailed');
+            // Draagt errorType/unavailable/retryable van buildAiErrorEvent mee
+            // zodat interpretAiError hieronder correct classificeert.
+            throw Object.assign(new Error(message), errorEvent);
+          } else if (!sawEvent) {
+            // Proxy/infra brak de stream vóór het eerste event → veilige fallback.
+            fallbackToJson = true;
+          } else {
+            // Stream stierf halverwege — server kan al gepersisteerd hebben;
+            // niet dubbel genereren, gewoon de bestaande error-flow + retry-knop.
+            throw new Error(t('lp.errors.generationFailed'));
+          }
+        } else {
+          // Server antwoordde met JSON (bv. oudere deploy) — gewoon verwerken.
+          applyGenerationResponse((await streamRes.json()) as GenerationResponsePayload);
+        }
+      } catch (streamErr) {
+        if (serverResponded) throw streamErr;
+        console.warn(
+          '[LandingPageGenerateBlock] SSE-transport faalde vóór server-response — fallback naar JSON-pad',
+          streamErr,
+        );
+        fallbackToJson = true;
       }
-      const data = (await res.json()) as {
-        variants: PageVariantContent[];
-        variantLabels?: (string | null)[];
-        deliveredCount?: number;
-        requestedCount?: number;
-      };
-      setStructuredVariantOptions(data.variants);
-      setVariantLabels(Array.isArray(data.variantLabels) ? data.variantLabels : null);
-      // Reset chosen variant zodat user-keuze opnieuw moet plaatsvinden
-      setStructuredVariant(null);
-      // Partial delivery: 1 van 2 variants gelukt — banner tonen
-      if (
-        typeof data.requestedCount === 'number'
-        && typeof data.deliveredCount === 'number'
-        && data.deliveredCount < data.requestedCount
-      ) {
-        setPartialDelivery({ delivered: data.deliveredCount, requested: data.requestedCount });
-      } else {
-        setPartialDelivery(null);
+
+      if (fallbackToJson) {
+        setStreamProgress(null);
+        const res = await fetch(
+          `/api/landing-pages/${deliverableId}/generate-structured-variant`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: requestBody,
+          },
+        );
+        if (!res.ok) {
+          throw await errorFromResponse(res, `HTTP ${res.status}`);
+        }
+        applyGenerationResponse((await res.json()) as GenerationResponsePayload);
       }
-      // Track 5 — fire-and-forget scoring voor ALLE varianten (A + B). User
-      // ziet variants direct; per-variant fidelity-score volgt ~20s later via
-      // store-update zodat klikken op variant B ook diens score toont. Geen
-      // await — variant-keuze mag niet blokkeren op scoring-latency.
-      data.variants.forEach((v, i) => void scoreVariantFidelity(v, i));
     } catch (err) {
       const e = interpretAiError(err);
       setError(e.message || t('lp.errors.generationFailed'));
@@ -405,17 +668,17 @@ export function LandingPageGenerateBlock({
       if (e.unavailable) notifyAiError(err, { retry: () => { void handleGenerate(countArg); } });
     } finally {
       setIsGenerating(false);
+      setStreamProgress(null);
     }
   }, [
+    applyGenerationResponse,
     briefIncomplete,
     builtPrompt,
     deliverableId,
+    handleStreamEvent,
     includePricing,
     includeProblem,
     resetFidelityScore,
-    scoreVariantFidelity,
-    setStructuredVariant,
-    setStructuredVariantOptions,
     t,
   ]);
 
@@ -480,7 +743,9 @@ export function LandingPageGenerateBlock({
       await fetch(`/api/studio/${deliverableId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings: { structuredVariant: updated, puckData } }),
+        // B4: volledige re-seed uit de variant → baseline mee (zie
+        // handleImageSelected voor de invariant).
+        body: JSON.stringify({ settings: { structuredVariant: updated, puckData, puckDataBaseline: puckData } }),
       });
       window.dispatchEvent(
         new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
@@ -488,6 +753,47 @@ export function LandingPageGenerateBlock({
     },
     [generateHeroVisualUrl, contextStack, deliverableId, setStructuredVariant],
   );
+
+  /**
+   * B4 — persisteert een opgeloste Puck-tree via het bestaande autosave-pad
+   * (PATCH /api/studio/[id], shallow-merge server-side) en zet de baseline op
+   * de verse incoming-mapping — de invariant "baseline = laatst geseedde
+   * tree" waarop de volgende merge-refresh edit-detectie bouwt.
+   */
+  const applyResolvedPuckData = useCallback(async (resolved: DiffMergeData, incoming: DiffMergeData) => {
+    const res = await fetch(`/api/studio/${deliverableId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings: { puckData: resolved, puckDataBaseline: incoming } }),
+    });
+    if (!res.ok) {
+      throw new Error(t('lp.errors.saveFailedHttp', { status: res.status }));
+    }
+  }, [deliverableId, t]);
+
+  /** Afronding van een variantkeuze: store + context verversen + doorschakelen. */
+  const finalizeChosenVariant = useCallback(async (chosen: PageVariantContent) => {
+    setStructuredVariant(chosen);
+    // Fetch /context expliciet zodat contextStack.puckData synchroon
+    // ververst is vóór user naar Step 3 doorklikt.
+    try {
+      const ctxRes = await fetch(`/api/studio/${deliverableId}/context`);
+      if (ctxRes.ok) {
+        const ctxData = (await ctxRes.json()) as { contextStack?: CanvasContextStack };
+        if (ctxData?.contextStack) {
+          setContextStack(ctxData.contextStack);
+        }
+      }
+    } catch {
+      // Niet-blokkerend: dispatch event als fallback voor andere listeners
+    }
+    window.dispatchEvent(
+      new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
+    );
+    // De hero-image (indien gegenereerd) zit nu al in de gepersisteerde
+    // puckData → Step 3 rendert de pagina MÉT de foto.
+    onAdvance();
+  }, [deliverableId, onAdvance, setContextStack, setStructuredVariant]);
 
   const handleChooseVariant = useCallback(async (variant: PageVariantContent) => {
     setIsChoosing(true);
@@ -618,43 +924,167 @@ export function LandingPageGenerateBlock({
       }
       chosen = lpChosen;
       } // einde LP-shaped beeld-blok (W1)
-      const puckData = variantToPuckDataFromStructured(chosen, contextStack);
-      const patchRes = await fetch(`/api/studio/${deliverableId}`, {
+
+      // B4 (lp-variant-merge, "edits overleven variantwissel"): persist eerst
+      // de variant, en vraag de server dan om een edit-preserving merge-preview
+      // van de verse mapping tegen bestaande puckData + puckDataBaseline —
+      // i.p.v. de oude blinde overwrite die handmatige Stap-3-edits wiste.
+      // Zonder edits/conflicten: direct toepassen (UX identiek aan voorheen).
+      // Mét user-werk: de flow pauzeert op de confirm-modal (keep-mine
+      // default); applyMergeResolution rondt de keuze daar af.
+      const variantPatch = await fetch(`/api/studio/${deliverableId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          settings: { structuredVariant: chosen, puckData },
-        }),
+        body: JSON.stringify({ settings: { structuredVariant: chosen } }),
       });
-      if (!patchRes.ok) {
-        throw new Error(t('lp.errors.saveFailedHttp', { status: patchRes.status }));
+      if (!variantPatch.ok) {
+        throw new Error(t('lp.errors.saveFailedHttp', { status: variantPatch.status }));
       }
-      setStructuredVariant(chosen);
-      // Fetch /context expliciet zodat contextStack.puckData synchroon
-      // ververst is vóór user naar Step 3 doorklikt.
+      let appliedViaMerge = false;
       try {
-        const ctxRes = await fetch(`/api/studio/${deliverableId}/context`);
-        if (ctxRes.ok) {
-          const ctxData = (await ctxRes.json()) as { contextStack?: typeof contextStack };
-          if (ctxData?.contextStack) {
-            setContextStack(ctxData.contextStack);
+        const mergeRes = await fetch(`/api/landing-pages/${deliverableId}/regenerate-puck-data`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ merge: true }),
+        });
+        if (mergeRes.ok) {
+          const preview = (await mergeRes.json()) as MergePreviewResponse;
+          if (preview?.merge === true && preview.merged && Array.isArray(preview.merged.content)) {
+            if (!mergeNeedsConfirmation(preview)) {
+              await applyResolvedPuckData(preview.merged, preview.incoming);
+              appliedViaMerge = true;
+            } else {
+              setPendingMerge({
+                merged: preview.merged,
+                conflicts: preview.conflicts ?? [],
+                incoming: preview.incoming,
+                baselineUsed: preview.baselineUsed !== false,
+                editedSectionCount: preview.editedSectionCount ?? 0,
+                refreshedSectionCount: preview.refreshedSectionCount ?? 0,
+                chosen,
+                advanceAfter: true,
+              });
+              return;
+            }
           }
         }
-      } catch {
-        // Niet-blokkerend: dispatch event als fallback voor andere listeners
+      } catch (mergeErr) {
+        console.warn(
+          '[LandingPageGenerateBlock] merge-preview faalde — fallback naar directe overwrite',
+          mergeErr,
+        );
       }
-      window.dispatchEvent(
-        new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
-      );
-      // De hero-image (indien gegenereerd) zit nu al in de gepersisteerde
-      // puckData → Step 3 rendert de pagina MÉT de foto.
-      onAdvance();
+      if (!appliedViaMerge) {
+        // Fallback (pre-B4 gedrag + baseline-write): client-side mapping,
+        // directe overwrite via hetzelfde autosave-pad.
+        const puckData = variantToPuckDataFromStructured(chosen, contextStack);
+        const patchRes = await fetch(`/api/studio/${deliverableId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ settings: { puckData, puckDataBaseline: puckData } }),
+        });
+        if (!patchRes.ok) {
+          throw new Error(t('lp.errors.saveFailedHttp', { status: patchRes.status }));
+        }
+      }
+      await finalizeChosenVariant(chosen);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('lp.errors.saveVariantChoice'));
     } finally {
       setIsChoosing(false);
     }
-  }, [contextStack, deliverableId, selectedHeroImageUrl, setContextStack, setStructuredVariant, onAdvance, generateHeroVisualUrl, t]);
+  }, [contextStack, deliverableId, selectedHeroImageUrl, applyResolvedPuckData, finalizeChosenVariant, generateHeroVisualUrl, t]);
+
+  /**
+   * B4 — "Structuur verversen" op de gekozen variant: haalt de merge-preview
+   * op (regenerate-puck-data { merge: true }, niet-persisterend), past 'm
+   * direct toe wanneer er geen user-werk te bewaren valt, en opent anders de
+   * confirm-modal met per-conflict keuze.
+   */
+  const handleStructureRefresh = useCallback(async () => {
+    setIsRefreshingStructure(true);
+    setStructureRefreshError(null);
+    setStructureRefreshMsg(null);
+    try {
+      const res = await fetch(`/api/landing-pages/${deliverableId}/regenerate-puck-data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ merge: true }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? `HTTP ${res.status}`);
+      }
+      const preview = (await res.json()) as MergePreviewResponse;
+      if (!preview?.merged || !Array.isArray(preview.merged.content)) {
+        throw new Error(t('lp.structureRefresh.failed'));
+      }
+      if (!mergeNeedsConfirmation(preview)) {
+        await applyResolvedPuckData(preview.merged, preview.incoming);
+        window.dispatchEvent(
+          new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
+        );
+        setStructureRefreshMsg(t('lp.structureRefresh.appliedClean'));
+      } else {
+        setPendingMerge({
+          merged: preview.merged,
+          conflicts: preview.conflicts ?? [],
+          incoming: preview.incoming,
+          baselineUsed: preview.baselineUsed !== false,
+          editedSectionCount: preview.editedSectionCount ?? 0,
+          refreshedSectionCount: preview.refreshedSectionCount ?? 0,
+          chosen: null,
+          advanceAfter: false,
+        });
+      }
+    } catch (err) {
+      setStructureRefreshError(err instanceof Error ? err.message : t('lp.structureRefresh.failed'));
+    } finally {
+      setIsRefreshingStructure(false);
+    }
+  }, [applyResolvedPuckData, deliverableId, t]);
+
+  /**
+   * B4 — modal-bevestiging: past per conflict keep-mine/take-new toe (take-new
+   * = swap op `mergedIndex` met `theirs`), persist via het autosave-pad en
+   * rondt bij de choose-flow de variantkeuze af (store + advance).
+   */
+  const applyMergeResolution = useCallback(async (takeNewIndices: Set<number>) => {
+    if (!pendingMerge) return;
+    const { merged, conflicts, incoming, chosen, advanceAfter, editedSectionCount } = pendingMerge;
+    setIsApplyingMerge(true);
+    setStructureRefreshError(null);
+    try {
+      const resolved: DiffMergeData = {
+        ...merged,
+        content: merged.content.map((item, i) => {
+          if (!takeNewIndices.has(i)) return item;
+          const conflict = conflicts.find((c) => c.mergedIndex === i);
+          return conflict ? conflict.theirs : item;
+        }),
+      };
+      await applyResolvedPuckData(resolved, incoming);
+      window.dispatchEvent(
+        new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
+      );
+      setPendingMerge(null);
+      setStructureRefreshMsg(
+        t('lp.structureRefresh.applied', { edited: editedSectionCount, conflicts: conflicts.length }),
+      );
+      if (advanceAfter && chosen) {
+        await finalizeChosenVariant(chosen);
+      }
+    } catch (err) {
+      setStructureRefreshError(err instanceof Error ? err.message : t('lp.structureRefresh.failed'));
+    } finally {
+      setIsApplyingMerge(false);
+    }
+  }, [pendingMerge, applyResolvedPuckData, deliverableId, finalizeChosenVariant, t]);
+
+  /** B4 — modal sluiten zonder toe te passen: puckData blijft onaangeroerd. */
+  const cancelMergeResolution = useCallback(() => {
+    setPendingMerge(null);
+  }, []);
 
   const handleGenerateVisual = useCallback(async () => {
     // W1: hero-AI-gen is LP-shaped (buildHeroVisualInstruction leest hero.subhead).
@@ -819,15 +1249,69 @@ export function LandingPageGenerateBlock({
   }
 
   // ─── Genereren bezig ─────────────────────────────────────
+  // B2: met een actieve SSE-stream tonen we per slot een kaart zodra diens
+  // `variant_complete` binnenkomt; de rest blijft skeleton-met-shimmer. Het
+  // JSON-fallback-pad houdt de bestaande spinner-InfoBox.
   if (!variantOptions && !chosenVariant && isGenerating) {
+    const doneCount = streamProgress
+      ? streamProgress.variants.filter((v) => v !== null).length
+      : 0;
     return (
       <div className="space-y-6">
-        <InfoBox variant="info" size="md" title={t('lp.generating.title', { count: selectedCount })}>
+        <InfoBox
+          variant="info"
+          size="md"
+          title={t('lp.generating.title', { count: streamProgress?.count ?? selectedCount })}
+        >
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
-            <span>{t('lp.generating.body')}</span>
+            <span>
+              {streamProgress
+                ? t('lp.streaming.progress', { done: doneCount, total: streamProgress.count })
+                : t('lp.generating.body')}
+            </span>
           </div>
         </InfoBox>
+        {streamProgress ? (
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${streamProgress.count === 1 ? 1 : 2}, minmax(0, 1fr))` }}
+            aria-live="polite"
+          >
+            {streamProgress.variants.map((v, i) => {
+              const hex = ACCENT_HEX[accentFor(i)];
+              const label = (() => {
+                const angle = streamProgress.labels[i]?.trim();
+                const fallbackKey = FALLBACK_LABEL_KEYS[i];
+                const displayAngle = angle && angle.length > 0
+                  ? angle
+                  : fallbackKey
+                    ? t(`lp.variant.fallback.${fallbackKey}`)
+                    : t('lp.variant.fallback.generic');
+                return t('lp.variant.labelWithAngle', { letter: String.fromCharCode(65 + i), angle: displayAngle });
+              })();
+              if (v) {
+                return (
+                  <div key={i} className="rounded-lg border-2 bg-white overflow-hidden" style={{ borderColor: hex.cardBorder }}>
+                    <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-100">
+                      <span className="text-xs font-medium uppercase tracking-wide text-gray-900">{label}</span>
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                    </div>
+                    <VariantPuckPreview variant={v} contextStack={contextStack} maxHeight={260} />
+                  </div>
+                );
+              }
+              return (
+                <StreamSkeletonCard
+                  key={i}
+                  label={label}
+                  failed={streamProgress.failed[i]}
+                  started={streamProgress.started[i]}
+                />
+              );
+            })}
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -868,6 +1352,20 @@ export function LandingPageGenerateBlock({
   if (variantOptions && !chosenVariant) {
     return (
       <div className="space-y-6">
+        {/* B4 — confirm-modal voor de choose-flow (edits overleven variantwissel). */}
+        {pendingMerge ? (
+          <StructureRefreshModal
+            state={pendingMerge}
+            busy={isApplyingMerge}
+            onConfirm={(takeNew) => void applyMergeResolution(takeNew)}
+            onCancel={cancelMergeResolution}
+          />
+        ) : null}
+        {structureRefreshError ? (
+          <InfoBox variant="error" size="sm" title={t('lp.structureRefresh.failed')} onDismiss={() => setStructureRefreshError(null)}>
+            {structureRefreshError}
+          </InfoBox>
+        ) : null}
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-900 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
           <p className="font-medium">
@@ -1168,6 +1666,15 @@ export function LandingPageGenerateBlock({
   // toont alleen een korte status met optie 'Andere variant kiezen'.
   return (
     <div className="space-y-4">
+      {/* B4 — confirm-modal voor structure-refresh op de gekozen variant. */}
+      {pendingMerge ? (
+        <StructureRefreshModal
+          state={pendingMerge}
+          busy={isApplyingMerge}
+          onConfirm={(takeNew) => void applyMergeResolution(takeNew)}
+          onCancel={cancelMergeResolution}
+        />
+      ) : null}
       <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 flex items-start gap-2">
         <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
         <div className="flex-1">
@@ -1177,7 +1684,16 @@ export function LandingPageGenerateBlock({
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-3">
+      {structureRefreshError ? (
+        <InfoBox variant="error" size="sm" title={t('lp.structureRefresh.failed')} onDismiss={() => setStructureRefreshError(null)}>
+          {structureRefreshError}
+        </InfoBox>
+      ) : structureRefreshMsg ? (
+        <InfoBox variant="info" size="sm" onDismiss={() => setStructureRefreshMsg(null)}>
+          {structureRefreshMsg}
+        </InfoBox>
+      ) : null}
+      <div className="flex items-center gap-3 flex-wrap">
         {/* >= 1 (niet > 1): ook bij één geleverde variant moet de gebruiker terug naar de
             keuze kunnen. Bij een partial generation (slot-failure → 1 variant) zat de
             gebruiker anders vast in deze "Variant chosen"-state zonder weg terug. De knop
@@ -1191,6 +1707,21 @@ export function LandingPageGenerateBlock({
             {t('lp.chooseDifferent')}
           </button>
         ) : null}
+        {/* B4 — edit-preserving structure-refresh: hermapt de pagina uit de
+            variant + actuele BrandTokens en bewaart handmatige Stap-3-edits
+            via de three-way merge (confirm-modal bij conflicten). */}
+        <button
+          type="button"
+          onClick={() => void handleStructureRefresh()}
+          disabled={isRefreshingStructure || isApplyingMerge}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 underline hover:text-gray-900 disabled:opacity-50"
+        >
+          {isRefreshingStructure ? (
+            <><Loader2 className="h-3 w-3 animate-spin" />{t('lp.structureRefresh.refreshing')}</>
+          ) : (
+            <><RefreshCw className="h-3 w-3" />{t('lp.structureRefresh.button')}</>
+          )}
+        </button>
         <div className="ml-auto">
           <button
             type="button"
@@ -1760,6 +2291,318 @@ function FieldRow({ label, value, accent }: { label: string; value: string; acce
     <div className="text-sm">
       <span className="text-xs font-medium text-gray-500">{label}: </span>
       <span className={accent ? 'font-semibold text-gray-900' : 'text-gray-700'}>{value}</span>
+    </div>
+  );
+}
+
+/**
+ * B2 — skeleton-kaart voor een variant-slot dat nog geen `variant_complete`
+ * heeft: shimmer-blokken (animate-pulse) op de plek waar de preview komt.
+ * Geen sectie-namen: het section_preview-event is bewust niet gebouwd
+ * (anthropic-client streamt geen tokens — zie route-JSDoc B2.2).
+ */
+function StreamSkeletonCard({
+  label,
+  failed,
+  started,
+}: {
+  label: string;
+  failed: boolean;
+  started: boolean;
+}) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
+  if (failed) {
+    return (
+      <div className="rounded-lg border-2 border-amber-200 bg-amber-50/60 overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-1.5 border-b border-amber-100">
+          <span className="text-xs font-medium uppercase tracking-wide text-amber-800">{label}</span>
+          <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+        </div>
+        <p className="px-3 py-4 text-xs text-amber-800">{t('lp.streaming.failed')}</p>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-lg border-2 border-gray-200 bg-white overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-100">
+        <span className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</span>
+        <span className="inline-flex items-center gap-1 text-[10px] text-gray-400">
+          {started ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+          {started ? t('lp.streaming.writing') : t('lp.streaming.waiting')}
+        </span>
+      </div>
+      <div className="p-3 space-y-2 animate-pulse" aria-hidden="true">
+        <div className="h-16 rounded bg-gray-100" />
+        <div className="h-3 w-3/4 rounded bg-gray-100" />
+        <div className="h-3 w-1/2 rounded bg-gray-100" />
+        <div className="grid grid-cols-3 gap-2 pt-1">
+          <div className="h-10 rounded bg-gray-100" />
+          <div className="h-10 rounded bg-gray-100" />
+          <div className="h-10 rounded bg-gray-100" />
+        </div>
+        <div className="h-3 w-2/3 rounded bg-gray-100" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * B4 — korte leesbare samenvatting van een sectie voor de conflict-kaarten:
+ * verzamelt string-props (excl. id/URLs) tot ~200 tekens.
+ */
+function sectionTextPreview(item: PuckMergeConflict['mine']): string {
+  const parts: string[] = [];
+  const walk = (value: unknown): void => {
+    if (parts.join(' · ').length > 200) return;
+    if (typeof value === 'string') {
+      const s = value.trim();
+      if (s && !/^https?:\/\//i.test(s) && !/^data:/i.test(s)) parts.push(s);
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(walk);
+      return;
+    }
+    if (value && typeof value === 'object') {
+      for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+        if (key === 'id') continue;
+        walk(v);
+      }
+    }
+  };
+  walk(item?.props ?? {});
+  const joined = parts.join(' · ');
+  return joined.length > 200 ? `${joined.slice(0, 197)}…` : joined;
+}
+
+/**
+ * B4 — confirm-modal voor de edit-preserving structure-refresh. Herbruikt de
+ * visuele taal van PageDiffPreviewModal (overlay rgba(15,23,42,.7), witte
+ * afgeronde panel, slate-palet, rounded-full footer-knoppen) zonder die
+ * component te importeren — dit is een per-conflict keuzelijst, geen
+ * dual-render-diff. Default keep-mine; take-new per conflict togglebaar.
+ */
+function StructureRefreshModal({
+  state,
+  busy,
+  onConfirm,
+  onCancel,
+}: {
+  state: PendingMergeState;
+  busy: boolean;
+  onConfirm: (takeNewIndices: Set<number>) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
+  const [takeNew, setTakeNew] = useState<Set<number>>(() => new Set());
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onCancel]);
+
+  const toggle = (mergedIndex: number) => {
+    setTakeNew((prev) => {
+      const next = new Set(prev);
+      if (next.has(mergedIndex)) next.delete(mergedIndex);
+      else next.add(mergedIndex);
+      return next;
+    });
+  };
+
+  const summary = state.conflicts.length > 0
+    ? t('lp.structureRefresh.modalSummary', {
+        edited: state.editedSectionCount,
+        conflicts: state.conflicts.length,
+      })
+    : t('lp.structureRefresh.modalSummaryNoConflicts', { edited: state.editedSectionCount });
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(15, 23, 42, 0.7)',
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+      }}
+      onClick={onCancel}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: '#ffffff',
+          borderRadius: 12,
+          width: '100%',
+          maxWidth: 720,
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            padding: '16px 24px',
+            borderBottom: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, color: '#0f172a' }}>
+              {t('lp.structureRefresh.modalTitle')}
+            </h2>
+            <p style={{ fontSize: 13, margin: '4px 0 0', color: '#64748b' }}>{summary}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            aria-label={t('lp.structureRefresh.close')}
+            className="inline-flex items-center justify-center rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Baseline-waarschuwing (pre-B4 pagina zonder puckDataBaseline) */}
+        {!state.baselineUsed ? (
+          <div
+            style={{
+              padding: '10px 24px',
+              background: '#fef3c7',
+              borderBottom: '1px solid #fde68a',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              color: '#92400e',
+              fontSize: 13,
+            }}
+          >
+            <AlertTriangle size={16} />
+            {t('lp.structureRefresh.noBaseline')}
+          </div>
+        ) : null}
+
+        {/* Conflictlijst (default keep-mine) */}
+        <div style={{ flex: 1, overflow: 'auto', padding: '16px 24px' }}>
+          {state.conflicts.length > 0 ? (
+            <p style={{ fontSize: 12, color: '#475569', fontWeight: 600, margin: '0 0 10px' }}>
+              {t('lp.structureRefresh.conflictsHeading', { count: state.conflicts.length })}
+            </p>
+          ) : null}
+          <div className="space-y-3">
+            {state.conflicts.map((conflict) => {
+              const takesNew = takeNew.has(conflict.mergedIndex);
+              return (
+                <div
+                  key={`${conflict.id ?? conflict.type}-${conflict.mergedIndex}`}
+                  style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: 12 }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#0f172a' }}>{conflict.type}</span>
+                    {conflict.conflictingProps.length > 0 ? (
+                      <span style={{ fontSize: 11, color: '#64748b' }}>
+                        {t('lp.structureRefresh.changedProps', { props: conflict.conflictingProps.join(', ') })}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => { if (takesNew) toggle(conflict.mergedIndex); }}
+                      aria-pressed={!takesNew}
+                      style={{
+                        textAlign: 'left',
+                        border: '1px solid',
+                        borderColor: takesNew ? '#e2e8f0' : '#0891b2',
+                        background: takesNew ? '#ffffff' : '#cffafe',
+                        borderRadius: 8,
+                        padding: 10,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: takesNew ? '#475569' : '#0e7490' }}>
+                        {!takesNew ? <Check size={12} /> : null}
+                        {t('lp.structureRefresh.keepMine')}
+                      </span>
+                      <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: '#334155' }}>
+                        {sectionTextPreview(conflict.mine) || '—'}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { if (!takesNew) toggle(conflict.mergedIndex); }}
+                      aria-pressed={takesNew}
+                      style={{
+                        textAlign: 'left',
+                        border: '1px solid',
+                        borderColor: takesNew ? '#0891b2' : '#e2e8f0',
+                        background: takesNew ? '#cffafe' : '#ffffff',
+                        borderRadius: 8,
+                        padding: 10,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: takesNew ? '#0e7490' : '#475569' }}>
+                        {takesNew ? <Check size={12} /> : null}
+                        {t('lp.structureRefresh.takeNew')}
+                      </span>
+                      <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: '#334155' }}>
+                        {sectionTextPreview(conflict.theirs) || '—'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {state.refreshedSectionCount > 0 ? (
+            <p style={{ fontSize: 12, color: '#64748b', margin: '12px 0 0' }}>
+              {t('lp.structureRefresh.refreshedCount', { count: state.refreshedSectionCount })}
+            </p>
+          ) : null}
+        </div>
+
+        {/* Footer */}
+        <div
+          style={{
+            padding: '16px 24px',
+            borderTop: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 8,
+          }}
+        >
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
+          >
+            {t('lp.structureRefresh.cancel')}
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirm(takeNew)}
+            disabled={busy}
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 transition-opacity"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            {busy ? t('lp.structureRefresh.applying') : t('lp.structureRefresh.confirm')}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

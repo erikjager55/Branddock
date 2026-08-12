@@ -1090,6 +1090,44 @@ export function fallbackAxes(count: number, userAxis: VariantAxis | null = null)
     : [userAxis];
 }
 
+/**
+ * P3a — +0.1..0.15 recovery-buffer per gebruikte temp; `?? 0.5` blijft vangnet.
+ * Geëxporteerd (B2 lp-streaming-generation) zodat de sequentiële SSE-modus in
+ * de generate-route exact dezelfde retry-temperatuur kiest als deze batch.
+ */
+export function recoveryTemperature(temp: number): number {
+  const RECOVERY_TEMPERATURES: Record<number, number> = {
+    0.25: 0.35, 0.3: 0.4, 0.4: 0.5, 0.45: 0.55,
+    0.55: 0.62, 0.65: 0.72, 0.7: 0.55, 0.8: 0.88, 0.85: 0.92,
+  };
+  return RECOVERY_TEMPERATURES[temp] ?? 0.5;
+}
+
+/**
+ * P3b — divergentie-frame per slot: wanneer dynamische creative-angles
+ * beschikbaar zijn (genoeg voor de count) winnen die (brand-specifiek);
+ * anders de generieke axis-paring (problem-led vs benefit-led, klassieke
+ * CRO A/B split). Per-slot guard: `useAngles` borgt al length>=count, maar
+ * val per slot terug op de axis als een angle onverhoopt ontbreekt
+ * (defensief tegen toekomstige count>angles-mismatch).
+ *
+ * Geëxporteerd (B2) zodat batch- én sequentiële SSE-generatie identiek
+ * divergeren. Pure functie.
+ */
+export function variantSlotParams(
+  params: LandingPageGenerationParams,
+  count: number,
+  angles: CreativeAngle[] | null | undefined,
+  i: number,
+): LandingPageGenerationParams {
+  const useAngles = Array.isArray(angles) && angles.length >= count;
+  const axisPair = fallbackAxes(count, params.variantAxis ?? null);
+  const angle = useAngles && angles ? angles[i] ?? null : null;
+  return angle
+    ? { ...params, angleInstruction: formatAngleInstruction(angle), angleLabel: angle.label, variantAxis: null }
+    : { ...params, variantAxis: axisPair[i] ?? params.variantAxis ?? null };
+}
+
 export async function generateLandingPageVariantBatch(
   params: LandingPageGenerationParams,
   count: 1 | 2 | 3 | 4 = 2,
@@ -1100,26 +1138,10 @@ export async function generateLandingPageVariantBatch(
     throw new Error(`generateLandingPageVariantBatch: count must be an integer 1-4, got ${count}`);
   }
   const TEMPERATURES = variantTemperatures(count);
-  // +0.1..0.15 recovery-buffer per gebruikte temp; `?? 0.5` blijft vangnet.
-  const RECOVERY_TEMPERATURES: Record<number, number> = {
-    0.25: 0.35, 0.3: 0.4, 0.4: 0.5, 0.45: 0.55,
-    0.55: 0.62, 0.65: 0.72, 0.7: 0.55, 0.8: 0.88, 0.85: 0.92,
-  };
 
-  // P3b — wanneer dynamische creative-angles beschikbaar zijn (genoeg voor de
-  // count) gebruiken we die als divergentie-frame (brand-specifiek). Anders de
-  // generieke axis-paring (problem-led vs benefit-led, klassieke CRO A/B split).
-  const useAngles = Array.isArray(angles) && angles.length >= count;
   const AXIS_PAIR = fallbackAxes(count, params.variantAxis ?? null);
-  const slotParams = (i: number): LandingPageGenerationParams => {
-    // Per-slot guard: `useAngles` borgt al length>=count, maar val per slot terug
-    // op de axis als een angle onverhoopt ontbreekt (defensief tegen toekomstige
-    // count>angles-mismatch) i.p.v. crashen op angles![i].
-    const angle = useAngles ? angles![i] : null;
-    return angle
-      ? { ...params, angleInstruction: formatAngleInstruction(angle), angleLabel: angle.label, variantAxis: null }
-      : { ...params, variantAxis: AXIS_PAIR[i] ?? params.variantAxis ?? null };
-  };
+  const slotParams = (i: number): LandingPageGenerationParams =>
+    variantSlotParams(params, count, angles, i);
 
   // Fase 1: parallel attempt — elk slot met eigen angle/axis + temperature
   const initial = await Promise.allSettled(
@@ -1146,7 +1168,7 @@ export async function generateLandingPageVariantBatch(
   // Axis blijft behouden zodat retry niet alsnog naar identical fallback verglijdt.
   for (let i = 0; i < results.length; i++) {
     if (results[i] === null) {
-      const retryTemp = RECOVERY_TEMPERATURES[TEMPERATURES[i]] ?? 0.5;
+      const retryTemp = recoveryTemperature(TEMPERATURES[i]);
       try {
         console.warn(
           `[variant-batch] Retrying slot ${i} with recovery-temp ${retryTemp}...`,
