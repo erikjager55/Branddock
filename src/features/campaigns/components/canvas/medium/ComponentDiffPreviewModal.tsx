@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Config } from '@puckeditor/core';
+import type { SectionLibraryConfig } from '@/lib/landing-pages/section-config';
 import { PageRender } from '@/lib/landing-pages/page-render';
 import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import { X, Check, AlertTriangle } from 'lucide-react';
@@ -14,7 +14,7 @@ type ComponentInstance = SpikeData['content'][number];
 
 interface Props {
   /** Puck config — same instance used by the editor so render functions match. */
-  config: Config<SpikePuckProps>;
+  config: SectionLibraryConfig<SpikePuckProps>;
   /** Component as it currently exists in the page. */
   current: ComponentInstance;
   /** Proposed AI-rewritten props for the same component. */

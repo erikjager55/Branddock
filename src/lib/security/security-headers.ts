@@ -20,16 +20,15 @@
 export const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
-  // rsms.me: @puckeditor/core/dist/index.css @import't het Inter-font daar.
-  // Zonder deze allow faalt de hele lazy CSS-chunk van de canvas op prod
-  // (ChunkLoadError → ErrorBoundary bij "Open in Canvas"; incident 2026-07-16).
-  // Dev heeft geen CSP, dus lokaal was dit onzichtbaar.
   // p.typekit.net: use.typekit.net/<kit>.css laadt hier zelf een tweede
   // stylesheet met de @font-face-regels vandaan. Zonder deze allow blijft
   // Halyard blokkeren en valt de site stil terug op Hanken Grotesk —
   // onopgemerkt tot productie-screenshot-verificatie (2026-07-16).
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.typekit.net https://p.typekit.net https://rsms.me",
-  "font-src 'self' data: https://fonts.gstatic.com https://use.typekit.net https://p.typekit.net https://rsms.me",
+  // NB: de rsms.me-allow (Inter-import van Pucks CSS; incident 2026-07-16)
+  // is met de Puck-exit (E3, ADR 2026-08-07) verwijderd — puck.css laadt
+  // nergens meer.
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.typekit.net https://p.typekit.net",
+  "font-src 'self' data: https://fonts.gstatic.com https://use.typekit.net https://p.typekit.net",
   // Permissive img-src: user-supplied URLs + AI-provider-previews landen in <img>
   "img-src 'self' data: blob: https:",
   // Externe AI-calls lopen server-side; de browser praat alleen met eigen API,

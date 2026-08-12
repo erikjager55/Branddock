@@ -1,19 +1,20 @@
 /**
- * Phase 46 — PageRender ↔ Puck-Render pariteit (E1, ADR
- * 2026-08-07-puck-exit-sectie-editor).
+ * Phase 46 — PageRender-consistentie + registry-sync (E1/E3).
  *
- * Acceptatiecriterium van de exit: de eigen render-loop produceert voor
- * álle 5 template-trees exact dezelfde HTML als Pucks `<Render>` (modulo
- * de opt-in provenance-wrappers). Byte-gelijke output = bewijs dat de
- * publieke route, previews en screenshotter zonder visuele regressie op
- * de eigen loop kunnen draaien.
+ * Historie: t/m commit dc48688 bewees deze fase byte-gelijke HTML tussen
+ * Pucks `<Render>` en de eigen `PageRender` op alle 5 template-trees
+ * (15/15 — het E1-acceptatiecriterium). Met de dependency-verwijdering
+ * (E3) is de Puck-vergelijking niet meer importeerbaar; de fase bewaakt
+ * sindsdien (a) render-zelfconsistentie op dezelfde 5 trees en (b) het
+ * registry-contract: SECTION_TYPE_IDS ↔ buildSpikePuckConfig blijven
+ * synchroon (de belofte in page-data.ts).
  *
  * Run: npx tsx scripts/smoke-tests/web-page-builder-phase46-pagerender-parity.ts
  */
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Render } from '@puckeditor/core';
 import { PageRender } from '../../src/lib/landing-pages/page-render';
+import { SECTION_TYPE_IDS } from '../../src/lib/landing-pages/page-data';
 import { buildSpikePuckConfig } from '../../src/features/campaigns/components/canvas/medium/puck-config';
 import {
   resolveTemplateBuilder,
@@ -59,45 +60,39 @@ const FILLED: FilledFields = {
 function main(): void {
   const config = buildSpikePuckConfig(null);
 
+  console.log('\nregistry-sync');
+  const registered = new Set(Object.keys(config.components ?? {}));
+  const missing = SECTION_TYPE_IDS.filter((id) => !registered.has(id));
+  assert('alle SECTION_TYPE_IDS geregistreerd in de config', missing.length === 0, `ontbreekt: ${missing.join(', ')}`);
+  const extra = [...registered].filter((k) => !(SECTION_TYPE_IDS as readonly string[]).includes(k));
+  assert('geen geregistreerde componenten buiten SECTION_TYPE_IDS', extra.length === 0, `extra: ${extra.join(', ')}`);
+
   for (const type of TYPES) {
     console.log(`\n${type}`);
     const tree = resolveTemplateBuilder(type)(FILLED, null);
 
-    const viaPuck = renderToStaticMarkup(
-      createElement(Render as never, { config, data: tree } as never),
-    );
-    const viaOwn = renderToStaticMarkup(
-      createElement(PageRender as never, { config, data: tree, withSectionMarkers: false } as never),
-    );
-    assert(
-      'byte-gelijke HTML (zonder markers)',
-      viaPuck === viaOwn,
-      `puck=${viaPuck.length}b own=${viaOwn.length}b — eerste divergentie op index ${firstDiff(viaPuck, viaOwn)}`,
-    );
-
-    const viaOwnMarked = renderToStaticMarkup(
+    const rendered = renderToStaticMarkup(
       createElement(PageRender as never, { config, data: tree } as never),
     );
-    const markerCount = (viaOwnMarked.match(/data-section-id=/g) ?? []).length;
-    assert(
-      `provenance-markers = ${tree.content.length} secties`,
-      markerCount === tree.content.length,
-      `gevonden ${markerCount}`,
+    const bare = renderToStaticMarkup(
+      createElement(PageRender as never, { config, data: tree, withSectionMarkers: false } as never),
     );
+
+    assert('render bevat de kern-copy', rendered.includes(FILLED.headline));
+    const markerCount = (rendered.match(/data-section-id=/g) ?? []).length;
+    assert(`provenance-markers = ${tree.content.length} secties`, markerCount === tree.content.length, `gevonden ${markerCount}`);
     assert(
       'markers zijn layout-neutraal (display:contents)',
-      (viaOwnMarked.match(/display:contents/g) ?? []).length === tree.content.length,
+      (rendered.match(/display:contents/g) ?? []).length === tree.content.length,
     );
+    assert('marker-loze render bevat dezelfde secties (geen markers)', !bare.includes('data-section-id=') && bare.includes(FILLED.headline));
+    assert('deterministisch (tweede render identiek)', bare === renderToStaticMarkup(
+      createElement(PageRender as never, { config, data: tree, withSectionMarkers: false } as never),
+    ));
   }
 
   console.log(`\n${pass} passed, ${fail} failed`);
   if (fail > 0) process.exit(1);
-}
-
-function firstDiff(a: string, b: string): number {
-  const n = Math.min(a.length, b.length);
-  for (let i = 0; i < n; i++) if (a[i] !== b[i]) return i;
-  return a.length === b.length ? -1 : n;
 }
 
 main();
