@@ -131,6 +131,28 @@ export function proxy(request: NextRequest) {
   // Per-request nonce voor de Report-Only-CSP (prod-only gebruikt).
   const nonce = btoa(crypto.randomUUID());
 
+  // Legacy publieke vorm `/p/<slug>?workspace=<ws>` → 308 naar de canonieke
+  // pad-param-route `/p/<ws>/<slug>` (P0 ISR-fix). Dit MOET hier in de proxy:
+  // als App-Router-route kan de shim niet bestaan — sibling-segmenten met
+  // verschillende namen ('slug' naast 'workspace') laten `next dev` weigeren
+  // te starten ("You cannot use different slug names for the same dynamic
+  // path"), ook al accepteert de productie-build ze. Zonder workspace-query
+  // valt het pad door naar de router → 404 (zelfde gedrag als de oude shim).
+  const legacyPublicMatch = pathname.match(/^\/p\/([^/]+)\/?$/);
+  if (legacyPublicMatch) {
+    const workspace = request.nextUrl.searchParams.get('workspace');
+    if (workspace) {
+      const redirectUrl = request.nextUrl.clone();
+      // Segment rauw doorzetten (behoudt bestaande percent-encoding);
+      // utm-achtige query-params blijven mee, alleen `workspace` vervalt.
+      redirectUrl.pathname = `/p/${encodeURIComponent(workspace)}/${legacyPublicMatch[1]}`;
+      redirectUrl.searchParams.delete('workspace');
+      const redirectResponse = NextResponse.redirect(redirectUrl, 308);
+      applySecurityHeaders(redirectResponse.headers, nonce);
+      return redirectResponse;
+    }
+  }
+
   // Web-page builder host-routing (ADR 2026-05-22-landing-page-builder-architectuur).
   // Runs first so <workspace>.branddock.app/<slug> rewrites to /p/<slug> before
   // any other logic. Security headers still applied to the rewritten response.

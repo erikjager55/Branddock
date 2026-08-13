@@ -36,6 +36,15 @@ geen launch-blockers, wel afmaken vóór volume-groei.
       laatste N blijft instant; ouder = on-demand hercompile).
 
 ## Robuustheid (geen waargenomen impact, wel echt)
+- [ ] **Registry-type versmallen (`buildSpikePuckConfig`)**: sinds E3 het
+      return-type laten inferen (de minimale annotatie brak 149 consumer-
+      regels die veld-metadata lezen) instantieert elke consumer een enorm
+      anoniem structureel type. Gevolg: de TS-fase van `next build` ging in
+      CI door de 4GB-default-heap (heap-bump in `.github/workflows/ci.yml`,
+      2026-08-13; kale `tsc --noEmit` past er wél in). Structurele fix: een
+      rijke maar benoemde interface die álle door consumenten gelezen
+      veld-metadata dekt, of het props-paneel-model loskoppelen van de
+      registry-literal.
 - [ ] **SSE-generator + client-disconnect**: `generate-structured-variant`
       luistert niet naar `request.signal` — na weglopen genereert de server
       tot 480s door (tokenkosten). Client mist AbortController op de
