@@ -13,7 +13,7 @@
  * als eigen blokken zijn een latere increment.
  */
 
-import type { Data } from "@puckeditor/core";
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import type { CanvasContextStack } from "@/lib/ai/canvas-context";
 import type { SpikePuckProps } from "../puck-config";
 import type { LongFormGeoVariantContent } from "@/lib/landing-pages/page-type-schemas";

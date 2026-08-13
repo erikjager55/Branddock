@@ -8,8 +8,9 @@
  *  - `app.branddock.app` / `localhost` → app-shell (passthrough naar de SPA).
  *  - `branddock.app` / `www.branddock.app` (apex) → marketing-site: root `/`
  *    rewrite naar `/marketing`; diepere paden passthrough (/marketing/*, /api…).
- *  - `<workspace>.branddock.app/<slug>` → /p/<slug>?workspace=<workspace>
- *    (rewritten, public render-route handles the lookup).
+ *  - `<workspace>.branddock.app/<slug>` → /p/<workspace>/<slug>
+ *    (rewritten, public render-route handles the lookup; pad-params zodat de
+ *    route statisch/ISR-cachebaar blijft — P0 ISR-fix verbeterplan v3).
  *  - `*.lvh.me` mirrors the subdomain pattern for local subdomain testing
  *    (no /etc/hosts edits needed).
  *  - Custom domains (v2) come from DomainMapping lookups; out of scope here.
@@ -105,8 +106,10 @@ export function decideHostRoute(host: string, path: string): HostRouteDecision {
     return { passthrough: true };
   }
 
+  // P0 ISR-fix: workspace als pad-segment i.p.v. query-param — `searchParams`
+  // is een Dynamic API die de render-route uit de statische cache duwde.
   return {
-    rewriteTo: `/p/${encodeURIComponent(slug)}?workspace=${encodeURIComponent(subdomainMatch)}`,
+    rewriteTo: `/p/${encodeURIComponent(subdomainMatch)}/${encodeURIComponent(slug)}`,
   };
 }
 

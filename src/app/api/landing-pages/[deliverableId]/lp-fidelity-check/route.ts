@@ -7,7 +7,7 @@ import { judgeLpFidelity, type LpFidelityResult } from "@/lib/landing-pages/lp-f
 import { judgeVisualBrandFit } from "@/lib/landing-pages/visual-brand-fit-judge";
 import { capturePuckTreeScreenshot } from "@/lib/landing-pages/lp-screenshotter";
 import { fetchMediaAsBuffer } from "@/lib/storage/fetch-media-buffer";
-import type { Data } from "@puckeditor/core";
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 
 /** Verdict-bucket uit een 0-100 score — zelfde grenzen als de side-by-side judge. */
 function verdictForScore(score: number): LpFidelityResult["verdict"] {

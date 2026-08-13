@@ -2,8 +2,9 @@
 
 import React, { useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, MessageCircle } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
+import { useClawStore } from '@/stores/useClawStore';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { PreviewContent } from '../../../types/canvas.types';
 import { PuckPageBuilder } from './PuckPageBuilder';
@@ -84,12 +85,24 @@ export function PuckLayoutWrapper({ children: _children, onAdvance, deliverableI
           which path they're on. */}
       <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-2.5 text-sm text-emerald-900 flex items-center gap-2">
         <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="font-medium">{t('builder.active')}</p>
           <p className="text-xs text-emerald-800 mt-0.5">
             {t('builder.activeHint')}
           </p>
         </div>
+        {/* B1 chat-dock: opent de Brand Assistant naast de pagina — de
+            page-awareness (CanvasPage.setActiveEntity) scoped het gesprek al
+            op dit deliverable; tekst- én structuur-edits lopen via de
+            Claw-tools met propose→confirm. */}
+        <button
+          type="button"
+          onClick={() => useClawStore.getState().openClaw()}
+          className="inline-flex flex-shrink-0 items-center gap-2 rounded-full border border-emerald-300 bg-white px-4 py-1.5 text-sm font-medium text-emerald-800 shadow-sm hover:bg-emerald-100 transition-colors"
+        >
+          <MessageCircle className="h-4 w-4" />
+          {t('builder.chatWithPage')}
+        </button>
       </div>
 
       <PuckPageBuilder

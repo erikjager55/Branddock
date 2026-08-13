@@ -40,7 +40,7 @@ assert('/robots.txt passthrough op subdomein', decideHostRoute('acme.branddock.a
 assert('/llms.txt passthrough op subdomein', decideHostRoute('acme.branddock.app', '/llms.txt').passthrough === true);
 assert(
   'gewone slug wordt nog steeds herschreven',
-  decideHostRoute('acme.branddock.app', '/pricing').rewriteTo === '/p/pricing?workspace=acme',
+  decideHostRoute('acme.branddock.app', '/pricing').rewriteTo === '/p/acme/pricing',
 );
 
 console.log('\n── requestOrigin ──');

@@ -33,6 +33,11 @@ jobs:
           DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
           BETTER_AUTH_SECRET: "ci-build-secret-not-real"
           BETTER_AUTH_URL: "http://localhost:3000"
+          # Next's build-TS-fase overschrijdt Node's default ~4GB-heap sinds de
+          # webpage-builder-rework (inference over de 22-component-registry na
+          # de Puck-exit; kale `tsc --noEmit` past er wél in). Runner heeft
+          # 16GB. Type-versmalling = follow-up in tasks/lp-review-followups.md.
+          NODE_OPTIONS: "--max-old-space-size=8192"
 
   e2e:
     runs-on: ubuntu-latest

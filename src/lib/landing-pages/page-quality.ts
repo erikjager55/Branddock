@@ -1,5 +1,9 @@
 import { wordCount, componentTypeCounts, flattenPuckTextForJudge, type PuckLikeData } from './puck-data-flatten';
 import type { CanvasContextStack } from '../ai/canvas-context';
+import {
+  evaluateLandingPageQuality,
+  type LandingPageDimensionScores,
+} from './landing-page-quality';
 
 /**
  * Page-quality stub for Phase 6 auto-iterate. Production replaces this
@@ -65,6 +69,90 @@ export function evaluatePageQuality(data: PuckLikeData): PageQualityResult {
   };
 }
 
+// ─── Type-aware dispatch (B5 — lp-quality-dimensions-live) ───
+
+/** Welke evaluator een type-aware score produceerde. */
+export type PageQualityEvaluator = 'landing-page-dimensions' | 'generic-heuristic';
+
+/**
+ * Resultaat van `evaluatePageQualityForType`: het bestaande
+ * `PageQualityResult`-contract (routes/consumers blijven ongewijzigd werken),
+ * verrijkt met de evaluator-marker en — op het LP-dimensie-pad — de
+ * dimensie-breakdown zodat de diff-modal kan tonen WAAROM een score laag is.
+ */
+export interface TypeAwarePageQualityResult extends PageQualityResult {
+  evaluator: PageQualityEvaluator;
+  /** 6-dimensie-breakdown — alleen aanwezig wanneer evaluator = 'landing-page-dimensions'. */
+  dimensions?: LandingPageDimensionScores;
+}
+
+/**
+ * Route-facing shape: `PageQualityResult` met de type-aware velden optioneel.
+ * Het F-VAL deep-path retourneert de kale `PageQualityResult`; het type-aware
+ * pad vult `evaluator` + `dimensions`. Routes annoteren hun score-functies met
+ * dit type zodat `judgement.dimensions` toegankelijk is zonder narrowing.
+ */
+export type MaybeTypeAwarePageQualityResult = PageQualityResult & {
+  evaluator?: PageQualityEvaluator;
+  dimensions?: LandingPageDimensionScores;
+};
+
+/**
+ * Type-aware page-quality dispatch (B5): gebruikt de 6 LP-specifieke
+ * dimensies (`evaluateLandingPageQuality`, deterministisch — geen AI, geen
+ * screenshots, geen DB) wanneer het content-type `landing-page` is, en valt
+ * voor elk ander/onbekend type terug op de generieke 5-signal heuristic.
+ *
+ * Bewust ALLEEN `landing-page` op het dimensie-pad — `product-page` is
+ * geëvalueerd en afgewezen omdat 3 van de 6 dimensies structureel misfiren
+ * op de canonieke product-tree (`buildProductPageTemplateFromStructured`):
+ *   1. anatomyCompleteness eist ≥2 FeatureGrids (trust-strip + features, LP-spec
+ *      §2) + een Testimonial; het product-template emit max 1 FeatureGrid (of een
+ *      FeatureSplit = 0 grids) en heeft géén testimonial-slot → schema-perfecte
+ *      product-page blijft op 4/6 ≈ 67 hangen.
+ *   2. socialProofPresence vereist een Testimonial voor 50 van de 100 punten →
+ *      permanent gecapt op 50 (0 bij FeatureSplit-rendering).
+ *   3. objectionCoverage's 100-band eist 5+ FAQ-items; productPageVariantSchema
+ *      capt `faq` op max 4 → permanent gecapt op 60.
+ * Die deficits zitten in de STRUCTUUR die het type niet mag hebben — de
+ * text-only auto-iterate-rewrite kan ze nooit repareren, dus de composite zou
+ * oneerlijk laag zijn en zinloze rewrites triggeren. heroClarity en
+ * singleCtaDiscipline zouden wél passen (het product-schema enforcet single-CTA
+ * via superRefine), maar 3/6 misfirende dimensies is diskwalificerend.
+ *
+ * WCAG (dim 7) en visual brand-fit (dim 8) blijven hier bewust uit: brandTokens
+ * vergt een styleguide-fetch en vision een screenshot + AI-call — beide horen
+ * niet op dit synchrone hot path. Threshold blijft 70 (beide modules definiëren 70).
+ */
+export function evaluatePageQualityForType(
+  data: PuckLikeData,
+  contentType: string | null | undefined,
+): TypeAwarePageQualityResult {
+  if (contentType === 'landing-page') {
+    const lp = evaluateLandingPageQuality({ data });
+    const counts = lp.signals.components;
+    return {
+      score: lp.composite,
+      threshold: lp.threshold,
+      thresholdMet: lp.thresholdMet,
+      evaluator: 'landing-page-dimensions',
+      dimensions: lp.dimensions,
+      // Genormaliseerd naar het generieke signals-contract zodat bestaande
+      // response-consumers (PuckPageBuilder) niets merken van de swap.
+      signals: {
+        wordCount: lp.signals.wordCount,
+        hasHero: (counts.BrandHero ?? 0) > 0,
+        hasCta: (counts.BrandCTA ?? 0) > 0,
+        hasProof: (counts.Testimonial ?? 0) > 0
+          || (counts.PricingTable ?? 0) > 0
+          || (counts.FAQ ?? 0) > 0,
+        components: counts,
+      },
+    };
+  }
+  return { ...evaluatePageQuality(data), evaluator: 'generic-heuristic' };
+}
+
 // ─── F-VAL judge integration (production path) ───────────────
 
 /**
@@ -118,8 +206,9 @@ export type FvalRunner = (input: {
  *      identical to the heuristic stub
  *
  * Fallback: when the runner returns null (word count < 50, missing brand
- * personality, etc.) we fall back to the heuristic stub so the route never
- * crashes — same defense-in-depth pattern as the spike auto-iterate flow.
+ * personality, etc.) we fall back to the type-aware evaluator (B5) so the
+ * route never crashes — same defense-in-depth pattern as the spike
+ * auto-iterate flow, now consistent with the fast heuristic-mode path.
  */
 export async function evaluatePageQualityViaFVAL(
   input: FvalEvaluatorInputs,
@@ -136,7 +225,9 @@ export async function evaluatePageQualityViaFVAL(
   });
 
   if (!fvalOutcome) {
-    return evaluatePageQuality(input.data);
+    // B5: zelfde type-aware fallback als het snelle pad — de deep-score-route
+    // degradeert dan naar exact dezelfde evaluator als heuristic-mode.
+    return evaluatePageQualityForType(input.data, input.contentTypeId);
   }
 
   // Dimensie 8 — vision-judge: in deze server-context skippen omdat
