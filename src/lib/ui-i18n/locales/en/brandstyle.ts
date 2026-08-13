@@ -151,8 +151,14 @@ const brandstyle = {
     imagery: 'Imagery',
     visual_system: 'Visual System',
     design_system: 'Design System',
+    preview: 'Preview',
     manifest: 'Manifest',
     history: 'History',
+  },
+  preview: {
+    title: 'Brand Preview',
+    subtitle:
+      'Your extracted style applied to a sample page with real content from your site — extraction errors are immediately visible here.',
   },
   manifest: {
     title: 'Brand Manifest',

@@ -269,6 +269,10 @@ export interface BrandStyleguide {
   // `unknown` laat de UI-componenten zelf casten via een type guard.
   semanticTokens: unknown | null;
 
+  // W4 preview — echte headlines/CTA's uit de scrape (Puck/specimen-fixtures).
+  // Shape: { headlines?, ctaLabels?, featureTitles?, testimonialQuotes? }
+  fixtureSamples?: unknown | null;
+
   // Fase 5 brand-fidelity — WCAG-geverifieerde kleurcombinaties (buildColorPairings).
   // Shape: Array<{ label, background, foreground, contrastRatio, wcag, usage }>.
   colorPairings?: ColorPairing[] | null;
@@ -366,6 +370,6 @@ export interface UpdateReviewBody {
 }
 
 // tone_of_voice + tone-of-voice verwijderd — verhuisd naar Brand Voice (ADR 2026-05-15)
-export type StyleguideTab = "brand_assets" | "colors" | "typography" | "spacing" | "components" | "imagery" | "visual_system" | "design_system" | "manifest" | "history";
+export type StyleguideTab = "brand_assets" | "colors" | "typography" | "spacing" | "components" | "imagery" | "visual_system" | "design_system" | "preview" | "manifest" | "history";
 
 export type SaveForAiSection = "logo" | "colors" | "typography" | "imagery" | "design-language" | "visual-language";

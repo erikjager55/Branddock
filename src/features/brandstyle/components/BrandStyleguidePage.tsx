@@ -26,6 +26,7 @@ import { VisualSystemSection } from "./VisualSystemSection";
 import { BrandstyleCalibrationPanel } from "./BrandstyleCalibrationPanel";
 import { DesignSystemSection } from "./DesignSystemSection";
 import { ManifestSection } from "./ManifestSection";
+import { BrandPreviewSection } from "./BrandPreviewSection";
 import { HistorySection } from "./HistorySection";
 import { useAnalyzeUrl } from "../hooks/useBrandstyleHooks";
 
@@ -172,6 +173,7 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
             {activeTab === "imagery" && <ImagerySection styleguide={styleguide} canEdit={canEdit} />}
             {activeTab === "visual_system" && <VisualSystemSection styleguide={styleguide} canEdit={canEdit} />}
             {activeTab === "design_system" && <DesignSystemSection styleguide={styleguide} />}
+            {activeTab === "preview" && <BrandPreviewSection styleguide={styleguide} />}
             {activeTab === "manifest" && <ManifestSection canEdit={canEdit} />}
             {activeTab === "history" && (
               <HistoryTabContent styleguide={styleguide} />
