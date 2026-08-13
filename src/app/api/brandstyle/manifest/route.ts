@@ -21,7 +21,7 @@ import {
 async function loadStyleguide(workspaceId: string) {
   return prisma.brandStyleguide.findUnique({
     where: { workspaceId },
-    include: { colors: true, fonts: true, logos: true },
+    include: { colors: true, fonts: true, logos: true, rules: true },
   });
 }
 

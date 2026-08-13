@@ -18,6 +18,7 @@ import type {
   StyleguideColor,
   StyleguideFont,
   StyleguideLogo,
+  StyleguideRule,
 } from '@prisma/client';
 import type { SemanticTokens } from './semantic-role-resolver';
 import { stripAnalyzerMarkers, stripAnalyzerMarkersFromList } from './analyzer-markers';
@@ -66,6 +67,8 @@ export type ManifestStyleguideInput = BrandStyleguide & {
   colors: StyleguideColor[];
   fonts: StyleguideFont[];
   logos: StyleguideLogo[];
+  /** W2: gestructureerde regels — wanneer aanwezig winnen die van de *Donts-velden. */
+  rules?: StyleguideRule[];
 };
 
 // ─── Assembly ──────────────────────────────────────────
@@ -156,6 +159,21 @@ function buildHardRules(styleguide: ManifestStyleguideInput): ManifestRule[] {
     },
   ];
 
+  // W2: gestructureerde StyleguideRule-records winnen van de legacy
+  // *Donts-import — die blijft de fallback voor nog niet gemigreerde
+  // workspaces.
+  if (styleguide.rules && styleguide.rules.length > 0) {
+    for (const rule of styleguide.rules) {
+      rules.push({
+        text: rule.description ? `${rule.title} — ${rule.description}` : rule.title,
+        evidence: `${rule.section} (${rule.kind.toLowerCase()})`,
+        source: normalizeRuleSource(rule.source),
+        severity: rule.severity,
+      });
+    }
+    return rules;
+  }
+
   const dontSections: Array<{ items: string[]; evidence: string; gated: boolean }> = [
     { items: styleguide.colorDonts ?? [], evidence: 'colorDonts', gated: styleguide.colorsSavedForAi },
     { items: styleguide.logoDonts ?? [], evidence: 'logoDonts', gated: styleguide.logoSavedForAi },
@@ -186,6 +204,13 @@ function buildHardRules(styleguide: ManifestStyleguideInput): ManifestRule[] {
     }
   }
   return rules;
+}
+
+/** Map het vrije source-veld naar het manifest-vocabulaire (onbekend → scraped). */
+function normalizeRuleSource(source: string): ManifestRuleSource {
+  if (source === 'recommended' || source === 'user' || source === 'derived') return source;
+  if (source === 'override') return 'user';
+  return 'scraped';
 }
 
 /** Fonts zonder bestand met commerciële/onbekende beschikbaarheid → substitutie-vlag (M5). */
