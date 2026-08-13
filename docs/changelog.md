@@ -35,6 +35,14 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ---
 
+## 2026-08
+
+### 454. Designbibliotheek-verbeterplan uitgevoerd — Brand Manifest, Brand Library-contract, regels, preview, refresh, Brand Kit Bundle
+
+Alle stappen van `docs/specs/brandstyle-designbibliotheek-verbeterplan.md` in één werkpakket uitgevoerd (Stap 0 + W1-W7). **Stap 0**: handgemaakt DTS Ede-manifest + A/B-protocol (`docs/specs/spike-stap0-brand-manifest-dts-ede.md`; de A/B-run zelf vereist lokale DB+keys). **W1**: `BrandStyleguide.brandManifest/manifestGeneratedAt/manifestVersion` + deterministische `manifest-builder.ts` (quick facts, harde regels met provenance, semantic tokens, voice-baseline, substituties, known gaps, iteration guide), geïnjecteerd als primaire merkbron in `getBrandContext`, met Manifest-tab (digest + agent-view, "what you see is what the AI gets") en `GET/POST /api/brandstyle/manifest`. **W7**: `src/lib/brand-library/` — `getBrandLibrary(workspaceId,{view})` als verplicht consumptiepad met 7 channel-views (copy/web/image/video/audio/social/email) en `manifestVersion` als stempel-contract; golden-eval `eval:brand-manifest-golden` (12 checks). **W2**: `StyleguideRule`-model (DO/DONT/HARD_RULE, severity BLOCKING/ADVISORY als Brandclaw-gate, source in token-provenance-vocabulaire, constraint Json) + CRUD-routes + donts-migratiescript; builder gebruikt gestructureerde regels boven legacy `*Donts`. **W3**: gebruiksratio's uit `observedColorPairs` als richtlijn in het manifest ("#F1F1F1 ≈62% of observed backgrounds"). **W4**: pure specimen-generators (`specimens.ts`, met eerlijke floor cards) + Preview-tab die de stijl op échte `fixtureSamples` toepast. **W5**: `rescrape-brand.ts` default niet-destructief (refresh, `--hard` voor wissen), 6 `BRANDSTYLE_*`-flags gedocumenteerd in `.env.example`, finalize geeft kritieke kalibratie-warnings mee. **W6**: Brand Kit Bundle-export (`/api/export/brand-kit-bundle`, zip in DTS Ede-anatomie: README/SKILL.md/DESIGN.md+IterationGuide+KnownGaps/tokens.css met @font-face/tokens.json/fonts/assets/preview/ui_kit) + registratie in de export-dropdown. Gates: tsc 0 errors, bestaande golden-set 21/21, nieuwe eval 12/12. Nog lokaal nodig: `npx prisma db push` (3 velden + StyleguideRule), donts-migratie, Stap 0 A/B-run. Bewust vervolgwerk: consumer-migratie naar de accessor (lint-regel), reviewstatus-reset per sectie-wijziging, renderer-handhaving van visuele constraints.
+
+- Task: `-` (uitgevoerd vanuit spec `docs/specs/brandstyle-designbibliotheek-verbeterplan.md`, branch `claude/designbibliotheek-brandstyle-jrptl0`)
+
 ## 2026-07
 
 ### 453. 8 offline workspaces naar prod gemigreerd + all-in-one import-tooling
