@@ -57,6 +57,12 @@ function makeFixture(): ManifestStyleguideInput {
       resolvedAt: '2026-08-13T00:00:00.000Z',
       resolverVersion: '1.0.0',
     },
+    observedColorPairs: {
+      '#222222 | #F1F1F1': 60,
+      '#FFFFFF | #0060A0': 25,
+      '#222222 | #FFFFFF': 12,
+      '#FFFFFF | auto': 3,
+    },
     colors: [
       { name: 'Royal Blue', hex: '#0060A0', category: 'PRIMARY', confidence: 'high' },
       { name: 'Bootstrap Blue', hex: '#0D6EFD', category: 'NEUTRAL', confidence: 'low' },
@@ -108,6 +114,12 @@ function run(): number {
   checks.push({
     ok: manifest.tokens?.colors?.primary === '#0060A0',
     label: 'semantic tokens pass through unrenamed',
+  });
+  checks.push({
+    ok:
+      (manifest.usageRatios ?? []).some((r) => r.startsWith('#F1F1F1') && r.includes('62%')) &&
+      !(manifest.usageRatios ?? []).some((r) => r.includes('auto')),
+    label: 'usage ratios derived from observed pairs (auto excluded)',
   });
   checks.push({
     ok: markdown.includes('## Known gaps') && markdown.includes('## Rules'),

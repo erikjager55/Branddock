@@ -55,6 +55,11 @@ export interface BrandManifest {
   hardRules: ManifestRule[];
   /** Subset van semanticTokens.resolved — het manifest hernoemt niets. */
   tokens?: SemanticTokens['resolved'];
+  /**
+   * W3: gebruiksratio's afgeleid uit werkelijk geobserveerde
+   * (tekst|achtergrond)-frequenties — richtlijn i.p.v. alleen waarden.
+   */
+  usageRatios?: string[];
   voiceBaseline?: string;
   imagery?: { style?: string; guidelines: string[]; donts: string[] };
   substitutions: ManifestSubstitution[];
@@ -98,6 +103,8 @@ export function buildBrandManifest(
   const semantic = styleguide.semanticTokens as SemanticTokens | null;
   if (semantic?.resolved && styleguide.colorsSavedForAi) {
     manifest.tokens = { ...semantic.resolved, ...(semantic.overrides ?? {}) };
+    const ratios = buildUsageRatios(styleguide.observedColorPairs);
+    if (ratios.length > 0) manifest.usageRatios = ratios;
   }
 
   if (voiceguide) {
@@ -252,6 +259,32 @@ function buildIterationGuide(): string[] {
   ];
 }
 
+/**
+ * Leid achtergrond-gebruiksratio's af uit de geobserveerde
+ * (tekstkleur " | " achtergrond)-frequenties (multi-page scrape).
+ * Alleen aandelen ≥5% — dit is een richtlijn ("~60% surface"), geen
+ * pixel-statistiek; 'auto'-surfaces (image-achtergronden) tellen niet mee.
+ */
+function buildUsageRatios(observedColorPairs: unknown): string[] {
+  if (!observedColorPairs || typeof observedColorPairs !== 'object') return [];
+  const totals = new Map<string, number>();
+  let sum = 0;
+  for (const [key, count] of Object.entries(observedColorPairs as Record<string, unknown>)) {
+    if (typeof count !== 'number' || count <= 0) continue;
+    const bg = key.split(' | ')[1]?.trim();
+    if (!bg || bg === 'auto') continue;
+    totals.set(bg, (totals.get(bg) ?? 0) + count);
+    sum += count;
+  }
+  if (sum === 0) return [];
+  return Array.from(totals.entries())
+    .map(([bg, count]) => ({ bg, share: count / sum }))
+    .filter((entry) => entry.share >= 0.05)
+    .sort((a, b) => b.share - a.share)
+    .slice(0, 4)
+    .map((entry) => `${entry.bg} ≈${Math.round(entry.share * 100)}% of observed backgrounds`);
+}
+
 function extractPhotographyMood(photographyStyle: unknown): string | undefined {
   if (!photographyStyle || typeof photographyStyle !== 'object') return undefined;
   const style = photographyStyle as { mood?: unknown };
@@ -293,6 +326,9 @@ export function renderBrandManifestMarkdown(manifest: BrandManifest): string {
     const roundedEntries = Object.entries(manifest.tokens.rounded ?? {});
     if (roundedEntries.length > 0) {
       lines.push(`- Rounded: ${roundedEntries.map(([k, v]) => `${k} ${v}px`).join(' · ')}`);
+    }
+    if (manifest.usageRatios && manifest.usageRatios.length > 0) {
+      lines.push(`- Usage: ${manifest.usageRatios.join(' · ')}`);
     }
     lines.push('');
   }
