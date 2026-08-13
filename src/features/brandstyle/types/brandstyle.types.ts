@@ -366,6 +366,6 @@ export interface UpdateReviewBody {
 }
 
 // tone_of_voice + tone-of-voice verwijderd — verhuisd naar Brand Voice (ADR 2026-05-15)
-export type StyleguideTab = "brand_assets" | "colors" | "typography" | "spacing" | "components" | "imagery" | "visual_system" | "design_system" | "history";
+export type StyleguideTab = "brand_assets" | "colors" | "typography" | "spacing" | "components" | "imagery" | "visual_system" | "design_system" | "manifest" | "history";
 
 export type SaveForAiSection = "logo" | "colors" | "typography" | "imagery" | "design-language" | "visual-language";

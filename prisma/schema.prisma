@@ -1937,6 +1937,15 @@ model BrandStyleguide {
   // Zie src/lib/brandstyle/semantic-role-resolver.ts voor volledige type.
   semanticTokens Json?
 
+  // Brand Manifest (designbibliotheek-verbeterplan W1) — gecureerd, tweeledig
+  // eindproduct: quick facts + harde regels + tokens + voice-baseline +
+  // substituties/known gaps. Shape: BrandManifest (manifest-builder.ts).
+  // manifestVersion is het consumptiecontract (W7): bump bij elke regeneratie;
+  // gegenereerde artefacten stempelen de gebruikte versie.
+  brandManifest       Json?
+  manifestGeneratedAt DateTime?
+  manifestVersion     Int       @default(0)
+
   // Kleurcombinaties (Fase 5 brand-fidelity) — WCAG-geverifieerde fg/bg-paren
   // afgeleid uit het palet door buildColorPairings (color-pairings.ts).
   // Shape: Array<{ label, background, foreground, contrastRatio, wcag, usage }>

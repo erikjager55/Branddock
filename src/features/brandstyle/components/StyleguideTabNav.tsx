@@ -1,6 +1,6 @@
 "use client";
 
-import { Image as ImageIcon, Palette, Type, Ruler, Blocks, Camera, Layers, Code2, Clock } from "lucide-react";
+import { Image as ImageIcon, Palette, Type, Ruler, Blocks, Camera, Layers, Code2, FileText, Clock } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { StyleguideTab } from "../types/brandstyle.types";
@@ -23,6 +23,8 @@ const TABS: Tab[] = [
   { id: "imagery", icon: Camera },
   { id: "visual_system", icon: Layers },
   { id: "design_system", icon: Code2 },
+  // W1 designbibliotheek-verbeterplan: gecureerd Brand Manifest (digest + agent-view)
+  { id: "manifest", icon: FileText },
   { id: "history", icon: Clock },
 ];
 
