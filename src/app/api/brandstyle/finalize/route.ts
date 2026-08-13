@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, resolveWorkspaceId } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { buildBrandstyleCalibrationReport } from "@/lib/brandstyle/calibration-report";
 
 // =============================================================
 // POST /api/brandstyle/finalize — close the review and finalize
@@ -23,11 +24,31 @@ export async function POST() {
 
     const styleguide = await prisma.brandStyleguide.findUnique({
       where: { workspaceId },
-      select: { id: true },
+      select: {
+        id: true,
+        typeScale: true,
+        colors: { select: { confidence: true, category: true } },
+        fonts: { select: { source: true, availability: true, fileUrl: true } },
+        logos: { select: { variant: true } },
+      },
     });
     if (!styleguide) {
       return NextResponse.json({ error: "No styleguide found" }, { status: 404 });
     }
+
+    // W5 zachte gate: kritieke kalibratie-issues blokkeren finalize niet
+    // ("I'm done, stop asking me" blijft gelden) maar reizen mee in de
+    // response zodat de UI ze kan tonen — publish bepaalt immers wat álle
+    // AI-generatie als merkcontext krijgt.
+    const calibration = buildBrandstyleCalibrationReport({
+      colors: styleguide.colors,
+      fonts: styleguide.fonts,
+      logos: styleguide.logos,
+      typeScaleCount: Array.isArray(styleguide.typeScale)
+        ? styleguide.typeScale.length
+        : undefined,
+    });
+    const criticalWarnings = calibration.asks.filter((a) => a.severity === "critical");
 
     await prisma.$transaction([
       prisma.styleguideReview.deleteMany({ where: { styleguideId: styleguide.id } }),
@@ -40,7 +61,7 @@ export async function POST() {
     invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, warnings: criticalWarnings });
   } catch (error) {
     console.error("[POST /api/brandstyle/finalize]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -150,8 +150,9 @@ npx prisma db push
 npx prisma generate
 DATABASE_URL="postgresql://erikjager:@localhost:5432/branddock" npx tsx prisma/seed.ts
 
-# Re-analyse één workspace-brandstyle (DESTRUCTIEF — wist reviews/edits van die styleguide)
-npx tsx scripts/rescrape-brand.ts <workspaceNameBevat>
+# Re-analyse één workspace-brandstyle (default = refresh, behoudt reviews/edits;
+# --hard = destructief, wist de hele styleguide incl. reviews/rules)
+npx tsx scripts/rescrape-brand.ts <workspaceNameBevat> [--hard]
 
 # Type check
 npx tsc --noEmit
