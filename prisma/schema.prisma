@@ -6849,6 +6849,9 @@ model FormSubmission {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, formId, createdAt])
+  /// Submissions-route filtert óók op landingPageId-IN binnen de workspace
+  /// (OR-tak) — zonder deze index wordt dat een scan bij volume.
+  @@index([workspaceId, landingPageId, createdAt])
 }
 
 /**

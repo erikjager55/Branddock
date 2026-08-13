@@ -32,12 +32,40 @@ console.log('\n2. blockers');
   const withPlaceholder = structuredClone(CLEAN);
   withPlaceholder.content[0].props.headline = 'Headline placeholder';
   const g = runPublishGate({ puckData: withPlaceholder, contentType: 'landing-page' });
-  assert('placeholder-copy blokkeert', !g.ok && g.findings.some((f) => f.code === 'placeholder-copy'));
+  assert('template-vorm placeholder (edge) blokkeert', !g.ok && g.findings.some((f) => f.code === 'placeholder-copy' && f.severity === 'blocker'));
+
+  // Review 2026-08-13 M3: het woord middenin echte klant-copy is een warning
+  // met override — anders is zo'n pagina permanent onpubliceerbaar.
+  const midSentence = structuredClone(CLEAN);
+  midSentence.content[0].props.sub = 'Ons formulier toont een placeholder in elk invoerveld voor context.';
+  const gMid = runPublishGate({ puckData: midSentence, contentType: 'landing-page' });
+  assert(
+    'placeholder middenin copy is warning, geen blocker',
+    gMid.ok && gMid.findings.some((f) => f.code === 'placeholder-copy' && f.severity === 'warning'),
+    JSON.stringify(gMid.findings),
+  );
+
+  // Edge-detectie werkt ook genest in arrays (template-defaults zitten in items).
+  const nested = structuredClone(CLEAN);
+  (nested.content[1].props as Record<string, unknown>).features = [{ heading: 'Pain point placeholder', body: 'x' }];
+  const gNested = runPublishGate({ puckData: nested, contentType: 'landing-page' });
+  assert('geneste array-placeholder blokkeert', !gNested.ok && gNested.findings.some((f) => f.code === 'placeholder-copy' && f.severity === 'blocker'));
 
   const noCta = structuredClone(CLEAN);
   noCta.content = noCta.content.filter((c) => c.type !== 'BrandCTA');
   const g2 = runPublishGate({ puckData: noCta, contentType: 'landing-page' });
-  assert('ontbrekende verplichte sectie blokkeert', !g2.ok && g2.findings.some((f) => f.code === 'missing-required-section'));
+  assert('ontbrekende verplichte sectie blokkeert (eerste publish)', !g2.ok && g2.findings.some((f) => f.code === 'missing-required-section' && f.severity === 'blocker'));
+
+  // Republish van een reeds-live pagina: degradeert naar warning (tekstfix
+  // op een oude tree moet altijd uit kunnen), placeholder blijft blocker.
+  const g2b = runPublishGate({ puckData: noCta, contentType: 'landing-page', hasBeenPublished: true });
+  assert(
+    'ontbrekende verplichte sectie is warning bij republish',
+    g2b.ok && g2b.findings.some((f) => f.code === 'missing-required-section' && f.severity === 'warning'),
+    JSON.stringify(g2b.findings),
+  );
+  const gPlaceholderRepub = runPublishGate({ puckData: withPlaceholder, contentType: 'landing-page', hasBeenPublished: true });
+  assert('placeholder blijft blocker, óók bij republish', !gPlaceholderRepub.ok);
 
   const g3 = runPublishGate({ puckData: { niet: 'een tree' }, contentType: 'landing-page' });
   assert('ongeldige tree blokkeert', !g3.ok && g3.findings.some((f) => f.code === 'invalid-tree'));

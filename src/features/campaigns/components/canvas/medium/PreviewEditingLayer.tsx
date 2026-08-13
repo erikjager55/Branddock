@@ -150,7 +150,8 @@ interface SectionProposal {
   sectionId: string;
   current: SectionInstance;
   proposed: SectionInstance;
-  proposedProps: Record<string, string>;
+  /** Herschreven props — strings óf herbouwde copy-arrays (FAQ-items e.d.). */
+  proposedProps: Record<string, unknown>;
   editDistance: number;
 }
 
@@ -445,7 +446,7 @@ export function PreviewEditingLayer({
           }),
         });
         const json = (await res.json().catch(() => null)) as {
-          proposedProps?: Record<string, string>;
+          proposedProps?: Record<string, unknown>;
           editDistance?: number;
           error?: string;
         } | null;
@@ -454,7 +455,10 @@ export function PreviewEditingLayer({
           return;
         }
         if (!res.ok || !json?.proposedProps) {
-          setAiError(json?.error ?? t('pageBuilder.sectionPromptFailed'));
+          // Servermeldingen zijn Engels/dev-gericht — toon de vertaalde
+          // melding en log het detail voor debugging.
+          if (json?.error) console.warn('[section-ai]', json.error);
+          setAiError(t('pageBuilder.sectionPromptFailed'));
           return;
         }
         const proposed = {
@@ -594,7 +598,7 @@ export function PreviewEditingLayer({
             sectionId,
             sectionType,
             top: r.top - container.top,
-            left: Math.min(r.right - container.left + 8, container.width - 140),
+            left: Math.max(8, Math.min(r.right - container.left + 8, container.width - 140)),
             currentValue: original,
           });
         }

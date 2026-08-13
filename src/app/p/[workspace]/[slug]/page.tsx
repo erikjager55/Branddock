@@ -8,6 +8,7 @@ import { resolvePublishedPage } from '@/lib/landing-pages/publish-page';
 import { buildSpikePuckConfig, type SpikePuckProps } from '@/features/campaigns/components/canvas/medium/puck-config';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
 import { buildPageJsonLdForDeliverable, serializeJsonLdForHtml } from '@/lib/landing-pages/page-json-ld-server';
+import { buildPageRuntimeScriptBody } from '@/lib/landing-pages/static-compile';
 import type { SeoChecklist } from '@/lib/ai/seo-pipeline.types';
 import { seoChecklistToMetadata } from '@/lib/landing-pages/page-metadata';
 
@@ -131,6 +132,12 @@ export default async function PublishedPage({ params }: Props) {
     ctx,
   );
 
+  // Zelfde meting + form-enhancement als het artifact-pad: zonder dit script
+  // vuurt de view-beacon niet op pre-P2-publishes (inconsistente stats).
+  const hasLeadForm = Array.isArray(data?.content)
+    && data.content.some((item) => item?.type === 'LeadForm');
+  const runtimeScript = buildPageRuntimeScriptBody({ withForms: hasLeadForm });
+
   return (
     <>
       {jsonLd ? (
@@ -143,6 +150,8 @@ export default async function PublishedPage({ params }: Props) {
         />
       ) : null}
       <PageRender config={config} data={data} />
+      {/* Statisch samengesteld first-party script (geen user-input) — zie static-compile. */}
+      <script dangerouslySetInnerHTML={{ __html: runtimeScript }} />
     </>
   );
 }

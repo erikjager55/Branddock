@@ -238,6 +238,13 @@ export function SectionEditor({ config, data, contentType, onChange, onClose }: 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        // Vanuit een props-input hoort Escape het veld te verlaten, niet de
+        // hele editor dicht te klappen (wijzigingen zijn al per-keystroke
+        // gecommit, maar de sluit-verrassing is onnodig).
+        if (isEditableTarget(e.target)) {
+          (e.target as HTMLElement).blur();
+          return;
+        }
         if (addOpen) setAddOpen(false);
         else onClose();
         return;

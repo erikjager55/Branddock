@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
@@ -78,10 +79,15 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       organization: { workspaces: { some: { id: workspaceId } } },
     },
-    select: { id: true },
+    select: { id: true, role: true },
   });
   if (!membership) {
     return NextResponse.json({ error: 'No access to this workspace' }, { status: 403 });
+  }
+  // Publiceren is een outward-facing mutatie: viewers zijn read-only
+  // (zelfde member+-grens als de Claw-confirm-flow).
+  if (membership.role === 'viewer') {
+    return NextResponse.json({ error: 'Viewers cannot publish pages' }, { status: 403 });
   }
 
   const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
@@ -97,7 +103,17 @@ export async function POST(request: NextRequest) {
   // checks vóór élke publish. Blockers weigeren altijd (anti-fabricatie:
   // template-placeholder-copy mag nooit live); warnings vereisen expliciete
   // bevestiging via de twee-fasen-flow (dryRun → bevestigen → publish).
-  const gate = runPublishGate({ puckData, contentType: deliverable.contentType });
+  // Republish-context: een pagina die al eens live ging mag niet hard
+  // stranden op een verplichte-sectie-check die toen nog niet bestond.
+  const existingPublish = await prisma.landingPage.findFirst({
+    where: { deliverableId: deliverable.id, publishedAt: { not: null } },
+    select: { id: true },
+  });
+  const gate = runPublishGate({
+    puckData,
+    contentType: deliverable.contentType,
+    hasBeenPublished: existingPublish !== null,
+  });
   if (body.dryRun === true) {
     return NextResponse.json({ gate });
   }
@@ -242,6 +258,15 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ...result, url });
   } catch (err) {
+    // Gelijktijdige publishes racen op @@unique([landingPageId, version]) —
+    // de verliezer krijgt P2002 (data blijft consistent). Dat is een
+    // retryable conflict, geen serverfout.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'Er liep al een publish voor deze pagina — probeer het opnieuw' },
+        { status: 409 },
+      );
+    }
     const message = err instanceof Error ? err.message : 'Publish failed';
     return NextResponse.json({ error: message }, { status: 500 });
   }

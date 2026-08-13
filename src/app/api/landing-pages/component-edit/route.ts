@@ -23,9 +23,10 @@ import {
  *    so the 4 preset prompts stay version-controlled
  *  - locked: clients pass it; route returns 423 (Locked) without an AI call
  *    so we never waste tokens on a component the user wants left alone
- *  - TEXT_FIELDS_BY_TYPE covers all 8 components (FeatureGrid + PricingTable
- *    + FAQ + Footer flatten their array-fields into newline-joined strings
- *    so Claude can rewrite without violating the array shape)
+ *  - TEXT_FIELDS_BY_TYPE dekt álle 22 registry-types; array-copy (FAQ-items,
+ *    features, tiers, …) wordt via ARRAY_TEXT_FIELDS_BY_TYPE gflattend naar
+ *    dotted keys (`items.0.answer`) en na de rewrite teruggebouwd in de
+ *    gekloonde array — ids/hrefs/icons/patternKey blijven byte-gelijk
  *
  * A4 changes (lp-preview-editing):
  *  - free-text `instruction` (trimmed, 3-2000 chars) is accepted as an
@@ -55,21 +56,117 @@ interface RequestBody {
   brandName?: string | null;
 }
 
+/**
+ * Top-level string-copy per sectie-type. ÁLLE 22 registry-types staan hier —
+ * de hover-toolbar toont de promptknop voor elk type, dus een ontbrekend
+ * type betekende een 400 op de meest voorkomende secties (review 2026-08-13,
+ * M2). Types zonder top-level copy hebben een lege lijst en leunen volledig
+ * op ARRAY_TEXT_FIELDS_BY_TYPE hieronder.
+ */
 const TEXT_FIELDS_BY_TYPE: Record<string, string[]> = {
   BrandHero: ['headline', 'sub', 'ctaLabel'],
-  BrandCTA: ['label'],
+  BrandCTA: ['label', 'heading', 'riskReducer'],
   Testimonial: ['quote', 'author'],
   RichText: ['content'],
   Footer: ['companyName', 'tagline'],
+  FAQ: ['heading'],
+  FeatureGrid: [],
+  FeatureSplit: [],
+  PricingTable: [],
+  StatsBlock: [],
+  SpecTable: ['heading'],
+  ComparisonTable: ['caption'],
+  Listicle: ['heading'],
+  StickyCtaBar: ['label', 'ctaLabel'],
+  BrandNav: ['brandName', 'ctaLabel'],
+  AnchorNav: ['brandName', 'ctaLabel'],
+  StoryChapter: ['heading', 'intro'],
+  HighlightCards: [],
   // P3 lp-forms-leads: alleen de copy-velden; fields/webhookUrl/notifyEmail
   // zijn config en blijven buiten de AI-rewrite.
   LeadForm: ['heading', 'sub', 'buttonLabel', 'successMessage'],
-  // C1 anatomie-componenten: alleen top-level string-copy (array-items als
-  // bullets/items vallen buiten dit route-contract; patternKey is config).
   TrustStrip: ['metric'],
   PainBullets: ['heading', 'bridge'],
   ImpactStats: ['heading'],
 };
+
+/**
+ * Array-copy per type: `<field>.<index>.<subveld>`-flattening zodat de
+ * sectie-brede prompt óók de items herschrijft (FAQ-antwoorden, feature-
+ * teksten). Bewust alleen copy-subvelden — hrefs/icons/prices/specs zijn
+ * data of config. Nav-links (Footer/BrandNav/AnchorNav) blijven buiten
+ * scope: labels zijn navigatie, geen herschrijfbare copy.
+ */
+const ARRAY_TEXT_FIELDS_BY_TYPE: Record<string, Array<{ field: string; itemFields: string[] }>> = {
+  FAQ: [{ field: 'items', itemFields: ['question', 'answer'] }],
+  FeatureGrid: [{ field: 'features', itemFields: ['title', 'description'] }],
+  FeatureSplit: [{ field: 'features', itemFields: ['title', 'description'] }],
+  PricingTable: [{ field: 'tiers', itemFields: ['name', 'features'] }],
+  StatsBlock: [{ field: 'items', itemFields: ['label'] }],
+  HighlightCards: [{ field: 'items', itemFields: ['title', 'description'] }],
+  Listicle: [{ field: 'items', itemFields: ['title', 'body'] }],
+  StoryChapter: [{ field: 'blocks', itemFields: ['heading', 'body'] }],
+  TrustStrip: [{ field: 'items', itemFields: ['label'] }],
+  PainBullets: [{ field: 'bullets', itemFields: ['text'] }],
+  ImpactStats: [{ field: 'items', itemFields: ['label'] }],
+};
+
+/** Max array-items die we per veld aan het model voorleggen (token-budget). */
+const MAX_ARRAY_ITEMS = 20;
+
+/** Flatten top-level + array-copy naar één platte string-map met dotted keys. */
+function flattenTextProps(componentType: string, props: Record<string, unknown>): Record<string, string> {
+  const flat: Record<string, string> = {};
+  for (const key of TEXT_FIELDS_BY_TYPE[componentType] ?? []) {
+    const value = props[key];
+    if (typeof value === 'string') flat[key] = value;
+  }
+  for (const spec of ARRAY_TEXT_FIELDS_BY_TYPE[componentType] ?? []) {
+    const arr = props[spec.field];
+    if (!Array.isArray(arr)) continue;
+    arr.slice(0, MAX_ARRAY_ITEMS).forEach((item, i) => {
+      if (!item || typeof item !== 'object') return;
+      for (const sub of spec.itemFields) {
+        const value = (item as Record<string, unknown>)[sub];
+        if (typeof value === 'string') flat[`${spec.field}.${i}.${sub}`] = value;
+      }
+    });
+  }
+  return flat;
+}
+
+/**
+ * Herbouw props uit de platte (herschreven) map: top-level keys direct,
+ * dotted keys terug de gekloonde array in. Alleen declareerde velden worden
+ * aangeraakt — al het andere (ids, hrefs, icons, patternKey) blijft byte-
+ * gelijk aan currentProps.
+ */
+function rebuildProposedProps(
+  componentType: string,
+  currentProps: Record<string, unknown>,
+  flatCurrent: Record<string, string>,
+  flatProposed: Record<string, string>,
+): Record<string, unknown> {
+  const proposed: Record<string, unknown> = {};
+  for (const key of TEXT_FIELDS_BY_TYPE[componentType] ?? []) {
+    if (key in flatCurrent) proposed[key] = flatProposed[key] ?? flatCurrent[key];
+  }
+  for (const spec of ARRAY_TEXT_FIELDS_BY_TYPE[componentType] ?? []) {
+    const arr = currentProps[spec.field];
+    if (!Array.isArray(arr)) continue;
+    const rebuilt = arr.map((item, i) => {
+      if (!item || typeof item !== 'object') return item;
+      const clone: Record<string, unknown> = { ...(item as Record<string, unknown>) };
+      for (const sub of spec.itemFields) {
+        const flatKey = `${spec.field}.${i}.${sub}`;
+        if (flatKey in flatCurrent) clone[sub] = flatProposed[flatKey] ?? flatCurrent[flatKey];
+      }
+      return clone;
+    });
+    proposed[spec.field] = rebuilt;
+  }
+  return proposed;
+}
 
 const SYSTEM_PROMPT = `You are a brand-aware copywriter helping users edit text inside a visual page builder.
 
@@ -126,26 +223,23 @@ export async function POST(request: NextRequest) {
     promptDirective = freeInstruction;
   }
 
-  const textFields = TEXT_FIELDS_BY_TYPE[body.componentType];
-  if (!textFields) {
+  if (!(body.componentType in TEXT_FIELDS_BY_TYPE)) {
     return NextResponse.json(
       { error: `Component ${body.componentType} has no text-editable fields` },
       { status: 400 },
     );
   }
 
-  const currentTextProps: Record<string, string> = {};
-  for (const key of textFields) {
-    const value = body.currentProps[key];
-    if (typeof value === 'string') currentTextProps[key] = value;
-  }
+  // Platte map: top-level copy + array-copy als dotted keys (`items.0.answer`).
+  const currentTextProps = flattenTextProps(body.componentType, body.currentProps);
 
-  // B3: element-scoped rewrite — valideer het doelveld tegen de per-type
-  // allowlist en tegen de aangeleverde props zodat het model exact één veld
-  // te zien krijgt en de rest gegarandeerd onaangeroerd terugkomt.
+  // B3: element-scoped rewrite — valideer het doelveld tegen de platte map
+  // (top-level contract van de client; dotted array-keys zijn ook geldig)
+  // zodat het model exact één veld te zien krijgt en de rest gegarandeerd
+  // onaangeroerd terugkomt.
   const targetField = typeof body.targetField === 'string' ? body.targetField : null;
   if (targetField !== null) {
-    if (!textFields.includes(targetField)) {
+    if (!(targetField in currentTextProps)) {
       return NextResponse.json(
         { error: `targetField "${targetField}" is not a text field of ${body.componentType}` },
         { status: 400 },
@@ -189,7 +283,8 @@ export async function POST(request: NextRequest) {
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
       ],
-      { useCase: 'CHAT', temperature: 0.4, maxTokens: 600 },
+      // 1500: array-flattening (FAQ met 6+ Q&A's) past niet in de oude 600.
+      { useCase: 'CHAT', temperature: 0.4, maxTokens: 1500 },
     );
 
     const parsed = parseJsonContent(result.content);
@@ -200,23 +295,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const proposedProps: Record<string, string> = {};
-    for (const key of textFields) {
-      // B3: buiten het doelveld komt álles ongewijzigd terug — het model
-      // heeft die velden niet eens gezien (promptTextProps is gescoped).
+    // Herschreven platte map: alleen keys die we het model gaven; buiten het
+    // doelveld komt álles ongewijzigd terug (het model zag die keys niet eens).
+    const flatProposed: Record<string, string> = {};
+    for (const key of Object.keys(currentTextProps)) {
       if (targetField !== null && key !== targetField) {
-        if (typeof currentTextProps[key] === 'string') proposedProps[key] = currentTextProps[key];
+        flatProposed[key] = currentTextProps[key];
         continue;
       }
       const value = parsed[key];
-      if (typeof value === 'string' && value.trim().length > 0) {
-        proposedProps[key] = value.trim();
-      } else {
-        proposedProps[key] = currentTextProps[key] ?? '';
-      }
+      flatProposed[key] =
+        typeof value === 'string' && value.trim().length > 0 ? value.trim() : currentTextProps[key];
     }
 
-    const editDistance = computeEditDistancePct(currentTextProps, proposedProps);
+    const editDistance = computeEditDistancePct(currentTextProps, flatProposed);
+    const proposedProps = rebuildProposedProps(
+      body.componentType,
+      body.currentProps,
+      currentTextProps,
+      flatProposed,
+    );
 
     return NextResponse.json({
       proposedProps,

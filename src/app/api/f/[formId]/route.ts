@@ -54,6 +54,20 @@ const CORS_HEADERS: Record<string, string> = {
 /** Requests per minuut per IP+formId — royaal voor mensen, stopt scripts. */
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 60_000;
+/**
+ * Grove tweede laag per IP over ÁLLE forms: de per-formId-bucket is te
+ * omzeilen door formKey-rotatie (de key is attacker-controlled en de
+ * workspaceId staat publiek in elke gepubliceerde form-action) — review
+ * 2026-08-13, M2. Een mens dient nooit >20 formulieren/min in vanaf één IP.
+ */
+const IP_RATE_LIMIT_MAX = 20;
+/**
+ * Dagcap per workspace (alle forms, alle IP's samen): begrenst DB-groei en
+ * notify/webhook-kosten bij gedistribueerde spam. 500/dag is ver boven elk
+ * legitiem pilot-volume; verhoog bewust wanneer een klant er tegenaan loopt.
+ */
+const WORKSPACE_DAY_CAP = 500;
+const DAY_MS = 24 * 60 * 60_000;
 /** Sneller dan dit tussen render/load en submit = bot (spec P3). */
 const MIN_SUBMIT_MS = 2_000;
 /** Early-reject vóór body-parse; ruim boven de 10KB-datacap (multipart-overhead). */
@@ -283,13 +297,16 @@ export async function POST(
     return jsonResponse({ error: 'Payload too large' }, 413);
   }
 
-  const rate = await checkGenericRateLimit(
-    `leadform:${clientIp(request)}:${formId}`,
-    RATE_LIMIT_MAX,
-    RATE_LIMIT_WINDOW_MS,
-  );
-  if (!rate.allowed) {
-    const retryAfter = Math.max(1, Math.ceil((rate.resetAt.getTime() - Date.now()) / 1000));
+  // Twee lagen: fijn per IP+formId (burst op één formulier) én grof per IP
+  // over alle forms — de fijne laag alleen is via formKey-rotatie te omzeilen.
+  const ip = clientIp(request);
+  const [rate, ipRate] = await Promise.all([
+    checkGenericRateLimit(`leadform:${ip}:${formId}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS),
+    checkGenericRateLimit(`leadform:ip:${ip}`, IP_RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS),
+  ]);
+  if (!rate.allowed || !ipRate.allowed) {
+    const resetAt = !rate.allowed ? rate.resetAt : ipRate.resetAt;
+    const retryAfter = Math.max(1, Math.ceil((resetAt.getTime() - Date.now()) / 1000));
     return jsonResponse({ error: 'Rate limit exceeded', retryAfter }, 429, { 'Retry-After': String(retryAfter) });
   }
 
@@ -341,6 +358,22 @@ export async function POST(
   });
   if (!workspace) {
     return jsonResponse({ error: 'Unknown form' }, 404);
+  }
+
+  // Dagcap per workspace — laatste verdedigingslaag tegen gedistribueerde
+  // spam (per-IP-limieten helpen niet tegen een botnet). Bewust ná de
+  // workspace-check zodat een verzonnen workspaceId de bucket niet vult.
+  const dayCap = await checkGenericRateLimit(
+    `leadform:ws:${workspace.id}`,
+    WORKSPACE_DAY_CAP,
+    DAY_MS,
+  );
+  if (!dayCap.allowed) {
+    console.warn(`[api/f] workspace-dagcap bereikt: ${workspace.id}`);
+    // Bot-achtig antwoord: succes tonen zonder opslag (zoals honeypot) zou
+    // ook kunnen, maar een eerlijke 429 laat een échte klant met een piek
+    // contact opnemen i.p.v. stil leads verliezen.
+    return jsonResponse({ error: 'Daily submission limit reached' }, 429, { 'Retry-After': '3600' });
   }
 
   // Sectie-resolutie uit de gepubliceerde snapshot: levert landingPageId

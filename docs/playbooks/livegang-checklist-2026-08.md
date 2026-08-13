@@ -10,10 +10,14 @@
 
 ## 1. Webpage-builder-rework naar prod (branch `claude/puck-editor-improvement-y9ep4x`)
 
-25 commits, schone fast-forward op main (0 achter, geverifieerd 2026-08-13). Volledige
+Schone fast-forward op main (0 achter, geverifieerd 2026-08-13). Volledige
 suite groen (53/53 phases, tsc 0). Puck-exit + versioned publishing + static compile +
 forms/analytics + publish-gate + generatieve patterns — zie
 `docs/specs/2026-08-07-webpage-builder-verbeterplan.md` (§ Uitvoeringsstatus).
+**Pre-merge review-ronde ✅ 2026-08-13**: 2 parallelle code-reviewers over de volledige
+diff — 0 CRITICAL; alle 5 MAJORs + goedkope MINORs gefixt (spoofbare leads-KPI dicht,
+form-rate-limit gelaagd, ISR-revalidate op delete, sectie-AI dekt alle 22 types,
+publish-gate-precisie). Uitgestelde restpunten: `tasks/lp-review-followups.md`.
 
 **Volgorde is essentieel** (memory `neon-schema-push-on-deploy`):
 

@@ -40,7 +40,11 @@ const eventSchema = z.object({
   p: z.string().min(1).max(64).optional(),
   w: z.string().min(1).max(80),
   s: z.string().min(1).max(120),
-  k: z.enum(['view', 'form_submit', 'cta_click']),
+  // Alleen 'view': form_submit wordt uitsluitend server-side door /api/f
+  // geschreven (dé betrouwbare bron) en cta_click heeft nog geen client-
+  // wiring. Publiek accepteren zou de leads-KPI spoofbaar maken — iedereen
+  // kent de workspace/slug uit de URL (review 2026-08-13, M1).
+  k: z.enum(['view']),
   r: z.string().max(2048).optional(),
 });
 

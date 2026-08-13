@@ -56,10 +56,14 @@ export async function POST(
       userId: session.user.id,
       organization: { workspaces: { some: { id: workspaceId } } },
     },
-    select: { id: true },
+    select: { id: true, role: true },
   });
   if (!membership) {
     return NextResponse.json({ error: 'No access to this workspace' }, { status: 403 });
+  }
+  // Rollback wisselt de live versie — outward-facing mutatie, viewers read-only.
+  if (membership.role === 'viewer') {
+    return NextResponse.json({ error: 'Viewers cannot roll back pages' }, { status: 403 });
   }
 
   // Scope-check: de snapshot moet bij een LandingPage van dít deliverable

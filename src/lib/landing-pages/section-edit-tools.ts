@@ -204,6 +204,11 @@ export function applyStructureOperations(
         result = duplicateSection(current, op.sectionId ?? '');
         if (result.ok) summaries.push(`Sectie gedupliceerd: ${op.sectionId}`);
         break;
+      default:
+        // Compile-time onbereikbaar (op.op is een union), maar runtime-input
+        // van ongevalideerde callers mag nooit een TypeError op result geven.
+        result = { ok: false, reason: 'not-found' };
+        break;
     }
     if (!result.ok) {
       return { ok: false, reason: result.reason, opIndex: i };

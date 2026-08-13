@@ -106,10 +106,21 @@ const FORM_ENHANCE_SNIPPET = [
  * zodat de smoke-suite de shape kan bewaken.
  */
 export function buildPageRuntimeScript(opts: { withForms: boolean }): string {
+  return `<script>${buildPageRuntimeScriptBody(opts)}</script>`;
+}
+
+/**
+ * Alleen de script-BODY (zonder `<script>`-wrapper) — voor het runtime-
+ * fallback-renderpad in `/p/[workspace]/[slug]` dat via React's
+ * `<script dangerouslySetInnerHTML>` injecteert. Zo meten pre-P2-publishes
+ * (zonder artifact) dezelfde views en krijgen hun forms dezelfde
+ * enhancement als het bevroren artifact (review 2026-08-13, m4).
+ */
+export function buildPageRuntimeScriptBody(opts: { withForms: boolean }): string {
   const parts = opts.withForms
     ? `${VIEW_BEACON_SNIPPET}${FORM_ENHANCE_SNIPPET}`
     : VIEW_BEACON_SNIPPET;
-  return `<script>(function(){${parts}})();</script>`;
+  return `(function(){${parts}})();`;
 }
 
 export interface CompilePageInput {

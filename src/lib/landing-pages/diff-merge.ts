@@ -29,7 +29,9 @@ interface DiffMergeData {
  *  - Preserve current's ordering — proposals never reorder; the user can
  *    still drag-drop after accepting.
  *  - Components in proposed that aren't in current (rare; auto-iterate
- *    prompts forbid invention) are appended at the end.
+ *    prompts forbid invention) are DROPPED — id-loze of verzonnen items
+ *    kunnen de tree dus nooit corrumperen; structuur wijzigen loopt via
+ *    de sectie-kernel, niet via dit merge-pad.
  *
  * When `acceptedComponentIds` is the literal string 'all', accept every
  * proposed component that exists in current.
