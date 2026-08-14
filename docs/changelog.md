@@ -35,6 +35,20 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ---
 
+## 2026-08
+
+### 455. Hoofdstukbeelden long-form + merkbeelden-beheer (livegang-feedback zelfde dag)
+
+Direct na de livegang bleek de gegenereerde pillar-page kaal: long-form/GEO-typen (pillar-page, blog-post, whitepaper, case-study, ebook, linkedin-article, thought-leadership) hadden alleen een hero-beeldslot en merkbeelden waren alleen via de scraper te vullen. Nu: `geoSectionSchema` + `imageUrl`/`imageBrief`, GEO-systeemprompt kiest 2-3 secties waar beeld het punt versterkt en levert bewijs-gedreven briefs (divers, unbranded, max 1 person-scène — zelfde regels als feature-briefs), `RichText` rendert een 16:9-figure boven de prose (zelfde registry voor editor, publieke route én compiled artifact) en krijgt een editor-beeldveld met de volledige picker (Generate/Library/Upload/Stock). `assignBrandImagesToGeoVariant` vult hero + brief-gemarkeerde secties automatisch met merkbeelden. Nieuw `BrandImagesPanel` in Brandstyle → Imagery: merkbeelden bekijken, uploaden (via media-library) en verwijderen. Geen schema-wijzigingen. Prod-smoke door Erik bevestigd. PR #252 (`8309379`).
+
+- Task: [tasks/done/lp-image-routes.md](tasks/done/lp-image-routes.md)
+
+### 454. Webpage-builder-rework live + volledige livegang op branddock.app
+
+De 27-commit rework (PR #251, `4d6746f`) squash-merged naar productie ná de Neon-schema-push (`PagePublish` incl. `compiledHtml`, `LandingPage.livePublishId`, `FormSubmission`, `PageEvent` — volgorde per memory `neon-schema-push-on-deploy`). Inhoud: Puck-exit (eigen `PageRender`/`SectionEditor`/section-edit-tools-kernel, `@puckeditor/core` verwijderd), P0 ISR-fix (`/p/[workspace]/[slug]` + proxy-redirect legacy vorm), publiceren als product (append-only versies + rollback, compile-to-static artifact, `LeadForm` + publiek endpoint, cookieloos view-beacon + stats/leads-UI, deterministische publish-gate), prompt-first editing (paginaprompt, inline tekst-edit, sectie-hover-toolbar, element-AI, Claw chat-dock met batch-structuurtool, streaming, variant-merge) en de generatieve design-library (pattern-registry, "Wissel layout", generator kiest layouts server-side gevalideerd). Zelfde nacht de volledige domein-migratie: nameservers naar Vercel gedelegeerd, apex=marketing / `app.`=applicatie / wildcard=klantpagina's, `www`-redirect, 3 env-vars + herdeploy. Klantpagina's serveren nu op `<workspace>.branddock.app`.
+
+- Task: diverse (zie `tasks/` — waves 0 t/m C van `docs/specs/2026-08-07-webpage-builder-verbeterplan.md`) + `docs/playbooks/livegang-checklist-2026-08.md`
+
 ## 2026-07
 
 ### 453. 8 offline workspaces naar prod gemigreerd + all-in-one import-tooling

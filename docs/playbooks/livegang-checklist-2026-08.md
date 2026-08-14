@@ -1,4 +1,4 @@
-# Livegang-checklist — peildatum 2026-08-13
+# Livegang-checklist — peildatum 2026-08-13 (bijgewerkt 2026-08-14: stap 1+2 ✅)
 
 > **Context**: de app draait al op productie (`branddock-7y9n.vercel.app`, main=production,
 > Vercel Pro+Fluid, regio fra1) met Stripe-billing live en credits in pilotmodus.
@@ -21,22 +21,21 @@ publish-gate-precisie). Uitgestelde restpunten: `tasks/lp-review-followups.md`.
 
 **Volgorde is essentieel** (memory `neon-schema-push-on-deploy`):
 
-- [ ] **1a. Neon schema-push VÓÓR de merge** (Erik, lokaal — additief, breekt draaiende code niet):
+- [x] **1a. Neon schema-push VÓÓR de merge** ✅ 2026-08-13 (Erik, via schema-download van de branch + `--schema`/`--url`-vlaggen — lokale checkout bleek onvindbaar):
   ```bash
   DATABASE_URL="<neon-prod-url>" npx prisma db push
   ```
   Nieuw in het schema: tabel `PagePublish` (incl. `compiledHtml`), kolom
   `LandingPage.livePublishId`, tabellen `FormSubmission` + `PageEvent`.
   Zonder deze push crasht de nieuwe code op de eerste publish/form/beacon-call.
-- [ ] **1b. PR maken + mergen naar main** (main=production deployt automatisch).
-  Geen nieuwe env-vars nodig; host-router is al consistent met het domein-runbook.
-- [ ] **1c. Prod-verificatie na deploy** (browser of curl):
-  - bestaande gepubliceerde pagina rendert nog (legacy `/p/<slug>` redirect werkt)
-  - nieuwe publish vanuit Step 4 → versie in "Publicaties"-lijst + live artifact
-  - rollback-knop → vorige versie serveert direct
-  - leadformulier op een testpagina → submission zichtbaar + webhook afgeleverd
-  - `?utm`-bezoek → beacon-event in stats-paneel
-  - publish-gate: pagina met placeholder-copy wordt geblokkeerd (422)
+- [x] **1b. PR maken + mergen naar main** ✅ 2026-08-13 — PR #251 squash-merged (`4d6746f`),
+  prod-deploy automatisch. Follow-up #252 (`8309379`, hoofdstukbeelden + merkbeelden-beheer,
+  n.a.v. livegang-feedback) 2026-08-14 gemerged.
+- [x] **1c. Prod-verificatie na deploy** — kern bevestigd 2026-08-14 (Erik, browser):
+  - [x] bestaande gepubliceerde pagina's renderen (o.a. `linfi.branddock.app/pillar-page`)
+  - [x] editor-flow werkt op prod (inline edit, beeldvelden, generatie incl. sectie-beelden)
+  - [ ] restchecks nog niet expliciet gedaan: rollback-knop, leadform-submission + webhook,
+    beacon-event in stats, publish-gate-422 — meenemen bij eerste echte klantpagina
 
 ## 2. Custom domain `branddock.app` (Erik — puur infra, code staat klaar)
 
@@ -46,8 +45,14 @@ Kort: **A** Vercel-domeinen (app/apex/www-redirect/wildcard) → **B** DNS-recor
 + Meta OAuth-redirect → **D** verificatie (7 checks). Onafhankelijk van stap 1 —
 kan parallel. Ontgrendelt daarna: Apple SSO, `@branddock.app`-afzender, klantdomeinen.
 
-- [ ] A t/m D uitgevoerd en geverifieerd
-- [ ] Gepubliceerde pagina op `<workspace>.branddock.app/<slug>` rendert (raakt stap 1!)
+- [x] A t/m D uitgevoerd en geverifieerd ✅ 2026-08-13/14 — uitvoering week af van het
+  runbook: nameservers volledig naar Vercel gedelegeerd (`ns1`/`ns2.vercel-dns.com`,
+  TransIP-DNS uit) i.p.v. losse records. Daardoor: DNS-beheer voortaan in Vercel,
+  wildcard zonder TXT-verificatie. NB: TransIP-mail-records (MX/SPF/DKIM) daarmee
+  vervallen — er draaide geen mail op het domein; bij `@branddock.app`-afzender
+  (runbook §E) records in Vercel-DNS aanmaken.
+- [x] Gepubliceerde pagina op `<workspace>.branddock.app/<slug>` rendert
+  (`linfi.branddock.app/pillar-page`, 2026-08-14)
 
 ## 3. TOPUP aan — omzet-schakelaar (Erik)
 
@@ -71,10 +76,15 @@ Technisch klaar (bouw #380-#386 ✅, smokes ✅). Playbook: `stripe-go-live.md` 
 
 ## 5. Go-live-criterium (roadmap "Launch"-definitie)
 
-- [ ] Custom domain live (stap 2)
-- [ ] Billing operationeel incl. topup (stap 3)
-- [ ] 0 P0/P1 bugs in core flows na stap-1c-verificatie
+- [x] Custom domain live (stap 2) ✅ 2026-08-14
+- [ ] Billing operationeel incl. topup (stap 3) — **enige resterende launch-stap**
+- [ ] 0 P0/P1 bugs in core flows na stap-1c-verificatie (restchecks 1c open)
 - [ ] Eerste betalende klant = de fase-afsluiting (post-livegang)
+
+> **Restlijst na 2026-08-14**: (1) TOPUP-flip + betaal-smoke (stap 3), (2) 1c-restchecks
+> (rollback/leadform/beacon/gate), (3) Meta OAuth-redirect-URL controleren,
+> (4) Neon-wachtwoord roteren (stond 2026-08-13 in een chatsessie) + `DATABASE_URL`
+> in Vercel bijwerken, (5) afhechting §4.
 
 ---
 
