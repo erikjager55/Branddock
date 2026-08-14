@@ -13,6 +13,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { getBrandContext } from './brand-context';
+import { getBrandLibrary } from '@/lib/brand-library';
 import type { BrandContextBlock } from './prompt-templates';
 import { detectJourneyPhase, type JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
 import { serializePersona } from './context/persona-serializer';
@@ -679,65 +680,17 @@ export async function assembleCanvasContext(
   // Null when never edited — Canvas store seeds via variantToPuckData() on first mount.
   const puckData = settings.puckData ?? null;
 
-  // Structural brand-tokens for the Puck builder — read once, pure-function.
-  // BrandStyleguide is workspace-unique (@@unique([workspaceId])); we eagerly
-  // load colors + fonts so extractBrandTokensFromStyleguide can pick the right
-  // record per category/role without N+1 fetches.
-  const styleguide = await prisma.brandStyleguide.findUnique({
-    where: { workspaceId },
-    select: {
-      primaryFontName: true,
-      layoutStyle: true,
-      layoutStyleInferred: true,
-      archetype: true,
-      // R5-gate (audit 2026-06-10-lp-feature-image-diversity): photographyStyle
-      // voedt image-gen prompts en mag alleen meedoen na user-review — zelfde
-      // semantiek als de imagery-gate in brand-context.ts (published-blok →
-      // imagerySavedForAi). Rendering-tokens blijven bewust ongegate.
-      published: true,
-      imagerySavedForAi: true,
-      // Verbeterplan Fase B — rendering-profiles (Json velden voor v4 tokens)
-      buttonProfile: true,
-      typographyProfile: true,
-      spacingProfile: true,
-      spacingScale: true,
-      elevationProfile: true,
-      radiusProfile: true,
-      motionProfile: true,
-      photographyStyle: true,
-      visualLanguage: true,
-      colors: { select: {
-        hex: true, category: true, sortOrder: true,
-        tags: true, contrastWhite: true, contrastBlack: true, confidence: true,
-      } },
-      // E-3 — availability + upload-velden zodat de canvas-loader Adobe/uploaded
-      // fonts kan laden (niet alleen Google).
-      fonts: { select: { name: true, role: true, fontFamily: true, sortOrder: true, availability: true, fileUrl: true, fileType: true } },
-      // E-3 — workspace-eigen Adobe Typekit kit-id (domain-geconfigureerd).
-      workspace: { select: { adobeFontsKitId: true } },
-      // P2 — brand-eigen beelden voor de beeld-producer.
-      brandImages: true,
-      // W4-fix (logo in de nav): logo-assets voor de AnchorNav/BrandNav-brandslot.
-      logos: { select: { variant: true, fileUrl: true, sortOrder: true } },
-      components: {
-        select: {
-          type: true, label: true, extractedStyles: true, confidence: true,
-        },
-        // Deterministische volgorde voor mapStyleguideComponents highest-conf
-        // pick: confidence DESC, dan sortOrder ASC als tiebreaker.
-        orderBy: [{ confidence: 'desc' }, { sortOrder: 'asc' }],
-      },
-    },
-  });
-  // R5-gate: een OBSERVED scrape-beschrijving mag niet prescriptief alle
-  // gegenereerde beelden sturen zolang de imagery niet gereviewd is. Bij
-  // gate-dicht vallen de photography-tokens op DEFAULT terug; prompt-builders
-  // gebruiken dan hun archetype-fallback (pickHeroImagePromptFragment).
+  // Structural brand-tokens for the Puck builder — via het verplichte
+  // consumptiepad (W7.1). De accessor levert de render-helft ongegate en de
+  // prozasecties gegate, dus de R5-gate van hieronder zit nu in één plek:
+  // `sections.imagery` is `undefined` zolang de imagery-review openstaat.
+  const library = await getBrandLibrary(workspaceId);
+
   // W4-fix — nav-logo: kies een horizontaal-vriendelijke variant voor het
   // brand-slot van de AnchorNav/BrandNav (LOCKUP/PRIMARY/WORDMARK lezen breed;
   // ICON als laatste). Leeg → de nav valt terug op de merknaam als tekst.
   const brandNavLogoUrl = (() => {
-    const logos = styleguide?.logos ?? [];
+    const logos = library.render.logos;
     if (logos.length === 0) return null;
     const pref = ['LOCKUP', 'PRIMARY', 'WORDMARK', 'DARK', 'ICON', 'LIGHT'];
     for (const variant of pref) {
@@ -750,23 +703,45 @@ export async function assembleCanvasContext(
     return any?.fileUrl ?? null;
   })();
 
-  const imageryGateOpen = Boolean(styleguide?.published && styleguide?.imagerySavedForAi);
-  const gatedStyleguide = styleguide && !imageryGateOpen
-    ? { ...styleguide, photographyStyle: null }
-    : styleguide;
+  // R5-gate (audit 2026-06-10-lp-feature-image-diversity): een OBSERVED
+  // scrape-beschrijving mag niet prescriptief alle gegenereerde beelden sturen
+  // zolang de imagery niet gereviewd is. Bij gate-dicht vallen de
+  // photography-tokens op DEFAULT terug; prompt-builders gebruiken dan hun
+  // archetype-fallback (pickHeroImagePromptFragment).
   const { tokens: brandTokens, provenance: brandProvenance } =
-    extractBrandTokensWithProvenance(gatedStyleguide, {
-      adobeFontsKitId: styleguide?.workspace?.adobeFontsKitId ?? null,
-    });
+    extractBrandTokensWithProvenance(
+      {
+        primaryFontName: library.render.primaryFontName,
+        layoutStyle: library.render.layoutStyle,
+        archetype: library.render.archetype,
+        buttonProfile: library.render.buttonProfile,
+        typographyProfile: library.render.typographyProfile,
+        spacingProfile: library.render.spacingProfile,
+        spacingScale: library.render.spacingScale,
+        elevationProfile: library.render.elevationProfile,
+        radiusProfile: library.render.radiusProfile,
+        motionProfile: library.render.motionProfile,
+        photographyStyle: library.sections.imagery?.photographyStyle ?? null,
+        // Alleen het renderbare deel van visualLanguage; de beschrijvende helft
+        // is proza en hoort in `sections.visualLanguage`.
+        visualLanguage: library.render.heroPattern
+          ? { heroPattern: { pattern: library.render.heroPattern } }
+          : null,
+        colors: library.render.colors,
+        fonts: library.render.fonts,
+        components: library.render.components,
+      },
+      { adobeFontsKitId: library.render.adobeFontsKitId },
+    );
 
   return {
     brand, concept, journeyPhase, medium,
     deliverableTypeId: deliverable.contentType ?? null,
     personas, brief, products, contentTypeInputs, visualBrief, additionalContextItems, puckData, brandTokens, brandProvenance,
-    brandImages: parseBrandImages(styleguide?.brandImages),
+    brandImages: parseBrandImages(library.render.brandImages),
     brandNavLogoUrl,
     brandStyleguideMeta: {
-      layoutStyleInferred: styleguide?.layoutStyleInferred ?? false,
+      layoutStyleInferred: library.render.layoutStyleInferred,
     },
   };
 }

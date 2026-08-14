@@ -17,7 +17,13 @@
 // achterdeur worden en is de hele laag betekenisloos.
 // =============================================================
 
-import type { BrandArchetype, LayoutStyle, RuleKind, RuleSeverity } from "@prisma/client";
+import type {
+  BrandArchetype,
+  FontAvailability,
+  LayoutStyle,
+  RuleKind,
+  RuleSeverity,
+} from "@prisma/client";
 import type { BrandManifest } from "@/lib/brandstyle/manifest-builder";
 import type { BrandLibraryView } from "./views";
 
@@ -30,8 +36,9 @@ export interface LibraryColor {
   category: string;
   sortOrder: number;
   tags: string[];
-  contrastWhite: number | null;
-  contrastBlack: number | null;
+  /** WCAG-tag voor tekst op deze kleur — "AAA" | "AA" | "Fail". */
+  contrastWhite: string | null;
+  contrastBlack: string | null;
   confidence: string | null;
   detectorSource: string | null;
 }
@@ -44,7 +51,7 @@ export interface LibraryFont {
   fileType: string | null;
   weight: string | null;
   fontFamily: string | null;
-  availability: string | null;
+  availability: FontAvailability | null;
   sortOrder: number;
 }
 
@@ -149,6 +156,13 @@ export interface BrandLibraryRender {
   brandImages: JsonLike;
   fixtureSamples: JsonLike;
   adobeFontsKitId: string | null;
+  /**
+   * `visualLanguage` is een gemengd veld: de beschrijvende helft is proza (en
+   * zit gegate in `sections.visualLanguage`), maar `heroPattern.pattern` is een
+   * renderbeslissing. Alleen dat renderbare stukje komt hier, zodat `render`
+   * prozavrij blijft en de consument niet zelf in de blob hoeft te graven.
+   */
+  heroPattern: string | null;
 }
 
 // ─── Gate-rapportage ────────────────────────────────

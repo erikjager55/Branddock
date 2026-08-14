@@ -118,7 +118,23 @@ function stripRules(rules: LibraryRule[]): LibraryRule[] {
   }));
 }
 
-/** Publish-gate × sectie-gate. Beide moeten open zijn. */
+
+/** Alleen het renderbare deel van `visualLanguage` — zie types.ts, `render.heroPattern`. */
+function extractHeroPattern(visualLanguage: unknown): string | null {
+  const vl = visualLanguage as { heroPattern?: { pattern?: string } } | null;
+  return vl?.heroPattern?.pattern ?? null;
+}
+
+/**
+ * Publish-gate × sectie-gate. Beide moeten open zijn.
+ *
+ * Uitzondering: `designLanguage` opent ook op `visualLanguageSavedForAi`. Die
+ * twee secties zijn in de UI samengevoegd tot één "Visual System"-tab; de
+ * design-language-vlag is daarvan de legacy-helft. Deze OR stond al zo in
+ * brand-context.ts en wordt hier overgenomen in plaats van stilzwijgend
+ * aangescherpt — een migratie hoort geen gedrag te veranderen dat niemand
+ * heeft gevraagd.
+ */
 export function resolveGates(row: StyleguideRowForLibrary): BrandLibraryGates {
   const p = row.published;
   return {
@@ -126,7 +142,7 @@ export function resolveGates(row: StyleguideRowForLibrary): BrandLibraryGates {
     colors: p && row.colorsSavedForAi,
     typography: p && row.typographySavedForAi,
     imagery: p && row.imagerySavedForAi,
-    designLanguage: p && row.designLanguageSavedForAi,
+    designLanguage: p && (row.designLanguageSavedForAi || row.visualLanguageSavedForAi),
     visualLanguage: p && row.visualLanguageSavedForAi,
     logo: p && row.logoSavedForAi,
   };
@@ -242,6 +258,7 @@ export function projectBrandLibrary(
       brandImages: row.brandImages,
       fixtureSamples: row.fixtureSamples,
       adobeFontsKitId,
+      heroPattern: extractHeroPattern(row.visualLanguage),
     },
     rules: stripRules(row.rules),
     gates,
@@ -289,6 +306,7 @@ export function emptyBrandLibrary(
       brandImages: null,
       fixtureSamples: null,
       adobeFontsKitId,
+      heroPattern: null,
     },
     rules: [],
     gates: {

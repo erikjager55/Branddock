@@ -192,8 +192,6 @@ const perSection: Array<[keyof StyleguideRowForLibrary, keyof typeof open.sectio
   ['colorsSavedForAi', 'colors'],
   ['typographySavedForAi', 'typography'],
   ['imagerySavedForAi', 'imagery'],
-  ['designLanguageSavedForAi', 'designLanguage'],
-  ['visualLanguageSavedForAi', 'visualLanguage'],
   ['logoSavedForAi', 'logo'],
 ];
 for (const [flag, section] of perSection) {
@@ -204,6 +202,26 @@ for (const [flag, section] of perSection) {
     closed.sections[section] === undefined && others,
   );
 }
+
+// designLanguage en visualLanguage delen in de UI één "Visual System"-tab;
+// de design-language-vlag is de legacy-helft. Vandaar de OR — overgenomen
+// uit brand-context.ts, niet nieuw bedacht.
+const dlOnly = project({ visualLanguageSavedForAi: false });
+assert(
+  'visualLanguage dicht sluit alleen visualLanguage, niet designLanguage',
+  dlOnly.sections.visualLanguage === undefined && dlOnly.sections.designLanguage !== undefined,
+);
+const vlOnly = project({ designLanguageSavedForAi: false });
+assert(
+  'designLanguage-vlag dicht houdt de sectie open zolang visualLanguage aan staat',
+  vlOnly.sections.designLanguage !== undefined,
+);
+const bothClosed = project({ designLanguageSavedForAi: false, visualLanguageSavedForAi: false });
+assert(
+  'beide vlaggen dicht sluit designLanguage én visualLanguage',
+  bothClosed.sections.designLanguage === undefined &&
+    bothClosed.sections.visualLanguage === undefined,
+);
 
 // ─── 2. Gate-rapportage ─────────────────────────────
 

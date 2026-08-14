@@ -16,18 +16,11 @@
 
 import { prisma } from '@/lib/prisma';
 import type { BrandContextBlock } from './prompt-templates';
-import {
-  renderBrandManifestMarkdown,
-  type BrandManifest,
-} from '@/lib/brandstyle/manifest-builder';
+import { getBrandLibrary } from '@/lib/brand-library';
 import {
   deriveVoiceBaseline1Pager,
   formatVoiceBaseline1Pager,
 } from '../brand-fidelity/voice-baseline-1pager';
-import {
-  stripAnalyzerMarkers,
-  stripAnalyzerMarkersFromList,
-} from '../brandstyle/analyzer-markers';
 
 // ─── Cache ─────────────────────────────────────────────────
 
@@ -876,7 +869,7 @@ export async function getBrandContext(
   if (cached) return cached;
 
   // Fetch all sources in parallel
-  const [workspace, brandAssets, personas, products, activatedTrends, competitors, styleguide, consistentModels, voiceguide] = await Promise.all([
+  const [workspace, brandAssets, personas, products, activatedTrends, competitors, library, consistentModels, voiceguide] = await Promise.all([
     prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { name: true, contentLanguage: true },
@@ -948,40 +941,11 @@ export async function getBrandContext(
       take: 10,
     }),
 
-    prisma.brandStyleguide.findFirst({
-      where: { workspaceId },
-      select: {
-        colors: { select: { name: true, hex: true, category: true } },
-        primaryFontName: true,
-        typeScale: true,
-        photographyStyle: true,
-        photographyGuidelines: true,
-        imageryDonts: true,
-        colorsSavedForAi: true,
-        typographySavedForAi: true,
-        imagerySavedForAi: true,
-        graphicElements: true,
-        graphicElementsDonts: true,
-        patternsTextures: true,
-        iconographyStyle: true,
-        iconographyDonts: true,
-        gradientsEffects: true,
-        layoutPrinciples: true,
-        designLanguageSavedForAi: true,
-        visualLanguage: true,
-        visualLanguageSavedForAi: true,
-        // Fase 2: publish gate
-        published: true,
-        // W1: Brand Manifest — primaire merkbron wanneer gegenereerd
-        brandManifest: true,
-        // Fase 1: brand assets
-        fonts: { select: { name: true, role: true, source: true, fileUrl: true, weight: true } },
-        // Fase 3: semantic colors
-        semanticColors: true,
-        // Fase 5: components
-        components: { select: { type: true, label: true } },
-      },
-    }),
+    // W7.1: de merkbibliotheek is het verplichte consumptiepad. De publish-gate
+    // en de per-sectie save-for-AI-gates zitten in de accessor, net als de
+    // marker-stripping — hieronder blijft alleen het formatteren naar
+    // prompttekst over.
+    getBrandLibrary(workspaceId),
 
     prisma.consistentModel.findMany({
       where: { workspaceId, status: 'READY' },
@@ -1275,19 +1239,18 @@ export async function getBrandContext(
   // Visual identity from brandstyle
   // Fase 2 gate: only expose the styleguide context when published is true.
   // Individual per-section `savedForAi` flags then provide finer-grained control.
-  if (styleguide && styleguide.published) {
+  if (library.gates.published) {
     // W1: Brand Manifest eerst — het gecureerde document is de primaire
     // merkbron; de veld-concatenatie hieronder blijft als fallback/detail.
-    if (styleguide.brandManifest) {
-      ctx.brandManifest = renderBrandManifestMarkdown(
-        styleguide.brandManifest as unknown as BrandManifest,
-      );
+    if (library.markdown) {
+      ctx.brandManifest = library.markdown;
     }
 
     // Colors
-    if (styleguide.colorsSavedForAi && styleguide.colors.length > 0) {
-      const colorsByCategory = new Map<string, typeof styleguide.colors>();
-      for (const c of styleguide.colors) {
+    const colorsSection = library.sections.colors;
+    if (colorsSection && colorsSection.palette.length > 0) {
+      const colorsByCategory = new Map<string, typeof colorsSection.palette>();
+      for (const c of colorsSection.palette) {
         const arr = colorsByCategory.get(c.category) ?? [];
         arr.push(c);
         colorsByCategory.set(c.category, arr);
@@ -1299,7 +1262,7 @@ export async function getBrandContext(
       }
 
       // Fase 3: semantic color tints (info/success/warning/danger)
-      const sem = styleguide.semanticColors as {
+      const sem = colorsSection.semanticColors as {
         info?: { light?: string; base?: string; dark?: string };
         success?: { light?: string; base?: string; dark?: string };
         warning?: { light?: string; base?: string; dark?: string };
@@ -1322,9 +1285,13 @@ export async function getBrandContext(
     // is available for previews / exports). Cap to 3 per role to keep the
     // context tight — for a site with 15 scraped Google Fonts we don't want
     // to flood the prompt with detector noise.
-    if (styleguide.fonts && styleguide.fonts.length > 0) {
+    // Gedragswijziging (W7.1): fonts liepen langs `typographySavedForAi` heen
+    // terwijl ze wél tot de typografie-sectie horen. Via de accessor erven ze
+    // nu de gate van hun eigen sectie.
+    const typographySection = library.sections.typography;
+    if (typographySection && typographySection.fonts.length > 0) {
       const byRole = new Map<string, string[]>();
-      for (const f of styleguide.fonts) {
+      for (const f of typographySection.fonts) {
         const status = f.source === "UPLOADED" ? "uploaded" : "detected";
         const label = `${f.name} (${status}${f.weight ? `, ${f.weight}` : ""})`;
         const arr = byRole.get(f.role) ?? [];
@@ -1339,11 +1306,11 @@ export async function getBrandContext(
     }
 
     // Typography
-    if (styleguide.typographySavedForAi) {
+    if (typographySection) {
       const typoParts: string[] = [];
-      if (styleguide.primaryFontName) typoParts.push(`Primary font: ${styleguide.primaryFontName}`);
-      if (Array.isArray(styleguide.typeScale) && styleguide.typeScale.length > 0) {
-        const scaleItems = (styleguide.typeScale as { level?: string; size?: string; weight?: string }[])
+      if (typographySection.primaryFontName) typoParts.push(`Primary font: ${typographySection.primaryFontName}`);
+      if (Array.isArray(typographySection.typeScale) && typographySection.typeScale.length > 0) {
+        const scaleItems = (typographySection.typeScale as { level?: string; size?: string; weight?: string }[])
           .filter((s) => s.level && s.size)
           .map((s) => `${s.level} ${s.size}/${s.weight ?? 'regular'}`)
           .join(', ');
@@ -1373,16 +1340,17 @@ export async function getBrandContext(
     // consumer (image/video/canvas prompts) gets clean text (audit T5). The
     // "label: value" segment structure must stay intact: downstream parsers
     // (featureSafeImagerySegments) split on these labels.
-    if (styleguide.imagerySavedForAi) {
+    const imagerySection = library.sections.imagery;
+    if (imagerySection) {
       const imgParts: string[] = [];
-      const photoStyle = styleguide.photographyStyle as { mood?: string; subjects?: string; composition?: string } | null;
-      const mood = stripAnalyzerMarkers(photoStyle?.mood);
-      const subjects = stripAnalyzerMarkers(photoStyle?.subjects);
-      const composition = stripAnalyzerMarkers(photoStyle?.composition);
+      const photoStyle = imagerySection.photographyStyle as { mood?: string; subjects?: string; composition?: string } | null;
+      const mood = photoStyle?.mood ?? '';
+      const subjects = photoStyle?.subjects ?? '';
+      const composition = photoStyle?.composition ?? '';
       if (mood) imgParts.push(`Photography mood: ${mood}`);
       if (subjects) imgParts.push(`Subjects: ${subjects}`);
       if (composition) imgParts.push(`Composition: ${composition}`);
-      const guidelines = stripAnalyzerMarkersFromList(styleguide.photographyGuidelines);
+      const guidelines = imagerySection.guidelines;
       if (guidelines.length > 0) {
         imgParts.push(`Guidelines: ${guidelines.join('; ')}`);
       }
@@ -1391,31 +1359,32 @@ export async function getBrandContext(
       // hun native negative-prompt parameter consumeren (Pattern A image-
       // quality-chain). Niet meer als "Avoid: …" suffix in brandImageryStyle
       // omdat dat het signaal duplificeert wanneer beide kanalen actief zijn.
-      if (styleguide.imageryDonts.length > 0) {
-        ctx.brandImageryDonts = styleguide.imageryDonts;
+      if (imagerySection.donts.length > 0) {
+        ctx.brandImageryDonts = imagerySection.donts;
       }
     }
 
     // Design Language — use visualLanguageSavedForAi as gate (merged Visual System tab)
     // Backward compat: also accept the legacy designLanguageSavedForAi flag
-    if (styleguide.designLanguageSavedForAi || styleguide.visualLanguageSavedForAi) {
+    const designLanguageSection = library.sections.designLanguage;
+    if (designLanguageSection) {
       const dlParts: string[] = [];
-      const graphicEl = styleguide.graphicElements as { brandShapes?: string[]; decorativeElements?: string[]; visualDevices?: string[]; usageNotes?: string } | null;
+      const graphicEl = designLanguageSection.graphicElements as { brandShapes?: string[]; decorativeElements?: string[]; visualDevices?: string[]; usageNotes?: string } | null;
       if (graphicEl) {
         const shapes = [...(graphicEl.brandShapes ?? []), ...(graphicEl.decorativeElements ?? []), ...(graphicEl.visualDevices ?? [])].filter(Boolean);
         if (shapes.length > 0) dlParts.push(`Graphic elements: ${shapes.join(', ')}`);
         if (graphicEl.usageNotes) dlParts.push(`Graphic usage: ${graphicEl.usageNotes}`);
       }
-      if (styleguide.graphicElementsDonts.length > 0) {
-        dlParts.push(`Graphic don'ts: ${styleguide.graphicElementsDonts.join('; ')}`);
+      if (designLanguageSection.graphicElementsDonts.length > 0) {
+        dlParts.push(`Graphic don'ts: ${designLanguageSection.graphicElementsDonts.join('; ')}`);
       }
-      const patternsEl = styleguide.patternsTextures as { patterns?: string[]; textures?: string[]; backgrounds?: string[]; usageNotes?: string } | null;
+      const patternsEl = designLanguageSection.patternsTextures as { patterns?: string[]; textures?: string[]; backgrounds?: string[]; usageNotes?: string } | null;
       if (patternsEl) {
         const items = [...(patternsEl.patterns ?? []), ...(patternsEl.textures ?? []), ...(patternsEl.backgrounds ?? [])].filter(Boolean);
         if (items.length > 0) dlParts.push(`Patterns & textures: ${items.join(', ')}`);
         if (patternsEl.usageNotes) dlParts.push(`Pattern usage: ${patternsEl.usageNotes}`);
       }
-      const iconStyle = styleguide.iconographyStyle as { style?: string; sizing?: string; strokeWeight?: string; cornerRadius?: string; colorUsage?: string; usageNotes?: string } | null;
+      const iconStyle = designLanguageSection.iconographyStyle as { style?: string; sizing?: string; strokeWeight?: string; cornerRadius?: string; colorUsage?: string; usageNotes?: string } | null;
       if (iconStyle?.style) {
         let iconStr = `Icon style: ${iconStyle.style}`;
         if (iconStyle.sizing) iconStr += `, sizing ${iconStyle.sizing}`;
@@ -1425,10 +1394,10 @@ export async function getBrandContext(
         dlParts.push(iconStr);
         if (iconStyle.usageNotes) dlParts.push(`Icon usage: ${iconStyle.usageNotes}`);
       }
-      if (styleguide.iconographyDonts.length > 0) {
-        dlParts.push(`Iconography don'ts: ${styleguide.iconographyDonts.join('; ')}`);
+      if (designLanguageSection.iconographyDonts.length > 0) {
+        dlParts.push(`Iconography don'ts: ${designLanguageSection.iconographyDonts.join('; ')}`);
       }
-      const grads = styleguide.gradientsEffects as { name?: string; type?: string; colors?: string[]; angle?: string; usage?: string }[] | null;
+      const grads = designLanguageSection.gradientsEffects as { name?: string; type?: string; colors?: string[]; angle?: string; usage?: string }[] | null;
       if (Array.isArray(grads) && grads.length > 0) {
         const gradStrs = grads.filter((g) => g.name).map((g) => {
           let str = `${g.name} (${g.type}, ${(g.colors ?? []).join(' → ')}`;
@@ -1439,7 +1408,7 @@ export async function getBrandContext(
         });
         if (gradStrs.length > 0) dlParts.push(`Gradients: ${gradStrs.join('; ')}`);
       }
-      const layout = styleguide.layoutPrinciples as { gridSystem?: string; spacingScale?: string; whitespacePhilosophy?: string; compositionRules?: string[]; usageNotes?: string } | null;
+      const layout = designLanguageSection.layoutPrinciples as { gridSystem?: string; spacingScale?: string; whitespacePhilosophy?: string; compositionRules?: string[]; usageNotes?: string } | null;
       if (layout) {
         if (layout.gridSystem) dlParts.push(`Grid: ${layout.gridSystem}`);
         if (layout.spacingScale) dlParts.push(`Spacing: ${layout.spacingScale}`);
@@ -1451,8 +1420,8 @@ export async function getBrandContext(
     }
 
     // Visual Language (Vormentaal) — the brand's visual DNA
-    if (styleguide.visualLanguageSavedForAi && styleguide.visualLanguage) {
-      const vl = styleguide.visualLanguage as { promptFragment?: string; summary?: string };
+    if (library.sections.visualLanguage) {
+      const vl = library.sections.visualLanguage as { promptFragment?: string; summary?: string };
       if (vl.promptFragment) {
         ctx.brandVisualLanguage = vl.promptFragment;
       } else if (vl.summary) {
@@ -1470,13 +1439,13 @@ export async function getBrandContext(
     // Fase 5: component samples — aggregate high-level counts per type so the
     // writer knows which component vocabulary the brand uses. Gated by the
     // visual-system saved-for-AI flag since components belong to the same tier.
-    if (
-      (styleguide.designLanguageSavedForAi || styleguide.visualLanguageSavedForAi) &&
-      Array.isArray(styleguide.components) &&
-      styleguide.components.length > 0
-    ) {
+    // Componenten horen bij dezelfde tier als het Visual System: de
+    // designLanguage-gate (die de visualLanguage-vlag meeneemt) bepaalt of ze
+    // in de prompt mogen. De data zelf zit ongegate in `render` omdat de
+    // renderer ze ook zonder review nodig heeft.
+    if (designLanguageSection && library.render.components.length > 0) {
       const counts = new Map<string, number>();
-      for (const c of styleguide.components) {
+      for (const c of library.render.components) {
         counts.set(c.type, (counts.get(c.type) ?? 0) + 1);
       }
       const compParts = Array.from(counts.entries())

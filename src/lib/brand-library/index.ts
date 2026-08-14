@@ -17,6 +17,7 @@
 // lint-fout (`no-restricted-properties` in eslint.config.mjs).
 // =============================================================
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCached, invalidateCache, setCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
@@ -153,6 +154,10 @@ const STYLEGUIDE_SELECT = {
   },
   components: {
     select: { type: true, label: true, extractedStyles: true, confidence: true },
+    // Deterministische volgorde voor de highest-confidence pick in
+    // `mapStyleguideComponents` — overgenomen uit canvas-context, waar deze
+    // volgorde de renderer-uitkomst bepaalt.
+    orderBy: [{ confidence: "desc" }, { sortOrder: "asc" }],
   },
   rules: {
     select: {
@@ -166,7 +171,7 @@ const STYLEGUIDE_SELECT = {
       constraint: true,
     },
   },
-} as const;
+} satisfies Prisma.BrandStyleguideSelect;
 
 // ─── Public API ─────────────────────────────────────
 
