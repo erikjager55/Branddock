@@ -7,7 +7,7 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
-import { stripAnalyzerMarkers, stripAnalyzerMarkersFromList } from '@/lib/brandstyle/analyzer-markers';
+import { getBrandLibrary } from '@/lib/brand-library';
 import type { ConsistentModelType } from '@prisma/client';
 import type { ModelBrandContext } from '@/features/consistent-models/types/consistent-model.types';
 
@@ -87,7 +87,7 @@ export async function resolveModelBrandContext(
   // Determine which queries to run based on needs
   const [
     workspace,
-    styleguide,
+    library,
     personas,
     products,
     competitors,
@@ -102,19 +102,9 @@ export async function resolveModelBrandContext(
 
     // Styleguide — colors, fonts, imagery, design language
     // toneOfVoice gate verhuisd naar voiceguide.guidelinesSavedForAi (ADR 2026-05-15).
+    // W7.1: via het consumptiepad; gates en marker-stripping zitten daar.
     (needs.brandColors || needs.brandFonts || needs.brandImageryStyle || needs.brandDesignLanguage)
-      ? prisma.brandStyleguide.findFirst({
-          where: { workspaceId },
-          select: {
-            colors: { select: { name: true, hex: true } },
-            primaryFontName: true,
-            photographyStyle: true,
-            photographyGuidelines: true,
-            designLanguageSavedForAi: true,
-            imagerySavedForAi: true,
-            published: true,
-          },
-        })
+      ? getBrandLibrary(workspaceId, { view: 'image' })
       : null,
 
     // Personas
@@ -187,13 +177,15 @@ export async function resolveModelBrandContext(
   };
 
   // Colors
-  if (needs.brandColors && styleguide?.colors?.length) {
-    ctx.brandColors = styleguide.colors.map((c) => ({ name: c.name, hex: c.hex }));
+  const colorsSection = library?.sections.colors;
+  if (needs.brandColors && colorsSection?.palette.length) {
+    ctx.brandColors = colorsSection.palette.map((c) => ({ name: c.name, hex: c.hex }));
   }
 
   // Fonts
-  if (needs.brandFonts && styleguide?.primaryFontName) {
-    ctx.brandFonts = [styleguide.primaryFontName];
+  const primaryFontName = library?.sections.typography?.primaryFontName;
+  if (needs.brandFonts && primaryFontName) {
+    ctx.brandFonts = [primaryFontName];
   }
 
   // Imagery style — same review-gate + marker-stripping as the workspace
@@ -201,23 +193,18 @@ export async function resolveModelBrandContext(
   // OBSERVED:/RECOMMENDED: markers into per-model generation prompts, and
   // subjects/composition are per-image dimensions that must not ride along
   // in shared prompt material (gotcha 2026-06-10).
-  if (needs.brandImageryStyle && styleguide?.published && styleguide.imagerySavedForAi) {
+  const imagerySection = library?.sections.imagery;
+  if (needs.brandImageryStyle && imagerySection) {
     const parts: string[] = [];
-    const photoStyle = styleguide.photographyStyle as
-      | { mood?: string | null }
-      | string
-      | null;
-    const mood = stripAnalyzerMarkers(
-      typeof photoStyle === 'string' ? photoStyle : photoStyle?.mood,
-    );
+    const mood = (imagerySection.photographyStyle?.mood as string | undefined) ?? '';
     if (mood) parts.push(mood);
-    const guidelines = stripAnalyzerMarkersFromList(styleguide.photographyGuidelines ?? []);
+    const guidelines = imagerySection.guidelines;
     if (guidelines.length) parts.push(guidelines.join('. '));
     if (parts.length) ctx.brandImageryStyle = parts.join('. ');
   }
 
   // Design language (savedForAi is a boolean flag — no content string available at this level)
-  if (needs.brandDesignLanguage && styleguide?.designLanguageSavedForAi) {
+  if (needs.brandDesignLanguage && library?.sections.designLanguage) {
     ctx.brandDesignLanguage = 'Design language saved for AI context';
   }
 

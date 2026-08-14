@@ -31,6 +31,7 @@ import type { BrandLibraryView } from "./views";
 export type JsonLike = unknown;
 
 export interface LibraryColor {
+  id: string;
   name: string;
   hex: string;
   category: string;
@@ -94,6 +95,8 @@ export interface ColorsSection {
 
 export interface TypographySection {
   primaryFontName: string | null;
+  /** Legacy vrije-tekst-lijst naast de `fonts`-relatie. */
+  additionalFonts: string[];
   fonts: LibraryFont[];
   typeScale: JsonLike;
 }
@@ -165,6 +168,14 @@ export interface BrandLibraryRender {
   heroPattern: string | null;
 }
 
+/**
+ * `gated` (default) past de publish- en sectie-gates toe: alles wat een prompt
+ * in gaat. `raw` levert elke sectie ongeacht de gates — uitsluitend voor
+ * audit- en analysepaden die juist moeten kunnen zien wat nóg niet gereviewd
+ * is. `gates` rapporteert in beide modi de wáre stand.
+ */
+export type BrandLibraryMode = "gated" | "raw";
+
 // ─── Gate-rapportage ────────────────────────────────
 
 /**
@@ -184,6 +195,12 @@ export interface BrandLibraryGates {
 
 export interface BrandLibraryResult {
   workspaceId: string;
+  /**
+   * Bestaat er überhaupt een styleguide voor deze workspace? Onderscheidt
+   * "nooit geanalyseerd" van "wel geanalyseerd, niet gepubliceerd" — consumers
+   * die in het eerste geval niets willen tonen hebben dat verschil nodig.
+   */
+  exists: boolean;
   /** False = geen enkele sectie beschikbaar; `render` werkt wél. */
   published: boolean;
   /** Contract-versie (W7.3) om op gegenereerde artefacten te stempelen. */
@@ -200,6 +217,8 @@ export interface BrandLibraryResult {
   gates: BrandLibraryGates;
   /** Overige merk-meta die geen sectie-gate kent. */
   meta: {
+    /** Null wanneer er geen styleguide is. */
+    styleguideId: string | null;
     designPhilosophy: string | null;
     sourceUrl: string | null;
     status: string;

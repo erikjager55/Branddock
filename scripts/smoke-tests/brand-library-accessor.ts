@@ -241,6 +241,36 @@ assert(
   emptyBrandLibrary('ws-2', 'full', null).workspaceId === 'ws-2',
 );
 
+// ─── 2b. Raw-modus (audit/analyse) ──────────────────
+
+console.log('\n2b. Raw-modus');
+
+const rawClosed = projectBrandLibrary(
+  'ws-1',
+  makeRow({ imagerySavedForAi: false, colorsSavedForAi: false }),
+  'full',
+  null,
+  'raw',
+);
+assert(
+  'raw levert secties ook met gesloten gates',
+  rawClosed.sections.imagery !== undefined && rawClosed.sections.colors !== undefined,
+);
+assert(
+  'raw rapporteert nog steeds de wáre gate-stand',
+  rawClosed.gates.imagery === false && rawClosed.gates.colors === false,
+  'anders kan een audit niet zien wat ongereviewd is',
+);
+assert(
+  'raw strip nog steeds de markers',
+  !/\b(observed|recommended|note):/i.test(JSON.stringify(rawClosed.sections.imagery)),
+);
+const rawUnpublished = projectBrandLibrary('ws-1', makeRow({ published: false }), 'full', null, 'raw');
+assert(
+  'raw op een niet-gepubliceerde styleguide levert de secties, maar published blijft false',
+  rawUnpublished.sections.colors !== undefined && rawUnpublished.gates.published === false,
+);
+
 // ─── 3. Marker-stripping ────────────────────────────
 
 console.log('\n3. Marker-stripping');

@@ -27,7 +27,7 @@ import {
   type StyleguideRowForLibrary,
 } from "./project";
 import type { BrandLibraryView } from "./views";
-import type { BrandLibraryResult } from "./types";
+import type { BrandLibraryMode, BrandLibraryResult } from "./types";
 
 export { projectManifest } from "./views";
 export type { BrandLibraryView } from "./views";
@@ -64,6 +64,7 @@ export function invalidateBrandLibrary(workspaceId: string): void {
 // ─── Query ──────────────────────────────────────────
 
 const STYLEGUIDE_SELECT = {
+  id: true,
   published: true,
   status: true,
   manifestVersion: true,
@@ -79,6 +80,7 @@ const STYLEGUIDE_SELECT = {
   logoSavedForAi: true,
 
   primaryFontName: true,
+  additionalFonts: true,
   layoutStyle: true,
   layoutStyleInferred: true,
   archetype: true,
@@ -114,6 +116,7 @@ const STYLEGUIDE_SELECT = {
 
   colors: {
     select: {
+      id: true,
       name: true,
       hex: true,
       category: true,
@@ -178,6 +181,26 @@ const STYLEGUIDE_SELECT = {
 export interface GetBrandLibraryOptions {
   /** Channel-view voor de manifest-projectie. Default `full`. */
   view?: BrandLibraryView;
+  /**
+   * `gated` (default) voor alles wat een prompt voedt; `raw` voor audit- en
+   * analysepaden die de ongereviewde staat juist moeten kunnen zien.
+   */
+  mode?: BrandLibraryMode;
+}
+
+/**
+ * Zoek bij een styleguide-id de workspace op.
+ *
+ * Bestaat zodat consumers die alleen een styleguide-id hebben (bv. de
+ * alignment-entiteitlezer) niet zelf `prisma.brandStyleguide` hoeven aan te
+ * roepen — het enige leespad blijft daarmee deze module.
+ */
+export async function resolveStyleguideWorkspace(styleguideId: string): Promise<string | null> {
+  const row = await prisma.brandStyleguide.findUnique({
+    where: { id: styleguideId },
+    select: { workspaceId: true },
+  });
+  return row?.workspaceId ?? null;
 }
 
 /**
@@ -197,7 +220,8 @@ export async function getBrandLibrary(
   options: GetBrandLibraryOptions = {},
 ): Promise<BrandLibraryResult> {
   const view = options.view ?? "full";
-  const key = cacheKey(workspaceId, view);
+  const mode = options.mode ?? "gated";
+  const key = `${cacheKey(workspaceId, view)}:${mode}`;
 
   const cached = getCached<BrandLibraryResult>(key);
   if (cached) return cached;
@@ -220,6 +244,7 @@ export async function getBrandLibrary(
         styleguide as unknown as StyleguideRowForLibrary,
         view,
         adobeFontsKitId,
+        mode,
       )
     : emptyBrandLibrary(workspaceId, view, adobeFontsKitId);
 

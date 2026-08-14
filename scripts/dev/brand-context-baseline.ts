@@ -23,6 +23,8 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../src/lib/prisma';
 import { getBrandContext } from '../../src/lib/ai/brand-context';
 import { assembleCanvasContext } from '../../src/lib/ai/canvas-context';
+import { resolveWorkspaceBrandContext } from '../../src/lib/consistent-models/workspace-context-resolver';
+import { fetchModuleData } from '../../src/lib/alignment/data-fetcher';
 
 const arg = (name: string): string | null =>
   process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=') ?? null;
@@ -31,12 +33,19 @@ const OUT = arg('out');
 const COMPARE = arg('compare');
 const WITH = arg('with');
 
+/**
+ * Velden die per run verschillen en dus geen echt verschil zijn. Zonder deze
+ * uitsluiting rapporteert élke workspace een diff en verdrinkt het signaal.
+ */
+const VOLATILE_KEYS = new Set(['resolvedAt', 'generatedAt']);
+
 /** Deterministische serialisatie: sleutels gesorteerd, zodat een diff alleen echte verschillen toont. */
 function stable(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stable);
   if (value && typeof value === 'object') {
     const out: Record<string, unknown> = {};
     for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+      if (VOLATILE_KEYS.has(key)) continue;
       out[key] = stable((value as Record<string, unknown>)[key]);
     }
     return out;
@@ -50,6 +59,10 @@ interface WorkspaceSnapshot {
   brandContext: unknown;
   canvasBrand: unknown | null;
   canvasNote?: string;
+  /** Voedt de image-generatie-prompts van consistent models. */
+  modelBrandContext: unknown;
+  /** Voedt de alignment-audit. */
+  alignmentBrandstyle: unknown;
 }
 
 /**
@@ -210,6 +223,8 @@ async function capture(): Promise<Record<string, WorkspaceSnapshot>> {
       brandContext,
       canvasBrand,
       canvasNote,
+      modelBrandContext: stable(await resolveWorkspaceBrandContext(ws.id)),
+      alignmentBrandstyle: stable(await fetchModuleData(ws.id, 'BRANDSTYLE')),
     };
     console.log(`  ✓ ${ws.name}${canvasNote ? ` (${canvasNote})` : ''}`);
   }
@@ -296,6 +311,8 @@ async function main(): Promise<void> {
       brandContext: stable(await getBrandContext(workspaceId)),
       canvasBrand: null,
       canvasNote: 'scratch-kloon, geen deliverable',
+      modelBrandContext: stable(await resolveWorkspaceBrandContext(workspaceId)),
+      alignmentBrandstyle: stable(await fetchModuleData(workspaceId, 'BRANDSTYLE')),
     };
     console.log('  ✓ __scratch_published (gepubliceerde kloon, alle gates open)');
   });

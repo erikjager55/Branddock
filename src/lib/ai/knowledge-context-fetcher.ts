@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getBrandLibrary } from "@/lib/brand-library";
 
 interface ContextResult {
   name: string;
@@ -180,26 +181,25 @@ export async function fetchContextData(
     case "brandstyle": {
       // contentGuidelines verhuisd naar BrandVoiceguide (ADR 2026-05-15).
       // Styleguide levert visuele velden, voiceguide levert guidelines.
-      const [styleguide, voiceguide] = await Promise.all([
-        prisma.brandStyleguide.findFirst({
-          where: { id: sourceId, workspaceId },
-          select: {
-            photographyStyle: true,
-            primaryFontName: true,
-          },
-        }),
+      //
+      // W7.1: via de accessor, want deze context gaat rechtstreeks een prompt
+      // in. Voorheen werd `photographyStyle` hier ongegate én met
+      // OBSERVED:-markers doorgegeven — de imagery-review had er geen invloed
+      // op. Nu levert een gesloten imagery-sectie simpelweg niets.
+      const [library, voiceguide] = await Promise.all([
+        getBrandLibrary(workspaceId, { view: "image" }),
         prisma.brandVoiceguide.findUnique({
           where: { workspaceId },
           select: { contentGuidelines: true },
         }),
       ]);
-      if (!styleguide) return null;
+      if (!library.exists) return null;
       return {
         name: "Brand Styleguide",
         contextData: {
           contentGuidelines: voiceguide?.contentGuidelines ?? [],
-          photographyStyle: styleguide.photographyStyle,
-          primaryFont: styleguide.primaryFontName,
+          photographyStyle: library.sections.imagery?.photographyStyle ?? null,
+          primaryFont: library.sections.typography?.primaryFontName ?? null,
         },
       };
     }

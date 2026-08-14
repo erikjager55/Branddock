@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getBrandLibrary, resolveStyleguideWorkspace } from "@/lib/brand-library";
 import type { AlignmentModule } from "@/types/brand-alignment";
 
 // =============================================================
@@ -102,22 +103,28 @@ export async function fetchEntityById(
       }
       case "Brandstyle": {
         // Guidelines verhuisd naar BrandVoiceguide (ADR 2026-05-15).
-        const styleguide = await prisma.brandStyleguide.findUnique({
-          where: { id: entityId },
-          select: {
-            id: true,
-            workspaceId: true,
-            primaryFontName: true,
-            colors: { select: { name: true, hex: true, category: true } },
-          },
-        });
-        if (!styleguide) return null;
-        const voiceguide = await prisma.brandVoiceguide.findUnique({
-          where: { workspaceId: styleguide.workspaceId },
-          select: { contentGuidelines: true, writingGuidelines: true },
-        });
+        // W7.1: via het consumptiepad, in `raw`-modus — alignment auditeert de
+        // merkdata zelf en moet juist kunnen zien wat nog niet gereviewd is.
+        const workspaceId = await resolveStyleguideWorkspace(entityId);
+        if (!workspaceId) return null;
+        const [library, voiceguide] = await Promise.all([
+          getBrandLibrary(workspaceId, { mode: "raw" }),
+          prisma.brandVoiceguide.findUnique({
+            where: { workspaceId },
+            select: { contentGuidelines: true, writingGuidelines: true },
+          }),
+        ]);
         return {
-          ...styleguide,
+          id: library.meta.styleguideId,
+          workspaceId,
+          primaryFontName: library.sections.typography?.primaryFontName ?? null,
+          // Zelfde velden als vóór de migratie — de accessor levert er meer,
+          // maar extra kolommen in een audit-prompt zijn ruis, geen winst.
+          colors: (library.sections.colors?.palette ?? []).map((c) => ({
+            name: c.name,
+            hex: c.hex,
+            category: c.category,
+          })),
           contentGuidelines: voiceguide?.contentGuidelines ?? [],
           writingGuidelines: voiceguide?.writingGuidelines ?? [],
         } as Record<string, unknown>;
@@ -250,28 +257,26 @@ async function fetchBusinessStrategy(
 
 async function fetchBrandstyle(workspaceId: string): Promise<ModuleData> {
   // Guidelines verhuisd naar BrandVoiceguide (ADR 2026-05-15).
-  const [styleguide, voiceguide] = await Promise.all([
-    prisma.brandStyleguide.findFirst({
-      where: { workspaceId },
-      select: {
-        id: true,
-        primaryFontName: true,
-        typeScale: true,
-        photographyStyle: true,
-        graphicElements: true,
-        colors: {
-          select: { name: true, hex: true, category: true },
-        },
-      },
-    }),
+  // `raw`: dit voedt de alignment-audit, die de ongereviewde staat moet zien.
+  const [library, voiceguide] = await Promise.all([
+    getBrandLibrary(workspaceId, { mode: "raw" }),
     prisma.brandVoiceguide.findUnique({
       where: { workspaceId },
       select: { contentGuidelines: true, writingGuidelines: true },
     }),
   ]);
-  const merged = styleguide
+  const merged = library.exists
     ? {
-        ...styleguide,
+        id: library.meta.styleguideId,
+        primaryFontName: library.sections.typography?.primaryFontName ?? null,
+        typeScale: library.sections.typography?.typeScale ?? null,
+        photographyStyle: library.sections.imagery?.photographyStyle ?? null,
+        graphicElements: library.sections.designLanguage?.graphicElements ?? null,
+        colors: (library.sections.colors?.palette ?? []).map((c) => ({
+          name: c.name,
+          hex: c.hex,
+          category: c.category,
+        })),
         contentGuidelines: voiceguide?.contentGuidelines ?? [],
         writingGuidelines: voiceguide?.writingGuidelines ?? [],
       }

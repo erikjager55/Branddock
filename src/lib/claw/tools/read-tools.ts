@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { getBrandLibrary } from '@/lib/brand-library';
 import type { ClawToolDefinition, ToolExecutionContext } from '../claw.types';
 import {
   getAssetCompletenessFields,
@@ -659,20 +660,12 @@ export const readTools: ClawToolDefinition[] = [
     requiresConfirmation: false,
     category: 'read',
     execute: async (_params, ctx: ToolExecutionContext) => {
-      const [styleguide, voiceguide, personalityAsset] = await Promise.all([
-        prisma.brandStyleguide.findFirst({
-        where: { workspaceId: ctx.workspaceId },
-        include: {
-          colors: {
-            select: { id: true, name: true, hex: true, category: true },
-            orderBy: { sortOrder: 'asc' },
-          },
-          logos: {
-            select: { variant: true, fileUrl: true, description: true },
-            orderBy: { sortOrder: 'asc' },
-          },
-        },
-      }),
+      // W7.1: de assistent leest via het consumptiepad. Voorheen kreeg hij de
+      // volledige styleguide-rij ongegate — inclusief ongereviewde scrape-
+      // beschrijvingen mét OBSERVED:-markers. Nu ziet hij per sectie alleen
+      // wat de gebruiker heeft vrijgegeven.
+      const [library, voiceguide, personalityAsset] = await Promise.all([
+        getBrandLibrary(ctx.workspaceId),
         // 2026-05-19: voiceguide is primaire bron; legacy fallback voor
         // unmigrated workspaces (BrandPersonality.frameworkData.contentGuidelines
         // bestaat als shape "guidelines" in oude data).
@@ -686,7 +679,7 @@ export const readTools: ClawToolDefinition[] = [
         }),
       ]);
 
-      if (!styleguide) return { error: 'No styleguide found' };
+      if (!library.exists) return { error: 'No styleguide found' };
 
       // Legacy fallback voor unmigrated workspaces: BrandPersonality.frameworkData
       // bevat soms contentGuidelines / writingGuidelines als legacy shape.
@@ -701,16 +694,16 @@ export const readTools: ClawToolDefinition[] = [
         : [];
 
       return {
-        id: styleguide.id,
-        logoVariations: styleguide.logos.map((l) => ({
+        id: library.meta.styleguideId,
+        logoVariations: (library.sections.logo?.logos ?? []).map((l) => ({
           variant: l.variant,
           url: l.fileUrl,
           description: l.description,
         })),
-        logoGuidelines: styleguide.logoGuidelines,
-        colors: styleguide.colors,
-        primaryFontName: styleguide.primaryFontName,
-        additionalFonts: styleguide.additionalFonts,
+        logoGuidelines: library.sections.logo?.guidelines ?? [],
+        colors: library.sections.colors?.palette ?? [],
+        primaryFontName: library.sections.typography?.primaryFontName ?? null,
+        additionalFonts: library.sections.typography?.additionalFonts ?? [],
         contentGuidelines:
           (voiceguide?.contentGuidelines?.length ?? 0) > 0
             ? voiceguide!.contentGuidelines
@@ -719,8 +712,8 @@ export const readTools: ClawToolDefinition[] = [
           (voiceguide?.writingGuidelines?.length ?? 0) > 0
             ? voiceguide!.writingGuidelines
             : legacyWritingGuidelines,
-        photographyStyle: styleguide.photographyStyle,
-        visualLanguage: styleguide.visualLanguage,
+        photographyStyle: library.sections.imagery?.photographyStyle ?? null,
+        visualLanguage: library.sections.visualLanguage ?? null,
       };
     },
   },

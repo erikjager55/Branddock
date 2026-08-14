@@ -15,6 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { extractColorsFromImage } from "@/lib/consistent-models/color-extractor";
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from "@/lib/security/fetch-with-limit";
 import { getBrandContext } from "@/lib/ai/brand-context";
+import { getBrandLibrary } from "@/lib/brand-library";
 
 import {
   alignColorsToPalette,
@@ -303,17 +304,10 @@ async function fetchImageBuffer(url: string): Promise<Buffer> {
 }
 
 async function fetchBrandColors(workspaceId: string): Promise<BrandColor[]> {
-  const styleguide = await prisma.brandStyleguide.findUnique({
-    where: { workspaceId },
-    select: {
-      colors: {
-        select: { hex: true, category: true },
-        orderBy: { sortOrder: "asc" },
-      },
-    },
-  });
-  if (!styleguide?.colors) return [];
-  return styleguide.colors
+  // Kleuren zijn een render-eigenschap: het beeld wordt beoordeeld op of het
+  // de merkkleuren gebruikt, niet op ongereviewde proza. Vandaar `render`.
+  const library = await getBrandLibrary(workspaceId, { view: "image" });
+  return library.render.colors
     .map((c) => ({ hex: c.hex, category: String(c.category) }))
     .filter((c) => c.hex && c.hex.length > 0);
 }
@@ -334,55 +328,44 @@ async function buildVisualBrandContext(
     // brand context optional
   }
 
-  // Pull visual-language + photography-style + illustration-guidelines +
-  // logo guidelines directly from the styleguide model — getBrandContext
-  // already wraps but we want the structured originals for visual judging.
-  const styleguide = await prisma.brandStyleguide.findUnique({
-    where: { workspaceId },
-    select: {
-      photographyStyle: true,
-      photographyGuidelines: true,
-      illustrationGuidelines: true,
-      logoGuidelines: true,
-      logos: { select: { description: true }, take: 1 },
-      visualLanguage: true,
-    },
-  });
+  // Deze tekst gaat rechtstreeks als beoordelingsmaatstaf de vision-judge in.
+  // Voorheen kwam hij ongegate én met OBSERVED:-markers uit de styleguide —
+  // een ongereviewde scrape-beschrijving bepaalde dus mee of een beeld
+  // "on-brand" heette. Via de accessor geldt de imagery-/logo-review, en zijn
+  // de markers gestript (leak-klasse gotchas.md 2026-06-24).
+  const library = await getBrandLibrary(workspaceId, { view: "image" });
+  const imagery = library.sections.imagery;
+  const logo = library.sections.logo;
 
-  if (styleguide) {
-    if (styleguide.photographyStyle || styleguide.photographyGuidelines.length > 0) {
+  if (imagery) {
+    if (imagery.photographyStyle || imagery.guidelines.length > 0) {
       const parts: string[] = [];
-      if (styleguide.photographyStyle) {
-        parts.push(
-          typeof styleguide.photographyStyle === "string"
-            ? styleguide.photographyStyle
-            : JSON.stringify(styleguide.photographyStyle).slice(0, 600),
-        );
+      if (imagery.photographyStyle) {
+        parts.push(JSON.stringify(imagery.photographyStyle).slice(0, 600));
       }
-      if (styleguide.photographyGuidelines.length > 0) {
-        parts.push(styleguide.photographyGuidelines.join("; ").slice(0, 400));
+      if (imagery.guidelines.length > 0) {
+        parts.push(imagery.guidelines.join("; ").slice(0, 400));
       }
       ctx.photographyStyle = parts.join("\n").slice(0, 800);
     }
-    if (styleguide.illustrationGuidelines.length > 0) {
-      ctx.illustrationStyle = styleguide.illustrationGuidelines.join("; ").slice(0, 800);
+    if (imagery.illustrationGuidelines.length > 0) {
+      ctx.illustrationStyle = imagery.illustrationGuidelines.join("; ").slice(0, 800);
     }
+  }
 
+  if (logo) {
     const logoParts: string[] = [];
-    if (styleguide.logos[0]?.description) logoParts.push(styleguide.logos[0].description);
-    if (styleguide.logoGuidelines.length > 0) {
-      logoParts.push(styleguide.logoGuidelines.join("; "));
+    if (logo.logos[0]?.description) logoParts.push(logo.logos[0].description);
+    if (logo.guidelines.length > 0) {
+      logoParts.push(logo.guidelines.join("; "));
     }
     if (logoParts.length > 0) {
       ctx.logoDescription = logoParts.join("\n").slice(0, 400);
     }
+  }
 
-    if (styleguide.visualLanguage) {
-      ctx.visualLanguage =
-        typeof styleguide.visualLanguage === "string"
-          ? styleguide.visualLanguage
-          : JSON.stringify(styleguide.visualLanguage).slice(0, 800);
-    }
+  if (library.sections.visualLanguage) {
+    ctx.visualLanguage = JSON.stringify(library.sections.visualLanguage).slice(0, 800);
   }
 
   return ctx;

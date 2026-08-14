@@ -20,6 +20,7 @@ import {
 import { projectManifest, type BrandLibraryView } from "./views";
 import type {
   BrandLibraryGates,
+  BrandLibraryMode,
   BrandLibraryResult,
   BrandLibrarySections,
   LibraryColor,
@@ -31,6 +32,7 @@ import type {
 
 /** Precies de velden die index.ts uit de database haalt. */
 export interface StyleguideRowForLibrary {
+  id: string;
   published: boolean;
   status: string;
   manifestVersion: number;
@@ -46,6 +48,7 @@ export interface StyleguideRowForLibrary {
   logoSavedForAi: boolean;
 
   primaryFontName: string | null;
+  additionalFonts: string[];
   layoutStyle: BrandLibraryResult["render"]["layoutStyle"];
   layoutStyleInferred: boolean;
   archetype: BrandLibraryResult["render"]["archetype"];
@@ -150,8 +153,25 @@ export function resolveGates(row: StyleguideRowForLibrary): BrandLibraryGates {
 
 function buildSections(
   row: StyleguideRowForLibrary,
-  gates: BrandLibraryGates,
+  gateState: BrandLibraryGates,
+  mode: BrandLibraryMode,
 ): BrandLibrarySections {
+  // `raw` levert élke sectie, ongeacht de gates — voor audit- en
+  // analysepaden die juist moeten kunnen zien wat nog niet gereviewd is.
+  // `gates` blijft de wáre stand rapporteren, zodat zo'n consument het
+  // verschil alsnog kent. Marker-stripping geldt onverkort.
+  const gates: BrandLibraryGates =
+    mode === "raw"
+      ? {
+          published: gateState.published,
+          colors: true,
+          typography: true,
+          imagery: true,
+          designLanguage: true,
+          visualLanguage: true,
+          logo: true,
+        }
+      : gateState;
   const sections: BrandLibrarySections = {};
 
   if (gates.colors) {
@@ -165,6 +185,7 @@ function buildSections(
   if (gates.typography) {
     sections.typography = {
       primaryFontName: row.primaryFontName,
+      additionalFonts: row.additionalFonts,
       fonts: row.fonts,
       typeScale: row.typeScale,
     };
@@ -213,12 +234,14 @@ function buildSections(
  * @param row - de rij inclusief relaties, zoals index.ts hem ophaalt
  * @param view - channel-view voor de manifest-projectie
  * @param adobeFontsKitId - workspace-scalar die canvas-context nodig heeft
+ * @param mode - `gated` (default) of `raw` voor audit-/analysepaden
  */
 export function projectBrandLibrary(
   workspaceId: string,
   row: StyleguideRowForLibrary,
   view: BrandLibraryView,
   adobeFontsKitId: string | null,
+  mode: BrandLibraryMode = "gated",
 ): BrandLibraryResult {
   const gates = resolveGates(row);
 
@@ -230,12 +253,13 @@ export function projectBrandLibrary(
 
   return {
     workspaceId,
+    exists: true,
     published: row.published,
     manifestVersion: row.manifestVersion,
     manifest,
     markdown: manifest ? renderBrandManifestMarkdown(manifest) : "",
     view,
-    sections: buildSections(row, gates),
+    sections: buildSections(row, gates, mode),
     render: {
       primaryFontName: row.primaryFontName,
       layoutStyle: row.layoutStyle,
@@ -263,6 +287,7 @@ export function projectBrandLibrary(
     rules: stripRules(row.rules),
     gates,
     meta: {
+      styleguideId: row.id,
       designPhilosophy: row.designPhilosophy ? stripAnalyzerMarkers(row.designPhilosophy) : null,
       sourceUrl: row.sourceUrl,
       status: row.status,
@@ -278,6 +303,7 @@ export function emptyBrandLibrary(
 ): BrandLibraryResult {
   return {
     workspaceId,
+    exists: false,
     published: false,
     manifestVersion: 0,
     manifest: null,
@@ -318,6 +344,6 @@ export function emptyBrandLibrary(
       visualLanguage: false,
       logo: false,
     },
-    meta: { designPhilosophy: null, sourceUrl: null, status: "DRAFT" },
+    meta: { styleguideId: null, designPhilosophy: null, sourceUrl: null, status: "DRAFT" },
   };
 }
