@@ -118,6 +118,10 @@ Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referenti
 
 **Afgevinkt kan pas na deploy**: Neon `prisma db push` (GeneratedBrandProfile + enum), deploy-smokes (generator end-to-end op prod, claim → workspace, dashboard-ladder), ANTHROPIC_API_KEY-afhankelijke scan op prod. Lokale gates groen: tsc 0, eslint nieuwe bestanden 0, emitter-smoke, validator-selftest + kruisvalidatie.
 
+# Uitvoeringsstand v2 (live-iteratie 2026-08-14)
+
+Na de geslaagde live test (scan → claim → dashboard werkend op prod) drie user-besluiten verwerkt: (1) **rijkere scan** — 1-2 extra same-origin-pagina's (over-ons/diensten-patronen), bredere AI-extractie (kernwaarden + letterlijke voorbeeldzinnen), tekstbudget 6k→12k, maxTokens 1400→2500; (2) **leken-laag resultaatpagina** — uitlegkop, hoofdbevindingen in gewone taal (deterministisch uit het payload), scoredimensies ingeklapt, use-paneel vóór download; (3) **harde e-mail-gate** — bestand niet meer in de generate-response, server-afgedwongen via `/api/brandmd/download` (403 EMAIL_REQUIRED zonder vastgelegde e-mail). Footer-links op de marketing-site toegevoegd (/brandmd + /brandmd/use). ⚠️ Door de harde gate is de **rapport-mail (Emailit) urgenter geworden**: de gate wekt de verwachting van opvolging — follow-up-task naar voren halen.
+
 # Notes
 
 - **Bestaande exportlaag (inventarisatie 2026-08-03)** — de fundering ligt er al: Export Format Registry met 7 formaten waaronder werkende `designmd`- (Google Stitch) en `brand-brief`-emitters ("AGENTS.md-style, om als BRAND.md in je repo-root te droppen" — feitelijk een proto-brand.md met 12 assets + personas + concurrenten), canoniek `DesignSystemModel` + resolver + linter, brand-kit-ZIP ("Claude Design compatible"), workspace-JSON-export. De brand.md-emitter is dus een inpas-klus in een bewezen patroon, geen greenfield.

@@ -27,7 +27,8 @@ import { DRAFT_PAYLOAD_VERSION } from './constants';
 const MAX_HTML_BYTES = 900_000;
 const MAX_CSS_FILES = 3;
 const MAX_CSS_BYTES = 300_000;
-const MAX_TEXT_FOR_AI = 6_000;
+const MAX_TEXT_FOR_AI = 12_000;
+const MAX_EXTRA_PAGES = 2;
 const FETCH_TIMEOUT_MS = 15_000;
 
 // ─── Payload (geborgd in GeneratedBrandProfile.payload) ───────────────
@@ -55,6 +56,12 @@ export interface BrandMdDraftPayload {
   };
   audience: Array<{ name: string; description: string }>;
   products: Array<{ name: string; description: string }>;
+  /** Verrijking 2026-08-14 (optioneel, additief): kernwaarden uit de copy */
+  coreValues?: string[];
+  /** Letterlijke zinnen uit de site-copy die de toon dragen */
+  exampleLines?: string[];
+  /** Welke pagina's zijn meegescand (transparantie + debugging) */
+  scannedPaths?: string[];
 }
 
 export function normalizeDomain(rawUrl: string): string {
@@ -73,7 +80,13 @@ export async function scanWebsiteForBrandMd(rawUrl: string): Promise<BrandMdDraf
   const css = await fetchStylesheets(url, html);
   const colors = extractColors(html + '\n' + css);
   const fonts = extractFonts(html, css);
-  const text = extractVisibleText(html).slice(0, MAX_TEXT_FOR_AI);
+
+  // Verrijking: de over-ons/diensten-pagina draagt vaak de échte strategie-
+  // en voice-copy — 1-2 extra same-origin-pagina's meelezen (byte-gecapt).
+  const extra = await fetchKeyPages(url, html);
+  const text = [extractVisibleText(html), ...extra.texts]
+    .join('\n\n---\n\n')
+    .slice(0, MAX_TEXT_FOR_AI);
 
   const ai = await extractBrandSignals(meta.title ?? domain, meta.description, text);
 
@@ -90,7 +103,50 @@ export async function scanWebsiteForBrandMd(rawUrl: string): Promise<BrandMdDraf
     voice: ai.voice,
     audience: ai.audience,
     products: ai.products,
+    coreValues: ai.coreValues,
+    exampleLines: ai.exampleLines,
+    scannedPaths: ['/', ...extra.paths],
   };
+}
+
+/** Kandidaat-paden waar merkstrategie en voice meestal wonen. */
+const KEY_PAGE_PATTERNS =
+  /\/(about|over-ons|over|wie-zijn-wij|missie|diensten|services|wat-we-doen|producten|products|aanpak|approach)(\/|$|\?|#)/i;
+
+async function fetchKeyPages(
+  pageUrl: string,
+  html: string,
+): Promise<{ texts: string[]; paths: string[] }> {
+  const origin = new URL(pageUrl).origin;
+  const candidates = [...html.matchAll(/<a[^>]+href=["']([^"'#]+)["']/gi)]
+    .map((m) => {
+      try {
+        return new URL(m[1], pageUrl);
+      } catch {
+        return null;
+      }
+    })
+    .filter((u): u is URL => !!u && u.origin === origin && KEY_PAGE_PATTERNS.test(u.pathname));
+  const unique: URL[] = [];
+  for (const u of candidates) {
+    if (!unique.some((x) => x.pathname === u.pathname)) unique.push(u);
+    if (unique.length >= MAX_EXTRA_PAGES) break;
+  }
+  const texts: string[] = [];
+  const paths: string[] = [];
+  for (const u of unique) {
+    try {
+      const pageHtml = await fetchBounded(u.toString(), MAX_HTML_BYTES);
+      const text = extractVisibleText(pageHtml);
+      if (text.length > 200) {
+        texts.push(text.slice(0, Math.floor(MAX_TEXT_FOR_AI / 2)));
+        paths.push(u.pathname);
+      }
+    } catch {
+      // Eén onbereikbare subpagina mag de scan niet laten falen.
+    }
+  }
+  return { texts, paths };
 }
 
 async function fetchBounded(url: string, maxBytes: number): Promise<string> {
@@ -236,6 +292,8 @@ interface AiBrandSignals {
   voice: BrandMdDraftPayload['voice'];
   audience: BrandMdDraftPayload['audience'];
   products: BrandMdDraftPayload['products'];
+  coreValues: string[];
+  exampleLines: string[];
 }
 
 async function extractBrandSignals(
@@ -248,6 +306,8 @@ async function extractBrandSignals(
     voice: { tonalRules: [], wordsWeUse: [], wordsWeAvoid: [] },
     audience: [],
     products: [],
+    coreValues: [],
+    exampleLines: [],
   };
   if (!text || text.length < 100) return empty;
 
@@ -284,6 +344,8 @@ async function extractBrandSignals(
       },
       audience: objArray(parsed.audience),
       products: objArray(parsed.products),
+      coreValues: strArray(parsed.coreValues),
+      exampleLines: strArray(parsed.exampleLines).slice(0, 5),
     };
   } catch {
     // AI-output onparsebaar → eerlijk mager draft i.p.v. harde fout.
@@ -308,15 +370,20 @@ async function callExtractionModel(
           '"strategy": {"purpose": string?, "positioning": string?, "personality": string?, "promise": string?}, ' +
           '"voice": {"description": string?, "tonalRules": string[], "wordsWeUse": string[], "wordsWeAvoid": string[]}, ' +
           '"audience": [{"name": string, "description": string}], ' +
-          '"products": [{"name": string, "description": string}]} ' +
-          'Keep every string under 300 characters; max 5 items per array. wordsWeUse = distinctive vocabulary that appears in the copy; wordsWeAvoid may be empty.',
+          '"products": [{"name": string, "description": string}], ' +
+          '"coreValues": string[], ' +
+          '"exampleLines": string[]} ' +
+          'Keep every string under 300 characters; max 5 items per array (max 8 for wordsWeUse). ' +
+          'wordsWeUse = distinctive vocabulary that appears in the copy; wordsWeAvoid may be empty. ' +
+          'coreValues = the values the brand explicitly claims or clearly lives in the copy. ' +
+          'exampleLines = 3-5 VERBATIM sentences quoted from the copy that best carry the brand voice — copy them exactly, do not rewrite.',
       },
       {
         role: 'user',
         content: `Site title: ${title}\nMeta description: ${description ?? '(none)'}\n\nVisible copy:\n${text}`,
       },
     ],
-    { maxTokens: 1400, temperature: 0.2 },
+    { maxTokens: 2500, temperature: 0.2 },
   );
 }
 
@@ -381,11 +448,11 @@ export function draftPayloadToModel(payload: BrandMdDraftPayload, claimCanonical
     prose: {},
     extensions: {
       voice:
-        payload.voice.tonalRules.length > 0
+        payload.voice.tonalRules.length > 0 || (payload.exampleLines?.length ?? 0) > 0
           ? {
               principles: payload.voice.tonalRules,
               writingGuidelines: [],
-              doSayPhrases: [],
+              doSayPhrases: payload.exampleLines ?? [],
               dontSayPhrases: [],
             }
           : undefined,
@@ -402,6 +469,9 @@ export function draftPayloadToModel(payload: BrandMdDraftPayload, claimCanonical
             : null,
           payload.strategy.promise
             ? { name: 'Brand Promise', slug: 'brand-promise', category: 'CORE', summary: payload.strategy.promise }
+            : null,
+          payload.coreValues?.length
+            ? { name: 'Core Values', slug: 'core-values', category: 'CULTURE', summary: payload.coreValues.join(' · ') }
             : null,
         ].filter((a): a is NonNullable<typeof a> => a !== null),
         personas: payload.audience.map((a) => ({

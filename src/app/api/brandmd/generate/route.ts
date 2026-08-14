@@ -16,7 +16,7 @@ import { createHash, randomBytes } from 'crypto';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { parseJsonBody } from '@/lib/api/parse-json-body';
-import { scanWebsiteForBrandMd, draftPayloadToModel, normalizeDomain } from '@/lib/brandmd/scan';
+import { scanWebsiteForBrandMd, draftPayloadToModel, normalizeDomain, type BrandMdDraftPayload } from '@/lib/brandmd/scan';
 import { computeBrandScore } from '@/lib/brandmd/score';
 import { emitBrandMd, countValidation } from '@/lib/export/design-system/emitters/brandmd';
 import {
@@ -99,10 +99,11 @@ export async function POST(request: NextRequest) {
       token: rawToken,
       brandName: payload.name,
       domain,
-      file,
       fileName: `${domain}-brand.md`,
       score: score.total,
       dimensions: score.dimensions,
+      findings: buildHumanFindings(payload),
+      scannedPaths: payload.scannedPaths ?? ['/'],
       validatedSections: counts.validated,
       totalSections: counts.total,
       claimUrl: claim ?? null,
@@ -125,6 +126,64 @@ export async function POST(request: NextRequest) {
       { status: isClientish ? 422 : 500 },
     );
   }
+}
+
+/**
+ * Leken-laag (feedback 2026-08-14): 3-4 hoofdbevindingen in gewone taal,
+ * deterministisch afgeleid uit de scan — sterk én zwak, geen analist-jargon.
+ */
+function buildHumanFindings(payload: BrandMdDraftPayload): Array<{ positive: boolean; text: string }> {
+  const findings: Array<{ positive: boolean; text: string }> = [];
+
+  if (payload.voice.description) {
+    findings.push({
+      positive: true,
+      text: 'Your tone of voice is recognizable — with this file, AI tools can imitate it instead of guessing.',
+    });
+  } else {
+    findings.push({
+      positive: false,
+      text: "We couldn't pin down a distinctive tone of voice from your site — AI output will sound generic until this is defined.",
+    });
+  }
+
+  if (payload.colors.length >= 3) {
+    findings.push({
+      positive: true,
+      text: `Your visual identity is detectable: ${payload.colors.length} brand colors${payload.fonts.length ? ` and ${payload.fonts.length} typefaces` : ''} found.`,
+    });
+  } else {
+    findings.push({
+      positive: false,
+      text: "We couldn't detect a clear color system — AI design tools have nothing to hold on to yet.",
+    });
+  }
+
+  if (payload.audience.length > 0) {
+    findings.push({
+      positive: true,
+      text: `We found who you're talking to (${payload.audience.map((a) => a.name).join(', ')}) — AI can now write for them, not for everyone.`,
+    });
+  } else {
+    findings.push({
+      positive: false,
+      text: "Your target audience isn't visible on your site — right now every AI tool is guessing who it's writing for.",
+    });
+  }
+
+  if (payload.exampleLines?.length) {
+    findings.push({
+      positive: true,
+      text: 'We captured real sentences from your site as voice examples — the strongest signal an AI can copy.',
+    });
+  } else if (payload.strategy.purpose || payload.strategy.positioning) {
+    findings.push({
+      positive: true,
+      text: 'Your positioning comes through — AI tools will know what you stand for, not just what you sell.',
+    });
+  }
+
+  return findings.slice(0, 4);
 }
 
 async function enforceRateLimits(ipHash: string, domain: string): Promise<NextResponse | null> {

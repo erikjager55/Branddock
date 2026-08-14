@@ -18,7 +18,11 @@
 
 ---
 
-## De gate-architectuur (kernbesluit van v2)
+## De gate-architectuur (kernbesluit van v2 — **herzien per user-besluit 2026-08-14**)
+
+> **User-besluit 2026-08-14 (na live test)**: **harde e-mail-gate op de download** (HubSpot-stijl), ter vervanging van "bestand altijd vrij". Score + hoofdbevindingen + use-teaser blijven vrij zichtbaar (partial reveal); het bestand wordt server-side pas geleverd ná e-mail (`/api/brandmd/download`). Consequenties: hero-copy zonder "no account"-belofte op de download, touchpoint 1.3's virale-drager-aanname verzwakt (bestanden circuleren alleen nog via mensen die de gate passeerden), en de Show HN-framing moet "free" houden maar "no email" niet claimen. De run→e-mail-target vervalt (wordt ~run→download); meet in het leads-dashboard of de download-conversie acceptabel blijft. De oorspronkelijke tabel hieronder blijft staan als ontwerp-referentie.
+
+### Oorspronkelijke v2-tabel (referentie)
 
 | Laag | Vrij/gated | Waarom |
 |---|---|---|
