@@ -146,6 +146,7 @@ const STYLEGUIDE_SELECT = {
   logos: {
     select: {
       variant: true,
+      fileName: true,
       fileUrl: true,
       fileType: true,
       width: true,

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
 import { judgeVisualBrandFit } from "@/lib/landing-pages/visual-brand-fit-judge";
 import type { PageData as Data } from '@/lib/landing-pages/page-data';
+import { getBrandLibrary } from '@/lib/brand-library';
 
 /**
  * POST /api/landing-pages/[deliverableId]/visual-brand-fit-check
@@ -67,20 +68,15 @@ export async function POST(
     );
   }
 
-  // Laad designPhilosophy + brand-context
-  const styleguide = await prisma.brandStyleguide.findUnique({
-    where: { workspaceId },
-    select: {
-      designPhilosophy: true,
-      colors: {
-        where: { category: "PRIMARY" },
-        orderBy: { sortOrder: "asc" },
-        select: { hex: true },
-        take: 3,
-      },
-    },
-  });
-  if (!styleguide?.designPhilosophy) {
+  // Laad designPhilosophy + brand-context via het consumptiepad (W7.1).
+  // designPhilosophy komt marker-vrij binnen; voorheen ging de ruwe
+  // OBSERVED:-tekst als beoordelingsmaatstaf de vision-judge in.
+  const library = await getBrandLibrary(workspaceId, { view: "image" });
+  const primaryHexes = library.render.colors
+    .filter((c) => c.category === "PRIMARY")
+    .slice(0, 3)
+    .map((c) => c.hex);
+  if (!library.meta.designPhilosophy) {
     return NextResponse.json(
       {
         error: "No designPhilosophy present — run the brand style analysis to enable the vision judge",
@@ -94,9 +90,9 @@ export async function POST(
   const result = await judgeVisualBrandFit({
     puckData,
     ctx,
-    designPhilosophy: styleguide.designPhilosophy,
+    designPhilosophy: library.meta.designPhilosophy,
     brandName: ctx.brand.brandName,
-    brandColors: styleguide.colors.map((c) => c.hex),
+    brandColors: primaryHexes,
     brandImageryStyle: ctx.brand.brandImageryStyle ?? null,
   });
 

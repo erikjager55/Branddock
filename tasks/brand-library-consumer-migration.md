@@ -5,9 +5,9 @@ fase: post-launch
 priority: now
 effort: 3 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-08-14
-completed: -
+completed: 2026-08-14
 related-adr: docs/adr/2026-08-14-brand-library-consumption.md
 related-spec: docs/specs/brandstyle-designbibliotheek-verbeterplan.md (W7.1)
 worktree: branddock-brand-library-consumer-migration
@@ -50,20 +50,21 @@ Ontwerpbeslissingen D1-D5 staan in de ADR.
 
 # Acceptatiecriteria
 
-- [ ] `getBrandLibrary` levert per sectie `undefined` zodra de bijbehorende gate dicht staat, en
+- [x] `getBrandLibrary` levert per sectie `undefined` zodra de bijbehorende gate dicht staat, en
       `gates` benoemt welke dicht stonden
-- [ ] Render-tokens komen óók terug bij `published: false` — canvas-context blijft werken op een
+- [x] Render-tokens komen óók terug bij `published: false` — canvas-context blijft werken op een
       niet-gefinaliseerde styleguide
-- [ ] Geen enkele prozawaarde uit de accessor bevat nog `OBSERVED:`/`RECOMMENDED:`
-- [ ] `brand-context` honoreert `typographySavedForAi` op `fonts` (gat #1) — bewuste gedragswijziging
-- [ ] `visual-fidelity-scorer` krijgt gegate én gestripte imagery (gat #2)
-- [ ] `api/brandstyle/ai-context` past de publish-gate toe
-- [ ] Baseline-diff toont alleen de benoemde verschillen
-- [ ] Lint-regel vlagt aantoonbaar een nieuwe overtreding en staat op `error`
-- [ ] De bestaande NL/i18n-lintguards blijven actief (`npx eslint --print-config`)
-- [ ] `npx tsc --noEmit` 0 errors · `npm run lint` 0 errors
-- [ ] `eval:brand-manifest-golden`, `smoke:styleguide-rules`, `smoke:geo-fidelity`,
-      `eval:brandstyle-golden` groen
+- [x] Geen enkele prozawaarde uit de accessor bevat nog `OBSERVED:`/`RECOMMENDED:`
+- [x] `brand-context` honoreert `typographySavedForAi` op `fonts` (gat #1) — raakt Linfi + Nobox
+- [x] `visual-fidelity-scorer` krijgt gegate én gestripte imagery (gat #2)
+- [x] `api/brandstyle/ai-context` past de publish-gate toe
+- [x] Baseline-diff toont alleen de benoemde verschillen (zie Notes)
+- [x] Lint-regel vlagt aantoonbaar een nieuwe overtreding en staat op `error`
+- [x] De bestaande NL/i18n-lintguards blijven actief (`--print-config`: beide rule-keys actief)
+- [x] `npx tsc --noEmit` 0 errors · `npm run lint` 0 nieuwe errors (1 pre-existing op main)
+- [x] `smoke:brand-library` 36/36 · `smoke:styleguide-rules` 51/51 ·
+      `smoke:styleguide-rules-fval` 17/17 · `eval:brand-manifest-golden` 14/14 ·
+      `eval:brandstyle-golden` PASS · `smoke:geo-fidelity` 20/20
 
 # Bestanden die ik aanraak
 
@@ -117,4 +118,53 @@ Ontwerpbeslissingen D1-D5 staan in de ADR.
 
 # Notes
 
-Werk-log en gevonden gotchas komen hier tijdens de uitvoering.
+## Wat er meetbaar veranderde (baseline-diff, 19 workspaces)
+
+Het "vóór"-beeld komt uit de ongemigreerde taak-1-worktree; het harnas legt
+`getBrandContext`, `assembleCanvasContext`, `resolveWorkspaceBrandContext` en de
+alignment-BRANDSTYLE-module vast, plus een gepubliceerde scratch-kloon omdat lokaal géén
+styleguide `published` is.
+
+1. **`consistent-models` verliest merkcontext bij een niet-gefinaliseerde styleguide.** Kleuren,
+   fonts en logo-proza gingen daar ongegate naar image-generatie-prompts; nu gelden dezelfde
+   publish- + sectie-gates als in `brand-context`. Lokaal raakt dat 16 van 18 workspaces (niets is
+   hier published); op prod alleen workspaces die de brandstyle-review nooit hebben afgerond.
+   **Dit is de grootste gedragsconsequentie van deze taak.**
+2. **`brand-context.brandFonts` volgt nu `typographySavedForAi`** — Linfi en Nobox zijn published
+   mét een gesloten typografie-sectie en stuurden hun fonts dus tóch de prompt in.
+3. **Alignment ziet geen analyzer-markers meer.** Per veld gecontroleerd: het verschil is
+   uitsluitend weggevallen `OBSERVED:`/`RECOMMENDED:`-prefixen, geen dataverlies. `mode: 'raw'`
+   houdt de gates daar bewust open — een audit moet juist zien wat nog niet gereviewd is.
+4. **`brandColors` staat nu PRIMARY-eerst** (Gemeente Barneveld) door de deterministische
+   `sortOrder`-ordening; voorheen bepaalde de fysieke rij-volgorde de groepering.
+5. Canvas-context is byte-identiek voor alle 7 workspaces met een deliverable.
+
+## Bewust overgenomen in plaats van aangescherpt
+
+- De `designLanguage`-gate opent óók op `visualLanguageSavedForAi` — die twee secties delen in de
+  UI één "Visual System"-tab en `brand-context` deed dit al zo.
+- Componenten blijven ongegate in `render` (de renderer heeft ze nodig), maar de prompt-string
+  erover volgt de `designLanguage`-gate.
+
+## Gevonden tijdens de uitvoering
+
+1. **Flat-config `ignores` leest `[token]` als character-class.** De allowlist-entry
+   `src/app/api/brandmd/claim/[token]/route.ts` matchte daardoor stil niet en de lint-regel gaf
+   een valse error. Cure: `src/app/api/brandmd/claim/**`. Let hierop bij élk pad met Next-brackets.
+2. **`as const` op een Prisma-select botst met `Exact<>`** (readonly `orderBy`-tuple). `satisfies
+   Prisma.BrandStyleguideSelect` houdt de literals én type-checkt.
+3. **De scratch-kloon is niet byte-stabiel tussen runs** wanneer meerdere kleuren dezelfde
+   `sortOrder` hebben. Lees een diff op `__scratch_published` dus met die korrel zout; de echte
+   workspaces zijn wél stabiel.
+4. **`no-restricted-properties` matcht op de objectnaam**, dus `ctx.brandStyleguideMeta` wordt
+   niet geraakt door de `tx`-entry — maar een `grep` op `tx\.brandStyleguide` wél. Bij het
+   inventariseren gaf dat een vals positief.
+
+## Resterende schuld (staat in de lint-allowlist)
+
+Negen lezers zijn nog niet gemigreerd: de vier export-paden (`design-system/resolver`,
+`brand-kit-bundle`, `workspace/export`, `brand-kit/data`), `proxy-image`, `get-brand-logo`,
+`alignment/audit-scoring` en `bug-analysis` (geen promptcontent), plus
+`brand-fidelity/styleguide-rule-compiler` en `brandstyle/rule-structurer`, die hun eigen gates al
+toepassen op hun eigen domein. De export-paden zijn de enige met een echte beslissing eraan vast:
+gating daar verandert de Brand Kit Bundle.

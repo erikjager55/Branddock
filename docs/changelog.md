@@ -37,6 +37,49 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 458. Merkcontext loopt via één gegate accessor — twaalf consumers gemigreerd + lint-regel (W7.1)
+
+Elke consumer las tot nu toe zelf `BrandStyleguide`-velden, dus de gates (`published` + de zes
+`*SavedForAi`-vlaggen) en de marker-stripping zaten verspreid over tientallen bestanden. Van de
+~24 leespaden pasten er **5** gates toe. `getBrandLibrary` bestond wel, maar had **nul** consumers
+en leverde alleen het manifest. **Fase 1**: de accessor is het consumptiecontract geworden — één
+query, twee helften met een bewust verschil in gating (`sections` = prozacontent voor prompts,
+gegate; `render` = tokens waarmee gerenderd wordt, ongegate zoals canvas-context al deed), een
+`gates`-rapportage zodat "sectie ontbreekt" te onderscheiden is van "sectie is leeg", en
+`mode: 'raw'` voor audit-paden die juist de ongereviewde staat moeten zien. Retourneert niet langer
+`null` bij een niet-gepubliceerde styleguide, en hangt onder de bestaande server-cache met de
+`brandstyle`-prefix zodat de invalidatie die élke mutatieroute al doet hem meeneemt. **Fase 2**:
+acht lib-modules (`brand-context`, `canvas-context`, `knowledge-context-fetcher`,
+`claw/read-tools`, `visual-fidelity-scorer`, beide `consistent-models`-resolvers,
+`alignment/data-fetcher`) en vier routes (`brandstyle/ai-context`, `visual-brand-fit-check`,
+`lp-fidelity-check`, `landing-pages/auto-iterate`) gemigreerd. **Fase 3**: `no-restricted-properties`
+op `prisma|tx|db.brandStyleguide` als **error**, met een `ignores`-lijst die de resterende negen
+lezers benoemt — bewust niet `no-restricted-syntax`, want die sleutel is al twee keer in gebruik
+voor de NL/i18n-guards en flat-config doet last-wins per rule-key.
+
+**Drie gaten gedicht**: `brand-context` las `fonts` langs `typographySavedForAi` heen (raakt Linfi +
+Nobox, allebei published mét gesloten typografie-sectie); `visual-fidelity-scorer` zette een
+ongegate, ongestripte `JSON.stringify` van de scrape als beoordelingsmaatstaf in de vision-judge;
+`claw/read_brandstyle` en `knowledge-context-fetcher` leverden ongereviewde scrape-data aan de
+assistent respectievelijk de prompt. **Grootste gedragsconsequentie**: `consistent-models` gaf
+kleuren, fonts en logo-proza ongegate aan image-generatie-prompts en volgt nu dezelfde gates als
+`brand-context` — bij een niet-gefinaliseerde styleguide krijgt de beeldgeneratie dus geen
+merkcontext meer (lokaal 16 van 18 workspaces; op prod alleen wie de review nooit afrondde).
+
+Bewijs: baseline-harnas (`scripts/dev/brand-context-baseline.ts`) dat `getBrandContext`,
+`assembleCanvasContext`, `resolveWorkspaceBrandContext` en de alignment-module per workspace
+vastlegt, met een gepubliceerde scratch-kloon omdat lokaal géén styleguide `published` is. Het
+"vóór"-beeld komt uit de ongemigreerde taak-1-worktree. Elke gemeten afwijking is verklaard en
+benoemd; canvas-context is byte-identiek. Gates: tsc 0 errors, lint 0 nieuwe errors (1 pre-existing
+op main), `smoke:brand-library` 36/36 (DB-vrij), `smoke:styleguide-rules` 51/51,
+`smoke:styleguide-rules-fval` 17/17, `eval:brand-manifest-golden` 14/14, `eval:brandstyle-golden`
+PASS, `smoke:geo-fidelity` 20/20. Bijvangst-gotcha: flat-config `ignores` leest `[token]` in een
+Next-route-pad als character-class, waardoor zo'n allowlist-entry stil niet matcht.
+
+- Task: [tasks/brand-library-consumer-migration.md](../tasks/brand-library-consumer-migration.md)
+- ADR: [docs/adr/2026-08-14-brand-library-consumption.md](adr/2026-08-14-brand-library-consumption.md)
+- Spec: `docs/specs/brandstyle-designbibliotheek-verbeterplan.md` (W7.1)
+
 ### 457. StyleguideRule bereikt F-VAL's rules-pijler — doorvoer, modaliteit-scheiding en de vulling die eronder ontbrak
 
 De Stap-0-spike mat dat regel-overtredende content (emoji, wij-vorm, superlatieven) gewoon 80+ scoorde omdat `score_against_brand` altijd `rulesEvaluated: 0` gaf: merkregels staan in `StyleguideRule`, maar de rules-pijler leest alleen `BrandRule`. **Fase A — de pijp**: `StyleguideRule` is nu een derde violation-bron in `mergeRuleResults`, naast BrandRule en de locale-heuristics, zónder materialisatie (`ruleId: styleguide:<sectie>:<id>`, `BLOCKING`→error/gewicht 3, `ADVISORY`→warning). Nieuw constraint-vocabulaire (`rule-constraints.ts`, Zod) met een tekst-familie (7 checks) en een visuele familie; alleen tekst-constraints compileren — visuele regels worden geteld en overgeslagen, want die horen bij de renderer. Gedeelde matchers uit `rule-compiler.ts` verhuisd (gedragsneutraal) plus een `unicodeWordBoundaryRegex`, omdat JavaScript's `\b` ASCII-only is en "dé"/"één" daardoor nooit matchten. Cap van 25 violations per regel zodat één brede regel de findings-persistentie niet overspoelt. **Fase B — vulling**: `BrandVoiceguide.vocabularyDont` werd nooit gesynct (91 termen over 9 workspaces bereikten de scoring niet) — nieuwe opt-in stream `auto:voiceguide.vocabularyDont`, plus een backfill-script dat weigert legacy-regels te wissen wanneer een lege voiceguide ze zou stranden. Deterministische constraint-afleiding markeerde alle 346 bestaande regels als visueel (0 tekst-checkbaar — bevestigd: de styleguide-secties zijn allemaal visueel). **Fase C — structurer**: de tekst-regels blijken in `BrandVoiceguide.writingGuidelines`/`contentGuidelines` te zitten; een AI-pass classificeert die naar constraints (nooit auteuren: geen regex, `forbidden-words` alleen met letterlijk genoemde woorden, perspectief via ingebouwde voornaamwoordtabellen) met deterministische vangnetten tegen gemiddelde-als-maximum, element-/positie-gebonden richtlijnen en elkaar uitsluitende u/je-regels. Gewired in finalize (fail-soft) + dry-run-backfill. Bijvangst: het dode `clearRuleCompilerCache` is gewired (een regelwijziging was tot 60s onzichtbaar), de gestructureerde tak van `buildHardRules` honoreert nu de `*SavedForAi`-gates die hij volledig omzeilde, en de copy/audio-views laten visuele regels weg. Gates: tsc 0 errors, lint schoon (1 pre-existing error op main in `export/design-system`), golden-eval 14/14, pure smoke 51/51 (DB-vrij), DB-smoke 17/17 (hermetische scratch-workspace: composiet 86 → 59). **Let op**: composietscores van workspaces mét regels schuiven omlaag zodra die regels bijten — pre/post-vergelijking van pilotcijfers is daardoor geen appels/appels meer.

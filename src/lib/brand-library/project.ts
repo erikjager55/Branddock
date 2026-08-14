@@ -122,10 +122,15 @@ function stripRules(rules: LibraryRule[]): LibraryRule[] {
 }
 
 
-/** Alleen het renderbare deel van `visualLanguage` — zie types.ts, `render.heroPattern`. */
+/** Alleen de renderbare delen van `visualLanguage` — zie types.ts, `render`. */
 function extractHeroPattern(visualLanguage: unknown): string | null {
   const vl = visualLanguage as { heroPattern?: { pattern?: string } } | null;
   return vl?.heroPattern?.pattern ?? null;
+}
+
+function extractHeroScreenshotUrl(visualLanguage: unknown): string | null {
+  const vl = visualLanguage as { heroScreenshotUrl?: string } | null;
+  return vl?.heroScreenshotUrl ?? null;
 }
 
 /**
@@ -283,6 +288,7 @@ export function projectBrandLibrary(
       fixtureSamples: row.fixtureSamples,
       adobeFontsKitId,
       heroPattern: extractHeroPattern(row.visualLanguage),
+      heroScreenshotUrl: extractHeroScreenshotUrl(row.visualLanguage),
     },
     rules: stripRules(row.rules),
     gates,
@@ -333,6 +339,7 @@ export function emptyBrandLibrary(
       fixtureSamples: null,
       adobeFontsKitId,
       heroPattern: null,
+      heroScreenshotUrl: null,
     },
     rules: [],
     gates: {

@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { getBrandLibrary } from "@/lib/brand-library";
 
 // =============================================================
 // GET /api/brandstyle/ai-context — all saved sections as AI prompt context
+//
+// Dit is de "what you see is what the AI gets"-oppervlakte uit W1. Sinds W7.1
+// leest hij daarom via dezelfde accessor als de AI zelf, in plaats van de
+// gates opnieuw na te bouwen. Twee gevolgen:
+//   - de publish-gate geldt nu óók hier; voorheen toonde deze route secties
+//     van een niet-gepubliceerde styleguide die de AI nooit te zien kreeg;
+//   - analyzer-markers (OBSERVED:/RECOMMENDED:) zijn gestript, precies zoals
+//     in de prompt.
 // =============================================================
 export async function GET() {
   try {
@@ -13,14 +22,8 @@ export async function GET() {
     }
 
     // Tone-of-voice content verhuisd naar BrandVoiceguide (ADR 2026-05-15).
-    const [styleguide, voiceguide] = await Promise.all([
-      prisma.brandStyleguide.findUnique({
-        where: { workspaceId },
-        include: {
-          colors: { orderBy: { sortOrder: "asc" } },
-          logos: { orderBy: { sortOrder: "asc" } },
-        },
-      }),
+    const [library, voiceguide] = await Promise.all([
+      getBrandLibrary(workspaceId),
       prisma.brandVoiceguide.findUnique({
         where: { workspaceId },
         select: {
@@ -33,40 +36,40 @@ export async function GET() {
       }),
     ]);
 
-    if (!styleguide) {
+    if (!library.exists) {
       return NextResponse.json({ context: null });
     }
 
     const sections: Record<string, unknown> = {};
 
-    if (styleguide.logoSavedForAi) {
+    if (library.sections.logo) {
       sections.logo = {
-        variations: styleguide.logos.map((l) => ({
+        variations: library.sections.logo.logos.map((l) => ({
           name: l.description ?? l.fileName,
           url: l.fileUrl,
           type: l.variant,
         })),
-        guidelines: styleguide.logoGuidelines,
-        donts: styleguide.logoDonts,
+        guidelines: library.sections.logo.guidelines,
+        donts: library.sections.logo.donts,
       };
     }
 
-    if (styleguide.colorsSavedForAi) {
+    if (library.sections.colors) {
       sections.colors = {
-        palette: styleguide.colors.map((c) => ({
+        palette: library.sections.colors.palette.map((c) => ({
           name: c.name,
           hex: c.hex,
           category: c.category,
           tags: c.tags,
         })),
-        donts: styleguide.colorDonts,
+        donts: library.sections.colors.donts,
       };
     }
 
-    if (styleguide.typographySavedForAi) {
+    if (library.sections.typography) {
       sections.typography = {
-        primaryFont: styleguide.primaryFontName,
-        typeScale: styleguide.typeScale,
+        primaryFont: library.sections.typography.primaryFontName,
+        typeScale: library.sections.typography.typeScale,
       };
     }
 
@@ -78,31 +81,32 @@ export async function GET() {
       };
     }
 
-    if (styleguide.imagerySavedForAi) {
+    if (library.sections.imagery) {
       sections.imagery = {
-        photographyStyle: styleguide.photographyStyle,
-        photographyGuidelines: styleguide.photographyGuidelines,
-        illustrationGuidelines: styleguide.illustrationGuidelines,
-        donts: styleguide.imageryDonts,
+        photographyStyle: library.sections.imagery.photographyStyle,
+        photographyGuidelines: library.sections.imagery.guidelines,
+        illustrationGuidelines: library.sections.imagery.illustrationGuidelines,
+        donts: library.sections.imagery.donts,
       };
     }
 
-    if (styleguide.designLanguageSavedForAi) {
+    const designLanguage = library.sections.designLanguage;
+    if (designLanguage) {
       // Type helpers for JSON fields
-      const iconography = styleguide.iconographyStyle as {
+      const iconography = designLanguage.iconographyStyle as {
         style?: string; strokeWeight?: string; cornerRadius?: string;
         sizing?: string; colorUsage?: string; usageNotes?: string;
       } | null;
 
-      const layout = styleguide.layoutPrinciples as {
+      const layout = designLanguage.layoutPrinciples as {
         gridSystem?: string; spacingScale?: string; whitespacePhilosophy?: string;
         compositionRules?: string[]; usageNotes?: string;
       } | null;
 
       sections.designLanguage = {
-        graphicElements: styleguide.graphicElements,
-        graphicElementsDonts: styleguide.graphicElementsDonts,
-        patternsTextures: styleguide.patternsTextures,
+        graphicElements: designLanguage.graphicElements,
+        graphicElementsDonts: designLanguage.graphicElementsDonts,
+        patternsTextures: designLanguage.patternsTextures,
         iconography: {
           ...(iconography ?? {}),
           // Flatten for easier AI consumption
@@ -116,8 +120,8 @@ export async function GET() {
               ].filter(Boolean).join('. ') || null
             : null,
         },
-        iconographyDonts: styleguide.iconographyDonts,
-        gradientsEffects: styleguide.gradientsEffects,
+        iconographyDonts: designLanguage.iconographyDonts,
+        gradientsEffects: designLanguage.gradientsEffects,
         layout: {
           ...(layout ?? {}),
           summary: layout

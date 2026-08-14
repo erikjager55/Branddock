@@ -58,6 +58,7 @@ export interface LibraryFont {
 
 export interface LibraryLogo {
   variant: string;
+  fileName: string | null;
   fileUrl: string | null;
   fileType: string | null;
   width: number | null;
@@ -166,6 +167,11 @@ export interface BrandLibraryRender {
    * prozavrij blijft en de consument niet zelf in de blob hoeft te graven.
    */
   heroPattern: string | null;
+  /**
+   * Idem: de bron-hero-screenshot uit `visualLanguage` is een referentiebeeld
+   * voor de fidelity-vergelijking, geen proza.
+   */
+  heroScreenshotUrl: string | null;
 }
 
 /**
