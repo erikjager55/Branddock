@@ -121,6 +121,16 @@ function MarketingFooter() {
                   Voor developers (API)
                 </Link>
               </li>
+              <li>
+                <Link href="/brandmd" className="hover:text-gray-900">
+                  brand.md-generator (gratis)
+                </Link>
+              </li>
+              <li>
+                <Link href="/brandmd/use" className="hover:text-gray-900">
+                  Hoe gebruik je brand.md
+                </Link>
+              </li>
             </ul>
           </div>
           <div>

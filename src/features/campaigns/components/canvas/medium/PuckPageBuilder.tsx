@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createPortal } from 'react-dom';
-import { Puck, Render, type Data } from '@puckeditor/core';
-import '@puckeditor/core/puck.css';
-import { Loader2, Shield, Wand2, Layout, X, ScanEye } from 'lucide-react';
+import { PageRender } from '@/lib/landing-pages/page-render';
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
+import { Loader2, Shield, Wand2, Layout, X, ScanEye, Sparkles } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
@@ -15,13 +14,15 @@ import { preserveHeroVisual } from './hero-visual-preserve';
 import { generateCanvasVisual } from '../../../api/canvas.api';
 import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
+import { PreviewEditingLayer } from './PreviewEditingLayer';
+import { SectionEditor } from './SectionEditor';
 import { useBrandFontLoader } from './useBrandFontLoader';
 import { buildA11yStyleBlock } from '@/lib/landing-pages/a11y-styles';
 import { TokenProvenancePanel } from './TokenProvenancePanel';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
 // Page-level lock is stored op `puckData.root.props.locked` (boolean).
 // Per-component lock-utils (component-lock.ts) blijven beschikbaar voor
-// de fullscreen Puck-editor (sidebar metadata) — niet meer in default-view.
+// de sectie-editor + PreviewEditingLayer — niet meer in default-view.
 
 type SpikeData = Data<SpikePuckProps>;
 
@@ -48,10 +49,11 @@ function withSectionBands(data: SpikeData): SpikeData {
  * Strict-rewrite / Generate-from-prompt) blijft voor structurele iteraties.
  *
  * Layout:
- *  - Full-width `<Render>` van puckData = hoofd-view (preview-first)
+ *  - Full-width `<PageRender>` van puckData = hoofd-view (preview-first)
  *  - Floating action-buttons rechtsboven: lock-toggle + "Bewerk layout"
  *  - Page-level toolbar onderaan (3 page-AI actions)
- *  - Fullscreen Puck editor modal voor drag-drop / Blocks-library / properties
+ *  - Eigen fullscreen {@link SectionEditor} (E2, ADR 2026-08-07-puck-exit-
+ *    sectie-editor) voor sectie-lijst / toevoegen / props / undo-redo
  *
  * Data-flow (ongewijzigd sinds Phase 1):
  *  - Hydrate uit `contextStack.puckData` (server-loaded)
@@ -65,6 +67,9 @@ export function PuckPageBuilder({
   const { t } = useTranslation('campaigns-canvas-medium');
   const contextStack = useCanvasStore((s) => s.contextStack);
   const deliverableId = useCanvasStore((s) => s.deliverableId);
+  // Content-type van de deliverable (bv. 'landing-page') — stuurt de
+  // verplichte-sectie-guard in de PreviewEditingLayer (A4).
+  const contentType = useCanvasStore((s) => s.contentType);
   const { data: isDeveloper } = useDeveloperAccess();
   const hydratedPuckData = (contextStack?.puckData ?? null) as SpikeData | null;
 
@@ -146,11 +151,15 @@ export function PuckPageBuilder({
     scoreBefore: number;
     scoreProjected: number;
     threshold: number;
-    source: 'auto-iterate';
+    source: 'auto-iterate' | 'strict-rewrite';
   };
   const [pagePending, setPagePending] = useState<PagePending | null>(null);
-  const [pageBusy, setPageBusy] = useState<null | 'auto-iterate' | 'fidelity-check'>(null);
+  const [pageBusy, setPageBusy] = useState<null | 'auto-iterate' | 'fidelity-check' | 'strict-rewrite'>(null);
   const [pageError, setPageError] = useState<string | null>(null);
+  // A2 (verbeterplan v3) — vrij promptveld op paginaniveau. Bedraadt de al
+  // bestaande strict-rewrite-route ("never skips") die sinds Phase 6 zonder
+  // UI-knop stond; het voorstel loopt door dezelfde PageDiffPreviewModal.
+  const [promptText, setPromptText] = useState('');
   // Fase D — fidelity-result tonen na judge-call. Reset bij data-change zodat
   // stale-result niet blijft hangen wanneer user de page edit.
   const [fidelityResult, setFidelityResult] = useState<{
@@ -297,9 +306,9 @@ export function PuckPageBuilder({
       // niet alsnog muteren. Locked = bevries de hele content-tree.
       const currentRoot = (data.root?.props ?? {}) as Record<string, unknown>;
       if (currentRoot.locked === true) return;
-      // Puck's onChange filtert props die niet in component.fields staan → de
-      // bandTone (geen editor-field) wordt gestript en sectie-reorders breken de
-      // ritmiek. Her-toepassen na elke editor-mutatie houdt de bands correct.
+      // bandTone is geen editor-field: sectie-reorders/adds wijzigen de
+      // base/alt-afwisseling. Her-toepassen na elke editor-mutatie houdt de
+      // band-ritmiek correct (deterministisch + idempotent).
       const banded = withSectionBands(data);
       // Synchroon (niet wachten op de effect-flush): de self-heal-completion
       // leest puckDataRef om een verse user-pick te respecteren — het
@@ -429,6 +438,67 @@ export function PuckPageBuilder({
     }
   }, [puckData, contextStack, deliverableId, pageLocked, t]);
 
+  /** A2 — vrije gebruikersinstructie → strict-rewrite-voorstel → diff-modal.
+   *  Anders dan auto-iterate skipt dit nooit: de gebruiker vroeg expliciet
+   *  om een wijziging, dus er komt altijd een voorstel (of een nette fout). */
+  const handlePromptRewrite = useCallback(async () => {
+    const instruction = promptText.trim();
+    if (instruction.length < 3) {
+      setPageError(t('pageBuilder.promptTooShort'));
+      return;
+    }
+    if (pageLocked) {
+      setPageError(t('pageErrors.lockedForAi'));
+      return;
+    }
+    setPageError(null);
+    setPageBusy('strict-rewrite');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3 * 60 * 1000);
+    try {
+      const res = await fetch('/api/landing-pages/strict-rewrite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          puckData,
+          instruction,
+          brandVoiceTone: contextStack?.brand?.brandToneOfVoice ?? null,
+          brandName: contextStack?.brand?.brandName ?? null,
+        }),
+        signal: controller.signal,
+      });
+      const json = (await res.json()) as
+        | { status: 'proposal'; score: number; scoreProjected: number; threshold: number; proposedPuckData: SpikeData }
+        | { status: 'error'; error?: string }
+        | { status?: undefined; error?: string };
+      if (!res.ok || json.status !== 'proposal' || !json.proposedPuckData?.content?.length) {
+        setPageError(('error' in json && json.error) ? json.error : t('pageBuilder.promptFailed'));
+        return;
+      }
+      setPagePending({
+        current: puckData,
+        proposed: json.proposedPuckData,
+        scoreBefore: typeof json.score === 'number' ? json.score : 0,
+        scoreProjected:
+          typeof json.scoreProjected === 'number'
+            ? json.scoreProjected
+            : (typeof json.score === 'number' ? json.score : 0),
+        threshold: typeof json.threshold === 'number' ? json.threshold : 70,
+        source: 'strict-rewrite',
+      });
+      setPromptText('');
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        setPageError(t('pageErrors.timeout'));
+      } else {
+        setPageError(err instanceof Error ? err.message : t('pageBuilder.promptFailed'));
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      setPageBusy(null);
+    }
+  }, [promptText, puckData, contextStack, pageLocked, t]);
+
   /** Fase D — fidelity-check: vergelijk LP-hero side-by-side met bron-
    *  website hero-screenshot. Geeft een verdict (excellent/good/fair/poor)
    *  + mismatches zodat user direct ziet of de gegenereerde LP visueel
@@ -536,6 +606,43 @@ export function PuckPageBuilder({
         />
       </div>
 
+      {/* A2 — vrij promptveld: het primaire edit-pad naast de vaste acties.
+          Enter of de knop dient in; het voorstel opent de bestaande
+          PageDiffPreviewModal met source='strict-rewrite'. */}
+      <form
+        className="flex items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void handlePromptRewrite();
+        }}
+      >
+        <div className="relative flex-1">
+          <Sparkles className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={promptText}
+            onChange={(e) => setPromptText(e.target.value)}
+            placeholder={pageLocked ? t('pageBuilder.promptLockedPlaceholder') : t('pageBuilder.promptPlaceholder')}
+            disabled={pageBusy !== null || pageLocked}
+            aria-label={t('pageBuilder.promptAria')}
+            className="w-full rounded-full border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-gray-50"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={pageBusy !== null || pageLocked || promptText.trim().length < 3}
+          title={pageLocked ? t('pageBuilder.promptLockedPlaceholder') : t('pageBuilder.promptSubmitTitle')}
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 transition-opacity"
+        >
+          {pageBusy === 'strict-rewrite' ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Wand2 className="h-4 w-4" />
+          )}
+          {pageBusy === 'strict-rewrite' ? t('pageBuilder.promptRunning') : t('pageBuilder.promptSubmit')}
+        </button>
+      </form>
+
       {/* Fase D — fidelity-result banner. Verdict-bucket bepaalt kleur:
           excellent=emerald, good=teal, fair=amber, poor=red. */}
       {fidelityResult ? (
@@ -592,8 +699,20 @@ export function PuckPageBuilder({
       ) : null}
 
       {/* Page-render — flat op de pagina-achtergrond, geen kader/wrapper-bg
-          zodat de preview naadloos in het Step 3 layout zit. */}
-      <Render config={config} data={puckData} />
+          zodat de preview naadloos in het Step 3 layout zit. De
+          PreviewEditingLayer (A3+A4) levert sectie-hover-toolbar + inline
+          tekst-edit; mutaties lopen via handlePuckChange (bestaand
+          debounced-autosave-pad — geen eigen persistentie). */}
+      <PreviewEditingLayer
+        puckData={puckData}
+        contentType={contentType}
+        config={config}
+        deliverableId={deliverableId}
+        pageLocked={pageLocked}
+        onChange={handlePuckChange}
+      >
+        <PageRender config={config} data={puckData} />
+      </PreviewEditingLayer>
 
       {pagePending ? (
         <PageDiffPreviewModal
@@ -610,9 +729,10 @@ export function PuckPageBuilder({
       ) : null}
 
       {editorOpen ? (
-        <FullscreenEditorModal
+        <SectionEditor
           config={config}
           data={puckData}
+          contentType={contentType}
           onChange={handlePuckChange}
           onClose={() => setEditorOpen(false)}
         />
@@ -712,147 +832,3 @@ function LockToggle({
   );
 }
 
-/**
- * Fullscreen modal die de volledige `<Puck>` editor opent (drag-drop /
- * Blocks-library / properties-panel) voor power-user layout-werk. Verstopt
- * achter de "Bewerk layout" knop zodat de preview-first default-view
- * uncluttered blijft.
- *
- * Implementation-keuze: React.createPortal naar `document.body` ipv
- * inline-render in de Step 3 React-tree — voorkomt stacking-context-trap
- * waar `fixed inset-0` constrained werd tot een transformed parent in
- * Branddock's app-shell (bug 2026-05-25: Sluit-editor topbar onzichtbaar
- * + Confirm-Continue knop nog steeds zichtbaar bij open editor).
- *
- * UI-keuze: ipv aparte slate-900 topbar BOVEN Puck, vervangen we Puck's
- * default Publish-knop via `overrides.headerActions` met een Branddock-
- * primary pill "Sluit editor". Dit consolideert tot één header (Puck's
- * eigen, met viewport-toggles + zoom + undo/redo behouden) en haalt
- * Puck's Publish-knop weg (we hebben eigen `/api/landing-pages/publish`).
- *
- * Theming: CSS-variable overrides op de wrapper-div mappen Puck's
- * `--puck-color-azure-*` blauw-palet naar Branddock primary cyan tones,
- * zodat selection-outlines, focus-rings, en hover-states matchen met
- * de rest van de app.
- */
-function FullscreenEditorModal({
-  config,
-  data,
-  onChange,
-  onClose,
-}: {
-  config: ReturnType<typeof buildSpikePuckConfig>;
-  data: SpikeData;
-  onChange: (data: SpikeData) => void;
-  onClose: () => void;
-}) {
-  const { t } = useTranslation('campaigns-canvas-medium');
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
-
-  // BEWUST GEEN body-scroll-lock hier (Playwright-diagnose 2026-06-10): Puck
-  // spiegelt de parent-`<body>`-attributen (incl. inline style) de preview-
-  // iframe in — een `document.body.style.overflow = 'hidden'` belandt dan als
-  // inline style op de iframe-body en maakt de pagina-preview onscrollbaar
-  // ("pagina zelf scrollt niet"). Een lock is hier ook onnodig: Branddock's
-  // app-shell scrollt via inner containers (h-full overflow-auto), nooit via
-  // body, dus er is geen scroll-bleed achter de fixed overlay.
-  //
-  // Wél defensief OPRUIMEN bij mount: een vóór de editor verkregen modal-lock
-  // (keyboard-pad: Tab uit een open modal → Enter op "Bewerk layout") zou
-  // anders alsnog one-shot de iframe in gespiegeld worden. De iframe laadt
-  // async, dus dit effect wint die race; shared Modal's release zet later
-  // hooguit nogmaals '' (no-op).
-  useEffect(() => {
-    if (document.body.style.overflow) {
-      document.body.style.overflow = '';
-    }
-  }, []);
-
-  if (typeof window === 'undefined') return null;
-
-  return createPortal(
-    <div
-      style={{
-        // Inline-style fixed-positioning + max z-index om Tailwind-JIT-
-        // compile issues (`z-[10000]` werd niet altijd opgepikt) en
-        // stacking-context-traps van Branddock's app-chrome (z-30 sticky
-        // top-nav + sidebar) te bypassen. Max int32 = 2147483647 garandeert
-        // dat geen ander element ooit boven dit modal komt te liggen.
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 2147483647,
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#ffffff',
-        // Map Puck's azure-blauw accent-palette → Branddock primary cyan
-        // (#1FD1B2 + darker hover). Geldt voor selection-outlines, focus-
-        // rings, button-bg, en hover-tints binnen de Puck-editor.
-        ['--puck-color-azure-04' as string]: '#1FD1B2',
-        ['--puck-color-azure-05' as string]: '#0DAFA0',
-        ['--puck-color-azure-11' as string]: '#e8faf7',
-        ['--puck-color-azure-12' as string]: '#f0fdfa',
-      } as React.CSSProperties}
-    >
-      {/* Puck's eigen CSS zet `._PuckLayout_ { height: 100dvh }` (hardcoded,
-          geen var) — met onze topbar erboven groeit de editor dan ~50px
-          voorbij het viewport. Gevolg: de onderste strook van sidebars +
-          canvas wordt door `overflow: hidden` afgekapt en is onbereikbaar,
-          en er valt niets te scrollen omdat Puck intern denkt dat alles past
-          (Playwright-diagnose 2026-06-10: sidebar scrollHeight==clientHeight
-          terwijl de velden visueel afgekapt waren). Scoped override: laat de
-          layout de beschikbare wrapper-hoogte volgen. `[class*="_PuckLayout_"]`
-          matcht alléén de layout-root — header/nav/inner gebruiken een
-          `-`-suffix in de CSS-module-naam, modifiers een `--`. */}
-      <style>{`
-        .bd-puck-editor-fit .Puck { height: 100%; }
-        .bd-puck-editor-fit [class*="_PuckLayout_"] { height: 100%; }
-      `}</style>
-      {/* Branddock-style topbar ABOVE Puck — guarantees that "Close editor"
-          is always visible at viewport-top, independent of Puck's own
-          header-layout or any CSS conflicts. */}
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-5 py-3 shadow-sm">
-        <div className="flex items-center gap-2">
-          <Layout className="h-4 w-4 text-gray-600" />
-          <span className="text-sm font-semibold text-gray-900">{t('pageBuilder.layoutEditor')}</span>
-          <span className="ml-2 text-xs text-gray-500">
-            {t('pageBuilder.dragHint')}
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t('pageBuilder.closeEditorAria')}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 transition-opacity"
-        >
-          <X className="h-4 w-4" />
-          {t('pageBuilder.closeEditor')}
-        </button>
-      </div>
-      <div className="bd-puck-editor-fit" style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-        <Puck
-          config={config}
-          data={data}
-          onChange={onChange}
-          overrides={{
-            // Vervang Puck's default Publish-knop met een lege fragment —
-            // we hebben eigen `/api/landing-pages/publish` flow buiten de
-            // editor. De close-knop zit in onze eigen topbar hierboven.
-            // Fragment ipv null omdat Puck's RenderFunc een ReactElement
-            // verwacht (geen null).
-            headerActions: () => <></>,
-          }}
-        />
-      </div>
-    </div>,
-    document.body,
-  );
-}

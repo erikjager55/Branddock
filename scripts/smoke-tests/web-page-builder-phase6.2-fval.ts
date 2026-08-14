@@ -15,6 +15,7 @@
 
 import {
   evaluatePageQuality,
+  evaluatePageQualityForType,
   evaluatePageQualityViaFVAL,
   type FvalRunner,
 } from '../../src/lib/landing-pages/page-quality';
@@ -165,11 +166,15 @@ async function testFvalFallback(): Promise<void> {
     runFVal: runner,
   });
 
-  const heuristic = evaluatePageQuality(TREE);
+  // B5: de fallback is type-bewust — voor landing-page geldt de
+  // 6-dimensies-composite, niet meer de generieke heuristiek.
+  const heuristic = evaluatePageQualityForType(TREE, 'landing-page');
+  const generic = evaluatePageQuality(TREE);
   assert('runner was called', callCount.value === 1);
-  assert(`fallback matches heuristic score (${result.score} === ${heuristic.score})`, result.score === heuristic.score);
-  assert('fallback threshold matches heuristic', result.threshold === heuristic.threshold);
+  assert(`fallback matches type-aware score (${result.score} === ${heuristic.score})`, result.score === heuristic.score);
+  assert('fallback threshold matches type-aware threshold', result.threshold === heuristic.threshold);
   assert('fallback signals match', result.signals.hasHero === heuristic.signals.hasHero);
+  assert('type-aware pad wijkt bewust af van de generieke heuristiek voor dit fixture', heuristic.score !== generic.score);
 }
 
 async function testFvalContentTypeId(): Promise<void> {

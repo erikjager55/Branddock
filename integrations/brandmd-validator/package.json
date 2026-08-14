@@ -1,0 +1,29 @@
+{
+  "name": "brandmd-validate",
+  "version": "0.1.0",
+  "description": "Validator for brand.md files — checks the open brand.md standard (v0.2 core) and the Branddock full profile. Dependency-free.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "brandmd-validate": "./bin/brandmd-validate.mjs"
+  },
+  "files": [
+    "bin",
+    "README.md"
+  ],
+  "keywords": [
+    "brand.md",
+    "brand",
+    "ai",
+    "validator",
+    "markdown",
+    "brand-identity"
+  ],
+  "homepage": "https://branddock.app/brandmd",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node bin/brandmd-validate.mjs --self-test"
+  }
+}

@@ -16,10 +16,11 @@
  * image-gen-flow wordt client-side voor dit type ge-gate (S5).
  */
 
-import type { Data } from "@puckeditor/core";
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import type { CanvasContextStack } from "@/lib/ai/canvas-context";
 import type { SpikePuckProps } from "../puck-config";
 import type { FaqPageVariantContent } from "@/lib/landing-pages/page-type-schemas";
+import { patternProp } from "@/lib/landing-pages/pattern-choice";
 import { resolveCtaHref, assignSectionBands } from "./landing-page-from-structured";
 import { instance, taglineFromSubline, footerInstance, slugifyAnchor, type PuckInstance } from "./from-structured-shared";
 
@@ -76,9 +77,16 @@ export function buildFaqPageTemplateFromStructured(
     instance("FAQ", {
       heading: "Meest gestelde vragen",
       items: variant.popularQuestions,
+      ...patternProp("FAQ", variant.layoutPatterns?.popularQuestions),
     }),
+    // C3: één categories-key stuurt álle categorie-blokken (consistente layout).
     ...variant.categories.map((category, i) =>
-      instance("FAQ", { heading: category.label, items: category.items, anchorId: categorySlugs[i] }),
+      instance("FAQ", {
+        heading: category.label,
+        items: category.items,
+        anchorId: categorySlugs[i],
+        ...patternProp("FAQ", variant.layoutPatterns?.categories),
+      }),
     ),
     // Eén afsluitende CTA (W3-fix): voorheen rende de escape-hatch én de
     // closingCta als twee bijna identieke BrandCTA-panelen onder elkaar. We
@@ -91,6 +99,7 @@ export function buildFaqPageTemplateFromStructured(
       personaId,
       riskReducer: variant.contactEscape.body,
       heading: variant.contactEscape.heading,
+      ...patternProp("BrandCTA", variant.layoutPatterns?.closingCta),
     }),
     footerInstance(ctx, taglineFromSubline(variant.hero.subline)),
   ];

@@ -8,6 +8,8 @@ import { emitShadcnCss } from '@/lib/export/design-system/emitters/shadcn';
 import { emitFigmaVariables } from '@/lib/export/design-system/emitters/figma-variables';
 import { emitStyleDictionary } from '@/lib/export/design-system/emitters/style-dictionary';
 import { emitBrandBrief } from '@/lib/export/design-system/emitters/brand-brief';
+import { emitBrandMd } from '@/lib/export/design-system/emitters/brandmd';
+import { BRAND_MD_USE_HUB_PATH } from '@/lib/brandmd/constants';
 import { lintDesignSystem } from '@/lib/export/design-system/linter';
 
 // =============================================================
@@ -35,6 +37,19 @@ interface FormatSpec {
 }
 
 const FORMATS: Record<string, FormatSpec> = {
+  brandmd: {
+    contentType: 'text/markdown; charset=utf-8',
+    extension: 'brand.md',
+    async render(workspaceId) {
+      const model = await buildDesignSystemModel(workspaceId, { includeBrandMd: true });
+      // Workspace-export = publiek profiel (deelbaar); het extended profiel
+      // (incl. Market Context) is alleen via MCP achter auth beschikbaar.
+      return emitBrandMd(model, {
+        profile: 'public',
+        useHubUrl: useHubUrl(),
+      });
+    },
+  },
   designmd: {
     contentType: 'text/markdown; charset=utf-8',
     extension: 'md',
@@ -150,6 +165,11 @@ export async function GET(
       { status: 500 },
     );
   }
+}
+
+function useHubUrl(): string | undefined {
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL;
+  return base ? `${base.replace(/\/$/, '')}${BRAND_MD_USE_HUB_PATH}` : undefined;
 }
 
 async function getWorkspaceSlug(workspaceId: string): Promise<string> {

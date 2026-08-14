@@ -307,6 +307,10 @@ model Workspace {
   landingPages   LandingPage[]
   domainMappings DomainMapping[]
 
+  // P3/P4 forms + first-party meting (verbeterplan §Fase P)
+  formSubmissions FormSubmission[]
+  pageEvents      PageEvent[]
+
   // Agent memory (4.3 — pgvector)
   agentMemories AgentMemory[]
 
@@ -6773,9 +6777,12 @@ model LandingPage {
   deliverableId String
   /// URL-slug binnen workspace-subdomain — `<slug>` in `<workspace>.branddock.app/<slug>`.
   slug          String
-  /// Frozen Puck data-tree snapshot bij publish-tijd. Shape: `Data<SpikePuckProps>`
-  /// (Puck core types). Niet gemuteerd na publish — verdere edits leven op
-  /// de bron-deliverable.settings.puckData totdat user opnieuw publisht.
+  /// LEGACY fallback (P1 versioned publishes, verbeterplan §Fase A): vóór de
+  /// `PagePublish`-tabel was dit dé live snapshot; elke publish overschreef 'm.
+  /// Bestaande rijen zonder `livePublishId` renderen nog via deze kolom
+  /// (`resolvePublishedPage`-fallback). Nieuwe publishes schrijven 'm nog mee
+  /// als mirror van de laatste snapshot, maar de live waarheid is
+  /// `livePublish.puckData` zodra de pointer gezet is.
   puckData      Json
   status        PageStatus @default(DRAFT)
   publishedAt   DateTime?
@@ -6786,13 +6793,55 @@ model LandingPage {
   locale          String  @default("en-GB")
   localeProfileId String?
 
+  /// P1 versioned publishes — pointer naar de live `PagePublish`-snapshot
+  /// (Framer/Netlify-model: publishes zijn immutable, live = pointer; rollback
+  /// = pointer-swap). Null voor legacy rijen van vóór de versionering.
+  livePublishId String? @unique
+
+  // GERESERVEERD (site-laag, verbeterplan §6.1 — comment only, geen veld):
+  // t.z.t. komt er een homepage-pointer per workspace (root-slug → pagina)
+  // zodat `<workspace>.branddock.app/` een gekozen pagina serveert. Dat is een
+  // workspace-niveau pointer náást deze per-pagina live-pointer; niet hier
+  // modelleren maar op de toekomstige site-config-laag.
+
   workspace     Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   deliverable   Deliverable         @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
   localeProfile BrandLocaleProfile? @relation(fields: [localeProfileId], references: [id], onDelete: SetNull)
+  livePublish   PagePublish?        @relation("LivePublish", fields: [livePublishId], references: [id])
+  publishes     PagePublish[]       @relation("PagePublishes")
+
+  /// P4 first-party meting — events (views/conversies) op deze pagina.
+  pageEvents PageEvent[]
 
   @@unique([workspaceId, locale, slug])
   @@index([workspaceId, status])
   @@index([deliverableId])
+}
+
+/**
+ * P1 versioned publishes (verbeterplan §Fase A) — append-only, immutable
+ * snapshot per publish van een LandingPage. `version` telt per pagina op
+ * (1, 2, 3, …); de live versie is de rij waar `LandingPage.livePublishId`
+ * naar wijst. Rollback = pointer-swap + revalidate — snapshots worden nooit
+ * gemuteerd of verwijderd (behalve cascade bij pagina-delete).
+ */
+model PagePublish {
+  id            String   @id @default(cuid())
+  landingPageId String
+  version       Int
+  puckData      Json
+  /// P2 compile-to-static (ADR 2026-08-12): bevroren HTML-artifact van deze
+  /// versie (tokens gefixeerd op publish-moment). Null = artifact ontbreekt
+  /// (pre-P2-publish of compile-fout) → runtime-fallback-pad in /p.
+  compiledHtml  String?
+  publishedById String?
+  createdAt     DateTime @default(now())
+
+  landingPage   LandingPage  @relation("PagePublishes", fields: [landingPageId], references: [id], onDelete: Cascade)
+  livePointerOf LandingPage? @relation("LivePublish")
+
+  @@unique([landingPageId, version])
+  @@index([landingPageId, createdAt])
 }
 
 enum PageStatus {
@@ -6828,6 +6877,58 @@ enum SslStatus {
   PROVISIONING
   ACTIVE
   FAILED
+}
+
+/**
+ * P3 lead-capture (verbeterplan §Fase P) — één submission van een publieke
+ * LeadForm-sectie via `POST /api/f/[formId]`. `formId` is samengesteld als
+ * `<workspaceId>:<formKey>` (formKey = gesaneerde sectie-instance-id, zie
+ * `src/lib/landing-pages/lead-form.ts`) zodat het publieke endpoint de
+ * workspace zonder extra lookup-tabel kan resolven. `landingPageId` is een
+ * bewust FK-loze referentie: submissions zijn lead-data en moeten een
+ * pagina-delete overleven; hij is null wanneer de bron niet herleidbaar is
+ * (zip-/WP-export). AVG: `data` bevat persoonsgegevens — retentie- en
+ * verwerkersafspraken in `tasks/lp-forms-leads.md`.
+ */
+model FormSubmission {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  landingPageId String?
+  formId        String
+  /// Ingevulde velden als { veldnaam-slug: waarde }; interne velden (_hp/_ts/_src) worden er vóór opslag uitgefilterd.
+  data          Json
+  sourceUrl     String?
+  createdAt     DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, formId, createdAt])
+  /// Submissions-route filtert óók op landingPageId-IN binnen de workspace
+  /// (OR-tak) — zonder deze index wordt dat een scan bij volume.
+  @@index([workspaceId, landingPageId, createdAt])
+}
+
+/**
+ * P4 first-party meting (verbeterplan §Fase P) — cookieloos event per
+ * gepubliceerde pagina via `POST /api/t` (sendBeacon). Bewust géén IP, géén
+ * user-agent, géén fingerprint en een tot origin+pad geschoonde referrer
+ * (AVG: geen persoonsgegevens in dit model). `kind`:
+ * 'view' | 'form_submit' | 'cta_click' (laatste gereserveerd).
+ */
+model PageEvent {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  landingPageId String
+  kind          String
+  path          String?
+  referrer      String?
+  createdAt     DateTime @default(now())
+
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  landingPage LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+
+  @@index([landingPageId, kind, createdAt])
+  @@index([workspaceId, createdAt])
 }
 
 // ─── Publieke Brand-API (ADR 2026-07-17-public-brand-api) ────────────────────
@@ -6909,4 +7010,69 @@ model WebhookEndpoint {
   failureCount       Int       @default(0)
 
   @@index([workspaceId])
+}
+
+// =============================================================
+// brand.md generator — claimbare draft-profielen (task
+// brand-md-open-standaard, launch-plan §4b + §Ontwerp claim-borging).
+// Draft = gestructureerde scan-tussenvorm + gerenderd bestand; nooit
+// publiek vindbaar; TTL-opruiming via cron brandmd-draft-cleanup.
+// =============================================================
+
+model GeneratedBrandProfile {
+  id String @id @default(cuid())
+
+  sourceUrl String
+  /// Genormaliseerd domein (zonder www/poort) — lead-aggregatie + rate-limit
+  domain String
+
+  /// Gestructureerde scan-output in de vorm die materialisatie consumeert
+  payload        Json
+  /// Gepind schema-versienummer — oude drafts blijven materialiseerbaar
+  payloadVersion Int  @default(1)
+
+  /// Gerenderd brand.md zoals gedownload (identieke re-download)
+  fileContent String @db.Text
+  brandName   String
+
+  /// Brand Score (0-100) + uitleg per dimensie — deterministisch berekend
+  score          Int?
+  scoreBreakdown Json?
+
+  /// Opt-in e-mail (rapport-laag / tweede scan) — enige PII in dit model
+  email String?
+
+  /// SHA-256 van het CSPRNG-claim-token (les invite-arc #443) — single-use
+  claimTokenHash String @unique
+
+  status GeneratedProfileStatus @default(DRAFT)
+
+  // Funnel-statusladder (leads-dashboard is DB-gedreven, niet PostHog)
+  downloadedAt    DateTime?
+  emailCapturedAt DateTime?
+  claimedAt       DateTime?
+  activatedAt     DateTime?
+
+  claimedByUserId    String?
+  claimedWorkspaceId String?
+
+  /// SHA-256(ip + salt) — rate-limiting zonder ruwe IP-opslag
+  requestIpHash String?
+
+  createdAt DateTime @default(now())
+  /// TTL (~90d) — cron verwijdert record + eventuele artefacten + token
+  expiresAt DateTime
+
+  @@index([domain])
+  @@index([status])
+  @@index([email])
+  @@index([expiresAt])
+  @@index([requestIpHash, createdAt])
+  @@index([domain, createdAt])
+}
+
+enum GeneratedProfileStatus {
+  DRAFT
+  CLAIMED
+  EXPIRED
 }

@@ -24,9 +24,10 @@ import { BugTriageTab } from './developer/BugTriageTab';
 import { FeatureTriageTab } from './developer/FeatureTriageTab';
 import { FeedbackTriageTab } from './developer/FeedbackTriageTab';
 import { CreditAdminPanel } from './developer/CreditAdminPanel';
+import { BrandMdLeadsPanel } from './developer/BrandMdLeadsPanel';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
 
-const DEVELOPER_TABS: SettingsTab[] = ['administrator', 'ai-models', 'ai-prompts', 'author-profile', 'visual-fidelity', 'bug-triage', 'feature-triage', 'feedback-triage', 'credit-admin', 'growth'];
+const DEVELOPER_TABS: SettingsTab[] = ['administrator', 'ai-models', 'ai-prompts', 'author-profile', 'visual-fidelity', 'bug-triage', 'feature-triage', 'feedback-triage', 'credit-admin', 'brandmd-leads', 'growth'];
 
 interface SettingsPageProps {
   initialTab?: SettingsTab;
@@ -100,6 +101,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
         return <FeedbackTriageTab />;
       case 'credit-admin':
         return <CreditAdminPanel />;
+      case 'brandmd-leads':
+        return <BrandMdLeadsPanel />;
       case 'growth':
         return <GrowthTab />;
       default:

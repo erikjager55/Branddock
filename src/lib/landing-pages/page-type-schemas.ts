@@ -18,6 +18,7 @@ import { z } from "zod";
 import {
   imageBriefSchema,
   landingPageVariantSchema,
+  layoutPatternKeySchema,
   type LandingPageVariantContent,
 } from "./variant-schema";
 import { LONG_FORM_SEO_TYPES } from "@/lib/ai/seo-pipeline.types";
@@ -75,6 +76,17 @@ export const faqPageVariantSchema = z.object({
     heading: z.string().min(1, "closingCta.heading mag niet leeg zijn"),
     ctaLabel: z.string().min(1, "closingCta.ctaLabel mag niet leeg zijn").max(48, "closingCta.ctaLabel max 48 tekens"),
   }),
+  /** C3 — additieve per-sectie layout-keuze (ADR 2026-08-12-generative-
+   *  pattern-choice): `categories` stuurt álle categorie-FAQ-blokken (één
+   *  consistente layout); validatie ná parse in pattern-choice.ts. */
+  layoutPatterns: z
+    .object({
+      popularQuestions: layoutPatternKeySchema,
+      categories: layoutPatternKeySchema,
+      closingCta: layoutPatternKeySchema,
+    })
+    .optional()
+    .catch(undefined),
 });
 
 export type FaqPageVariantContent = z.infer<typeof faqPageVariantSchema>;
@@ -147,6 +159,16 @@ export const productPageVariantSchema = z
       primaryCta: z.string().min(1),
       secondaryCta: z.string().nullable().optional(),
     }),
+    /** C3 — additieve per-sectie layout-keuze (ADR 2026-08-12-generative-
+     *  pattern-choice); validatie ná parse in pattern-choice.ts. */
+    layoutPatterns: z
+      .object({
+        features: layoutPatternKeySchema,
+        faq: layoutPatternKeySchema,
+        finalCta: layoutPatternKeySchema,
+      })
+      .optional()
+      .catch(undefined),
   })
   .superRefine((data, ctx) => {
     if (data.finalCta.primaryCta !== data.hero.primaryCta) {
@@ -226,6 +248,16 @@ export const micrositeVariantSchema = z.object({
     primaryCta: z.string().min(1, "join.primaryCta mag niet leeg zijn"),
     deadline: z.string().nullable().optional(),
   }),
+  /** C3 — additieve per-sectie layout-keuze (ADR 2026-08-12-generative-
+   *  pattern-choice): `quote` stuurt álle hoofdstuk-citaten (één consistente
+   *  layout), `join` de deelname-CTA; validatie ná parse in pattern-choice.ts. */
+  layoutPatterns: z
+    .object({
+      quote: layoutPatternKeySchema,
+      join: layoutPatternKeySchema,
+    })
+    .optional()
+    .catch(undefined),
 });
 
 export type MicrositeVariantContent = z.infer<typeof micrositeVariantSchema>;
@@ -245,6 +277,8 @@ const geoStatSchema = z.object({
 const geoSectionSchema = z.object({
   heading: z.string().min(1, "sections[].heading mag niet leeg zijn"),
   body: z.string().min(1, "sections[].body mag niet leeg zijn"),
+  imageUrl: z.string().url("sections[].imageUrl moet een geldige URL zijn").nullable().optional(),
+  imageBrief: imageBriefSchema.nullable().optional().catch(null),
 });
 
 /** Multi-kolom vergelijkingstabel — een van de hoogst-geciteerde GEO-formats. */

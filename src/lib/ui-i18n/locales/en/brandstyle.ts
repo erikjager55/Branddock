@@ -637,6 +637,13 @@ const brandstyle = {
   imagery: {
     observed: 'Observed',
     recommended: 'Recommended',
+    brandImagesTitle: 'Brand images',
+    brandImagesHint: 'Real brand photos the page generator uses to fill hero, feature and article image slots. Scraped images appear here automatically; upload your own to enrich generated pages.',
+    brandImagesAdd: 'Add image',
+    brandImagesUploading: 'Uploading…',
+    brandImagesUploadError: 'Upload failed. Please try again.',
+    brandImagesRemove: 'Remove image',
+    brandImagesEmpty: 'No brand images yet. Upload photos to give generated pages real imagery.',
     photoStyleTitle: 'Photography Style',
     mood: 'Mood',
     subjects: 'Subjects',

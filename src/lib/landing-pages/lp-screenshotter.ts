@@ -20,7 +20,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { CanvasContextStack } from "../ai/canvas-context";
-import type { Data } from "@puckeditor/core";
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 
 const execFileAsync = promisify(execFile);
 

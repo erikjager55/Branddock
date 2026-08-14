@@ -145,11 +145,74 @@ export interface BrandFoundationExtension {
   competitors: CompetitorSummary[];
 }
 
+// ─── brand.md full profile (open standaard, upstream v0.2-kern) ──────
+//
+// Additieve laag voor de `brandmd`-emitter. Waarom apart van de bestaande
+// extensies: brand.md heeft velden die geen enkel ander formaat nodig heeft
+// (validatie-status per sectie, provenance, producten, channel tones) én een
+// harde publiek/privaat-grens — concurrenten mogen alleen in het extended
+// profiel landen, nooit in het publieke bestand.
+
+export interface ProductSummary {
+  name: string;
+  category?: string;
+  description?: string;
+  features: string[];
+  benefits: string[];
+  useCases: string[];
+}
+
+export interface ChannelToneSummary {
+  channel: string;
+  tone: string;
+}
+
+export type BrandMdSectionKey =
+  | 'strategy'
+  | 'voice'
+  | 'visual'
+  | 'audience'
+  | 'products';
+
+export interface SectionValidation {
+  status: 'validated' | 'unvalidated';
+  /** 0-100 — alleen gezet wanneer een echte validatie-bron bestaat */
+  score?: number;
+  /** ISO-datum van de laatste validatie */
+  date?: string;
+}
+
+export interface BrandMdProvenance {
+  generatedBy: string;
+  /** URL van de levende versie (workspace-export) of claim-URL (generator-draft) */
+  canonicalUrl?: string;
+  /** Bron-site bij scan-gegenereerde profielen */
+  sourceUrl?: string;
+}
+
+export interface BrandMdExtension {
+  tagline?: string;
+  /** ISO 639-1, upstream-kernveld `language` */
+  language: string;
+  /** Full-profile: alle content-locales van de workspace (>=1) */
+  locales: string[];
+  voiceDescription?: string;
+  wordsWeUse: string[];
+  wordsWeAvoid: string[];
+  channelTones: ChannelToneSummary[];
+  products: ProductSummary[];
+  /** Machine-checkbare guardrails (full-profile upgrade van prose-dosDonts) */
+  guardrails: { do: string[]; dont: string[] };
+  validation: Partial<Record<BrandMdSectionKey, SectionValidation>>;
+  provenance: BrandMdProvenance;
+}
+
 export interface Extensions {
   voice?: VoiceExtension;
   imagery?: ImageryExtension;
   iconography?: IconographyExtension;
   brandFoundation?: BrandFoundationExtension;
+  brandMd?: BrandMdExtension;
 }
 
 // ─── Het canonieke model ──────────────────────────────

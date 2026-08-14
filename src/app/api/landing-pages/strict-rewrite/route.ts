@@ -4,7 +4,7 @@ import { anthropicClient } from '@/lib/ai/anthropic-client';
 import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
 import { parseJsonBody } from '@/lib/api/parse-json-body';
 import { withAi } from '@/lib/ai/middleware';
-import { evaluatePageQuality } from '@/lib/landing-pages/page-quality';
+import { evaluatePageQualityForType } from '@/lib/landing-pages/page-quality';
 import type { PuckLikeData } from '@/lib/landing-pages/puck-data-flatten';
 
 /**
@@ -15,9 +15,11 @@ import type { PuckLikeData } from '@/lib/landing-pages/puck-data-flatten';
  * a fixed "improve quality" prompt; strict-rewrite passes the user's
  * exact ask through ("Make it more formal" / "Shorten by 50%" / etc.).
  *
- * Body: { puckData, instruction, brandVoiceTone?, brandName? }
+ * Body: { puckData, instruction, brandVoiceTone?, brandName?, contentType? }
  *
  * Returns: { status: 'proposal' | 'error', proposedPuckData, score-before, score-projected }
+ * Proposal draagt additief `dimensions`/`dimensionsProjected` (B5) wanneer
+ * het LP-dimensie-pad scoort — zodat de diff-modal later kan tonen WAAROM.
  *
  * Unlike auto-iterate this never skips — the user explicitly asked for
  * a rewrite, so we always call the AI even if the page is currently
@@ -29,6 +31,13 @@ interface RequestBody {
   instruction: string;
   brandVoiceTone?: string | null;
   brandName?: string | null;
+  /**
+   * B5 — optioneel + backward-compatible: bij 'landing-page' scoren before/
+   * projected op de 6 LP-dimensies i.p.v. de generieke heuristic. De enige
+   * UI-caller (PuckPageBuilder.handlePromptRewrite) stuurt dit veld nog niet
+   * mee; zonder veld valt de score op de generieke heuristic terug.
+   */
+  contentType?: string;
 }
 
 // L8 Zod-sweep (audit 2026-06-26, batch 4): puckData ging als vrije JSON de
@@ -44,6 +53,9 @@ const strictRewriteSchema = z.object({
   instruction: z.string().trim().min(3).max(5000),
   brandVoiceTone: z.string().max(2000).nullish(),
   brandName: z.string().max(500).nullish(),
+  // B5 additief — type-aware scoring-dispatch; onbekende waardes vallen in
+  // evaluatePageQualityForType vanzelf op de generieke heuristic terug.
+  contentType: z.string().max(100).optional(),
 });
 
 const SYSTEM_PROMPT = `You are a brand-aware copywriter executing a user-supplied rewrite instruction on a published landing-page (JSON Puck data-tree).
@@ -100,8 +112,8 @@ export async function POST(request: NextRequest) {
       root: body.puckData.root,
       content: (parsed as { content: PuckLikeData['content'] }).content,
     };
-    const projected = evaluatePageQuality(proposedTree);
-    const before = evaluatePageQuality(body.puckData);
+    const projected = evaluatePageQualityForType(proposedTree, body.contentType ?? null);
+    const before = evaluatePageQualityForType(body.puckData, body.contentType ?? null);
 
     return NextResponse.json({
       status: 'proposal',
@@ -109,6 +121,10 @@ export async function POST(request: NextRequest) {
       scoreProjected: projected.score,
       threshold: before.threshold,
       proposedPuckData: proposedTree,
+      // B5 additief — alleen aanwezig op het LP-dimensie-pad (undefined valt
+      // weg in JSON; bestaande consumers ongemoeid).
+      dimensions: before.dimensions,
+      dimensionsProjected: projected.dimensions,
       tokens: { input: result.inputTokens, output: result.outputTokens },
     });
   } catch (err) {

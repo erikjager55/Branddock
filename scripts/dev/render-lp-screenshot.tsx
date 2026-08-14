@@ -3,7 +3,7 @@
  * styleguide-tokens van een workspace, voor visuele verificatie van de
  * web-page-builder renderer (zonder dev-server/auth).
  *
- * Rendert via `renderToStaticMarkup(<Render config data/>)` en schrijft
+ * Rendert via `renderToStaticMarkup(<PageRender config data/>)` en schrijft
  * /tmp/lp-<slug>.html. Screenshot daarna met scripts/dev/shot-lp.mjs.
  *
  * De styleguide-tokens (kleuren/fonts/card-styles/spacing) zijn faithful; de
@@ -15,7 +15,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import fs from "fs";
-import { Render } from "@puckeditor/core";
+import { PageRender } from "../../src/lib/landing-pages/page-render";
 import { prisma } from "../../src/lib/prisma";
 import { extractBrandTokensFromStyleguide } from "../../src/lib/landing-pages/brand-tokens";
 import { buildSpikePuckConfig } from "../../src/features/campaigns/components/canvas/medium/puck-config";
@@ -132,14 +132,13 @@ async function main() {
   const ctx = { brandTokens, personas: [], brand: { brandName: nameContains }, deliverableTypeId: "landing-page", brandImages } as unknown as CanvasContextStack;
   const config = buildSpikePuckConfig(ctx);
   const tree = buildLandingPageTemplateFromStructured(v, ctx);
-  const body = renderToStaticMarkup(React.createElement(Render, { config, data: tree } as never));
+  const body = renderToStaticMarkup(React.createElement(PageRender, { config, data: tree } as never));
 
-  const puckCss = fs.readFileSync("node_modules/@puckeditor/core/dist/Render-3OV4N4MT.css", "utf8");
   const html = `<!doctype html><html lang="nl"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sen:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap"/>
-<style>${puckCss}</style><style>${buildA11yStyleBlock(brandTokens.brand)}</style>
+<style>${buildA11yStyleBlock(brandTokens.brand)}</style>
 <style>*{box-sizing:border-box}html,body{margin:0;padding:0}img{max-width:100%}</style>
 </head><body>${body}</body></html>`;
   const out = `/tmp/lp-${nameContains}.html`;

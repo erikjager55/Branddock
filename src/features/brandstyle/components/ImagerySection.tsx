@@ -10,6 +10,7 @@ import { useUpdateSection } from "../hooks/useBrandstyleHooks";
 import type { BrandStyleguide, PhotographyStyle } from "../types/brandstyle.types";
 import { BrandStyleAnchorsPanel } from "@/components/brand-foundation/BrandStyleAnchorsPanel";
 import { HeroLogoOverlayPanel } from "@/components/brand-foundation/HeroLogoOverlayPanel";
+import { BrandImagesPanel } from "./BrandImagesPanel";
 
 /** Parse "OBSERVED:" or "RECOMMENDED:" prefix from a guideline string */
 function parseGuidelinePrefix(text: string): { prefix: "observed" | "recommended" | null; content: string } {
@@ -86,6 +87,9 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
 
       {/* W5 L-Fase 3 — opt-in: echt merklogo op de hero-afbeelding */}
       <HeroLogoOverlayPanel />
+
+      {/* lp-image-routes W2 — merkbeelden die de paginagenerator gebruikt */}
+      <BrandImagesPanel styleguide={styleguide} canEdit={canEdit} />
 
       {/* Photography */}
       <Card>

@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Render, type Config, type Data } from '@puckeditor/core';
+import type { SectionLibraryConfig } from '@/lib/landing-pages/section-config';
+import { PageRender } from '@/lib/landing-pages/page-render';
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import { X, Check, AlertTriangle, ArrowRight } from 'lucide-react';
 import type { SpikePuckProps } from './puck-config';
 import {
@@ -14,7 +16,7 @@ import {
 type SpikeData = Data<SpikePuckProps>;
 
 interface Props {
-  config: Config<SpikePuckProps>;
+  config: SectionLibraryConfig<SpikePuckProps>;
   current: SpikeData;
   proposed: SpikeData;
   /** Page-quality score before this proposal (0-100, threshold 70). */
@@ -314,7 +316,7 @@ function PreviewPane({
 }: {
   label: string;
   data: SpikeData;
-  config: Config<SpikePuckProps>;
+  config: SectionLibraryConfig<SpikePuckProps>;
   accent: string;
 }) {
   const { t } = useTranslation('campaigns-canvas-medium');
@@ -348,7 +350,7 @@ function PreviewPane({
           const safeData = (data as { root?: unknown }).root
             ? data
             : ({ ...data, root: { props: {} } } as SpikeData);
-          return <Render config={config} data={safeData} />;
+          return <PageRender config={config} data={safeData} />;
         })()}
       </div>
     </div>

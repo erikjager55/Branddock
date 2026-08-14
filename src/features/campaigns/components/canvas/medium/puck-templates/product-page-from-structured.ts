@@ -20,12 +20,13 @@
  * schema heeft features als array i.p.v. {items}).
  */
 
-import type { Data } from "@puckeditor/core";
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import type { CanvasContextStack } from "@/lib/ai/canvas-context";
 import type { SpikePuckProps } from "../puck-config";
 import type { ProductPageVariantContent } from "@/lib/landing-pages/page-type-schemas";
 import type { BrandImage } from "@/lib/landing-pages/brand-images";
 import { assignProductImagesToVariant } from "@/lib/landing-pages/product-images";
+import { patternProp } from "@/lib/landing-pages/pattern-choice";
 import { resolveCtaHref, assignSectionBands } from "./landing-page-from-structured";
 import { instance, taglineFromSubline, footerInstance, type PuckInstance } from "./from-structured-shared";
 
@@ -84,7 +85,12 @@ function featuresSection(v: ProductPageVariantContent): PuckInstance {
   if (hasImages) return instance("FeatureSplit", { features });
   const columns: "2" | "3" | "4" =
     features.length >= 4 ? "4" : features.length === 2 ? "2" : "3";
-  return instance("FeatureGrid", { columns, features });
+  // C3 — gevalideerde generator-keuze (alleen FeatureGrid draagt patterns).
+  return instance("FeatureGrid", {
+    columns,
+    features,
+    ...patternProp("FeatureGrid", v.layoutPatterns?.features),
+  });
 }
 
 function buildUseCasesSection(v: ProductPageVariantContent): PuckInstance | null {
@@ -132,6 +138,7 @@ function finalCtaSection(
     personaId,
     riskReducer: v.finalCta.body,
     heading: v.finalCta.heading,
+    ...patternProp("BrandCTA", v.layoutPatterns?.finalCta),
   });
 }
 
@@ -157,7 +164,11 @@ export function buildProductPageTemplateFromStructured(
     specsSection(variant), // 5. Specs (optional)
     processStepsSection(variant), // 6. Process-stappen (optional)
     pricingSection(variant), // 7. Pricing (optional)
-    instance("FAQ", { heading: "Veelgestelde vragen", items: variant.faq }), // 8. FAQ
+    instance("FAQ", {
+      heading: "Veelgestelde vragen",
+      items: variant.faq,
+      ...patternProp("FAQ", variant.layoutPatterns?.faq),
+    }), // 8. FAQ
     finalCtaSection(variant, ctx), // 9. Final CTA
     footerInstance(ctx, taglineFromSubline(variant.hero.subline)),
   ];

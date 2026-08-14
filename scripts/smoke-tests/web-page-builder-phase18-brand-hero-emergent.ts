@@ -136,7 +136,7 @@ function renderBrandHero(tokens: BrandTokens, props: { headline: string; sub: st
   } as unknown as CanvasContextStack;
   const config = buildSpikePuckConfig(ctx);
   const heroComponent = config.components.BrandHero;
-  // @ts-expect-error — Puck's component-shape; render is callable in tests
+  // E3: sinds de eigen registry-inferentie is render direct callable.
   const element = heroComponent.render({ ...props, heroVisualUrl: props.heroVisualUrl ?? '' });
   return renderToStaticMarkup(element);
 }

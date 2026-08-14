@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
@@ -150,7 +151,25 @@ export async function DELETE(
       return NextResponse.json({ error: "Deliverable not found" }, { status: 404 });
     }
 
+    // Live web-pagina's van deze deliverable: slugs VÓÓR de cascade-delete
+    // vastleggen, zodat we de ISR-cache van /p/<ws>/<slug> kunnen legen.
+    // Zonder deze revalidate blijft een verwijderde pagina tot `revalidate`
+    // (7 dagen) uit de cache geserveerd worden (review 2026-08-13, M1 —
+    // takedown/AVG-verwijdering moet direct effect hebben).
+    const livePages = await prisma.landingPage.findMany({
+      where: { deliverableId: did },
+      select: { slug: true, workspace: { select: { slug: true } } },
+    });
+
     await prisma.deliverable.delete({ where: { id: did } });
+
+    for (const page of livePages) {
+      try {
+        revalidatePath(`/p/${page.workspace.slug}/${page.slug}`);
+      } catch (err) {
+        console.warn("[DELETE deliverable] revalidatePath faalde (genegeerd):", err instanceof Error ? err.message : err);
+      }
+    }
 
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));

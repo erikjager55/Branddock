@@ -8,6 +8,7 @@
 // =============================================================
 
 export type ExportFormatId =
+  | 'brandmd'
   | 'designmd'
   | 'dtcg'
   | 'tailwind'
@@ -29,6 +30,16 @@ export interface ExportFormat {
 }
 
 export const EXPORT_FORMATS: ExportFormat[] = [
+  {
+    // Primaire markdown-export (touchpoints v2): standaard-conform publiek
+    // profiel — bewust vóór DESIGN.md en brand-brief in de UI-ordening.
+    id: 'brandmd',
+    label: 'brand.md',
+    description: 'Open brand.md standard (v0.2 core + full profile) — strategy, voice, visual, audience',
+    consumers: ['Claude', 'ChatGPT', 'Cursor', 'n8n', 'any AI agent'],
+    endpoint: '/api/export/design-system/brandmd',
+    status: 'ready',
+  },
   {
     id: 'brand-kit-bundle',
     label: 'Brand Kit Bundle (zip)',

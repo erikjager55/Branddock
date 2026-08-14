@@ -62,6 +62,11 @@ const COPY_KEYS: ReadonlySet<string> = new Set([
   'body',
   // GEO Fase 3 — ComparisonTable redactionele caption (long-form GEO-component).
   'caption',
+  // C1 anatomie-componenten: TrustStrip.metric + PainBullets.bridge zijn
+  // vrije copy (bullets[].text valt al onder 'text'). `patternKey` staat
+  // hier bewust NIET: dat is config, geen tekst.
+  'metric',
+  'bridge',
 ]);
 
 /** True wanneer een leaf-prop-key vrije, bewerkbare copy bevat. */
