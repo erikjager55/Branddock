@@ -15,7 +15,8 @@ export type ExportFormatId =
   | 'shadcn-css'
   | 'figma-variables'
   | 'style-dictionary'
-  | 'brand-brief';
+  | 'brand-brief'
+  | 'brand-kit-bundle';
 
 export type ExportStatus = 'ready' | 'soon';
 
@@ -37,6 +38,15 @@ export const EXPORT_FORMATS: ExportFormat[] = [
     description: 'Open brand.md standard (v0.2 core + full profile) — strategy, voice, visual, audience',
     consumers: ['Claude', 'ChatGPT', 'Cursor', 'n8n', 'any AI agent'],
     endpoint: '/api/export/design-system/brandmd',
+    status: 'ready',
+  },
+  {
+    id: 'brand-kit-bundle',
+    label: 'Brand Kit Bundle (zip)',
+    description:
+      'Complete designbibliotheek: README + SKILL.md + DESIGN.md + tokens.css/json + fonts + assets + specimens + ui-kit',
+    consumers: ['Claude Code', 'Claude Design', 'Cursor', 'elke AI-agent'],
+    endpoint: '/api/export/brand-kit-bundle',
     status: 'ready',
   },
   {
