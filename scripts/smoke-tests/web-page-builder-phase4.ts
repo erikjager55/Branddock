@@ -85,7 +85,11 @@ interface UpsertCall {
 
 function makeMockPrisma() {
   const upsertCalls: UpsertCall[] = [];
-  const mock = {
+  // P1 versioned publishes — de mock houdt PagePublish-rijen + pointer-updates
+  // bij zodat de smoke de version-increment + livePublishId-repoint verifieert.
+  const publishRows: Array<{ id: string; landingPageId: string; version: number }> = [];
+  const pointerUpdates: Array<{ id: string; livePublishId: unknown }> = [];
+  const base = {
     landingPage: {
       upsert: async (args: UpsertCall) => {
         upsertCalls.push(args);
@@ -96,16 +100,54 @@ function makeMockPrisma() {
           publishedAt: new Date(),
         };
       },
+      update: async (args: { where: { id: string }; data: Record<string, unknown> }) => {
+        pointerUpdates.push({ id: args.where.id, livePublishId: args.data.livePublishId });
+        return { id: args.where.id };
+      },
       findFirst: async (args: {
         where: { workspaceId: string; slug: string };
-      }): Promise<{ puckData: unknown; status: string } | null> => {
+      }): Promise<{
+        puckData: unknown;
+        status: string;
+        livePublish?: { puckData: unknown } | null;
+      } | null> => {
         if (args.where.slug === 'published-page') {
           return { puckData: { root: { props: {} }, content: [] }, status: 'PUBLISHED' };
+        }
+        if (args.where.slug === 'published-versioned-page') {
+          // Pointer gezet → livePublish.puckData wint van de legacy kolom.
+          return {
+            puckData: { root: { props: {} }, content: [{ type: 'Legacy' }] },
+            status: 'PUBLISHED',
+            livePublish: { puckData: { root: { props: {} }, content: [{ type: 'Live' }] } },
+          };
         }
         if (args.where.slug === 'draft-page') {
           return { puckData: { root: { props: {} }, content: [] }, status: 'DRAFT' };
         }
         return null;
+      },
+    },
+    pagePublish: {
+      findFirst: async (args: {
+        where: { landingPageId: string };
+        orderBy: { version: 'desc' };
+      }): Promise<{ version: number } | null> => {
+        const rows = publishRows
+          .filter((r) => r.landingPageId === args.where.landingPageId)
+          .sort((a, b) => b.version - a.version);
+        return rows[0] ?? null;
+      },
+      create: async (args: {
+        data: Record<string, unknown>;
+      }): Promise<{ id: string; version: number }> => {
+        const row = {
+          id: `pub-${publishRows.length + 1}`,
+          landingPageId: args.data.landingPageId as string,
+          version: args.data.version as number,
+        };
+        publishRows.push(row);
+        return { id: row.id, version: row.version };
       },
     },
     workspace: {
@@ -115,13 +157,17 @@ function makeMockPrisma() {
       },
     },
   };
-  return { mock, upsertCalls };
+  const mock = {
+    ...base,
+    $transaction: async <T,>(fn: (tx: typeof base) => Promise<T>): Promise<T> => fn(base),
+  };
+  return { mock, upsertCalls, publishRows, pointerUpdates };
 }
 
 async function testPublishLandingPage(): Promise<void> {
   group('2. publishLandingPage — upsert flow');
 
-  const { mock, upsertCalls } = makeMockPrisma();
+  const { mock, upsertCalls, publishRows, pointerUpdates } = makeMockPrisma();
   const result = await publishLandingPage(mock, {
     workspaceId: 'ws-1',
     deliverableId: 'd-1',
@@ -146,6 +192,26 @@ async function testPublishLandingPage(): Promise<void> {
   assert(
     'upsert.update sets status=PUBLISHED',
     upsertCalls[0]?.update.status === 'PUBLISHED',
+  );
+
+  group('2b. publishLandingPage — versioned snapshots (P1)');
+  assert('first publish creates PagePublish v1', result.version === 1 && publishRows[0]?.version === 1);
+  assert(
+    'livePublishId repoints to new snapshot',
+    pointerUpdates.length === 1 && pointerUpdates[0]?.livePublishId === publishRows[0]?.id,
+  );
+
+  const second = await publishLandingPage(mock, {
+    workspaceId: 'ws-1',
+    deliverableId: 'd-1',
+    slug: 'my-launch',
+    locale: 'en-GB',
+    puckData: { root: { props: {} }, content: [] },
+  });
+  assert('second publish appends v2 (no overwrite)', second.version === 2 && publishRows.length === 2);
+  assert(
+    'pointer follows the latest snapshot',
+    pointerUpdates.length === 2 && pointerUpdates[1]?.livePublishId === publishRows[1]?.id,
   );
 
   group('3. publishLandingPage — rejects invalid slug');
@@ -174,7 +240,14 @@ async function testResolvePublishedPage(): Promise<void> {
   const published = await resolvePublishedPage(mock, 'my-workspace', 'published-page');
   assert('returns data for PUBLISHED page', published !== null);
   assert('returns workspaceId', published?.workspaceId === 'ws-1');
-  assert('returns puckData', published?.puckData !== undefined);
+  assert('returns puckData (legacy fallback, no pointer)', published?.puckData !== undefined);
+
+  // P1: pointer gezet → de live snapshot wint van de legacy puckData-kolom.
+  const versioned = await resolvePublishedPage(mock, 'my-workspace', 'published-versioned-page');
+  const versionedFirstType = (
+    versioned?.puckData as { content?: Array<{ type?: string }> } | undefined
+  )?.content?.[0]?.type;
+  assert('prefers livePublish.puckData over legacy column', versionedFirstType === 'Live');
 
   const draft = await resolvePublishedPage(mock, 'my-workspace', 'draft-page');
   assert('returns null for DRAFT page', draft === null);
@@ -227,17 +300,17 @@ function testHostRouter(): void {
     {
       host: 'my-ws.branddock.app',
       path: '/spring-launch',
-      expected: '/p/spring-launch?workspace=my-ws',
+      expected: '/p/my-ws/spring-launch',
     },
     {
       host: 'my-ws.lvh.me:3000',
       path: '/about-us',
-      expected: '/p/about-us?workspace=my-ws',
+      expected: '/p/my-ws/about-us',
     },
     {
       host: 'WS.BRANDDOCK.APP',
       path: '/Slug-1',
-      expected: '/p/Slug-1?workspace=ws',
+      expected: '/p/ws/Slug-1',
     },
   ];
   for (const { host, path, expected } of rewrites) {

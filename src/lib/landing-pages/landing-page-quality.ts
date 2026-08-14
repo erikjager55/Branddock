@@ -430,7 +430,7 @@ export async function evaluateLandingPageQualityWithVision(
   try {
     const { judgeVisualBrandFit } = await import("./visual-brand-fit-judge");
     const vbfResult = await judgeVisualBrandFit({
-      puckData: input.data as unknown as import("@puckeditor/core").Data,
+      puckData: input.data as unknown as import("./page-data").PageData,
       ctx: input.canvasContext ?? null,
       designPhilosophy: input.designPhilosophy,
       brandName: input.brandName,

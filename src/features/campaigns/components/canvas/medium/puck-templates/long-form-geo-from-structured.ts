@@ -13,13 +13,14 @@
  * als eigen blokken zijn een latere increment.
  */
 
-import type { Data } from "@puckeditor/core";
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import type { CanvasContextStack } from "@/lib/ai/canvas-context";
 import type { SpikePuckProps } from "../puck-config";
 import type { LongFormGeoVariantContent } from "@/lib/landing-pages/page-type-schemas";
 import { resolveCtaHref, assignSectionBands } from "./landing-page-from-structured";
 import { instance, taglineFromSubline, footerInstance, type PuckInstance } from "./from-structured-shared";
 import { cleanStatSource } from "@/lib/landing-pages/sanitize-geo-sources";
+import { assignBrandImagesToGeoVariant } from "@/lib/landing-pages/brand-images";
 
 type SpikeData = Data<SpikePuckProps>;
 
@@ -39,9 +40,12 @@ function safeMdUrl(url: string): string {
  * Bouwt een Puck-data-tree uit een via longFormGeoVariantSchema gevalideerde variant.
  */
 export function buildLongFormGeoTemplateFromStructured(
-  variant: LongFormGeoVariantContent,
+  rawVariant: LongFormGeoVariantContent,
   ctx: CanvasContextStack | null,
 ): SpikeData {
+  // lp-image-routes W1 — vul hero + brief-gemarkeerde secties met merkbeelden
+  // (zelfde P2-patroon als de LP-template; no-op zonder brandImages).
+  const variant = assignBrandImagesToGeoVariant(rawVariant, ctx?.brandImages ?? null);
   const personaId = ctx?.personas?.[0]?.id ?? "";
   const ctaHref = resolveCtaHref(ctx);
 
@@ -61,7 +65,15 @@ export function buildLongFormGeoTemplateFromStructured(
     // Volledige locale-awareness van álle section-labels blijft een aparte follow-up.
     instance("RichText", { content: `## Samenvatting\n\n${variant.tldr.map((b) => `- ${escapeMdInline(b)}`).join("\n")}` }),
     // Prose-secties (artikel-body): heading inline-escaped, body blijft block-prose (raw).
-    ...variant.sections.map((s) => instance("RichText", { content: `## ${escapeMdInline(s.heading)}\n\n${s.body}` })),
+    // lp-image-routes W1: sectie-beeld (merkbeeld of later via picker/Generate) als
+    // figure boven de prose; alt uit de brief-subject, anders de sectie-kop.
+    ...variant.sections.map((s) =>
+      instance("RichText", {
+        content: `## ${escapeMdInline(s.heading)}\n\n${s.body}`,
+        imageUrl: s.imageUrl ?? "",
+        imageAlt: s.imageBrief?.subject ?? s.heading,
+      }),
+    ),
     // Citeerbare stats — bron alleen tonen bij een ECHTE externe bron; first-party
     // cijfers (source null/leeg) vallen terug op label-only. Render-vangnet: scrub ook
     // hier zodat reeds-opgeslagen pre-fix varianten bij een puck-rebuild geheald worden

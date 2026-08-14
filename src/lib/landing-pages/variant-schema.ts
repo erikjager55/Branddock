@@ -218,6 +218,42 @@ const finalCtaSchema = z.object({
   primaryCta: z.string().min(1),
 });
 
+// ─── Layout-patterns (C3, ADR 2026-08-12-generative-pattern-choice) ──
+
+/**
+ * Eén pattern-key-waarde in `layoutPatterns`. Zod bewaakt hier bewust alleen
+ * de vorm (string, niet leeg, plausibele lengte): de échte toegestane set is
+ * per-type + archetype dynamisch en wordt server-side afgedwongen ná parse
+ * (sanitizeVariantLayoutPatterns in pattern-choice.ts). `.catch(undefined)`
+ * per key (imageBrief-precedent): een gehallucineerd type degradeert het
+ * veld i.p.v. de hele variant-parse te laten falen. Gedeeld met de per-type
+ * schemas in page-type-schemas.ts.
+ */
+export const layoutPatternKeySchema = z
+  .string()
+  .min(1)
+  .max(40)
+  .optional()
+  .catch(undefined);
+
+/**
+ * C3 — per-sectie layout-pattern-keuze uit de generatie, ADDITIEF: bestaande
+ * gepersisteerde variants (zonder dit veld) parsen én renderen ongewijzigd.
+ * Veldnamen sluiten aan op de LP-sectie-sleutels; keys komen uit
+ * SECTION_PATTERNS (section-patterns.ts). Outer `.catch(undefined)`: een
+ * niet-object (string/array/onzin) degradeert naar afwezig.
+ */
+const lpLayoutPatternsSchema = z
+  .object({
+    features: layoutPatternKeySchema,
+    testimonial: layoutPatternKeySchema,
+    stats: layoutPatternKeySchema,
+    faq: layoutPatternKeySchema,
+    finalCta: layoutPatternKeySchema,
+  })
+  .optional()
+  .catch(undefined);
+
 // ─── Root schema met cross-field constraint ───────────────────
 
 export const landingPageVariantSchema = z
@@ -230,6 +266,7 @@ export const landingPageVariantSchema = z
     pricing: pricingSchema.optional(),
     faq: faqSchema,
     finalCta: finalCtaSchema,
+    layoutPatterns: lpLayoutPatternsSchema,
   })
   .superRefine((data, ctx) => {
     if (data.finalCta.primaryCta !== data.hero.primaryCta) {

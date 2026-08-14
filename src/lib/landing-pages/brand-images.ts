@@ -13,6 +13,7 @@
  * beslissing, niet deze deterministische mapping.
  */
 import type { LandingPageVariantContent } from "./variant-schema";
+import type { LongFormGeoVariantContent } from "./page-type-schemas";
 
 export interface BrandImage {
   url: string;
@@ -60,4 +61,34 @@ export function assignBrandImagesToVariant(
   });
 
   return { ...variant, hero, features: { ...variant.features, items } };
+}
+
+/**
+ * Long-form/GEO-variant van de merkbeeld-toewijzing (lp-image-routes W1):
+ * vult de hero en daarna uitsluitend secties MET een imageBrief maar zonder
+ * imageUrl — de brief markeert "deze sectie wil een visual" (generator kiest
+ * er 2-3), sectie's zonder brief blijven bewust tekst-only voor artikel-ritme.
+ * Zelfde contract als assignBrandImagesToVariant: puur, muteert niet, no-op
+ * zonder bruikbare brandImages.
+ */
+export function assignBrandImagesToGeoVariant(
+  variant: LongFormGeoVariantContent,
+  brandImages: BrandImage[] | null | undefined,
+): LongFormGeoVariantContent {
+  const urls = (brandImages ?? []).map((b) => b?.url).filter((u): u is string => typeof u === "string" && u.length > 0);
+  if (urls.length === 0) return variant;
+
+  let idx = 0;
+  const hero = { ...variant.hero };
+  if (!hero.heroVisualUrl && idx < urls.length) {
+    hero.heroVisualUrl = urls[idx++];
+  }
+  const sections = variant.sections.map((section) => {
+    if (section.imageBrief && !section.imageUrl && idx < urls.length) {
+      return { ...section, imageUrl: urls[idx++] };
+    }
+    return section;
+  });
+
+  return { ...variant, hero, sections };
 }

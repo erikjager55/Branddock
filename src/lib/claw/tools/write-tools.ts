@@ -10,6 +10,8 @@ import {
 } from '@/lib/landing-pages/puck-text-fields';
 import { preserveHeroOnSettings } from '@/features/campaigns/components/canvas/medium/hero-visual-preserve';
 import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
+import { applyStructureOperations, type EditableTree, type StructureOperation } from '@/lib/landing-pages/section-edit-tools';
+import { SECTION_TYPE_IDS } from '@/lib/landing-pages/page-data';
 import { createAndGenerateDeliverable } from '@/lib/content/headless-create';
 import type { ClawToolDefinition, MutationProposal } from '../claw.types';
 
@@ -1875,4 +1877,152 @@ export const writeTools: ClawToolDefinition[] = [
       };
     },
   },
+
+  // ─── Update Landing Page Structure (B1, verbeterplan v3) ──
+  // Structurele edits op de sectie-tree: toevoegen/verwijderen/verplaatsen/
+  // dupliceren. Draait op dezelfde kernel als de sectie-hover-toolbar
+  // (section-edit-tools) zodat de guards — verplichte secties per type,
+  // per-sectie locks, registry-vocabulaire — één waarheid hebben. Batch is
+  // alles-of-niets: één geweigerde operatie = niets toegepast + uitleg.
+  {
+    name: 'update_landing_page_structure',
+    description:
+      'Apply STRUCTURAL edits to the CURRENT web-page deliverable: add, remove, move, or duplicate sections. Use when the user asks to restructure ("voeg een FAQ toe", "zet de testimonial boven de pricing", "haal die sectie weg"). ALWAYS call `read_landing_page_content` first — it lists the sections with their ids in order. Adding a section inserts brand-styled placeholder copy: IMMEDIATELY follow up with `update_landing_page_content` to fill its text (re-read paths after the add is confirmed). Guards apply: required sections for the page type cannot be removed, locked sections are untouchable, and only known section types exist. Operations run in order, all-or-nothing.',
+    inputSchema: z.object({
+      deliverableId: z.string().describe('The deliverable ID from the Current Page context.'),
+      operations: z.array(z.object({
+        op: z.enum(['add', 'remove', 'move', 'duplicate']).describe('The structural operation.'),
+        sectionId: z.string().optional().describe('Target section id (remove/move/duplicate) — exactly as listed by read_landing_page_content.'),
+        type: z.enum(SECTION_TYPE_IDS).optional().describe('Section type to add (add only).'),
+        afterSectionId: z.string().nullish().describe('Add only: insert after this section id; omit to append at the end.'),
+        direction: z.enum(['up', 'down']).optional().describe('Move only: one position up or down.'),
+      })).min(1).max(10).describe('Ordered operations — keep batches small and purposeful.'),
+    }),
+    requiresConfirmation: true,
+    category: 'write',
+    buildProposal: async (params, ctx) => {
+      const p = params as { deliverableId: string; operations: StructureOperation[] };
+      const deliverable = await prisma.deliverable.findFirst({
+        where: { id: p.deliverableId },
+        include: { campaign: { select: { workspaceId: true, title: true } } },
+      });
+      if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
+        throw new Error('Deliverable not found in this workspace');
+      }
+      const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
+      const contentTypeInputs = (settings.contentTypeInputs ?? null) as Record<string, unknown> | null;
+      if (!isPuckRenderable(deliverable.contentType, contentTypeInputs)) {
+        throw new Error(`"${deliverable.title}" is a ${deliverable.contentType}, not a Puck-renderable page — structural edits are not supported here.`);
+      }
+      const puckData = settings.puckData;
+      if (!puckData || typeof puckData !== 'object' || !Array.isArray((puckData as EditableTree).content)) {
+        throw new Error('This landing page has no generated layout yet — run Step 2 first.');
+      }
+
+      // Dry-run op een clone: guards nu al afdwingen zodat het voorstel dat de
+      // user te zien krijgt gegarandeerd uitvoerbaar is (en de model-loop een
+      // bruikbare weigering krijgt i.p.v. een confirm die later klapt).
+      const simulated = applyStructureOperations(puckData as EditableTree, deliverable.contentType, p.operations);
+      if (!simulated.ok) {
+        throw new Error(structureReasonMessage(simulated.reason, simulated.opIndex, p.operations));
+      }
+
+      const tree = puckData as EditableTree;
+      const changes: MutationProposal['changes'] = p.operations.map((op, i) => ({
+        field: `structure[${i}]`,
+        label: structureOpLabel(op),
+        currentValue: op.sectionId
+          ? `positie ${tree.content.findIndex((c) => c.props?.id === op.sectionId) + 1} van ${tree.content.length}`
+          : `${tree.content.length} secties`,
+        proposedValue: simulated.summaries[i],
+      }));
+
+      return {
+        toolCallId: '',
+        toolName: 'update_landing_page_structure',
+        params,
+        description: `Restructure "${deliverable.title}" — ${p.operations.length} operation${p.operations.length === 1 ? '' : 's'}`,
+        entityType: 'Deliverable',
+        entityId: p.deliverableId,
+        entityName: deliverable.title,
+        changes,
+      };
+    },
+    execute: async (params, ctx) => {
+      const p = params as { deliverableId: string; operations: StructureOperation[] };
+      const deliverable = await prisma.deliverable.findFirst({
+        where: { id: p.deliverableId },
+        include: { campaign: { select: { workspaceId: true } } },
+      });
+      if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
+        throw new Error('Deliverable not found in this workspace');
+      }
+      const existingSettings = (deliverable.settings ?? {}) as Record<string, unknown>;
+      const contentTypeInputs = (existingSettings.contentTypeInputs ?? null) as Record<string, unknown> | null;
+      if (!isPuckRenderable(deliverable.contentType, contentTypeInputs)) {
+        throw new Error('Not a Puck-renderable page deliverable');
+      }
+      const puckData = existingSettings.puckData;
+      if (!puckData || typeof puckData !== 'object' || !Array.isArray((puckData as EditableTree).content)) {
+        throw new Error('This landing page has no generated layout yet');
+      }
+
+      // Defence in depth: execute draait mogelijk op een nieuwere tree dan
+      // buildProposal zag — guards opnieuw afdwingen op de actuele staat.
+      const applied = applyStructureOperations(puckData as EditableTree, deliverable.contentType, p.operations);
+      if (!applied.ok) {
+        return {
+          success: false,
+          message: structureReasonMessage(applied.reason, applied.opIndex, p.operations),
+        };
+      }
+
+      // Hero-preserve chokepoint — zelfde guard als autosave + text-edits.
+      const incoming = { ...existingSettings, puckData: applied.data };
+      const preserved = preserveHeroOnSettings(existingSettings, incoming);
+      const mergedSettings = JSON.parse(JSON.stringify({ ...existingSettings, ...preserved }));
+
+      await prisma.deliverable.update({
+        where: { id: p.deliverableId },
+        data: { settings: mergedSettings },
+      });
+      invalidateCache(cacheKeys.prefixes.campaigns(ctx.workspaceId));
+      invalidateDashboard(ctx.workspaceId);
+      return {
+        success: true,
+        deliverableId: p.deliverableId,
+        message: `Herstructurering toegepast: ${applied.summaries.join('; ')}. Ververs de preview; vul nieuwe secties direct met passende copy via update_landing_page_content.`,
+      };
+    },
+  },
 ];
+
+/** User-toonbaar label per structurele operatie (proposal-weergave). */
+function structureOpLabel(op: StructureOperation): string {
+  switch (op.op) {
+    case 'add': return `Sectie toevoegen: ${op.type ?? '?'}`;
+    case 'remove': return `Sectie verwijderen: ${op.sectionId ?? '?'}`;
+    case 'move': return `Sectie verplaatsen (${op.direction === 'down' ? 'omlaag' : 'omhoog'}): ${op.sectionId ?? '?'}`;
+    case 'duplicate': return `Sectie dupliceren: ${op.sectionId ?? '?'}`;
+  }
+}
+
+/** Guard-reason → uitlegbare weigering voor model + user. */
+function structureReasonMessage(reason: string, opIndex: number, operations: StructureOperation[]): string {
+  const op = operations[opIndex];
+  const target = op?.sectionId ?? op?.type ?? '?';
+  switch (reason) {
+    case 'required':
+      return `Operation ${opIndex + 1} refused: "${target}" is (the last) required section for this page type and cannot be removed.`;
+    case 'locked':
+      return `Operation ${opIndex + 1} refused: section "${target}" is locked by the user — ask them to unlock it first.`;
+    case 'not-found':
+      return `Operation ${opIndex + 1} refused: section "${target}" was not found — call read_landing_page_content for the current section ids.`;
+    case 'unknown-type':
+      return `Operation ${opIndex + 1} refused: "${target}" is not a known section type.`;
+    case 'out-of-bounds':
+      return `Operation ${opIndex + 1} refused: "${target}" is already at that edge of the page.`;
+    default:
+      return `Operation ${opIndex + 1} refused (${reason}).`;
+  }
+}

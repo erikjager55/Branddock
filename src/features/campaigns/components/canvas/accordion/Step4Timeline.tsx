@@ -23,6 +23,7 @@ import { STUDIO } from '@/lib/constants/design-tokens';
 import { useFormat, type UiFormatters } from '@/lib/ui-i18n/format';
 import { PublishGate } from '../PublishGate';
 import { GeoOptimizationPanel } from '../GeoOptimizationPanel';
+import { WebPagePublishPanel } from '../WebPagePublishPanel';
 import { VersionHistorySidebar } from '../VersionHistorySidebar';
 import type { PreviewContent } from '../../../types/canvas.types';
 import {
@@ -760,6 +761,12 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           </div>
         </div>
       )}
+
+      {/* P1 versioned publishes — publish-UI voor Puck-renderbare types:
+          slug + Publiceer + live-URL + versielijst met rollback/preview.
+          Buiten de !isPublished-gate: ná publish blijft de versielijst
+          (rollback!) juist relevant. */}
+      {isPuckType && <WebPagePublishPanel deliverableId={deliverableId} />}
 
       {/* GEO-meet-paneel — toont de gepersisteerde geoOptimizationAnalysis van
           een gepubliceerd long-form GEO-artikel. Buiten de !isPublished-gate

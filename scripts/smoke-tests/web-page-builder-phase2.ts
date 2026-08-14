@@ -180,6 +180,12 @@ function testPuckConfig(): void {
     // GEO Fase 2 — long-form GEO: multi-koloms vergelijking + genummerde listicle
     'ComparisonTable',
     'Listicle',
+    // P3 lp-forms-leads — brand-gestyled leadformulier (no-JS-first)
+    'LeadForm',
+    // C1 — anatomie-componenten (LP-spec §4a): trust-strip, pijnpunten, impact-stats
+    'TrustStrip',
+    'PainBullets',
+    'ImpactStats',
   ];
 
   // Afgeleid van `expected` zodat de assert zowel ontbrekende als EXTRA
@@ -281,6 +287,18 @@ function testRenderInjections(): void {
       name: 'RichText',
       props: { content: 'Multi-line\ncontent block.' },
       expectedSubstrings: ['Multi-line', 'content block.', tokens.secondaryHex],
+    },
+    {
+      name: 'LeadForm',
+      props: {
+        heading: 'Talk to us',
+        sub: 'We reply fast.',
+        buttonLabel: 'Send it',
+        successMessage: 'Received!',
+        fields: [{ label: 'Email', fieldType: 'email', required: true }],
+      },
+      // Geen workspaceId in deze config → inerte editor-render (action="#").
+      expectedSubstrings: ['Talk to us', 'Send it', 'name="_hp"', 'type="email"', 'action="#"'],
     },
   ];
 

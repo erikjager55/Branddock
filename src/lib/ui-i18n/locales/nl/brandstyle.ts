@@ -609,6 +609,13 @@ const brandstyle = {
   imagery: {
     observed: 'Waargenomen',
     recommended: 'Aanbevolen',
+    brandImagesTitle: 'Merkbeelden',
+    brandImagesHint: 'Echte merkfoto’s die de paginagenerator gebruikt om hero-, feature- en artikel-beeldslots te vullen. Gescrapte beelden verschijnen hier automatisch; upload eigen foto’s om gegenereerde pagina’s te verrijken.',
+    brandImagesAdd: 'Beeld toevoegen',
+    brandImagesUploading: 'Uploaden…',
+    brandImagesUploadError: 'Upload mislukt. Probeer het opnieuw.',
+    brandImagesRemove: 'Beeld verwijderen',
+    brandImagesEmpty: 'Nog geen merkbeelden. Upload foto’s zodat gegenereerde pagina’s echt beeld krijgen.',
     photoStyleTitle: 'Fotografiestijl',
     mood: 'Sfeer',
     subjects: 'Onderwerpen',

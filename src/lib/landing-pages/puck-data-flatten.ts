@@ -25,6 +25,9 @@ interface PuckLikeData {
  */
 const EXCLUDED_KEYS = new Set([
   'id', 'href', 'personaId', 'columns', 'metadata', 'icon',
+  // C1 — layout-patroon-key ('default'/'bento'/'two-column') is config;
+  // zonder exclusie lekt hij als pseudo-copy de judge-/gate-input in.
+  'patternKey',
 ]);
 
 /**

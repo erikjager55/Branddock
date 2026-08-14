@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Render, type Config, type Data } from '@puckeditor/core';
+import type { SectionLibraryConfig } from '@/lib/landing-pages/section-config';
+import { PageRender } from '@/lib/landing-pages/page-render';
+import type { PageData as Data } from '@/lib/landing-pages/page-data';
 import { X, Check, AlertTriangle } from 'lucide-react';
 import type { SpikePuckProps } from './puck-config';
 
@@ -12,7 +14,7 @@ type ComponentInstance = SpikeData['content'][number];
 
 interface Props {
   /** Puck config — same instance used by the editor so render functions match. */
-  config: Config<SpikePuckProps>;
+  config: SectionLibraryConfig<SpikePuckProps>;
   /** Component as it currently exists in the page. */
   current: ComponentInstance;
   /** Proposed AI-rewritten props for the same component. */
@@ -182,7 +184,7 @@ export function ComponentDiffPreviewModal({
               {t('componentDiff.current')}
             </div>
             <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-              <Render config={config} data={currentData} />
+              <PageRender config={config} data={currentData} />
             </div>
           </div>
           <div style={{ background: '#ffffff', padding: '16px' }}>
@@ -199,7 +201,7 @@ export function ComponentDiffPreviewModal({
               {t('componentDiff.proposedByAi')}
             </div>
             <div style={{ border: '1px solid #67e8f9', borderRadius: '8px', overflow: 'hidden' }}>
-              <Render config={config} data={proposedData} />
+              <PageRender config={config} data={proposedData} />
             </div>
           </div>
         </div>
