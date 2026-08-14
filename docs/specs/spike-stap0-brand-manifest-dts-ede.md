@@ -1,8 +1,8 @@
 # Stap 0 — validatie-spike: handgemaakt Brand Manifest (DTS Ede)
 
 > **Datum**: 2026-08-13 · **Onderdeel van**: `brandstyle-designbibliotheek-verbeterplan.md` (Stap 0)
-> **Status**: manifest-voorbeeld af (dit document, §2); de A/B-run vereist de lokale omgeving
-> (database + API-keys) en staat als protocol in §3.
+> **Status**: manifest-voorbeeld af (§2); **A/B-run uitgevoerd 2026-08-14 via de Branddock
+> MCP-koppeling tegen prod** (workspace DTS Ede) — resultaten en verdict in §4.
 > **Doel**: (a) het ontwerpvoorbeeld voor `src/lib/brandstyle/manifest-builder.ts` — dit is hoe
 > een gegenereerd manifest eruit hoort te zien; (b) het protocol om de kernaanname te toetsen
 > dat manifest-injectie de AI-outputkwaliteit meetbaar verbetert.
@@ -109,3 +109,52 @@ zware filters. [observed]
 4. Beslisregel (uit het verbeterplan): duidelijk verschil → W1 bouwen zoals gespecificeerd en
    deze outputs bevriezen als eerste golden-set-fixture (W7.4). Klein/geen verschil → eerst
    het extractie-spoor (analyzer-plan A2-A4).
+
+## 4. Resultaten A/B-run (2026-08-14, uitgevoerd via Branddock MCP tegen prod)
+
+**Methode zoals daadwerkelijk gedraaid** (variant op §3, mogelijk gemaakt door de MCP-koppeling):
+generator constant (Claude, zelfde model beide condities), alleen de merkcontext verschilde —
+(A) de letterlijke output van `get_brand_context` voor DTS Ede, (B) het §2-manifest. Alle 10
+outputs blind gescoord door de productie-F-VAL-engine via `score_against_brand`. Geen dubbel-
+blinde opzet (dezelfde agent schreef beide varianten); de judge was wél blind voor conditie.
+
+### F-VAL composietscores
+
+| Opdracht | A (huidige context) | B (manifest) |
+|---|---|---|
+| 1. LP-hero | 78 | **83** |
+| 2. Social wedstrijdverslag | **80** | 78 |
+| 3. Nieuwsbrief-intro toernooi | 83 | 83 |
+| 4. Image-prompt hero | **82** | 81 |
+| 5. CTA-microcopy | 79 | 79 |
+| **Gemiddeld** | **80,4** | **80,8** |
+
+### Harde-regel-overtredingen (manifest §2, handmatig geteld)
+
+| Output | Overtredingen |
+|---|---|
+| A1 | 2 — superlatief/marketing-frame ("dé voetbalfamilie", "meest verbonden … van Nederland"), wij-vorm in redactionele copy |
+| A2 | 2+ — emoji (💪⚽, verboden), wij-vorm ("samen zijn we DTS") |
+| A3/A4/A5 | 0 |
+| **A totaal** | **4+** |
+| **B totaal** | **0** |
+
+### Interpretatie & verdict
+
+1. **F-VAL-composiet ziet vrijwel geen verschil (+0,4)** — maar kan het verschil ook niet
+   zien: `rulesEvaluated: 0` in élke scoring (er zijn geen actieve BrandRule-records voor
+   deze workspace) en de judge kent de merkboek-regels (geen emoji, geen superlatieven,
+   derde persoon) niet. Off-brand output scoort daardoor gewoon 80+.
+2. **De regel-overtredingen tonen het werkelijke verschil**: conditie A produceerde 4+
+   overtredingen van regels die alléén in het merkboek staan; conditie B nul. Het manifest
+   levert precies de laag die de huidige context mist.
+3. **Beslisregel-verdict**: W1 doorzetten (gebeurd) én **W2-doorvoer naar de scoring-engine
+   naar voren halen** — zolang StyleguideRule-regels F-VAL's rules-pijler niet bereiken,
+   blijft regel-overtredende content hoog scoren. Dit is de belangrijkste bevinding van de
+   spike: het gat zit niet alleen in de generatie-context maar ook in de meting.
+4. **Databevinding**: de prod-brandcontext zegt "U13 Top Tournament / Tweede Paasdag";
+   het merkboek (mei 2026) zegt "U15 / 23e editie / maandag 25 mei". Eén van beide is
+   verouderd — corrigeren in de DTS Ede-workspace vóór de volgende contentronde.
+5. **Beperkingen**: n=5 per conditie; generator niet geblindeerd; de tekst-judge kan
+   image-prompt-uitvoerbaarheid (exacte hex, kleurgrading in B4) niet waarderen; deze
+   outputs zijn bruikbaar als eerste golden-set-fixtures (W7.4).
