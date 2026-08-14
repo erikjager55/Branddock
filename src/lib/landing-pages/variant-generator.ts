@@ -758,7 +758,7 @@ Genereer een compleet long-form GEO-artikel als **gestructureerd JSON** volgens 
   },
   "answerFirstIntro": string (40-60 woorden die DE kernvraag meteen én zelfstandig beantwoorden — citeerbaar door een AI-engine zónder de rest van het artikel),
   "tldr": [string] (2-5 bullets: de key takeaways, elk zelfstandig leesbaar),
-  "sections": [{ "heading": string, "body": string (de artikel-body in atomic chunks van 2-4 zinnen die elk los citeerbaar zijn) }] (min 1),
+  "sections": [{ "heading": string, "body": string (de artikel-body in atomic chunks van 2-4 zinnen die elk los citeerbaar zijn), "imageBrief": ${IMAGE_BRIEF_JSON} | optional }] (min 1),
   "qa": [{ "question": string (max 120 tekens, klanttaal), "answer": string (antwoord-eerst, zelfstandig leesbaar) }] (min 2),
   "citeableStats": [{ "label": string, "value": string, "source": string | null (een titel of URL EXACT uit de "## CITEERBARE BRONNEN"- of "## GEVERIFIEERD BRONMATERIAAL"-lijst als het cijfer daaruit komt; null voor een eigen/first-party merk-cijfer of als er geen passende bron in die lijsten staat; NOOIT een interne laagnaam of verzonnen bron) }] (min 1),
   "definitions": [{ "term": string, "definition": string }] | optional (sleuteltermen helder gedefinieerd — entity-clarity),
@@ -779,6 +779,7 @@ Genereer een compleet long-form GEO-artikel als **gestructureerd JSON** volgens 
 8. **Geen markdown in veld-strings**: lever platte tekst; de renderer verzorgt de opmaak (geen **bold**, # of tabel-syntax in de strings).
 9. **Readability**: 5e-7e graders niveau, zinnen ≤25 woorden, jargon alleen mét uitleg.
 10. **Locale ${opts.locale}**: alle content in deze taal.
+11. **Sectie-beelden = bewijs + diversiteit (2-3 briefs)**: geef PRECIES 2-3 secties een imageBrief — kies de secties waar een beeld het punt aantoonbaar versterkt (een proces, een object, een plek; geen abstracties). De briefs volgen dezelfde regels als feature-briefs: onderling verschillende sceneTypes of duidelijk verschillende subjects, max 1 "person"-scene per artikel (candid/werkend, nooit frontaal geposeerd), subjects UNBRANDED (geen logo's of lettering) en elke "avoid" bevat standaard "brand logos or lettering". De overige secties krijgen GEEN brief; het veld "imageUrl" lever je nooit (dat vult de pipeline).
 
 # JSON-ONLY OUTPUT
 Genereer ALLEEN het JSON-object, zonder prefix-zin, markdown code-fence of post-script. Begin direct met { en eindig met }.`;

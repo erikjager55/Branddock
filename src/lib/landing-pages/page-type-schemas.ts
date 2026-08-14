@@ -277,6 +277,8 @@ const geoStatSchema = z.object({
 const geoSectionSchema = z.object({
   heading: z.string().min(1, "sections[].heading mag niet leeg zijn"),
   body: z.string().min(1, "sections[].body mag niet leeg zijn"),
+  imageUrl: z.string().url("sections[].imageUrl moet een geldige URL zijn").nullable().optional(),
+  imageBrief: imageBriefSchema.nullable().optional().catch(null),
 });
 
 /** Multi-kolom vergelijkingstabel — een van de hoogst-geciteerde GEO-formats. */
