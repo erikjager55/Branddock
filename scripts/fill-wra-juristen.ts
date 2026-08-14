@@ -1071,7 +1071,10 @@ async function main() {
 
   for (const color of styleguideColors) {
     await prisma.styleguideColor.create({
-      data: { ...color, styleguideId: styleguide.id },
+      // Deze kleuren komen uit de brondocumenten van de klant, niet uit een
+      // scrape — stempel ze als user-eigendom zodat een latere re-analyse ze
+      // laat staan (W5).
+      data: { ...color, source: "user", styleguideId: styleguide.id },
     });
     console.log(`  ✅ Color: ${color.name} (${color.hex})`);
   }

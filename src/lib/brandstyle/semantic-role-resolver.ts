@@ -113,9 +113,19 @@ interface StyleguideWithData extends BrandStyleguide {
 export async function resolveSemanticTokens(
   styleguideId: string,
 ): Promise<SemanticTokens> {
+  // Expliciete `orderBy`: de resolver kiest de primaire merkkleur op volgorde,
+  // en die volgorde was tot nu toe toevallig goed omdat een analyse álle rijen
+  // wiste en op sortOrder opnieuw aanmaakte. Sinds user-rijen een re-analyse
+  // overleven (W5) klopt de fysieke rij-volgorde niet meer met sortOrder, en
+  // zonder deze regel is de "deterministische" output uit de docstring dat
+  // niet meer — met een spontane review-drift tot gevolg.
   const sg = await prisma.brandStyleguide.findUnique({
     where: { id: styleguideId },
-    include: { colors: true, components: true, fonts: true },
+    include: {
+      colors: { orderBy: { sortOrder: 'asc' } },
+      components: { orderBy: [{ type: 'asc' }, { sortOrder: 'asc' }] },
+      fonts: { orderBy: [{ role: 'asc' }, { sortOrder: 'asc' }] },
+    },
   });
   if (!sg) {
     throw new Error(`Styleguide ${styleguideId} not found`);

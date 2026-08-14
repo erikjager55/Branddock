@@ -5,6 +5,7 @@ import { resolveWorkspaceId } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { recomputeColorPairings } from "@/lib/brandstyle/recompute-color-pairings";
+import { ROW_SOURCE_USER } from "@/lib/brandstyle/preserve-user-rows";
 
 // =============================================================
 // PATCH /api/brandstyle/colors/[colorId] — update tags (Fase E)
@@ -44,10 +45,23 @@ export async function PATCH(
         { status: 400 },
       );
     }
+    // Een handmatige tag-correctie maakt de gebruiker eigenaar van deze rij: de
+    // volgende re-analyse laat 'm staan i.p.v. 'm te vervangen door een verse
+    // gescrapte kleur met dezelfde hex (W5). Alleen bij een échte wijziging —
+    // een lege PATCH of een toggle die op hetzelfde uitkomt hoort geen
+    // eigenaarschap te claimen. De afgeleide velden (naam, categorie,
+    // detector-provenance) blijven wél meebewegen met de scrape; alleen de tags
+    // zijn vanaf nu van de gebruiker.
+    const tagsChanged =
+      parsed.data.tags !== undefined &&
+      (parsed.data.tags.length !== color.tags.length ||
+        parsed.data.tags.some((t, i) => t !== color.tags[i]));
+
     const updated = await prisma.styleguideColor.update({
       where: { id: colorId },
       data: {
         ...(parsed.data.tags !== undefined ? { tags: parsed.data.tags } : {}),
+        ...(tagsChanged ? { source: ROW_SOURCE_USER } : {}),
       },
     });
     // Tags-only update raakt hex/category niet → pairings ongewijzigd; wel cache.

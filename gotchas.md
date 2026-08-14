@@ -400,3 +400,25 @@ Bewezen via Playwright: `el.style.background = '<grad>, url(...)'; el.style.setP
 - Voor Gemini *structured-JSON*-extractie (geen redenering nodig): zet `thinkingConfig: { thinkingBudget: 0 }` én geef een ruim `maxOutputTokens` — anders bepaalt onzichtbaar thinking-verbruik of de JSON nog past.
 - Een fakes-smoke valideert orchestratie/contract, NIET model-budget/-gedrag. Eén live end-to-end run (gated, kosten) hoort bij de acceptatie van AI-pipelines — die ving dit defect dat tsc + 30/30 smoke misten.
 **Prior art**: Deep Research-feature `tasks/knowledge-library-deep-research.md`; dev-runner `scripts/dev/deep-research-live.ts`.
+
+## 2026-08-14: Een expliciete sleutel ná een spread maakte de bescherming die eromheen gebouwd was stil ongedaan
+**What went wrong**: Bij het beschermen van gecureerde lijsten tegen een re-analyse (W5) verving ik acht `result.x || []`-regels door één `...curated`-spread die alleen niet-geclaimde, non-empty velden uitspreidt. Zeven regels waren weg; `iconographyDonts: result.iconographyDonts || []` stond 26 regels ná de spread en bleef staan. Later-key-wins, dus dat veld ontsnapte volledig aan de bescherming — inclusief aan een expliciete user-claim. `tsc --noEmit` was schoon (geldige TypeScript), `no-dupe-keys` vuurt niet op spread-vs-sleutel, en alle negen smoke-gates waren groen. Alleen een code-review vond het. Dezelfde diff claimde in changelog én task-file "acht lijsten beschermd" — het waren er zeven.
+**Rule**:
+- Bij het vervangen van N losse object-sleutels door één spread: grep na afloop op elke vervangen sleutelnaam binnen hetzelfde literal. Een overgeslagen sleutel ná de spread is onzichtbaar voor de compiler én voor lint.
+- Zet een spread die velden *weglaat* zo laat mogelijk in het literal, niet in het midden — dan wint hij van wat eraan voorafgaat in plaats van andersom.
+**Prior art**: task `refresh-preserves-user-data`, changelog #460.
+
+## 2026-08-14: Twee vlaggen op rij gebouwd die niemand ooit schreef — leescode is geen bescherming
+**What went wrong**: De zes `*Override`-vlaggen op `BrandStyleguide` hadden complete, correcte leescode in de analyse-engine en werden in route-comments én in `rescrape-brand.ts` aangehaald als "de override-bescherming". Een repo-brede grep vond nul schrijvers: geen enkele route accepteerde de profielvelden die de vlaggen beschermen, dus de vlaggen stonden permanent op `false` en de bescherming deed maanden niets. Bij het repareren daarvan bouwde ik `userEditedFields` — en liep in exact dezelfde val: de claim hing aan de catch-all `PATCH /api/brandstyle`, terwijl de UI die velden via vijf sectie-routes schrijft. Erger nog: het verificatie-harnas zette de kolom rechtstreeks met Prisma en testte dus langs het gat heen, waardoor 17/17 groen was terwijl de feature in de app niet werkte.
+**Rule**:
+- Een vlag/kolom die gedrag onderdrukt is pas af als je de schrijver hebt aangewezen én een test hem via dat pad zet. Grep op de kolomnaam: staat hij alleen in `select`/`where` en nooit in een `data`, dan is de feature dood.
+- Verificatie-harnassen mogen de productiestap niet overslaan. Schrijft een route het veld via een helper, dan gebruikt de test diezelfde helper — anders bewijst groen alleen dat de test zichzelf kan opzetten.
+- Bij "veld X wordt door de UI geschreven": controleer wélke route dat doet. Een catch-all PATCH die bestaat, betekent niet dat de UI hem gebruikt (hier: 2 call-sites, allebei voor een ander veld).
+**Prior art**: task `refresh-preserves-user-data`, ADR `docs/adr/2026-08-14-user-ownership-bij-re-analyse.md`.
+
+## 2026-08-14: Rijen die een re-analyse overleven, breken elke impliciete aanname over rij-volgorde
+**What went wrong**: Zolang `writeResultToDb` álle kleuren wiste en op `sortOrder` opnieuw aanmaakte, was de fysieke rij-volgorde toevallig gelijk aan sortOrder. Twee plekken leunden daar stil op. (1) `resolveSemanticTokens` haalde `include: { colors: true }` op zónder `orderBy`, met een docstring die "output is deterministisch" beloofde — zodra user-rijen bleven staan kon de gekozen primary tussen twee identieke analyses wisselen, wat via de snapshot-diff een spontane review-reset (#459) oplevert. (2) Mijn eigen fix schoof overlevende user-rijen naar het einde van de sortering; `pickBrand` in de LP-renderer neemt de eerste PRIMARY op sortOrder, dus één usage-tag-klik op de merkkleur veranderde stilletjes de kleur van alle gegenereerde landingspagina's.
+**Rule**:
+- Verander je een delete-and-recreate naar een gedeeltelijk behoud, grep dan op élke query naar die tabel en voeg een expliciete `orderBy` toe. Insertion-order is geen contract; Postgres hergebruikt vrijgekomen heap-ruimte.
+- Sorteervelden die een selectie sturen (`[0]` na sorteren) zijn betekenisdragend, geen presentatie. Behoud de positie van rijen die je bewaart en laat nieuwe rijen de gaten vullen.
+**Prior art**: task `refresh-preserves-user-data`; `src/lib/landing-pages/brand-tokens.ts` `pickBrand`.

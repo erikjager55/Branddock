@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { resolveFieldClaims } from "@/lib/brandstyle/claim-fields";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 
 // =============================================================
 // GET /api/brandstyle/typography — typography section
@@ -38,10 +42,15 @@ export async function GET() {
 // =============================================================
 // PATCH /api/brandstyle/typography — update typography
 // =============================================================
+// `nullable`: de UI stuurt `null` zodra een veld leeg is (TypographySection
+// `saveFont`), en dat is het normale geval — de meeste fonts hebben geen
+// publieke URL. Met een niet-nullable schema 400'de het opslaan van een
+// font-naam zonder URL. Sinds W5 is het bovendien de enige manier om een claim
+// op een typografieveld weer los te laten.
 const updateTypographySchema = z.object({
-  primaryFontName: z.string().optional(),
-  primaryFontUrl: z.string().optional(),
-  additionalFonts: z.array(z.string()).optional(),
+  primaryFontName: z.string().nullable().optional(),
+  primaryFontUrl: z.string().nullable().optional(),
+  additionalFonts: z.array(z.string()).nullable().optional(),
   typeScale: z.any().optional(),
 });
 
@@ -58,9 +67,21 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
+    // `typeScale` is een nullable Json-kolom: rauwe `null` moet als
+    // `Prisma.JsonNull` binnenkomen, anders leest Prisma het als "niet
+    // meegegeven" en blijft de oude schaal staan. Zelfde conversie als in
+    // route.ts en design-language/route.ts.
+    const data: Record<string, unknown> = { ...parsed.data };
+    if ("typeScale" in data && data.typeScale === null) {
+      data.typeScale = Prisma.JsonNull;
+    }
+
     const styleguide = await prisma.brandStyleguide.update({
       where: { workspaceId },
-      data: parsed.data,
+      // Claim de geschreven velden zodat de volgende re-analyse ze niet
+      // overschrijft (W5). Zonder deze regel is `userEditedFields` een vlag
+      // zonder schrijver — precies wat de `*Override`-vlaggen waren.
+      data: { ...data, ...(await resolveFieldClaims(workspaceId, parsed.data)) },
       select: {
         primaryFontName: true,
         primaryFontUrl: true,
@@ -69,6 +90,12 @@ export async function PATCH(request: NextRequest) {
         typographySavedForAi: true,
       },
     });
+
+    // CLAUDE.md #10: elke mutatieroute invalideert de brandstyle-cache. Deze
+    // sectie-routes deden dat als enige niet, waardoor de AI-paden na een
+    // curatie nog een cache-TTL lang met de oude merkdata werkten.
+    invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json({ typography: styleguide });
   } catch (error) {

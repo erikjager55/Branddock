@@ -1855,13 +1855,22 @@ model BrandStyleguide {
 
   // Verbeterplan #5 — per-veld override-flags. False = scraper mag
   // overschrijven bij re-scrape; True = user-set OR expliciet
-  // re-scrape-protected. Voor toekomstige brand-onboarding UI.
+  // re-scrape-protected. Gezet door PATCH /api/brandstyle wanneer de gebruiker
+  // het bijbehorende profiel schrijft.
   buttonProfileOverride     Boolean @default(false)
   spacingProfileOverride    Boolean @default(false)
   elevationProfileOverride  Boolean @default(false)
   radiusProfileOverride     Boolean @default(false)
   motionProfileOverride     Boolean @default(false)
   typographyProfileOverride Boolean @default(false)
+
+  // W5 — dezelfde bescherming voor de gecureerde tekstlijsten (logoDonts,
+  // colorDonts, photographyGuidelines, …) en het typografieprofiel. Die
+  // velden hebben geen eigen rij en dus geen `source`-kolom; hier houden we
+  // bij wélke de gebruiker zelf geschreven heeft, zodat de analyzer ze bij een
+  // re-scrape overslaat. Gevuld door PATCH /api/brandstyle, gelezen door
+  // `writeResultToDb`. Leegmaken = de scraper weer de baas maken.
+  userEditedFields String[] @default([])
   /**
    * Eén-zin design-philosophy uit AI-analyse (Fase E3 verbeterplan).
    * "Beschrijf wat dit merk visueel anders maakt — wat MOET behouden bij
@@ -2009,6 +2018,12 @@ model StyleguideColor {
   // detectorSource: e.g. 'acss', 'shadcn', 'css-variable', 'frequency', 'other'
   confidence     String?
   detectorSource String?
+  // Eigenaarschap — 'scraped' (analyzer mag overschrijven bij re-analyse) of
+  // 'user' (handmatig toegevoegd of bewerkt; overleeft élke re-scrape). Zelfde
+  // vocabulaire als StyleguideRule.source. Bewust los van `detectorSource`
+  // hierboven: dát is detector-provenance ("hoe vonden we deze kleur"), dit is
+  // eigenaarschap ("wie is de baas over deze rij").
+  source         String        @default("scraped")
   sortOrder      Int           @default(0)
 
   styleguideId String
@@ -2095,6 +2110,15 @@ model StyleguideComponent {
   extractedStyles Json // { padding, radius, colors, shadow, typography, ... }
   previewHtml     String?       @db.Text
   confidence      Float?
+  // Eigenaarschap — zie StyleguideColor.source. Een component dat de gebruiker
+  // hernoemde of bijstelde wordt 'user' en overleeft de volgende re-analyse.
+  source          String        @default("scraped")
+  // Het label zoals de analyzer het oorspronkelijk gaf. `label` is de helft van
+  // de natural key waarop de scraper zijn eigen batch tegen user-rijen filtert,
+  // maar hernoemen is nu juist de edit die eigenaarschap oplevert — zonder dit
+  // veld matcht de sleutel na een rename niet meer en verschijnt er alsnog een
+  // duplicaat. Blijft null voor rijen die nooit hernoemd zijn.
+  detectedLabel   String?
   sortOrder       Int           @default(0)
 
   styleguideId String

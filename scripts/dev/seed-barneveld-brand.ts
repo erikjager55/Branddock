@@ -351,7 +351,9 @@ async function main() {
   ] as const;
   for (const color of colors) {
     await prisma.styleguideColor.create({
-      data: { ...color, tags: [...color.tags], styleguideId: styleguide.id },
+      // Uit de brondocumenten, niet uit een scrape — als user-eigendom
+      // stempelen zodat een latere re-analyse ze laat staan (W5).
+      data: { ...color, tags: [...color.tags], source: "user", styleguideId: styleguide.id },
     });
   }
   console.log("brandstyle gevuld (10 kleuren, Bree Serif + Fira Sans, fotografie-principes, published)");

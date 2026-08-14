@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, requireAuth } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { ROW_SOURCE_USER } from "@/lib/brandstyle/preserve-user-rows";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -27,7 +28,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const existing = await prisma.styleguideComponent.findFirst({
       where: { id, workspaceId },
-      select: { id: true },
+      select: { id: true, label: true, detectedLabel: true },
     });
     if (!existing) return NextResponse.json({ error: "Component not found" }, { status: 404 });
 
@@ -41,6 +42,27 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if ("extractedStyles" in data && data.extractedStyles) {
       // Prisma JSON needs proper type cast
       data.extractedStyles = data.extractedStyles as object;
+    }
+    // Bewerkt component → eigendom van de gebruiker, dus de volgende
+    // re-analyse vervangt 'm niet meer (W5). Een `sortOrder`-only wijziging
+    // telt niet als inhoudelijke edit: die komt uit drag-and-drop-herordening
+    // en zou anders het hele component per ongeluk bevriezen.
+    const isContentEdit =
+      "label" in parsed.data ||
+      "extractedStyles" in parsed.data ||
+      "previewHtml" in parsed.data;
+    if (isContentEdit) {
+      data.source = ROW_SOURCE_USER;
+      // Bewaar het analyzer-label bij de eerste hernoeming: dát is de sleutel
+      // waarop de scraper zijn eigen batch tegen deze rij filtert. Zonder dit
+      // levert een rename een duplicaat op bij de volgende analyse.
+      if (
+        parsed.data.label !== undefined &&
+        parsed.data.label !== existing.label &&
+        existing.detectedLabel === null
+      ) {
+        data.detectedLabel = existing.label;
+      }
     }
 
     const component = await prisma.styleguideComponent.update({

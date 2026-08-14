@@ -37,6 +37,65 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 460. Een re-analyse vernietigt geen user-edits meer (W5, relatie-niveau)
+
+W5 beloofde dat een re-scrape "alle overrides en reviews behoudt". De helft klopte: de
+analyze-routes hergebruiken sinds W5 de styleguide-rij, dus reviews, regels en snapshots overleven.
+Het relatie-niveau was nooit aangeraakt. `writeResultToDb` wiste bij élke run alle kleuren
+(handmatig toegevoegde weg, en elke overlevende rij kreeg een nieuw `cuid`), alle logo's — ook de
+geüploade, ondanks de comment erboven die het tegendeel beweerde — en alle componenten. Acht
+gecureerde don'ts-lijsten stonden als `result.x || []`, dus één lege AI-respons wiste ze. Alleen
+`StyleguideFont` deed het goed, en dat patroon is nu gegeneraliseerd: `deleteMany` mét
+provenance-filter, dan de overlevende user-rijen lezen, dan de inkomende batch daartegen filteren.
+Die laatste stap is geen detail — zonder suppressie verruil je dataverlies voor duplicaten.
+
+Eigenaarschap krijgt dezelfde vorm als `StyleguideRule.source`: een `source`-kolom op
+`StyleguideColor` en `StyleguideComponent`, gestempeld op `'user'` zodra iemand een kleur toevoegt,
+een tag corrigeert of een component bewerkt. Logo's hebben geen kolom nodig — `uploadedById` wordt
+alleen door de upload-route gezet en is dus al de discriminator. De zes `*Override`-vlaggen bleken
+**geen enkele schrijver** te hebben: de leescode in de engine bestond, maar geen route kon de
+profielvelden zetten, dus de "override-bescherming" waar de analyze-routes naar verwijzen was een
+no-op. `PATCH /api/brandstyle` accepteert die zes nu en stempelt de vlag mee.
+
+De echte dubbele analyse-run legde bloot dat de partiële update te zwak was: hij beschermt alleen
+tegen een *lege* AI-respons, terwijl een geslaagde respons een gecureerde don'ts-lijst gewoon
+overschreef. Die velden hebben geen eigen rij en dus geen `source`-kolom; daarom houdt
+`BrandStyleguide.userEditedFields` nu bij wélke lijsten de gebruiker zelf schreef, gevuld door de
+PATCH-route en gerespecteerd door de engine. Een veld leegmaken geeft het terug aan de scraper.
+
+**Tweede destructieve deur dicht**: `website-scanner/scanner-pipeline.ts` deed vóór een re-scan een
+`brandStyleguide.delete` die zichzelf "atomic pattern" noemde. Élke relatie hangt aan
+`onDelete: Cascade`, dus dat pad wiste ook de `StyleguideRule`-regels uit #457, de reviews en de
+snapshots waar de driftdetectie van #459 op leunt. Nu hergebruikt hij de rij, net als
+`/api/brandstyle/analyze/url` sinds W5.
+
+Twee code-reviews haalden er daarna nog negen defecten uit die alle gates hadden overleefd. Vier
+ondermijnden het doel van de taak zelf: `iconographyDonts` ontsnapte volledig aan de bescherming
+doordat een expliciete sleutel ná de spread stond (geldige TypeScript, dus onzichtbaar voor `tsc`);
+de claim werd alleen door de catch-all PATCH gezet terwijl de UI de vijf sectie-routes gebruikt —
+exact het vlag-zonder-schrijver-patroon dat deze taak bij de `*Override`-vlaggen aanklaagt, en het
+verificatie-harnas testte er langsheen door de kolom rechtstreeks te schrijven; de
+sortOrder-herstempeling schoof de merkkleur naar achteren, waarna `pickBrand` in de LP-renderer een
+andere kleur koos; en `resolveSemanticTokens` miste een `orderBy`, wat pas kapot gaat zodra rijen
+een analyse overleven — met spontane review-drift (#459) tot gevolg. Verder: `colorPairings` misten
+de user-kleuren en draaiden de `recomputeColorPairings`-fix uit #17/#18 terug, één geüploade LOCKUP
+blokkeerde álle gedetecteerde lockups, een component-rename brak de natural key (vandaar
+`detectedLabel`), de kleur-PATCH claimde ook bij een lege body, en `PATCH /api/brandstyle`
+invalideerde als enige mutatieroute geen cache.
+
+**Schema-wijziging**: vier additieve kolommen, vraagt een handmatige Neon-push. Bestaande rijen
+worden `scraped` — we kunnen niet achteraf raden wat ooit handmatig was, dus een bestaande
+handmatige kleur is nog één re-analyse lang kwetsbaar. Gates: tsc 0 errors, lint 0 nieuwe errors (1
+pre-existing), `smoke:preserve-user-rows` 43/43 (DB-vrij), `smoke:brand-library` 36/36,
+`smoke:styleguide-rules` 51/51, `smoke:styleguide-rules-fval` 17/17, `smoke:review-drift` 23/23,
+`smoke:review-drift-reset` 14/14, `eval:brand-manifest-golden` 14/14, `smoke:geo-fidelity` 20/20.
+Plus **twee echte analyses achter elkaar** met user-edits ertussen (`verify-refresh-preserves.ts`,
+24/24): de handmatige kleur, de tag-correctie, het geüploade logo, het bewerkte component en de
+gecureerde lijst staan er na de refresh nog — zonder duplicaten, met de merkkleur op haar plek, en
+met de gescrapte kleuren wél ververst. Er staan nu vier eigenaarschapsmechanismen naast elkaar
+(source-kolom, `uploadedById`, `userEditedFields`, `*Override`) — waarom dat bewust is, staat in
+`docs/adr/2026-08-14-user-ownership-bij-re-analyse.md`.
+
 ### 459. Reviewstatus vervalt wanneer een re-analyse de sectie verandert (W5-driftreset)
 
 W5 maakte re-analyse niet-destructief — reviews blijven staan bij een refresh. Daarmee ontstond het

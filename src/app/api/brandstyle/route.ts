@@ -3,6 +3,9 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { applyFieldClaims } from "@/lib/brandstyle/preserve-user-rows";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 
 // =============================================================
 // GET /api/brandstyle — fetch styleguide (max 1 per workspace)
@@ -116,7 +119,28 @@ const updateSchema = z.object({
   // de resolver output. UI PATCH'et `{semanticTokens: {overrides: {...}}}`
   // en we behouden `resolved`/`diagnostics` uit de laatste analyzer-run.
   semanticTokens: z.any().optional(),
+  // Rendering-profielen (verbeterplan fase B). De analyzer schrijft deze bij
+  // elke scrape, maar respecteert de bijbehorende `*Override`-vlag. Die vlag
+  // had tot nu toe geen enkele schrijver — de "override-bescherming" waar de
+  // analyze-routes naar verwijzen was daarmee een no-op. Wie een profiel via
+  // deze route zet, claimt het: we stempelen de vlag hieronder mee.
+  buttonProfile: z.any().optional(),
+  typographyProfile: z.any().optional(),
+  spacingProfile: z.any().optional(),
+  elevationProfile: z.any().optional(),
+  radiusProfile: z.any().optional(),
+  motionProfile: z.any().optional(),
 });
+
+/** Profielveld → de vlag die de analyzer ervan weghoudt bij een re-scrape. */
+const PROFILE_OVERRIDE_FLAG = {
+  buttonProfile: "buttonProfileOverride",
+  typographyProfile: "typographyProfileOverride",
+  spacingProfile: "spacingProfileOverride",
+  elevationProfile: "elevationProfileOverride",
+  radiusProfile: "radiusProfileOverride",
+  motionProfile: "motionProfileOverride",
+} as const;
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -136,12 +160,35 @@ export async function PATCH(request: NextRequest) {
       "typeScale", "photographyStyle", "brandImages",
       "graphicElements", "patternsTextures", "iconographyStyle", "gradientsEffects", "layoutPrinciples",
       "semanticTokens",
+      "buttonProfile", "typographyProfile", "spacingProfile",
+      "elevationProfile", "radiusProfile", "motionProfile",
     ] as const;
     const data: Record<string, unknown> = { ...parsed.data };
     for (const key of NULLABLE_JSON_FIELDS) {
       if (key in data && data[key] === null) {
         data[key] = Prisma.JsonNull;
       }
+    }
+
+    // Een handmatig gezet profiel claimt zichzelf: zonder deze stempel schrijft
+    // de volgende analyse er gewoon overheen. Een expliciete `null` (= "wis
+    // mijn override, laat de scraper het weer bepalen") laat de vlag los.
+    for (const [field, flag] of Object.entries(PROFILE_OVERRIDE_FLAG)) {
+      if (field in parsed.data) {
+        data[flag] = parsed.data[field as keyof typeof parsed.data] !== null;
+      }
+    }
+
+    // Zelfde principe voor de gecureerde lijsten (logoDonts, colorDonts, …) en
+    // het typografieprofiel. Die hebben geen eigen vlag, dus houden we de
+    // geclaimde veldnamen bij; `writeResultToDb` slaat ze over bij een
+    // re-analyse. Een veld leegmaken geeft het terug aan de scraper.
+    const currentClaims = await prisma.brandStyleguide.findUnique({
+      where: { workspaceId },
+      select: { userEditedFields: true },
+    });
+    if (currentClaims) {
+      data.userEditedFields = applyFieldClaims(currentClaims.userEditedFields, parsed.data);
     }
 
     // Merge semantic tokens overrides into existing resolved snapshot zodat
@@ -175,6 +222,11 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
+    // Ontbrak hier als enige van alle brandstyle-mutatieroutes; nu deze route
+    // ook de rendering-profielen en de veld-claims schrijft, serveerden de
+    // AI-paden tot een minuut lang de oude merkdata.
+    invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
     return NextResponse.json({ styleguide });
   } catch (error) {
     console.error("[PATCH /api/brandstyle]", error);

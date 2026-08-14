@@ -60,6 +60,16 @@ import {
   contrastWithBlack,
 } from '@/features/brandstyle/utils/color-utils';
 import { importScrapedImagesToMediaLibrary } from '@/lib/media/import-scraped-image';
+import {
+  ROW_SOURCE_USER,
+  allocateFreeSlots,
+  colorKey,
+  componentKey,
+  omitClaimed,
+  onlyProvided,
+  suppressOwned,
+  suppressOwnedLogoVariants,
+} from './preserve-user-rows';
 
 // ─── Types ────────────────────────────────────────────
 
@@ -2077,7 +2087,11 @@ function defaultColorNotes(entry: AuthoritativeColor): string | null {
 
 /**
  * Write AI analysis results to the database.
- * Deletes existing colors first to prevent accumulation on re-analysis.
+ *
+ * Vervangt de gescrapte kleuren, logo's, fonts en componenten door de verse
+ * scan-resultaten. Rijen die de *gebruiker* bezit blijven staan (W5): kleuren
+ * en componenten via `source: 'user'`, logo's via een gezette `uploadedById`.
+ * Zie `preserve-user-rows.ts` voor waarom de suppressie-stap daarbij hoort.
  */
 async function writeResultToDb(
   styleguideId: string,
@@ -2113,8 +2127,14 @@ async function writeResultToDb(
    *  de OBSERVED-kleurcombinaties (i.p.v. gegenereerd uit palet-categorieën). */
   observedColorPairs?: Record<string, number> | null,
 ): Promise<void> {
-  // Delete existing colors before creating new ones
-  await prisma.styleguideColor.deleteMany({ where: { styleguideId } });
+  // Verwijder alleen de gescrapte kleuren — handmatig toegevoegde of bewerkte
+  // rijen (`source: 'user'`) overleven de re-analyse. Hun hexes worden verderop
+  // uit de verse batch gefilterd zodat er geen dubbele rij naast komt.
+  // `not: user` in plaats van `= scraped` — zie de component-delete verderop:
+  // alleen zo partitioneren delete-filter en owned-read de ruimte volledig.
+  await prisma.styleguideColor.deleteMany({
+    where: { styleguideId, source: { not: ROW_SOURCE_USER } },
+  });
 
   // ── Typography: canonicaliseer + dedupliceer de gescrapte fonts vóór de
   // split. Adobe-CLS-fallback-families ('effra-fallback') en case/quote-
@@ -2128,15 +2148,21 @@ async function writeResultToDb(
   const primaryFontName = firstFont ?? result.primaryFontName ?? null;
   const additionalFonts = restFonts.slice(0, 5);
 
-  // Replace all existing detected logos, then create new ones from scraped URLs.
-  // User-uploaded logos are managed via dedicated upload endpoints (Fase 1).
+  // Vervang de gedetecteerde logo's. Geüploade logo's blijven staan: alleen de
+  // upload-route zet `uploadedById`, de analyzer nooit — dat veld is dus al de
+  // provenance-discriminator en er is geen extra kolom voor nodig.
+  //
+  // (De comment die hier stond beloofde dit al, maar de `deleteMany` eronder
+  // had geen enkel filter en wiste ook de uploads.)
   const sgForWorkspace = await prisma.brandStyleguide.findUnique({
     where: { id: styleguideId },
     select: { workspaceId: true },
   });
   const sgWorkspaceId = sgForWorkspace?.workspaceId;
   if (sgWorkspaceId) {
-    await prisma.styleguideLogo.deleteMany({ where: { styleguideId } });
+    await prisma.styleguideLogo.deleteMany({
+      where: { styleguideId, uploadedById: null },
+    });
 
     // Vision-detected logo (Sprint 6A) — takes the PRIMARY slot because it
     // comes from Claude identifying the actual brand logo in the hero
@@ -2203,8 +2229,25 @@ async function writeResultToDb(
       });
     }
 
-    if (logoRows.length > 0) {
-      await prisma.styleguideLogo.createMany({ data: logoRows });
+    // Onderdruk wat de gebruiker zelf uploadde. Zonder deze stap krijgt een
+    // workspace met een eigen PRIMARY-logo er elke re-scrape een tweede PRIMARY
+    // naast en moet de renderer gokken welke het merklogo is.
+    const uploadedLogos = await prisma.styleguideLogo.findMany({
+      where: { styleguideId, uploadedById: { not: null } },
+      select: { variant: true, fileUrl: true, sortOrder: true },
+    });
+    const suppressedLogos = suppressOwnedLogoVariants(logoRows, uploadedLogos);
+    // Zelfde slot-discipline als bij kleuren en componenten: de upload-route
+    // geeft een geüpload logo `sortOrder = aantal bestaande rijen`, wat botst
+    // met de verse 0..n-1. `logos[0]` wordt elders als het merklogo gelezen.
+    const logoSlots = allocateFreeSlots(
+      suppressedLogos.length,
+      new Set(uploadedLogos.map((l) => l.sortOrder)),
+    );
+    const freshLogoRows = suppressedLogos.map((l, i) => ({ ...l, sortOrder: logoSlots[i] }));
+
+    if (freshLogoRows.length > 0) {
+      await prisma.styleguideLogo.createMany({ data: freshLogoRows });
     }
 
     // Replace detected fonts (UPLOADED fonts are preserved). Upgrade a matching
@@ -2318,17 +2361,46 @@ async function writeResultToDb(
     }
   }
 
-  // Persist detected components (Fase 5) — replace all existing records
-  // belonging to this styleguide with the fresh scan results. Scope the
-  // workspaceId via the styleguide's workspace association.
+  // Persist detected components (Fase 5) — vervang de gescrapte records door de
+  // verse scan-resultaten. Componenten die de gebruiker hernoemde of bijstelde
+  // (`source: 'user'`) blijven staan; hun (type, label) wordt hieronder uit de
+  // verse batch gefilterd. Scope de workspaceId via de styleguide-associatie.
   const sgMeta = await prisma.brandStyleguide.findUnique({
     where: { id: styleguideId },
     select: { workspaceId: true },
   });
   if (sgMeta?.workspaceId) {
-    await prisma.styleguideComponent.deleteMany({ where: { styleguideId } });
+    // `not: user` in plaats van `= scraped`: die twee partitioneren de ruimte
+    // pas echt. Een rij met een onverwachte derde source zou anders nooit
+    // verwijderd én nooit onderdrukt worden — een duplicaat dat elke run blijft.
+    await prisma.styleguideComponent.deleteMany({
+      where: { styleguideId, source: { not: ROW_SOURCE_USER } },
+    });
     if (detectedComponents && detectedComponents.length > 0) {
-      const rows = detectedComponents.map((c, i) => ({
+      const ownedComponents = await prisma.styleguideComponent.findMany({
+        where: { styleguideId, source: ROW_SOURCE_USER },
+        select: { type: true, label: true, detectedLabel: true, sortOrder: true },
+      });
+      // Match op het oorspronkelijke analyzer-label wanneer de gebruiker het
+      // component hernoemde — anders herkent de scraper zijn eigen component
+      // niet terug en zet hij er een duplicaat naast.
+      const ownedKeys = new Set(
+        ownedComponents.map((c) => componentKey(c.type, c.detectedLabel ?? c.label)),
+      );
+      const suppressed = suppressOwned(
+        detectedComponents,
+        (c) => componentKey(c.type, c.label),
+        ownedKeys,
+      );
+      // Zelfde slot-discipline als bij de kleuren: bewaarde rijen houden hun
+      // positie, de verse batch vult de gaten. Zonder dit botsen de sortOrders
+      // zodra de detectievolgorde tussen twee runs verschuift, en heeft de
+      // `orderBy` in de semantic-resolver geen tiebreak meer.
+      const componentSlots = allocateFreeSlots(
+        suppressed.length,
+        new Set(ownedComponents.map((c) => c.sortOrder)),
+      );
+      const freshRows = suppressed.map((c, i) => ({
         styleguideId,
         workspaceId: sgMeta.workspaceId,
         type: c.type,
@@ -2338,9 +2410,11 @@ async function writeResultToDb(
         extractedStyles: c.extractedStyles as unknown as Prisma.InputJsonValue,
         previewHtml: c.previewHtml,
         confidence: c.confidence,
-        sortOrder: i,
+        sortOrder: componentSlots[i],
       }));
-      await prisma.styleguideComponent.createMany({ data: rows });
+      if (freshRows.length > 0) {
+        await prisma.styleguideComponent.createMany({ data: freshRows });
+      }
     }
   }
 
@@ -2379,8 +2453,54 @@ async function writeResultToDb(
   // Normaliseer type-scale-eenheden naar rem vóór de write (alleen unit-
   // normalisatie, geen dedup/collision — die braken de size-gedreven rol-
   // mapping en de live preview). Behoudt volgorde + aantal entries. Een lege
-  // input blijft een lege array (zelfde gedrag als de oude `|| null`-write).
+  // input wordt gewoon geschreven: een site zónder herkenbare schaal is een
+  // geldig scrape-resultaat. Alleen een claim van de gebruiker houdt de
+  // analyzer hier tegen — zie `typography` hieronder.
   const normalizedTypeScale = normalizeTypeScale(result.typeScale ?? []);
+
+  // Gecureerde lijsten en het typografieprofiel worden alleen geschreven als de
+  // analyzer daadwerkelijk iets teruggaf én de gebruiker het veld niet zelf al
+  // heeft ingevuld. Deze velden stonden als `result.x || []`, waardoor één lege
+  // AI-respons een handmatig samengestelde don'ts-lijst wiste — en bij een
+  // geslaagde respons won de AI sowieso. Ze hebben geen eigen rij en dus geen
+  // `source`-kolom; `userEditedFields` doet dat werk. Zelfde gedachte als de
+  // tone-of-voice-upsert verderop in deze functie.
+  const claimed = await prisma.brandStyleguide.findUnique({
+    where: { id: styleguideId },
+    select: { userEditedFields: true },
+  });
+  const userEditedFields = claimed?.userEditedFields ?? [];
+  const curated = onlyProvided(
+    {
+      logoGuidelines: result.logoGuidelines,
+      logoDonts: result.logoDonts,
+      photographyGuidelines: result.photographyGuidelines,
+      illustrationGuidelines: result.illustrationGuidelines,
+      imageryDonts: result.imageryDonts,
+      colorDonts: result.colorDonts,
+      graphicElementsDonts: result.graphicElementsDonts,
+      iconographyDonts: result.iconographyDonts,
+    },
+    userEditedFields,
+  );
+
+  // Het typografieprofiel is géén curatie maar afgeleide scrape-data, en de drie
+  // velden horen bij elkaar: `primaryFontUrl` hoort bij `primaryFontName`, en
+  // `additionalFonts` is de staart van dezelfde detectie. Ze los per veld
+  // overslaan bij een lege waarde levert een profiel op dat naar de font van een
+  // vórige scrape verwijst — de renderer laadt dan de verkeerde webfont onder de
+  // juiste naam. Dus: één blok, en alleen de claim van de gebruiker houdt de
+  // analyzer tegen. `StyleguideFont` wordt hierboven op dezelfde manier volledig
+  // ververst, dus zo blijven rijen en profiel in de pas.
+  const typography = omitClaimed(
+    {
+      primaryFontName,
+      primaryFontUrl: result.primaryFontUrl || null,
+      additionalFonts,
+      typeScale: normalizedTypeScale,
+    },
+    userEditedFields,
+  );
 
   // Update styleguide fields
   await prisma.brandStyleguide.update({
@@ -2396,52 +2516,50 @@ async function writeResultToDb(
         observedColorPairs && Object.keys(observedColorPairs).length > 0
           ? (observedColorPairs as unknown as Prisma.InputJsonValue)
           : Prisma.JsonNull,
-      // Logo
-      logoGuidelines: result.logoGuidelines || [],
-      logoDonts: result.logoDonts || [],
+      // Gecureerde lijsten (alleen wat de analyzer gevuld heeft én de gebruiker
+      // niet geclaimd heeft) en het typografieprofiel (atomair, alleen door een
+      // claim tegen te houden) — zie hierboven.
+      ...curated,
+      ...typography,
 
       // Provenance — which CSS frameworks the scraper recognised
       detectedFrameworks,
 
-      // Typography — primaryFontName pinned to scraped value
-      primaryFontName,
-      primaryFontUrl: result.primaryFontUrl || null,
-      additionalFonts,
-      typeScale: normalizedTypeScale,
-
       // Tone of Voice velden verhuisd naar BrandVoiceguide (ADR 2026-05-15) —
       // upsert hieronder na de styleguide update.
-
-      // Imagery — guard against empty objects from AI
-      photographyStyle: isNonEmptyObject(result.photographyStyle)
-        ? (result.photographyStyle as Prisma.InputJsonValue)
-        : Prisma.JsonNull,
-      photographyGuidelines: result.photographyGuidelines || [],
-      illustrationGuidelines: result.illustrationGuidelines || [],
-      imageryDonts: result.imageryDonts || [],
-      colorDonts: result.colorDonts || [],
 
       // Brand images now live in the Media Library — clear the legacy field.
       brandImages: Prisma.JsonNull,
 
-      // Design Language
-      graphicElements: isNonEmptyObject(result.graphicElements)
-        ? (result.graphicElements as Prisma.InputJsonValue)
-        : Prisma.JsonNull,
-      graphicElementsDonts: result.graphicElementsDonts || [],
-      patternsTextures: isNonEmptyObject(result.patternsTextures)
-        ? (result.patternsTextures as Prisma.InputJsonValue)
-        : Prisma.JsonNull,
-      iconographyStyle: isNonEmptyObject(result.iconographyStyle)
-        ? (result.iconographyStyle as Prisma.InputJsonValue)
-        : Prisma.JsonNull,
-      iconographyDonts: result.iconographyDonts || [],
-      gradientsEffects: Array.isArray(result.gradientsEffects) && result.gradientsEffects.length > 0
-        ? (result.gradientsEffects as unknown as Prisma.InputJsonValue)
-        : Prisma.JsonNull,
-      layoutPrinciples: isNonEmptyObject(result.layoutPrinciples)
-        ? (result.layoutPrinciples as Prisma.InputJsonValue)
-        : Prisma.JsonNull,
+      // De Json-helften van de imagery- en design-language-secties. Bewust ná
+      // `curated`, en via `omitClaimed`: een lege AI-respons hoort deze velden
+      // wél te legen (dat is een geldig scrape-resultaat), maar een claim van de
+      // gebruiker houdt de analyzer tegen. Zonder die claim-check was de halve
+      // sectie beschermd en de andere helft niet.
+      ...omitClaimed(
+        {
+          photographyStyle: isNonEmptyObject(result.photographyStyle)
+            ? (result.photographyStyle as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          graphicElements: isNonEmptyObject(result.graphicElements)
+            ? (result.graphicElements as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          patternsTextures: isNonEmptyObject(result.patternsTextures)
+            ? (result.patternsTextures as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          iconographyStyle: isNonEmptyObject(result.iconographyStyle)
+            ? (result.iconographyStyle as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          gradientsEffects:
+            Array.isArray(result.gradientsEffects) && result.gradientsEffects.length > 0
+              ? (result.gradientsEffects as unknown as Prisma.InputJsonValue)
+              : Prisma.JsonNull,
+          layoutPrinciples: isNonEmptyObject(result.layoutPrinciples)
+            ? (result.layoutPrinciples as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+        },
+        userEditedFields,
+      ),
 
       // Spacing tokens (Fase 4) — derived from CSS heuristics
       ...(spacingTokenFields),
@@ -2530,8 +2648,57 @@ async function writeResultToDb(
 
   // Create color records with computed values (RGB, HSL, CMYK, contrast)
   // Uses the RESOLVED palette — exact hexes from scraping with AI names merged in.
-  for (let i = 0; i < resolvedColors.length; i++) {
-    const color = resolvedColors[i];
+  //
+  // Kleuren die de gebruiker bezit zijn de delete hierboven overleefd; hun
+  // hexes worden nu uit de verse batch gefilterd zodat dezelfde kleur niet
+  // twee keer in de lijst belandt (één keer gecureerd, één keer gescrapt).
+  const ownedColors = await prisma.styleguideColor.findMany({
+    where: { styleguideId, source: ROW_SOURCE_USER },
+    select: { id: true, hex: true, sortOrder: true, detectorSource: true },
+    orderBy: { sortOrder: 'asc' },
+  });
+  const ownedColorKeys = new Set(ownedColors.map((c) => colorKey(c.hex)));
+  const freshColors = suppressOwned(resolvedColors, (c) => colorKey(c.hex), ownedColorKeys);
+
+  // Sorteervolgorde is betekenisdragend: `pickBrand` in de LP-renderer neemt de
+  // eerste PRIMARY op sortOrder als merkkleur. Een user-rij mag daarom haar
+  // plek NIET verliezen — anders verandert het toggelen van één usage-tag op de
+  // merkkleur stilletjes welke kleur de landingspagina's krijgen. De verse
+  // rijen vullen daarom de gaten tussen de bezette posities op.
+  const freeSlots = allocateFreeSlots(
+    freshColors.length,
+    new Set(ownedColors.map((c) => c.sortOrder)),
+  );
+
+  // Een gescrapte kleur die de gebruiker alleen van tags voorzag, houdt die tags
+  // (dát is wat hij corrigeerde) maar krijgt de afgeleide velden vers. Zonder
+  // deze stap bevriest één tag-klik de naam, categorie en detector-provenance
+  // van die kleur voorgoed.
+  //
+  // Alleen voor rijen die de scraper zélf ooit aanmaakte — `detectorSource`
+  // wordt uitsluitend door de detectoren gezet en staat niet in het schema van
+  // `POST /api/brandstyle/colors`. Bij een handmatig toegevoegde kleur koos de
+  // gebruiker naam en categorie zelf; die overschrijven zou het dataverlies zijn
+  // dat deze hele taak juist wegneemt.
+  const freshByKey = new Map(resolvedColors.map((c) => [colorKey(c.hex), c]));
+  for (const owned of ownedColors) {
+    if (owned.detectorSource === null) continue;
+    const match = freshByKey.get(colorKey(owned.hex));
+    if (!match) continue;
+    await prisma.styleguideColor.update({
+      where: { id: owned.id },
+      data: {
+        name: match.name,
+        category: match.category,
+        notes: match.notes,
+        confidence: match.confidence,
+        detectorSource: match.detectorSource,
+      },
+    });
+  }
+
+  for (let i = 0; i < freshColors.length; i++) {
+    const color = freshColors[i];
     // Merge AI/heuristic-tags met scraped usage-tags. Usage-tags krijgen
     // 'usage:' prefix om collision met andere tag-conventies te vermijden
     // en zodat consumers ze gericht kunnen filteren.
@@ -2553,10 +2720,21 @@ async function writeResultToDb(
         contrastBlack: contrastWithBlack(color.hex),
         confidence: color.confidence,
         detectorSource: color.detectorSource,
-        sortOrder: i,
+        sortOrder: freeSlots[i],
         styleguideId,
       },
     });
+  }
+
+  // De `colorPairings` hierboven zijn over het vérse palet gebouwd, want op dat
+  // moment bestonden de rijen nog niet. Nu ze er staan — inclusief de kleuren
+  // die de gebruiker toevoegde en die de scraper dus niet kent — het paneel
+  // opnieuw laten berekenen over het samengevoegde palet. Dit is dezelfde
+  // helper die de kleur-add/-delete-routes aanroepen; zonder deze regel draait
+  // elke re-analyse hun werk terug.
+  if (ownedColors.length > 0) {
+    const { recomputeColorPairings } = await import('./recompute-color-pairings');
+    await recomputeColorPairings(styleguideId);
   }
 }
 
