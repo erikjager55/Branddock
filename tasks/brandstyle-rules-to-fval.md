@@ -5,9 +5,9 @@ fase: post-launch
 priority: now
 effort: 4-6 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-08-14
-completed: -
+completed: 2026-08-14
 related-adr: docs/adr/2026-08-14-styleguide-rules-in-fval.md
 related-spec: docs/specs/brandstyle-designbibliotheek-verbeterplan.md (W2, §5.3)
 worktree: branddock-brandstyle-rules-to-fval
@@ -55,34 +55,38 @@ Ontwerpbeslissingen D1-D5 staan in de ADR.
 
 # Acceptatiecriteria
 
-- [ ] Een `HARD_RULE` met `{ modality: 'text', check: 'no-emoji' }` op een testworkspace levert bij
+- [x] Een `HARD_RULE` met `{ modality: 'text', check: 'no-emoji' }` op een testworkspace levert bij
       emoji-content aantoonbaar violations, `rulesEvaluated > 0`, `ruleScore < 100` én een lagere
-      composietscore dan dezelfde tekst zonder emoji (de W2-acceptatie)
-- [ ] Een visuele regel (`{ modality: 'visual', property: 'gradient', allowed: false }`) levert nul
+      composietscore dan dezelfde tekst zonder emoji (de W2-acceptatie) — composiet 86 → 59
+- [x] Een visuele regel (`{ modality: 'visual', property: 'gradient', allowed: false }`) levert nul
       tekst-violations en verschijnt als `skippedVisual`
-- [ ] Een regel zónder `constraint` levert nul violations en telt als `skippedUnconstrained`; bij
+- [x] Een regel zónder `constraint` levert nul violations en telt als `skippedUnconstrained`; bij
       ≥1 regel en 0 compileerbare tekstregels volgt één warn-log
-- [ ] `BLOCKING` weegt zwaarder dan `ADVISORY` (gewicht 3 vs 1) en mapt naar finding-severity HIGH
-- [ ] De `copy`-view van `getBrandLibrary` bevat geen visuele regels meer
-- [ ] `vocabularyDont` van Gemeente Barneveld levert na sync ≥22 actieve `BrandRule`-records
-- [ ] Een regel-mutatie via de CRUD-route is direct zichtbaar in de scoring (cache geïnvalideerd)
-- [ ] `npm run eval:brand-manifest-golden` groen (12 bestaande + 2 nieuwe checks)
-- [ ] `npx tsc --noEmit` 0 errors
-- [ ] `npm run lint` 0 errors
-- [ ] Smoke-test uitgevoerd (zie plan hieronder), inclusief de echte hergescoorde spike-run
-- [ ] ADR + changelog-entry bijgewerkt
+- [x] `BLOCKING` weegt zwaarder dan `ADVISORY` (gewicht 3 vs 1) en mapt naar finding-severity HIGH
+- [x] De `copy`-view van `getBrandLibrary` bevat geen visuele regels meer
+- [x] `vocabularyDont` van Gemeente Barneveld levert na sync ≥22 actieve `BrandRule`-records — 22
+- [x] Een regel-mutatie via de CRUD-route is direct zichtbaar in de scoring (cache geïnvalideerd)
+- [x] `npm run eval:brand-manifest-golden` groen (12 bestaande + 2 nieuwe checks) — 14/14
+- [x] `npx tsc --noEmit` 0 errors
+- [x] `npm run lint` — 0 nieuwe errors (1 pre-existing error op `main`, zie Notes)
+- [x] Smoke-test uitgevoerd: 51/51 puur, 17/17 DB, spike-verificatie op DTS Ede
+- [x] ADR + changelog-entry (#457) bijgewerkt
 
 # Bestanden die ik aanraak
 
 **Nieuw**
 
 - `src/lib/brandstyle/rule-constraints.ts` — constraint-vocabulaire (Zod) + parser
-- `src/lib/brandstyle/rule-structurer.ts` — AI-classificatie van bestaande regels (fase C)
+- `src/lib/brandstyle/rule-sections.ts` — sectie → save-for-AI-gate (gedeeld)
+- `src/lib/brandstyle/derive-rule-constraint.ts` — deterministische classificatie (puur)
+- `src/lib/brandstyle/rule-structurer.ts` — AI-classificatie van schrijfrichtlijnen (fase C)
 - `src/lib/brand-fidelity/text-matchers.ts` — gedeelde matcher-primitieven (pure move)
-- `src/lib/brand-fidelity/styleguide-rule-compiler.ts` — `evaluateStyleguideRules`
+- `src/lib/brand-fidelity/styleguide-rule-checks.ts` — compile/evaluate, puur (geen Prisma)
+- `src/lib/brand-fidelity/styleguide-rule-compiler.ts` — `evaluateStyleguideRules` (DB + cache)
+- `scripts/sync-voiceguide-brand-rules.ts` — vocabularyDont-backfill (dry-run default)
 - `scripts/derive-rule-constraints.ts` — deterministische afleiding (dry-run default)
 - `scripts/structure-styleguide-rules.ts` — AI-backfill (dry-run default)
-- `scripts/seed-dts-manifest-rules.ts` — spike-regels als fixture op DTS Ede
+- `scripts/verify-spike-rules-dts.ts` — reproduceert de spike-bevinding, read-only
 - `scripts/smoke-tests/styleguide-rule-compiler.ts` — pure smoke
 - `scripts/smoke-tests/styleguide-rules-fval.ts` — DB-smoke end-to-end
 - `docs/adr/2026-08-14-styleguide-rules-in-fval.md`
@@ -125,8 +129,9 @@ Ontwerpbeslissingen D1-D5 staan in de ADR.
    composiet-delta, en ruimt daarna op.
 3. **Regressie** — `npm run smoke:violation-dedup` · `npm run smoke:geo-fidelity` ·
    `npm run eval:brand-manifest-golden` · `npm run eval:brandstyle-golden`.
-4. **Echte run (het bewijs dat telt)** — DTS Ede lokaal: `seed-dts-manifest-rules.ts --apply`, dan de
-   vijf spike-opdrachten hergescoord. Verwacht: conditie A zakt aantoonbaar, conditie B niet.
+4. **Echte run (het bewijs dat telt)** — `npx tsx scripts/verify-spike-rules-dts.ts`: leidt de regels
+   af uit DTS Ede's eigen schrijfrichtlijnen en draait ze tegen de conditie-A- en conditie-B-teksten
+   uit spike §4. Verwacht: A levert overtredingen, B nul.
 
 # Risico's
 
@@ -155,4 +160,61 @@ Ontwerpbeslissingen D1-D5 staan in de ADR.
 
 # Notes
 
-Werk-log en gevonden gotchas komen hier tijdens de uitvoering.
+## Afwijkingen van het plan (met reden)
+
+- **Twee modules i.p.v. één compiler.** `styleguide-rule-checks.ts` (puur, geen Prisma) naast
+  `styleguide-rule-compiler.ts` (DB + cache). Zonder die knip kan de smoke de compile-logica niet
+  zonder database draaien — dezelfde seam die `brand-library/views.ts` al hanteert.
+- **Geen hand-geseede DTS-regels.** Het plan noemde een script dat de drie merkboek-regels uit de
+  spike op DTS Ede zet. Tijdens de uitvoering bleek dat die regels **al in de data staan**, in
+  `BrandVoiceguide.writingGuidelines` ("Write in third person … rather than 'Wij organiseren'",
+  "average 15-20 words"). De structurer leidt ze daar nu uit af. Regels afleiden uit de eigen
+  merkdata is beter dan ze overtypen uit een PDF (M1, exacte-waarden-doctrine); de spike blijft
+  reproduceerbaar via `scripts/verify-spike-rules-dts.ts`.
+- **Structurer draait op de voiceguide, niet op bestaande styleguide-regels.** De deterministische
+  afleiding classificeerde alle 346 bestaande regels als visueel en liet 0 onbepaald — er zat dus
+  niets voor de AI om te classificeren. De tekst-regels van een merk staan in de schrijfrichtlijnen.
+- **Extra check `forbidden-pronouns`** toegevoegd aan het vocabulaire. Zonder die check zou een
+  perspectief-regel ("derde persoon, niet wij") alleen als vrije woordenlijst kunnen bestaan, en dan
+  moet een model woorden verzinnen. Met een ingebouwde tabel kiest het model alleen de groep.
+- **Extra script** `scripts/sync-voiceguide-brand-rules.ts` — de `vocabularyDont`-stream had een
+  backfill nodig; die trigger bestond alleen op een PATCH van de voiceguide.
+
+## Gevonden tijdens de uitvoering (niet gefixt — beslissing bij Erik)
+
+1. **`\b` is ASCII-only, dus de BrandRule-lane matcht geen woorden met diakrieten.** `\bdé\b`,
+   `\béén\b` en `\bcafé\b` matchen nooit. De nieuwe lane gebruikt daarom
+   `unicodeWordBoundaryRegex`; `wordBoundaryRegex` (BrandRule + heuristics) is bewust ongewijzigd
+   gelaten omdat omzetten de scores van 6 workspaces met 213 regels verschuift. Dat verdient een
+   eigen meting, geen ride-along.
+2. **DTS Ede's `Workspace.contentLanguage` staat op `en` terwijl het merk Nederlands schrijft.**
+   Exact de LINFI-gotcha van 2026-05-10. Gevolg: de perspectief-regel krijgt de Engelse
+   voornaamwoordtabel en vangt alleen "we" — met de Nederlandse tabel gaat A1 van 1 → 5
+   overtredingen en A2 van 2 → 5 (`scripts/verify-spike-rules-dts.ts --language=nl`).
+   **Datafix, geen codefix.**
+3. **Geen enkele lokale styleguide is `published`.** Daardoor injecteert `getBrandContext` lokaal
+   ook geen manifest en tellen styleguide-regels lokaal niet mee. Op prod geldt dat alleen voor
+   niet-gefinaliseerde workspaces; de compiler logt dit nu expliciet.
+4. **`syncWorkspaceBrandRules` wist legacy-regels bij een lege voiceguide.** Bij WRA Juristen
+   verdwenen zo 10 regels tijdens de eerste backfill (hersteld). Het backfill-script slaat zulke
+   workspaces nu over tenzij `--force-legacy-drop`; de echte oplossing is die woorden naar de
+   voiceguide migreren.
+5. **Pre-existing lint-error op `main`**: `src/app/api/export/design-system/[format]/route.ts:49` —
+   `react-hooks/rules-of-hooks` op een functie die toevallig `useHubUrl` heet. Niet in deze diff.
+6. **`rulesEvaluated` telt appels en peren** (`composition-engine.ts`): de heuristic-term telt
+   *violations*, de andere twee tellen *regels*. Pre-existing; bewust niet aangeraakt om de
+   bestaande telling niet te breken, wel gedocumenteerd in de code.
+
+## Operationeel (prod)
+
+Volgorde na deploy, allemaal dry-run-first:
+
+1. `npx tsx scripts/sync-voiceguide-brand-rules.ts` → `--apply` (vocabularyDont-backfill)
+2. `npx tsx scripts/derive-rule-constraints.ts` → `--apply` (markeert bestaande regels als visueel)
+3. `npx tsx scripts/structure-styleguide-rules.ts` → `--apply` (kost AI-tokens, 1 call per workspace)
+
+Terugdraaien van stap 3: `DELETE FROM "StyleguideRule" WHERE section='voice' AND source IN
+('derived','recommended')`. Stap 2: `constraint` weer op `NULL` waar `derivedBy='deterministic'`.
+
+De structurer is niet deterministisch: twee runs kunnen net andere regels opleveren. Daarom
+altijd eerst dry-run lezen, en de schrijfactie vervangt per definitie (idempotent).

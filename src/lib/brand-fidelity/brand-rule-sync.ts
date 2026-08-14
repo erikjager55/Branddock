@@ -23,6 +23,7 @@ import { clearRuleCompilerCache } from './rule-compiler';
 const SOURCE_LEGACY = 'auto:wordsWeAvoid';
 const SOURCE_VOICEGUIDE_WORDS = 'auto:voiceguide.wordsWeAvoid';
 const SOURCE_VOICEGUIDE_ANTI = 'auto:voiceguide.antiPatterns';
+const SOURCE_VOICEGUIDE_VOCAB_DONT = 'auto:voiceguide.vocabularyDont';
 
 /** Normalize input — strip empty strings, lowercase, dedupe. */
 function normalize(words: string[] | undefined | null): string[] {
@@ -203,41 +204,74 @@ export async function syncWordsAvoidToRules(
 }
 
 /**
- * Sync BrandVoiceguide.wordsWeAvoid + antiPatterns into BrandRule records.
- * Two separate source streams so each list can be replaced independently.
+ * Sync BrandVoiceguide.wordsWeAvoid + antiPatterns + vocabularyDont into
+ * BrandRule records. Drie aparte source-streams zodat elke lijst
+ * onafhankelijk vervangen kan worden.
  *
- * Replaces rules with source='auto:voiceguide.wordsWeAvoid' or
- * source='auto:voiceguide.antiPatterns' for this workspace.
+ * Replaces rules with source='auto:voiceguide.wordsWeAvoid',
+ * 'auto:voiceguide.antiPatterns' of 'auto:voiceguide.vocabularyDont'.
  *
  * Anti-patterns get severity='error' (stronger signal than wordsWeAvoid)
  * since they explicitly enumerate phrasings the brand should never use.
+ *
+ * `vocabularyDont` (DTS-plan C1 vocabulary-rails) werd tot 2026-08-14 nergens
+ * gesynct: die woorden stuurden wél de generatie maar bereikten de scoring
+ * nooit. De lijst valt onder de `vocabularySavedForAi`-gate — staat die uit,
+ * dan wordt de stream leeggemaakt in plaats van gevuld, zodat "niet in de
+ * AI-context" en "niet in de scoring" gelijk lopen.
  */
 export async function syncVoiceguideToRules(
   workspaceId: string,
   payload: {
     wordsWeAvoid?: string[] | null;
     antiPatterns?: string[] | null;
+    vocabularyDont?: string[] | null;
+    /** Save-for-AI-gate op de Vocabulary-sectie; default aan (schema-default). */
+    vocabularySavedForAi?: boolean | null;
   },
-): Promise<{ wordsDeleted: number; wordsCreated: number; antiDeleted: number; antiCreated: number }> {
+): Promise<{
+  wordsDeleted: number;
+  wordsCreated: number;
+  antiDeleted: number;
+  antiCreated: number;
+  vocabDontDeleted: number;
+  vocabDontCreated: number;
+}> {
   const wordsNormalized = normalize(payload.wordsWeAvoid);
   const antiNormalized = normalize(payload.antiPatterns);
+  // Opt-in: deze functie vervangt elke stream die hij aanraakt volledig. Een
+  // bestaande aanroeper die `vocabularyDont` niet meegeeft zou de stream
+  // anders stil wissen — daarom raken we hem alleen aan als de aanroeper er
+  // expliciet iets over zegt.
+  const syncVocabDont =
+    payload.vocabularyDont !== undefined || payload.vocabularySavedForAi !== undefined;
+  const vocabDontNormalized =
+    payload.vocabularySavedForAi === false ? [] : normalize(payload.vocabularyDont);
   // Stem-expansie alleen op single-words. antiPatterns zijn doorgaans phrases
   // ("jouw droomvloerluik") waarbij stem-expansie false-positives geeft —
   // daar blijft 1 input = 1 rule.
   const wordsExpanded = expandWordsToPatterns(wordsNormalized);
+  // vocabularyDont bevat zowel losse woorden als korte frasen; expandWordsToPatterns
+  // slaat multi-word entries over, dus dit is veilig voor beide vormen.
+  const vocabDontExpanded = expandWordsToPatterns(vocabDontNormalized);
 
-  // Delete both auto-source streams in parallel
-  const [wordsDelete, antiDelete] = await Promise.all([
+  // Delete all three auto-source streams in parallel
+  const [wordsDelete, antiDelete, vocabDontDelete] = await Promise.all([
     prisma.brandRule.deleteMany({
       where: { workspaceId, source: SOURCE_VOICEGUIDE_WORDS },
     }),
     prisma.brandRule.deleteMany({
       where: { workspaceId, source: SOURCE_VOICEGUIDE_ANTI },
     }),
+    syncVocabDont
+      ? prisma.brandRule.deleteMany({
+          where: { workspaceId, source: SOURCE_VOICEGUIDE_VOCAB_DONT },
+        })
+      : Promise.resolve({ count: 0 }),
   ]);
 
   // Recreate rules
-  const [wordsCreate, antiCreate] = await Promise.all([
+  const [wordsCreate, antiCreate, vocabDontCreate] = await Promise.all([
     wordsExpanded.length > 0
       ? prisma.brandRule.createMany({
           data: wordsExpanded.map((word) => ({
@@ -268,6 +302,21 @@ export async function syncVoiceguideToRules(
           })),
         })
       : Promise.resolve({ count: 0 }),
+    syncVocabDont && vocabDontExpanded.length > 0
+      ? prisma.brandRule.createMany({
+          data: vocabDontExpanded.map((word) => ({
+            workspaceId,
+            ruleType: 'FORBIDDEN_WORD' as const,
+            pattern: word,
+            patternIsRegex: false,
+            message: `Avoid "${word}" — listed in Brand Voiceguide.vocabularyDont.`,
+            severity: 'warning',
+            contentTypeFilter: [],
+            isActive: true,
+            source: SOURCE_VOICEGUIDE_VOCAB_DONT,
+          })),
+        })
+      : Promise.resolve({ count: 0 }),
   ]);
 
   clearRuleCompilerCache(workspaceId);
@@ -277,6 +326,8 @@ export async function syncVoiceguideToRules(
     wordsCreated: wordsCreate.count,
     antiDeleted: antiDelete.count,
     antiCreated: antiCreate.count,
+    vocabDontDeleted: vocabDontDelete.count,
+    vocabDontCreated: vocabDontCreate.count,
   };
 }
 
@@ -296,7 +347,12 @@ export async function syncWorkspaceBrandRules(workspaceId: string): Promise<{
 }> {
   const voiceguide = await prisma.brandVoiceguide.findUnique({
     where: { workspaceId },
-    select: { wordsWeAvoid: true, antiPatterns: true },
+    select: {
+      wordsWeAvoid: true,
+      antiPatterns: true,
+      vocabularyDont: true,
+      vocabularySavedForAi: true,
+    },
   });
 
   if (voiceguide) {
@@ -308,6 +364,8 @@ export async function syncWorkspaceBrandRules(workspaceId: string): Promise<{
     const result = await syncVoiceguideToRules(workspaceId, {
       wordsWeAvoid: voiceguide.wordsWeAvoid,
       antiPatterns: voiceguide.antiPatterns,
+      vocabularyDont: voiceguide.vocabularyDont,
+      vocabularySavedForAi: voiceguide.vocabularySavedForAi,
     });
 
     return {

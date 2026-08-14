@@ -27,6 +27,7 @@ import {
   isTextConstraint,
   isVisualConstraint,
   parseRuleConstraint,
+  PRONOUN_TABLE,
   type TextRuleConstraint,
 } from "@/lib/brandstyle/rule-constraints";
 
@@ -117,6 +118,8 @@ function describePattern(constraint: TextRuleConstraint): string {
       return constraint.pattern;
     case "required-phrase":
       return constraint.phrase;
+    case "forbidden-pronouns":
+      return `${constraint.group} (${constraint.language})`;
     case "max-sentence-words":
       return `max-sentence-words:${constraint.max}`;
     default:
@@ -151,6 +154,13 @@ function compileOne(
       }
       case "forbidden-pattern":
         return { ...base, regexes: [new RegExp(constraint.pattern, "gi")] };
+      case "forbidden-pronouns": {
+        // Woordenlijst uit de ingebouwde tabel — nooit uit de constraint zelf,
+        // zodat een AI-classificatie geen woorden kan verzinnen (D4).
+        const words = PRONOUN_TABLE[constraint.language][constraint.group];
+        if (!words || words.length === 0) return null;
+        return { ...base, regexes: words.map((w) => unicodeWordBoundaryRegex(w)) };
+      }
       case "required-phrase":
         return { ...base, phrase: constraint.phrase.toLowerCase() };
       case "max-sentence-words":
@@ -245,7 +255,8 @@ const MAX_VIOLATIONS_PER_RULE = 25;
 function evaluateOne(text: string, c: CompiledStyleguideRule): RuleViolation[] {
   switch (c.constraint.check) {
     case "forbidden-words":
-    case "forbidden-pattern": {
+    case "forbidden-pattern":
+    case "forbidden-pronouns": {
       const out: RuleViolation[] = [];
       for (const regex of c.regexes ?? []) {
         for (const m of findMatches(text, regex)) {

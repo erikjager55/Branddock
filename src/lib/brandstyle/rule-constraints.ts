@@ -101,6 +101,36 @@ const noExclamationSchema = z.object({
   derivedBy: originSchema,
 });
 
+/** Talen waarvoor een ingebouwde voornaamwoord-tabel bestaat. */
+export const PRONOUN_LANGUAGES = ["nl", "en"] as const;
+export type PronounLanguage = (typeof PRONOUN_LANGUAGES)[number];
+
+/** Voornaamwoord-groepen die als merkregel voorkomen. */
+export const PRONOUN_GROUPS = [
+  "first-person-plural",
+  "second-person-formal",
+  "second-person-informal",
+] as const;
+export type PronounGroup = (typeof PRONOUN_GROUPS)[number];
+
+/**
+ * Perspectief-regel ("derde persoon, nooit wij-vorm", "altijd je, nooit u").
+ * De woordenlijst is ingebouwd, niet vrij invulbaar — zo kan een
+ * AI-classificatie deze regel kiezen zónder woorden te verzinnen (D4).
+ */
+const forbiddenPronounsSchema = z
+  .object({
+    modality: z.literal("text"),
+    check: z.literal("forbidden-pronouns"),
+    group: z.enum(PRONOUN_GROUPS),
+    language: z.enum(PRONOUN_LANGUAGES),
+    derivedBy: originSchema,
+  })
+  .refine((c) => PRONOUN_TABLE[c.language][c.group] !== undefined, {
+    message:
+      "Deze voornaamwoord-groep bestaat niet in deze taal (het Engels kent geen u/je-onderscheid)",
+  });
+
 const maxSentenceWordsSchema = z.object({
   modality: z.literal("text"),
   check: z.literal("max-sentence-words"),
@@ -114,8 +144,34 @@ const textConstraintSchema = z.discriminatedUnion("check", [
   requiredPhraseSchema,
   noEmojiSchema,
   noExclamationSchema,
+  forbiddenPronounsSchema,
   maxSentenceWordsSchema,
 ]);
+
+/**
+ * Ingebouwde voornaamwoord-tabellen. Bewust kort en onbetwistbaar: alleen de
+ * vormen die het perspectief eenduidig aanwijzen. "je" staat niet onder
+ * `second-person-formal` en "u" niet onder informal — dat zijn elkaars
+ * tegenpolen, geen synoniemen.
+ *
+ * Het Engels kent geen T-V-onderscheid: `second-person-*` bestaat daar niet.
+ * Een ontbrekende combinatie is geen lege lijst maar `undefined`, zodat de
+ * schema-validatie zo'n regel afwijst in plaats van hem stil nooit te laten
+ * matchen.
+ */
+export const PRONOUN_TABLE: Record<
+  PronounLanguage,
+  Partial<Record<PronounGroup, string[]>>
+> = {
+  nl: {
+    "first-person-plural": ["wij", "we", "ons", "onze", "onszelf"],
+    "second-person-formal": ["u", "uw", "uzelf"],
+    "second-person-informal": ["je", "jij", "jou", "jouw", "jullie"],
+  },
+  en: {
+    "first-person-plural": ["we", "us", "our", "ours", "ourselves"],
+  },
+};
 
 // ─── Visuele constraints ────────────────────────────
 
@@ -148,6 +204,7 @@ export const TEXT_RULE_CHECKS: readonly TextRuleCheck[] = [
   "required-phrase",
   "no-emoji",
   "no-exclamation-marks",
+  "forbidden-pronouns",
   "max-sentence-words",
 ] as const;
 

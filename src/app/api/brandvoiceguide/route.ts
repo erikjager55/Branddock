@@ -38,6 +38,10 @@ const VOICEGUIDE_SELECT = {
   wordsWeAvoid: true,
   channelTones: true,
   antiPatterns: true,
+  // Vocabulary-rails (DTS-plan C1). vocabularyDont voedt sinds 2026-08-14 ook
+  // de F-VAL rules-pijler, dus de sync heeft de actuele waarde nodig.
+  vocabularyDo: true,
+  vocabularyDont: true,
   // Verhuisd uit BrandStyleguide (ADR 2026-05-15)
   contentGuidelines: true,
   writingGuidelines: true,
@@ -123,6 +127,8 @@ const updateSchema = z.object({
     .nullable()
     .optional(),
   antiPatterns: z.array(z.string()).optional(),
+  vocabularyDo: z.array(z.string()).optional(),
+  vocabularyDont: z.array(z.string()).optional(),
   // Tone-of-voice content (verhuisd uit BrandStyleguide, ADR 2026-05-15)
   contentGuidelines: z.array(z.string()).optional(),
   writingGuidelines: z.array(z.string()).optional(),
@@ -176,7 +182,15 @@ export async function PATCH(request: NextRequest) {
     // Detect whether the rule-sync needs to run
     const wordsWeAvoidChanged = "wordsWeAvoid" in parsed.data;
     const antiPatternsChanged = "antiPatterns" in parsed.data;
-    const shouldSyncRules = wordsWeAvoidChanged || antiPatternsChanged;
+    const vocabularyDontChanged = "vocabularyDont" in parsed.data;
+    // De save-for-AI-gate stuurt of vocabularyDont überhaupt gesynct wordt,
+    // dus een wijziging daarvan moet de sync ook opnieuw draaien.
+    const vocabularyGateChanged = "vocabularySavedForAi" in parsed.data;
+    const shouldSyncRules =
+      wordsWeAvoidChanged ||
+      antiPatternsChanged ||
+      vocabularyDontChanged ||
+      vocabularyGateChanged;
 
     // Upsert — first PATCH for a workspace creates the row.
     const voiceguide = await prisma.brandVoiceguide.upsert({
@@ -196,6 +210,8 @@ export async function PATCH(request: NextRequest) {
         await syncVoiceguideToRules(workspaceId, {
           wordsWeAvoid: voiceguide.wordsWeAvoid,
           antiPatterns: voiceguide.antiPatterns,
+          vocabularyDont: voiceguide.vocabularyDont,
+          vocabularySavedForAi: voiceguide.vocabularySavedForAi,
         });
       } catch (err) {
         console.error("[PATCH /api/brandvoiceguide] rule-sync failed (non-fatal)", err);

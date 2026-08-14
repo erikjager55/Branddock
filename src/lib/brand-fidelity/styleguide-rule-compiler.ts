@@ -113,7 +113,21 @@ async function getCompiled(workspaceId: string): Promise<CacheEntry> {
     expiresAt: Date.now() + CACHE_TTL_MS,
   };
 
-  if (!styleguide || !styleguide.published || styleguide.rules.length === 0) {
+  if (!styleguide || styleguide.rules.length === 0) {
+    cache.set(workspaceId, entry);
+    return entry;
+  }
+
+  // Niet-gepubliceerde styleguide: de merkcontext wordt óók niet geïnjecteerd
+  // (brand-context.ts hanteert dezelfde gate), dus scoren op deze regels zou
+  // meten wat de generator nooit gezien heeft. Wél luid melden — "ik heb
+  // regels toegevoegd en er gebeurt niets" is precies de stille nul die deze
+  // taak wegneemt.
+  if (!styleguide.published) {
+    console.warn(
+      `[styleguide-rules] workspace ${workspaceId}: ${entry.counts.total} regel(s) aanwezig, ` +
+        `maar de styleguide is niet gepubliceerd — regels tellen pas mee na finalize.`,
+    );
     cache.set(workspaceId, entry);
     return entry;
   }

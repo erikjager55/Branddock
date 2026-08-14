@@ -81,7 +81,9 @@
     "smoke:styleguide-rules": "tsx scripts/smoke-tests/styleguide-rule-compiler.ts",
     "smoke:styleguide-rules-fval": "tsx scripts/smoke-tests/styleguide-rules-fval.ts",
     "derive-rule-constraints": "tsx scripts/derive-rule-constraints.ts",
-    "structure-styleguide-rules": "tsx scripts/structure-styleguide-rules.ts"
+    "structure-styleguide-rules": "tsx scripts/structure-styleguide-rules.ts",
+    "sync-voiceguide-brand-rules": "tsx scripts/sync-voiceguide-brand-rules.ts",
+    "verify-spike-rules-dts": "tsx scripts/verify-spike-rules-dts.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

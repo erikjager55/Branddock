@@ -249,6 +249,49 @@ assert(
   run({ modality: 'text', check: 'no-exclamation-marks' }, 'Kom nu! Echt!').violations.length === 2,
 );
 
+const pronouns = run(
+  { modality: 'text', check: 'forbidden-pronouns', group: 'first-person-plural', language: 'nl' },
+  SPIKE_A2,
+);
+assert(
+  'forbidden-pronouns vangt de wij-vorm uit de ingebouwde tabel',
+  pronouns.violations.length === 1 && pronouns.violations[0]?.snippet.toLowerCase() === 'we',
+  `${pronouns.violations.length}× — verwacht alleen "we" uit "zijn we DTS"`,
+);
+assert(
+  'forbidden-pronouns kent geen woorden uit de constraint zelf',
+  run(
+    {
+      modality: 'text',
+      check: 'forbidden-pronouns',
+      group: 'second-person-formal',
+      language: 'nl',
+      words: ['verzonnen'],
+    },
+    'Een verzonnen woord en uw aandacht.',
+  ).violations.length === 1,
+  'alleen "uw" telt; het meegegeven woord wordt genegeerd',
+);
+assert(
+  'forbidden-pronouns weigert een onbekende taal',
+  parseRuleConstraint({
+    modality: 'text',
+    check: 'forbidden-pronouns',
+    group: 'first-person-plural',
+    language: 'fr',
+  }) === null,
+);
+assert(
+  'forbidden-pronouns weigert u/je-onderscheid in het Engels',
+  parseRuleConstraint({
+    modality: 'text',
+    check: 'forbidden-pronouns',
+    group: 'second-person-formal',
+    language: 'en',
+  }) === null,
+  'het Engels kent geen T-V-onderscheid — zo\'n regel zou nooit matchen',
+);
+
 // ─── 4. Severity + identiteit ───────────────────────
 
 console.log('\n4. Severity en ruleId');

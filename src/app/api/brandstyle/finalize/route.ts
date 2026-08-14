@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, resolveWorkspaceId } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { clearStyleguideRuleCache } from "@/lib/brand-fidelity/styleguide-rule-compiler";
+import { syncStructuredVoiceRules } from "@/lib/brandstyle/rule-structurer";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { buildBrandstyleCalibrationReport } from "@/lib/brandstyle/calibration-report";
 
@@ -63,7 +64,19 @@ export async function POST() {
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
     clearStyleguideRuleCache(workspaceId);
 
-    return NextResponse.json({ success: true, warnings: criticalWarnings });
+    // Publiceren is het moment waarop de merkcontext geldig wordt; leid dan
+    // ook de afdwingbare tekst-regels af uit de schrijfrichtlijnen. Fail-soft:
+    // een gefaalde classificatie (AI-fout, timeout) mag een finalize nooit
+    // afschieten — de styleguide is dan al gepubliceerd.
+    let voiceRulesDerived = 0;
+    try {
+      const sync = await syncStructuredVoiceRules(workspaceId);
+      voiceRulesDerived = sync.written;
+    } catch (err) {
+      console.error("[POST /api/brandstyle/finalize] voice-rule-sync mislukt (non-fataal)", err);
+    }
+
+    return NextResponse.json({ success: true, warnings: criticalWarnings, voiceRulesDerived });
   } catch (error) {
     console.error("[POST /api/brandstyle/finalize]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
