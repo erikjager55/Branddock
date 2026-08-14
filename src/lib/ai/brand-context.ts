@@ -17,6 +17,10 @@
 import { prisma } from '@/lib/prisma';
 import type { BrandContextBlock } from './prompt-templates';
 import {
+  renderBrandManifestMarkdown,
+  type BrandManifest,
+} from '@/lib/brandstyle/manifest-builder';
+import {
   deriveVoiceBaseline1Pager,
   formatVoiceBaseline1Pager,
 } from '../brand-fidelity/voice-baseline-1pager';
@@ -968,6 +972,8 @@ export async function getBrandContext(
         visualLanguageSavedForAi: true,
         // Fase 2: publish gate
         published: true,
+        // W1: Brand Manifest — primaire merkbron wanneer gegenereerd
+        brandManifest: true,
         // Fase 1: brand assets
         fonts: { select: { name: true, role: true, source: true, fileUrl: true, weight: true } },
         // Fase 3: semantic colors
@@ -1270,6 +1276,14 @@ export async function getBrandContext(
   // Fase 2 gate: only expose the styleguide context when published is true.
   // Individual per-section `savedForAi` flags then provide finer-grained control.
   if (styleguide && styleguide.published) {
+    // W1: Brand Manifest eerst — het gecureerde document is de primaire
+    // merkbron; de veld-concatenatie hieronder blijft als fallback/detail.
+    if (styleguide.brandManifest) {
+      ctx.brandManifest = renderBrandManifestMarkdown(
+        styleguide.brandManifest as unknown as BrandManifest,
+      );
+    }
+
     // Colors
     if (styleguide.colorsSavedForAi && styleguide.colors.length > 0) {
       const colorsByCategory = new Map<string, typeof styleguide.colors>();

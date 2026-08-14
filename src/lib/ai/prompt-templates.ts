@@ -17,6 +17,13 @@ import { buildLocaleInstruction } from './locale-instruction';
 
 export interface BrandContextBlock {
   brandName?: string;
+  /**
+   * Brand Manifest markdown (designbibliotheek-verbeterplan W1) — het
+   * gecureerde agent-manifest uit manifest-builder.ts. Wanneer aanwezig is
+   * dit de primaire merkbron; de losse brand*-velden hieronder blijven als
+   * fallback/detail bestaan tot alle consumers via het manifest lezen.
+   */
+  brandManifest?: string;
   // Brand strategy assets (from 11 canonical brand assets)
   brandPurpose?: string;
   goldenCircle?: string;
@@ -112,6 +119,14 @@ export function formatBrandContext(ctx: BrandContextBlock): string {
   lines.push('## Brand Context');
 
   if (ctx.brandName) lines.push(`**Brand Name:** ${ctx.brandName}`);
+
+  // W1: het manifest is de primaire merkbron — vóór de losse velden, zodat
+  // harde regels en tokens niet ondersneeuwen in de veld-concatenatie.
+  if (ctx.brandManifest) {
+    lines.push('');
+    lines.push(ctx.brandManifest);
+    lines.push('');
+  }
 
   // Deduplication note for AI
   lines.push('');

@@ -1941,6 +1941,15 @@ model BrandStyleguide {
   // Zie src/lib/brandstyle/semantic-role-resolver.ts voor volledige type.
   semanticTokens Json?
 
+  // Brand Manifest (designbibliotheek-verbeterplan W1) — gecureerd, tweeledig
+  // eindproduct: quick facts + harde regels + tokens + voice-baseline +
+  // substituties/known gaps. Shape: BrandManifest (manifest-builder.ts).
+  // manifestVersion is het consumptiecontract (W7): bump bij elke regeneratie;
+  // gegenereerde artefacten stempelen de gebruikte versie.
+  brandManifest       Json?
+  manifestGeneratedAt DateTime?
+  manifestVersion     Int       @default(0)
+
   // Kleurcombinaties (Fase 5 brand-fidelity) — WCAG-geverifieerde fg/bg-paren
   // afgeleid uit het palet door buildColorPairings (color-pairings.ts).
   // Shape: Array<{ label, background, foreground, contrastRatio, wcag, usage }>
@@ -1960,6 +1969,9 @@ model BrandStyleguide {
 
   // Review workflow + Published state (Fase 2)
   reviews     StyleguideReview[]
+
+  // W2: gestructureerde do's/don'ts/harde regels
+  rules StyleguideRule[]
   published   Boolean            @default(false)
   publishedAt DateTime?
 
@@ -2095,6 +2107,48 @@ model StyleguideComponent {
   @@index([workspaceId])
   @@index([styleguideId])
   @@index([type])
+}
+
+// Do's/Don'ts/harde regels als eersteklas datatype (designbibliotheek-
+// verbeterplan W2). `source` gebruikt het token-provenance-vocabulaire
+// (token-provenance.ts) + 'recommended'/'user' — géén tweede begrippenkader.
+// BLOCKING-regels stoppen autonome publicatie (Brandclaw-gate);
+// ADVISORY-regels wegen mee in F-VAL's rules-pijler.
+model StyleguideRule {
+  id           String          @id @default(cuid())
+  styleguideId String
+  styleguide   BrandStyleguide @relation(fields: [styleguideId], references: [id], onDelete: Cascade)
+
+  // Sectiesleutel — zelfde vocabulaire als review-sections/kalibratie
+  section  String
+  kind     RuleKind
+  severity RuleSeverity @default(ADVISORY)
+  source   String       @default("scraped")
+
+  title       String
+  description String? @db.Text
+
+  // Afdwingbare constraint, bv. { "property": "gradient", "allowed": false }
+  constraint Json?
+
+  // Optioneel visueel voorbeeld (Frontify Do&Don't-blok-patroon)
+  exampleAssetUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([styleguideId, section])
+}
+
+enum RuleKind {
+  DO
+  DONT
+  HARD_RULE
+}
+
+enum RuleSeverity {
+  BLOCKING
+  ADVISORY
 }
 
 model StyleguideReview {

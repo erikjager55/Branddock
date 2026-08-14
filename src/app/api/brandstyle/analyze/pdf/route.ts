@@ -43,26 +43,38 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Delete existing styleguide if present (atomic)
-    const existing = await prisma.brandStyleguide.findUnique({ where: { workspaceId } });
-    if (existing) {
-      await prisma.$transaction([
-        prisma.styleguideColor.deleteMany({ where: { styleguideId: existing.id } }),
-        prisma.brandStyleguide.delete({ where: { id: existing.id } }),
-      ]);
-    }
-
-    const styleguide = await prisma.brandStyleguide.create({
-      data: {
-        status: "ANALYZING",
-        sourceType: "PDF",
-        sourceFileName: file.name,
-        analysisStatus: "SCANNING_STRUCTURE",
-        analysisJobId: `job_${crypto.randomUUID()}`,
-        createdById: session.user.id,
-        workspaceId,
-      },
+    // W5/G6: re-analyse is een refresh, geen wipe — zelfde patroon als de
+    // URL-route. Hergebruik het bestaande record zodat reviews, rules,
+    // snapshots, manifest en user-edits (met *Override-bescherming in de
+    // engine) bewaard blijven.
+    const existing = await prisma.brandStyleguide.findUnique({
+      where: { workspaceId },
+      select: { id: true },
     });
+    const analysisJobId = `job_${crypto.randomUUID()}`;
+    const styleguide = existing
+      ? await prisma.brandStyleguide.update({
+          where: { id: existing.id },
+          data: {
+            status: "ANALYZING",
+            sourceType: "PDF",
+            sourceFileName: file.name,
+            analysisStatus: "SCANNING_STRUCTURE",
+            analysisJobId,
+            errorMessage: null,
+          },
+        })
+      : await prisma.brandStyleguide.create({
+          data: {
+            status: "ANALYZING",
+            sourceType: "PDF",
+            sourceFileName: file.name,
+            analysisStatus: "SCANNING_STRUCTURE",
+            analysisJobId,
+            createdById: session.user.id,
+            workspaceId,
+          },
+        });
 
     // Serverless-safe: persist de PDF naar storage (de buffer overleeft de
     // function-freeze niet) + verwerk via de AgentJob-queue i.p.v. fire-and-forget.
@@ -78,7 +90,9 @@ export async function POST(request: NextRequest) {
       workspaceId,
       priority: 50,
       maxAttempts: 1,
-      idempotencyKey: `brandstyle-analyze:${styleguide.id}`,
+      // Per klik uniek — het styleguide-id is sinds het refresh-pad stabiel
+      // en zou herhaalde analyses dedupen.
+      idempotencyKey: `brandstyle-analyze:${analysisJobId}`,
       triggeredBy: "user",
     });
 
