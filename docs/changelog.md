@@ -35,6 +35,16 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ---
 
+## 2026-08
+
+### 455. brand.md rapport-mail — touchpoint 2.1 live (Emailit)
+
+De harde e-mail-gate op de generator (live-iteratie van 2026-08-14) legde adressen vast zonder er iets tegenover te stellen — deze mail maakt de gate-belofte waar. Eenmalige rapport-mail direct na de éérste e-mail-capture op een draft: Brand Score, hoofdbevindingen (gedeeld via nieuw `src/lib/brandmd/findings.ts` zodat resultaatpagina en mail exact hetzelfde vertellen), score-uitleg per dimensie, download-link, 3 gebruiksrecepten (Claude/ChatGPT/any chat) en claim-CTA. Dedupe zonder schema-wijziging (trigger alleen als `emailCapturedAt` nog null was), URLs uit het rauwe request-token (server bewaart alleen de hash), fail-soft via `trySendTransactional` — een mail-storing blokkeert de download nooit. Gate-copy belooft de mail nu expliciet; eerlijke one-time-footer met vervaldatum. Lifecycle-mails 2.2-2.5 blijven follow-up.
+
+- Task: [tasks/brand-md-open-standaard.md](../tasks/brand-md-open-standaard.md)
+- Spec: [marketing/brand-md-touchpoints-2026-08-03.md](marketing/brand-md-touchpoints-2026-08-03.md)
+- Commit: `60d433c`
+
 ## 2026-07
 
 ### 454. brand.md-referentie-implementatie — emitter, gratis generator, claim-flow, leads-dashboard, validator
