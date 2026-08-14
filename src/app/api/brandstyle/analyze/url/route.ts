@@ -33,40 +33,54 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    // Delete existing styleguide if present (max 1 per workspace, atomic)
-    const existing = await prisma.brandStyleguide.findUnique({ where: { workspaceId } });
-    if (existing) {
-      await prisma.$transaction([
-        prisma.styleguideColor.deleteMany({ where: { styleguideId: existing.id } }),
-        prisma.brandStyleguide.delete({ where: { id: existing.id } }),
-      ]);
-    }
-
-    // Create new styleguide in ANALYZING state
-    const styleguide = await prisma.brandStyleguide.create({
-      data: {
-        status: "ANALYZING",
-        sourceType: "URL",
-        sourceUrl: parsed.data.url,
-        analysisStatus: "SCANNING_STRUCTURE",
-        analysisJobId: `job_${crypto.randomUUID()}`,
-        createdById: session.user.id,
-        workspaceId,
-      },
+    // W5/G6: re-analyse is een refresh, geen wipe. Het oude delete+create-pad
+    // vernietigde bij elke nieuwe analyse de reviews, rules, snapshots, het
+    // manifest en alle user-edits. De engine doet partial-upsert met
+    // *Override-bescherming, dus het bestaande record wordt hergebruikt;
+    // destructief wissen kan alleen nog expliciet via rescrape-brand.ts --hard.
+    const existing = await prisma.brandStyleguide.findUnique({
+      where: { workspaceId },
+      select: { id: true },
     });
+    const analysisJobId = `job_${crypto.randomUUID()}`;
+    const styleguide = existing
+      ? await prisma.brandStyleguide.update({
+          where: { id: existing.id },
+          data: {
+            status: "ANALYZING",
+            sourceType: "URL",
+            sourceUrl: parsed.data.url,
+            analysisStatus: "SCANNING_STRUCTURE",
+            analysisJobId,
+            errorMessage: null,
+          },
+        })
+      : await prisma.brandStyleguide.create({
+          data: {
+            status: "ANALYZING",
+            sourceType: "URL",
+            sourceUrl: parsed.data.url,
+            analysisStatus: "SCANNING_STRUCTURE",
+            analysisJobId,
+            createdById: session.user.id,
+            workspaceId,
+          },
+        });
 
     // Serverless-safe: op de AgentJob-queue i.p.v. fire-and-forget (dat wordt op
     // Vercel gekild na de response). De analyse-engine schrijft analysisStatus
     // progressief naar de DB; frontend blijft GET /analyze/status/[jobId] pollen.
-    // maxAttempts:1 — analyse is duur (AI-calls) + de route is destructief; bij
-    // falen landt de engine op ERROR en laat de user opnieuw triggeren.
+    // maxAttempts:1 — analyse is duur (AI-calls); bij falen landt de engine op
+    // ERROR en laat de user opnieuw triggeren. idempotencyKey op de job-id
+    // (per klik uniek — het styleguide-id is sinds het refresh-pad stabiel en
+    // zou herhaalde analyses dedupen).
     await dispatchJob({
       type: "BRANDSTYLE_ANALYZE_URL",
       payload: { styleguideId: styleguide.id, url: parsed.data.url },
       workspaceId,
       priority: 50,
       maxAttempts: 1,
-      idempotencyKey: `brandstyle-analyze:${styleguide.id}`,
+      idempotencyKey: `brandstyle-analyze:${analysisJobId}`,
       triggeredBy: "user",
     });
 
