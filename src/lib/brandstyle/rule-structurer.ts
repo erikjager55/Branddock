@@ -201,6 +201,10 @@ export async function structureVoiceGuidelines(params: {
     {
       useCase: "STRUCTURED",
       maxTokens: Math.min(16_000, 4_000 + cleaned.length * 400),
+      // Deze call hangt aan een knop-klik (finalize). Harde bovengrens zodat
+      // een trage provider de publicatie-actie niet laat wachten; de aanroeper
+      // vangt de fout fail-soft op en de backfill-scripts kunnen 'm herhalen.
+      timeoutMs: 45_000,
     },
   );
 
