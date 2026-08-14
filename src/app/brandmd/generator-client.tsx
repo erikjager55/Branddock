@@ -370,7 +370,8 @@ export function GeneratorClient() {
                   <Check className="mx-auto h-8 w-8" style={{ color: PRIMARY }} />
                   <h3 className="mt-2 text-lg font-semibold">Your brand.md is downloading</h3>
                   <p className="mt-1 text-sm" style={{ color: '#9FB0C3' }}>
-                    Try the recipes above — and when you want the living, validated version:
+                    Your full report is on its way to your inbox. Try the recipes above — and
+                    when you want the living, validated version:
                   </p>
                   {result.claimUrl && (
                     <a
@@ -389,9 +390,9 @@ export function GeneratorClient() {
                     Download your brand.md
                   </h3>
                   <p className="mt-1 text-sm" style={{ color: '#9FB0C3' }}>
-                    Free — leave your email and your file downloads instantly. Your claim link
-                    stays tied to this address, so only you can turn this draft into a workspace.
-                    No newsletter, no spam.
+                    Free — leave your email and your file downloads instantly. We&apos;ll also
+                    email you this full report with your download link, so you can pick it up on
+                    any device. One email, no newsletter, no spam.
                   </p>
                   <div className="mt-4 flex gap-2">
                     <input

@@ -75,7 +75,7 @@
 
 | # | Moment | Boodschap + CTA | Must | Don't |
 |---|---|---|---|---|
-| 2.1 | Direct | Bestand + volledig rapport + 3 gebruiksrecepten (Claude-project / ChatGPT-instructions / MCP) | Recepten copy-paste-klaar; het rapport waarmaken wat de gate beloofde | Verkooppraat in mail 1 |
+| 2.1 | Direct | **LIVE (2026-08-14)** — Bestand + volledig rapport + 3 gebruiksrecepten (Claude-project / ChatGPT-instructions / MCP). Gebouwd: `templates/brandmd-report.ts`, trigger in `/api/brandmd/track` bij éérste e-mail-capture (dedupe zonder schema-wijziging), fail-soft via `trySendTransactional`. Zelfde bevindingen als de resultaatpagina (`lib/brandmd/findings.ts`) | Recepten copy-paste-klaar; het rapport waarmaken wat de gate beloofde | Verkooppraat in mail 1 |
 | 2.2 | +24 u | "Werkte het? Eén tip die vandaag verschil maakt" + wat `unvalidated` betekent → eerste zachte claim-CTA | Binnen het 48-uurs-venster; concreet resultaat centraal | Wachten tot dag 3-7 (v1-fout — te laat) |
 | 2.3 | Dag 7-14 | Concurrent-scan + benchmark ("waar sta jij in je categorie?") | De grader-vergelijkings-reflex benutten | Bang maken met concurrent-scores |
 | 2.4 | Dag 21-30 | "Je brand.md veroudert" — wat een levende versie doet | Feitelijk (generatiedatum) | Herhaal-spam als 2.3 niet opende |
