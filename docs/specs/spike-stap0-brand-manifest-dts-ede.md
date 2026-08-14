@@ -152,9 +152,15 @@ blinde opzet (dezelfde agent schreef beide varianten); de judge was wél blind v
    naar voren halen** — zolang StyleguideRule-regels F-VAL's rules-pijler niet bereiken,
    blijft regel-overtredende content hoog scoren. Dit is de belangrijkste bevinding van de
    spike: het gat zit niet alleen in de generatie-context maar ook in de meting.
-4. **Databevinding**: de prod-brandcontext zegt "U13 Top Tournament / Tweede Paasdag";
-   het merkboek (mei 2026) zegt "U15 / 23e editie / maandag 25 mei". Eén van beide is
-   verouderd — corrigeren in de DTS Ede-workspace vóór de volgende contentronde.
+4. **Databevinding — herzien na live-site-verificatie (2026-08-14)**: de eerste lezing
+   ("U13 in de DB is verouderd, moet U15 zijn") bleek onjuist. DTS Ede organiseert
+   **twee** internationale jeugdtoernooien: het 58e U13-toernooi (Tweede Paasdag) én het
+   23e U15 Tournament. De database was correct; het was het merkboek/de Claude
+   Design-bibliotheek (`docs/experiments/DTS Ede Design System/`, README + SKILL:
+   "U15 Top Tournament, 23e editie, 25 mei") die beide evenementen conflateerde —
+   die bibliotheek is op dit punt dus niet gezaghebbend. Gekozen fix (optie 2): U15
+   toegevoegd als tweede product; U13-verwijzingen ongemoeid. Les voor de pijplijn:
+   ook een gecureerde bron verifiëren tegen de live site vóór correctie (M1/M5).
 5. **Beperkingen**: n=5 per conditie; generator niet geblindeerd; de tekst-judge kan
    image-prompt-uitvoerbaarheid (exacte hex, kleurgrading in B4) niet waarderen; deze
    outputs zijn bruikbaar als eerste golden-set-fixtures (W7.4).
