@@ -332,6 +332,11 @@ export type RichTextProps = {
   /** W1 microsite — optioneel DOM-anker (`id` op de section) voor de
    *  hoofdstuk-ankernavigatie. Geen Puck-field (zoals bandTone). */
   anchorId?: string;
+  /** lp-image-routes W1 — optioneel sectie-beeld (figure boven de prose);
+   *  gevuld door merkbeeld-toewijzing of handmatig/Generate via de picker. */
+  imageUrl?: string;
+  /** Alt-tekst bij imageUrl (brief-subject of sectie-kop). */
+  imageAlt?: string;
 };
 
 /** C9 — StickyCtaBar: fixed bottom-bar met label + CTA, sticky on scroll.
@@ -4093,13 +4098,16 @@ function richTextComponent(tokens: BrandTokens) {
   return {
     fields: {
       content: { type: 'textarea' as const },
+      imageUrl: imageField('Sectie-afbeelding', true),
     },
     defaultProps: {
       content: 'Write your content here.',
+      imageUrl: '',
     },
-    render: ({ content, bandTone, anchorId }: RichTextProps) => {
+    render: ({ content, bandTone, anchorId, imageUrl, imageAlt }: RichTextProps) => {
       const sectionBg = sectionBandBg(tokens, bandTone);
       const markdownComponents = buildRichTextMarkdownComponents(tokens, sectionBg);
+      const hasImage = !!imageUrl && imageUrl.trim().length > 0;
       return (
       <section
         id={anchorId?.trim() ? anchorId : undefined}
@@ -4121,6 +4129,24 @@ function richTextComponent(tokens: BrandTokens) {
             lineHeight: ds.typography.body.lineHeight,
           }}
         >
+          {hasImage && (
+            <figure style={{ margin: `0 0 ${Math.round(sectionPaddingY * 0.6)}px` }}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- render draait óók buiten de Next image-pipeline (compiled artifact) */}
+              <img
+                src={imageUrl}
+                alt={imageAlt ?? ''}
+                loading="lazy"
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                  borderRadius: Math.min(12, getRenderConstraints(tokens.archetype, tokens.layoutStyle).maxRadiusPx),
+                  objectFit: 'cover',
+                  aspectRatio: '16 / 9',
+                }}
+              />
+            </figure>
+          )}
           <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
         </div>
       </section>
