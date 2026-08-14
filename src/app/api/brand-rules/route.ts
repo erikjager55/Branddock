@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { listBrandRules } from '@/lib/brand-fidelity/brand-rule-sync';
+import { clearRuleCompilerCache } from '@/lib/brand-fidelity/rule-compiler';
 
 async function getWorkspaceOrError() {
   const workspaceId = await resolveWorkspaceId();
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    clearRuleCompilerCache(workspaceId);
     return NextResponse.json({ rule }, { status: 201 });
   } catch (err) {
     console.error('[POST /api/brand-rules]', err);

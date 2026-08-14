@@ -23,6 +23,10 @@
 import { detectAiTells, type AiTellResult } from './ai-tell-detector';
 import { evaluateBrandRules, type RuleEvaluationResult } from './rule-compiler';
 import { evaluateHeuristics } from './heuristics/evaluator';
+import {
+  evaluateStyleguideRules,
+  type StyleguideRuleEvaluation,
+} from './styleguide-rule-compiler';
 import { runRubricJudge, type GeneratorProvider } from './judge-dispatcher';
 import { scoreBrandStyle, type StyleScoreResult } from './style-scorer';
 import { scoreVoiceSimilarity, type VoiceSimilarityResult } from './voice-similarity';
@@ -252,19 +256,25 @@ export function dedupeViolations(
 }
 
 /**
- * Merge BrandRule evaluator-result met heuristic-violations (Δ-2). Recompute
- * ruleScore + counters om beide bronnen te reflecteren. Hergebruikt zelfde
- * scoring-formula als rule-compiler (weighted violations / wordCount * 1000).
- * Dedupe via `dedupeViolations` voorkomt dubbel-tellen wanneer beide bronnen
- * dezelfde textspan vangen.
+ * Merge de drie bronnen van pijler 3 tot één RuleEvaluationResult:
+ *   1. BrandRule (workspace-rules, o.a. gesynct uit de voiceguide)
+ *   2. locale-heuristics (Δ-2 term-packs)
+ *   3. StyleguideRule met een tekst-constraint (designbibliotheek W2)
+ *
+ * Recompute ruleScore + counters om alle bronnen te reflecteren; hergebruikt
+ * dezelfde scoring-formula als rule-compiler (weighted violations /
+ * wordCount * 1000). Dedupe via `dedupeViolations` voorkomt dubbel-tellen
+ * wanneer meerdere bronnen dezelfde textspan vangen.
  */
 function mergeRuleResults(
   brandRules: RuleEvaluationResult,
   heuristicViolations: import('./rule-compiler').RuleViolation[],
+  styleguideRules: StyleguideRuleEvaluation,
 ): RuleEvaluationResult {
   const merged = dedupeViolations([
     ...brandRules.violations,
     ...heuristicViolations,
+    ...styleguideRules.violations,
   ]);
   const SEVERITY_WEIGHTS = { error: 3, warning: 1, info: 0.5 };
   const weighted = merged.reduce((sum, v) => sum + (SEVERITY_WEIGHTS[v.severity] ?? 1), 0);
@@ -289,7 +299,12 @@ function mergeRuleResults(
     byCount,
     byType,
     wordCount: brandRules.wordCount,
-    rulesEvaluated: brandRules.rulesEvaluated + heuristicViolations.length,
+    // NB: de heuristic-term (pre-existing) telt violations, niet entries —
+    // `HeuristicEvaluationResult.entriesEvaluated` bestaat wel maar werd hier
+    // nooit gebruikt. Bewust ongewijzigd gelaten om de bestaande telling niet
+    // te breken; de styleguide-term telt wél echte regels.
+    rulesEvaluated:
+      brandRules.rulesEvaluated + heuristicViolations.length + styleguideRules.evaluated,
   };
 }
 
@@ -399,13 +414,19 @@ export async function computeFidelityScore(
   const detectorResult = detectAiTells(input.contentText, { brandVocabulary: brandAllowlist });
 
   // Pijler 3: parallel-fetch BrandRule evaluator (DB-backed) + heuristics
-  // evaluator (Δ-2 — locale-package). Merge into single RuleEvaluationResult
+  // evaluator (Δ-2 — locale-package) + styleguide-regels met een tekst-
+  // constraint (designbibliotheek W2). Merge into single RuleEvaluationResult
   // zodat downstream pillar3 score-logic ongewijzigd blijft.
-  const [brandRulesResult, heuristicsResult] = await Promise.all([
+  const [brandRulesResult, heuristicsResult, styleguideRulesResult] = await Promise.all([
     evaluateBrandRules(input.workspaceId, input.contentText),
     evaluateHeuristics(input.workspaceId, input.contentText, { brandAllowlist }),
+    evaluateStyleguideRules(input.workspaceId, input.contentText),
   ]);
-  const rulesResult = mergeRuleResults(brandRulesResult, heuristicsResult.violations);
+  const rulesResult = mergeRuleResults(
+    brandRulesResult,
+    heuristicsResult.violations,
+    styleguideRulesResult,
+  );
 
   // W-1-full: voice-similarity via centroid embedding when available.
   // Runs in parallel with the deterministic pillars above (rules already async,

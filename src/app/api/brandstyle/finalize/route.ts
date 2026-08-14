@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, resolveWorkspaceId } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
+import { clearStyleguideRuleCache } from "@/lib/brand-fidelity/styleguide-rule-compiler";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { buildBrandstyleCalibrationReport } from "@/lib/brandstyle/calibration-report";
 
@@ -60,6 +61,7 @@ export async function POST() {
 
     invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+    clearStyleguideRuleCache(workspaceId);
 
     return NextResponse.json({ success: true, warnings: criticalWarnings });
   } catch (error) {

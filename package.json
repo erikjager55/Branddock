@@ -77,7 +77,11 @@
     "smoke:geo-claw-gate": "tsx scripts/smoke-tests/geo-claw-gate.ts",
     "smoke:geo-analysis": "tsx scripts/smoke-tests/geo-analysis.ts",
     "smoke:geo-panel": "tsx scripts/smoke-tests/geo-panel.ts",
-    "eval:brand-manifest-golden": "tsx scripts/eval/brand-manifest-golden/run.ts"
+    "eval:brand-manifest-golden": "tsx scripts/eval/brand-manifest-golden/run.ts",
+    "smoke:styleguide-rules": "tsx scripts/smoke-tests/styleguide-rule-compiler.ts",
+    "smoke:styleguide-rules-fval": "tsx scripts/smoke-tests/styleguide-rules-fval.ts",
+    "derive-rule-constraints": "tsx scripts/derive-rule-constraints.ts",
+    "structure-styleguide-rules": "tsx scripts/structure-styleguide-rules.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

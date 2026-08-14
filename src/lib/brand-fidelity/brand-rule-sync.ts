@@ -18,6 +18,7 @@
 // ============================================================
 
 import { prisma } from '@/lib/prisma';
+import { clearRuleCompilerCache } from './rule-compiler';
 
 const SOURCE_LEGACY = 'auto:wordsWeAvoid';
 const SOURCE_VOICEGUIDE_WORDS = 'auto:voiceguide.wordsWeAvoid';
@@ -179,6 +180,7 @@ export async function syncWordsAvoidToRules(
   });
 
   if (expanded.length === 0) {
+    clearRuleCompilerCache(workspaceId);
     return { deleted: deleteResult.count, created: 0 };
   }
 
@@ -196,6 +198,7 @@ export async function syncWordsAvoidToRules(
     })),
   });
 
+  clearRuleCompilerCache(workspaceId);
   return { deleted: deleteResult.count, created: created.count };
 }
 
@@ -266,6 +269,8 @@ export async function syncVoiceguideToRules(
         })
       : Promise.resolve({ count: 0 }),
   ]);
+
+  clearRuleCompilerCache(workspaceId);
 
   return {
     wordsDeleted: wordsDelete.count,

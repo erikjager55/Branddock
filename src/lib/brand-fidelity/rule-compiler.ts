@@ -15,6 +15,7 @@
 
 import { prisma } from '@/lib/prisma';
 import type { BrandRule, BrandRuleType } from '@prisma/client';
+import { countWords, splitSentences, wordBoundaryRegex } from './text-matchers';
 
 // ─── Types ───────────────────────────────────────────
 
@@ -80,17 +81,13 @@ const SEVERITY_WEIGHTS: Record<string, number> = {
   error: 2.0,
 };
 
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function compileRule(rule: BrandRule): CompiledRule | null {
   try {
     if (rule.ruleType === 'FORBIDDEN_WORD') {
-      const pattern = rule.patternIsRegex
-        ? rule.pattern
-        : `\\b${escapeRegex(rule.pattern)}\\b`;
-      return { rule, regex: new RegExp(pattern, 'gi') };
+      const regex = rule.patternIsRegex
+        ? new RegExp(rule.pattern, 'gi')
+        : wordBoundaryRegex(rule.pattern);
+      return { rule, regex };
     }
 
     if (rule.ruleType === 'REQUIRED_PHRASE') {
@@ -189,9 +186,9 @@ function evaluateStyleLimit(text: string, c: CompiledRule): RuleViolation[] {
 
   if (kind === 'maxSentenceLength') {
     // Split on . ! ? followed by space + capital
-    const sentences = text.split(/(?<=[.!?])\s+(?=[A-Z])/g);
-    sentences.forEach((s, i) => {
-      const wc = s.trim().split(/\s+/).filter(Boolean).length;
+    const sentences = splitSentences(text);
+    sentences.forEach((s) => {
+      const wc = countWords(s);
       if (wc > value) {
         out.push({
           ruleId: c.rule.id,
@@ -286,7 +283,7 @@ export async function evaluateBrandRules(
     }
   }
 
-  const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+  const wordCount = countWords(text);
 
   // Score: weighted violations divided by word count, mapped to 0-100
   // 0 violations → 100. ~1 weighted violation per 100 words → 80. Steeper falloff.

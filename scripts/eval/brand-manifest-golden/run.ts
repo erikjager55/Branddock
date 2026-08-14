@@ -76,6 +76,53 @@ function makeFixture(): ManifestStyleguideInput {
   return styleguide as unknown as ManifestStyleguideInput;
 }
 
+/**
+ * Variant met gestructureerde StyleguideRule-records (W2). Dekt de
+ * modaliteit-scheiding en de save-for-AI-gate op de gestructureerde tak —
+ * die tak omzeilde de gate aanvankelijk volledig.
+ */
+function makeStructuredFixture(): ManifestStyleguideInput {
+  const base = makeFixture() as unknown as Record<string, unknown>;
+  return {
+    ...base,
+    // imagery staat bewust UIT: de imagery-regel hieronder hoort daardoor
+    // nergens in het manifest te verschijnen.
+    imagerySavedForAi: false,
+    rules: [
+      {
+        id: 'rule-text',
+        section: 'voice',
+        kind: 'HARD_RULE',
+        severity: 'BLOCKING',
+        source: 'user',
+        title: 'Geen emoji in redactionele copy',
+        description: null,
+        constraint: { modality: 'text', check: 'no-emoji', derivedBy: 'user' },
+      },
+      {
+        id: 'rule-visual',
+        section: 'design-language',
+        kind: 'DONT',
+        severity: 'ADVISORY',
+        source: 'scraped',
+        title: 'Geen gradients in UI-chrome',
+        description: null,
+        constraint: { property: 'gradient', allowed: false },
+      },
+      {
+        id: 'rule-gated',
+        section: 'imagery',
+        kind: 'DONT',
+        severity: 'ADVISORY',
+        source: 'scraped',
+        title: 'Geen stockfotografie',
+        description: null,
+        constraint: null,
+      },
+    ],
+  } as unknown as ManifestStyleguideInput;
+}
+
 function run(): number {
   const manifest = buildBrandManifest(makeFixture(), null, 'V.V. DTS ’35 Ede');
   const markdown = renderBrandManifestMarkdown(manifest);
@@ -135,6 +182,27 @@ function run(): number {
   checks.push({
     ok: imageView.imagery !== undefined && imageView.voiceBaseline === undefined,
     label: 'image view keeps imagery, drops voice',
+  });
+
+  // ── W2: gestructureerde regels — modaliteit + save-for-AI-gate ──
+  const structured = buildBrandManifest(makeStructuredFixture(), null, 'V.V. DTS ’35 Ede');
+  const textRule = structured.hardRules.find((r) => r.text.includes('Geen emoji'));
+  const visualRule = structured.hardRules.find((r) => r.text.includes('gradients in UI-chrome'));
+  const gatedRule = structured.hardRules.find((r) => r.text.includes('stockfotografie'));
+  checks.push({
+    ok:
+      textRule?.modality === 'text' &&
+      visualRule?.modality === 'visual' &&
+      gatedRule === undefined,
+    label: 'structured rules: modality stamped, save-for-AI gate honoured',
+  });
+
+  const structuredCopyView = projectManifest(structured, 'copy');
+  checks.push({
+    ok:
+      structuredCopyView.hardRules.some((r) => r.text.includes('Geen emoji')) &&
+      !structuredCopyView.hardRules.some((r) => r.modality === 'visual'),
+    label: 'copy view drops visual rules, keeps text rules',
   });
 
   const failed = checks.filter((c) => !c.ok);

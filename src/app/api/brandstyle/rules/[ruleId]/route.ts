@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, requireAuth } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { clearStyleguideRuleCache } from "@/lib/brand-fidelity/styleguide-rule-compiler";
+import { ruleConstraintInputSchema } from "@/lib/brandstyle/rule-constraints";
 
 // =============================================================
 // /api/brandstyle/rules/[ruleId] — regel bewerken/verwijderen (W2)
@@ -19,7 +21,9 @@ const updateRuleSchema = z.object({
   severity: z.enum(["BLOCKING", "ADVISORY"]).optional(),
   title: z.string().min(1).max(300).optional(),
   description: z.string().max(2000).nullable().optional(),
-  constraint: z.record(z.string(), z.unknown()).nullable().optional(),
+  // `null` wist de constraint; een waarde wordt gevalideerd tegen het
+  // gedeelde vocabulaire (zie rule-constraints.ts).
+  constraint: ruleConstraintInputSchema.nullable().optional(),
   exampleAssetUrl: z.string().url().nullable().optional(),
 });
 
@@ -66,6 +70,7 @@ export async function PATCH(
     });
 
     invalidateCache(cacheKeys.prefixes.brandstyle(loaded.workspaceId));
+    clearStyleguideRuleCache(loaded.workspaceId);
     return NextResponse.json({ rule: updated });
   } catch (error) {
     console.error("[PATCH /api/brandstyle/rules/[ruleId]]", error);
@@ -85,6 +90,7 @@ export async function DELETE(
     await prisma.styleguideRule.delete({ where: { id: ruleId } });
 
     invalidateCache(cacheKeys.prefixes.brandstyle(loaded.workspaceId));
+    clearStyleguideRuleCache(loaded.workspaceId);
     return NextResponse.json({ deleted: true });
   } catch (error) {
     console.error("[DELETE /api/brandstyle/rules/[ruleId]]", error);
