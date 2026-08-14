@@ -11,6 +11,7 @@ import {
   type CalibrationSection,
 } from "@/lib/brandstyle/calibration-report";
 import type { BrandStyleguide, StyleguideTab } from "../types/brandstyle.types";
+import { staleReviewsToCalibrationInput } from "@/lib/brandstyle/review-sections";
 
 interface BrandstyleCalibrationPanelProps {
   styleguide: BrandStyleguide;
@@ -58,6 +59,9 @@ export function BrandstyleCalibrationPanel({ styleguide, onJumpToTab }: Brandsty
             logos: styleguide.logos.map((l) => ({ variant: l.variant })),
             guidelines: [...styleguide.photographyGuidelines, ...styleguide.illustrationGuidelines],
             typeScaleCount: styleguide.typeScale?.length ?? 0,
+            // W5-driftreset: secties waarvan de goedkeuring verviel doordat een
+            // re-analyse de data veranderde.
+            staleReviews: staleReviewsToCalibrationInput(styleguide.reviews ?? []),
           })
         : null,
     [styleguide],

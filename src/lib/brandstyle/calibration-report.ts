@@ -50,6 +50,24 @@ export interface CalibrationInput {
   guidelines?: string[];
   /** Number of derived type-scale levels (h1..body). */
   typeScaleCount?: number;
+  /**
+   * Secties waarvan de goedkeuring verviel doordat een re-analyse de data
+   * veranderde (W5-driftreset). De caller levert de review-rijen met een
+   * `staleAt`-stempel aan; hier worden ze actionable asks.
+   */
+  staleReviews?: StaleReviewInput[];
+}
+
+/** Eén sectie waarvan de goedkeuring is ingetrokken door drift. */
+export interface StaleReviewInput {
+  /** Kalibratie-sectie waaronder de ask valt (deep-link-doel). */
+  section: CalibrationSection;
+  /** Label van de review-sectie, voor de titel. */
+  label: string;
+  /** Waarom de goedkeuring verviel. */
+  reason: string;
+  /** Stabiele sleutel voor dedup/telemetrie. */
+  key: string;
 }
 
 /** Count guidelines whose only provenance is `RECOMMENDED:` (inferred, not observed). */
@@ -76,6 +94,19 @@ export function buildBrandstyleCalibrationReport(
   input: CalibrationInput,
 ): BrandstyleCalibrationReport {
   const asks: CalibrationAsk[] = [];
+
+  // ── Verlopen goedkeuringen ──────────────────────────────
+  // Eerst: dit is het enige type ask dat over een *besluit* van de gebruiker
+  // gaat dat niet meer klopt, in plaats van over ontbrekende extractie.
+  for (const stale of input.staleReviews ?? []) {
+    asks.push({
+      id: `review-stale-${stale.key}`,
+      severity: 'review',
+      section: stale.section,
+      title: `${stale.label} needs re-approval`,
+      detail: `${stale.reason}. Your earlier approval covered the previous version, so this section is back to pending.`,
+    });
+  }
 
   // ── Logo ────────────────────────────────────────────────
   const hasPrimaryLogo = input.logos.some((l) => l.variant === 'PRIMARY');

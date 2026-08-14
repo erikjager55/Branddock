@@ -4,6 +4,7 @@ import { requireAuth, resolveWorkspaceId } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { clearStyleguideRuleCache } from "@/lib/brand-fidelity/styleguide-rule-compiler";
 import { syncStructuredVoiceRules } from "@/lib/brandstyle/rule-structurer";
+import { staleReviewsToCalibrationInput } from "@/lib/brandstyle/review-sections";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { buildBrandstyleCalibrationReport } from "@/lib/brandstyle/calibration-report";
 
@@ -32,6 +33,7 @@ export async function POST() {
         colors: { select: { confidence: true, category: true } },
         fonts: { select: { source: true, availability: true, fileUrl: true } },
         logos: { select: { variant: true } },
+        reviews: { select: { section: true, staleAt: true } },
       },
     });
     if (!styleguide) {
@@ -49,6 +51,7 @@ export async function POST() {
       typeScaleCount: Array.isArray(styleguide.typeScale)
         ? styleguide.typeScale.length
         : undefined,
+      staleReviews: staleReviewsToCalibrationInput(styleguide.reviews),
     });
     const criticalWarnings = calibration.asks.filter((a) => a.severity === "critical");
 

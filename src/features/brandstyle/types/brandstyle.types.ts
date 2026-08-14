@@ -69,6 +69,8 @@ export interface StyleguideReviewData {
   status: ReviewStatus;
   feedback: string | null;
   referenceImageUrl: string | null;
+  /** Gezet wanneer een re-analyse deze sectie veranderde en de goedkeuring verviel. */
+  staleAt: string | null;
   reviewedById: string | null;
   createdAt: string;
   updatedAt: string;

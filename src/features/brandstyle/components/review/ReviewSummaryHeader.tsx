@@ -9,6 +9,7 @@ import type {
   StyleguideTab,
 } from "../../types/brandstyle.types";
 import {
+  COMPONENTS_SECTION_TO_TYPE,
   getApplicableReviewSections,
   REVIEW_SECTION_LABELS,
   type ReviewSectionKey,
@@ -64,18 +65,11 @@ function tabForSection(section: string): StyleguideTab {
 }
 
 /** Map a Components review-section key back to the internal sub-tab key
- *  (ComponentType) so the Continue-review flow can auto-select it. */
-const COMPONENTS_SECTION_TO_TYPE: Record<string, ComponentTypeKey> = {
-  "components-buttons": "BUTTON",
-  "components-form-inputs": "FORM_INPUT",
-  "components-status-chips": "STATUS_CHIP",
-  "components-product-cards": "PRODUCT_CARD",
-  "components-feature-icons": "FEATURE_ICON",
-  "components-top-navigation": "TOP_NAVIGATION",
-  "components-quote-blocks": "QUOTE_BLOCK",
-};
+ *  (ComponentType) so the Continue-review flow can auto-select it. De map zelf
+ *  woont in review-sections.ts, zodat de omgekeerde richting (drift-detectie)
+ *  dezelfde bron deelt. */
 function componentSectionToTypeKey(section: string): ComponentTypeKey | null {
-  return COMPONENTS_SECTION_TO_TYPE[section] ?? null;
+  return (COMPONENTS_SECTION_TO_TYPE[section] as ComponentTypeKey | undefined) ?? null;
 }
 
 export function ReviewSummaryHeader({ styleguide, canEdit }: ReviewSummaryHeaderProps) {

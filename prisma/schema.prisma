@@ -2158,6 +2158,14 @@ model StyleguideReview {
   feedback          String?      @db.Text
   referenceImageUrl String?
 
+  /**
+   * Gezet wanneer een re-analyse deze sectie inhoudelijk veranderde en de
+   * goedkeuring daarmee verviel (W5-driftreset). Onderscheidt "gereset omdat
+   * de data wijzigde" van "nog nooit bekeken" — beide zijn PENDING. Wordt
+   * geleegd zodra de gebruiker de sectie opnieuw beoordeelt.
+   */
+  staleAt DateTime?
+
   reviewedById String?
   reviewedBy   User?   @relation("StyleguideReviewer", fields: [reviewedById], references: [id])
 

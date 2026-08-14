@@ -37,6 +37,39 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 459. Reviewstatus vervalt wanneer een re-analyse de sectie verandert (W5-driftreset)
+
+W5 maakte re-analyse niet-destructief — reviews blijven staan bij een refresh. Daarmee ontstond het
+gat dat het verbeterplan zelf benoemt: een goedkeuring hoort bij een *specifieke versie* van de
+data, dus `colors-brand` bleef APPROVED nadat een re-scrape de merkkleuren had veranderd. De
+detectie hergebruikt de bestaande snapshot-machinerie in plaats van er iets naast te zetten: fase 6
+van de analyse schrijft al een snapshot met hash-dedupe (`created: false` = niets veranderd, een
+gratis en exacte no-op-gate) en `computeSnapshotDiff` levert al een gestructureerde diff. Nieuw is
+alleen de mapping van diff-categorie naar review-sectie (`review-drift.ts`, puur) plus de reset zelf
+(`review-drift-store.ts`). Alleen APPROVED gaat terug naar PENDING, met een nieuwe
+`StyleguideReview.staleAt` zodat het kalibratie-paneel "gereset door drift" kan onderscheiden van
+"nog nooit bekeken"; die stempel vervalt zodra de gebruiker de sectie opnieuw beoordeelt. NEEDS_WORK
+blijft staan inclusief feedback, cosmetische kleurwijzigingen (RGB-afstand < 3) resetten niets, en
+**`published` blijft ongemoeid** — bewust asymmetrisch met een handmatige "needs work", die wél
+depubliceert: een klik is een besluit, drift is een signaal, en sinds #457/#458 hangt de hele
+merkcontext-injectie aan die vlag. Bijvangst op dezelfde hook: de analyse-engine invalideerde
+**nergens** een cache, waardoor de brand-library- en regel-cache na een re-analyse tot vijf minuten
+de oude merkdata bleven serveren.
+
+Dekking is bewust deelbaar: detecteerbaar zijn de drie kleursecties, fonts, de drie spacing-secties,
+`system-roles`, `components-buttons` en `brand-assets-logos` (via `scrapedJson.logoUrls`). De
+overige zes `components-*`-secties niet — de design-system-resolver emit alleen `button-*`-varianten
+in het canonical model, dus die komen nooit in een diff voor. **Schema-wijziging**: één nullable
+kolom, vraagt een handmatige Neon-push. Gates: tsc 0 errors, lint 0 nieuwe errors,
+`smoke:review-drift` 23/23 (DB-vrij), `smoke:review-drift-reset` 14/14 (hermetisch),
+`smoke:brand-library` 36/36, `smoke:styleguide-rules` 51/51, `eval:brand-manifest-golden` 14/14,
+`smoke:geo-fidelity` 20/20. Plus een échte analyse-run op een wegwerp-workspace: drie goedkeuringen
+ingetrokken, `published` onveranderd, analyse COMPLETE — het enige bewijs dat de wiring in fase 6
+draait.
+
+- Task: [tasks/review-drift-reset.md](../tasks/review-drift-reset.md)
+- Spec: `docs/specs/brandstyle-designbibliotheek-verbeterplan.md` (W5, "hash-anker")
+
 ### 458. Merkcontext loopt via één gegate accessor — twaalf consumers gemigreerd + lint-regel (W7.1)
 
 Elke consumer las tot nu toe zelf `BrandStyleguide`-velden, dus de gates (`published` + de zes

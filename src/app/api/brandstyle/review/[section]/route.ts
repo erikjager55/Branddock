@@ -67,6 +67,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         feedback: data.feedback ?? null,
         referenceImageUrl: data.referenceImageUrl ?? null,
         reviewedById: session.user.id,
+        // De gebruiker heeft opnieuw naar deze sectie gekeken, dus het
+        // drift-stempel vervalt — daarmee verdwijnt ook de melding in het
+        // kalibratie-paneel (W5-driftreset).
+        staleAt: null,
       },
     });
 
