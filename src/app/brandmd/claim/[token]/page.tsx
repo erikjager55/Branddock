@@ -32,6 +32,7 @@ export default function BrandMdClaimPage({ params }: { params: Promise<{ token: 
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimedWorkspaceId, setClaimedWorkspaceId] = useState<string | null>(null);
+  const [deepScanStarted, setDeepScanStarted] = useState(false);
   const [needsLogin, setNeedsLogin] = useState(false);
 
   useEffect(() => {
@@ -58,7 +59,12 @@ export default function BrandMdClaimPage({ params }: { params: Promise<{ token: 
     setNeedsLogin(false);
     try {
       const res = await fetch(`/api/brandmd/claim/${token}`, { method: 'POST' });
-      const data = (await res.json()) as { workspaceId?: string; error?: string; code?: string };
+      const data = (await res.json()) as {
+        workspaceId?: string;
+        deepScanStarted?: boolean;
+        error?: string;
+        code?: string;
+      };
       if (res.status === 401) {
         setNeedsLogin(true);
         return;
@@ -68,6 +74,7 @@ export default function BrandMdClaimPage({ params }: { params: Promise<{ token: 
         return;
       }
       setClaimedWorkspaceId(data.workspaceId);
+      setDeepScanStarted(data.deepScanStarted === true);
     } catch {
       setClaimError('Claim failed — please try again.');
     } finally {
@@ -168,6 +175,15 @@ export default function BrandMdClaimPage({ params }: { params: Promise<{ token: 
               Your brand DNA from the scan is pre-filled — complete the open fields and generate
               your first on-brand content.
             </p>
+            {deepScanStarted && (
+              <p className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
+                We&apos;ve also started a <span className="font-medium text-gray-900">deep scan</span>{' '}
+                of your site (up to 15 pages) to draft your full brand foundation, personas and
+                visual identity. Review and apply the results under{' '}
+                <span className="font-medium text-gray-900">Website Scanner</span> in your
+                workspace — it takes a few minutes to finish.
+              </p>
+            )}
             <a
               href={appHref('/?utm_source=brandmd&utm_medium=claim-success')}
               className="mkt-btn-primary mt-6 inline-flex items-center gap-2 rounded-lg px-6 py-3 font-semibold"

@@ -86,7 +86,9 @@ interface DimensionResult {
 function scoreCompleteness(model: DesignSystemModel): DimensionResult {
   const md = model.extensions.brandMd;
   const checks: Array<[string, boolean]> = [
-    ['strategy', (model.extensions.brandFoundation?.assets.length ?? 0) > 0],
+    // Alleen assets met echte inhoud tellen — de 12 canonical assets bestaan
+    // altijd, maar leeg is leeg (zelfde eerlijkheidsregel als de emitter).
+    ['strategy', (model.extensions.brandFoundation?.assets ?? []).some((a) => a.summary)],
     ['voice description', !!md?.voiceDescription],
     ['vocabulary', (md?.wordsWeUse.length ?? 0) > 0],
     ['colors', Object.keys(model.colors).length >= 3],

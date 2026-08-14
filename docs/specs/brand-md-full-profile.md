@@ -1,7 +1,9 @@
 # brand.md — Branddock full profile (conformance-documentatie)
 
-> **Status**: v1, 2026-08-03 · hoort bij `tasks/brand-md-open-standaard.md` en launch-plan v2 Bijlage A.
-> **Kern-spec (upstream)**: [github.com/caiopizzol/brand.md](https://github.com/caiopizzol/brand.md), v0.2 (draft, MIT) — wij zijn implementeerder en contributor, geen eigenaar.
+> **Status**: v1.1, 2026-08-14 · hoort bij `tasks/brand-md-open-standaard.md` en launch-plan v2 Bijlage A.
+> **Kern-spec (upstream)**: [github.com/caiopizzol/brand.md](https://github.com/caiopizzol/brand.md) — wij zijn implementeerder en contributor, geen eigenaar.
+>
+> **Upstream-update 2026-08-14**: upstream is doorontwikkeld naar **v0.3.0** (tagline verplicht, `specVersion`, Strategy met 7 verplichte subsecties incl. Audience en Guardrails, Governance-laag, Visual-hernoemingen mét 0.2-aliassen, BRAND.md↔DESIGN.md-grens). Wij blijven bewust op de **v0.2-kern** emitten — per upstream-beleid onbeperkt geldig (geen `specVersion` = valideert als 0.2). Roadmap: 0.3-conformance + DESIGN.md-emitter (Brand Manifest als bron). PR-strategie herzien in `brandmd-upstream-proposals.md` v2.
 
 ## Conformance
 

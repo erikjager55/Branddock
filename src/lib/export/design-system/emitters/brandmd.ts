@@ -144,14 +144,16 @@ function renderPointerLine(md: BrandMdExtension | undefined, options: BrandMdOpt
 // ─── Kern-secties (upstream v0.2) ─────────────────────
 
 function renderStrategy(model: DesignSystemModel): string {
-  const assets = model.extensions.brandFoundation?.assets ?? [];
+  // Alleen assets met échte inhoud — een workspace heeft altijd 12 canonical
+  // assets, maar lege horen niet als sectie-inhoud in het bestand
+  // (eerlijkheidsregel full-profile-spec).
+  const assets = (model.extensions.brandFoundation?.assets ?? []).filter((a) => a.summary);
   const lines: string[] = ['## Strategy', ''];
   if (assets.length === 0) {
     lines.push('_No strategy assets defined yet._', '');
     return lines.join('\n');
   }
   for (const asset of assets) {
-    if (!asset.summary) continue;
     lines.push(`### ${asset.name}`, '', asset.summary, '');
   }
   return lines.join('\n');
