@@ -1,7 +1,8 @@
 ---
 name: Example SaaS
 tagline: Ship customer updates without the busywork
-version: "0.2"
+specVersion: "0.3.0"
+version: 1
 language: en
 validation:
   strategy: { status: unvalidated }
@@ -11,7 +12,7 @@ validation:
   products: { status: unvalidated }
 provenance:
   generated_by: Branddock
-  generated_at: 2026-08-12
+  generated_at: 2026-08-14
   canonical: "https://branddock.app/brandmd/claim/EXAMPLE-TOKEN"
   source: "https://example-saas.com"
 ---
@@ -20,44 +21,79 @@ provenance:
 
 ## Strategy
 
-### Purpose
+### Overview
 
 Help product teams close the loop with their users.
+
+### Audience
+
+Primary audiences: Product managers.
+
+#### Product managers
+
+B2B SaaS, 10-200 employees
 
 ### Positioning
 
 The changelog tool that writes itself.
 
+### Personality
+
+_Not yet defined._
+
+### References & Anti-References
+
+_Not yet defined._
+
+### Promise
+
+_Not yet defined._
+
+### Guardrails
+
+_Not yet defined._
+
 ## Voice
+
+### Identity
 
 Direct, developer-friendly, lightly wry.
 
-### Tonal rules
+### Tagline & Slogans
+
+- Primary: "Ship customer updates without the busywork"
+
+### Message Pillars
+
+_Not yet defined._
+
+### Phrases
+
+_Not yet defined._
+
+### Vocabulary
+
+- Preferred: ship · close the loop
+
+### Tonal Rules
 
 - No corporate filler
 
-### Words we use
-
-ship · close the loop
-
 ## Visual
 
-### Colors
+### Core Colors
 
-- primary: #3B5BDB
-- secondary: #12B886
+- **Primary** `#3B5BDB`
+- **Secondary** `#12B886`
 
-### Typography
+### Typefaces
 
-- headline-lg: Sora 700 32px
-- body-md: Inter 400 16px
+- **Sora** — used for headline-lg. Licensing: not verified.
+- **Inter** — used for body-md. Licensing: not verified.
 
-## Audience
+### Art Direction
 
-### Product managers
-
-B2B SaaS, 10-200 employees
-
+_Not yet defined._
 
 ## Products & Services
 

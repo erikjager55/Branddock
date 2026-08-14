@@ -37,6 +37,14 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 458. BRAND.md 0.3-migratie — strikte spec-conformance voor emitter, validator en download
+
+Hercontrole tegen de letterlijke spec-teksten (0.2 via commit-historie, 0.3 integraal) toonde dat onze "0.2-kern" een eigen lezing was: `version` als specversie-string i.p.v. integer-merkrevisie, ontbrekende `tagline`, eigen subsectienamen, en een validator die die eigen lezing circulair bevestigde. In één beweging naar spec v0.3.0: emitter met volledige frontmatter (`tagline`, `specVersion: "0.3.0"`, `version: 1`) en alle verplichte Strategy/Voice/Visual-subsecties (datamapping-tabel in de full-profile-spec v2; lege verplichte subsecties expliciet `_Not yet defined._` — nooit verzonnen); personas en Do/Don't-lijsten als `####`-conventies bínnen de spec-secties (onze upstream-PR-voorstellen, nu zelf geïmplementeerd); Typefaces zonder maten (DESIGN.md-grens); downloads heten canoniek `BRAND.md`. Validator v0.2.0 implementeert de echte resolutieregels (0.2.0/0.3.0, aliassen, malformed-`specVersion`-tabel); de emitter-smoke kruisvalideert voortaan tegen die validator. Voorbeelden geregenereerd en spec-valide.
+
+- Task: [tasks/brand-md-open-standaard.md](../tasks/brand-md-open-standaard.md) (Uitvoeringsstand v4)
+- Spec: [specs/brand-md-full-profile.md](specs/brand-md-full-profile.md) v2
+- Commit: zie git log (0.3-migratie)
+
 ### 457. brand.md conformance-audit — upstream v0.3-respons, placeholder-fix, claim-time deepening
 
 Audit tegen de upstream-spec wees uit dat thebrand.md naar **v0.3.0** is doorontwikkeld (Audience/Guardrails nu verplichte Strategy-subsecties, Governance-laag, specVersion, BRAND.md↔DESIGN.md-grens); onze v0.2-bestanden blijven per upstream-beleid onbeperkt geldig. Drie acties: (1) upstream-PR-pakket herschreven (`brandmd-upstream-proposals.md` v2) — speerpunt is nu provenance+validation-frontmatter, personas/Do-Don't als additieve conventies binnen de 0.3-secties; (2) placeholder-lek gefixt — de resolver emitte de framework-uitlegtekst (`BrandAsset.description`) als sectie-inhoud bij lege assets; fallback geschrapt, emitter en Brand Score tellen alleen echte inhoud; (3) **claim-time deepening** — POST `/api/brandmd/claim` start fail-soft de volledige intake-scan (website-scanner-pipeline via job-queue) op de verse workspace: brandstyle verdiept automatisch, assets/personas/producten via de bestaande review-&-apply-stap; claim-succespagina wijst daarheen. Ook in deze stroom: /brandmd-pagina's volledig geïntegreerd in de marketing-site (gedeelde nav/footer/licht schema, `MarketingFooter` geëxtraheerd, appHref-fix op de claim-pagina).

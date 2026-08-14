@@ -1,16 +1,22 @@
 // =============================================================
-// Smoke: brand.md-emitter
+// Smoke: BRAND.md-emitter (spec v0.3.0)
 //
-// Draait zonder DB (fixture-model). Bewaakt de drie harde
-// emitter-garanties uit de task-file:
+// Draait zonder DB (fixture-model). Bewaakt de harde garanties:
 //   1. Determinisme — zelfde model → bit-voor-bit zelfde output
 //   2. Publiek/privaat — concurrenten NOOIT in het publieke profiel
-//   3. Kern-conformiteit — frontmatter-basisvelden + Strategy/Voice/
-//      Visual aanwezig (upstream v0.2-kern)
+//   3. Spec-conformiteit — frontmatter (name/tagline/specVersion/
+//      version/language) + alle verplichte 0.3-subsecties, bewezen
+//      via KRUISVALIDATIE met de echte validator (geen zelfgemaakte
+//      kern-lezing meer — les van de conformance-audit 2026-08-14)
+//   4. Full-profile-elementen + pointer-regel
 //
 // Run: npx tsx scripts/smoke-tests/brandmd-emitter.ts
 // =============================================================
 
+import { execFileSync } from 'node:child_process';
+import { writeFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { emitBrandMd, countValidation } from '../../src/lib/export/design-system/emitters/brandmd';
 import type { DesignSystemModel } from '../../src/lib/export/design-system/canonical';
 
@@ -44,7 +50,10 @@ const fixture: DesignSystemModel = {
   spacing: {},
   elevation: {},
   components: {},
-  prose: { dosDonts: ['Do: keep it human', "Don't: use hype words"] },
+  prose: {
+    overview: 'Editorial calm: one accent color, generous whitespace, no ornament.',
+    dosDonts: ['Do: keep it human', "Don't: use hype words"],
+  },
   extensions: {
     voice: {
       principles: ['Plain language over jargon'],
@@ -59,6 +68,18 @@ const fixture: DesignSystemModel = {
           slug: 'purpose',
           category: 'PURPOSE',
           summary: 'We help teams ship honest software.',
+        },
+        {
+          name: 'Positioning',
+          slug: 'positioning',
+          category: 'STRATEGY',
+          summary: 'The boring-reliable platform for teams burned by hype.',
+        },
+        {
+          name: 'Core Values',
+          slug: 'core-values',
+          category: 'CULTURE',
+          summary: 'Honesty · Craft · Calm',
         },
       ],
       personas: [
@@ -80,6 +101,7 @@ const fixture: DesignSystemModel = {
       ],
     },
     brandMd: {
+      tagline: 'Build faster, break nothing',
       language: 'en',
       locales: ['en', 'nl'],
       voiceDescription: 'Confident, concrete, never salesy.',
@@ -130,16 +152,39 @@ if (a.includes('SECRET-RIVAL-CORP') || a.includes('Market Context')) {
 const ext = emitBrandMd(fixture, { ...opts, profile: 'extended' });
 if (!ext.includes('SECRET-RIVAL-CORP')) fail('extended profiel mist Market Context');
 
-// 3. Kern-conformiteit (upstream v0.2)
+// 3. Spec-conformiteit: frontmatter-vorm + kruisvalidatie met de validator
 for (const needle of [
-  'name: ',
-  'version: "0.2"',
+  'tagline: "Build faster, break nothing"',
+  'specVersion: "0.3.0"',
+  'version: 1',
   'language: en',
-  '## Strategy',
-  '## Voice',
-  '## Visual',
+  '### Overview',
+  '### Audience',
+  '### References & Anti-References',
+  '### Core Colors',
+  '### Typefaces',
+  '### Art Direction',
+  '#### Do',
 ]) {
-  if (!a.includes(needle)) fail(`kern-element ontbreekt: ${needle}`);
+  if (!a.includes(needle)) fail(`spec-element ontbreekt: ${needle}`);
+}
+// Maten horen per 0.3 in DESIGN.md, niet in Typefaces.
+if (/Typefaces[\s\S]*?32px/.test(a.split('### Photography')[0])) {
+  fail('Typefaces bevat maten — die horen in DESIGN.md');
+}
+
+const tmp = mkdtempSync(join(tmpdir(), 'brandmd-smoke-'));
+for (const [label, content] of [['public', a], ['extended', ext]] as const) {
+  const p = join(tmp, `${label}-BRAND.md`);
+  writeFileSync(p, content);
+  try {
+    execFileSync('node', ['integrations/brandmd-validator/bin/brandmd-validate.mjs', p], {
+      stdio: 'pipe',
+    });
+  } catch (err) {
+    const out = err instanceof Error && 'stderr' in err ? String((err as { stderr: unknown }).stderr) : String(err);
+    fail(`${label} profiel faalt spec-validatie:\n${out}`);
+  }
 }
 
 // 4. Full-profile-elementen + pointer-regel
@@ -148,10 +193,10 @@ for (const needle of [
   'validation:',
   'strategy: { status: validated, score: 82',
   'provenance:',
-  '## Audience',
+  '#### Practical Petra',
   '## Products & Services',
   '## Channel Tones',
-  '## Guardrails',
+  '### Core Values',
   'how to use this file: https://branddock.app/brandmd/use',
 ]) {
   if (!a.includes(needle)) fail(`full-profile-element ontbreekt: ${needle}`);
@@ -167,4 +212,4 @@ if (counts.validated !== 3 || counts.total !== 5) {
 }
 if (!a.includes('3 of 5 sections verified')) fail('pointer-regel mist verified-telling');
 
-console.log('✓ brand.md-emitter smoke: determinisme, publiek/privaat, kern + full profile OK');
+console.log('✓ BRAND.md-emitter smoke: determinisme, publiek/privaat, spec-0.3-kruisvalidatie + full profile OK');

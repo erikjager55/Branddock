@@ -77,7 +77,7 @@ const USE_RECIPES: Array<{ tool: string; recipe: string; copyText?: string }> = 
   },
   {
     tool: 'Cursor / coding agents',
-    recipe: 'Drop brand.md in your repo root, next to AGENTS.md. Done.',
+    recipe: 'Drop BRAND.md in your repo root, next to AGENTS.md. Done.',
   },
   {
     tool: 'Any AI chat',
@@ -404,7 +404,7 @@ export function GeneratorClient() {
               <a href="https://thebrand.md" className="underline underline-offset-2" rel="noopener">
                 brand.md standard
               </a>{' '}
-              (v0.2 core) · fields we couldn&apos;t verify are marked <code>unvalidated</code> —
+              (spec v0.3) · fields we couldn&apos;t verify are marked <code>unvalidated</code> —
               we&apos;d rather ship an honest file than an impressive one.
             </p>
           </div>

@@ -99,7 +99,7 @@
 ## Niet als PR, wel voor de outreach-mail
 
 - **DESIGN.md**: melden dat wij het BRAND.md ↔ DESIGN.md-paar implementeren (Brand Manifest/designbibliotheek als bron voor een DESIGN.md-emitter is bij ons in voorbereiding). Positioneert Branddock als eerste volledige implementatie van beide kanten van de 0.3-grens.
-- **0.3-migratie**: wij emitten bewust nog de 0.2-kern (onbeperkt geldig); 0.3-conformance (specVersion, tagline, hernoemde Visual-secties, Strategy-subsecties) staat op de roadmap. Niet beloven met datum — wel noemen als richting.
+- **0.3-conformance is live** (migratie 2026-08-14): generator én workspace-export emitten `specVersion: "0.3.0"` met alle verplichte subsecties, canonieke bestandsnaam `BRAND.md`, en een validator die de spec-resolutieregels implementeert (incl. malformed-`specVersion`-tabel en 0.2-aliassen). Dát is de openingszet: werkende, verifieerbare tooling op de nieuwste spec, twee weken na de release ervan.
 
 ## Bewijsmateriaal om in de PR's naar te linken (na launch)
 

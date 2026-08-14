@@ -40,9 +40,9 @@ const GUIDES = [
     icon: TerminalSquare,
     tool: 'Cursor & coding agents',
     steps: [
-      'Drop brand.md in your repo root, next to AGENTS.md or CLAUDE.md.',
+      'Drop BRAND.md in your repo root, next to AGENTS.md or CLAUDE.md.',
       "That's it — agents that read repo context pick it up automatically.",
-      'For UI work: the Visual section carries your colors and typography.',
+      'For UI work: the Visual section carries your colors and typefaces.',
     ],
     test: 'Ask the agent to write UI copy or an error message — it should match your voice rules.',
   },
@@ -112,7 +112,7 @@ export default function BrandMdUsePage() {
             <a href="https://thebrand.md" rel="noopener" className="underline underline-offset-2">
               thebrand.md
             </a>{' '}
-            (v0.2, open standard).
+            (v0.3, open standard).
           </p>
         </div>
       </div>
