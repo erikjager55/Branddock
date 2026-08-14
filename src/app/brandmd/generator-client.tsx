@@ -3,13 +3,12 @@
 // =============================================================
 // brand.md generator — publieke client-UI
 //
-// v2 (feedback 2026-08-14): leken-laag op de resultaatpagina
-// (uitlegzin + hoofdbevindingen in gewone taal; scoredimensies
-// ingeklapt als "How we scored this"), use-paneel zichtbaar vóór
-// download, en een HARDE e-mail-gate (user-besluit): downloaden
-// kan pas na e-mail — server-side afgedwongen via
-// /api/brandmd/download. Copy belooft géén rapport-mail zolang
-// de mail-verzending (follow-up-task) niet bestaat.
+// v3 (integratie 2026-08-14): volwaardig onderdeel van de
+// marketing-site — licht kleurschema, marketing-tokens (mkt-*),
+// nav+footer via de /brandmd-layout. Inhoudelijk ongewijzigd
+// t.o.v. v2: leken-laag op de resultaatpagina, use-paneel vóór
+// download, en de HARDE e-mail-gate (server-side afgedwongen via
+// /api/brandmd/download) met rapport-mail-belofte.
 // =============================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -25,7 +24,8 @@ import {
   X,
 } from 'lucide-react';
 
-const PRIMARY = '#1FD1B2';
+// Leesbare merk-inkt op wit (AA) — zie marketing.css UX-01.
+const ACCENT_INK = 'var(--link-ink)';
 
 interface ScoreDimension {
   key: string;
@@ -179,17 +179,15 @@ export function GeneratorClient() {
   }, []);
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: '#0B1220', color: '#E7ECF2' }}>
+    <div className="mkt-hero-glow">
       <div className="mx-auto max-w-3xl px-6 py-16">
         {/* Hero (touchpoint 0.1) */}
         <div className="text-center">
-          <p className="text-sm font-medium uppercase tracking-wide" style={{ color: PRIMARY }}>
+          <p className="mkt-accent text-sm font-semibold uppercase tracking-wide">
             Free · built on the open brand.md standard
           </p>
-          <h1 className="mt-4 text-4xl font-bold leading-tight sm:text-5xl">
-            Give every AI agent your brand memory.
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-lg" style={{ color: '#9FB0C3' }}>
+          <h1 className="mt-4">Give every AI agent your brand memory.</h1>
+          <p className="mx-auto mt-4 max-w-xl text-lg text-gray-600">
             Paste your URL. Get your brand.md — the open file that keeps ChatGPT, Claude, Cursor
             and every AI tool on-brand.
           </p>
@@ -197,22 +195,20 @@ export function GeneratorClient() {
 
         {/* Input */}
         {phase !== 'done' && (
-          <div className="mx-auto mt-10 flex max-w-xl gap-3">
+          <div className="mx-auto mt-10 flex max-w-xl flex-col gap-3 sm:flex-row">
             <input
               type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && phase !== 'scanning' && generate()}
               placeholder="yourbrand.com"
-              className="w-full rounded-lg border px-4 py-3 text-base outline-none"
-              style={{ backgroundColor: '#111B2E', borderColor: '#26354D', color: '#E7ECF2' }}
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 outline-none"
               disabled={phase === 'scanning'}
             />
             <button
               onClick={generate}
               disabled={phase === 'scanning' || !url.trim()}
-              className="flex items-center gap-2 whitespace-nowrap rounded-lg px-5 py-3 font-semibold disabled:opacity-50"
-              style={{ backgroundColor: PRIMARY, color: '#06251F' }}
+              className="mkt-btn-primary flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-5 py-3 font-semibold disabled:opacity-50"
             >
               {phase === 'scanning' ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -230,13 +226,12 @@ export function GeneratorClient() {
             {PROGRESS_LINES.slice(0, progressIdx + 1).map((line, i) => (
               <div
                 key={line}
-                className="flex items-center gap-3 text-sm"
-                style={{ color: i === progressIdx ? '#E7ECF2' : '#5E7189' }}
+                className={`flex items-center gap-3 text-sm ${i === progressIdx ? 'text-gray-900' : 'text-gray-500'}`}
               >
                 {i === progressIdx ? (
-                  <Loader2 className="h-4 w-4 animate-spin" style={{ color: PRIMARY }} />
+                  <Loader2 className="h-4 w-4 animate-spin" style={{ color: ACCENT_INK }} />
                 ) : (
-                  <Check className="h-4 w-4" style={{ color: PRIMARY }} />
+                  <Check className="h-4 w-4" style={{ color: ACCENT_INK }} />
                 )}
                 {line}
               </div>
@@ -245,10 +240,7 @@ export function GeneratorClient() {
         )}
 
         {phase === 'error' && (
-          <div
-            className="mx-auto mt-8 max-w-xl rounded-lg border p-4 text-sm"
-            style={{ borderColor: '#7A2E2E', backgroundColor: '#2A1518', color: '#F0B9B9' }}
-          >
+          <div className="mx-auto mt-8 max-w-xl rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
             {error}
           </div>
         )}
@@ -256,21 +248,18 @@ export function GeneratorClient() {
         {/* Resultaat — leken-laag eerst (feedback 2026-08-14) */}
         {phase === 'done' && result && (
           <div className="mt-12">
-            <div
-              className="rounded-2xl border p-8"
-              style={{ backgroundColor: '#111B2E', borderColor: '#26354D' }}
-            >
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
               <div className="text-center">
-                <h2 className="text-2xl font-bold">How AI-ready is {result.domain}?</h2>
-                <p className="mx-auto mt-2 max-w-lg text-sm" style={{ color: '#9FB0C3' }}>
+                <h2>How AI-ready is {result.domain}?</h2>
+                <p className="mx-auto mt-2 max-w-lg text-sm text-gray-600">
                   This score shows how well AI tools like ChatGPT and Claude can play your brand —
                   based on what your website alone reveals.
                 </p>
-                <p className="mt-5 text-6xl font-bold" style={{ color: PRIMARY }}>
+                <p className="mt-5 text-6xl font-bold" style={{ color: ACCENT_INK }}>
                   {result.score}
-                  <span className="text-2xl" style={{ color: '#5E7189' }}>/100</span>
+                  <span className="text-2xl text-gray-400">/100</span>
                 </p>
-                <p className="mt-1 text-sm font-medium uppercase tracking-wide" style={{ color: '#9FB0C3' }}>
+                <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-gray-500">
                   Brand Score
                 </p>
               </div>
@@ -280,37 +269,34 @@ export function GeneratorClient() {
                 {result.findings.map((f) => (
                   <div key={f.text} className="flex items-start gap-3 text-sm">
                     {f.positive ? (
-                      <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: PRIMARY }} />
+                      <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: ACCENT_INK }} />
                     ) : (
-                      <X className="mt-0.5 h-4 w-4 shrink-0" style={{ color: '#E8A13C' }} />
+                      <X className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
                     )}
-                    <span style={{ color: '#C7D2DF' }}>{f.text}</span>
+                    <span className="text-gray-700">{f.text}</span>
                   </div>
                 ))}
               </div>
 
-              <p className="mt-5 text-xs" style={{ color: '#5E7189' }}>
+              <p className="mt-5 text-xs text-gray-500">
                 Scanned: {result.scannedPaths.join(', ')} · {result.validatedSections} of{' '}
                 {result.totalSections} sections could be verified from your site alone — the open
                 fields are why the score isn&apos;t higher yet.
               </p>
 
               {/* Scoredimensies — ingeklapt, voor wie het wil weten */}
-              <details className="mt-4 rounded-lg border" style={{ borderColor: '#26354D' }}>
-                <summary
-                  className="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-sm font-medium"
-                  style={{ color: '#9FB0C3' }}
-                >
+              <details className="mt-4 rounded-lg border border-gray-200">
+                <summary className="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600">
                   <ChevronDown className="h-4 w-4" /> How we scored this
                 </summary>
                 <div className="grid gap-3 p-4 pt-1 sm:grid-cols-3">
                   {result.dimensions.map((d) => (
-                    <div key={d.key} className="rounded-lg border p-3" style={{ borderColor: '#26354D' }}>
-                      <p className="text-xs uppercase tracking-wide" style={{ color: '#5E7189' }}>
+                    <div key={d.key} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                      <p className="text-xs uppercase tracking-wide text-gray-500">
                         {d.label} · {Math.round(d.weight * 100)}%
                       </p>
-                      <p className="text-xl font-semibold">{d.score}</p>
-                      <p className="mt-1 text-xs leading-relaxed" style={{ color: '#9FB0C3' }}>
+                      <p className="text-xl font-semibold text-gray-900">{d.score}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-gray-600">
                         {d.explanation}
                       </p>
                     </div>
@@ -320,30 +306,27 @@ export function GeneratorClient() {
             </div>
 
             {/* Wat kun je ermee — zichtbaar vóór de download (use-teaser) */}
-            <div
-              className="mt-6 rounded-2xl border p-6"
-              style={{ backgroundColor: '#111B2E', borderColor: '#26354D' }}
-            >
-              <h3 className="flex items-center gap-2 text-lg font-semibold">
-                <FileText className="h-5 w-5" style={{ color: PRIMARY }} />
+            <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h3 className="flex items-center gap-2">
+                <FileText className="h-5 w-5" style={{ color: ACCENT_INK }} />
                 What can you do with your brand.md?
               </h3>
               <div className="mt-4 space-y-3">
                 {USE_RECIPES.map((r, i) => (
                   <div
                     key={r.tool}
-                    className="flex items-start justify-between gap-3 rounded-lg border p-3"
-                    style={{ borderColor: '#26354D' }}
+                    className="flex items-start justify-between gap-3 rounded-lg border border-gray-200 p-3"
                   >
                     <div>
-                      <p className="text-sm font-semibold" style={{ color: PRIMARY }}>{r.tool}</p>
-                      <p className="text-sm" style={{ color: '#9FB0C3' }}>{r.recipe}</p>
+                      <p className="text-sm font-semibold" style={{ color: ACCENT_INK }}>
+                        {r.tool}
+                      </p>
+                      <p className="text-sm text-gray-600">{r.recipe}</p>
                     </div>
                     {r.copyText && downloaded && (
                       <button
                         onClick={() => copyRecipe(i, r.copyText!)}
-                        className="flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 text-xs"
-                        style={{ borderColor: '#26354D', color: '#9FB0C3' }}
+                        className="flex shrink-0 items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
                       >
                         {copiedIdx === i ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                         {copiedIdx === i ? 'Copied' : 'Copy prompt'}
@@ -352,9 +335,9 @@ export function GeneratorClient() {
                   </div>
                 ))}
               </div>
-              <p className="mt-3 text-xs" style={{ color: '#5E7189' }}>
+              <p className="mt-3 text-xs text-gray-500">
                 Full walkthroughs:{' '}
-                <a href="/brandmd/use" className="underline underline-offset-2" style={{ color: PRIMARY }}>
+                <a href="/brandmd/use" className="mkt-accent underline underline-offset-2">
                   branddock.app/brandmd/use
                 </a>
               </p>
@@ -362,22 +345,21 @@ export function GeneratorClient() {
 
             {/* Download-gate (hard, user-besluit 2026-08-14) */}
             <div
-              className="mt-6 rounded-2xl border p-6"
-              style={{ backgroundColor: '#111B2E', borderColor: downloaded ? PRIMARY : '#26354D' }}
+              className={`mt-6 rounded-2xl border bg-gray-50 p-6 ${downloaded ? '' : 'border-gray-200'}`}
+              style={downloaded ? { borderColor: 'var(--primary)' } : undefined}
             >
               {downloaded ? (
                 <div className="text-center">
-                  <Check className="mx-auto h-8 w-8" style={{ color: PRIMARY }} />
-                  <h3 className="mt-2 text-lg font-semibold">Your brand.md is downloading</h3>
-                  <p className="mt-1 text-sm" style={{ color: '#9FB0C3' }}>
+                  <Check className="mx-auto h-8 w-8" style={{ color: ACCENT_INK }} />
+                  <h3 className="mt-2">Your brand.md is downloading</h3>
+                  <p className="mt-1 text-sm text-gray-600">
                     Your full report is on its way to your inbox. Try the recipes above — and
                     when you want the living, validated version:
                   </p>
                   {result.claimUrl && (
                     <a
                       href={result.claimUrl}
-                      className="mt-4 inline-flex items-center gap-2 rounded-lg px-6 py-3 font-semibold"
-                      style={{ backgroundColor: PRIMARY, color: '#06251F' }}
+                      className="mkt-btn-primary mt-4 inline-flex items-center gap-2 rounded-lg px-6 py-3 font-semibold"
                     >
                       Claim &amp; complete your brand <ArrowRight className="h-5 w-5" />
                     </a>
@@ -385,43 +367,39 @@ export function GeneratorClient() {
                 </div>
               ) : (
                 <>
-                  <h3 className="flex items-center gap-2 text-lg font-semibold">
-                    <Download className="h-5 w-5" style={{ color: PRIMARY }} />
+                  <h3 className="flex items-center gap-2">
+                    <Download className="h-5 w-5" style={{ color: ACCENT_INK }} />
                     Download your brand.md
                   </h3>
-                  <p className="mt-1 text-sm" style={{ color: '#9FB0C3' }}>
+                  <p className="mt-1 text-sm text-gray-600">
                     Free — leave your email and your file downloads instantly. We&apos;ll also
                     email you this full report with your download link, so you can pick it up on
                     any device. One email, no newsletter, no spam.
                   </p>
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && !gateBusy && unlockAndDownload()}
                       placeholder="you@company.com"
-                      className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none"
-                      style={{ backgroundColor: '#0B1220', borderColor: '#26354D', color: '#E7ECF2' }}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none"
                     />
                     <button
                       onClick={unlockAndDownload}
                       disabled={gateBusy || !email.trim()}
-                      className="flex items-center gap-2 whitespace-nowrap rounded-lg px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
-                      style={{ backgroundColor: PRIMARY, color: '#06251F' }}
+                      className="mkt-btn-primary flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
                     >
                       {gateBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                       Download — free
                     </button>
                   </div>
-                  {gateError && (
-                    <p className="mt-3 text-sm" style={{ color: '#F0B9B9' }}>{gateError}</p>
-                  )}
+                  {gateError && <p className="mt-3 text-sm text-red-600">{gateError}</p>}
                 </>
               )}
             </div>
 
-            <p className="mt-8 text-center text-xs" style={{ color: '#5E7189' }}>
+            <p className="mt-8 text-center text-xs text-gray-500">
               Built on the open{' '}
               <a href="https://thebrand.md" className="underline underline-offset-2" rel="noopener">
                 brand.md standard
@@ -433,12 +411,14 @@ export function GeneratorClient() {
         )}
 
         {phase === 'idle' && (
-          <p className="mt-10 text-center text-sm" style={{ color: '#5E7189' }}>
+          <p className="mt-10 text-center text-sm text-gray-500">
             Works with: Claude · ChatGPT · Cursor · n8n ·{' '}
-            <a href="/brandmd/use" className="underline underline-offset-2">how to use a brand.md</a>
+            <a href="/brandmd/use" className="mkt-accent underline underline-offset-2">
+              how to use a brand.md
+            </a>
           </p>
         )}
       </div>
-    </main>
+    </div>
   );
 }
