@@ -122,11 +122,20 @@ const brandvoice = {
       moreSamples: '+ {{n}} more',
       channelsLabel: 'Channel tones',
       antiPatternsLabel: 'Anti-patterns ({{n}})',
+      pillarsLabel: 'Message pillars ({{n}})',
       runAgain: 'Run again',
       apply: 'Apply to voiceguide',
     },
   },
   voiceDna: {
+    pillars: {
+      title: 'Message pillars',
+      help: 'The 3-6 core themes your brand keeps returning to. Each pillar has a short name and 1-2 key statements (separate with ;). Feeds the Voice section of your BRAND.md.',
+      pillarPlaceholder: 'Pillar name',
+      statementsPlaceholder: 'Key statement(s), separated by ;',
+      add: '+ Add pillar',
+      remove: 'Remove pillar',
+    },
     description: {
       title: 'Voice description',
       help: 'One paragraph that captures how the brand sounds. Used as the top-of-prompt voice instruction in every AI generation.',

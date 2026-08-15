@@ -191,6 +191,7 @@ export async function startVoiceAnalysisPipeline(input: StartVoiceAnalysisInput)
         wordsWeAvoid: stringArray(result.wordsWeAvoid).slice(0, 20),
         channelTones,
         antiPatterns: stringArray(result.antiPatterns).slice(0, 12),
+        messagePillars: pillarArray(result.messagePillars),
         rationale: result.rationale ?? {},
       };
 
@@ -235,4 +236,16 @@ function stringArray(v: unknown): string[] {
     .filter((x): x is string => typeof x === "string")
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
+}
+
+function pillarArray(v: unknown): Array<{ pillar: string; statements: string[] }> {
+  if (!Array.isArray(v)) return [];
+  return v
+    .filter(
+      (e): e is { pillar: string; statements?: unknown } =>
+        !!e && typeof e === "object" && typeof (e as Record<string, unknown>).pillar === "string",
+    )
+    .map((e) => ({ pillar: e.pillar.trim(), statements: stringArray(e.statements).slice(0, 2) }))
+    .filter((e) => e.pillar.length > 0)
+    .slice(0, 6);
 }
