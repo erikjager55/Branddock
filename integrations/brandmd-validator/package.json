@@ -1,7 +1,7 @@
 {
   "name": "brandmd-validate",
-  "version": "0.1.0",
-  "description": "Validator for brand.md files — checks the open brand.md standard (v0.2 core) and the Branddock full profile. Dependency-free.",
+  "version": "0.2.0",
+  "description": "Validator for brand.md files \u2014 checks the open brand.md standard (v0.2 core) and the Branddock full profile. Dependency-free.",
   "license": "MIT",
   "type": "module",
   "bin": {

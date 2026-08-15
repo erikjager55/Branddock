@@ -60,6 +60,12 @@ export interface BrandMdDraftPayload {
   coreValues?: string[];
   /** Letterlijke zinnen uit de site-copy die de toon dragen */
   exampleLines?: string[];
+  /** Verrijking 2026-08-15 (optioneel, additief) — vult de 0.3-secties
+   *  Message Pillars en Art Direction zodat het bestand zo compleet
+   *  mogelijk is. Eerlijk afgeleid: pillars uit terugkerende thema's in de
+   *  copy, art direction uit observeerbare designkeuzes (kleuren/fonts). */
+  messagePillars?: Array<{ pillar: string; statements: string[] }>;
+  artDirection?: { keywords: string[]; statement?: string };
   /** Welke pagina's zijn meegescand (transparantie + debugging) */
   scannedPaths?: string[];
 }
@@ -88,7 +94,7 @@ export async function scanWebsiteForBrandMd(rawUrl: string): Promise<BrandMdDraf
     .join('\n\n---\n\n')
     .slice(0, MAX_TEXT_FOR_AI);
 
-  const ai = await extractBrandSignals(meta.title ?? domain, meta.description, text);
+  const ai = await extractBrandSignals(meta.title ?? domain, meta.description, text, colors, fonts);
 
   return {
     version: DRAFT_PAYLOAD_VERSION,
@@ -105,6 +111,8 @@ export async function scanWebsiteForBrandMd(rawUrl: string): Promise<BrandMdDraf
     products: ai.products,
     coreValues: ai.coreValues,
     exampleLines: ai.exampleLines,
+    messagePillars: ai.messagePillars.length ? ai.messagePillars : undefined,
+    artDirection: ai.artDirection,
     scannedPaths: ['/', ...extra.paths],
   };
 }
@@ -294,12 +302,16 @@ interface AiBrandSignals {
   products: BrandMdDraftPayload['products'];
   coreValues: string[];
   exampleLines: string[];
+  messagePillars: NonNullable<BrandMdDraftPayload['messagePillars']>;
+  artDirection?: BrandMdDraftPayload['artDirection'];
 }
 
 async function extractBrandSignals(
   title: string,
   description: string | undefined,
   text: string,
+  colors: string[],
+  fonts: string[],
 ): Promise<AiBrandSignals> {
   const empty: AiBrandSignals = {
     strategy: {},
@@ -308,12 +320,13 @@ async function extractBrandSignals(
     products: [],
     coreValues: [],
     exampleLines: [],
+    messagePillars: [],
   };
   if (!text || text.length < 100) return empty;
 
   let result: { content: string };
   try {
-    result = await callExtractionModel(title, description, text);
+    result = await callExtractionModel(title, description, text, colors, fonts);
   } catch (err) {
     // Fail-soft: AI-uitval (outage, timeout, max_tokens-throw) mag de scan
     // niet doden — kleuren/fonts/meta zijn al binnen; eerlijk mager draft.
@@ -346,6 +359,8 @@ async function extractBrandSignals(
       products: objArray(parsed.products),
       coreValues: strArray(parsed.coreValues),
       exampleLines: strArray(parsed.exampleLines).slice(0, 5),
+      messagePillars: pillarArray(parsed.messagePillars),
+      artDirection: parseArtDirection(parsed.artDirection),
     };
   } catch {
     // AI-output onparsebaar → eerlijk mager draft i.p.v. harde fout.
@@ -353,18 +368,44 @@ async function extractBrandSignals(
   }
 }
 
+function pillarArray(v: unknown): Array<{ pillar: string; statements: string[] }> {
+  if (!Array.isArray(v)) return [];
+  return v
+    .filter(
+      (e): e is { pillar: string; statements?: unknown } =>
+        !!e && typeof e === 'object' && typeof (e as Record<string, unknown>).pillar === 'string',
+    )
+    .map((e) => ({ pillar: e.pillar, statements: strArray(e.statements).slice(0, 2) }))
+    .slice(0, 6);
+}
+
+function parseArtDirection(v: unknown): BrandMdDraftPayload['artDirection'] {
+  if (!v || typeof v !== 'object') return undefined;
+  const o = v as Record<string, unknown>;
+  const keywords = strArray(o.keywords).slice(0, 8);
+  const statement = strOrUndefined(o.statement);
+  if (!keywords.length && !statement) return undefined;
+  return { keywords, statement };
+}
+
 async function callExtractionModel(
   title: string,
   description: string | undefined,
   text: string,
+  colors: string[],
+  fonts: string[],
 ): Promise<{ content: string }> {
   return anthropicClient.createChatCompletion(
     [
       {
         role: 'system',
         content:
-          'You extract brand identity signals from website copy for a brand.md file. ' +
-          'Only state what the text supports — never invent facts. Where the text is thin, omit the field. ' +
+          'You extract brand identity signals from website copy for a BRAND.md file. ' +
+          'Only state what the material supports — never invent facts. Where the material is thin, omit the field. ' +
+          'Two kinds of fields: EXTRACTED fields quote or paraphrase what the copy literally says; ' +
+          'INFERRED fields (strategy.personality, messagePillars, artDirection) may be derived from how the site ' +
+          'reads and looks — tone, recurring themes, the observed colors and typefaces — but must stay grounded ' +
+          'in those observations, never in category cliches. ' +
           'Respond with ONLY a JSON object, no markdown fences, matching: ' +
           '{"brandName": string, "tagline": string?, "language": "en"|"nl"|"de"|"fr"|"es"|"it"|"pt", ' +
           '"strategy": {"purpose": string?, "positioning": string?, "personality": string?, "promise": string?}, ' +
@@ -372,18 +413,28 @@ async function callExtractionModel(
           '"audience": [{"name": string, "description": string}], ' +
           '"products": [{"name": string, "description": string}], ' +
           '"coreValues": string[], ' +
-          '"exampleLines": string[]} ' +
-          'Keep every string under 300 characters; max 5 items per array (max 8 for wordsWeUse). ' +
+          '"exampleLines": string[], ' +
+          '"messagePillars": [{"pillar": string, "statements": string[]}], ' +
+          '"artDirection": {"keywords": string[], "statement": string}?} ' +
+          'Keep every string under 300 characters; max 5 items per array (max 8 for wordsWeUse, max 6 for messagePillars). ' +
           'wordsWeUse = distinctive vocabulary that appears in the copy; wordsWeAvoid may be empty. ' +
           'coreValues = the values the brand explicitly claims or clearly lives in the copy. ' +
-          'exampleLines = 3-5 VERBATIM sentences quoted from the copy that best carry the brand voice — copy them exactly, do not rewrite.',
+          'exampleLines = 3-5 VERBATIM sentences quoted from the copy that best carry the brand voice — copy them exactly, do not rewrite. ' +
+          'strategy.personality = dominant archetype plus 3-5 attribute words, derived from the tone even when the copy never names them (e.g. "The Calm Expert — precise, warm, unhurried"); omit only if the copy is too thin to read a tone at all. ' +
+          'strategy.promise = the commitment the brand makes to customers, in its own words where possible. ' +
+          'messagePillars = the 3-6 recurring themes the copy keeps returning to, one short pillar name each, with 1-2 key statements per pillar taken from or closely paraphrasing the copy. ' +
+          'artDirection = 4-6 design keywords plus a 1-2 sentence direction statement, derived from the OBSERVED design signals provided (colors, typefaces) combined with how the copy presents itself; omit if the signals are too thin.',
       },
       {
         role: 'user',
-        content: `Site title: ${title}\nMeta description: ${description ?? '(none)'}\n\nVisible copy:\n${text}`,
+        content:
+          `Site title: ${title}\nMeta description: ${description ?? '(none)'}\n` +
+          `Observed brand colors (CSS, by frequency): ${colors.length ? colors.join(', ') : '(none found)'}\n` +
+          `Observed typefaces: ${fonts.length ? fonts.join(', ') : '(none found)'}\n\n` +
+          `Visible copy:\n${text}`,
       },
     ],
-    { maxTokens: 2500, temperature: 0.2 },
+    { maxTokens: 3000, temperature: 0.2 },
   );
 }
 
@@ -416,6 +467,8 @@ export function draftPayloadToModel(payload: BrandMdDraftPayload, claimCanonical
       do: [],
       dont: payload.voice.wordsWeAvoid.map((w) => `Avoid the word/phrase "${w}"`),
     },
+    messagePillars: payload.messagePillars,
+    artDirection: payload.artDirection,
     // Scan-drafts zijn per definitie volledig unvalidated — validatie hoort
     // bij de levende versie (eerlijkheids-principe touchpoints v2).
     validation: {
