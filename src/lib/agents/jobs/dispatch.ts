@@ -98,10 +98,30 @@ export async function dispatchJob(input: DispatchJobInput): Promise<DispatchedJo
 const KICK_DEBOUNCE_MS = 10_000;
 let lastKickAt = 0;
 
+let warnedNoKick = false;
+
 function kickWorker(): void {
   const secret = process.env.CRON_SECRET;
   const base = process.env.BETTER_AUTH_URL;
-  if (!secret || !base) return;
+  if (!secret || !base) {
+    // Was een stille early-return, en dat is de duurste soort stilte: zonder
+    // worker blijft de job PENDING, blijft de UI oneindig "genereren" tonen en
+    // komt er nooit een foutmelding. Dat kostte in de e2e-sweep van 2026-08-15
+    // twaalf minuten debuggen aan iets wat een ontbrekende env-var was.
+    // Eén keer per proces waarschuwen — niet per dispatch.
+    if (!warnedNoKick) {
+      warnedNoKick = true;
+      const missing = [!secret && 'CRON_SECRET', !base && 'BETTER_AUTH_URL']
+        .filter(Boolean)
+        .join(' + ');
+      console.warn(
+        `[agent-jobs] ${missing} ontbreekt — de job-worker wordt NIET gewekt. ` +
+          `Jobs blijven PENDING tot een cron-tick ze oppakt; lokaal betekent dat: nooit. ` +
+          `Zet ${missing} in .env.local als je queued werk (SEO-pipeline, agents) wilt zien draaien.`,
+      );
+    }
+    return;
+  }
   if (Date.now() - lastKickAt < KICK_DEBOUNCE_MS) return;
   lastKickAt = Date.now();
 

@@ -144,6 +144,7 @@ export function QuickContentForm() {
           {t('quick.contentTypeLabel')} <span className="text-red-500">*</span>
         </label>
         <select
+          data-testid="quick-content-type"
           value={quickContentForm.contentType}
           onChange={(e) => updateQuickContentForm({ contentType: e.target.value })}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
@@ -151,7 +152,12 @@ export function QuickContentForm() {
           <option value="">{t('quick.pickType')}</option>
           {DELIVERABLE_CATEGORIES.map((cat) => (
             <optgroup key={cat} label={cat}>
-              {DELIVERABLE_TYPES.filter((dt) => dt.category === cat).map((dt) => (
+              {/* `hidden` moet hier net zo goed gelden als in de Add
+                  Content-modal. Zonder deze filter lekten 9 bewust verborgen
+                  types (linkedin-carousel, tiktok-script, retargeting-ad,
+                  video-ad, …) tóch de picker in, omdat er alleen op categorie
+                  werd gefilterd — gevonden in de e2e-sweep van 2026-08-15. */}
+              {DELIVERABLE_TYPES.filter((dt) => dt.category === cat && !dt.hidden).map((dt) => (
                 <option key={dt.id} value={dt.id}>
                   {dt.name}
                 </option>
@@ -191,6 +197,7 @@ export function QuickContentForm() {
           </div>
         ) : (
           <select
+            data-testid="quick-content-campaign"
             value={quickContentForm.campaignId ?? ''}
             onChange={(e) =>
               updateQuickContentForm({ campaignId: e.target.value || null })
@@ -234,6 +241,7 @@ export function QuickContentForm() {
           value={quickContentForm.objective}
           onChange={(v) => updateQuickContentForm({ objective: v })}
           placeholder={t('quick.objectivePlaceholder')}
+          testId="quick-content-objective"
         />
         <BriefField
           label={t('quick.keyMessageLabel')}
@@ -266,6 +274,7 @@ export function QuickContentForm() {
       {/* Actions */}
       <div className="flex items-center gap-2 pt-1">
         <button
+          data-testid="quick-content-submit"
           onClick={handleSubmit}
           disabled={
             isSubmitting ||
@@ -294,16 +303,19 @@ function BriefField({
   placeholder,
   value,
   onChange,
+  testId,
 }: {
   label: string;
   placeholder: string;
   value: string;
   onChange: (v: string) => void;
+  testId?: string;
 }) {
   return (
     <label className="block">
       <span className="block text-[11px] font-medium text-gray-600 mb-1">{label}</span>
       <textarea
+        data-testid={testId}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

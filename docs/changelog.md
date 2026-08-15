@@ -37,7 +37,7 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
-### 462. Merkcontext loopt via één gegate accessor — twaalf consumers gemigreerd + lint-regel (W7.1)
+### 463. Merkcontext loopt via één gegate accessor — twaalf consumers gemigreerd + lint-regel (W7.1)
 
 Elke consumer las tot nu toe zelf `BrandStyleguide`-velden, dus de gates (`published` + de zes
 `*SavedForAi`-vlaggen) en de marker-stripping zaten verspreid over tientallen bestanden. Van de
@@ -79,6 +79,18 @@ Next-route-pad als character-class, waardoor zo'n allowlist-entry stil niet matc
 - Task: [tasks/brand-library-consumer-migration.md](../tasks/brand-library-consumer-migration.md)
 - ADR: [docs/adr/2026-08-14-brand-library-consumption.md](adr/2026-08-14-brand-library-consumption.md)
 - Spec: `docs/specs/brandstyle-designbibliotheek-verbeterplan.md` (W7.1)
+
+### 462. brand.md lifecycle-mails — touchpoints 2.2-2.5 live, met opt-in en één-klik-uitschrijven
+
+Fase 2 van de mailflow: na de rapport-mail (#455) volgen nu vier lifecycle-momenten, verzonden door de nieuwe dagelijkse cron `/api/cron/brandmd-lifecycle` (07:00 UTC). **2.2** (24 u-dag 7) geeft één praktische tip plus uitleg van `unvalidated`; **2.3** (dag 7-21) zet de benchmark-reflex in met een gratis concurrent-scan; **2.4** (dag 21-60) is feitelijk over veroudering; **2.5** (TTL ≤10 dagen) is de laatste mail. De vensterlogica zit als pure functie in `src/lib/brandmd/lifecycle.ts` — de cron blijft dun (kandidaten, versturen, boekhouden) en de beslissing is zonder DB of mailer te smoken. Harde grenzen: hooguit één mail per draft per run, cap 200 sends, `lifecycleStagesSent` als idempotente administratie, en een gemist 2.2-venster wordt stil afgemarkeerd in plaats van ingehaald — te laat versturen leest als spam.
+
+**Toestemming is de kern van het ontwerp.** 2.2-2.4 zijn marketing en gaan alleen uit na een expliciet vinkje bij de download-gate (default UIT, `lifecycleOptInAt`); 2.5 is een transactioneel service-bericht over opgeslagen data en gaat ongeacht opt-in of opt-out — en wint van de reeks, want een TTL-melding is tijdgebonden. Nieuwe route `GET|POST /api/brandmd/unsubscribe?token=` (RFC 8058 one-click, hash-lookup als de download-route, `lifecycleOptOutAt` write-once, simpele HTML-bevestiging); 2.2-2.4 dragen `List-Unsubscribe` + `List-Unsubscribe-Post`, zodat Gmail/Outlook hun eigen knop tonen. Dat een GET muteert is bewust: een prefetch die per ongeluk uitschrijft faalt naar mínder mail.
+
+**Copy-consistentie was een expliciete eis.** De rapport-mail beloofde "this is a one-time email — no follow-up sequence"; die belofte botste met alles wat hierboven staat. De footer heeft nu twee varianten (mét/zonder opt-in) die beide de eenmalige TTL-melding aankondigen, en de gate-copy op de generator is meegegaan. `_layout` kreeg een `footerLink` omdat `footerNote` als platte tekst ge-escaped wordt — een URL daarin kwam onklikbaar aan. Afbakening zonder backfill of uitzonderingslijst: de cron selecteert alleen drafts mét `claimTokenEnc` (versleuteld via `token-crypto`, gezet bij e-mail-capture), dus élke draft van vóór deze copy blijft automatisch buiten de reeks — precies degene die de one-time-belofte kreeg. Gates: tsc 0 errors, eslint schoon, emitter-smoke groen, nieuwe `brandmd-lifecycle`-smoke groen en mutatie-getest (vervalste vensters en genegeerde opt-out maken hem aantoonbaar rood). ⚠️ **Neon `prisma db push` vereist** voor 4 nieuwe velden op `GeneratedBrandProfile`.
+
+- Task: [tasks/brand-md-open-standaard.md](../tasks/brand-md-open-standaard.md)
+- Spec: [docs/marketing/brand-md-touchpoints-2026-08-03.md](marketing/brand-md-touchpoints-2026-08-03.md) fase 2
+- Commit: zie git log (fase-2 lifecycle-mails)
 
 ### 461. StyleguideRule bereikt F-VAL's rules-pijler — doorvoer, modaliteit-scheiding en de vulling die eronder ontbrak
 

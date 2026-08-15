@@ -1036,6 +1036,12 @@ export async function generateLandingPageVariant(
       // 3500 → 4500 (R7, audit 2026-06-10): 4-5 imageBriefs (~400 extra
       // output-tokens) mogen de JSON-staart niet afkappen.
       maxTokens,
+      // Thinking UIT (2026-08-15). claude-sonnet-5 heeft extended thinking
+      // standaard aan en die tokens komen uit ditzelfde budget: de e2e-sweep
+      // zag 4 van de 5 website-types falen met "truncated, output was 0 chars"
+      // — beide variantslots én beide retries. Gemeten: met thinking uit past
+      // dezelfde generatie in 1326 van de 4500 tokens.
+      thinking: "disabled",
       timeoutMs: 90_000,
       ...(opts?.model ? { model: opts.model } : {}),
       ...(opts?.temperature !== undefined ? { temperature: opts.temperature } : {}),
