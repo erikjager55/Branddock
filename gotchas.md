@@ -406,7 +406,7 @@ Bewezen via Playwright: `el.style.background = '<grad>, url(...)'; el.style.setP
 **Rule**:
 - Bij het vervangen van N losse object-sleutels door één spread: grep na afloop op elke vervangen sleutelnaam binnen hetzelfde literal. Een overgeslagen sleutel ná de spread is onzichtbaar voor de compiler én voor lint.
 - Zet een spread die velden *weglaat* zo laat mogelijk in het literal, niet in het midden — dan wint hij van wat eraan voorafgaat in plaats van andersom.
-**Prior art**: task `refresh-preserves-user-data`, changelog #460.
+**Prior art**: task `refresh-preserves-user-data`, changelog #463.
 
 ## 2026-08-14: Twee vlaggen op rij gebouwd die niemand ooit schreef — leescode is geen bescherming
 **What went wrong**: De zes `*Override`-vlaggen op `BrandStyleguide` hadden complete, correcte leescode in de analyse-engine en werden in route-comments én in `rescrape-brand.ts` aangehaald als "de override-bescherming". Een repo-brede grep vond nul schrijvers: geen enkele route accepteerde de profielvelden die de vlaggen beschermen, dus de vlaggen stonden permanent op `false` en de bescherming deed maanden niets. Bij het repareren daarvan bouwde ik `userEditedFields` — en liep in exact dezelfde val: de claim hing aan de catch-all `PATCH /api/brandstyle`, terwijl de UI die velden via vijf sectie-routes schrijft. Erger nog: het verificatie-harnas zette de kolom rechtstreeks met Prisma en testte dus langs het gat heen, waardoor 17/17 groen was terwijl de feature in de app niet werkte.
@@ -417,7 +417,7 @@ Bewezen via Playwright: `el.style.background = '<grad>, url(...)'; el.style.setP
 **Prior art**: task `refresh-preserves-user-data`, ADR `docs/adr/2026-08-14-user-ownership-bij-re-analyse.md`.
 
 ## 2026-08-14: Rijen die een re-analyse overleven, breken elke impliciete aanname over rij-volgorde
-**What went wrong**: Zolang `writeResultToDb` álle kleuren wiste en op `sortOrder` opnieuw aanmaakte, was de fysieke rij-volgorde toevallig gelijk aan sortOrder. Twee plekken leunden daar stil op. (1) `resolveSemanticTokens` haalde `include: { colors: true }` op zónder `orderBy`, met een docstring die "output is deterministisch" beloofde — zodra user-rijen bleven staan kon de gekozen primary tussen twee identieke analyses wisselen, wat via de snapshot-diff een spontane review-reset (#459) oplevert. (2) Mijn eigen fix schoof overlevende user-rijen naar het einde van de sortering; `pickBrand` in de LP-renderer neemt de eerste PRIMARY op sortOrder, dus één usage-tag-klik op de merkkleur veranderde stilletjes de kleur van alle gegenereerde landingspagina's.
+**What went wrong**: Zolang `writeResultToDb` álle kleuren wiste en op `sortOrder` opnieuw aanmaakte, was de fysieke rij-volgorde toevallig gelijk aan sortOrder. Twee plekken leunden daar stil op. (1) `resolveSemanticTokens` haalde `include: { colors: true }` op zónder `orderBy`, met een docstring die "output is deterministisch" beloofde — zodra user-rijen bleven staan kon de gekozen primary tussen twee identieke analyses wisselen, wat via de snapshot-diff een spontane review-reset (#462) oplevert. (2) Mijn eigen fix schoof overlevende user-rijen naar het einde van de sortering; `pickBrand` in de LP-renderer neemt de eerste PRIMARY op sortOrder, dus één usage-tag-klik op de merkkleur veranderde stilletjes de kleur van alle gegenereerde landingspagina's.
 **Rule**:
 - Verander je een delete-and-recreate naar een gedeeltelijk behoud, grep dan op élke query naar die tabel en voeg een expliciete `orderBy` toe. Insertion-order is geen contract; Postgres hergebruikt vrijgekomen heap-ruimte.
 - Sorteervelden die een selectie sturen (`[0]` na sorteren) zijn betekenisdragend, geen presentatie. Behoud de positie van rijen die je bewaart en laat nieuwe rijen de gaten vullen.
@@ -429,11 +429,11 @@ Bewezen via Playwright: `el.style.background = '<grad>, url(...)'; el.style.setP
 - Bied je een correctie aan op een **afgeleid** record (gesynct, geëxpandeerd, gedenormaliseerd), leid dan eerst terug naar de bron-waarde en toon díe. Een reverse-index over dezelfde expansie-functie is de betrouwbare weg; het afgeleide veld gebruiken werkt alleen toevallig, namelijk wanneer afleiding = identiteit.
 - Kies je testdata zo dat de afleiding zichtbaar is. Eén fixture waarvoor bron == afgeleide bewijst niets over de gevallen waar ze verschillen — en dat is de meerderheid.
 - Is de bron-waarde niet terug te vinden, toon dan géén knop. Een knop die gegarandeerd faalt is erger dan geen knop.
-**Prior art**: task `curation-feedback-loop`, changelog #461; `expandStemVariants` in `src/lib/brand-fidelity/brand-rule-sync.ts`.
+**Prior art**: task `curation-feedback-loop`, changelog #464; `expandStemVariants` in `src/lib/brand-fidelity/brand-rule-sync.ts`.
 
 ## 2026-08-15: Een kalendervenster is de verkeerde vorm voor bursty gebruik
 **What went wrong**: De feedback-loop aggregeerde overtredingen over "de laatste 30 dagen". Dat leek de logische keuze en leverde **nul signalen op alle vijf de workspaces** op, terwijl er 331 metingen en 1141 findings in de database stonden — al het gebruik zat in geconcentreerde bursts (178 generaties in vijf weken, daarna niets meer, inmiddels 45+ dagen geleden). Alle negen gates waren groen; alleen een harnas dat de aggregatie tegen de échte data draaide liet zien dat de feature nergens iets zou tonen.
 **Rule**:
 - Begrens een aggregatievenster op **aantal** (de laatste N metingen) in plaats van op periode zodra het gebruik bursty kan zijn. De noemer is dan bovendien precies "waar we naar gekeken hebben", wat in de UI eerlijker uit te leggen is.
 - Een aggregatie- of dashboardfeature is pas bewezen als je 'm tegen echte productiedata hebt gedraaid en er iets uit komt. "Query klopt, dus de feature werkt" is bij aggregaties de meest voorkomende zelfmisleiding.
-**Prior art**: task `curation-feedback-loop`, changelog #461; `scripts/dev/verify-curation-signals.ts`.
+**Prior art**: task `curation-feedback-loop`, changelog #464; `scripts/dev/verify-curation-signals.ts`.
