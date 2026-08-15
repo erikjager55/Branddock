@@ -24,6 +24,21 @@ jobs:
       - run: npx prisma generate
 
       - run: npx tsc --noEmit
+        env:
+          # Sinds 2026-08-15 past ook de KALE `tsc --noEmit` niet meer in Node's
+          # default ~4GB-heap: de brandstyle-stack (#255-#259) duwde 'm eroverheen
+          # en de stap viel om met `Ineffective mark-compacts near heap limit`
+          # (exit 134). Lokaal viel dat niet op — macOS schaalt de heap mee met
+          # het beschikbare RAM, de runner niet.
+          #
+          # Dezelfde druk verklaart de Vercel-preview die op "Running TypeScript"
+          # 45 minuten hing en in een timeout liep: geen typefout, geen trage
+          # branch (koud type-checken duurt ~35s), maar geheugen.
+          #
+          # Runner heeft 16GB, dus 8GB is ruim en consistent met de build-stap.
+          # Type-versmalling blijft de echte oplossing — follow-up in
+          # tasks/lp-review-followups.md.
+          NODE_OPTIONS: "--max-old-space-size=8192"
 
       - run: npm run lint
 
@@ -35,8 +50,7 @@ jobs:
           BETTER_AUTH_URL: "http://localhost:3000"
           # Next's build-TS-fase overschrijdt Node's default ~4GB-heap sinds de
           # webpage-builder-rework (inference over de 22-component-registry na
-          # de Puck-exit; kale `tsc --noEmit` past er wél in). Runner heeft
-          # 16GB. Type-versmalling = follow-up in tasks/lp-review-followups.md.
+          # de Puck-exit). Runner heeft 16GB.
           NODE_OPTIONS: "--max-old-space-size=8192"
 
   e2e:
