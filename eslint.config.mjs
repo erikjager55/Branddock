@@ -139,6 +139,9 @@ const eslintConfig = defineConfig([
 
       // Schrijfpaden: analyse, scrape, afgeleide velden, lock-checks.
       "src/lib/brandstyle/analysis-engine.ts",
+      // Leest uitsluitend `userEditedFields` om een mutatie te ondersteunen —
+      // geen merkcontent, dus de gates zijn hier niet van toepassing (W5).
+      "src/lib/brandstyle/claim-fields.ts",
       "src/lib/brandstyle/recompute-color-pairings.ts",
       "src/lib/brandstyle/semantic-role-resolver.ts",
       "src/lib/brandstyle/snapshots/snapshot-cleanup.ts",

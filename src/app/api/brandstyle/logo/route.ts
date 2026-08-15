@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { resolveFieldClaims } from "@/lib/brandstyle/claim-fields";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 
 // =============================================================
 // GET /api/brandstyle/logo — logo section
@@ -85,7 +88,10 @@ export async function PATCH(request: NextRequest) {
 
     await prisma.brandStyleguide.update({
       where: { workspaceId },
-      data: parsed.data,
+      // Claim de geschreven velden zodat de volgende re-analyse ze niet
+      // overschrijft (W5). Zonder deze regel is `userEditedFields` een vlag
+      // zonder schrijver — precies wat de `*Override`-vlaggen waren.
+      data: { ...parsed.data, ...(await resolveFieldClaims(workspaceId, parsed.data)) },
     });
 
     // Return fresh payload in legacy shape for compat with existing callers.
@@ -101,6 +107,12 @@ export async function PATCH(request: NextRequest) {
         logoSavedForAi: true,
       },
     });
+
+    // CLAUDE.md #10: elke mutatieroute invalideert de brandstyle-cache. Deze
+    // sectie-routes deden dat als enige niet, waardoor de AI-paden na een
+    // curatie nog een cache-TTL lang met de oude merkdata werkten.
+    invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json({
       logo: {

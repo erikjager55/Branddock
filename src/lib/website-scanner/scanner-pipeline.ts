@@ -232,30 +232,43 @@ export async function startScanPipeline(
     });
 
     try {
-      // Delete existing brandstyle data (atomic pattern)
-      const existingStyleguide = await prisma.brandStyleguide.findUnique({ where: { workspaceId } });
-      if (existingStyleguide) {
-        await prisma.$transaction([
-          prisma.styleguideColor.deleteMany({ where: { styleguideId: existingStyleguide.id } }),
-          prisma.brandStyleguide.delete({ where: { id: existingStyleguide.id } }),
-        ]);
-      }
-
       progress.brandstyleStatus = 'Analyzing visual identity...';
 
-      // Create new styleguide record
-      const analysisJobId = `job_${crypto.randomUUID()}`;
-      const styleguide = await prisma.brandStyleguide.create({
-        data: {
-          status: 'ANALYZING',
-          sourceType: 'URL',
-          sourceUrl: url,
-          analysisStatus: 'SCANNING_STRUCTURE',
-          analysisJobId,
-          createdById: userId,
-          workspaceId,
-        },
+      // W5: hergebruik een bestaande styleguide i.p.v. 'm te wissen — zelfde
+      // pad als /api/brandstyle/analyze/url. Hier stond een delete+create die
+      // zichzelf "atomic pattern" noemde maar in de praktijk een volledige wipe
+      // was: élke relatie hangt aan `onDelete: Cascade`, dus een re-scan gooide
+      // ook de regels, reviews, snapshots en het manifest weg. De engine doet
+      // partial-upsert met *Override-bescherming, dus hergebruik is veilig.
+      // Destructief wissen kan nog expliciet via `rescrape-brand.ts --hard`.
+      const existingStyleguide = await prisma.brandStyleguide.findUnique({
+        where: { workspaceId },
+        select: { id: true },
       });
+      const analysisJobId = `job_${crypto.randomUUID()}`;
+      const styleguide = existingStyleguide
+        ? await prisma.brandStyleguide.update({
+            where: { id: existingStyleguide.id },
+            data: {
+              status: 'ANALYZING',
+              sourceType: 'URL',
+              sourceUrl: url,
+              analysisStatus: 'SCANNING_STRUCTURE',
+              analysisJobId,
+              errorMessage: null,
+            },
+          })
+        : await prisma.brandStyleguide.create({
+            data: {
+              status: 'ANALYZING',
+              sourceType: 'URL',
+              sourceUrl: url,
+              analysisStatus: 'SCANNING_STRUCTURE',
+              analysisJobId,
+              createdById: userId,
+              workspaceId,
+            },
+          });
 
       // Await the analysis (NOT fire-and-forget)
       await analyzeUrl(styleguide.id, url);

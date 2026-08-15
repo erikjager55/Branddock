@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { resolveFieldClaims } from "@/lib/brandstyle/claim-fields";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { recomputeColorPairings } from "@/lib/brandstyle/recompute-color-pairings";
+import { ROW_SOURCE_USER } from "@/lib/brandstyle/preserve-user-rows";
 
 // =============================================================
 // GET /api/brandstyle/colors — colors section
@@ -59,7 +61,10 @@ export async function PATCH(request: NextRequest) {
 
     const styleguide = await prisma.brandStyleguide.update({
       where: { workspaceId },
-      data: parsed.data,
+      // Claim de geschreven velden zodat de volgende re-analyse ze niet
+      // overschrijft (W5). Zonder deze regel is `userEditedFields` een vlag
+      // zonder schrijver — precies wat de `*Override`-vlaggen waren.
+      data: { ...parsed.data, ...(await resolveFieldClaims(workspaceId, parsed.data)) },
       select: {
         colorDonts: true,
         colorsSavedForAi: true,
@@ -120,6 +125,9 @@ export async function POST(request: NextRequest) {
     const color = await prisma.styleguideColor.create({
       data: {
         ...parsed.data,
+        // Handmatig toegevoegd → eigendom van de gebruiker. Zonder deze stempel
+        // wist de eerstvolgende re-analyse de kleur weer (W5).
+        source: ROW_SOURCE_USER,
         sortOrder: maxSort + 1,
         styleguideId: styleguide.id,
       },

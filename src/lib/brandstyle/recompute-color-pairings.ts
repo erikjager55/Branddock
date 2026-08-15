@@ -20,6 +20,11 @@ export async function recomputeColorPairings(styleguideId: string): Promise<void
     prisma.styleguideColor.findMany({
       where: { styleguideId },
       select: { hex: true, category: true },
+      // `buildColorPairings` is ordergevoelig (`lights[0]`/`darks[0]`, first-wins
+      // dedupe), en sinds user-rijen een re-analyse overleven (W5) is de fysieke
+      // rij-volgorde niet meer gelijk aan sortOrder. Zonder deze orderBy levert
+      // dezelfde data een ander Kleurcombinaties-paneel op.
+      orderBy: { sortOrder: "asc" },
     }),
     prisma.brandStyleguide.findUnique({
       where: { id: styleguideId },

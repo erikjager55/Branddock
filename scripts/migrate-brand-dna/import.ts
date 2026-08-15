@@ -271,6 +271,13 @@ async function runImport(bundle: BrandDnaBundle, target: Target): Promise<void> 
         for (const raw of rows) {
           const data = transformRow(raw, target.workspaceId, target.ownerUserId);
           if (model.globallyUniqueFields) await resolveGlobalUniques(tx, model, data, target.workspaceId);
+          // Een bundle bevat gecureerd merk-DNA, geen scrape-resultaat. Zonder
+          // deze stempel krijgen kleuren en componenten de schema-default
+          // 'scraped' en wist de eerstvolgende re-analyse ze weer (W5). Geldt
+          // ook voor oudere bundles die de kolom nog niet kennen.
+          if (model.accessor === 'styleguideColor' || model.accessor === 'styleguideComponent') {
+            data.source = 'user';
+          }
           await delegateFor(tx, model.accessor).create({ data });
         }
         if (rows.length) console.log(`[import] inserted ${model.label}: ${rows.length}`);
