@@ -201,7 +201,6 @@ export function buildBrandstyleCalibrationReport(
       hideJump: !v.visibleInManifest,
     });
   }
-
   // ── Logo ────────────────────────────────────────────────
   const hasPrimaryLogo = input.logos.some((l) => l.variant === 'PRIMARY');
   if (!hasPrimaryLogo) {

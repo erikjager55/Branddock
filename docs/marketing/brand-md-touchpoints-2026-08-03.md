@@ -76,12 +76,21 @@
 | # | Moment | Boodschap + CTA | Must | Don't |
 |---|---|---|---|---|
 | 2.1 | Direct | **LIVE (2026-08-14)** — Bestand + volledig rapport + 3 gebruiksrecepten (Claude-project / ChatGPT-instructions / MCP). Gebouwd: `templates/brandmd-report.ts`, trigger in `/api/brandmd/track` bij éérste e-mail-capture (dedupe zonder schema-wijziging), fail-soft via `trySendTransactional`. Zelfde bevindingen als de resultaatpagina (`lib/brandmd/findings.ts`) | Recepten copy-paste-klaar; het rapport waarmaken wat de gate beloofde | Verkooppraat in mail 1 |
-| 2.2 | +24 u | "Werkte het? Eén tip die vandaag verschil maakt" + wat `unvalidated` betekent → eerste zachte claim-CTA | Binnen het 48-uurs-venster; concreet resultaat centraal | Wachten tot dag 3-7 (v1-fout — te laat) |
-| 2.3 | Dag 7-14 | Concurrent-scan + benchmark ("waar sta jij in je categorie?") | De grader-vergelijkings-reflex benutten | Bang maken met concurrent-scores |
-| 2.4 | Dag 21-30 | "Je brand.md veroudert" — wat een levende versie doet | Feitelijk (generatiedatum) | Herhaal-spam als 2.3 niet opende |
-| 2.5 | Dag ~80 | TTL: draft verloopt over 10 dagen | Alleen omdat het écht beleid is; laatste mail, punt | Verlenging-trucjes ("we bewaren hem tóch nog even") |
+| 2.2 | +24 u | **LIVE (2026-08-15, opt-in)** — "Werkte het? Eén tip die vandaag verschil maakt" + wat `unvalidated` betekent → eerste zachte claim-CTA. Venster 24 u t/m dag 7; daarna stil afgemarkeerd (nooit inhalen) | Binnen het 48-uurs-venster; concreet resultaat centraal | Wachten tot dag 3-7 (v1-fout — te laat) |
+| 2.3 | Dag 7-14 | **LIVE (2026-08-15, opt-in)** — Concurrent-scan + benchmark ("waar sta jij in je categorie?"). Venster dag 7-21 | De grader-vergelijkings-reflex benutten | Bang maken met concurrent-scores |
+| 2.4 | Dag 21-30 | **LIVE (2026-08-15, opt-in)** — "Je brand.md veroudert" — wat een levende versie doet. Venster dag 21-60 | Feitelijk (generatiedatum) | Herhaal-spam als 2.3 niet opende |
+| 2.5 | Dag ~80 | **LIVE (2026-08-15, transactioneel)** — TTL: draft verloopt over 10 dagen. Géén opt-in vereist (service-bericht over opgeslagen data) en wint van de reeks | Alleen omdat het écht beleid is; laatste mail, punt | Verlenging-trucjes ("we bewaren hem tóch nog even") |
 
 **Target**: e-mail→claim ≥ 10% binnen 30 dagen.
+
+**Toestemming en techniek (fase 2, 2026-08-15)**: 2.2-2.4 zijn marketing en gaan alleen uit na
+een expliciet vinkje bij de download-gate (default UIT, `lifecycleOptInAt`); 2.5 is transactioneel
+en gaat altijd. Elke mail draagt een zichtbare uitschrijflink; 2.2-2.4 dragen daarnaast de RFC
+8058-headers (`List-Unsubscribe` + `List-Unsubscribe-Post`) zodat Gmail/Outlook hun eigen
+één-klik-knop tonen. Verzending via de dagelijkse cron `/api/cron/brandmd-lifecycle` (07:00 UTC):
+max één mail per draft per run, cap 200 per run, administratie in `lifecycleStagesSent`, en alleen
+voor drafts mét `claimTokenEnc` — drafts van vóór deze copy kregen de "one-time email"-belofte en
+blijven daardoor automatisch buiten de reeks.
 
 ## Fase 3 — Claim & activatie
 

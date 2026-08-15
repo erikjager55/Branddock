@@ -22,6 +22,12 @@ export interface LayoutOptions {
   intro?: string;
   body: string; // pre-rendered HTML (paragraphs, cta block, etc.)
   footerNote?: string;
+  /**
+   * Optional footer link (e.g. unsubscribe). Rendered as a real anchor —
+   * `footerNote` is escaped as plain text, so a URL pasted in there would
+   * arrive unclickable.
+   */
+  footerLink?: { href: string; label: string };
 }
 
 export function renderLayout(opts: LayoutOptions): string {
@@ -58,6 +64,7 @@ export function renderLayout(opts: LayoutOptions): string {
           <td style="padding:24px 32px;border-top:1px solid #e2e8f0;background:#f8fafc;">
             <p style="margin:0;font-size:12px;line-height:1.5;color:#64748b;">
               ${opts.footerNote ? escape(opts.footerNote) + '<br>' : ''}
+              ${opts.footerLink ? `<a href="${escape(opts.footerLink.href)}" style="color:#0d9f7e;">${escape(opts.footerLink.label)}</a><br>` : ''}
               &copy; ${new Date().getFullYear()} Branddock &middot; <a href="https://branddock.app" style="color:#0d9f7e;text-decoration:none;">branddock.app</a>
             </p>
           </td>

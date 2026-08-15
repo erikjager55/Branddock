@@ -608,6 +608,10 @@ export function StrategyStep() {
   // 9-Phase: Review Briefing
   if (strategyPhase === "review_briefing" && briefingValidation) {
     return (
+      <div
+        data-testid="strategy-review-briefing"
+        data-briefing-score={String(briefingValidation.overallScore ?? '')}
+      >
       <BriefingReviewView
         validation={briefingValidation}
         onRevise={handleEditBriefing}
@@ -632,6 +636,7 @@ export function StrategyStep() {
         }}
         onRevalidate={handleValidateBriefing}
       />
+      </div>
     );
   }
 

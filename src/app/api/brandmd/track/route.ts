@@ -16,7 +16,13 @@ import { trySendTransactional } from '@/lib/email/transactional';
 import { renderBrandMdReportEmail } from '@/lib/email/templates/brandmd-report';
 import { buildHumanFindings } from '@/lib/brandmd/findings';
 import type { BrandMdDraftPayload } from '@/lib/brandmd/scan';
-import { appBaseUrl, claimUrl, BRAND_MD_USE_HUB_PATH } from '@/lib/brandmd/constants';
+import { encryptToken } from '@/lib/security/token-crypto';
+import {
+  appBaseUrl,
+  claimUrl,
+  brandMdUnsubscribeUrl,
+  BRAND_MD_USE_HUB_PATH,
+} from '@/lib/brandmd/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,13 +30,15 @@ const bodySchema = z.object({
   token: z.string().min(10).max(200),
   event: z.enum(['downloaded', 'email']),
   email: z.string().email().max(200).optional(),
+  /** Vinkje bij de gate (default uit) — expliciete toestemming voor 2.2-2.4. */
+  lifecycleOptIn: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const parsed = await parseJsonBody(request, bodySchema);
     if (!parsed.ok) return parsed.response;
-    const { token, event, email } = parsed.data;
+    const { token, event, email, lifecycleOptIn } = parsed.data;
 
     const tokenHash = createHash('sha256').update(token).digest('hex');
     const profile = await prisma.generatedBrandProfile.findUnique({
@@ -40,6 +48,7 @@ export async function POST(request: NextRequest) {
         status: true,
         downloadedAt: true,
         emailCapturedAt: true,
+        lifecycleOptInAt: true,
         brandName: true,
         domain: true,
         score: true,
@@ -68,6 +77,18 @@ export async function POST(request: NextRequest) {
         data: {
           email,
           ...(firstCapture ? { emailCapturedAt: new Date() } : {}),
+          // Het rauwe token bestaat alleen in dit request (server-side staat
+          // de hash). Versleuteld opslaan is wat de cron later in staat stelt
+          // download-/claim-/unsubscribe-links te bouwen. Dat dit veld pas
+          // vanaf nu gevuld wordt, is meteen de afbakening: drafts van vóór
+          // de fase-2-copy kregen de "one-time email"-belofte en blijven
+          // daardoor automatisch buiten de lifecycle-reeks.
+          claimTokenEnc: encryptToken(token),
+          // Write-once: de opt-in is een toestemmingsmoment, geen toggle.
+          // Terugkomen doe je via de unsubscribe-link, niet via een reset.
+          ...(lifecycleOptIn && !profile.lifecycleOptInAt
+            ? { lifecycleOptInAt: new Date() }
+            : {}),
         },
       });
       // Rapport-mail (touchpoint 2.1) — alleen bij de éérste capture, zodat
@@ -76,7 +97,8 @@ export async function POST(request: NextRequest) {
       // De URLs komen uit het rauwe token in dit request — server-side
       // staat alleen de hash, dus dit is het enige moment om ze te bouwen.
       if (firstCapture) {
-        await sendReportEmail(token, email, profile);
+        const optedIn = Boolean(lifecycleOptIn) || profile.lifecycleOptInAt !== null;
+        await sendReportEmail(token, email, profile, optedIn);
       }
     }
 
@@ -104,6 +126,7 @@ async function sendReportEmail(
   rawToken: string,
   email: string,
   profile: ReportProfileFields,
+  lifecycleOptedIn: boolean,
 ): Promise<void> {
   try {
     const base = appBaseUrl();
@@ -124,6 +147,8 @@ async function sendReportEmail(
       claimUrl: claimUrl(rawToken),
       useHubUrl: `${base}${BRAND_MD_USE_HUB_PATH}`,
       expiresAt: profile.expiresAt,
+      lifecycleOptedIn,
+      unsubscribeUrl: brandMdUnsubscribeUrl(rawToken),
     });
 
     const result = await trySendTransactional({

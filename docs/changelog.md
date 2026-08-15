@@ -37,7 +37,7 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
-### 465. De bibliotheek leert van haar eigen gebruik — curatie-suggesties uit F-VAL-overtredingen (R4)
+### 466. De bibliotheek leert van haar eigen gebruik — curatie-suggesties uit F-VAL-overtredingen (R4)
 
 Het verbeterplan vroeg om een feedback-loop: *"regel X wordt in 80% van generaties overtreden — te
 streng geformuleerd of verkeerd geëxtraheerd?"* De **logging bleek al te bestaan**: elke generatie
@@ -95,9 +95,9 @@ een wérkende correctie bij hoort) en het actiepad op een wegwerp-workspace (6/6
 regel weg, de andere lanes intact).
 
 **Uit scope**: de token-overrides uit R4 — die pijp is vandaag leeg (alle 158 kleuren `scraped`,
-nul claims) en vult zich pas na #464 naarmate gebruikers gaan bewerken.
+nul claims) en vult zich pas na #465 naarmate gebruikers gaan bewerken.
 
-### 464. Een re-analyse vernietigt geen user-edits meer (W5, relatie-niveau)
+### 465. Een re-analyse vernietigt geen user-edits meer (W5, relatie-niveau)
 
 W5 beloofde dat een re-scrape "alle overrides en reviews behoudt". De helft klopte: de
 analyze-routes hergebruiken sinds W5 de styleguide-rij, dus reviews, regels en snapshots overleven.
@@ -127,6 +127,8 @@ PATCH-route en gerespecteerd door de engine. Een veld leegmaken geeft het terug 
 `brandStyleguide.delete` die zichzelf "atomic pattern" noemde. Élke relatie hangt aan
 `onDelete: Cascade`, dus dat pad wiste ook de `StyleguideRule`-regels uit #461, de reviews en de
 snapshots waar de driftdetectie van #463 op leunt. Nu hergebruikt hij de rij, net als
+
+snapshots waar de driftdetectie van #464 op leunt. Nu hergebruikt hij de rij, net als
 `/api/brandstyle/analyze/url` sinds W5.
 
 Twee code-reviews haalden er daarna nog negen defecten uit die alle gates hadden overleefd. Vier
@@ -138,6 +140,8 @@ verificatie-harnas testte er langsheen door de kolom rechtstreeks te schrijven; 
 sortOrder-herstempeling schoof de merkkleur naar achteren, waarna `pickBrand` in de LP-renderer een
 andere kleur koos; en `resolveSemanticTokens` miste een `orderBy`, wat pas kapot gaat zodra rijen
 een analyse overleven — met spontane review-drift (#463) tot gevolg. Verder: `colorPairings` misten
+
+een analyse overleven — met spontane review-drift (#464) tot gevolg. Verder: `colorPairings` misten
 de user-kleuren en draaiden de `recomputeColorPairings`-fix uit #17/#18 terug, één geüploade LOCKUP
 blokkeerde álle gedetecteerde lockups, een component-rename brak de natural key (vandaar
 `detectedLabel`), de kleur-PATCH claimde ook bij een lege body, en `PATCH /api/brandstyle`
@@ -156,7 +160,7 @@ met de gescrapte kleuren wél ververst. Er staan nu vier eigenaarschapsmechanism
 (source-kolom, `uploadedById`, `userEditedFields`, `*Override`) — waarom dat bewust is, staat in
 `docs/adr/2026-08-14-user-ownership-bij-re-analyse.md`.
 
-### 463. Reviewstatus vervalt wanneer een re-analyse de sectie verandert (W5-driftreset)
+### 464. Reviewstatus vervalt wanneer een re-analyse de sectie verandert (W5-driftreset)
 
 W5 maakte re-analyse niet-destructief — reviews blijven staan bij een refresh. Daarmee ontstond het
 gat dat het verbeterplan zelf benoemt: een goedkeuring hoort bij een *specifieke versie* van de
@@ -171,6 +175,8 @@ alleen de mapping van diff-categorie naar review-sectie (`review-drift.ts`, puur
 blijft staan inclusief feedback, cosmetische kleurwijzigingen (RGB-afstand < 3) resetten niets, en
 **`published` blijft ongemoeid** — bewust asymmetrisch met een handmatige "needs work", die wél
 depubliceert: een klik is een besluit, drift is een signaal, en sinds #461/#462 hangt de hele
+
+depubliceert: een klik is een besluit, drift is een signaal, en sinds #461/#463 hangt de hele
 merkcontext-injectie aan die vlag. Bijvangst op dezelfde hook: de analyse-engine invalideerde
 **nergens** een cache, waardoor de brand-library- en regel-cache na een re-analyse tot vijf minuten
 de oude merkdata bleven serveren.
@@ -189,7 +195,7 @@ draait.
 - Task: [tasks/review-drift-reset.md](../tasks/review-drift-reset.md)
 - Spec: `docs/specs/brandstyle-designbibliotheek-verbeterplan.md` (W5, "hash-anker")
 
-### 462. Merkcontext loopt via één gegate accessor — twaalf consumers gemigreerd + lint-regel (W7.1)
+### 463. Merkcontext loopt via één gegate accessor — twaalf consumers gemigreerd + lint-regel (W7.1)
 
 Elke consumer las tot nu toe zelf `BrandStyleguide`-velden, dus de gates (`published` + de zes
 `*SavedForAi`-vlaggen) en de marker-stripping zaten verspreid over tientallen bestanden. Van de
@@ -232,6 +238,17 @@ Next-route-pad als character-class, waardoor zo'n allowlist-entry stil niet matc
 - ADR: [docs/adr/2026-08-14-brand-library-consumption.md](adr/2026-08-14-brand-library-consumption.md)
 - Spec: `docs/specs/brandstyle-designbibliotheek-verbeterplan.md` (W7.1)
 
+### 462. brand.md lifecycle-mails — touchpoints 2.2-2.5 live, met opt-in en één-klik-uitschrijven
+
+Fase 2 van de mailflow: na de rapport-mail (#455) volgen nu vier lifecycle-momenten, verzonden door de nieuwe dagelijkse cron `/api/cron/brandmd-lifecycle` (07:00 UTC). **2.2** (24 u-dag 7) geeft één praktische tip plus uitleg van `unvalidated`; **2.3** (dag 7-21) zet de benchmark-reflex in met een gratis concurrent-scan; **2.4** (dag 21-60) is feitelijk over veroudering; **2.5** (TTL ≤10 dagen) is de laatste mail. De vensterlogica zit als pure functie in `src/lib/brandmd/lifecycle.ts` — de cron blijft dun (kandidaten, versturen, boekhouden) en de beslissing is zonder DB of mailer te smoken. Harde grenzen: hooguit één mail per draft per run, cap 200 sends, `lifecycleStagesSent` als idempotente administratie, en een gemist 2.2-venster wordt stil afgemarkeerd in plaats van ingehaald — te laat versturen leest als spam.
+
+**Toestemming is de kern van het ontwerp.** 2.2-2.4 zijn marketing en gaan alleen uit na een expliciet vinkje bij de download-gate (default UIT, `lifecycleOptInAt`); 2.5 is een transactioneel service-bericht over opgeslagen data en gaat ongeacht opt-in of opt-out — en wint van de reeks, want een TTL-melding is tijdgebonden. Nieuwe route `GET|POST /api/brandmd/unsubscribe?token=` (RFC 8058 one-click, hash-lookup als de download-route, `lifecycleOptOutAt` write-once, simpele HTML-bevestiging); 2.2-2.4 dragen `List-Unsubscribe` + `List-Unsubscribe-Post`, zodat Gmail/Outlook hun eigen knop tonen. Dat een GET muteert is bewust: een prefetch die per ongeluk uitschrijft faalt naar mínder mail.
+
+**Copy-consistentie was een expliciete eis.** De rapport-mail beloofde "this is a one-time email — no follow-up sequence"; die belofte botste met alles wat hierboven staat. De footer heeft nu twee varianten (mét/zonder opt-in) die beide de eenmalige TTL-melding aankondigen, en de gate-copy op de generator is meegegaan. `_layout` kreeg een `footerLink` omdat `footerNote` als platte tekst ge-escaped wordt — een URL daarin kwam onklikbaar aan. Afbakening zonder backfill of uitzonderingslijst: de cron selecteert alleen drafts mét `claimTokenEnc` (versleuteld via `token-crypto`, gezet bij e-mail-capture), dus élke draft van vóór deze copy blijft automatisch buiten de reeks — precies degene die de one-time-belofte kreeg. Gates: tsc 0 errors, eslint schoon, emitter-smoke groen, nieuwe `brandmd-lifecycle`-smoke groen en mutatie-getest (vervalste vensters en genegeerde opt-out maken hem aantoonbaar rood). ⚠️ **Neon `prisma db push` vereist** voor 4 nieuwe velden op `GeneratedBrandProfile`.
+
+- Task: [tasks/brand-md-open-standaard.md](../tasks/brand-md-open-standaard.md)
+- Spec: [docs/marketing/brand-md-touchpoints-2026-08-03.md](marketing/brand-md-touchpoints-2026-08-03.md) fase 2
+- Commit: zie git log (fase-2 lifecycle-mails)
 ### 461. StyleguideRule bereikt F-VAL's rules-pijler — doorvoer, modaliteit-scheiding en de vulling die eronder ontbrak
 
 De Stap-0-spike mat dat regel-overtredende content (emoji, wij-vorm, superlatieven) gewoon 80+ scoorde omdat `score_against_brand` altijd `rulesEvaluated: 0` gaf: merkregels staan in `StyleguideRule`, maar de rules-pijler leest alleen `BrandRule`. **Fase A — de pijp**: `StyleguideRule` is nu een derde violation-bron in `mergeRuleResults`, naast BrandRule en de locale-heuristics, zónder materialisatie (`ruleId: styleguide:<sectie>:<id>`, `BLOCKING`→error/gewicht 3, `ADVISORY`→warning). Nieuw constraint-vocabulaire (`rule-constraints.ts`, Zod) met een tekst-familie (7 checks) en een visuele familie; alleen tekst-constraints compileren — visuele regels worden geteld en overgeslagen, want die horen bij de renderer. Gedeelde matchers uit `rule-compiler.ts` verhuisd (gedragsneutraal) plus een `unicodeWordBoundaryRegex`, omdat JavaScript's `\b` ASCII-only is en "dé"/"één" daardoor nooit matchten. Cap van 25 violations per regel zodat één brede regel de findings-persistentie niet overspoelt. **Fase B — vulling**: `BrandVoiceguide.vocabularyDont` werd nooit gesynct (91 termen over 9 workspaces bereikten de scoring niet) — nieuwe opt-in stream `auto:voiceguide.vocabularyDont`, plus een backfill-script dat weigert legacy-regels te wissen wanneer een lege voiceguide ze zou stranden. Deterministische constraint-afleiding markeerde alle 346 bestaande regels als visueel (0 tekst-checkbaar — bevestigd: de styleguide-secties zijn allemaal visueel). **Fase C — structurer**: de tekst-regels blijken in `BrandVoiceguide.writingGuidelines`/`contentGuidelines` te zitten; een AI-pass classificeert die naar constraints (nooit auteuren: geen regex, `forbidden-words` alleen met letterlijk genoemde woorden, perspectief via ingebouwde voornaamwoordtabellen) met deterministische vangnetten tegen gemiddelde-als-maximum, element-/positie-gebonden richtlijnen en elkaar uitsluitende u/je-regels. Gewired in finalize (fail-soft) + dry-run-backfill. Bijvangst: het dode `clearRuleCompilerCache` is gewired (een regelwijziging was tot 60s onzichtbaar), de gestructureerde tak van `buildHardRules` honoreert nu de `*SavedForAi`-gates die hij volledig omzeilde, en de copy/audio-views laten visuele regels weg. Gates: tsc 0 errors, lint schoon (1 pre-existing error op main in `export/design-system`), golden-eval 14/14, pure smoke 51/51 (DB-vrij), DB-smoke 17/17 (hermetische scratch-workspace: composiet 86 → 59). **Let op**: composietscores van workspaces mét regels schuiven omlaag zodra die regels bijten — pre/post-vergelijking van pilotcijfers is daardoor geen appels/appels meer.

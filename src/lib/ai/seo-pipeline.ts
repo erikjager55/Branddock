@@ -285,10 +285,14 @@ export async function* runSeoPipeline(
   // latere `await` ziet de waarde/rejection gewoon nog.
   void tailPromise.catch(() => {});
 
-  // Stap 8 afronden — bij een fout geldt dezelfde harde error-semantiek als
-  // een wave-fout (de checklist is een productonderdeel); de staart-promise
-  // wordt dan netjes losgelaten (hij is fail-soft en rejectt niet).
-  let step8Raw: string;
+  // Stap 8 afronden — FAIL-SOFT (2026-08-15). Op dit punt is het artikel al
+  // klaar: `finalContent` komt uit stap 7 en de variant-/GEO-staart loopt er
+  // naast. Stap 8 voegt alleen de technische checklist toe. Een harde error
+  // hier gooide dus een voltooid artikel weg om ontbrekende metadata — en was
+  // bovendien inconsistent met de parse-fout tien regels verderop, die de
+  // checklist gewoon op `null` zet en doorgaat. Nu volgen beide paden dezelfde
+  // semantiek: geen checklist, wél content.
+  let step8Raw: string | null = null;
   if (step8Promise) {
     try {
       const r = await step8Promise;
@@ -305,26 +309,26 @@ export async function* runSeoPipeline(
       step8Raw = r.rawText;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      console.error('[seo-pipeline] step 8 failed:', message);
+      console.warn(
+        `[seo-pipeline] step 8 (${labelOf(8)}) failed — doorgaan zonder checklist:`,
+        message,
+      );
+      // 'error'-status op de stap zelf zodat de UI eerlijk toont dat de
+      // checklist ontbreekt, maar GEEN pipeline-brede error-event: de content
+      // is klaar en wordt hieronder gewoon opgeleverd.
       yield { event: 'seo_step', data: { ...stepEventFor(8), status: 'error' as const, preview: message } };
-      yield {
-        event: 'error',
-        data: {
-          ...buildAiErrorEvent(err, { recoverable: false }),
-          message: `SEO pipeline failed in wave [${labelOf(8)}]: ${message}`,
-        },
-      };
-      return;
     }
   } else {
     step8Raw = existingStep8!.rawText;
   }
 
   let seoChecklist: SeoChecklist | null = null;
-  try {
-    seoChecklist = (JSON.parse(stripFences(step8Raw)) as PublicationPrep).checklist;
-  } catch {
-    console.warn('[seo-pipeline] Step 8 checklist parse failed — checklist unavailable.');
+  if (step8Raw !== null) {
+    try {
+      seoChecklist = (JSON.parse(stripFences(step8Raw)) as PublicationPrep).checklist;
+    } catch {
+      console.warn('[seo-pipeline] Step 8 checklist parse failed — checklist unavailable.');
+    }
   }
 
   const tail = await tailPromise;
@@ -501,7 +505,11 @@ const STEP_BUDGETS: Record<number, StepBudget> = {
   5: { maxTokens: 12000, timeoutMs: 180_000 },  // Outline & Internal Links (cap — 24K was veel te ruim)
   6: { maxTokens: 24000, timeoutMs: 240_000 },  // First Draft (full page in JSON envelope)
   7: { maxTokens: 24000, timeoutMs: 240_000 },  // Editorial Review
-  8: { maxTokens: 4000, timeoutMs: 120_000 },   // Publication Prep — enkel de checklist (geen rewrite meer)
+  // Publication Prep — checklist-only, maar de checklist zelf draagt twee
+  // JSON-LD-blobs (faqSchema/howToSchema) als ge-escapete strings. 4000 was
+  // daarvoor te krap: de sweep van 2026-08-15 zag 3/3 long-form-runs hier
+  // trunceren (output 4560-5420 tekens) en de hele pipeline meesleuren.
+  8: { maxTokens: 8000, timeoutMs: 120_000 },
 };
 
 /**

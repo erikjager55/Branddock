@@ -7093,6 +7093,21 @@ model GeneratedBrandProfile {
   claimedAt       DateTime?
   activatedAt     DateTime?
 
+  // ─── Lifecycle-mails (touchpoints fase 2, 2026-08-15) ───
+  /// Claim-token versleuteld (v1-token-crypto) — de cron kan er de
+  /// download-/claim-/unsubscribe-links van latere mails mee bouwen;
+  /// lookup blijft via de hash. Alleen gezet bij e-mail-capture ná de
+  /// fase-2-copy (oudere drafts kregen de "one-time"-belofte en blijven
+  /// daardoor automatisch buiten de mailreeks).
+  claimTokenEnc String?
+  /// Expliciete opt-in (vinkje bij de gate) voor mails 2.2-2.4 — AVG:
+  /// een download-e-mail is transactionele grond, geen reeks-toestemming.
+  lifecycleOptInAt  DateTime?
+  /// Unsubscribe (tokenlink of List-Unsubscribe) — stopt 2.2-2.4 direct.
+  lifecycleOptOutAt DateTime?
+  /// Verzonden stages ("2.2".."2.5") — idempotente cron zonder extra tabel.
+  lifecycleStagesSent String[] @default([])
+
   claimedByUserId    String?
   claimedWorkspaceId String?
 
