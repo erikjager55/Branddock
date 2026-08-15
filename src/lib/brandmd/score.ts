@@ -83,6 +83,37 @@ interface DimensionResult {
   explanation: string;
 }
 
+/** De rollen die `draftPayloadToModel` uit de gescande kleuren vult
+ *  (`on-primary` is afgeleid en telt dus niet als eigen keuze mee). */
+const SCANNED_COLOR_ROLES = ['primary', 'secondary', 'tertiary', 'surface', 'outline'] as const;
+
+/**
+ * Standaardpaletten van veelgebruikte CSS-frameworks. Een site die hierop
+ * draait heeft geen kleurkeuze gemaakt — en dat is precies wat de
+ * consistency-score hoort te zien. Bewust exact-match op hex: een merk dat
+ * toevallig vlakbij zit heeft wél gekozen.
+ */
+const FRAMEWORK_DEFAULT_HEXES = new Set(
+  [
+    // Bootstrap 5
+    '#0D6EFD', '#6C757D', '#198754', '#DC3545', '#FFC107', '#0DCAF0', '#F8F9FA', '#212529',
+    '#6610F2', '#6F42C1', '#D63384', '#FD7E14', '#20C997', '#0DCAF0',
+    // Tailwind — de grijstrap die vrijwel elk template ongewijzigd overneemt
+    '#111827', '#1F2937', '#374151', '#4B5563', '#6B7280', '#9CA3AF',
+    '#D1D5DB', '#E5E7EB', '#F3F4F6', '#F9FAFB',
+    // WordPress/WooCommerce-defaults
+    '#7F54B3', '#A46497', '#96588A',
+    // Material Design baseline
+    '#2196F3', '#4CAF50', '#F44336', '#FF9800', '#9C27B0',
+    // Neutraal zwart/wit — geen merkkeuze
+    '#000000', '#FFFFFF',
+  ].map((h) => h.toUpperCase()),
+);
+
+function isFrameworkDefault(hex: string): boolean {
+  return FRAMEWORK_DEFAULT_HEXES.has(hex.trim().toUpperCase());
+}
+
 function scoreCompleteness(model: DesignSystemModel): DimensionResult {
   const md = model.extensions.brandMd;
   const checks: Array<[string, boolean]> = [
@@ -118,18 +149,36 @@ function scoreConsistency(model: DesignSystemModel): DimensionResult {
   let points = 0;
   let max = 0;
 
-  // Kleursysteem: primary + on-primary paar aanwezig = teken van systeem.
+  // Kleursysteem (2026-08-15): niet "is er een paar" — dat is na de
+  // on-primary-fix bij iedereen waar en levert dus geen signaal. Wél: is de
+  // kleur van dit merk een eigen keuze of het standaardpalet van een CSS-
+  // framework? Dat onderscheidt "wij hebben een merk" van "wij hebben een
+  // template", en varieert echt (zwarthout.com draait op het complete
+  // Bootstrap-5-palet; napking.nl op Tailwind-grijzen plus twee eigen tinten).
   max += 40;
-  const hasPrimaryPair = !!model.colors.primary && !!model.colors['on-primary'];
-  if (hasPrimaryPair) points += 40;
-  else notes.push('no primary/on-primary color pair detected');
+  const scanned = SCANNED_COLOR_ROLES.map((r) => model.colors[r]?.value).filter(
+    (v): v is string => typeof v === 'string',
+  );
+  const own = scanned.filter((hex) => !isFrameworkDefault(hex));
+  const primaryIsOwn = !!model.colors.primary && !isFrameworkDefault(model.colors.primary.value);
 
-  // Typografie: heading- én body-rol gevonden.
+  if (primaryIsOwn) points += 25;
+  else notes.push('primary colour matches a CSS-framework default');
+
+  if (scanned.length > 0 && own.length / scanned.length >= 0.5) points += 15;
+  else notes.push(`${own.length} of ${scanned.length} colours are brand-owned`);
+
+  // Typografie: rollen aanwezig (altijd waar bij een scan) telt licht; het
+  // onderscheid zit in een bewuste kop/tekst-combinatie versus één font voor
+  // alles.
   max += 30;
-  const hasHeading = !!model.typography['headline-lg'] || !!model.typography['headline-md'] || !!model.typography['headline-display'];
-  const hasBody = !!model.typography['body-md'] || !!model.typography['body-lg'];
-  if (hasHeading && hasBody) points += 30;
+  const headline = model.typography['headline-lg'] ?? model.typography['headline-md'] ?? model.typography['headline-display'];
+  const body = model.typography['body-md'] ?? model.typography['body-lg'];
+  if (headline && body) points += 15;
   else notes.push('heading/body typography roles incomplete');
+
+  if (headline && body && headline.fontFamily !== body.fontFamily) points += 15;
+  else if (headline && body) notes.push('one typeface for both headings and body');
 
   // Voice: beschrijving én vocabulaire wijzen dezelfde kant op.
   max += 30;
@@ -152,23 +201,42 @@ function scoreAiReadiness(model: DesignSystemModel): DimensionResult {
   const notes: string[] = [];
   let points = 0;
 
-  if ((md?.guardrails.dont.length ?? 0) > 0) points += 35;
-  else notes.push('no machine-checkable guardrails');
-
-  if ((model.extensions.brandFoundation?.personas.length ?? 0) > 0) points += 35;
+  // Herweging 2026-08-15. Guardrails en channel-tones wogen samen 50 punten,
+  // terwijl een scan ze per definitie niet kán vinden: elk gescand merk kreeg
+  // daardoor exact dezelfde 50. Ze blijven meetellen — het zijn echte gaten,
+  // en precies wat een workspace vult — maar als minderheid, zodat de score
+  // meet wat er staat in plaats van of iemand de gratis versie gebruikte.
+  // Wat de scan wél levert wordt nu gegradeerd i.p.v. binair afgevinkt.
+  const personas = model.extensions.brandFoundation?.personas.length ?? 0;
+  if (personas >= 3) points += 25;
+  else if (personas === 2) points += 18;
+  else if (personas === 1) points += 10;
   else notes.push('no audience/personas for targeting');
 
-  if ((md?.products.length ?? 0) > 0) points += 15;
+  const products = md?.products.length ?? 0;
+  if (products >= 4) points += 20;
+  else if (products >= 2) points += 14;
+  else if (products === 1) points += 8;
   else notes.push('no product context');
 
-  if ((md?.channelTones.length ?? 0) > 0) points += 15;
-  else notes.push('no per-channel tones');
+  if ((md?.messagePillars?.length ?? 0) > 0) points += 15;
+  else notes.push('no message pillars');
+
+  if (md?.artDirection?.keywords.length || md?.artDirection?.statement) points += 10;
+  else notes.push('no art direction');
+
+  // Alleen een mens kan deze twee vaststellen — de scan kan ze niet afleiden.
+  if ((md?.guardrails.dont.length ?? 0) > 0) points += 20;
+  else notes.push('no machine-checkable guardrails (needs a human)');
+
+  if ((md?.channelTones.length ?? 0) > 0) points += 10;
+  else notes.push('no per-channel tones (needs a human)');
 
   return {
     score: points,
     explanation:
       notes.length === 0
-        ? 'Guardrails, audience, products and channel tones all present.'
+        ? 'Audience, products, pillars, art direction, guardrails and channel tones all present.'
         : notes.join('; ') + '.',
   };
 }

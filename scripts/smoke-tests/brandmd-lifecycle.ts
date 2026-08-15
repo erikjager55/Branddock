@@ -155,13 +155,14 @@ const renderVars = {
   score: 62,
   downloadUrl: DOWNLOAD,
   claimUrl: 'https://branddock.app/brandmd/claim/tok_abc123',
+  useHubUrl: 'https://branddock.app/brandmd/use',
   generatorUrl: 'https://branddock.app/brandmd',
   unsubscribeUrl: UNSUB,
   generatedAt: new Date('2026-08-01T10:00:00.000Z'),
   expiresAt: new Date('2026-10-30T10:00:00.000Z'),
 };
 
-const TIPS_REASON = 'ticked the box for follow-up tips';
+const TIPS_REASON = 'aangaf tips te willen ontvangen';
 
 for (const stage of ['2.2', '2.3', '2.4', '2.5'] as LifecycleStage[]) {
   const mail = renderLifecycleEmail(stage, renderVars);
@@ -170,7 +171,7 @@ for (const stage of ['2.2', '2.3', '2.4', '2.5'] as LifecycleStage[]) {
   check(mail.html.includes(UNSUB), `${stage}: unsubscribe-link ontbreekt in de HTML`);
   check(mail.html.includes(`<a href="${UNSUB}"`), `${stage}: unsubscribe staat niet als klikbare link`);
   check(mail.text.includes(UNSUB), `${stage}: unsubscribe-link ontbreekt in de plain-text`);
-  check(mail.text.includes(`Unsubscribe: ${UNSUB}`), `${stage}: plain-text unsubscribe-regel ontbreekt`);
+  check(mail.text.includes(`Uitschrijven: ${UNSUB}`), `${stage}: plain-text unsubscribe-regel ontbreekt`);
   check(!mail.html.includes('undefined'), `${stage}: "undefined" lekt in de HTML`);
   check(!mail.text.includes('undefined'), `${stage}: "undefined" lekt in de plain-text`);
 }
@@ -178,8 +179,8 @@ for (const stage of ['2.2', '2.3', '2.4', '2.5'] as LifecycleStage[]) {
 // 2.5 is een service-bericht: het mag GEEN tips-opt-in claimen.
 const expiryMail = renderLifecycleEmail('2.5', renderVars);
 check(!expiryMail.html.includes(TIPS_REASON), '2.5 mag geen tips-opt-in claimen (footerOverride werkt niet)');
-check(expiryMail.html.includes('Service notice'), '2.5 mist de service-bericht-footer');
-check(expiryMail.html.includes('2026-10-30'), '2.5 moet de echte vervaldatum noemen');
+check(expiryMail.html.includes('laatste mail over deze scan'), '2.5 mist de service-bericht-footer');
+check(expiryMail.html.includes('30 oktober'), '2.5 moet de echte vervaldatum noemen');
 
 // 2.2-2.4 leggen wél uit waarom je ze krijgt.
 for (const stage of ['2.2', '2.3', '2.4'] as LifecycleStage[]) {

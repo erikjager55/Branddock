@@ -12,7 +12,12 @@ import '../marketing/marketing.css';
 
 export default function BrandMdLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="marketing-root min-h-screen flex flex-col bg-white text-gray-900">
+    // `lang="nl"` op de wrapper (2026-08-15): de root-layout leidt <html lang>
+    // af uit de UI-locale-cookie, en een anonieme bezoeker van de publieke
+    // generator heeft die niet — die zou dus als `en` renderen terwijl de copy
+    // Nederlands is. Een lang-attribuut op een subtree is valide HTML en wordt
+    // door screenreaders en zoekmachines gevolgd.
+    <div lang="nl" className="marketing-root min-h-screen flex flex-col bg-white text-gray-900">
       {/* Merk-font Halyard via Adobe Fonts (Typekit); CSP staat use.typekit.net toe. */}
       <link rel="stylesheet" href="https://use.typekit.net/idv8cqe.css" />
       <a href="#mkt-main" className="mkt-skip">

@@ -56,32 +56,32 @@ interface GenerateResult {
 }
 
 const PROGRESS_LINES = [
-  'Reading your site…',
-  'Looking for your about and services pages…',
-  'Extracting your color system…',
-  'Listening to your tone of voice…',
-  "Checking what we can't verify — we'll mark it honestly",
-  'Building your brand.md…',
+  'Je site lezen…',
+  'Zoeken naar je over-ons- en dienstenpagina\'s…',
+  'Je kleursysteem uitlezen…',
+  'Luisteren naar je tone-of-voice…',
+  'Nagaan wat we niet kunnen bevestigen — dat markeren we eerlijk',
+  'Je brand.md bouwen…',
 ];
 
 const USE_RECIPES: Array<{ tool: string; recipe: string; copyText?: string }> = [
   {
     tool: 'Claude',
-    recipe: 'Create a Project → drag brand.md in → every chat is on-brand.',
+    recipe: 'Maak een Project → sleep brand.md erin → elke chat is on-brand.',
     copyText:
-      'Use the attached brand.md as the single source of truth for this brand. Follow its voice, guardrails and audience in everything you write.',
+      'Gebruik de bijgevoegde brand.md als enige bron van waarheid voor dit merk. Volg de stem, guardrails en doelgroep in alles wat je schrijft.',
   },
   {
     tool: 'ChatGPT',
-    recipe: 'Settings → Custom Instructions → paste the Voice section.',
+    recipe: 'Instellingen → Aangepaste instructies → plak de Voice-sectie.',
   },
   {
-    tool: 'Cursor / coding agents',
-    recipe: 'Drop BRAND.md in your repo root, next to AGENTS.md. Done.',
+    tool: 'Cursor / coding-agents',
+    recipe: 'Zet BRAND.md in de root van je repo, naast AGENTS.md. Klaar.',
   },
   {
     tool: 'Any AI chat',
-    recipe: "Paste the whole file above your prompt. It's only ~2 pages.",
+    recipe: 'Plak het hele bestand boven je prompt. Het is maar zo\'n twee pagina\'s.',
   },
 ];
 
@@ -156,12 +156,12 @@ export function GeneratorClient() {
       });
       if (!track.ok) {
         const data = (await track.json()) as { error?: string };
-        throw new Error(data.error ?? 'Could not save your email');
+        throw new Error(data.error ?? 'Je e-mailadres kon niet worden opgeslagen');
       }
       const res = await fetch(`/api/brandmd/download?token=${encodeURIComponent(result.token)}`);
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
-        throw new Error(data.error ?? 'Download failed');
+        throw new Error(data.error ?? 'Downloaden mislukt');
       }
       const blob = await res.blob();
       const a = document.createElement('a');
@@ -174,7 +174,7 @@ export function GeneratorClient() {
       setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
       setDownloaded(true);
     } catch (e) {
-      setGateError(e instanceof Error ? e.message : 'Something went wrong');
+      setGateError(e instanceof Error ? e.message : 'Er ging iets mis');
     } finally {
       setGateBusy(false);
     }
@@ -192,12 +192,12 @@ export function GeneratorClient() {
         {/* Hero (touchpoint 0.1) */}
         <div className="text-center">
           <p className="mkt-accent text-sm font-semibold uppercase tracking-wide">
-            Free · built on the open brand.md standard
+            Gratis · gebouwd op de open brand.md-standaard
           </p>
-          <h1 className="mt-4">Give every AI agent your brand memory.</h1>
+          <h1 className="mt-4">Geef elke AI-agent het geheugen van je merk.</h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-gray-600">
-            Paste your URL. Get your brand.md — the open file that keeps ChatGPT, Claude, Cursor
-            and every AI tool on-brand.
+            Plak je URL. Je krijgt je brand.md — het open bestand dat ChatGPT, Claude, Cursor en
+            elke andere AI-tool on-brand houdt.
           </p>
         </div>
 
@@ -209,7 +209,7 @@ export function GeneratorClient() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && phase !== 'scanning' && generate()}
-              placeholder="yourbrand.com"
+              placeholder="jouwmerk.nl"
               className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 outline-none"
               disabled={phase === 'scanning'}
             />
@@ -223,7 +223,7 @@ export function GeneratorClient() {
               ) : (
                 <Sparkles className="h-5 w-5" />
               )}
-              Generate my brand.md
+              Genereer mijn brand.md
             </button>
           </div>
         )}
@@ -258,10 +258,10 @@ export function GeneratorClient() {
           <div className="mt-12">
             <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
               <div className="text-center">
-                <h2>How AI-ready is {result.domain}?</h2>
+                <h2>Hoe AI-klaar is {result.domain}?</h2>
                 <p className="mx-auto mt-2 max-w-lg text-sm text-gray-600">
-                  This score shows how well AI tools like ChatGPT and Claude can play your brand —
-                  based on what your website alone reveals.
+                  Deze score laat zien hoe goed AI-tools als ChatGPT en Claude jouw merk kunnen
+                  spelen — op basis van wat je website alleen al prijsgeeft.
                 </p>
                 <p className="mt-5 text-6xl font-bold" style={{ color: ACCENT_INK }}>
                   {result.score}
@@ -287,15 +287,15 @@ export function GeneratorClient() {
               </div>
 
               <p className="mt-5 text-xs text-gray-500">
-                Scanned: {result.scannedPaths.join(', ')} · {result.validatedSections} of{' '}
-                {result.totalSections} sections could be verified from your site alone — the open
-                fields are why the score isn&apos;t higher yet.
+                Gescand: {result.scannedPaths.join(', ')} · {result.validatedSections} van{' '}
+                {result.totalSections} secties konden we bevestigen op basis van je site alleen —
+                de openstaande velden zijn de reden dat de score nog niet hoger is.
               </p>
 
               {/* Scoredimensies — ingeklapt, voor wie het wil weten */}
               <details className="mt-4 rounded-lg border border-gray-200">
                 <summary className="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600">
-                  <ChevronDown className="h-4 w-4" /> How we scored this
+                  <ChevronDown className="h-4 w-4" /> Zo kwamen we aan deze score
                 </summary>
                 <div className="grid gap-3 p-4 pt-1 sm:grid-cols-3">
                   {result.dimensions.map((d) => (
@@ -317,7 +317,7 @@ export function GeneratorClient() {
             <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <h3 className="flex items-center gap-2">
                 <FileText className="h-5 w-5" style={{ color: ACCENT_INK }} />
-                What can you do with your brand.md?
+                Wat kun je met je brand.md?
               </h3>
               <div className="mt-4 space-y-3">
                 {USE_RECIPES.map((r, i) => (
@@ -337,7 +337,7 @@ export function GeneratorClient() {
                         className="flex shrink-0 items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
                       >
                         {copiedIdx === i ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                        {copiedIdx === i ? 'Copied' : 'Copy prompt'}
+                        {copiedIdx === i ? 'Gekopieerd' : 'Kopieer prompt'}
                       </button>
                     )}
                   </div>
@@ -359,7 +359,7 @@ export function GeneratorClient() {
               {downloaded ? (
                 <div className="text-center">
                   <Check className="mx-auto h-8 w-8" style={{ color: ACCENT_INK }} />
-                  <h3 className="mt-2">Your brand.md is downloading</h3>
+                  <h3 className="mt-2">Je brand.md wordt gedownload</h3>
                   <p className="mt-1 text-sm text-gray-600">
                     Your full report is on its way to your inbox. Try the recipes above — and
                     when you want the living, validated version:
@@ -390,7 +390,7 @@ export function GeneratorClient() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && !gateBusy && unlockAndDownload()}
-                      placeholder="you@company.com"
+                      placeholder="jij@bedrijf.nl"
                       className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none"
                     />
                     <button
