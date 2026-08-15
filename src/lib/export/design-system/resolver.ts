@@ -81,6 +81,7 @@ export async function buildDesignSystemModel(
         vocabularyDo: true,
         vocabularyDont: true,
         channelTones: true,
+        messagePillars: true,
         updatedAt: true,
       },
     }),
@@ -576,6 +577,8 @@ function buildBrandMdExtension(input: {
     channelTones: parseChannelTones(vg.channelTones),
     products: input.products,
     guardrails: { do: guardrailsDo, dont: guardrailsDont },
+    messagePillars: parseMessagePillars(vg.messagePillars),
+    artDirection: buildArtDirection(sg),
     validation: buildSectionValidation(
       input.brandAssetStatuses,
       vg,
@@ -588,6 +591,48 @@ function buildBrandMdExtension(input: {
       canonicalUrl: buildCanonicalUrl(input.workspaceSlug),
     },
   };
+}
+
+/** BrandVoiceguide.messagePillars (Json) → typed shape; onbekende vormen → undefined. */
+function parseMessagePillars(
+  raw: unknown,
+): Array<{ pillar: string; statements: string[] }> | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const pillars = raw
+    .filter(
+      (e): e is { pillar: string; statements?: unknown } =>
+        !!e && typeof e === 'object' && typeof (e as Record<string, unknown>).pillar === 'string',
+    )
+    .map((e) => ({ pillar: e.pillar, statements: asStringArray(e.statements).slice(0, 2) }))
+    .slice(0, 6);
+  return pillars.length > 0 ? pillars : undefined;
+}
+
+/**
+ * Art Direction (BRAND.md 0.3, verplichte Visual-subsectie) uit bestaande
+ * styleguide-data: designPhilosophy (AI Phase 3, verbeterplan #4) als
+ * direction statement en de photography-mood-woorden als design keywords.
+ * Geen nieuwe databron — alleen hergebruik (verrijking 2026-08-15).
+ */
+function buildArtDirection(
+  sg: Record<string, unknown>,
+): { keywords: string[]; statement?: string } | undefined {
+  const statement = asStringOrUndefined(sg.designPhilosophy);
+  const photo = sg.photographyStyle;
+  const mood =
+    photo && typeof photo === 'object' && 'mood' in photo
+      ? asStringOrUndefined((photo as Record<string, unknown>).mood)
+      : undefined;
+  // Mood-strings zijn doorgaans "woord, woord, woord — toelichting": de
+  // komma-lijst vóór een em-dash/punt levert de keywords.
+  const keywords = (mood ?? '')
+    .split(/—|\.|:/)[0]
+    .split(',')
+    .map((w) => w.replace(/^(OBSERVED|RECOMMENDED):\s*/i, '').trim())
+    .filter((w) => w.length > 1 && w.length < 40)
+    .slice(0, 6);
+  if (!statement && keywords.length === 0) return undefined;
+  return { keywords, statement };
 }
 
 function buildCanonicalUrl(workspaceSlug: string): string | undefined {

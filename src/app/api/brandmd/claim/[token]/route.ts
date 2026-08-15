@@ -17,6 +17,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/auth-server';
 import {
@@ -182,6 +183,11 @@ export async function POST(_req: NextRequest, context: RouteContext) {
           wordsWeUse: payload.voice.wordsWeUse,
           wordsWeAvoid: payload.voice.wordsWeAvoid,
           contentGuidelines: payload.voice.tonalRules,
+          // Scan-verrijking 2026-08-15: pillars uit de generator-scan mee
+          // als startpunt — de voice-analyzer/gebruiker verfijnt later.
+          ...(payload.messagePillars?.length
+            ? { messagePillars: payload.messagePillars as unknown as Prisma.InputJsonValue }
+            : {}),
         },
       });
 
@@ -341,6 +347,22 @@ function parsePayload(raw: unknown): BrandMdDraftPayload | null {
     },
     audience: pairArr(p.audience),
     products: pairArr(p.products),
+    messagePillars: Array.isArray(p.messagePillars)
+      ? (p.messagePillars as unknown[])
+          .filter(
+            (e): e is { pillar: string; statements?: unknown } =>
+              !!e && typeof e === 'object' && typeof (e as { pillar?: unknown }).pillar === 'string',
+          )
+          .map((e) => ({ pillar: e.pillar, statements: strArr(e.statements).slice(0, 2) }))
+          .slice(0, 6)
+      : undefined,
+    artDirection:
+      p.artDirection && typeof p.artDirection === 'object'
+        ? {
+            keywords: strArr((p.artDirection as { keywords?: unknown }).keywords).slice(0, 8),
+            statement: strOrUndef((p.artDirection as { statement?: unknown }).statement),
+          }
+        : undefined,
   };
 }
 

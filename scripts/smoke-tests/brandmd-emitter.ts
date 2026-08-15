@@ -81,6 +81,12 @@ const fixture: DesignSystemModel = {
           category: 'CULTURE',
           summary: 'Honesty · Craft · Calm',
         },
+        {
+          name: 'References & Anti-References',
+          slug: 'references-anti-references',
+          category: 'STRATEGY',
+          summary: 'Borrow: Linear (restraint). Reject: generic enterprise SaaS gradients.',
+        },
       ],
       personas: [
         {
@@ -175,6 +181,7 @@ for (const needle of [
   '#### Do',
   '- **Reliability** — Boring is a feature',
   'Design keywords: calm · editorial · unhurried.',
+  'Borrow: Linear (restraint). Reject: generic enterprise SaaS gradients.',
 ]) {
   if (!a.includes(needle)) fail(`spec-element ontbreekt: ${needle}`);
 }
