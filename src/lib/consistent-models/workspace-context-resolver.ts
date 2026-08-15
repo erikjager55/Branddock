@@ -8,12 +8,9 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
+import { getBrandLibrary } from '@/lib/brand-library';
 import type { ModelBrandContext } from '@/features/consistent-models/types/consistent-model.types';
 import { extractBrandTags } from '@/lib/consistent-models/reference-prompt-builder';
-import {
-  stripAnalyzerMarkers,
-  stripAnalyzerMarkersFromList,
-} from '@/lib/brandstyle/analyzer-markers';
 
 /**
  * Resolve the full brand context for a workspace.
@@ -26,7 +23,7 @@ export async function resolveWorkspaceBrandContext(
 ): Promise<ModelBrandContext | null> {
   const [
     workspace,
-    styleguide,
+    library,
     personas,
     products,
     competitors,
@@ -38,24 +35,10 @@ export async function resolveWorkspaceBrandContext(
       where: { id: workspaceId },
       select: { name: true },
     }),
-    prisma.brandStyleguide.findFirst({
-      where: { workspaceId },
-      select: {
-        colors: { select: { name: true, hex: true } },
-        primaryFontName: true,
-        photographyStyle: true,
-        photographyGuidelines: true,
-        designLanguageSavedForAi: true,
-        imagerySavedForAi: true,
-        published: true,
-        logos: {
-          orderBy: { sortOrder: 'asc' },
-          select: { variant: true, fileUrl: true, description: true },
-        },
-        logoGuidelines: true,
-        logoDonts: true,
-      },
-    }),
+    // W7.1: via het consumptiepad. De imagery-gate die hieronder stond zit nu
+    // in de accessor; kleuren, fonts en logo-proza volgen voortaan óók hun
+    // eigen sectie-gate in plaats van ongegate mee te liften.
+    getBrandLibrary(workspaceId, { view: 'image' }),
     prisma.persona.findMany({
       where: { workspaceId },
       select: { name: true, occupation: true, tagline: true },
@@ -103,11 +86,13 @@ export async function resolveWorkspaceBrandContext(
     brandName: workspace.name ?? undefined,
   };
 
-  if (styleguide?.colors?.length) {
-    ctx.brandColors = styleguide.colors.map((c) => ({ name: c.name, hex: c.hex }));
+  const colorsSection = library.sections.colors;
+  if (colorsSection?.palette.length) {
+    ctx.brandColors = colorsSection.palette.map((c) => ({ name: c.name, hex: c.hex }));
   }
-  if (styleguide?.primaryFontName) {
-    ctx.brandFonts = [styleguide.primaryFontName];
+  const primaryFontName = library.sections.typography?.primaryFontName;
+  if (primaryFontName) {
+    ctx.brandFonts = [primaryFontName];
   }
   // Imagery follows the same review-gate as brand-context (published +
   // imagerySavedForAi) — this path used to push raw JSON.stringify of the
@@ -116,23 +101,16 @@ export async function resolveWorkspaceBrandContext(
   // subjects/composition describe the scraped source photos and are
   // per-image dimensions that must not ride along in the shared
   // contextSummary tail (gotcha 2026-06-10).
-  if (styleguide?.published && styleguide.imagerySavedForAi) {
+  const imagerySection = library.sections.imagery;
+  if (imagerySection) {
     const parts: string[] = [];
-    const photoStyle = styleguide.photographyStyle as
-      | { mood?: string | null }
-      | string
-      | null;
-    const mood = stripAnalyzerMarkers(
-      typeof photoStyle === 'string' ? photoStyle : photoStyle?.mood,
-    );
+    const mood = (imagerySection.photographyStyle?.mood as string | undefined) ?? '';
     if (mood) parts.push(mood);
-    const guidelines = stripAnalyzerMarkersFromList(
-      styleguide.photographyGuidelines ?? [],
-    );
+    const guidelines = imagerySection.guidelines;
     if (guidelines.length) parts.push(guidelines.join('. '));
     if (parts.length) ctx.brandImageryStyle = parts.join('. ');
   }
-  if (styleguide?.designLanguageSavedForAi) {
+  if (library.sections.designLanguage) {
     ctx.brandDesignLanguage = 'Design language saved for AI context';
   }
   if (voiceguide?.guidelinesSavedForAi) {
@@ -140,18 +118,20 @@ export async function resolveWorkspaceBrandContext(
   }
 
   // Build logo context — only injected when the user explicitly asks for logo/brand name
-  if (styleguide) {
+  const logoSection = library.sections.logo;
+  if (logoSection) {
     const logoParts: string[] = [];
     if (ctx.brandName) logoParts.push(`Brand name: "${ctx.brandName}".`);
-    const primaryLogo = styleguide.logos.find((l) => l.variant === 'PRIMARY') ?? styleguide.logos[0];
+    const primaryLogo =
+      logoSection.logos.find((l) => l.variant === 'PRIMARY') ?? logoSection.logos[0];
     if (primaryLogo?.description) {
       logoParts.push(`Logo: ${primaryLogo.description}.`);
     }
-    if (styleguide.logoGuidelines?.length) {
-      logoParts.push(`Logo guidelines: ${styleguide.logoGuidelines.join('. ')}.`);
+    if (logoSection.guidelines.length) {
+      logoParts.push(`Logo guidelines: ${logoSection.guidelines.join('. ')}.`);
     }
-    if (styleguide.logoDonts?.length) {
-      logoParts.push(`Logo don'ts: ${styleguide.logoDonts.join('. ')}.`);
+    if (logoSection.donts.length) {
+      logoParts.push(`Logo don'ts: ${logoSection.donts.join('. ')}.`);
     }
     if (ctx.brandColors?.length) {
       const primary = ctx.brandColors[0];

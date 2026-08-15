@@ -115,6 +115,70 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // ─────────────────────────────────────────────────────────────
+  // W7.1 — de merkbibliotheek is het verplichte consumptiepad.
+  //
+  // Directe `prisma.brandStyleguide`-toegang verspreidt de gates (published +
+  // de zes save-for-AI-vlaggen) en de marker-stripping over tientallen
+  // bestanden; één vergeten gate is dan een governance-gat. Consumers gaan via
+  // `getBrandLibrary` (src/lib/brand-library).
+  //
+  // Bewust `no-restricted-properties` en niet `no-restricted-syntax`: die
+  // laatste sleutel is hierboven al twee keer in gebruik voor de NL- en
+  // i18n-guards, en flat-config doet last-wins per rule-key — een derde blok
+  // zou die guards op elk overlappend bestand uitschakelen.
+  //
+  // De `ignores`-lijst is de resterende schuld en hoort te krimpen.
+  // Zie docs/adr/2026-08-14-brand-library-consumption.md.
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: [
+      // De accessor zelf + de CRUD/editor-routes van de styleguide.
+      "src/lib/brand-library/**",
+      "src/app/api/brandstyle/**",
+
+      // Schrijfpaden: analyse, scrape, afgeleide velden, lock-checks.
+      "src/lib/brandstyle/analysis-engine.ts",
+      "src/lib/brandstyle/recompute-color-pairings.ts",
+      "src/lib/brandstyle/semantic-role-resolver.ts",
+      "src/lib/brandstyle/snapshots/snapshot-cleanup.ts",
+      "src/lib/landing-pages/ensure-archetype.ts",
+      "src/lib/landing-pages/ensure-layout-style.ts",
+      "src/lib/website-scanner/scanner-pipeline.ts",
+      "src/lib/alignment/fix-generator.ts",
+      // NB: geen letterlijke [token] in het pad — flat-config leest `[...]`
+      // als character-class, waardoor de entry stil niet matcht.
+      "src/app/api/brandmd/claim/**",
+
+      // Styleguide-domein zelf: leest zijn eigen regels mét eigen gates.
+      "src/lib/brand-fidelity/styleguide-rule-compiler.ts",
+      "src/lib/brandstyle/rule-structurer.ts",
+
+      // TODO(brand-library-consumer-migration): nog te migreren lezers.
+      // Export-paden zijn bewust uitgesteld — gating daar verandert de Brand
+      // Kit Bundle en verdient een eigen beslissing.
+      "src/lib/export/design-system/resolver.ts",
+      "src/lib/export/brand-kit-bundle/index.ts",
+      "src/app/api/export/brand-kit/data/route.ts",
+      "src/app/api/export/proxy-image/route.ts",
+      "src/app/api/workspace/export/route.ts",
+      // Geen promptcontent: asset-URLs, tellingen, debug-context.
+      "src/lib/brand/get-brand-logo.ts",
+      "src/lib/alignment/audit-scoring.ts",
+      "src/lib/bug-analysis/analyze-bug.ts",
+    ],
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        ...["prisma", "tx", "db"].map((object) => ({
+          object,
+          property: "brandStyleguide",
+          message:
+            "Read the brand library through getBrandLibrary() from @/lib/brand-library instead of querying BrandStyleguide directly — gates and marker-stripping live there (W7.1).",
+        })),
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

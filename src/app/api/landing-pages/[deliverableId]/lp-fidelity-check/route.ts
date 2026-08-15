@@ -8,6 +8,7 @@ import { judgeVisualBrandFit } from "@/lib/landing-pages/visual-brand-fit-judge"
 import { capturePuckTreeScreenshot } from "@/lib/landing-pages/lp-screenshotter";
 import { fetchMediaAsBuffer } from "@/lib/storage/fetch-media-buffer";
 import type { PageData as Data } from '@/lib/landing-pages/page-data';
+import { getBrandLibrary } from '@/lib/brand-library';
 
 /** Verdict-bucket uit een 0-100 score — zelfde grenzen als de side-by-side judge. */
 function verdictForScore(score: number): LpFidelityResult["verdict"] {
@@ -85,18 +86,14 @@ export async function POST(
   // Load bron-hero-screenshot URL + fallback-velden (designPhilosophy) uit de
   // styleguide. De bron-hero is de side-by-side referentie; designPhilosophy
   // voedt de tekstuele fallback-judge wanneer die referentie ontbreekt.
-  const styleguide = await prisma.brandStyleguide.findUnique({
-    where: { workspaceId },
-    select: {
-      visualLanguage: true,
-      designPhilosophy: true,
-      colors: { where: { category: "PRIMARY" }, orderBy: { sortOrder: "asc" }, select: { hex: true }, take: 3 },
-    },
-  });
-  const heroScreenshotUrl = (() => {
-    const vl = styleguide?.visualLanguage as { heroScreenshotUrl?: string } | null;
-    return vl?.heroScreenshotUrl ?? null;
-  })();
+  // W7.1: via het consumptiepad. De hero-screenshot en de primaire hexen zijn
+  // render-referenties (ongegate); designPhilosophy komt marker-vrij mee.
+  const library = await getBrandLibrary(workspaceId, { view: "image" });
+  const heroScreenshotUrl = library.render.heroScreenshotUrl;
+  const primaryHexes = library.render.colors
+    .filter((c) => c.category === "PRIMARY")
+    .slice(0, 3)
+    .map((c) => c.hex);
 
   // Render LP-screenshot (nodig voor beide paden).
   const ctx = await assembleCanvasContext(deliverable.id, workspaceId);
@@ -141,7 +138,7 @@ export async function POST(
     result = sideBySide;
   } else {
     // Pad 2 — fallback: tekstuele design-philosophy-judge (geen bron-image).
-    if (!styleguide?.designPhilosophy) {
+    if (!library.meta.designPhilosophy) {
       return NextResponse.json(
         {
           error:
@@ -152,9 +149,9 @@ export async function POST(
     }
     const fit = await judgeVisualBrandFit({
       screenshotBuffer: lpScreenshot,
-      designPhilosophy: styleguide.designPhilosophy,
+      designPhilosophy: library.meta.designPhilosophy,
       brandName: ctx.brand.brandName,
-      brandColors: styleguide.colors.map((c) => c.hex),
+      brandColors: primaryHexes,
       brandImageryStyle: ctx.brand.brandImageryStyle ?? null,
     });
     if (fit.status !== "scored" || typeof fit.score !== "number") {

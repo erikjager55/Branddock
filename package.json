@@ -78,6 +78,8 @@
     "smoke:geo-analysis": "tsx scripts/smoke-tests/geo-analysis.ts",
     "smoke:geo-panel": "tsx scripts/smoke-tests/geo-panel.ts",
     "eval:brand-manifest-golden": "tsx scripts/eval/brand-manifest-golden/run.ts",
+    "smoke:brand-library": "tsx scripts/smoke-tests/brand-library-accessor.ts",
+    "brand-context-baseline": "tsx scripts/dev/brand-context-baseline.ts",
     "smoke:styleguide-rules": "tsx scripts/smoke-tests/styleguide-rule-compiler.ts",
     "smoke:styleguide-rules-fval": "tsx scripts/smoke-tests/styleguide-rules-fval.ts",
     "derive-rule-constraints": "tsx scripts/derive-rule-constraints.ts",

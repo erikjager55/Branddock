@@ -13,6 +13,7 @@ import { anthropicClient } from '@/lib/ai/anthropic-client';
 import { runFidelityScoring } from '@/lib/brand-fidelity/fidelity-runner';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
 import { prisma } from '@/lib/prisma';
+import { getBrandLibrary } from '@/lib/brand-library';
 
 /**
  * POST /api/landing-pages/auto-iterate
@@ -311,18 +312,11 @@ async function scoreWithFvalOrFallback(
 
     // F-VAL dimensie 8 — laad designPhilosophy + brand-colors voor vision-judge.
     // Non-critical: bij absence wordt vision-judge geskipt (composite blijft 7-dim).
-    const styleguide = await prisma.brandStyleguide.findUnique({
-      where: { workspaceId },
-      select: {
-        designPhilosophy: true,
-        colors: {
-          where: { category: 'PRIMARY' },
-          orderBy: { sortOrder: 'asc' },
-          select: { hex: true },
-          take: 3,
-        },
-      },
-    });
+    const library = await getBrandLibrary(workspaceId, { view: 'image' });
+    const primaryHexes = library.render.colors
+      .filter((c) => c.category === 'PRIMARY')
+      .slice(0, 3)
+      .map((c) => c.hex);
 
     return await evaluatePageQualityViaFVAL({
       data: body.puckData,
@@ -330,11 +324,11 @@ async function scoreWithFvalOrFallback(
       workspaceId,
       deliverableId: deliverable.id,
       contentTypeId: deliverable.contentType ?? null,
-      visionJudge: styleguide?.designPhilosophy
+      visionJudge: library.meta.designPhilosophy
         ? {
-            designPhilosophy: styleguide.designPhilosophy,
+            designPhilosophy: library.meta.designPhilosophy,
             brandName: ctx.brand.brandName,
-            brandColors: styleguide.colors.map((c) => c.hex),
+            brandColors: primaryHexes,
             brandImageryStyle: ctx.brand.brandImageryStyle ?? null,
           }
         : undefined,

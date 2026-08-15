@@ -33,6 +33,13 @@ UI                              — src/features/brandstyle/components/DesignSys
                                   — src/features/brandstyle/components/SystemScalesSection.tsx (Visual System tab)
 ```
 
+> **Let op — twee lagen, twee opdrachten.** `buildDesignSystemModel` (deze pijplijn) is de
+> **ongegate** assembler voor exports die de gebruiker zelf start. Voor *consumptie* door AI en
+> agents bestaat daarnaast `getBrandLibrary` (`src/lib/brand-library/`): dezelfde bron, maar met de
+> publish- en save-for-AI-gates en marker-stripping erop. Nieuwe AI-consumers gaan altijd via de
+> accessor — directe `prisma.brandStyleguide`-toegang is een lint-fout. Zie
+> [`docs/adr/2026-08-14-brand-library-consumption.md`](adr/2026-08-14-brand-library-consumption.md).
+
 ## De Semantic Role Resolver
 
 De analyzer detecteert ruwe kleuren/fonts/radii/spacing. De resolver maakt daar semantische rollen van die elk export-formaat kan verbruiken.

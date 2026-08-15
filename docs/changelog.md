@@ -37,6 +37,49 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 463. Merkcontext loopt via één gegate accessor — twaalf consumers gemigreerd + lint-regel (W7.1)
+
+Elke consumer las tot nu toe zelf `BrandStyleguide`-velden, dus de gates (`published` + de zes
+`*SavedForAi`-vlaggen) en de marker-stripping zaten verspreid over tientallen bestanden. Van de
+~24 leespaden pasten er **5** gates toe. `getBrandLibrary` bestond wel, maar had **nul** consumers
+en leverde alleen het manifest. **Fase 1**: de accessor is het consumptiecontract geworden — één
+query, twee helften met een bewust verschil in gating (`sections` = prozacontent voor prompts,
+gegate; `render` = tokens waarmee gerenderd wordt, ongegate zoals canvas-context al deed), een
+`gates`-rapportage zodat "sectie ontbreekt" te onderscheiden is van "sectie is leeg", en
+`mode: 'raw'` voor audit-paden die juist de ongereviewde staat moeten zien. Retourneert niet langer
+`null` bij een niet-gepubliceerde styleguide, en hangt onder de bestaande server-cache met de
+`brandstyle`-prefix zodat de invalidatie die élke mutatieroute al doet hem meeneemt. **Fase 2**:
+acht lib-modules (`brand-context`, `canvas-context`, `knowledge-context-fetcher`,
+`claw/read-tools`, `visual-fidelity-scorer`, beide `consistent-models`-resolvers,
+`alignment/data-fetcher`) en vier routes (`brandstyle/ai-context`, `visual-brand-fit-check`,
+`lp-fidelity-check`, `landing-pages/auto-iterate`) gemigreerd. **Fase 3**: `no-restricted-properties`
+op `prisma|tx|db.brandStyleguide` als **error**, met een `ignores`-lijst die de resterende negen
+lezers benoemt — bewust niet `no-restricted-syntax`, want die sleutel is al twee keer in gebruik
+voor de NL/i18n-guards en flat-config doet last-wins per rule-key.
+
+**Drie gaten gedicht**: `brand-context` las `fonts` langs `typographySavedForAi` heen (raakt Linfi +
+Nobox, allebei published mét gesloten typografie-sectie); `visual-fidelity-scorer` zette een
+ongegate, ongestripte `JSON.stringify` van de scrape als beoordelingsmaatstaf in de vision-judge;
+`claw/read_brandstyle` en `knowledge-context-fetcher` leverden ongereviewde scrape-data aan de
+assistent respectievelijk de prompt. **Grootste gedragsconsequentie**: `consistent-models` gaf
+kleuren, fonts en logo-proza ongegate aan image-generatie-prompts en volgt nu dezelfde gates als
+`brand-context` — bij een niet-gefinaliseerde styleguide krijgt de beeldgeneratie dus geen
+merkcontext meer (lokaal 16 van 18 workspaces; op prod alleen wie de review nooit afrondde).
+
+Bewijs: baseline-harnas (`scripts/dev/brand-context-baseline.ts`) dat `getBrandContext`,
+`assembleCanvasContext`, `resolveWorkspaceBrandContext` en de alignment-module per workspace
+vastlegt, met een gepubliceerde scratch-kloon omdat lokaal géén styleguide `published` is. Het
+"vóór"-beeld komt uit de ongemigreerde taak-1-worktree. Elke gemeten afwijking is verklaard en
+benoemd; canvas-context is byte-identiek. Gates: tsc 0 errors, lint 0 nieuwe errors (1 pre-existing
+op main), `smoke:brand-library` 36/36 (DB-vrij), `smoke:styleguide-rules` 51/51,
+`smoke:styleguide-rules-fval` 17/17, `eval:brand-manifest-golden` 14/14, `eval:brandstyle-golden`
+PASS, `smoke:geo-fidelity` 20/20. Bijvangst-gotcha: flat-config `ignores` leest `[token]` in een
+Next-route-pad als character-class, waardoor zo'n allowlist-entry stil niet matcht.
+
+- Task: [tasks/brand-library-consumer-migration.md](../tasks/brand-library-consumer-migration.md)
+- ADR: [docs/adr/2026-08-14-brand-library-consumption.md](adr/2026-08-14-brand-library-consumption.md)
+- Spec: `docs/specs/brandstyle-designbibliotheek-verbeterplan.md` (W7.1)
+
 ### 462. brand.md lifecycle-mails — touchpoints 2.2-2.5 live, met opt-in en één-klik-uitschrijven
 
 Fase 2 van de mailflow: na de rapport-mail (#455) volgen nu vier lifecycle-momenten, verzonden door de nieuwe dagelijkse cron `/api/cron/brandmd-lifecycle` (07:00 UTC). **2.2** (24 u-dag 7) geeft één praktische tip plus uitleg van `unvalidated`; **2.3** (dag 7-21) zet de benchmark-reflex in met een gratis concurrent-scan; **2.4** (dag 21-60) is feitelijk over veroudering; **2.5** (TTL ≤10 dagen) is de laatste mail. De vensterlogica zit als pure functie in `src/lib/brandmd/lifecycle.ts` — de cron blijft dun (kandidaten, versturen, boekhouden) en de beslissing is zonder DB of mailer te smoken. Harde grenzen: hooguit één mail per draft per run, cap 200 sends, `lifecycleStagesSent` als idempotente administratie, en een gemist 2.2-venster wordt stil afgemarkeerd in plaats van ingehaald — te laat versturen leest als spam.
