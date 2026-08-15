@@ -37,6 +37,13 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 459. Scan-verrijking — Message Pillars en Art Direction eerlijk afgeleid
+
+De generator streeft nu naar een zo compleet mogelijk bestand: de éne extractie-call levert additioneel `messagePillars` (3-6 terugkerende thema's + kernstatements uit de copy) en `artDirection` (design-keywords + direction statement, gegrond in de geobserveerde kleuren/typefaces die nu als context in de prompt meegaan), en de prompt maakt expliciet onderscheid tussen EXTRACTED- en INFERRED-velden zodat Personality/Promise vaker gevuld worden zonder verzinsels. References & Anti-References blijft bewust "Not yet defined" — dat is een menselijke strategische keuze en het sterkste claim-signaal. Emitter rendert de nieuwe velden in de verplichte 0.3-secties; Brand Score-completeness telt ze mee (8→10 checks); payload-velden additief-optioneel (geen schema-wijziging). Smoke + voorbeelden bijgewerkt, beide spec-valide.
+
+- Task: [tasks/brand-md-open-standaard.md](../tasks/brand-md-open-standaard.md)
+- Commit: zie git log (scan-verrijking)
+
 ### 458. BRAND.md 0.3-migratie — strikte spec-conformance voor emitter, validator en download
 
 Hercontrole tegen de letterlijke spec-teksten (0.2 via commit-historie, 0.3 integraal) toonde dat onze "0.2-kern" een eigen lezing was: `version` als specversie-string i.p.v. integer-merkrevisie, ontbrekende `tagline`, eigen subsectienamen, en een validator die die eigen lezing circulair bevestigde. In één beweging naar spec v0.3.0: emitter met volledige frontmatter (`tagline`, `specVersion: "0.3.0"`, `version: 1`) en alle verplichte Strategy/Voice/Visual-subsecties (datamapping-tabel in de full-profile-spec v2; lege verplichte subsecties expliciet `_Not yet defined._` — nooit verzonnen); personas en Do/Don't-lijsten als `####`-conventies bínnen de spec-secties (onze upstream-PR-voorstellen, nu zelf geïmplementeerd); Typefaces zonder maten (DESIGN.md-grens); downloads heten canoniek `BRAND.md`. Validator v0.2.0 implementeert de echte resolutieregels (0.2.0/0.3.0, aliassen, malformed-`specVersion`-tabel); de emitter-smoke kruisvalideert voortaan tegen die validator. Voorbeelden geregenereerd en spec-valide.

@@ -118,6 +118,14 @@ const fixture: DesignSystemModel = {
         },
       ],
       guardrails: { do: ['Use active voice'], dont: ['Avoid the word/phrase "synergy"'] },
+      messagePillars: [
+        { pillar: 'Reliability', statements: ['Boring is a feature'] },
+        { pillar: 'Honesty', statements: ['We say what we ship'] },
+      ],
+      artDirection: {
+        keywords: ['calm', 'editorial', 'unhurried'],
+        statement: 'The identity should read like a well-set book, not a dashboard.',
+      },
       validation: {
         strategy: { status: 'validated', score: 82, date: '2026-08-01' },
         voice: { status: 'validated', date: '2026-08-01' },
@@ -165,6 +173,8 @@ for (const needle of [
   '### Typefaces',
   '### Art Direction',
   '#### Do',
+  '- **Reliability** — Boring is a feature',
+  'Design keywords: calm · editorial · unhurried.',
 ]) {
   if (!a.includes(needle)) fail(`spec-element ontbreekt: ${needle}`);
 }

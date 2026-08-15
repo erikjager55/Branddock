@@ -12,7 +12,7 @@ validation:
   products: { status: unvalidated }
 provenance:
   generated_by: Branddock
-  generated_at: 2026-08-14
+  generated_at: 2026-08-15
   canonical: "https://branddock.app/brandmd/claim/EXAMPLE-TOKEN"
   source: "https://example-saas.com"
 ---
@@ -65,7 +65,8 @@ Direct, developer-friendly, lightly wry.
 
 ### Message Pillars
 
-_Not yet defined._
+- **Close the loop** — Users deserve to know what shipped
+- **Zero busywork** — Release notes that write themselves
 
 ### Phrases
 
@@ -93,7 +94,9 @@ _Not yet defined._
 
 ### Art Direction
 
-_Not yet defined._
+Design keywords: clean · developer-native · high-contrast.
+
+Reads like good documentation: quiet surfaces, one confident accent color.
 
 ## Products & Services
 

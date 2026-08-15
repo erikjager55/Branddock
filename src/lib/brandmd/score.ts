@@ -96,6 +96,10 @@ function scoreCompleteness(model: DesignSystemModel): DimensionResult {
     ['audience', (model.extensions.brandFoundation?.personas.length ?? 0) > 0],
     ['products', (md?.products.length ?? 0) > 0],
     ['guardrails', (md?.guardrails.do.length ?? 0) + (md?.guardrails.dont.length ?? 0) > 0],
+    // Verrijking 2026-08-15: de scan streeft naar een zo compleet mogelijk
+    // bestand — deze 0.3-secties tellen dus mee in de volledigheid.
+    ['message pillars', (md?.messagePillars?.length ?? 0) > 0],
+    ['art direction', !!(md?.artDirection?.keywords.length || md?.artDirection?.statement)],
   ];
   const filled = checks.filter(([, ok]) => ok);
   const score = Math.round((filled.length / checks.length) * 100);

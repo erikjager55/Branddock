@@ -295,8 +295,16 @@ function renderVoice(
     lines.push('');
   }
 
-  // Message Pillars (verplicht) — geen databron in Branddock (nog).
-  pushSubsection(lines, 'Message Pillars', []);
+  // Message Pillars (verplicht) — scan-afgeleid of (later) workspace-data.
+  lines.push('### Message Pillars', '');
+  if (md?.messagePillars?.length) {
+    for (const p of md.messagePillars) {
+      lines.push(`- **${p.pillar}**${p.statements.length ? ` — ${p.statements.join('; ')}` : ''}`);
+    }
+    lines.push('');
+  } else {
+    lines.push(NOT_DEFINED, '');
+  }
 
   // Phrases (verplicht)
   lines.push('### Phrases', '');
@@ -378,8 +386,18 @@ function renderVisual(model: DesignSystemModel): string {
     if (imagery.photographyGuidelines.length) lines.push('');
   }
 
-  // Art Direction (verplicht in 0.3; 0.2-alias: Style)
-  pushSubsection(lines, 'Art Direction', model.prose.overview ? [model.prose.overview] : []);
+  // Art Direction (verplicht in 0.3; 0.2-alias: Style) — scan-afgeleide
+  // keywords + statement; levende versie valt terug op de styleguide-overview.
+  const art = model.extensions.brandMd?.artDirection;
+  lines.push('### Art Direction', '');
+  if (art?.keywords.length || art?.statement) {
+    if (art.keywords.length) lines.push(`Design keywords: ${art.keywords.join(' · ')}.`, '');
+    if (art.statement) lines.push(art.statement, '');
+  } else if (model.prose.overview) {
+    lines.push(model.prose.overview, '');
+  } else {
+    lines.push(NOT_DEFINED, '');
+  }
 
   return lines.join('\n');
 }
