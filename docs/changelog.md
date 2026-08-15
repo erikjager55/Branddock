@@ -37,6 +37,13 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 460. Levende laag verrijkt — Message Pillars, Art Direction en References-asset met terugwerkende kracht
+
+De 0.3-secties zijn nu eersteklas workspace-data (waren alleen scan-draft). **Voice**: `BrandVoiceguide.messagePillars` (Json, ⚠️ Neon `db push` vereist) — voice-analyzer extraheert pillars (prompt + sanitize + review-toggle in VoiceAnalyzerReview), bewerkbaar blok in VoiceDnaSection (i18n en/nl), PATCH-route gevalideerd, claim seedt pillars uit de generator-scan. **Brandstyle**: Art Direction hergebruikt bestáánde data — `designPhilosophy` (AI Phase 3) als direction statement + photography-mood-woorden als keywords, via de resolver in de levende BRAND.md; geen nieuw veld nodig. **Merkfundament**: 12e canonical asset "References & Anti-References" (REFERENCES, categorie STRATEGY — bewust nooit scan-gevuld; menselijke keuze), automatisch in nieuwe/geclaimde workspaces, gemapt op de verplichte 0.3-subsectie. **Backfill**: `scripts/dev/enrich-brandmd-sections.ts` — niet-destructief (alleen lege velden; default dry-run, `--apply`): references-asset aanmaken, pillars afleiden uit de opgeslagen voice-corpus (1 AI-call), rapporteert styleguides zonder designPhilosophy (→ re-analyse). Smoke bewaakt de asset→subsectie-mapping.
+
+- Task: [tasks/brand-md-open-standaard.md](../tasks/brand-md-open-standaard.md)
+- Commit: zie git log (levende-laag-verrijking)
+
 ### 459. Scan-verrijking — Message Pillars en Art Direction eerlijk afgeleid
 
 De generator streeft nu naar een zo compleet mogelijk bestand: de éne extractie-call levert additioneel `messagePillars` (3-6 terugkerende thema's + kernstatements uit de copy) en `artDirection` (design-keywords + direction statement, gegrond in de geobserveerde kleuren/typefaces die nu als context in de prompt meegaan), en de prompt maakt expliciet onderscheid tussen EXTRACTED- en INFERRED-velden zodat Personality/Promise vaker gevuld worden zonder verzinsels. References & Anti-References blijft bewust "Not yet defined" — dat is een menselijke strategische keuze en het sterkste claim-signaal. Emitter rendert de nieuwe velden in de verplichte 0.3-secties; Brand Score-completeness telt ze mee (8→10 checks); payload-velden additief-optioneel (geen schema-wijziging). Smoke + voorbeelden bijgewerkt, beide spec-valide.

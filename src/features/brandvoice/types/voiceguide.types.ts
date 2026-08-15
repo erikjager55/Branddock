@@ -35,6 +35,11 @@ export interface ExamplePhrase {
   type: "do" | "dont";
 }
 
+export interface MessagePillar {
+  pillar: string;
+  statements: string[];
+}
+
 export interface BrandVoiceguide {
   id: string;
   workspaceId: string;
@@ -46,6 +51,8 @@ export interface BrandVoiceguide {
   wordsWeAvoid: string[];
   channelTones: ChannelTones | null;
   antiPatterns: string[];
+  /** BRAND.md 0.3 Voice > Message Pillars (verrijking 2026-08-15) */
+  messagePillars: MessagePillar[] | null;
   // Verhuisd uit BrandStyleguide (ADR 2026-05-15)
   contentGuidelines: string[];
   writingGuidelines: string[];
@@ -79,6 +86,7 @@ export interface UpdateBrandVoiceguideBody {
   wordsWeAvoid?: string[];
   channelTones?: ChannelTones | null;
   antiPatterns?: string[];
+  messagePillars?: MessagePillar[] | null;
   contentGuidelines?: string[];
   writingGuidelines?: string[];
   examplePhrases?: ExamplePhrase[] | null;
@@ -146,6 +154,8 @@ export interface VoiceAnalysisResult {
   wordsWeAvoid: string[];
   channelTones: ChannelTones;
   antiPatterns: string[];
+  /** BRAND.md 0.3 Voice > Message Pillars — 3-6 kernthema's + statements */
+  messagePillars?: Array<{ pillar: string; statements: string[] }>;
   /** Human-readable rationale per section — surfaced in the review UI */
   rationale: {
     voice?: string;

@@ -38,6 +38,7 @@ const VOICEGUIDE_SELECT = {
   wordsWeAvoid: true,
   channelTones: true,
   antiPatterns: true,
+  messagePillars: true,
   // Verhuisd uit BrandStyleguide (ADR 2026-05-15)
   contentGuidelines: true,
   writingGuidelines: true,
@@ -123,6 +124,12 @@ const updateSchema = z.object({
     .nullable()
     .optional(),
   antiPatterns: z.array(z.string()).optional(),
+  // BRAND.md 0.3 Voice > Message Pillars (verrijking 2026-08-15)
+  messagePillars: z
+    .array(z.object({ pillar: z.string().min(1).max(80), statements: z.array(z.string().max(300)).max(2) }))
+    .max(6)
+    .nullable()
+    .optional(),
   // Tone-of-voice content (verhuisd uit BrandStyleguide, ADR 2026-05-15)
   contentGuidelines: z.array(z.string()).optional(),
   writingGuidelines: z.array(z.string()).optional(),
@@ -145,7 +152,7 @@ const updateSchema = z.object({
   source: z.string().optional(),
 });
 
-const NULLABLE_JSON_FIELDS = ["toneDimensions", "channelTones", "examplePhrases"] as const;
+const NULLABLE_JSON_FIELDS = ["toneDimensions", "channelTones", "examplePhrases", "messagePillars"] as const;
 
 export async function PATCH(request: NextRequest) {
   try {

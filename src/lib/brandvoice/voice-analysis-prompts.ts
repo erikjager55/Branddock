@@ -41,6 +41,10 @@ Rules:
   generic CTAs.
 - Channel tones describe how the voice flexes per medium. Be specific about what
   changes (rhythm, length, formality, density).
+- "Message pillars" = the 3-6 recurring themes the corpus keeps returning to.
+  One short pillar name each (one word or short phrase), with 1-2 key statements
+  per pillar taken from or closely paraphrasing the corpus. Derive them from what
+  the text actually emphasizes — never from category conventions.
 - Output strict JSON matching the schema. No prose around it.`;
 
 /**
@@ -120,6 +124,9 @@ Output JSON in this exact shape:
     "video": "..."
   },
   "antiPatterns": ["multi-word phrase to avoid", "another phrase", "..."],
+  "messagePillars": [
+    { "pillar": "Short theme name", "statements": ["Key statement expressing it"] }
+  ],
   "rationale": {
     "voice": "Why this voiceDescription",
     "samples": "Why these excerpts (briefly)",

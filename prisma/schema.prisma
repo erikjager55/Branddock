@@ -6495,6 +6495,14 @@ model BrandVoiceguide {
    */
   voiceSample String? @db.Text
 
+  /**
+   * BRAND.md 0.3 Voice > Message Pillars — de 3-6 kernthema's die het merk
+   * communiceert. Shape: [{ pillar: string, statements: string[] }].
+   * Gevuld door de voice-analyzer (review-gated) of handmatig; geseed
+   * vanuit de generator-scan bij claim (verrijking 2026-08-15).
+   */
+  messagePillars Json?
+
   // ─── References ─────────────────────────────
   /**
    * /**

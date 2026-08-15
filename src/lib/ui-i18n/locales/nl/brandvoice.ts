@@ -122,11 +122,20 @@ const brandvoice = {
       moreSamples: '+ {{n}} meer',
       channelsLabel: 'Kanaaltonen',
       antiPatternsLabel: 'Anti-patronen ({{n}})',
+      pillarsLabel: 'Boodschap-pijlers ({{n}})',
       runAgain: 'Opnieuw uitvoeren',
       apply: 'Toepassen op voiceguide',
     },
   },
   voiceDna: {
+    pillars: {
+      title: 'Boodschap-pijlers',
+      help: 'De 3-6 kernthema\u2019s waar je merk steeds op terugkomt. Elke pijler heeft een korte naam en 1-2 kernstatements (scheid met ;). Voedt de Voice-sectie van je BRAND.md.',
+      pillarPlaceholder: 'Naam pijler',
+      statementsPlaceholder: 'Kernstatement(s), gescheiden door ;',
+      add: '+ Pijler toevoegen',
+      remove: 'Pijler verwijderen',
+    },
     description: {
       title: 'Stembeschrijving',
       help: 'Eén alinea die vastlegt hoe het merk klinkt. Wordt als stem-instructie boven aan de prompt gebruikt bij elke AI-generatie.',
