@@ -624,11 +624,15 @@ function buildArtDirection(
       ? asStringOrUndefined((photo as Record<string, unknown>).mood)
       : undefined;
   // Mood-strings zijn doorgaans "woord, woord, woord — toelichting": de
-  // komma-lijst vóór een em-dash/punt levert de keywords.
+  // komma-lijst vóór een em-dash/punt levert de keywords. De analyzer-marker
+  // (OBSERVED:/RECOMMENDED:) moet VÓÓR het splitsen weg — anders wordt de
+  // eerste dubbele punt als scheidingsteken gezien en is "RECOMMENDED" het
+  // enige keyword (live geconstateerd 2026-08-15).
   const keywords = (mood ?? '')
+    .replace(/^(OBSERVED|RECOMMENDED):\s*/i, '')
     .split(/—|\.|:/)[0]
     .split(',')
-    .map((w) => w.replace(/^(OBSERVED|RECOMMENDED):\s*/i, '').trim())
+    .map((w) => w.trim())
     .filter((w) => w.length > 1 && w.length < 40)
     .slice(0, 6);
   if (!statement && keywords.length === 0) return undefined;
