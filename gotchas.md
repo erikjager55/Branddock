@@ -400,3 +400,11 @@ Bewezen via Playwright: `el.style.background = '<grad>, url(...)'; el.style.setP
 - Voor Gemini *structured-JSON*-extractie (geen redenering nodig): zet `thinkingConfig: { thinkingBudget: 0 }` én geef een ruim `maxOutputTokens` — anders bepaalt onzichtbaar thinking-verbruik of de JSON nog past.
 - Een fakes-smoke valideert orchestratie/contract, NIET model-budget/-gedrag. Eén live end-to-end run (gated, kosten) hoort bij de acceptatie van AI-pipelines — die ving dit defect dat tsc + 30/30 smoke misten.
 **Prior art**: Deep Research-feature `tasks/knowledge-library-deep-research.md`; dev-runner `scripts/dev/deep-research-live.ts`.
+
+## 2026-08-15 — Losse tsx-scripts laden .env.local NIET vanzelf; fail-soft las als succes
+
+**What went wrong**: `scripts/dev/enrich-brandmd-sections.ts` draaide op prod met alleen een inline `DATABASE_URL`. tsx laadt `.env.local` niet automatisch, dus `ANTHROPIC_API_KEY` ontbrak → elke pijler-afleiding faalde per workspace ("messagePillars FAILED: …" tussen tientallen output-regels), maar het script eindigde gewoon met "Klaar" — de run lás als geslaagd. Pas de eindcontrole op het levende BRAND.md-bestand onthulde dat er niets geschreven was.
+**Rule**:
+- Elk los draaibaar script (scripts/dev, scripts/) begint met `dotenv.config({ path: '.env.local' })` vóór imports die env lezen (patroon `rescrape-brand.ts`); inline geëxporteerde vars winnen automatisch (dotenv overschrijft nooit).
+- Een script dat een vereiste env-var alleen per-item nodig heeft, checkt die **fail-fast bij start** (exit 2 + duidelijke melding) — per-item catch-and-continue is goed voor robuustheid maar mag nooit de enige signalering zijn.
+**Prior art**: `scripts/dev/enrich-brandmd-sections.ts` (fix in zelfde commit); levende-laag-verrijking changelog #460.
