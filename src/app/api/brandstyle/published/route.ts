@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, requireAuth } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
+import { clearStyleguideRuleCache } from "@/lib/brand-fidelity/styleguide-rule-compiler";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { getApplicableReviewSections } from "@/lib/brandstyle/review-sections";
 
@@ -90,6 +91,10 @@ export async function PATCH(request: NextRequest) {
 
     invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+    // De publish-vlag is de gate van de styleguide-regels in de F-VAL
+    // rules-pijler — zonder deze clear telt een net gepubliceerde regelset
+    // tot 60s niet mee.
+    clearStyleguideRuleCache(workspaceId);
 
     return NextResponse.json({
       published: updated.published,

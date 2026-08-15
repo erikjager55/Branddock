@@ -22,6 +22,8 @@ import type {
 } from '@prisma/client';
 import type { SemanticTokens } from './semantic-role-resolver';
 import { stripAnalyzerMarkers, stripAnalyzerMarkersFromList } from './analyzer-markers';
+import { parseRuleConstraint } from './rule-constraints';
+import { isRuleSectionSavedForAi } from './rule-sections';
 import {
   deriveVoiceBaseline1Pager,
   formatVoiceBaseline1Pager,
@@ -39,6 +41,14 @@ export interface ManifestRule {
   source: ManifestRuleSource;
   /** BLOCKING stopt autonome publicatie (W2/Brandclaw-gate); ADVISORY weegt mee in F-VAL. */
   severity: 'BLOCKING' | 'ADVISORY';
+  /**
+   * Waar wordt deze regel afgedwongen? `text` = F-VAL's rules-pijler,
+   * `visual` = de renderer (analyzer-plan fase D). `undefined` = regel zonder
+   * gestructureerde constraint: alleen richtinggevend, nergens afdwingbaar.
+   * Stuurt tevens de channel-views: een visuele regel hoort niet in de
+   * copy-view (zie brand-library/views.ts).
+   */
+  modality?: 'text' | 'visual';
 }
 
 export interface ManifestSubstitution {
@@ -171,11 +181,17 @@ function buildHardRules(styleguide: ManifestStyleguideInput): ManifestRule[] {
   // workspaces.
   if (styleguide.rules && styleguide.rules.length > 0) {
     for (const rule of styleguide.rules) {
+      // Dezelfde save-for-AI-gate als de legacy-tak hieronder. Zonder deze
+      // check lekte een sectie die de gebruiker bewust uit de AI-context had
+      // gehaald alsnog het manifest in — de bugklasse uit gotchas.md:380.
+      if (!isRuleSectionSavedForAi(styleguide, rule.section)) continue;
+      const constraint = parseRuleConstraint(rule.constraint);
       rules.push({
         text: rule.description ? `${rule.title} — ${rule.description}` : rule.title,
         evidence: `${rule.section} (${rule.kind.toLowerCase()})`,
         source: normalizeRuleSource(rule.source),
         severity: rule.severity,
+        modality: constraint?.modality,
       });
     }
     return rules;
