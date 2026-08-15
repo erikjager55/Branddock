@@ -397,17 +397,19 @@ async function fetchBrandAssetSummaries(
 }
 
 function summarizeBrandAsset(
-  description: unknown,
+  _description: unknown,
   content: unknown,
   frameworkData: unknown,
 ): string {
   // Kies eerste beschikbare narrative veld, truncate tot 280 chars.
   // content + frameworkData zijn Json? — kunnen strings, objects, of null zijn.
+  // BEWUST geen fallback op `description`: dat veld draagt de framework-
+  // uitlegtekst uit de workspace-seed ("The reason your organization exists
+  // beyond profit"), geen merkinhoud — die als sectie-inhoud emitten lekte
+  // placeholders in geëxporteerde bestanden (eerlijkheidsregel full-profile-
+  // spec; geconstateerd in live export 2026-08-14).
   const contentStr = extractNarrativeString(content);
   if (contentStr) return truncate(contentStr, 280);
-  if (typeof description === 'string' && description.trim().length > 0) {
-    return truncate(description.trim(), 280);
-  }
   if (frameworkData && typeof frameworkData === 'object') {
     const fd = frameworkData as Record<string, unknown>;
     for (const key of ['statement', 'promiseStatement', 'coreMessage', 'essence', 'why']) {

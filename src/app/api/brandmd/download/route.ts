@@ -54,7 +54,9 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': 'text/markdown; charset=utf-8',
-        'Content-Disposition': `attachment; filename="${profile.domain}-brand.md"`,
+        // Canonieke naam per spec 0.3 (uppercase, exact) — geen rename-stap
+        // nodig voor "drop it in your repo root".
+        'Content-Disposition': 'attachment; filename="BRAND.md"',
         'Cache-Control': 'no-store',
       },
     });

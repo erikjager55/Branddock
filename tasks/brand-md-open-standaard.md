@@ -122,6 +122,25 @@ Adopteer de bestaande brand.md v0.2-spec als kern en maak Branddock de referenti
 
 Na de geslaagde live test (scan → claim → dashboard werkend op prod) drie user-besluiten verwerkt: (1) **rijkere scan** — 1-2 extra same-origin-pagina's (over-ons/diensten-patronen), bredere AI-extractie (kernwaarden + letterlijke voorbeeldzinnen), tekstbudget 6k→12k, maxTokens 1400→2500; (2) **leken-laag resultaatpagina** — uitlegkop, hoofdbevindingen in gewone taal (deterministisch uit het payload), scoredimensies ingeklapt, use-paneel vóór download; (3) **harde e-mail-gate** — bestand niet meer in de generate-response, server-afgedwongen via `/api/brandmd/download` (403 EMAIL_REQUIRED zonder vastgelegde e-mail). Footer-links op de marketing-site toegevoegd (/brandmd + /brandmd/use). ⚠️ Door de harde gate is de **rapport-mail (Emailit) urgenter geworden**: de gate wekt de verwachting van opvolging — follow-up-task naar voren halen.
 
+# Uitvoeringsstand v3 (conformance-audit 2026-08-14)
+
+Audit "zijn de upstream-onderdelen integraal overgenomen?" uitgevoerd. Uitkomst: v0.2-kern integraal en bewezen (validator + live MCP-check); **upstream is doorontwikkeld naar v0.3.0** (Audience/Guardrails nu als verplichte Strategy-subsecties, Governance-laag, specVersion, BRAND.md↔DESIGN.md-grens). Drie acties opgepakt:
+
+1. **Upstream-PR-pakket herschreven** (`docs/specs/brandmd-upstream-proposals.md` v2): oude PR #1/#3 waren ingehaald door 0.3; nieuw speerpunt = provenance+validation-frontmatter (nog steeds afwezig upstream), personas en Do/Don't-lijsten als additieve conventies bínnen de 0.3-secties. Full-profile-spec kreeg een 0.3-statusnoot. **Roadmap-item (niet in deze task): 0.3-conformance + DESIGN.md-emitter (Brand Manifest als bron — leapfrog-kans).**
+2. **Placeholder-lek gefixt**: `summarizeBrandAsset` (resolver) viel terug op `description` = de framework-uitlegtekst, waardoor lege assets als inhoud in geëxporteerde bestanden lekten (live geconstateerd op de eigen workspace). Fallback geschrapt; emitter en Brand Score tellen alleen nog assets met echte inhoud.
+3. **Claim-time deepening**: POST claim start nu (fail-soft, via job-queue) de volledige intake-scan (website-scanner-pipeline, 15 pagina's, 4 Sonnet-calls) op de verse workspace — brandstyle automatisch verdiept, assets/personas/producten via de bestaande review-&-apply-stap in de Website Scanner-UI; claim-succespagina wijst daarheen. Bewust NIET in de anonieme gratis laag (kosten × 500/dag; de dunne draft is de funnel-hefboom).
+
+# Uitvoeringsstand v4 (0.3-migratie 2026-08-14)
+
+Strikte spec-hercontrole (originele 0.2-spec via commit `0e82ffd` + actuele 0.3-tekst integraal gelezen) wees uit dat onze "0.2-kern" een eigen lezing was: frontmatter `version` als specversie-string i.p.v. integer-merkrevisie, geen `tagline`, eigen subsectienamen, en een validator die onze eigen lezing bevestigde (circulair). In één beweging naar **0.3-conformance** gemigreerd:
+
+- **Emitter**: frontmatter `name`/`tagline`/`specVersion: "0.3.0"`/`version: 1`/`language`; alle verplichte 0.3-subsecties met datamapping vanuit het canonical model (tabel in `docs/specs/brand-md-full-profile.md` v2); verplichte-maar-lege subsecties expliciet `_Not yet defined._` (nooit verzonnen); personas als `####`-subentries onder Strategy > Audience en Do/Don't onder Strategy > Guardrails (= onze upstream-PR-conventies, nu zelf geïmplementeerd); Typefaces zonder maten (DESIGN.md-grens) met expliciete "Licensing: not verified".
+- **Bestandsnaam**: downloads heten exact `BRAND.md` (spec-canoniek).
+- **Validator v0.2.0**: implementeert de échte spec-resolutieregels (0.2.0/0.3.0, aliassen, integer-`version`-check, malformed-`specVersion`-tabel — "absent means 0.2, malformed means say so"); zelftest dekt beide versies + foutklassen.
+- **Smoke**: kruisvalideert de emitter-output nu tegen de echte validator (les: nooit meer valideren tegen een eigen lezing).
+- Voorbeelden geregenereerd; tagline-fallback voor de levende versie = eerste "phrase that sounds like us".
+- **Restpunten** (roadmap in full-profile-spec): DESIGN.md-emitter (Brand Manifest als bron), References & Anti-References + Message Pillars als merkfundament-features, merkrevisieteller. Oude uitgegeven drafts (0.2-lezing) blijven functioneel maar valideren niet strikt — re-scan levert conform bestand.
+
 # Notes
 
 - **Bestaande exportlaag (inventarisatie 2026-08-03)** — de fundering ligt er al: Export Format Registry met 7 formaten waaronder werkende `designmd`- (Google Stitch) en `brand-brief`-emitters ("AGENTS.md-style, om als BRAND.md in je repo-root te droppen" — feitelijk een proto-brand.md met 12 assets + personas + concurrenten), canoniek `DesignSystemModel` + resolver + linter, brand-kit-ZIP ("Claude Design compatible"), workspace-JSON-export. De brand.md-emitter is dus een inpas-klus in een bewezen patroon, geen greenfield.
