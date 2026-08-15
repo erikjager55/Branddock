@@ -1,3 +1,5 @@
+import type { StaleReviewInput } from "./calibration-report";
+
 // =============================================================
 // Brandstyle Review Sections — Fase 2
 // =============================================================
@@ -190,4 +192,98 @@ export function getApplicableReviewSections(
     if (s === "system-roles" && !hasSemanticTokens) return false;
     return true;
   });
+}
+
+// ─── Mappings naar aangrenzende vocabulaires ──────────
+
+/**
+ * Review-sectie → het `ComponentType` van de bijbehorende sub-tab, zodat de
+ * Continue-review-flow de juiste tab kan openen. Stond eerder lokaal in
+ * `ReviewSummaryHeader.tsx`; verhuisd zodat de omgekeerde map hieronder
+ * dezelfde bron deelt.
+ */
+export const COMPONENTS_SECTION_TO_TYPE: Record<string, string> = {
+  "components-buttons": "BUTTON",
+  "components-form-inputs": "FORM_INPUT",
+  "components-status-chips": "STATUS_CHIP",
+  "components-product-cards": "PRODUCT_CARD",
+  "components-feature-icons": "FEATURE_ICON",
+  "components-top-navigation": "TOP_NAVIGATION",
+  "components-quote-blocks": "QUOTE_BLOCK",
+};
+
+/**
+ * Componentvariant-prefix uit het canonical model → review-sectie.
+ *
+ * Let op de beperkte dekking: `buildComponentTokens` in de design-system-
+ * resolver emit vandaag uitsluitend `button-*`-varianten, dus dit is in de
+ * praktijk een map met één bruikbare sleutel. De rest staat er voor als de
+ * resolver later meer componenttypes uitdraagt.
+ */
+export const COMPONENT_VARIANT_REVIEW_SECTION: Record<string, ReviewSectionKey> = {
+  button: "components-buttons",
+  input: "components-form-inputs",
+  chip: "components-status-chips",
+  card: "components-product-cards",
+  icon: "components-feature-icons",
+  nav: "components-top-navigation",
+  quote: "components-quote-blocks",
+};
+
+/** Kalibratie-secties zijn grover dan review-secties; deze map overbrugt dat. */
+export const REVIEW_TO_CALIBRATION_SECTION: Record<
+  ReviewSectionKey,
+  "logo" | "colors" | "typography" | "imagery" | "design-language"
+> = {
+  "brand-assets-logos": "logo",
+  "brand-assets-fonts": "typography",
+  colors: "colors",
+  typography: "typography",
+  imagery: "imagery",
+  "visual-system": "design-language",
+  "colors-brand": "colors",
+  "colors-neutrals": "colors",
+  "colors-semantic": "colors",
+  "typography-display": "typography",
+  "typography-ui": "typography",
+  "typography-eyebrow": "typography",
+  "spacing-scale": "design-language",
+  "spacing-radii": "design-language",
+  "spacing-shadow": "design-language",
+  "components-buttons": "design-language",
+  "components-form-inputs": "design-language",
+  "components-status-chips": "design-language",
+  "components-product-cards": "design-language",
+  "components-feature-icons": "design-language",
+  "components-top-navigation": "design-language",
+  "components-quote-blocks": "design-language",
+  "system-roles": "design-language",
+};
+
+/**
+ * Zet review-rijen met een `staleAt`-stempel om in kalibratie-input.
+ *
+ * Alleen secties die (a) door drift zijn gereset én (b) nog niet opnieuw zijn
+ * beoordeeld leveren een ask op — zodra de gebruiker de sectie beoordeelt
+ * wordt `staleAt` geleegd en verdwijnt de melding vanzelf.
+ *
+ * De specifieke reden ("2 kleuren gewijzigd") staat alleen in de analyse-log;
+ * hier volstaat de generieke formulering, zodat er geen extra kolom nodig is
+ * om die tekst te bewaren.
+ */
+export function staleReviewsToCalibrationInput(
+  reviews: ReadonlyArray<{ section: string; staleAt: Date | string | null }>,
+): StaleReviewInput[] {
+  const out: StaleReviewInput[] = [];
+  for (const review of reviews) {
+    if (!review.staleAt) continue;
+    if (!isValidReviewSection(review.section)) continue;
+    out.push({
+      key: review.section,
+      section: REVIEW_TO_CALIBRATION_SECTION[review.section],
+      label: REVIEW_SECTION_LABELS[review.section],
+      reason: 'This section changed during the most recent brand analysis',
+    });
+  }
+  return out;
 }

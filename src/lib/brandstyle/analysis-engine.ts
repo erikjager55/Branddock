@@ -976,6 +976,23 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       console.log(
         `[brandstyle-analysis] Snapshot ${result.created ? 'created' : 'deduplicated'} (id=${result.snapshotId}, hash=${result.tokensHash.slice(0, 8)})`,
       );
+
+      // W5-driftreset: een goedkeuring hoort bij een specifieke versie van de
+      // data. Alleen bij een échte nieuwe snapshot (created=false betekent een
+      // identieke hash, dus niets veranderd) vergelijken we met de vorige en
+      // trekken we de goedkeuring in van de secties die veranderden.
+      // `published` blijft bewust ongemoeid — zie review-drift-store.ts.
+      if (result.created) {
+        const { resetReviewsAfterSnapshot } = await import('./review-drift-store');
+        const drift = await resetReviewsAfterSnapshot(styleguideId, result.snapshotId);
+        if (drift.drift.sections.length > 0) {
+          console.warn(
+            `[brandstyle-analysis] Review-drift: ${drift.drift.sections.length} sectie(s) gewijzigd ` +
+              `(${drift.drift.sections.join(', ')}); ${drift.reset} goedkeuring(en) ingetrokken. ` +
+              `Secties zonder review-rij hebben niets in te trekken.`,
+          );
+        }
+      }
     } catch (err) {
       console.warn(
         `[brandstyle-analysis] Snapshot write failed (non-critical): ${err instanceof Error ? err.message : String(err)}`,
@@ -1150,6 +1167,8 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         errorMessage: null,
       },
     });
+
+    await invalidateBrandstyleCaches(styleguideId);
   } catch (err) {
     await markError(styleguideId, `Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
   }
@@ -1312,6 +1331,8 @@ export async function analyzePdf(
         errorMessage: null,
       },
     });
+
+    await invalidateBrandstyleCaches(styleguideId);
   } catch (err) {
     await markError(styleguideId, `Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
   }
@@ -2645,4 +2666,41 @@ Return ONLY valid JSON. No markdown.`,
     linkedStylesheetCount: 0,
     brandImages: [],
   };
+}
+
+/**
+ * Leeg de caches die de merkdata van deze workspace serveren.
+ *
+ * De analyse-engine deed dit tot 2026-08-14 nergens, terwijl élke
+ * brandstyle-mutatieroute het wel doet. Sinds de merkbibliotheek (W7.1) en de
+ * F-VAL-regeldoorvoer (W2) hun eigen cache hebben, betekende dat: tot vijf
+ * minuten na een re-analyse serveerden de AI-paden nog de oude merkdata.
+ *
+ * Fail-soft: een cache die niet geleegd kan worden mag een geslaagde analyse
+ * niet alsnog laten mislukken.
+ */
+async function invalidateBrandstyleCaches(styleguideId: string): Promise<void> {
+  try {
+    const row = await prisma.brandStyleguide.findUnique({
+      where: { id: styleguideId },
+      select: { workspaceId: true },
+    });
+    if (!row) return;
+
+    const [{ invalidateCache }, { cacheKeys }, { clearStyleguideRuleCache }, { invalidateBrandContext }] =
+      await Promise.all([
+        import('@/lib/api/cache'),
+        import('@/lib/api/cache-keys'),
+        import('@/lib/brand-fidelity/styleguide-rule-compiler'),
+        import('@/lib/ai/brand-context'),
+      ]);
+
+    invalidateCache(cacheKeys.prefixes.brandstyle(row.workspaceId));
+    clearStyleguideRuleCache(row.workspaceId);
+    invalidateBrandContext(row.workspaceId);
+  } catch (err) {
+    console.warn(
+      `[brandstyle-analysis] Cache-invalidatie mislukt (non-critical): ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 }
