@@ -5,9 +5,9 @@ fase: post-launch
 priority: now
 effort: 1 dag bouwen + 1-2 uur runtime
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-08-15
-completed: -
+completed: 2026-08-15
 related-adr: -
 related-spec: docs/playbooks/testplan-content-items.md
 worktree: - (co-sessie blokkeert git; committen kan pas als 8ed1aa79 dicht is)
