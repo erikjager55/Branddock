@@ -46,7 +46,7 @@ const FORMATS: Record<string, FormatSpec> = {
       // (incl. Market Context) is alleen via MCP achter auth beschikbaar.
       return emitBrandMd(model, {
         profile: 'public',
-        useHubUrl: useHubUrl(),
+        useHubUrl: resolveUseHubUrl(),
       });
     },
   },
@@ -167,7 +167,17 @@ export async function GET(
   }
 }
 
-function useHubUrl(): string | undefined {
+/**
+ * Bouwt de "how to use this file"-URL voor de brand.md-export.
+ *
+ * Bewust NIET `useHubUrl` genoemd: `react-hooks/rules-of-hooks` gaat puur op het
+ * `use`-voorvoegsel af en zag dit als een hook die buiten een component wordt
+ * aangeroepen — een false positive in een server-side API-route, maar wel een
+ * harde lint-error die de CI-gate op main brak. De optie-sleutel in de
+ * emitter-payload heet nog gewoon `useHubUrl`; dat is een property-naam en
+ * daar kijkt de regel niet naar.
+ */
+function resolveUseHubUrl(): string | undefined {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL;
   return base ? `${base.replace(/\/$/, '')}${BRAND_MD_USE_HUB_PATH}` : undefined;
 }

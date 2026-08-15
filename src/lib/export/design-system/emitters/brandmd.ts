@@ -57,6 +57,7 @@ const OVERVIEW_SLUGS = new Set(['purpose', 'purpose-statement', 'golden-circle',
 const POSITIONING_SLUGS = new Set(['positioning', 'brand-essence']);
 const PERSONALITY_SLUGS = new Set(['personality', 'brand-personality', 'brand-archetype']);
 const PROMISE_SLUGS = new Set(['brand-promise', 'promise']);
+const REFERENCES_SLUGS = new Set(['references-anti-references', 'references']);
 
 export interface BrandMdOptions {
   /** 'public' (deelbaar bestand) of 'extended' (privé, achter MCP-auth) */
@@ -186,7 +187,9 @@ function renderStrategy(model: DesignSystemModel, md: BrandMdExtension | undefin
   // assets, maar lege horen niet als sectie-inhoud in het bestand.
   const assets = (model.extensions.brandFoundation?.assets ?? []).filter((a) => a.summary);
   const bySlug = (slugs: Set<string>) => assets.filter((a) => slugs.has(a.slug));
-  const mapped = new Set([...OVERVIEW_SLUGS, ...POSITIONING_SLUGS, ...PERSONALITY_SLUGS, ...PROMISE_SLUGS]);
+  const mapped = new Set([
+    ...OVERVIEW_SLUGS, ...POSITIONING_SLUGS, ...PERSONALITY_SLUGS, ...PROMISE_SLUGS, ...REFERENCES_SLUGS,
+  ]);
   const extras = assets.filter((a) => !mapped.has(a.slug));
 
   const lines: string[] = ['## Strategy', ''];
@@ -195,8 +198,9 @@ function renderStrategy(model: DesignSystemModel, md: BrandMdExtension | undefin
   lines.push(...renderStrategyAudience(model));
   pushSubsection(lines, 'Positioning', bySlug(POSITIONING_SLUGS).map((a) => a.summary));
   pushSubsection(lines, 'Personality', bySlug(PERSONALITY_SLUGS).map((a) => a.summary));
-  // Geen databron in Branddock (nog) — expliciet leeg i.p.v. verzonnen.
-  pushSubsection(lines, 'References & Anti-References', []);
+  // Menselijke strategische keuze — het canonical asset (merkfundament) is
+  // de enige bron; een scan vult dit bewust nooit.
+  pushSubsection(lines, 'References & Anti-References', bySlug(REFERENCES_SLUGS).map((a) => a.summary));
   pushSubsection(lines, 'Promise', bySlug(PROMISE_SLUGS).map((a) => a.summary));
   lines.push(...renderStrategyGuardrails(model, md));
 

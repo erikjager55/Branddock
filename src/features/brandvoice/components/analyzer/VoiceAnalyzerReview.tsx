@@ -65,6 +65,7 @@ export function VoiceAnalyzerReview({ result, onApplied, onReset }: VoiceAnalyze
     vocabulary: true,
     channels: true,
     antiPatterns: true,
+    pillars: true,
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -90,6 +91,9 @@ export function VoiceAnalyzerReview({ result, onApplied, onReset }: VoiceAnalyze
     }
     if (enabled.antiPatterns) {
       patch.antiPatterns = result.antiPatterns;
+    }
+    if (enabled.pillars && result.messagePillars?.length) {
+      patch.messagePillars = result.messagePillars;
     }
     patch.source = "analyzer";
 
@@ -213,6 +217,26 @@ export function VoiceAnalyzerReview({ result, onApplied, onReset }: VoiceAnalyze
           ))}
         </div>
       </SectionToggle>
+
+      {/* Message pillars (BRAND.md 0.3) */}
+      {(result.messagePillars?.length ?? 0) > 0 && (
+        <SectionToggle
+          label={t("analyzer.review.pillarsLabel", { n: result.messagePillars!.length })}
+          enabled={enabled.pillars}
+          onToggle={() => toggle("pillars")}
+        >
+          <div className="space-y-1.5">
+            {result.messagePillars!.map((p, i) => (
+              <div key={i} className="text-xs">
+                <span className="font-medium text-gray-700">{p.pillar}</span>
+                {p.statements.length > 0 && (
+                  <span className="text-gray-600"> — {p.statements.join("; ")}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </SectionToggle>
+      )}
 
       {error && (
         <div className="p-3 bg-rose-50 border border-rose-200 rounded text-sm text-rose-700">

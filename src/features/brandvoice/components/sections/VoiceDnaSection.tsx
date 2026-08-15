@@ -9,7 +9,7 @@ import { EditableStringList } from "@/features/brandstyle/components/EditableStr
 import { useUpdateVoiceguide, useRecomputeCentroid } from "../../hooks";
 import { useSuggestedLocale } from "@/hooks/useSuggestedLocale";
 import { useFormat } from "@/lib/ui-i18n/format";
-import type { BrandVoiceguide, ToneAxis, ToneDimensions } from "../../types/voiceguide.types";
+import type { BrandVoiceguide, MessagePillar, ToneAxis, ToneDimensions } from "../../types/voiceguide.types";
 
 /** Parse "OBSERVED:" or "RECOMMENDED:" prefix from a guideline string (verhuisd uit Brandstyle ToneOfVoiceSection, ADR 2026-05-15). */
 function parseGuidelinePrefix(text: string): { prefix: "observed" | "recommended" | null; content: string } {
@@ -92,6 +92,7 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
   const [contentLocale, setContentLocale] = useState<ContentLocale | null>(
     voiceguide.contentLocale ?? null,
   );
+  const [pillars, setPillars] = useState<MessagePillar[]>(voiceguide.messagePillars ?? []);
   const [recomputeError, setRecomputeError] = useState<string | null>(null);
 
   // Sync incoming when row updates externally
@@ -104,12 +105,16 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
   useEffect(() => {
     setContentLocale(voiceguide.contentLocale ?? null);
   }, [voiceguide.contentLocale]);
+  useEffect(() => {
+    setPillars(voiceguide.messagePillars ?? []);
+  }, [voiceguide.messagePillars]);
 
   const handleSave = () => {
     update.mutate({
       voiceDescription: description,
       toneDimensions: tone,
       contentLocale,
+      messagePillars: pillars.filter((p) => p.pillar.trim().length > 0),
     });
   };
 
@@ -125,7 +130,8 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
   const dirty =
     (voiceguide.voiceDescription ?? "") !== description ||
     JSON.stringify(voiceguide.toneDimensions ?? DEFAULT_TONE) !== JSON.stringify(tone) ||
-    (voiceguide.contentLocale ?? null) !== contentLocale;
+    (voiceguide.contentLocale ?? null) !== contentLocale ||
+    JSON.stringify(voiceguide.messagePillars ?? []) !== JSON.stringify(pillars);
 
   return (
     <div className="space-y-6">
@@ -145,6 +151,69 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
           placeholder={t("voiceDna.description.placeholder")}
           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary-300"
         />
+      </div>
+
+      {/* Message pillars — BRAND.md 0.3 Voice > Message Pillars */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Mic2 className="w-4 h-4 text-teal-600" />
+          <h3 className="text-sm font-semibold text-gray-900">{t("voiceDna.pillars.title")}</h3>
+        </div>
+        <p className="text-xs text-gray-500 mb-3">{t("voiceDna.pillars.help")}</p>
+        <div className="space-y-2">
+          {pillars.map((p, i) => (
+            <div key={i} className="flex gap-2">
+              <input
+                type="text"
+                value={p.pillar}
+                onChange={(e) =>
+                  setPillars(pillars.map((x, j) => (j === i ? { ...x, pillar: e.target.value } : x)))
+                }
+                placeholder={t("voiceDna.pillars.pillarPlaceholder")}
+                className="w-48 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
+              />
+              <input
+                type="text"
+                value={p.statements.join("; ")}
+                onChange={(e) =>
+                  setPillars(
+                    pillars.map((x, j) =>
+                      j === i
+                        ? {
+                            ...x,
+                            statements: e.target.value
+                              .split(";")
+                              .map((s) => s.trim())
+                              .filter(Boolean)
+                              .slice(0, 2),
+                          }
+                        : x,
+                    ),
+                  )
+                }
+                placeholder={t("voiceDna.pillars.statementsPlaceholder")}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPillars(pillars.filter((_, j) => j !== i))}
+                aria-label={t("voiceDna.pillars.remove")}
+              >
+                ×
+              </Button>
+            </div>
+          ))}
+          {pillars.length < 6 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPillars([...pillars, { pillar: "", statements: [] }])}
+            >
+              {t("voiceDna.pillars.add")}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Content locale — F-VAL pijler-3 heuristic-pack-keuze */}
