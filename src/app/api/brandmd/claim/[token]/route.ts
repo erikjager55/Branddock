@@ -244,7 +244,16 @@ export async function POST(_req: NextRequest, context: RouteContext) {
     invalidateCache(cacheKeys.personas.list(workspace.id));
     invalidateCache(cacheKeys.products.list(workspace.id));
 
-    return NextResponse.json({ workspaceId: workspace.id, slug: workspace.slug }, { status: 201 });
+    // Claim-time deepening (assessment 2026-08-14): de gratis generator-scan
+    // is bewust dun (1 AI-call); ná de claim is de gebruiker geauthenticeerd
+    // en zijn de kosten van de volledige intake-pipeline gerechtvaardigd.
+    // Fail-soft — een claim mag hier nooit op stuklopen.
+    const deepScanStarted = await startDeepScan(workspace.id, session.user.id, payload.sourceUrl);
+
+    return NextResponse.json(
+      { workspaceId: workspace.id, slug: workspace.slug, deepScanStarted },
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof AlreadyClaimedError) {
       return NextResponse.json({ error: 'This draft was already claimed' }, { status: 409 });
@@ -257,6 +266,37 @@ export async function POST(_req: NextRequest, context: RouteContext) {
 class AlreadyClaimedError extends Error {
   constructor() {
     super('draft already claimed');
+  }
+}
+
+/**
+ * Start de volledige intake-scan (website-scanner-pipeline) op de zojuist
+ * gematerialiseerde workspace — serverless-safe via de job-queue, zelfde
+ * patroon als POST /api/website-scanner. De pipeline verdiept wat de draft
+ * dun liet: 15 pagina's, 12 canonical assets (frameworkData), rijke
+ * personas/producten/concurrenten (via de bestaande review-&-apply-stap in
+ * de Website Scanner-UI) en een volledige brandstyle-analyse (automatisch —
+ * vervangt bewust de draft-styleguide; de voiceguide blijft staan, de
+ * pipeline slaat bestaande voiceguides over).
+ */
+async function startDeepScan(workspaceId: string, userId: string, url: string): Promise<boolean> {
+  try {
+    const scan = await prisma.websiteScan.create({
+      data: { url, workspaceId, createdById: userId, status: 'PENDING' },
+    });
+    const { dispatchJob } = await import('@/lib/agents/jobs/dispatch');
+    await dispatchJob({
+      type: 'WEBSITE_SCAN',
+      payload: { scanId: scan.id, url, workspaceId, userId },
+      workspaceId,
+      maxAttempts: 1,
+      idempotencyKey: `website-scan:${scan.id}`,
+      triggeredBy: 'system',
+    });
+    return true;
+  } catch (error) {
+    console.error('[brandmd/claim] deep scan start failed (non-critical):', error);
+    return false;
   }
 }
 

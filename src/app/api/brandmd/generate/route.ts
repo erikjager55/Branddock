@@ -29,6 +29,7 @@ import {
   appBaseUrl,
   claimUrl,
   BRAND_MD_USE_HUB_PATH,
+  BRAND_MD_FILE_NAME,
 } from '@/lib/brandmd/constants';
 
 export const dynamic = 'force-dynamic';
@@ -100,7 +101,9 @@ export async function POST(request: NextRequest) {
       token: rawToken,
       brandName: payload.name,
       domain,
-      fileName: `${domain}-brand.md`,
+      // Canonieke naam per spec 0.3 — de download heet exact BRAND.md zodat
+      // "drop it in your repo root" zonder rename-stap klopt.
+      fileName: BRAND_MD_FILE_NAME,
       score: score.total,
       dimensions: score.dimensions,
       findings: buildHumanFindings(payload),
