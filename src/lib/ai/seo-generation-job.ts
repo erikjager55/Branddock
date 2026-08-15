@@ -22,6 +22,7 @@ import type {
   SeoPipelineState,
 } from './seo-pipeline.types';
 import { dispatchWebhookEvent } from '@/lib/api/public/webhooks';
+import { NonRetryableJobError } from '@/lib/agents/jobs/types';
 
 // Veilig onder de 800s worker-ceiling (vercel.json run-jobs): re-enqueue rond 10
 // min zodat zelfs een trage stap ná de check nog binnen de ceiling afrondt.
@@ -102,7 +103,12 @@ export async function runSeoGenerationJob(jobId: string): Promise<void> {
           where: { id: jobId },
           data: { status: 'FAILED', stepLabel: 'Failed', errors: { push: message } },
         });
-        return; // domein-fout: geen throw (dure pipeline niet nodeloos retry-en)
+        // Domein-fout: definitief mislukt, maar de dure pipeline niet nodeloos
+        // opnieuw draaien. Een kale `return` boekte de omliggende AgentJob
+        // echter als COMPLETED — monitoring zag deze storingen daardoor nooit
+        // (e2e-sweep 2026-08-15). NonRetryableJobError geeft de runner beide:
+        // status FAILED én geen retry.
+        throw new NonRetryableJobError(message);
       } else if (event.event === 'complete') {
         const d = event.data as { tailMs?: number };
         if (typeof d.tailMs === 'number') tailMs = d.tailMs;
@@ -110,6 +116,9 @@ export async function runSeoGenerationJob(jobId: string): Promise<void> {
       // 'text_complete': de generator persist de DeliverableComponents.
     }
   } catch (err) {
+    // De domein-fout hierboven heeft de rij al op FAILED gezet én de melding
+    // al gepusht — nog een keer schrijven zou 'm dubbel in `errors` zetten.
+    if (err instanceof NonRetryableJobError) throw err;
     const message = err instanceof Error ? err.message : 'Unknown error';
     await prisma.seoGenerationJob
       .update({
