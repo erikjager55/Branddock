@@ -1,5 +1,7 @@
 import type {
   CalibrationAskAction,
+  OverrideSignalInput,
+  ReviewFeedbackInput,
   RuleViolationInput,
 } from "@/lib/brandstyle/calibration-report";
 import type {
@@ -362,9 +364,17 @@ export async function finalizeReview(): Promise<{ success: true }> {
 /** Eén regel die vaak genoeg botst om te bevragen, met de correcties erbij. */
 export interface CurationSignalsResponse {
   signals: RuleViolationInput[];
+  overrideSignals: OverrideSignalInput[];
+  reviewFeedback: ReviewFeedbackInput[];
   window: { generations: number; cap: number };
-  /** True als er wél gemeten is maar niets de drempel haalde. */
-  evaluated: boolean;
+  /**
+   * `insufficient-data` = te weinig generaties om iets over regels te zeggen;
+   * `nothing-above-threshold` = wél gemeten, niets boven de drempel.
+   */
+  status: "insufficient-data" | "nothing-above-threshold" | "signals";
+  minGenerations: number;
+  /** Hoeveel suggesties de gebruiker heeft weggeklikt. */
+  dismissedCount: number;
   truncated: boolean;
 }
 
@@ -446,4 +456,20 @@ export async function runCurationAction(action: CalibrationAskAction): Promise<v
       return;
     }
   }
+}
+
+/** Klikt één curatie-suggestie weg (R4). */
+export async function dismissCurationSignal(key: string): Promise<void> {
+  const res = await fetch(`${BASE}/curation-signals/dismiss`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key }),
+  });
+  if (!res.ok) throw new Error("Failed to dismiss suggestion");
+}
+
+/** Haalt alle weggeklikte suggesties terug (R4). */
+export async function resetDismissedCurationSignals(): Promise<void> {
+  const res = await fetch(`${BASE}/curation-signals/dismiss`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to restore hidden suggestions");
 }

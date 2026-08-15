@@ -1,4 +1,4 @@
-import type { StaleReviewInput } from "./calibration-report";
+import type { ReviewFeedbackInput, StaleReviewInput } from "./calibration-report";
 
 // =============================================================
 // Brandstyle Review Sections — Fase 2
@@ -283,6 +283,35 @@ export function staleReviewsToCalibrationInput(
       section: REVIEW_TO_CALIBRATION_SECTION[review.section],
       label: REVIEW_SECTION_LABELS[review.section],
       reason: 'This section changed during the most recent brand analysis',
+    });
+  }
+  return out;
+}
+
+/**
+ * Zet reviews met een toelichting om in curatie-asks (R4, derde poot).
+ *
+ * `NEEDS_WORK` mét feedback is het scherpste extractie-signaal dat er is: de
+ * gebruiker heeft letterlijk opgeschreven wat er mis is. Tot nu toe stond die
+ * tekst alleen op de review-rij en stroomde hij nergens terug.
+ *
+ * Alleen NEEDS_WORK telt. Een APPROVED-sectie met een opmerking is een
+ * kanttekening, geen probleem; die als ask tonen zou de gebruiker straffen
+ * voor meedenken.
+ */
+export function reviewFeedbackToCalibrationInput(
+  reviews: ReadonlyArray<{ section: string; status: string; feedback: string | null }>,
+): ReviewFeedbackInput[] {
+  const out: ReviewFeedbackInput[] = [];
+  for (const review of reviews) {
+    if (review.status !== 'NEEDS_WORK') continue;
+    if (!review.feedback || review.feedback.trim() === '') continue;
+    if (!isValidReviewSection(review.section)) continue;
+    out.push({
+      key: review.section,
+      section: REVIEW_TO_CALIBRATION_SECTION[review.section],
+      label: REVIEW_SECTION_LABELS[review.section],
+      feedback: review.feedback.trim(),
     });
   }
   return out;

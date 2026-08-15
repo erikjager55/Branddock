@@ -10,6 +10,8 @@ import {
   type CalibrationAskAction,
   type CalibrationSeverity,
   type CalibrationSection,
+  type OverrideSignalInput,
+  type ReviewFeedbackInput,
   type RuleViolationInput,
 } from "@/lib/brandstyle/calibration-report";
 import type { BrandStyleguide, StyleguideTab } from "../types/brandstyle.types";
@@ -25,6 +27,23 @@ interface BrandstyleCalibrationPanelProps {
    * al-geladen data, en de parent bepaalt wanneer er gehaald wordt.
    */
   ruleViolations?: RuleViolationInput[];
+  /** Secties waarvan de gebruiker een groot deel handmatig corrigeerde (R4). */
+  overrideSignals?: OverrideSignalInput[];
+  /** Secties met een "needs work"-toelichting van de gebruiker (R4). */
+  reviewFeedback?: ReviewFeedbackInput[];
+  /**
+   * `insufficient-data` = er is nog te weinig gegenereerd om iets over regels
+   * te zeggen. Zonder dit onderscheid leest een lege lijst als "niets aan de
+   * hand", terwijl er niet gemeten is.
+   */
+  curationStatus?: "insufficient-data" | "nothing-above-threshold" | "signals";
+  /** Hoeveel generaties er zijn, en hoeveel er nodig zijn. */
+  curationProgress?: { generations: number; required: number };
+  /** Klikt één suggestie weg. */
+  onDismiss?: (key: string) => Promise<void>;
+  /** Aantal weggeklikte suggesties, en hoe je ze terughaalt. */
+  dismissedCount?: number;
+  onRestoreDismissed?: () => Promise<void>;
   /**
    * De signalen konden niet geladen worden. Zonder dit zou een falende fetch
    * er precies zo uitzien als "niets te cureren" — en bij een verder schone
@@ -67,12 +86,37 @@ export function BrandstyleCalibrationPanel({
   styleguide,
   onJumpToTab,
   ruleViolations,
+  overrideSignals,
+  reviewFeedback,
+  curationStatus,
+  curationProgress,
   curationSignalsFailed,
   onRunAction,
+  onDismiss,
+  dismissedCount,
+  onRestoreDismissed,
 }: BrandstyleCalibrationPanelProps) {
   const { t } = useTranslation("brandstyle");
   const [runningAction, setRunningAction] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [dismissing, setDismissing] = useState<string | null>(null);
+
+  /**
+   * De ask-id is `rule-violated-<key>`; de dismiss-route wil de kale sleutel,
+   * want die matcht wat de aggregatie produceert.
+   */
+  const dismissAsk = async (askId: string) => {
+    if (!onDismiss || dismissing) return;
+    setDismissing(askId);
+    setActionError(null);
+    try {
+      await onDismiss(askId.replace(/^rule-violated-/, ""));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDismissing(null);
+    }
+  };
 
   const runAction = async (askId: string, action: CalibrationAskAction) => {
     if (!onRunAction || runningAction) return;
@@ -106,9 +150,11 @@ export function BrandstyleCalibrationPanel({
             // genereren. Komt van de parent (eigen endpoint), niet uit het
             // styleguide-record.
             ruleViolations,
+            overrideSignals,
+            reviewFeedback,
           })
         : null,
-    [styleguide, ruleViolations],
+    [styleguide, ruleViolations, overrideSignals, reviewFeedback],
   );
 
   if (!report) return null;
@@ -129,16 +175,49 @@ export function BrandstyleCalibrationPanel({
     );
   }
 
-  if (report.clean) {
+  // Alles schoon, maar we hebben nog te weinig generaties om íets over de
+  // merkregels te kunnen zeggen. Dan is groen melden te stellig: er is niet
+  // gemeten, er is niets gevonden.
+  if (report.clean && curationStatus === "insufficient-data") {
     return (
       <div
         data-testid="brandstyle-calibration-panel"
-        className="mt-6 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3"
+        className="mt-6 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3"
       >
-        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-        <span className="text-sm font-medium text-emerald-700">
-          {t("calibration.complete")}
+        <ClipboardCheck className="h-4 w-4 text-gray-500" />
+        <span className="text-sm text-gray-600">
+          {t("calibration.insufficientData", {
+            count: curationProgress?.generations ?? 0,
+            required: curationProgress?.required ?? 10,
+          })}
         </span>
+      </div>
+    );
+  }
+
+  // De "terughalen"-link hoort óók in de schone staat te staan: juist wie alles
+  // heeft weggeklikt ziet groen, en zonder deze link is er geen weg terug.
+  const restoreLink = (dismissedCount ?? 0) > 0 && onRestoreDismissed && (
+    <button
+      type="button"
+      className="mt-3 text-xs text-gray-500 underline underline-offset-2 hover:text-gray-700"
+      data-testid="calibration-restore-dismissed"
+      onClick={() => void onRestoreDismissed()}
+    >
+      {t("calibration.restoreDismissed", { count: dismissedCount })}
+    </button>
+  );
+
+  if (report.clean) {
+    return (
+      <div data-testid="brandstyle-calibration-panel" className="mt-6">
+        <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <span className="text-sm font-medium text-emerald-700">
+            {t("calibration.complete")}
+          </span>
+        </div>
+        {restoreLink}
       </div>
     );
   }
@@ -208,6 +287,17 @@ export function BrandstyleCalibrationPanel({
                     })}
                   </div>
                 )}
+                {onDismiss && ask.id.startsWith("rule-violated-") && (
+                  <button
+                    type="button"
+                    className="mt-2 text-xs text-gray-500 underline underline-offset-2 hover:text-gray-700 disabled:opacity-50"
+                    disabled={dismissing === ask.id}
+                    data-testid={`calibration-dismiss-${ask.id}`}
+                    onClick={() => void dismissAsk(ask.id)}
+                  >
+                    {dismissing === ask.id ? t("calibration.actionRunning") : t("calibration.dismiss")}
+                  </button>
+                )}
               </div>
               {!ask.hideJump && (
                 <Button variant="ghost" size="sm" className="shrink-0" onClick={() => onJumpToTab(targetTab)}>
@@ -219,6 +309,7 @@ export function BrandstyleCalibrationPanel({
           );
         })}
       </ul>
+      {restoreLink}
     </div>
   );
 }

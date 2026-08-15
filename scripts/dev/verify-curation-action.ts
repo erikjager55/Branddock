@@ -84,6 +84,13 @@ async function main(): Promise<void> {
       before.find((r) => r.pattern === TERM)?.source.startsWith('auto:') === true,
     );
 
+    const premiumVoor = (
+      await prisma.brandRule.findFirst({
+        where: { workspaceId: workspace.id, pattern: 'premium' },
+        select: { createdAt: true },
+      })
+    )?.createdAt;
+
     console.log('\n2. De curatie-actie: term uit het bronveld halen');
     const vg = await prisma.brandVoiceguide.findUnique({
       where: { workspaceId: workspace.id },
@@ -127,6 +134,20 @@ async function main(): Promise<void> {
         after.some((r) => r.pattern === 'synergie'),
       `antiPatterns/vocabularyDont weg? nu: ${after.map((r) => r.pattern).join(', ')}`,
     );
+    // De aanmaakdatum moet de vervanging overleven, anders is `createdAt` als
+    // leeftijd waardeloos en kan de curatie-loop een verse regel niet van een
+    // oude onderscheiden (changelog #467).
+    const premiumNa = await prisma.brandRule.findFirst({
+      where: { workspaceId: workspace.id, pattern: 'premium' },
+      select: { createdAt: true },
+    });
+    assert(
+      'de aanmaakdatum overleeft de delete+create van de sync',
+      premiumNa != null && premiumVoor != null &&
+        Math.abs(premiumNa.createdAt.getTime() - premiumVoor.getTime()) < 1000,
+      `voor: ${premiumVoor?.toISOString()} na: ${premiumNa?.createdAt.toISOString()}`,
+    );
+
     assert(
       'de stem-variant van een ander woord bestaat óók als regel',
       after.some((r) => r.pattern === 'exclusieve'),

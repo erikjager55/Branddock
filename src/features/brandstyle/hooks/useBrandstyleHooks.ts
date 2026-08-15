@@ -29,6 +29,8 @@ import {
   deleteComponent,
   fetchCurationSignals,
   runCurationAction,
+  dismissCurationSignal,
+  resetDismissedCurationSignals,
 } from "../api/brandstyle.api";
 import type { SaveForAiSection, UpdateFontBody, UpdateLogoBody, UpdateReviewBody, UpdateComponentBody } from "../types/brandstyle.types";
 
@@ -92,6 +94,28 @@ export function useRunCurationAction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: brandstyleKeys.curationSignals() });
       queryClient.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
+    },
+  });
+}
+
+/** Klikt één curatie-suggestie weg en ververst de signalen (R4). */
+export function useDismissCurationSignal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: dismissCurationSignal,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: brandstyleKeys.curationSignals() });
+    },
+  });
+}
+
+/** Haalt weggeklikte suggesties terug (R4). */
+export function useResetDismissedCurationSignals() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resetDismissedCurationSignals,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: brandstyleKeys.curationSignals() });
     },
   });
 }

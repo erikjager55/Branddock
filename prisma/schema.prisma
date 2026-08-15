@@ -1871,6 +1871,13 @@ model BrandStyleguide {
   // re-scrape overslaat. Gevuld door PATCH /api/brandstyle, gelezen door
   // `writeResultToDb`. Leegmaken = de scraper weer de baas maken.
   userEditedFields String[] @default([])
+
+  // R4-feedback-loop: curatie-suggesties die de gebruiker heeft weggeklikt.
+  // Sleutel is `<lane>::<ruleType>::<pattern>` — dus zodra de regel wordt
+  // aangepast verandert de sleutel en komt de suggestie vanzelf terug.
+  // Wegklikken bevriest deze regel in deze vorm, niet het onderwerp; daarom
+  // heeft dit geen expiry nodig.
+  dismissedCurationKeys String[] @default([])
   /**
    * Eén-zin design-philosophy uit AI-analyse (Fase E3 verbeterplan).
    * "Beschrijf wat dit merk visueel anders maakt — wat MOET behouden bij

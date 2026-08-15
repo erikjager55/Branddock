@@ -11,6 +11,8 @@ import {
   useStyleguide,
   useCurationSignals,
   useRunCurationAction,
+  useDismissCurationSignal,
+  useResetDismissedCurationSignals,
   brandstyleKeys,
 } from "../hooks/useBrandstyleHooks";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
@@ -53,6 +55,8 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
   // analyse is er nog niets zinnigs te aggregeren.
   const curationSignals = useCurationSignals(styleguide?.status === "COMPLETE");
   const runCurationAction = useRunCurationAction();
+  const dismissCurationSignal = useDismissCurationSignal();
+  const resetDismissed = useResetDismissedCurationSignals();
 
   // Hook must be called unconditionally (Rules of Hooks).
   // Pass safe defaults when styleguide is not yet loaded.
@@ -160,7 +164,21 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
           styleguide={styleguide}
           onJumpToTab={setActiveTab}
           ruleViolations={curationSignals.data?.signals}
+          overrideSignals={curationSignals.data?.overrideSignals}
+          reviewFeedback={curationSignals.data?.reviewFeedback}
+          curationStatus={curationSignals.data?.status}
+          curationProgress={
+            curationSignals.data
+              ? {
+                  generations: curationSignals.data.window.generations,
+                  required: curationSignals.data.minGenerations,
+                }
+              : undefined
+          }
           curationSignalsFailed={curationSignals.isError}
+          onDismiss={(key) => dismissCurationSignal.mutateAsync(key).then(() => undefined)}
+          dismissedCount={curationSignals.data?.dismissedCount}
+          onRestoreDismissed={() => resetDismissed.mutateAsync().then(() => undefined)}
           onRunAction={(action) => runCurationAction.mutateAsync(action).then(() => undefined)}
         />
 
