@@ -39,7 +39,7 @@ async function main(): Promise<void> {
   for (const ws of workspaces) {
     const window = await prisma.contentFidelityScore.findMany({
       where: { workspaceId: ws.id },
-      select: { id: true },
+      select: { id: true, scoredAt: true },
       orderBy: { scoredAt: 'desc' },
       take: WINDOW_GENERATIONS,
     });
@@ -55,7 +55,10 @@ async function main(): Promise<void> {
           }),
       prisma.brandRule.findMany({
         where: { workspaceId: ws.id, isActive: true },
-        select: { id: true, ruleType: true, pattern: true, severity: true, source: true },
+        select: {
+          id: true, ruleType: true, pattern: true, severity: true, source: true,
+          createdAt: true, contentTypeFilter: true,
+        },
       }),
     ]);
 
@@ -96,9 +99,11 @@ async function main(): Promise<void> {
       sourceTerm: r.source.startsWith('auto:voiceguide.')
         ? sourceTerms.get(r.pattern.toLowerCase())
         : undefined,
+      createdAt: r.createdAt,
+      contentTypeFilter: r.contentTypeFilter ?? undefined,
     }));
 
-    const all = aggregateViolations(rows, generationsTotal, liveRules);
+    const all = aggregateViolations(rows, window, liveRules);
     const signals = selectCurationSignals(all);
     totalSignals += signals.length;
 
@@ -126,7 +131,7 @@ async function main(): Promise<void> {
       console.log(
         `  ${surfaced ? '→' : ' '} ${s.rule.pattern.padEnd(18)} ` +
           `${String(Math.round(s.rate * 100)).padStart(3)}%  ` +
-          `(${s.generationsHit}/${s.generationsTotal})  ${action}` +
+          `(${s.generationsHit}/${s.generationsTotal}${s.generationsTotal < generationsTotal ? ` van ${generationsTotal}` : ''})  ${action}` +
           `${surfaced ? '   ← komt in het paneel' : ''}`,
       );
     }

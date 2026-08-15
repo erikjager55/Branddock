@@ -8,11 +8,15 @@ import {
   selectCurationSignals,
   type LiveRule,
   type ViolationRow,
+  type WindowGeneration,
 } from "@/lib/brandstyle/rule-violation-stats";
 import { compileStyleguideRules } from "@/lib/brand-fidelity/styleguide-rule-checks";
 import { expandStemVariants } from "@/lib/brand-fidelity/brand-rule-sync";
+import { reviewFeedbackToCalibrationInput } from "@/lib/brandstyle/review-sections";
+import { MIN_GENERATIONS } from "@/lib/brandstyle/rule-violation-stats";
 import type {
   CalibrationAskAction,
+  OverrideSignalInput,
   RuleViolationInput,
 } from "@/lib/brandstyle/calibration-report";
 
@@ -40,6 +44,13 @@ import type {
  * eerlijker uit te leggen is in de UI.
  */
 const WINDOW_GENERATIONS = 200;
+/**
+ * Drempels voor het override-signaal (R4, tweede poot). Percentage én absoluut
+ * aantal, om dezelfde reden als bij de regels: 1 van de 2 kleuren is 50% maar
+ * zegt niets.
+ */
+const MIN_OVERRIDE_RATE = 0.25;
+const MIN_OVERRIDES = 3;
 const FINDING_FETCH_CAP = 20_000;
 
 type VoiceguideField = "wordsWeAvoid" | "vocabularyDont" | "antiPatterns";
@@ -157,14 +168,14 @@ export async function GET() {
 
     // Eerst het venster vaststellen, dan pas de findings — zo is de noemer
     // gegarandeerd dezelfde verzameling als de teller.
-    const window = await prisma.contentFidelityScore.findMany({
+    const windowRows = await prisma.contentFidelityScore.findMany({
       where: { workspaceId },
-      select: { id: true },
+      select: { id: true, scoredAt: true },
       orderBy: { scoredAt: "desc" },
       take: WINDOW_GENERATIONS,
     });
-    const generationsTotal = window.length;
-    const windowIds = window.map((s) => s.id);
+    const generationsTotal = windowRows.length;
+    const windowIds = windowRows.map((s) => s.id);
 
     const [findings, brandRules, voiceguide, styleguide] = await Promise.all([
       windowIds.length === 0
@@ -181,7 +192,13 @@ export async function GET() {
           }),
       prisma.brandRule.findMany({
         where: { workspaceId, isActive: true },
-        select: { id: true, ruleType: true, pattern: true, severity: true, source: true },
+        select: {
+          id: true, ruleType: true, pattern: true, severity: true, source: true,
+          // `createdAt` begrenst de noemer: een regel kan niet overtreden zijn
+          // in generaties van vóór zijn bestaan.
+          createdAt: true,
+          contentTypeFilter: true,
+        },
         // Deterministisch: bij twee rijen met hetzelfde pattern (dezelfde term
         // uit twee bronvelden) moet dezelfde regel winnen bij elke request.
         orderBy: [{ pattern: "asc" }, { id: "asc" }],
@@ -193,6 +210,10 @@ export async function GET() {
       prisma.brandStyleguide.findUnique({
         where: { workspaceId },
         select: {
+          id: true,
+          dismissedCurationKeys: true,
+          // R4, derde poot: wat de gebruiker over de extractie schreef.
+          reviews: { select: { section: true, status: true, feedback: true } },
           rules: {
             select: {
               id: true,
@@ -202,6 +223,7 @@ export async function GET() {
               title: true,
               description: true,
               constraint: true,
+              createdAt: true,
             },
           },
         },
@@ -237,6 +259,8 @@ export async function GET() {
         kind: isAuto ? "voiceguide-synced" : "brand-rule-manual",
         sourceTerm: resolved?.term,
         sourceFields: resolved ? [...resolved.fields] : undefined,
+        createdAt: r.createdAt,
+        contentTypeFilter: r.contentTypeFilter ?? undefined,
       };
     });
 
@@ -256,20 +280,52 @@ export async function GET() {
         constraint: r.constraint,
       })),
     );
+    const styleguideRuleCreatedAt = new Map(
+      (styleguide?.rules ?? []).map((r) => [r.id, r.createdAt]),
+    );
     for (const c of compiled.compiled) {
+      const ruleId = c.ruleId.slice(c.ruleId.lastIndexOf(":") + 1);
       liveRules.push({
-        id: c.ruleId.slice(c.ruleId.lastIndexOf(":") + 1),
+        id: ruleId,
         ruleType: c.ruleType,
         pattern: c.pattern,
         // `severity` is hier al vertaald naar error/warning; terug naar het
         // BLOCKING/ADVISORY-vocabulaire dat de PATCH-route verwacht.
         severity: c.severity === "error" ? "BLOCKING" : "ADVISORY",
         kind: "styleguide-rule",
+        // Valt terug op epoch als de rij onverwacht ontbreekt: dan geldt het
+        // volle venster, wat het huidige gedrag is — nooit strenger dan nu.
+        createdAt: styleguideRuleCreatedAt.get(ruleId) ?? new Date(0),
       });
     }
 
+    // Content-types alleen ophalen als er iets te filteren valt. Vandaag heeft
+    // géén enkele regel een `contentTypeFilter`, dus deze join kost normaal
+    // niets — maar zodra iemand er één zet, klopt de noemer meteen.
+    const needsContentType = liveRules.some((r) => (r.contentTypeFilter?.length ?? 0) > 0);
+    let contentTypeById = new Map<string, string | null>();
+    if (needsContentType && windowIds.length > 0) {
+      const withType = await prisma.contentFidelityScore.findMany({
+        where: { id: { in: windowIds } },
+        select: {
+          id: true,
+          contentVersion: { select: { deliverable: { select: { contentType: true } } } },
+        },
+      });
+      contentTypeById = new Map(
+        withType.map((r) => [r.id, r.contentVersion?.deliverable?.contentType ?? null]),
+      );
+    }
+
+    const window: WindowGeneration[] = windowRows.map((r) => ({
+      id: r.id,
+      scoredAt: r.scoredAt,
+      contentType: needsContentType ? contentTypeById.get(r.id) ?? null : undefined,
+    }));
+
     const stats = selectCurationSignals(
-      aggregateViolations(rows, generationsTotal, liveRules),
+      aggregateViolations(rows, window, liveRules),
+      { dismissedKeys: styleguide?.dismissedCurationKeys ?? [] },
     );
 
     const signals: RuleViolationInput[] = stats.map((s) => ({
@@ -282,12 +338,65 @@ export async function GET() {
       visibleInManifest: s.rule.kind === "styleguide-rule",
     }));
 
+    const styleguideId = styleguide?.id;
+    const reviewFeedback = reviewFeedbackToCalibrationInput(styleguide?.reviews ?? []);
+
+    // ── R4, tweede poot: wat de gebruiker zelf corrigeerde ──
+    //
+    // `source: 'user'` alléén is hier NIET de juiste maatstaf: dat veld wordt
+    // door drie paden gezet — een handmatig toegevoegde kleur (POST), een
+    // gecorrigeerde kleur (PATCH tags), en de document-backfill. Alleen de
+    // tweede zegt iets over de extractiekwaliteit; de andere twee zouden een
+    // valse "je corrigeerde 100%"-melding opleveren op workspaces waar niemand
+    // iets corrigeerde.
+    //
+    // `detectorSource` is de exacte discriminator: dat veld wordt uitsluitend
+    // door de kleur-resolver van de scraper gezet. De ratio is dus "van wat wij
+    // extraheerden, hoeveel heb jij moeten corrigeren" — precies de vraag.
+    // Dezelfde discriminator als de verversings-guard in #465.
+    const overrideSignals: OverrideSignalInput[] = [];
+    if (styleguideId) {
+      const [extracted, corrected] = await Promise.all([
+        prisma.styleguideColor.count({
+          where: { styleguideId, detectorSource: { not: null } },
+        }),
+        prisma.styleguideColor.count({
+          where: { styleguideId, detectorSource: { not: null }, source: "user" },
+        }),
+      ]);
+      if (
+        extracted > 0 &&
+        corrected >= MIN_OVERRIDES &&
+        corrected / extracted >= MIN_OVERRIDE_RATE
+      ) {
+        overrideSignals.push({
+          section: "colors",
+          label: "extracted colors",
+          overridden: corrected,
+          total: extracted,
+        });
+      }
+    }
+
     const payload = {
       signals,
+      overrideSignals,
+      reviewFeedback,
       window: { generations: generationsTotal, cap: WINDOW_GENERATIONS },
-      // Zichtbaar maken dat er wél gemeten is maar niets de drempel haalde —
-      // anders leest een lege lijst als "de meting draait niet".
-      evaluated: stats.length === 0 && generationsTotal > 0,
+      // Onderscheid tussen "te weinig data" en "gemeten, niets boven de
+      // drempel". Zonder dat leest een lege lijst als "niets aan de hand",
+      // terwijl er misschien helemaal niet gemeten is.
+      status:
+        generationsTotal < MIN_GENERATIONS
+          ? ("insufficient-data" as const)
+          : stats.length === 0
+            ? ("nothing-above-threshold" as const)
+            : ("signals" as const),
+      minGenerations: MIN_GENERATIONS,
+      // Zonder deze teller ziet iemand die alles wegklikte een groen "alles in
+      // orde" — met geen enkel spoor dat er iets onderdrukt is, en geen weg
+      // terug.
+      dismissedCount: styleguide?.dismissedCurationKeys.length ?? 0,
       truncated: findings.length >= FINDING_FETCH_CAP,
       styleguideRuleCount: styleguide?.rules.length ?? 0,
     };

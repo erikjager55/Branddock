@@ -160,6 +160,39 @@ function expandWordsToPatterns(words: string[]): string[] {
 }
 
 /**
+ * Bewaart de aanmaakdatum van regels over een delete+create heen.
+ *
+ * Deze syncs vervangen hun hele stream bij elke save, waardoor `createdAt`
+ * altijd "vandaag" werd. Dat maakte het veld onbruikbaar als leeftijd: de
+ * curatie-loop (changelog #467) wil weten sinds wanneer een regel bestaat om
+ * hem eerlijk tegen de generaties af te zetten, en kreeg altijd vandaag.
+ *
+ * De sleutel is `(source, pattern)` — dezelfde stabiele identiteit waarop de
+ * hele feedback-loop aggregeert. Een term die blijft staan houdt dus zijn
+ * oorspronkelijke datum; een nieuwe term krijgt vandaag, wat klopt.
+ */
+async function preservedCreatedAt(
+  workspaceId: string,
+  sources: readonly string[],
+): Promise<Map<string, Date>> {
+  const existing = await prisma.brandRule.findMany({
+    where: { workspaceId, source: { in: [...sources] } },
+    select: { source: true, pattern: true, createdAt: true },
+  });
+  return new Map(existing.map((r) => [`${r.source}::${r.pattern.toLowerCase()}`, r.createdAt]));
+}
+
+/** Kiest de bewaarde datum, of nu voor een echt nieuwe regel. */
+function keepCreatedAt(
+  preserved: ReadonlyMap<string, Date>,
+  source: string,
+  pattern: string,
+  now: Date,
+): Date {
+  return preserved.get(`${source}::${pattern.toLowerCase()}`) ?? now;
+}
+
+/**
  * LEGACY entry point — sync wordsWeAvoid from BrandPersonality.frameworkData.
  * Kept for back-compat with brand-asset framework PATCH endpoint.
  *
@@ -175,6 +208,9 @@ export async function syncWordsAvoidToRules(
   // patterns op ("innovatief", "innovatie", "innovatieve", ...) zodat NL-
   // morfologische varianten ook gevangen worden door rule-engine.
   const expanded = expandWordsToPatterns(normalized);
+
+  const legacyPreserved = await preservedCreatedAt(workspaceId, [SOURCE_LEGACY]);
+  const legacyNow = new Date();
 
   const deleteResult = await prisma.brandRule.deleteMany({
     where: { workspaceId, source: SOURCE_LEGACY },
@@ -196,6 +232,7 @@ export async function syncWordsAvoidToRules(
       contentTypeFilter: [],
       isActive: true,
       source: SOURCE_LEGACY,
+      createdAt: keepCreatedAt(legacyPreserved, SOURCE_LEGACY, word, legacyNow),
     })),
   });
 
@@ -255,6 +292,15 @@ export async function syncVoiceguideToRules(
   // slaat multi-word entries over, dus dit is veilig voor beide vormen.
   const vocabDontExpanded = expandWordsToPatterns(vocabDontNormalized);
 
+  // Snapshot vóór de delete: zo overleeft de aanmaakdatum de vervanging en
+  // blijft `createdAt` bruikbaar als leeftijd (changelog #467).
+  const preserved = await preservedCreatedAt(workspaceId, [
+    SOURCE_VOICEGUIDE_WORDS,
+    SOURCE_VOICEGUIDE_ANTI,
+    SOURCE_VOICEGUIDE_VOCAB_DONT,
+  ]);
+  const now = new Date();
+
   // Delete all three auto-source streams in parallel
   const [wordsDelete, antiDelete, vocabDontDelete] = await Promise.all([
     prisma.brandRule.deleteMany({
@@ -284,6 +330,7 @@ export async function syncVoiceguideToRules(
             contentTypeFilter: [],
             isActive: true,
             source: SOURCE_VOICEGUIDE_WORDS,
+            createdAt: keepCreatedAt(preserved, SOURCE_VOICEGUIDE_WORDS, word, now),
           })),
         })
       : Promise.resolve({ count: 0 }),
@@ -299,6 +346,7 @@ export async function syncVoiceguideToRules(
             contentTypeFilter: [],
             isActive: true,
             source: SOURCE_VOICEGUIDE_ANTI,
+            createdAt: keepCreatedAt(preserved, SOURCE_VOICEGUIDE_ANTI, phrase, now),
           })),
         })
       : Promise.resolve({ count: 0 }),
@@ -314,6 +362,7 @@ export async function syncVoiceguideToRules(
             contentTypeFilter: [],
             isActive: true,
             source: SOURCE_VOICEGUIDE_VOCAB_DONT,
+            createdAt: keepCreatedAt(preserved, SOURCE_VOICEGUIDE_VOCAB_DONT, word, now),
           })),
         })
       : Promise.resolve({ count: 0 }),

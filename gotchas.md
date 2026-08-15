@@ -456,3 +456,11 @@ Bewezen via Playwright: `el.style.background = '<grad>, url(...)'; el.style.setP
 - Elk los draaibaar script (scripts/dev, scripts/) begint met `dotenv.config({ path: '.env.local' })` vóór imports die env lezen (patroon `rescrape-brand.ts`); inline geëxporteerde vars winnen automatisch (dotenv overschrijft nooit).
 - Een script dat een vereiste env-var alleen per-item nodig heeft, checkt die **fail-fast bij start** (exit 2 + duidelijke melding) — per-item catch-and-continue is goed voor robuustheid maar mag nooit de enige signalering zijn.
 **Prior art**: `scripts/dev/enrich-brandmd-sections.ts` (fix in zelfde commit); levende-laag-verrijking changelog #460.
+
+## 2026-08-15: `createdAt` van een gesyncte rij is de leeftijd van de rij, niet van het ding
+**What went wrong**: De curatie-loop beoordeelde elke merkregel tegen het volle venster van 200 generaties, ook regels die pas kort bestonden — een regel die in 24% van zijn relevante generaties botste scoorde daardoor 6% en surfacete nooit. De fix leek triviaal: begrens de noemer op `rule.createdAt`. Tegen de échte data gaf dat **nul signalen waar er eerst één was**. Oorzaak: `brand-rule-sync` doet `deleteMany` + `createMany`, dus alle 398 regels droegen de datum van de laatste sync (gisteren) terwijl de generaties uit mei-juli kwamen. Elke regel leek nieuwer dan alle data → nul geldige generaties. Exact dezelfde val als het aggregeren op `ruleId` (2026-08-15, changelog #466), op een ander veld — en de gotcha daarover had ik één dag eerder zelf opgeschreven.
+**Rule**:
+- Bij een tabel die door een sync wordt weggegooid en opnieuw aangemaakt zijn `id` én `createdAt` allebei betekenisloos als historisch anker. Grep op `deleteMany` in de sync vóór je een van beide als tijdlijn gebruikt.
+- Heb je toch een begin-tijdstip nodig: leid het af uit de *observaties* (de eerste meting waarin het ding voorkomt), niet uit de rij. Dat is sync-proof en vraagt geen kolom die de volgende sync ook weer wist.
+- Laat de data zichzelf corrigeren waar dat kan: ligt er een observatie vóór de `createdAt`, dan is die datum aantoonbaar een artefact en kun je 'm negeren zonder configuratie.
+**Prior art**: task `curation-loop-completion`, changelog #467; `effectiveStart()` in `src/lib/brandstyle/rule-violation-stats.ts`.

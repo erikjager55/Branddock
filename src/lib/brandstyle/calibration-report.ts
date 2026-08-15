@@ -109,6 +109,42 @@ export interface CalibrationInput {
    * levende-regel-filter zitten in `rule-violation-stats.ts`.
    */
   ruleViolations?: RuleViolationInput[];
+  /**
+   * Hoeveel van de geëxtraheerde data de gebruiker handmatig corrigeerde
+   * (R4, tweede poot). Veel correcties op één sectie zeggen iets over de
+   * extractie, niet over de gebruiker.
+   */
+  overrideSignals?: OverrideSignalInput[];
+  /**
+   * Secties die de gebruiker op "needs work" zette mét een toelichting
+   * (R4, derde poot). Die tekst is het scherpste extractie-signaal dat er is —
+   * iemand heeft letterlijk opgeschreven wat er mis is — en stroomde nergens
+   * terug.
+   */
+  reviewFeedback?: ReviewFeedbackInput[];
+}
+
+/** Eén sectie waarvan de gebruiker een groot deel handmatig corrigeerde. */
+export interface OverrideSignalInput {
+  /** Kalibratie-sectie (deep-link-doel). */
+  section: CalibrationSection;
+  /** Wat er gecorrigeerd is, voor de titel: 'colors', 'components'. */
+  label: string;
+  /** Aantal handmatig gecorrigeerde items. */
+  overridden: number;
+  /** Totaal aantal items in die sectie. */
+  total: number;
+}
+
+/** Eén review-sectie met een toelichting van de gebruiker. */
+export interface ReviewFeedbackInput {
+  section: CalibrationSection;
+  /** Label van de review-sectie. */
+  label: string;
+  /** De letterlijke tekst die de gebruiker schreef. */
+  feedback: string;
+  /** Stabiele sleutel voor dedup/telemetrie. */
+  key: string;
 }
 
 /** Eén regel die vaak genoeg wordt overtreden om te bevragen. */
@@ -142,6 +178,15 @@ export interface StaleReviewInput {
   reason: string;
   /** Stabiele sleutel voor dedup/telemetrie. */
   key: string;
+}
+
+/** Kort een citaat af op woordgrens, zodat een lange toelichting de titel niet opblaast. */
+function truncate(text: string, max: number): string {
+  const clean = text.trim().replace(/\s+/g, ' ');
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }
 
 /** Count guidelines whose only provenance is `RECOMMENDED:` (inferred, not observed). */
@@ -182,6 +227,39 @@ export function buildBrandstyleCalibrationReport(
     });
   }
 
+  // ── Wat de gebruiker zelf al corrigeerde ────────────────
+  // Als iemand de helft van een sectie handmatig overschrijft, is dat geen
+  // gebruikersfout maar een extractie-oordeel. Eerst, want het is het meest
+  // directe signaal dat we hebben.
+  for (const o of input.overrideSignals ?? []) {
+    const pct = Math.round((o.overridden / o.total) * 100);
+    asks.push({
+      id: `override-${o.section}`,
+      severity: 'suggestion',
+      section: o.section,
+      title: `You corrected ${o.overridden} of ${o.total} ${o.label} by hand`,
+      detail:
+        `That is ${pct}% — enough that the extraction itself is probably off, not just ` +
+        `individual items. Worth a re-analysis or a look at the source. Your corrections ` +
+        `are safe either way: they survive a refresh.`,
+    });
+  }
+
+  // ── Wat de gebruiker over de extractie schreef ──────────
+  // Zelfde rem als op de regel-suggesties: zonder cap duwen 16 secties met
+  // feedback de rest uit beeld.
+  for (const r of (input.reviewFeedback ?? []).slice(0, 3)) {
+    asks.push({
+      id: `review-feedback-${r.key}`,
+      severity: 'review',
+      section: r.section,
+      title: `You flagged ${r.label}: "${truncate(r.feedback, 90)}"`,
+      detail:
+        `You marked this section as needing work and wrote that down. Nothing acted on it ` +
+        `yet — re-extract the section, or fix it by hand and approve.`,
+    });
+  }
+
   // ── Regels die structureel botsen ───────────────────────
   // De bibliotheek leert van haar eigen gebruik (R4). Een regel die telkens
   // sneuvelt is óf te streng geformuleerd óf verkeerd geëxtraheerd — beide
@@ -195,8 +273,8 @@ export function buildBrandstyleCalibrationReport(
       detail:
         `Violated in ${v.ratePercent}% of recent generations ` +
         `(${v.generationsHit} of ${v.generationsTotal}). Either the rule is stricter than you ` +
-        `meant, or it was extracted wrong — both are worth a look. Percentages count every ` +
-        `generation in the workspace, also the ones this rule never applied to.`,
+        `meant, or it was extracted wrong — both are worth a look. The count covers only the ` +
+        `generations this rule could apply to.`,
       actions: v.actions,
       hideJump: !v.visibleInManifest,
     });

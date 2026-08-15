@@ -37,6 +37,64 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 467. R4 compleet — noemer per regel, dismiss, en de twee ontbrekende signalen
+
+De feedback-loop uit #466 had een gat dat pas zichtbaar werd toen ik 'm tegen de eigen data hield:
+de noemer was plat `WINDOW_GENERATIONS = 200`, ongeacht wanneer een regel bestond. Een regel die
+botst in bijna elke generatie waarin hij van toepassing wás, maar pas 50 generaties oud is, scoorde
+6% en surfacete nooit — de loop was **blind voor precies de regels die net gecureerd zijn**. De
+noemer is nu per regel: alleen generaties waarin de regel al bestond én (bij een `contentTypeFilter`)
+van het juiste type was.
+
+**`createdAt` bleek te liegen — twee keer.** De voor de hand liggende implementatie gaf op de echte
+data nul signalen waar er eerst één was: alle 398 BrandRules dragen `createdAt` van de laatste sync,
+terwijl de generaties uit mei-juli komen — `brand-rule-sync` doet delete+create, dus die datum is de
+leeftijd van de rij, niet van de regel. Dezelfde val als het aggregeren op `ruleId` uit #466, op een
+ander veld.
+
+Mijn eerste reparatie (de eerste treffer als begin nemen) leverde mooie cijfers maar was
+**niet-monotoon**: de noemer begint dan per definitie bij een treffer, dus een regel met 4
+overtredingen scoorde lager dan dezelfde regel met 3 — slechter presteren maakte je onzichtbaar. Een
+code-review ving dat. Wat het wél werd: ligt `createdAt` ná de nieuwste generatie, dan kán het geen
+echte datum zijn en negeren we de grens. De noemer hangt zo alleen van het venster af, nooit van de
+meting. Op de huidige data betekent dat: gedrag identiek aan #466 — eerlijk, want we wéten de
+leeftijd niet. **En de wortel is gefixt**: beide syncs bewaren `createdAt` nu over hun delete+create
+heen, dus vanaf nu is het veld wél een leeftijd en wordt de grens vanzelf actief.
+
+**Dismiss** (`BrandStyleguide.dismissedCurationKeys`) heeft bewust geen expiry: de sleutel bevat het
+pattern, dus zodra je de regel aanpast verandert de sleutel en komt de suggestie vanzelf terug.
+Wegklikken bevriest deze regel in deze vórm, niet het onderwerp.
+
+**De twee ontbrekende R4-poten**: token-overrides (≥25% van een sectie handmatig gecorrigeerd, min.
+3 — "je corrigeerde 4 van de 12 kleuren, de extractie klopt waarschijnlijk niet") en review-feedback
+(een `NEEDS_WORK`-review mét toelichting is het scherpste extractie-signaal dat er is, en stroomde
+nergens terug). Beide staan vandaag op nul — de `source`-kolommen bestaan sinds gisteren en
+`finalize` wist review-rijen — dus het paneel toont nu expliciet "nog te weinig generaties (4 van
+10)" in plaats van stilte, want een lege lijst leest anders als "niets aan de hand".
+
+**Backfill**: `scripts/dev/backfill-curated-colors.sql` beschermt de document-workspaces (Barneveld,
+HNG, WRA). Twee voorwaarden, niet één: `sourceType='PDF'` **én** `detectorSource IS NULL` — dat
+eerste veld wordt bij élke analyse overschreven en zegt dus "de laatste analyse was een PDF", niet
+"deze rijen komen uit een document". Het UPDATE-blok staat uitgecommentarieerd in git: een review
+wees erop dat `psql -f` het anders meteen uitvoert, terwijl de header een dry-run belooft.
+
+Diezelfde review legde bloot dat de backfill het nieuwe override-signaal vals aanzette:
+`source: 'user'` wordt door drie paden gezet (toevoegen, corrigeren, importeren) en alleen het
+tweede zegt iets over extractiekwaliteit. Barneveld zou "je corrigeerde 10 van de 10 kleuren met de
+hand" tonen, onwegklikbaar. Het signaal telt nu alleen kleuren mét een `detectorSource` — van wat we
+extraheerden, hoeveel moest jij corrigeren.
+
+Gates: tsc 0 · lint 0 errors · `smoke:rule-violation-stats` 43/43 · `preserve-user-rows` 43/43 ·
+`review-drift` 23/23 · `review-drift-reset` 14/14 · `brand-library` 36/36 · `styleguide-rules` 51/51 ·
+`styleguide-rules-fval` 17/17 · `geo-fidelity` 20/20 · `brand-manifest-golden` 14/14. Plus
+`verify-r4-signals.ts` 12/12 op een wegwerp-workspace — nodig omdat de echte data voor die twee
+signalen leeg is; zonder dat harnas zou ik alleen aantonen dát ze niets tonen.
+
+**Schema**: één additieve kolom, vraagt een handmatige Neon-push.
+
+Bewust blijven staan (zie `tasks/refresh-preserves-user-data.md`): de claim-release-knop, de
+transactie op `claim-fields`, en het component-rename-duplicaat.
+
 ### 466. De bibliotheek leert van haar eigen gebruik — curatie-suggesties uit F-VAL-overtredingen (R4)
 
 Het verbeterplan vroeg om een feedback-loop: *"regel X wordt in 80% van generaties overtreden — te
