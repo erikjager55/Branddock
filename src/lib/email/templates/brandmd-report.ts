@@ -5,9 +5,13 @@
 // generator-draft (harde gate, user-besluit 2026-08-14). Inhoud:
 // het volledige score-rapport (score, hoofdbevindingen, dimensies),
 // de download-link, drie gebruiksrecepten en de claim-CTA. EN-only
-// (generator is EN-first). Eerlijkheidsregel: dit is de enige mail
-// over deze scan zolang de lifecycle-sequence (2.2-2.5) niet bestaat
-// — en dat zeggen we ook.
+// (generator is EN-first).
+//
+// Eerlijkheidsregel (herzien 2026-08-15, fase 2): de oude belofte "dit
+// is de enige mail" botste met de lifecycle-reeks. De footer heeft nu
+// twee varianten — mét en zónder tips-opt-in — en kondigt in beide de
+// eenmalige TTL-melding (2.5) aan. Wat hier staat moet exact kloppen
+// met wat de cron daadwerkelijk stuurt én met het vinkje bij de gate.
 // =============================================================
 
 import { renderLayout, renderCta, escape } from './_layout';
@@ -23,6 +27,10 @@ export interface BrandMdReportEmailVars {
   claimUrl?: string;
   useHubUrl: string;
   expiresAt: Date;
+  /** Vinkje bij de download-gate (default uit) — bepaalt de footer-belofte. */
+  lifecycleOptedIn: boolean;
+  /** Alleen nodig als er tips volgen: de reeks draagt een uitschrijflink. */
+  unsubscribeUrl?: string;
 }
 
 export function renderBrandMdReportEmail(vars: BrandMdReportEmailVars): {
@@ -85,12 +93,22 @@ export function renderBrandMdReportEmail(vars: BrandMdReportEmailVars): {
     </p>
   `;
 
+  // Twee varianten, want de belofte moet exact dekken wat er volgt.
+  // Beide kondigen de eenmalige TTL-melding (2.5) aan — die is een
+  // service-bericht over opgeslagen data en gaat dus altijd uit.
+  const footerNote = vars.lifecycleOptedIn
+    ? `You ticked the box for follow-up tips when you scanned ${vars.domain}, so you'll get three short ones over the coming weeks — no newsletter, and you can stop them in one click. We'll also send a single reminder before your draft (and this download link) expires on ${expiresDate}.`
+    : `No newsletter and no tips sequence — you didn't ask for those. The only other email you'll get about this scan is one reminder before your draft (and this download link) expires on ${expiresDate}.`;
+
   const html = renderLayout({
     title: `Your Brand Score: ${vars.score}/100`,
     preheader: `How AI-ready is ${vars.domain}? Your report and brand.md are inside.`,
     intro: undefined,
     body,
-    footerNote: `This is a one-time email about your scan of ${vars.domain} — no newsletter, no follow-up sequence. Your draft (and this download link) expires on ${expiresDate}.`,
+    footerNote,
+    ...(vars.lifecycleOptedIn && vars.unsubscribeUrl
+      ? { footerLink: { href: vars.unsubscribeUrl, label: 'Unsubscribe from the tips' } }
+      : {}),
   });
 
   const text = [
@@ -105,7 +123,8 @@ export function renderBrandMdReportEmail(vars: BrandMdReportEmailVars): {
     vars.claimUrl ? `Claim & complete your brand (free for 28 days): ${vars.claimUrl}` : '',
     `How to use the file: ${vars.useHubUrl}`,
     '',
-    `One-time email — no newsletter. Your draft expires on ${expiresDate}.`,
+    footerNote,
+    vars.lifecycleOptedIn && vars.unsubscribeUrl ? `Unsubscribe from the tips: ${vars.unsubscribeUrl}` : '',
   ]
     .filter(Boolean)
     .join('\n');

@@ -456,15 +456,16 @@ export function ContentTypeInputFields({
             </h4>
             <div className={compact ? 'space-y-2' : 'space-y-3'}>
               {categoryFields.map((field) => (
-                <FieldRenderer
-                  key={field.key}
-                  field={field}
-                  typeId={typeId}
-                  value={values[field.key]}
-                  onChange={(v) => onChange(field.key, v)}
-                  isAiDerived={aiDerivedKeys?.has(field.key) ?? false}
-                  compact={compact}
-                />
+                <div key={field.key} data-testid={`cti-${field.key}`}>
+                  <FieldRenderer
+                    field={field}
+                    typeId={typeId}
+                    value={values[field.key]}
+                    onChange={(v) => onChange(field.key, v)}
+                    isAiDerived={aiDerivedKeys?.has(field.key) ?? false}
+                    compact={compact}
+                  />
+                </div>
               ))}
             </div>
           </div>
