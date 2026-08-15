@@ -24,6 +24,23 @@ export interface AnthropicCompletionOptions {
    * (e.g. a client disconnect or a deep-research deadline).
    */
   abortSignal?: AbortSignal;
+  /**
+   * Extended thinking. Standaard laat de client dit aan het model over — en
+   * `claude-sonnet-5` heeft het AAN staan, waarbij de thinking-tokens uit
+   * hetzelfde `max_tokens`-budget komen als de output.
+   *
+   * Gemeten 2026-08-15 (echte API-calls, identieke prompt):
+   *   max_tokens 4500,  default  → stop=max_tokens, blocks=[thinking], 0 tekens
+   *   max_tokens 12000, default  → stop=max_tokens, blocks=[thinking], 0 tekens
+   *   max_tokens 4500,  disabled → stop=end_turn,   blocks=[text],  3035 tekens
+   *
+   * Budget verhogen lost dit dus NIET op — het financiert alleen meer thinking.
+   * Zet `'disabled'` op elke call die een volledig JSON-document terug moet
+   * krijgen, waar afkappen fataal is en redeneerruimte niet opweegt tegen
+   * output-ruimte. `'enabled'` met een eigen budget wordt door dit model
+   * geweigerd (het verlangt `adaptive`), vandaar de beperkte union.
+   */
+  thinking?: 'disabled';
 }
 
 export interface AnthropicCompletionResult {
@@ -135,6 +152,9 @@ export const anthropicClient = {
           model,
           max_tokens,
           ...(temperature !== undefined ? { temperature } : {}),
+          ...(options?.thinking === 'disabled'
+            ? { thinking: { type: 'disabled' as const } }
+            : {}),
           system: system || undefined,
           messages: anthropicMessages,
         },
@@ -151,12 +171,25 @@ export const anthropicClient = {
     // Detect truncation: silent max_tokens cut-offs corrupt downstream
     // parsing/persistence — fail loudly instead (prompt-audit 2026-06-11).
     if (response.stop_reason === 'max_tokens') {
+      // Nul tekens bij een vol budget betekent dat er nooit een text-block is
+      // gekomen: de thinking-tokens hebben `max_tokens` volledig opgesoupeerd.
+      // Dat is een ándere fout dan een te krap budget, en de oude tekst
+      // ("increase maxTokens") stuurde precies de verkeerde kant op — meer
+      // budget financiert dan alleen meer thinking (gemeten 2026-08-15).
+      const thinkingStarved =
+        content.length === 0 && response.content.some((b) => b.type === 'thinking');
+      const advice = thinkingStarved
+        ? `Extended thinking consumed the entire budget (no text block was produced). ` +
+          `Increasing maxTokens will NOT help — pass thinking: 'disabled' for structured output.`
+        : `Try increasing maxTokens or simplifying the prompt.`;
       console.error(
-        `[anthropic-client] Claude response truncated (max_tokens reached). Model: ${model}, maxTokens: ${max_tokens}, output length: ${content.length} chars. Increase maxTokens to avoid this.`,
+        `[anthropic-client] Claude response truncated (max_tokens reached). Model: ${model}, ` +
+          `maxTokens: ${max_tokens}, output length: ${content.length} chars, ` +
+          `blocks: [${response.content.map((b) => b.type).join(',')}]. ${advice}`,
       );
       throw new Error(
         `Claude response was truncated (hit ${max_tokens} token limit). The output is incomplete. ` +
-        `Try increasing maxTokens or simplifying the prompt. Output was ${content.length} chars.`,
+          `${advice} Output was ${content.length} chars.`,
       );
     }
 

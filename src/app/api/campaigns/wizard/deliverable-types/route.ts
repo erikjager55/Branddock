@@ -1,32 +1,32 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth-server";
+import { DELIVERABLE_TYPES } from "@/features/campaigns/lib/deliverable-types";
 
 // GET /api/campaigns/wizard/deliverable-types — Return available deliverable types
-const DELIVERABLE_TYPES = [
-  { id: "blog-article", label: "Blog Article", category: "written" },
-  { id: "social-post", label: "Social Post", category: "social" },
-  { id: "email-newsletter", label: "Email Newsletter", category: "email" },
-  { id: "whitepaper", label: "Whitepaper", category: "written" },
-  { id: "case-study", label: "Case Study", category: "written" },
-  { id: "infographic", label: "Infographic", category: "visual" },
-  { id: "video-script", label: "Video Script", category: "video" },
-  { id: "linkedin-post", label: "LinkedIn Post", category: "social" },
-  { id: "twitter-thread", label: "Twitter Thread", category: "social" },
-  { id: "instagram-post", label: "Instagram Post", category: "social" },
-  { id: "presentation", label: "Presentation", category: "visual" },
-  { id: "brand-guidelines", label: "Brand Guidelines", category: "visual" },
-  { id: "welcome-email", label: "Welcome Email", category: "email" },
-  { id: "promotional-email", label: "Promotional Email", category: "email" },
-  { id: "drip-campaign", label: "Drip Campaign", category: "email" },
-  { id: "banner", label: "Banner", category: "visual" },
-];
-
+//
+// Afgeleid van de canonieke registry (`deliverable-types.ts`), niet langer een
+// eigen hardcoded lijst. Die lijst was uit de pas gelopen en bevatte zes IDs die
+// nergens meer bestonden (`blog-article`, `social-post`, `email-newsletter`,
+// `video-script`, `presentation`, `brand-guidelines`). Een client die daarop
+// vertrouwde kreeg types terug die `createAndGenerateDeliverable` vervolgens
+// afkeurt met CONTENT_TYPE_UNKNOWN — een storing die pas bij genereren zichtbaar
+// wordt. Gevonden in de e2e-sweep van 2026-08-15.
+//
+// `hidden`-types blijven eruit: dit endpoint beschrijft wat een gebruiker mag
+// kiezen, net als de pickers.
 export async function GET() {
-  // Static data, but gated for consistency with the rest of the API —
-  // no reason unauthenticated callers need to see our deliverable catalog.
+  // Statische data, maar gated voor consistentie met de rest van de API —
+  // geen reden om onze deliverable-catalogus aan anonieme callers te tonen.
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  return NextResponse.json(DELIVERABLE_TYPES);
+
+  const types = DELIVERABLE_TYPES.filter((t) => !t.hidden).map((t) => ({
+    id: t.id,
+    label: t.name,
+    category: t.category,
+  }));
+
+  return NextResponse.json(types);
 }

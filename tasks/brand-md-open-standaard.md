@@ -141,6 +141,19 @@ Strikte spec-hercontrole (originele 0.2-spec via commit `0e82ffd` + actuele 0.3-
 - Voorbeelden geregenereerd; tagline-fallback voor de levende versie = eerste "phrase that sounds like us".
 - **Restpunten** (roadmap in full-profile-spec): DESIGN.md-emitter (Brand Manifest als bron), References & Anti-References + Message Pillars als merkfundament-features, merkrevisieteller. Oude uitgegeven drafts (0.2-lezing) blijven functioneel maar valideren niet strikt — re-scan levert conform bestand.
 
+# Uitvoeringsstand v5 (mailflow fase 2 — 2026-08-15)
+
+Touchpoints 2.2 t/m 2.5 gebouwd en op LIVE gezet in de touchpoints-tabel (changelog #462). Kern:
+
+- **Cron** `/api/cron/brandmd-lifecycle` (dagelijks 07:00 UTC, `isCronAuthorized`): max 1 mail per draft per run, cap 200 sends, administratie in `lifecycleStagesSent`. Vensters 2.2 = 24 u-dag 7 (daarna stil afmarkeren, nooit inhalen), 2.3 = dag 7-21, 2.4 = dag 21-60, 2.5 = TTL ≤10 dagen.
+- **Toestemming**: 2.2-2.4 alleen met vinkje bij de download-gate (default UIT → `lifecycleOptInAt`) en zonder `lifecycleOptOutAt`; 2.5 is transactioneel (service-bericht over opgeslagen data) en gaat altijd, met voorrang op de reeks.
+- **Unsubscribe**: `GET|POST /api/brandmd/unsubscribe?token=` (RFC 8058 one-click), hash-lookup zoals de download-route, `lifecycleOptOutAt` write-once, HTML-bevestiging. 2.2-2.4 dragen `List-Unsubscribe` + `List-Unsubscribe-Post`.
+- **Afbakening zonder backfill**: alleen drafts mét `claimTokenEnc` doen mee. Dat veld wordt pas vanaf deze copy gezet, dus oudere drafts — die de "one-time email"-belofte kregen — vallen er automatisch buiten. De afwezigheid van het veld ís de grens.
+- **Copy-consistentie**: de rapport-mail-footer heeft twee varianten (mét/zonder opt-in) die beide de eenmalige TTL-melding aankondigen; de oude "one-time email"-belofte is weg, ook uit de gate-copy op de generator.
+- **Testbaarheid**: vensterlogica als pure functie in `src/lib/brandmd/lifecycle.ts`; `scripts/smoke-tests/brandmd-lifecycle.ts` dekt vensters, toestemming, unsubscribe-links en copy-consistentie — mutatie-getest (vervalst venster en genegeerde opt-out maken hem rood).
+
+**Openstaand (Erik)**: (1) Neon `prisma db push` voor de 4 nieuwe `GeneratedBrandProfile`-velden — vóór deploy, anders 500't de track-route; (2) eenmalige handmatige cron-test op prod met `CRON_SECRET`; (3) eerste echte lifecycle-mail visueel controleren in een inbox (Gmail-knop = RFC 8058-bewijs).
+
 # Notes
 
 - **Bestaande exportlaag (inventarisatie 2026-08-03)** — de fundering ligt er al: Export Format Registry met 7 formaten waaronder werkende `designmd`- (Google Stitch) en `brand-brief`-emitters ("AGENTS.md-style, om als BRAND.md in je repo-root te droppen" — feitelijk een proto-brand.md met 12 assets + personas + concurrenten), canoniek `DesignSystemModel` + resolver + linter, brand-kit-ZIP ("Claude Design compatible"), workspace-JSON-export. De brand.md-emitter is dus een inpas-klus in een bewezen patroon, geen greenfield.

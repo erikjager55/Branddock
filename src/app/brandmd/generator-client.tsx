@@ -94,6 +94,9 @@ export function GeneratorClient() {
   const [email, setEmail] = useState('');
   const [gateBusy, setGateBusy] = useState(false);
   const [gateError, setGateError] = useState<string | null>(null);
+  // Default UIT: de reeks 2.2-2.4 is marketing, dus expliciete toestemming.
+  // De download zelf en de TTL-melding hangen hier niet van af.
+  const [lifecycleOptIn, setLifecycleOptIn] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -144,7 +147,12 @@ export function GeneratorClient() {
       const track = await fetch('/api/brandmd/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: result.token, event: 'email', email: email.trim() }),
+        body: JSON.stringify({
+          token: result.token,
+          event: 'email',
+          email: email.trim(),
+          lifecycleOptIn,
+        }),
       });
       if (!track.ok) {
         const data = (await track.json()) as { error?: string };
@@ -170,7 +178,7 @@ export function GeneratorClient() {
     } finally {
       setGateBusy(false);
     }
-  }, [result, email]);
+  }, [result, email, lifecycleOptIn]);
 
   const copyRecipe = useCallback((idx: number, text: string) => {
     void navigator.clipboard.writeText(text);
@@ -374,7 +382,7 @@ export function GeneratorClient() {
                   <p className="mt-1 text-sm text-gray-600">
                     Free — leave your email and your file downloads instantly. We&apos;ll also
                     email you this full report with your download link, so you can pick it up on
-                    any device. One email, no newsletter, no spam.
+                    any device. No newsletter — just one reminder before your draft expires.
                   </p>
                   <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                     <input
@@ -394,6 +402,19 @@ export function GeneratorClient() {
                       Download — free
                     </button>
                   </div>
+                  <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={lifecycleOptIn}
+                      onChange={(e) => setLifecycleOptIn(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300"
+                      style={{ accentColor: 'var(--primary)' }}
+                    />
+                    <span>
+                      Also send me 3 short tips on getting more out of my brand.md — about one a
+                      week. Unsubscribe in one click, anytime.
+                    </span>
+                  </label>
                   {gateError && <p className="mt-3 text-sm text-red-600">{gateError}</p>}
                 </>
               )}

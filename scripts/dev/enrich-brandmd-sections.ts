@@ -17,6 +17,12 @@
 //   DATABASE_URL="postgresql://…" npx tsx scripts/dev/enrich-brandmd-sections.ts [--apply] [naamFilter]
 // =============================================================
 
+// .env.local laden vóór alle imports die env lezen (zelfde patroon als
+// rescrape-brand.ts) — al-geëxporteerde vars (bv. een prod-DATABASE_URL
+// inline op de command line) winnen: dotenv overschrijft nooit.
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+
 import { prisma } from '../../src/lib/prisma';
 import { anthropicClient } from '../../src/lib/ai/anthropic-client';
 import {
@@ -71,6 +77,16 @@ async function derivePillars(corpus: string, brandName: string): Promise<Pillar[
 }
 
 async function main() {
+  // Fail-fast: zonder API-key faalt elke pijler-afleiding stilletjes per
+  // workspace — dat las in de eerste run als succes (gotcha 2026-08-15).
+  if (apply && !process.env.ANTHROPIC_API_KEY) {
+    console.error(
+      '✗ ANTHROPIC_API_KEY ontbreekt — nodig voor de pijler-afleiding.\n' +
+        '  Zet hem in .env.local (wordt automatisch geladen) of exporteer hem in deze shell.',
+    );
+    process.exit(2);
+  }
+
   const workspaces = await prisma.workspace.findMany({
     where: nameFilter ? { name: { contains: nameFilter, mode: 'insensitive' } } : {},
     select: { id: true, name: true },

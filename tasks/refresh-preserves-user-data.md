@@ -121,7 +121,7 @@ zodat alle zes PATCH-routes dezelfde stempeling delen.
 - **`scanner-pipeline` zit in het onboarding-pad.** De wijziging is dezelfde die de analyze-routes
   in W5 kregen, maar de echte run dekt alleen het re-scan-geval.
 - **Schema-wijziging** → handmatige Neon-push mét verificatie-query (gotcha 2026-07-13). `prisma db
-  push` liep opnieuw vast op de pre-existing `LandingPage.livePublishId`-drift (zie #463), dus de
+  push` liep opnieuw vast op de pre-existing `LandingPage.livePublishId`-drift (zie #464), dus de
   vier kolommen zijn met een gerichte `ALTER TABLE … ADD COLUMN IF NOT EXISTS` toegevoegd.
 
 # Out of scope
@@ -167,7 +167,7 @@ daarvan ondermijnden het doel van de taak zelf:
 4. **`resolveSemanticTokens` had geen `orderBy`.** Dat werkte zolang elke analyse álle kleuren wiste
    en op volgorde herschreef. Nu rijen overleven is de fysieke rij-volgorde niet meer gelijk aan
    sortOrder, dus de "deterministische" resolver-output kon per run wisselen — met een spontane
-   review-drift (#463) tot gevolg.
+   review-drift (#464) tot gevolg.
 
 En vijf die het gedrag scheef zetten: de `colorPairings` misten de user-kleuren en draaiden de
 `recomputeColorPairings`-fix uit #17/#18 terug; de logo-suppressie op `variant` hield één geüploade

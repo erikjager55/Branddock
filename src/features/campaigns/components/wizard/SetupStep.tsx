@@ -67,6 +67,7 @@ export function SetupStep() {
     <div className="space-y-6">
       {/* Campaign name */}
       <Input
+        data-testid="setup-name"
         label={t("setup.nameLabel")}
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -103,6 +104,7 @@ export function SetupStep() {
             {t("setup.briefing.occasionLabel")}
           </label>
           <textarea
+            data-testid="setup-briefing-occasion"
             value={briefingOccasion}
             onChange={(e) => setBriefingOccasion(e.target.value)}
             placeholder={t("setup.briefing.occasionPlaceholder")}
@@ -116,6 +118,7 @@ export function SetupStep() {
             {t("setup.briefing.audienceLabel")}
           </label>
           <textarea
+            data-testid="setup-briefing-audience"
             value={briefingAudienceObjective}
             onChange={(e) => setBriefingAudienceObjective(e.target.value)}
             placeholder={t("setup.briefing.audiencePlaceholder")}
@@ -129,6 +132,7 @@ export function SetupStep() {
             {t("setup.briefing.coreMessageLabel")}
           </label>
           <textarea
+            data-testid="setup-briefing-core-message"
             value={briefingCoreMessage}
             onChange={(e) => setBriefingCoreMessage(e.target.value)}
             placeholder={t("setup.briefing.coreMessagePlaceholder")}
@@ -142,6 +146,7 @@ export function SetupStep() {
             {t("setup.briefing.toneLabel")}
           </label>
           <textarea
+            data-testid="setup-briefing-tone"
             value={briefingTonePreference}
             onChange={(e) => setBriefingTonePreference(e.target.value)}
             placeholder={t("setup.briefing.tonePlaceholder")}
@@ -155,6 +160,7 @@ export function SetupStep() {
             {t("setup.briefing.constraintsLabel")}
           </label>
           <textarea
+            data-testid="setup-briefing-constraints"
             value={briefingConstraints}
             onChange={(e) => setBriefingConstraints(e.target.value)}
             placeholder={t("setup.briefing.constraintsPlaceholder")}
@@ -261,6 +267,7 @@ export function SetupStep() {
                 {category.types.map(({ id, label, description: desc, icon }) => (
                   <SelectionCard
                     key={id}
+                    testId={`goal-${id}`}
                     icon={icon}
                     title={t(`campaigns-setup:goals.${id}`, { defaultValue: label })}
                     subtitle={t(`campaigns-setup:goals.${id}Desc`, { defaultValue: desc })}

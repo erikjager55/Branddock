@@ -348,7 +348,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   // ─── Empty state ───────────────────────────────────────────
   if (!hasVariants && !isGenerating) {
     return (
-      <div className="text-center py-8">
+      <div className="text-center py-8" data-testid="canvas-variants-empty">
         <Sparkles className="h-8 w-8 text-gray-300 mx-auto mb-3" />
         <p className="text-sm text-gray-500">
           {t('step2.empty')}
@@ -359,7 +359,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
 
   // ─── Variants ready ────────────────────────────────────────
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="canvas-variants-ready">
       {/* Regeneration banner — prominent so user doesn't miss it */}
       {isGenerating && hasVariants && (
         <div className="flex items-center gap-3 rounded-lg border-2 border-teal-200 bg-teal-50 px-4 py-3">

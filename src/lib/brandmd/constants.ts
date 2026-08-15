@@ -40,3 +40,15 @@ export function claimUrl(token: string): string | undefined {
   const base = appBaseUrl();
   return base ? `${base}${BRAND_MD_CLAIM_PATH}/${token}` : undefined;
 }
+
+/** Download-link voor in mails — het rauwe token is de capability. */
+export function brandMdDownloadUrl(token: string): string | undefined {
+  const base = appBaseUrl();
+  return base ? `${base}/api/brandmd/download?token=${encodeURIComponent(token)}` : undefined;
+}
+
+/** Unsubscribe-link (lifecycle-mails 2.2-2.4) — zelfde token-capability. */
+export function brandMdUnsubscribeUrl(token: string): string | undefined {
+  const base = appBaseUrl();
+  return base ? `${base}/api/brandmd/unsubscribe?token=${encodeURIComponent(token)}` : undefined;
+}

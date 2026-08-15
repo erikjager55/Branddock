@@ -284,6 +284,8 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
             const first = mapped[0];
             if (first) {
               setHeroImage({ url: first.url, mediaAssetId: null, alt: first.prompt });
+              // alt wordt in `setHeroImage` (canvas.api) op 500 tekens gekapt —
+              // de beeldprompt is langer en gaf anders een stille HTTP 400.
               persistHeroImage(deliverableId, {
                 imageUrl: first.url,
                 imageSource: 'ai-generated',
@@ -591,6 +593,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
         ) : (
           <button
             type="button"
+            data-testid="canvas-generate"
             onClick={handleGenerate}
             disabled={isGenerating || hasMissingRequired}
             aria-busy={isGenerating}

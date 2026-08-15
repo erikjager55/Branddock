@@ -15,7 +15,11 @@
 // =============================================================
 
 import Anthropic from '@anthropic-ai/sdk';
+import { isTempDeprecatedModel } from '@/lib/ai/anthropic-client';
 import { prisma } from '@/lib/prisma';
+
+/** Vision-model voor auto-tagging. Eén plek zodat de temperature-guard meeschuift. */
+const DAM_MODEL = 'claude-sonnet-5';
 
 interface DamAnalysisResult {
   description: string;
@@ -79,9 +83,13 @@ export async function analyzeMediaAssetForDam(
     const imageSource = await toImageSource(fileUrl);
     if (!imageSource) return null;
     const res = await client.messages.create({
-      model: 'claude-sonnet-5',
+      model: DAM_MODEL,
       max_tokens: 1500,
-      temperature: 0.2,
+      // `temperature` is deprecated op sonnet-5/opus-5 en levert een harde 400
+      // op — deze route omzeilde de gedeelde client en dus ook diens guard,
+      // waardoor ÉLKE auto-tagging-call faalde (gevonden in de e2e-sweep van
+      // 2026-08-15). Zelfde guard als anthropic-client.ts:138.
+      ...(isTempDeprecatedModel(DAM_MODEL) ? {} : { temperature: 0.2 }),
       system: DAM_SYSTEM_PROMPT,
       messages: [
         {
