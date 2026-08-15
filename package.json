@@ -81,6 +81,7 @@
     "smoke:review-drift": "tsx scripts/smoke-tests/review-drift.ts",
     "smoke:review-drift-reset": "tsx scripts/smoke-tests/review-drift-reset.ts",
     "smoke:preserve-user-rows": "tsx scripts/smoke-tests/preserve-user-rows.ts",
+    "smoke:rule-violation-stats": "tsx scripts/smoke-tests/rule-violation-stats.ts",
     "smoke:brand-library": "tsx scripts/smoke-tests/brand-library-accessor.ts",
     "brand-context-baseline": "tsx scripts/dev/brand-context-baseline.ts",
     "smoke:styleguide-rules": "tsx scripts/smoke-tests/styleguide-rule-compiler.ts",

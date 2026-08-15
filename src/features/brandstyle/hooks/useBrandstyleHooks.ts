@@ -27,6 +27,8 @@ import {
   finalizeReview,
   updateComponent,
   deleteComponent,
+  fetchCurationSignals,
+  runCurationAction,
 } from "../api/brandstyle.api";
 import type { SaveForAiSection, UpdateFontBody, UpdateLogoBody, UpdateReviewBody, UpdateComponentBody } from "../types/brandstyle.types";
 
@@ -39,6 +41,7 @@ export const brandstyleKeys = {
   aiContext: () => ["brandstyle", "ai-context"] as const,
   fonts: () => ["brandstyle", "fonts"] as const,
   logos: () => ["brandstyle", "logos"] as const,
+  curationSignals: () => ["brandstyle", "curation-signals"] as const,
 };
 
 // === Queries ===
@@ -60,6 +63,35 @@ export function useAnalysisStatus(jobId: string | null) {
       if (!data) return 2000;
       if (data.status === "COMPLETE" || data.status === "ERROR") return false;
       return 2000;
+    },
+  });
+}
+
+/**
+ * Regels die structureel botsen met wat we genereren (R4-feedback-loop).
+ * Alleen zinvol bij een afgeronde styleguide; `enabled` voorkomt een call
+ * tijdens de analyse.
+ */
+export function useCurationSignals(enabled: boolean) {
+  return useQuery({
+    queryKey: brandstyleKeys.curationSignals(),
+    queryFn: fetchCurationSignals,
+    enabled,
+  });
+}
+
+/**
+ * Voert een inline curatie-correctie uit en ververst daarna zowel de signalen
+ * als de styleguide — een weggehaalde regel hoort meteen uit het paneel te
+ * verdwijnen.
+ */
+export function useRunCurationAction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: runCurationAction,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: brandstyleKeys.curationSignals() });
+      queryClient.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
     },
   });
 }

@@ -7,7 +7,12 @@ import { PageShell } from "@/components/ui/layout";
 import { LockBanner, LockConfirmDialog, LockOverlay } from "@/components/lock";
 import { useLockState } from "@/hooks/useLockState";
 import { useQueryClient } from "@tanstack/react-query";
-import { useStyleguide, brandstyleKeys } from "../hooks/useBrandstyleHooks";
+import {
+  useStyleguide,
+  useCurationSignals,
+  useRunCurationAction,
+  brandstyleKeys,
+} from "../hooks/useBrandstyleHooks";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { StyleguideTabNav } from "./StyleguideTabNav";
 import { StyleguideHeader } from "./StyleguideHeader";
@@ -43,6 +48,11 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
   const qc = useQueryClient();
 
   const styleguide = data?.styleguide ?? null;
+
+  // R4-feedback-loop. Alleen ophalen bij een afgeronde styleguide — tijdens de
+  // analyse is er nog niets zinnigs te aggregeren.
+  const curationSignals = useCurationSignals(styleguide?.status === "COMPLETE");
+  const runCurationAction = useRunCurationAction();
 
   // Hook must be called unconditionally (Rules of Hooks).
   // Pass safe defaults when styleguide is not yet loaded.
@@ -146,7 +156,13 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
 
         <div className="mt-6" />
 
-        <BrandstyleCalibrationPanel styleguide={styleguide} onJumpToTab={setActiveTab} />
+        <BrandstyleCalibrationPanel
+          styleguide={styleguide}
+          onJumpToTab={setActiveTab}
+          ruleViolations={curationSignals.data?.signals}
+          curationSignalsFailed={curationSignals.isError}
+          onRunAction={(action) => runCurationAction.mutateAsync(action).then(() => undefined)}
+        />
 
         {!styleguide.published && (
           <div className="mb-5">

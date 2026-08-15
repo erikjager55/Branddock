@@ -222,6 +222,11 @@ export async function PATCH(request: NextRequest) {
     invalidateBrandContext(workspaceId);
     invalidateCache(cacheKeys.prefixes.brandvoiceguide(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+    // Ook de brandstyle-prefix: een wijziging aan wordsWeAvoid/vocabularyDont
+    // hersynct de BrandRules, en de curatie-signalen in het kalibratie-paneel
+    // hangen onder die prefix. Zonder dit blijft een net weggecureerde regel
+    // nog een cache-TTL lang als suggestie staan — mét een knop die dan faalt.
+    invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
 
     return NextResponse.json({ voiceguide });
   } catch (error) {
