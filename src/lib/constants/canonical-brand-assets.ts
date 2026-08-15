@@ -1,5 +1,5 @@
 /**
- * Canonical Brand Assets — single source of truth for the 11 fixed brand assets
+ * Canonical Brand Assets — single source of truth for the canonical brand assets (12 sinds 2026-08-15)
  * every workspace gets automatically.
  *
  * Imported by: seed, workspace creation (API + auth provisioning).
@@ -27,6 +27,9 @@ export const CANONICAL_BRAND_ASSETS: CanonicalBrandAsset[] = [
   { name: "Brand Story",          slug: "brand-story",          category: "NARRATIVE",   description: "Your brand's past, present and future",               frameworkType: "BRAND_STORY" },
   { name: "Core Values",          slug: "core-values",          category: "CULTURE",     description: "Fundamental beliefs that guide your brand",            frameworkType: "BRANDHOUSE_VALUES" },
   { name: "Social Relevancy",     slug: "social-relevancy",     category: "ESG",         description: "Your brand's societal and environmental impact",       frameworkType: "ESG" },
+  // BRAND.md 0.3 Strategy > References & Anti-References (verrijking 2026-08-15).
+  // Menselijke strategische keuze — wordt bewust NOOIT door een scan gevuld.
+  { name: "References & Anti-References", slug: "references-anti-references", category: "STRATEGY", description: "Brands to borrow from (and the trait not to copy) and patterns you reject", frameworkType: "REFERENCES" },
 ];
 
 /** All research method types (including deactivated). Kept for backward compat. */

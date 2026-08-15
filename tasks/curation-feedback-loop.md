@@ -23,7 +23,7 @@ geëxtraheerd?"*
 **De logging bestond al.** Elke generatie schrijft een `ContentFidelityScore` met geneste
 `BrandReviewFinding`-rijen (`fidelity-runner.ts:495-528`), en `mapViolationToFindingInput` zet
 `{ ruleId, ruleType, pattern }` in `evidence`. Lokaal stonden er 331 scores en 1141 findings op 5
-workspaces. Sinds #460 lopen ook de StyleguideRule-overtredingen mee via `mergeRuleResults`.
+workspaces. Sinds #461 lopen ook de StyleguideRule-overtredingen mee via `mergeRuleResults`.
 
 Wat ontbrak was de **aggregatie per regel** en het **tonen** ervan.
 

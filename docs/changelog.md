@@ -37,7 +37,7 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
-### 464. De bibliotheek leert van haar eigen gebruik — curatie-suggesties uit F-VAL-overtredingen (R4)
+### 465. De bibliotheek leert van haar eigen gebruik — curatie-suggesties uit F-VAL-overtredingen (R4)
 
 Het verbeterplan vroeg om een feedback-loop: *"regel X wordt in 80% van generaties overtreden — te
 streng geformuleerd of verkeerd geëxtraheerd?"* De **logging bleek al te bestaan**: elke generatie
@@ -95,9 +95,9 @@ een wérkende correctie bij hoort) en het actiepad op een wegwerp-workspace (6/6
 regel weg, de andere lanes intact).
 
 **Uit scope**: de token-overrides uit R4 — die pijp is vandaag leeg (alle 158 kleuren `scraped`,
-nul claims) en vult zich pas na #463 naarmate gebruikers gaan bewerken.
+nul claims) en vult zich pas na #464 naarmate gebruikers gaan bewerken.
 
-### 463. Een re-analyse vernietigt geen user-edits meer (W5, relatie-niveau)
+### 464. Een re-analyse vernietigt geen user-edits meer (W5, relatie-niveau)
 
 W5 beloofde dat een re-scrape "alle overrides en reviews behoudt". De helft klopte: de
 analyze-routes hergebruiken sinds W5 de styleguide-rij, dus reviews, regels en snapshots overleven.
@@ -125,8 +125,8 @@ PATCH-route en gerespecteerd door de engine. Een veld leegmaken geeft het terug 
 
 **Tweede destructieve deur dicht**: `website-scanner/scanner-pipeline.ts` deed vóór een re-scan een
 `brandStyleguide.delete` die zichzelf "atomic pattern" noemde. Élke relatie hangt aan
-`onDelete: Cascade`, dus dat pad wiste ook de `StyleguideRule`-regels uit #460, de reviews en de
-snapshots waar de driftdetectie van #462 op leunt. Nu hergebruikt hij de rij, net als
+`onDelete: Cascade`, dus dat pad wiste ook de `StyleguideRule`-regels uit #461, de reviews en de
+snapshots waar de driftdetectie van #463 op leunt. Nu hergebruikt hij de rij, net als
 `/api/brandstyle/analyze/url` sinds W5.
 
 Twee code-reviews haalden er daarna nog negen defecten uit die alle gates hadden overleefd. Vier
@@ -137,7 +137,7 @@ exact het vlag-zonder-schrijver-patroon dat deze taak bij de `*Override`-vlaggen
 verificatie-harnas testte er langsheen door de kolom rechtstreeks te schrijven; de
 sortOrder-herstempeling schoof de merkkleur naar achteren, waarna `pickBrand` in de LP-renderer een
 andere kleur koos; en `resolveSemanticTokens` miste een `orderBy`, wat pas kapot gaat zodra rijen
-een analyse overleven — met spontane review-drift (#462) tot gevolg. Verder: `colorPairings` misten
+een analyse overleven — met spontane review-drift (#463) tot gevolg. Verder: `colorPairings` misten
 de user-kleuren en draaiden de `recomputeColorPairings`-fix uit #17/#18 terug, één geüploade LOCKUP
 blokkeerde álle gedetecteerde lockups, een component-rename brak de natural key (vandaar
 `detectedLabel`), de kleur-PATCH claimde ook bij een lege body, en `PATCH /api/brandstyle`
@@ -156,7 +156,7 @@ met de gescrapte kleuren wél ververst. Er staan nu vier eigenaarschapsmechanism
 (source-kolom, `uploadedById`, `userEditedFields`, `*Override`) — waarom dat bewust is, staat in
 `docs/adr/2026-08-14-user-ownership-bij-re-analyse.md`.
 
-### 462. Reviewstatus vervalt wanneer een re-analyse de sectie verandert (W5-driftreset)
+### 463. Reviewstatus vervalt wanneer een re-analyse de sectie verandert (W5-driftreset)
 
 W5 maakte re-analyse niet-destructief — reviews blijven staan bij een refresh. Daarmee ontstond het
 gat dat het verbeterplan zelf benoemt: een goedkeuring hoort bij een *specifieke versie* van de
@@ -170,7 +170,7 @@ alleen de mapping van diff-categorie naar review-sectie (`review-drift.ts`, puur
 "nog nooit bekeken"; die stempel vervalt zodra de gebruiker de sectie opnieuw beoordeelt. NEEDS_WORK
 blijft staan inclusief feedback, cosmetische kleurwijzigingen (RGB-afstand < 3) resetten niets, en
 **`published` blijft ongemoeid** — bewust asymmetrisch met een handmatige "needs work", die wél
-depubliceert: een klik is een besluit, drift is een signaal, en sinds #460/#461 hangt de hele
+depubliceert: een klik is een besluit, drift is een signaal, en sinds #461/#462 hangt de hele
 merkcontext-injectie aan die vlag. Bijvangst op dezelfde hook: de analyse-engine invalideerde
 **nergens** een cache, waardoor de brand-library- en regel-cache na een re-analyse tot vijf minuten
 de oude merkdata bleven serveren.
@@ -189,7 +189,7 @@ draait.
 - Task: [tasks/review-drift-reset.md](../tasks/review-drift-reset.md)
 - Spec: `docs/specs/brandstyle-designbibliotheek-verbeterplan.md` (W5, "hash-anker")
 
-### 461. Merkcontext loopt via één gegate accessor — twaalf consumers gemigreerd + lint-regel (W7.1)
+### 462. Merkcontext loopt via één gegate accessor — twaalf consumers gemigreerd + lint-regel (W7.1)
 
 Elke consumer las tot nu toe zelf `BrandStyleguide`-velden, dus de gates (`published` + de zes
 `*SavedForAi`-vlaggen) en de marker-stripping zaten verspreid over tientallen bestanden. Van de
@@ -232,13 +232,20 @@ Next-route-pad als character-class, waardoor zo'n allowlist-entry stil niet matc
 - ADR: [docs/adr/2026-08-14-brand-library-consumption.md](adr/2026-08-14-brand-library-consumption.md)
 - Spec: `docs/specs/brandstyle-designbibliotheek-verbeterplan.md` (W7.1)
 
-### 460. StyleguideRule bereikt F-VAL's rules-pijler — doorvoer, modaliteit-scheiding en de vulling die eronder ontbrak
+### 461. StyleguideRule bereikt F-VAL's rules-pijler — doorvoer, modaliteit-scheiding en de vulling die eronder ontbrak
 
 De Stap-0-spike mat dat regel-overtredende content (emoji, wij-vorm, superlatieven) gewoon 80+ scoorde omdat `score_against_brand` altijd `rulesEvaluated: 0` gaf: merkregels staan in `StyleguideRule`, maar de rules-pijler leest alleen `BrandRule`. **Fase A — de pijp**: `StyleguideRule` is nu een derde violation-bron in `mergeRuleResults`, naast BrandRule en de locale-heuristics, zónder materialisatie (`ruleId: styleguide:<sectie>:<id>`, `BLOCKING`→error/gewicht 3, `ADVISORY`→warning). Nieuw constraint-vocabulaire (`rule-constraints.ts`, Zod) met een tekst-familie (7 checks) en een visuele familie; alleen tekst-constraints compileren — visuele regels worden geteld en overgeslagen, want die horen bij de renderer. Gedeelde matchers uit `rule-compiler.ts` verhuisd (gedragsneutraal) plus een `unicodeWordBoundaryRegex`, omdat JavaScript's `\b` ASCII-only is en "dé"/"één" daardoor nooit matchten. Cap van 25 violations per regel zodat één brede regel de findings-persistentie niet overspoelt. **Fase B — vulling**: `BrandVoiceguide.vocabularyDont` werd nooit gesynct (91 termen over 9 workspaces bereikten de scoring niet) — nieuwe opt-in stream `auto:voiceguide.vocabularyDont`, plus een backfill-script dat weigert legacy-regels te wissen wanneer een lege voiceguide ze zou stranden. Deterministische constraint-afleiding markeerde alle 346 bestaande regels als visueel (0 tekst-checkbaar — bevestigd: de styleguide-secties zijn allemaal visueel). **Fase C — structurer**: de tekst-regels blijken in `BrandVoiceguide.writingGuidelines`/`contentGuidelines` te zitten; een AI-pass classificeert die naar constraints (nooit auteuren: geen regex, `forbidden-words` alleen met letterlijk genoemde woorden, perspectief via ingebouwde voornaamwoordtabellen) met deterministische vangnetten tegen gemiddelde-als-maximum, element-/positie-gebonden richtlijnen en elkaar uitsluitende u/je-regels. Gewired in finalize (fail-soft) + dry-run-backfill. Bijvangst: het dode `clearRuleCompilerCache` is gewired (een regelwijziging was tot 60s onzichtbaar), de gestructureerde tak van `buildHardRules` honoreert nu de `*SavedForAi`-gates die hij volledig omzeilde, en de copy/audio-views laten visuele regels weg. Gates: tsc 0 errors, lint schoon (1 pre-existing error op main in `export/design-system`), golden-eval 14/14, pure smoke 51/51 (DB-vrij), DB-smoke 17/17 (hermetische scratch-workspace: composiet 86 → 59). **Let op**: composietscores van workspaces mét regels schuiven omlaag zodra die regels bijten — pre/post-vergelijking van pilotcijfers is daardoor geen appels/appels meer.
 
 - Task: [tasks/brandstyle-rules-to-fval.md](../tasks/brandstyle-rules-to-fval.md)
 - ADR: [docs/adr/2026-08-14-styleguide-rules-in-fval.md](adr/2026-08-14-styleguide-rules-in-fval.md)
 - Spec: `docs/specs/brandstyle-designbibliotheek-verbeterplan.md` (W2) + `docs/specs/spike-stap0-brand-manifest-dts-ede.md` §4
+
+### 460. Levende laag verrijkt — Message Pillars, Art Direction en References-asset met terugwerkende kracht
+
+De 0.3-secties zijn nu eersteklas workspace-data (waren alleen scan-draft). **Voice**: `BrandVoiceguide.messagePillars` (Json, ⚠️ Neon `db push` vereist) — voice-analyzer extraheert pillars (prompt + sanitize + review-toggle in VoiceAnalyzerReview), bewerkbaar blok in VoiceDnaSection (i18n en/nl), PATCH-route gevalideerd, claim seedt pillars uit de generator-scan. **Brandstyle**: Art Direction hergebruikt bestáánde data — `designPhilosophy` (AI Phase 3) als direction statement + photography-mood-woorden als keywords, via de resolver in de levende BRAND.md; geen nieuw veld nodig. **Merkfundament**: 12e canonical asset "References & Anti-References" (REFERENCES, categorie STRATEGY — bewust nooit scan-gevuld; menselijke keuze), automatisch in nieuwe/geclaimde workspaces, gemapt op de verplichte 0.3-subsectie. **Backfill**: `scripts/dev/enrich-brandmd-sections.ts` — niet-destructief (alleen lege velden; default dry-run, `--apply`): references-asset aanmaken, pillars afleiden uit de opgeslagen voice-corpus (1 AI-call), rapporteert styleguides zonder designPhilosophy (→ re-analyse). Smoke bewaakt de asset→subsectie-mapping.
+
+- Task: [tasks/brand-md-open-standaard.md](../tasks/brand-md-open-standaard.md)
+- Commit: zie git log (levende-laag-verrijking)
 
 ### 459. Scan-verrijking — Message Pillars en Art Direction eerlijk afgeleid
 
