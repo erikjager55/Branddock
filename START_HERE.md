@@ -1,116 +1,159 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> Update wekelijks (vrijdagretro) en na elke grote sprint.
+> **Laatst bijgewerkt: 2026-08-15** (volledig herschreven — de vorige versie was een
+> maand oud en noemde het credit-model nog als kritiek pad).
 
 ---
 
 ## Huidige fase
 
-**Pre-launch → launch-fase — peildatum 2026-07-12.** **`vercel-deployment` ✅ LIVE + `stripe-billing-live` ✅ LIVE** — app én billing draaien op productie (`branddock-7y9n.vercel.app`, main=production, Vercel Pro+Fluid); **beide harde launch-blockers zijn weg**. Stripe live-billing is volledig go-live (checkout→PRO / cancel→FREE getest, webhook 9 events enabled, Customer Portal, Vercel-env `BILLING_ENABLED=true`). **`pilot-onboarding-better-brands` is ✅ afgesloten** (BB live op prod, PR #95) en **credits draaien LIVE in pilotmodus** (sinds 2026-07-10, top-up dicht). Het kritieke pad richting betalende klanten is nu **het credit-model afronden tot betaling-aan** (Fase 4-rest + Fase 5 + launch-checklist). In juni landden twee grote feature-clusters op `main`: de **web-page-builder (Puck) + GEO/SEO long-form** (Fase 1-3 + alle followups) en de **Knowledge Library / Deep Research** + knowledge-context-laag. De GEO/SEO-arc, de bijbehorende LP-render-bugfixes én het brandstyle-kalibratie-paneel zijn nu **volledig afgerond en gemerged**.
+**Live op productie, in acquisitie.** App én billing draaien op `branddock.app`
+(main = production, Vercel Pro+Fluid). De launch-blockers uit het voorjaar zijn
+allemaal weg: Vercel ✅, Stripe ✅, credits ✅ gebouwd en gesmoked.
 
-### Stand per 2026-07-05 (actueel)
+Het zwaartepunt is verschoven van *bouwen tot het af is* naar **distributie**. Twee
+sporen dragen dat:
 
-- **💳 Launch-pricing besloten 2026-07-07** (ADR [`2026-07-07-pricing-credits-launch`](docs/adr/2026-07-07-pricing-credits-launch.md)) — **lage basis + prepaid credit-bundel + on-demand top-up (€0,10/credit)**, €15 platform-floor, **output-only metering** (merkcontext/F-VAL credit-vrij). Tiers **Starter €39/400cr · Growth €89/1.200cr · Agency €299/4.000cr** + 28d no-card trial; iDEAL/SEPA + Stripe Tax/BTW. Herziet D8 van de agents-ADR. ~46% marge / ~€142K jaarwinst bij 300 gemixte users. **Build = launch-blocker**: [`pricing-credits-billing`](tasks/pricing-credits-billing.md) (gefaseerd 0-6, gesplitst in 7 fase-task-files). **Stand 2026-07-12 — BOUW COMPLEET (Fase 0-6)**: Fase 0-3+6 live in pilotmodus (#369-#374); **Fase 4 (reverse-trial read-only-lock + T-3/T-0-meldingen) ✅ #380**, **Fase 5a (iDEAL/SEPA + incasso-mandaat + auto-topup) ✅ #381**, **Fase 5b (Stripe Tax/BTW + factuur-uitsplitsing) ✅ #382**. Wat rest vóór betaling-koppelen is uitsluitend **user-config**: één gebatchte Neon `db push` (TRIAL_EXPIRING/AUTO_TOPUP/sepaPaymentMethodId/Invoice-tax-kolommen), Stripe-dashboard (5 extra webhook-events, iDEAL+SEPA aan, Stripe Tax + origin + OSS, prijzen op tax_behavior exclusive), `SELLER_VAT_NUMBER`-env, testmode-deploy-smokes en de herbeoordeel-punten uit playbook §8/§9 (cap-race, auto-topup-PI buiten Stripe Tax) — zie memory `user-actiepunten` + `docs/playbooks/stripe-go-live.md`. **Stand-update 2026-07-12 (doc-sync)**: Fase 3+6 ✅ + de 8 billing-ON-gates ✅ (#372, PR #98), Credit Admin-paneel ✅ (#373, PR #99), en **credits LIVE in pilotmodus sinds 2026-07-10** (#374, PR #100 — `NEXT_PUBLIC_CREDITS_ENABLED=true`, top-up-gate dicht, pilot-orgs comped; zie memory `credit-billing-state`). **Rest vóór betaling-aan** (`NEXT_PUBLIC_TOPUP_ENABLED=true`): Fase 4-rest (dag-28 read-only-lock; trial-grant + expiry ✅) + Fase 5 (iDEAL/SEPA-mandaat + Stripe Tax/BTW + auto-topup off-session) + launch-checklist (o.a. álle `STRIPE_PRICE_*`-ids in de env-map).
+1. **`brand.md` als instap-funnel** — gratis scan → download → claim → trial. Live en
+   werkend: generator, Brand Score, rapport-mail, lifecycle-reeks 2.2-2.5, claim-flow
+   en leads-dashboard staan er.
+2. **De designbibliotheek** — Brand Manifest, Brand Library-accessor, StyleguideRule
+   als eersteklas datatype, en sinds vandaag ook de F-VAL-rules-pijler die ze écht leest.
 
-- **`vercel-deployment` ✅ done 2026-07-05** — app live op branddock-7y9n.vercel.app (main=production, Vercel Pro+Fluid). Ontgrendelt Track B Phase C (Vercel Cron), `pilot-onboarding-better-brands` en de GEO deploy-smoke. Let op memory `neon-schema-push-on-deploy`: schema-changes handmatig naar Neon `prisma db push`-en.
-- **Nieuw initiatief 2026-07-05 — 🤖 Agents (user-facing persona-agents)**: volledige Fase 0 afgerond in één dag — diepte-analyse (`docs/reports/agents-diepte-analyse-en-plan-2026-07-05.md`: adversarieel geverifieerde Sintra/Jasper-analyse + brede scan + codebase-inventaris), idea-doc `tasks/_drafts/idea-agents-feature.md` (verdict `ready-to-build`, gepromoot), ADR `2026-07-05-agents-architectuur` (8 deelbeslissingen) en 6 task-files: `agents-foundation` → `agents-motor-wiring` + `agents-ui-inbox` → `agents-data-analyst` (Fase 1, pre-launch NOW, 16-24d, lite-fallback ~11-17d), `agents-scheduling` (Fase 2, gate: Fase 1), `agents-brandclaw-convergentie` (Fase 3-epic, blocked). Kernframe: Agents = user-facing productlaag op `runAgentLoop`; Brandclaw = latere autonomie-trap. User-besluiten: persona-agents, Data Analyst in MVP, vaste maandprijs (per-token later). Detail: roadmap §🤖.
-- **Geland op `main` in juni** (changelog #322-#344): web-page-builder/Puck als Canvas Step 3 + brandstyle-extractie-fixes; website page-types W0-W5; GEO/SEO long-form Fase 1-3 (directive + composable seo-geo + F-VAL GEO-pijler + entity-JSON-LD + meet-haak); Deep Research in de Knowledge Library; knowledge-context in de content-flow + op de 5 PUCK web-page-types; content-item-beelden auto-groeien de Media Library; prompt-audit fase 0-5; NL→EN UI-migratie; web-page/GEO-publish markeert het content-item als PUBLISHED (#337); GEO-meet-paneel in de Canvas (#338); LP Step 2+3 render-bugfixes ge-finalized (#339); GEO stat-citatie-leak gedicht (#340/#343); "model offline"-melding (#341); LP/GEO render quick-wins (#342); **brandstyle kalibratie-paneel (#344, deze sessie — gemerged via `37701ab7`)**.
-- **Worktrees (stand 2026-07-12)**: alle taak-worktrees zijn opgeruimd (incl. `branddock-brandclaw`, `branddock-launch` en de agents-/content-flow-trees) — gemergde branches verwijderd via de nieuwe `scripts/dev/worktree.sh --done <task-id>`. Naast de main-tree rest alleen `branddock-figma-reference`. Nieuwe taak = nieuwe worktree via `scripts/dev/worktree.sh <task-id>`.
-- **Research Hub** staat bewust uit achter `RESEARCH_HUB_ENABLED=false` (per-asset AI-Exploration vanuit Brand Foundation blijft wél aan).
-- **Nog open / niet ge-finalized**: `web-page-builder-canvas-step-mvp` op `in-progress` (alle 6 fasen + squash-merges PR #14/#15 done; alleen een verspreide acceptance-staart rest: README, F-VAL HTML-calibratie, dual-render perf, marketing-site dogfood, browser-smoke door user); `strategy-analyst-stub` Phase C **gesuperseded** (→ Agents `agents-scheduling`/`agents-brandclaw-convergentie`); Track C launch-infra: `vercel-deployment` ✅ LIVE + `stripe-billing-live` ✅ LIVE (go-live 2026-07-06). **De `lp-*`-bugfixes (`lp-fidelity-bugfixes-step2` + `lp-step3-rendering-bugs`) zijn afgerond** — de eerdere "in-review"-claim was stale.
-- **Nieuw initiatief gepland 2026-06-30 — Meertaligheid (i18n + multi-markt)**: ADR `2026-06-28-multilingual-i18n-and-multi-market-content` + 5 task-files (`i18n-ui-foundation`, `i18n-ai-translation-pipeline`, `content-locale-foundation`, `content-locale-target-picker`, `multi-market-transcreation-enterprise`). Twee assen: UI-taal per gebruiker (i18next, automatisch AI-vertaald — geen handwerk) + content-taal per workspace/markt (Approach C: `Brand` 1:1 + `BrandLocaleProfile`). Fases 1-3 pre-launch-startklaar + niet-brekend; Fase 4-5 = enterprise/LATER, go/no-go-gated, mag `vercel-deployment` niet gijzelen. **✅ STATUS 2026-07-05 — Fase 1-3 GEMERGED op `main` (#65/#68/#70/#71/#73/#74), launch-ready**: en↔nl live door de hele app; de twee-selector-visie (Display-language per gebruiker + Content-/Output-language per workspace/generatie) is compleet. Blokkeert `vercel-deployment` niet. **Post-launch parkeer**: `i18n-ai-translation-pipeline` (automatische engine voor onderhoud + de/es/fr — nu en/nl geseed), de deferred Fase-3-follow-ups (F-VAL-target-pack + bulk-UI-picker), en Fase 4-5. Detail: roadmap §🌍 Meertaligheid.
-- **GEO/SEO Fase 1a/1b/2/3 + 2 van 3 followups afgesloten 2026-06-24/25** (→ `tasks/done/`): `geo-seo-followup-measurement-dashboard` ✅ en `geo-seo-followup-live-ai-e2e` ✅ done. Alleen `geo-seo-followup-later` (entity-reinforcement + restschema + deploy-smoke) blijft **open**.
-
----
-
-#### Sprint-archief (peildatum 2026-05-29 — historisch, niet meer de huidige stand)
-
-Actuele sprint-status:
-
-- ✅ Sprint #4 quick-wins (5/5): cron-infra ADR, Surface C smoke, claw-page-awareness smoke, locale-picker smoke, code-debt 2/12 + close-out cluster A/B/C (#257). VB Compose/Trained smoke deferred post-vercel. STOP-GATE genomen 2026-05-17 (P2 shared-pipeline `effie-waardig` leak fixt via prompt-guards + sanitizer, commit `e849a1ed` = entry #258). Auto-iterate variant-clobber fix gemerged 2026-05-17 (`cdd0e074` = #259).
-- ✅ Sprint #5 Track A vooruitgelopen: `content-test-foundation-5A`, `content-test-goldens-5B`, `content-test-auto-iterate-6B` (5/7 backend, wiring + dashboard deferred), `content-test-wiring-gates-6A` ✅, `compose-pipeline-gemini-migration`, `claw-page-awareness-vervolg`. **Open**: 6B wiring/dashboard panels + bugfix-cluster uit Ronde 1.
-- ✅ **Track B Phase A + B gemerged 2026-05-18** (merge-commit `a0e59a5b`): `brandclaw-data-collection`, `brandclaw-tool-orchestrator`, `strategy-analyst-stub` Phase A (node entry + manual trigger + UI Tab 5) + Phase A vervolg + Phase B (4 dimensions + UI sort/group) + model-ID hotfix (#260-262). Worktree `branddock-brandclaw` blijft actief voor Phase C.
-- ✅ **Competitive-AI surfaces ge-finalized 2026-05-29**: `competitor-ai-event-classifier` (#263) + `competitor-activities-ui` (#271 — detail-timeline + dashboard attention + multi-competitor digest + Brand Assistant tool + in-app/email notificaties + reconcile-cron). Was gemerged via PR #6/#8/#13 maar nooit formeel ge-finalized; audit gaf 0 critical/major defects, 7 minor hardening-fixes doorgevoerd (mark-all-read scope, digest-gate, reconcile invalidateCache, OrganizationMember user-resolutie, constant-time cron-auth, dev email-log, silent-return warn).
-- ⏸️ **Track B Phase C open** (5-7d, in `branddock-brandclaw` worktree): Vercel Cron weekly `0 9 * * 1` + per-workspace concurrency-cap + cost-budget alerts (>$10/ws/maand → PostHog) + BB pilot smoke met productie-data. **Sequential dep**: Vercel Cron heeft `vercel-deployment` nodig — Track C moet eerst.
-- ⏸️ Track C (worktree `branddock-launch`): 0 eigen commits, ~6 commits achter op main per 2026-06-24 (de "~58 commits"-telling hieronder was de mei-stand). Rebase nodig voor start. Hard launch-blocker.
-
-Eerdere afronding (sprint #1-3):
-
-- ✅ Pre-launch product-readiness van content-flows (sprint #1, 2026-05-07/08)
-- ✅ Canvas + Studio audit + per-item tweaks (3 clusters, 36 types) + image-flow (3 layers) + locale-fix (sprint #2)
-- ✅ Brand Control Program **Phase 0** (foundation + tech-debt-any-types)
-- ✅ Brand Control Program **Phase 1** (F-VAL extension: W1-full centroid + multilingual heuristics + voice-baseline)
-- ✅ Brand Control Program **Phase 2 Δ-1 surfaces** (Surface C Tab 3 UI + Surface D chat-tool + Surface E PublishGate + cleanup-pack + Insights tab)
-- ✅ F-VAL rules-pijler audit (mapper + NL-NL packs + stem-variants + violation-dedup)
-- ✅ Brand-language auto-detect (`franc-min` + backfill 13 workspaces + runtime mismatch-guard)
-- ✅ BrandVoiceguide.contentLocale picker UI (Voice DNA tab manuele override)
-- ✅ Cowork-pariteit Fase A + Competitive-intel Fase 1 data-laag
-
-**Open Pre-launch werk** (scope-uitbreiding 2026-05-12 na roadmap-inventaris — 5 items + ~10 code-TODOs uit gaps getrokken):
-
-3 parallelle tracks via worktrees, 4 sprints (~6-8 weken):
-
-- **Track A — Quality + Validation**: content-items-test-coverage (53 types) + browser-smoke batch + code-debt cleanup
-- **Track B — Brandclaw + Competitive**: brandclaw-tool-orchestrator → strategy-analyst-stub + competitor-ai-event-classifier + competitor-content-item-discovery + cron-infra ADR
-- **Track C — Launch infra**: vercel-deployment → stripe-billing-live → pilot-onboarding-better-brands + onboarding-flow-test + marketing-site-pricing
-
-**Verplaatst naar post-launch (2026-05-12)**:
-- **Δ-4 PublishGate 2nd-opinion** — pilot niet live, geen evidence dat huidige 3-pijler F-VAL gaten heeft.
-
-Pilot-start projectie: **+9-11 weken** (content-test verbeterplan Optie B Full geaccepteerd 2026-05-12 — 6 sub-sprints in Track A + chain-of-prompts + multi-modal upgrades, ~40d totaal naast strategy-analyst-stub langste pad).
+**Wat er niét meer speelt:** het credit-model is compleet (bouw, Stripe-config,
+smokes). Het enige dat rest is jouw schakelmoment: `NEXT_PUBLIC_TOPUP_ENABLED=true`
+plus één echte betaal-smoke.
 
 ---
 
-## Top 4 actieve tasks
+## ⚠️ Eerst afmaken: ongecommit werk in de main-worktree
 
-> **▶️ HIER VERDER (bijgewerkt 2026-07-22)**: Eriks **test-uitnodiging** legde bloot dat de uitnodigingsflow nooit heeft gewerkt — de accept-pagina waar élke invite-mail naar linkt **bestond niet**, dus iedere uitnodiging ooit liep dood op een 404. Het naspeuren daarvan bracht een fail-open in de multi-tenant toegangscontrole aan het licht: workspace-scoping (#220) was **adviserend**, niet afgedwongen. Beide gefixt en **live op prod** (#442–#444, PR #241, merge `245bb203`) — inclusief een schemawijziging (`OrganizationMember.workspaceScoped`) die al naar Neon is gepusht en geverifieerd. Kritiek pad blijft onveranderd: **TOPUP aanzetten + pilot-adoptie**; daarnaast nog steeds **de content-accessor**. **Update 2026-08-02**: [`brand-md-open-standaard`](tasks/brand-md-open-standaard.md) is op user-directive naar voren gehaald als hoogste bouw-prioriteit (punt 2 hieronder) — aanleiding: de concurrentieanalyse ([`docs/reports/concurrentieanalyse-2026-08-02.md`](docs/reports/concurrentieanalyse-2026-08-02.md)), race met Frontify MCP om de brand-context-laag voor AI-agents.
+Dit staat al dagen los in `branddock-app` en gaat verloren bij een `git checkout` of
+een onvoorzichtige pull. **Begin hiermee.**
 
-1. **💳 TOPUP aanzetten — nog steeds het enige met omzet-impact.** Bouw (#380–#382), Stripe-live-config + testmode-smokes (#385) en de herbeoordeel-punten (#386) zijn ✅; playbook §10/§11. Rest: `NEXT_PUBLIC_TOPUP_ENABLED=true` + één echte betaal-smoke. **Puur Eriks schakelmoment, geen resterend werk.**
-2. **🚀 `brand.md` omarmen — naar voren gehaald (user-directive 2026-08-02; strategie herzien 2026-08-03).** De standaard bleek al te bestaan (thebrand.md, spec v0.2 draft, minimale tractie) → strategie is nu **omarmen + compatibel "full profile"** i.p.v. een eigen standaard-claim. [`tasks/brand-md-open-standaard.md`](tasks/brand-md-open-standaard.md): gratis generator (URL → brand.md) + workspace-export (UI/REST/MCP) + validator + upstream-PR's (±2-3d). **Erik-gate**: akkoord omarm-strategie + outreach maintainer. Plan: `docs/marketing/brand-md-launch-plan-2026-08-02.md` (v2, incl. veldmapping Bijlage A).
-3. **🧩 Content-accessor Fase 1** — [`tasks/content-chain-accessor.md`](tasks/content-chain-accessor.md) + ADR [`2026-07-17`](docs/adr/2026-07-17-deliverable-content-accessor.md). Content woont op **3 plekken**; voor de 11 web-page/long-form-types is de component-keten **structureel leeg**. Sweep vond **21 kruisingen**. Fase 1 raakt geen consument en is veilig te mergen. ⚠️ **Fase 2 is geblokkeerd op 2 productbeslissingen van Erik** — zie Open beslissingen.
-4. **🤖/🔐 Afhechting (~28-07).** Ada-drempel-kalibratie + Vera-go/no-go + de CSP-enforce-flip in één sessie · `repair-defaults` op prod draaien voor de BB-`contentLanguage` · onboarding-testers (user).
+| Bestand | Wat het is | Actie |
+|---|---|---|
+| `tasks/hng-invulboek-2026-08-14.md` | Task-file, status `done`, HNG-invulboek volledig verwerkt | committen |
+| `scripts/fill-nieuwe-golfen.ts` | Het fill-script dat dat werk uitvoerde | committen |
+| `scripts/score-hng-referentieteksten.ts` | Hertest-script (A=91 / B=61 / C=68) | committen |
+| `scripts/migrate-brand-dna/bundles/het-nieuwe-golfen-2026-08-14.json` | Prod-bundle, klaar voor import | committen (andere bundles zijn ook getrackt) |
+| `tasks/open-acties-2026-07-23.md` | Gewijzigd, niet gecommit | doorlezen en committen |
+| `docs/Branddock branddoc v3.pdf` | Untracked sinds juli | **besluit nodig**: committen, verplaatsen of weggooien |
+| `integrations/browser-extension/package-lock.json` | Gewijzigd | checken of dit bedoeld is |
 
-> **Restpunten uit de invite-/ACL-arc** (2026-07-22, bewust niet meegenomen — staan uitgeschreven in [`tasks/done/workspace-scoping-fail-open.md`](tasks/done/workspace-scoping-fail-open.md)): leden die vóór de fix al gestrand waren zijn niet meer als "ooit gescopet" herkenbaar (op prod leeg, dus theorie) · `resolveWorkspaceId` stap 3 negeert `activeOrganizationId` en kan naar een workspace in een ándere organisatie vallen — pre-existing, maar nu vaker bereikbaar · e2e mist nog een tak voor "gescopet + nul rijen = geweigerd" (wel handmatig bewezen).
+Het HNG-werk oogt af — het task-file staat op `done` met alle criteria afgevinkt — maar
+is nooit vastgelegd. Eén commit lost het op.
 
-> **⚠️ Bekend rood, niet jouw diff**: `settings/team.spec.ts › team tab loads` faalt op `main` (geverifieerd 2026-07-22 in een schone worktree: identiek rood). Idem de golden-sets-nightly, 4 van de 5 nachten.
-
-> **Nieuw open, zonder eigenaar** (2026-07-17): [`golden-set-gate-decouple`](tasks/golden-set-gate-decouple.md) — de golden-sets-nightly faalt **4 van de 5 nachten** op main (flakey promptfoo-gate, 6/10 < 70%), en het LP-prompt-pad is er nu aan gehangen waardoor élke LP-PR meekleurt. Een gate die altijd rood staat, wordt genegeerd. · [`guard-hooks-hardening`](tasks/guard-hooks-hardening.md) — de session-guard mist `gh pr merge` (twee sessies kunnen tegelijk naar prod deployen; is 17-07 gebeurd) en fout-positieft over worktrees; `check-dangerous-bash` belooft een escape die niet bestaat. **Raakt het veiligheidsnet — niet uitvoeren zonder Eriks akkoord.**
-
-> **Recent afgesloten (2026-07-22, invite-arc — live op prod)**: **#442** dode accept-link + verkeerde naam in de mail + resend die niets verstuurde · **#443** workspace-scoping écht afgedwongen (ACL-blinde resolver, de parallelle Better-Auth-accept-deur, rol/seats, CSPRNG-tokens) · **#444** "lege ACL = onbeperkt" wegwerkt via `OrganizationMember.workspaceScoped` + sweep over alle 7 lezers. Vier reviewrondes, negen subagents; drie ervan vonden iets dat de vorige ronde miste. Nieuwe e2e-spec `settings/invite-accept` (6/6) + scoping-test in `permissions` (19/19).
-
-> **Recent afgesloten (2026-07-17, pilot-tester-meldingen)**: **#409** taalmenging — de web-page-generator adopteerde de gedeelde `buildLocaleInstruction` nooit (bewijs: 3/3 lek → 0/3 op echte runs) · **#410** Copy/Export leverde een leeg bestand voor web-page-types (tegen de échte prod-rij: leeg → 8.722 tekens) · **#411** content-locale-anker + ADR — `provisionNewUser` legde er geen; 3 van 4 prod-workspaces stonden zonder · **#412** leeg-guard op kanaal-publicatie — voorkwam lege posts naar LinkedIn/WordPress · **ADR** content-accessor + 21-kruisingen-plan. Bijvangst: de **LP-golden-set draait nu in CI** (bestond sinds mei, was nooit ingehaakt — dat pad was dus onbewaakt).
-
-> **Recent afgesloten (doc-sync 2026-07-14)**: `review-live-pricing` + `ci-golden-set-e2e-fixes` + `pre-launch-browser-smoke-batch` ✅ (in `tasks/done/`) · credit-model Fase 4/5a/5b ✅ (#380–#382) + launch-config/smokes ✅ (#385/#386) · `agents-scheduling` ✅ live (#390/#391) + runner-parallel (#393) · agents-uitbreiding ✅ (#394–#400) · `seo-pipeline-speedup` Fase 4a ✅ (#389, 12→7,5 min; 4b NO-GO #390) · security-residual PR #120 ✅ gemerged (#401). Eerder: `content-items-test-coverage` (#367), `pilot-onboarding-better-brands` (PR #95), Track D serverless (PR #78/#80), `content-flow-improvements-7a` (#376).
-
-**Meertaligheid Fase 1-3 — ✅ AFGEROND + GEMERGED op `main` (2026-07-05, #65/#68/#70/#71/#73/#74)**: `i18n-ui-foundation` + `content-locale-foundation` + `content-locale-target-picker` zijn done; en↔nl is live door de hele app, de twee-selector-visie is compleet. Volledige gate-suite groen op main. Blokkeert `vercel-deployment` niet meer. **Post-launch**: `i18n-ai-translation-pipeline` (onderhoud-engine + de/es/fr), de deferred Fase-3-follow-ups (F-VAL-target-pack + bulk-UI-picker), Fase 4-5 (`multi-market-transcreation-enterprise`). Detail: roadmap §🌍 Meertaligheid + ADR `2026-06-28`.
-
-**Track A vervolg (binnen sprint #5/6)**:
-- `content-test-auto-iterate-6B` wiring + dashboard panels (deferred deel afmaken)
-- `code-debt-pre-launch-cleanup` overige clusters (2/12 done → close-out per #257 deed grootste deel; resterende fill-in)
-- `content-items-test-coverage` full 53-types Ronde 1 + Ronde 2
-
-**Track C follow-on**:
-- `stripe-billing-live` (1w) parallel mogelijk
-- `marketing-site-pricing` + `onboarding-flow-test` afsluitend
+**Daarna nog open bij HNG**: de prod-import draaien (workspace `cmrxl41sm00230akjshqksl17`,
+runbook in `scripts/migrate-brand-dna/README.md`) en de kennisbronnen handmatig uploaden;
+die zitten niet in de bundle.
 
 ---
 
-## Open beslissingen (blokkers voor werk)
+## Wat er vandaag landde (2026-08-15)
 
-1. **Content-accessor `structured-unchosen` — 2 productbeslissingen (blokkeren fase 2).** De accessor maakt "content gegenereerd, variant nog niet gekozen" een expliciete staat die élke consument moet afhandelen. Twee daarvan zijn productkeuzes, geen techniek:
-   - **Content Library** (`content-library/route.ts:208`): wat toont het stoplicht bij een gegenereerde-maar-ongekozen pagina? Nu: rood + "No content generated" — dat liegt.
-   - **Brand Assistant** (`read-tools.ts:861`): wat antwoordt Claw op een vraag over zo'n pagina? Nu: "deze pagina heeft nog geen content" — ook onwaar.
-   Zie [`tasks/content-chain-accessor.md`](tasks/content-chain-accessor.md) fase 2.
-2. **`guard-hooks-hardening` — richting per gat.** Raakt Eriks veiligheidsnet; vraagt expliciet akkoord vóór uitvoering. Kernvraag: móet `gh pr merge` geblokkeerd worden bij een co-sessie (twee sessies die tegelijk PR's mergen is soms legitiem), of volstaat waarschuwen?
-1. **Pilot LoRA-status Better Brands workspace** — trained-style image-flow defaults open op (`canvas-image-briefing-defaults` zette tiktok-script default op lifestyle als pilot-veiligheid; flip naar trained-style mogelijk via runtime check zodra LoRA's geseed zijn).
-2. **Pre-launch sprint #3 browser-smokes uitgesteld** (per memory `branddock-pre-launch-smoke-batch`): Δ-1 Surface C 9-stappen browser-smoke bundelen met deployment/billing/onboarding smokes in sprint #4 batch.
+Twee parallelle sessies, negen PR's, alles gemerged met groene CI.
+
+**Designbibliotheek** (#255-#259, #263): StyleguideRule bereikt de F-VAL-rules-pijler,
+merkcontext via één gegate accessor met lint-regel, reviewstatus-driftreset, re-analyse
+die geen user-edits meer vernietigt, curatie-suggesties uit F-VAL-overtredingen, en R4
+compleet. Plus twee CI-fixes (#260, #262) die main van acht commits rood naar groen
+brachten — de tsc-stap kreeg 8GB heap omdat hij omviel met out-of-memory.
+
+**E2E-sweep + 8 bugs** (#261, changelog 468): alle 24 zichtbare content-types door het
+echte klikpad. 7 leverden nul tekens op. Zes van de acht bugs faalden stil.
+
+**Brand Score + lifecycle-mails** (#264, changelog 469): de score gaf iedereen exact 70;
+nu 71-98 met uitleg. Mails herschreven naar Nederlands, één CTA per stuk.
+
+---
+
+## Top 3 om mee te beginnen
+
+**1. Het ongecommitte werk hierboven.** Tien minuten, en het risico is weg.
+
+**2. 💳 TOPUP aanzetten.** Nog steeds het enige met directe omzet-impact, en er is geen
+technisch werk meer — alleen `NEXT_PUBLIC_TOPUP_ENABLED=true` en één betaal-smoke.
+
+**3. 🧩 [`content-chain-accessor`](tasks/content-chain-accessor.md) fase 1.** Content woont
+op drie plekken; 21 kruisingen in kaart, ADR ligt er. Fase 1 raakt geen consument en is
+veilig te mergen. Deze sessie liep er nog live tegenaan: `product-page` leek mislukt omdat
+de componentketen leeg was terwijl de content in `settings.structuredVariantOptions` stond.
+⚠️ Fase 2 wacht op twee productbeslissingen (zie Open beslissingen).
+
+---
+
+## Open beslissingen (blokkeren werk)
+
+1. **Content-accessor `structured-unchosen`** — twee productkeuzes, geen techniek:
+   het Content Library-stoplicht toont rood + "No content generated" op een vólle pagina,
+   en de Brand Assistant zegt onterecht "deze pagina heeft nog geen content".
+2. **`guard-hooks-hardening`** — raakt je veiligheidsnet, vraagt expliciet akkoord.
+   Kernvraag: móet `gh pr merge` blokkeren bij een co-sessie, of volstaat waarschuwen?
+   Deze sessie bewees dat de guard werkt maar eenrichting beschermt (zie gotchas 15-08).
+3. **`docs/Branddock branddoc v3.pdf`** — committen, verplaatsen of weggooien?
+4. **brand.md-strategie** — akkoord op de omarm-strategie + outreach naar de maintainer;
+   de upstream-PR's liggen als tekstpakket klaar.
+5. **Meertaligheid brand.md-funnel** — de pagina's en mails zijn nu Nederlands. De wens was
+   breder: site meertalig, mails volgen de gekozen taal. Vereist een locale-kolom op
+   `GeneratedBrandProfile` (schemawijziging → Neon-push) en template-lookup per taal.
+   Het fundament ligt er: `renderLayout` kent al een `locale`.
+
+---
+
+## Openstaande taken
+
+### Nu
+| Taak | Staat |
+|---|---|
+| [`brand-md-open-standaard`](tasks/brand-md-open-standaard.md) | in-progress — funnel live; rest is upstream-PR's + jouw strategie-akkoord |
+| [`content-chain-accessor`](tasks/content-chain-accessor.md) | open — fase 1 veilig, fase 2 geblokkeerd |
+| [`lp-image-routes`](tasks/lp-image-routes.md) | review — wacht op één prod-smoke door jou |
+| [`seo-pipeline-speedup`](tasks/seo-pipeline-speedup.md) | open — fase 4a deed 12→7,5 min |
+| [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
+| [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst, deels achterhaald |
+
+### Volgende
+`workspaces-online-migratie` (4 workspaces resteren, jouw keuze) ·
+[`lp-review-followups`](tasks/lp-review-followups.md) (⚠️ retentie-items zijn tijdgevoelig:
+`PageEvent` groeit onbegrensd, `FormSubmission` bevat PII zonder wisroutine) ·
+[`golden-set-gate-decouple`](tasks/golden-set-gate-decouple.md) ·
+[`guard-hooks-hardening`](tasks/guard-hooks-hardening.md) ·
+[`headless-content-service`](tasks/headless-content-service.md) (P3.0a) ·
+[`brand-assistant-quick-create`](tasks/brand-assistant-quick-create.md) (P3.0b)
+
+### Later
+`agent-vera-triggers` · `security-residual-hardening` (rest: CSP-enforce-flip) ·
+`content-test-regression-7B` · `geo-seo-followup-later` · `i18n-ai-translation-pipeline` ·
+`power-user-shortcuts` · `publishgate-second-opinion` · `validate-brand-domain-component-fit` ·
+`video-chain-explainer-showcase` · `web-page-builder-acceptance-rest` ·
+`mcp-external-data-enrichment-research`
+
+---
+
+## Losse eindjes uit deze sessie
+
+- **F-VAL onder de drempel** bij `linkedin-post` (69), `linkedin-poll` (70), `search-ad`
+  (70,5) en `twitter-thread` (71). Signaal, geen conclusie: Napking's styleguide staat op
+  `published = false`, dus de stijl-pijler mist context. Sluit dat eerst uit.
+- **Campagnewizard voorbij stap 3 ongetest** — foundation, concept, deliverables en review.
+  Vereist een briefing die ≥80 scoort; een rijk ingevulde testbriefing haalde 68. Dat de
+  gate zo streng is, is op zichzelf het bekijken waard.
+- **`rule-structurer` en `brief-week-theme-prompt`** zijn dezelfde soort STRUCTURED-calls
+  als de variant-generator en dus theoretisch kwetsbaar voor thinking-uitputting. Daar
+  thinking uitzetten is een kwaliteitsafweging (ze redeneren over merkregels), geen bugfix.
+  De nieuwe foutmelding wijst het aan als het gebeurt.
+- **Mail 2.4** citeert nu de positionering uit de scan. Merken zonder bruikbare
+  positionering vallen terug op een datum-variant — dat is de zwakkere versie.
+- **`channelTones`** wordt nooit door een scan gevuld: 2,5 punt van de Brand Score is
+  daarmee onbereikbaar zonder mens. Bewust zo gelaten.
 
 ---
 
 ## Hoe te beginnen
 
-**Sessie-start prompt** (Stream Deck "Start sessie" knop):
+**Sessie-start** (Stream Deck):
 ```
 Lees CLAUDE.md, gotchas.md en START_HERE.md.
 Bevestig wat je begrijpt over de huidige fase en geef de top 3 actieve tasks.
@@ -122,64 +165,31 @@ Werk aan tasks/<id>.md volgens de regels in CLAUDE.md.
 Start in plan-mode. Bevestig file-set en acceptatiecriteria voor je begint.
 ```
 
-**Twijfel over wat te pakken**:
-```
-Geef me een overzichtelijk overzicht van mijn openstaande werk zodat ik kan kiezen wat ik oppak.
-```
+**Nieuw feature-idee**: `Ik heb een idee voor X. Run feature-planner subagent.`
+Pipeline: 6-assen discovery → `tasks/_drafts/idea-<id>.md` → technical-planner →
+`tasks/<id>.md`. Gids: [`docs/playbooks/feature-discovery.md`](docs/playbooks/feature-discovery.md)
 
-**Nieuw feature-idee** (sparring nodig vóór code):
-```
-Ik heb een idee voor X. Run feature-planner subagent.
-```
-Pipeline: 6-assen discovery → `tasks/_drafts/idea-<id>.md` → technical-planner → `tasks/<id>.md` → uitvoer.
-Volledige gids: [`docs/playbooks/feature-discovery.md`](docs/playbooks/feature-discovery.md)
+### Twee sessies tegelijk
 
----
+Werkt, maar alleen met discipline. Vandaag ging het één keer mis en één keer goed:
 
-## Recent afgeronde tasks (sessies 2026-05-10 t/m 2026-05-18)
-
-> Track A op `main`. Track B Phase A+B gemerged via `a0e59a5b` op 2026-05-18.
-
-**Track B landing 2026-05-18** (changelog #255/#256/#260/#261/#262 na renumber-collision):
-- `brandclaw-data-collection` ✅ — DataSnapshot model + registry + alignment + 4 v1 sources live
-- `brandclaw-tool-orchestrator` ✅ — types + registry + agent-loop + persistence + 4 query-tools + PostHog
-- `strategy-analyst-stub` Phase A ✅ — node entry + manual trigger + UI Tab 5
-- `strategy-analyst-stub` Phase A vervolg ✅ — UI uitbreiding
-- `strategy-analyst-stub` Phase B ✅ — 4 extra dimensions + UI sort/group
-- Brandclaw model-ID hotfix ✅ (correct Anthropic agent-loop default)
-
-**Track A 2026-05-17 (Sprint #4 close + bugfixes)**:
-- `code-debt-pre-launch-cleanup` ✅ close-out (cluster A persist-TODOs + B API-deprecation + C cleanup, #257)
-- Effie-rubric leak fix in content-flow Strategy ✅ (#258, commit `e849a1ed`) — prompt-guards + `scrubStrategyLayer()` utility + 30/30 smoke groen
-- Auto-iterate gate-floor + silent-iter scope-fix ✅ (#259, `cdd0e074`) — variant-clobber + long-form shrinkage bugfix
-
-**Sprint #4 quick-wins (2026-05-10/12)**:
-- Cron-infra ADR — Vercel Cron continueren (`docs/adr/2026-05-12-cron-infra.md`)
-- Browser-smoke partial: Surface C ✅ + claw-page-awareness ✅ + locale-picker ✅. VB Compose/Trained deferred post-vercel.
-
-**Sprint #5 Track A vooruitgelopen (2026-05-12)**:
-- `content-test-foundation-5A` ✅ — Layer 1 generic property evals + Prompt Registry UI v1
-- `content-test-goldens-5B` ✅ — chain-of-prompts upgrades (4 batches A-D) + golden sets via Promptfoo
-- `content-test-wiring-gates-6A` ✅ — alle 8 gates gewired
-- `content-test-auto-iterate-6B` ✅ partial (5/7 backend) — feedback-compiler + auto-iterate orchestrator + edit-distance + per-type thresholds + Canvas SSE + InsightsTab dashboard. Wiring + dashboard panels deferred.
-- `compose-pipeline-gemini-migration` ✅ — FAL Flux Pro Kontext → Gemini nano-banana
-- `claw-page-awareness-vervolg` ✅ — Step1Context + PersonaDetail + BrandAssetDetail wiring
-
-**Sprint #3 (eerder afgerond, 2026-05-09/11)** — Δ-1 Content Review surfaces (C/D/E + cleanup + Insights tab), F-VAL rules-pijler audit, Brand-language auto-detect, BrandVoiceguide picker. Details: `tasks/done/` + `docs/changelog.md` entries #243–250.
-
-**Sprint #2 (gemerged 2026-05-09 via PR #5 `618d336`)** — Canvas/Studio 12 tasks + BCP Phase 0/1 + Cowork-pariteit Fase A + Competitive-intel Fase 1. Entries #239–242.
+- **Mis**: een branch vanaf *lokale* main nam ongepusht werk van een ander mee en
+  deployde dat vóór de bijbehorende Neon-migratie. Vertak **altijd vanaf `origin/main`**,
+  en controleer de PR-diff op bestandsaantal vóór de merge — niet alleen wat je zelf staged.
+- **Goed**: de `session-guard` blokkeerde een tweede branch-mutatie. Hij beschermt
+  eenrichting (HEAD/branch, niet `gh pr merge`) en laat pas na 15 minuten los. Een sessie
+  die "dicht" lijkt kan de lock nog vasthouden — check `.claude-session.lock`.
+- Na commits van een andere sessie: **`npx prisma generate`**. Schemawijzigingen laten je
+  gegenereerde client achter en `tsc` faalt dan op bestanden die je niet aanraakte.
 
 ---
 
 ## Zie ook
 
-- **`roadmap.md`** — volledige Now/Next/Later met fasering
-- **`docs/playbooks/working-flow.md`** — operating manual + spelregels
-- **`docs/playbooks/feature-discovery.md`** — feature-planner pipeline
-- **`CLAUDE.md`** — runtime context voor agent
-- **`docs/changelog.md`** — wat is gebouwd (chronologisch; #400+ en doorlopend)
-- **`docs/audits/2026-05-08-canvas-studio-state.md`** — Canvas/Studio current-state audit
-- **`docs/audits/2026-05-08-canvas-per-item-tweaks-plan.md`** — per-content-type tweak-plan
-- **`docs/audits/2026-05-08-canvas-image-briefing-plan.md`** — image-flow plan
-- **`docs/adr/`** — architecturale beslissingen
-- **`tasks/`** — actieve taken (`_drafts/` staging area voor PM-output)
+- [`roadmap.md`](roadmap.md) — volledige Now/Next/Later met fasering
+- [`docs/changelog.md`](docs/changelog.md) — wat is gebouwd (#469 en doorlopend)
+- [`gotchas.md`](gotchas.md) — lessons learned, lees bij elke sessie
+- [`CLAUDE.md`](CLAUDE.md) — runtime context + werkregels
+- [`PATTERNS.md`](PATTERNS.md) — verplichte UI-primitives
+- [`docs/adr/`](docs/adr/) — architecturale beslissingen
+- [`docs/playbooks/working-flow.md`](docs/playbooks/working-flow.md) — operating manual
