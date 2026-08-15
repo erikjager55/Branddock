@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, requireAuth } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
+import { clearStyleguideRuleCache } from "@/lib/brand-fidelity/styleguide-rule-compiler";
+import { ruleConstraintInputSchema } from "@/lib/brandstyle/rule-constraints";
 import { cacheKeys } from "@/lib/api/cache-keys";
 
 // =============================================================
@@ -21,7 +23,9 @@ const createRuleSchema = z.object({
     .default("user"),
   title: z.string().min(1).max(300),
   description: z.string().max(2000).optional(),
-  constraint: z.record(z.string(), z.unknown()).optional(),
+  // Afdwingbare constraint — gevalideerd tegen het gedeelde vocabulaire, zodat
+  // een regel die niet compileert nooit stil in de DB belandt.
+  constraint: ruleConstraintInputSchema.optional(),
   exampleAssetUrl: z.string().url().optional(),
 });
 
@@ -75,6 +79,7 @@ export async function POST(request: NextRequest) {
     });
 
     invalidateCache(cacheKeys.prefixes.brandstyle(resolved.workspaceId));
+    clearStyleguideRuleCache(resolved.workspaceId);
     return NextResponse.json({ rule }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/brandstyle/rules]", error);

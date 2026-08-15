@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { clearRuleCompilerCache } from '@/lib/brand-fidelity/rule-compiler';
 
 async function getWorkspaceOrError() {
   const workspaceId = await resolveWorkspaceId();
@@ -65,6 +66,7 @@ export async function PATCH(
       data: parsed.data,
     });
 
+    clearRuleCompilerCache(workspaceId);
     return NextResponse.json({ rule: updated });
   } catch (err) {
     console.error('[PATCH /api/brand-rules/:id]', err);
@@ -93,6 +95,7 @@ export async function DELETE(
     }
 
     await prisma.brandRule.delete({ where: { id } });
+    clearRuleCompilerCache(workspaceId);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[DELETE /api/brand-rules/:id]', err);

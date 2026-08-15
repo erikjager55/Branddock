@@ -65,7 +65,10 @@ export function mapSeverity(s: RuleViolation['severity']): BrandReviewSeverity {
  *  1. **Heuristic violations** (`ruleId` starts met `heuristic:`): parse
  *     `heuristic:<locale>:<category>:<term>` prefix; mapping zoals voorheen.
  *
- *  2. **BrandRule violations** (DB-rules): gebruik `ruleType` voor
+ *  2. **StyleguideRule violations** (`styleguide:<section>:<id>`): voice-achtige
+ *     secties → VOICE; overige secties vallen door naar pad 3.
+ *
+ *  3. **BrandRule violations** (DB-rules): gebruik `ruleType` voor
  *     categorisatie i.p.v. blind TERMINOLOGY-fallback (insights-tab toonde
  *     anders 100% TERMINOLOGY voor alle BrandRule findings, wat de category-
  *     spread waardeloos maakt). FORBIDDEN_WORD blijft TERMINOLOGY want
@@ -95,6 +98,17 @@ export function inferCategory(
         return FindingCategory.AI_TELL;
       default:
         return FindingCategory.TERMINOLOGY;
+    }
+  }
+
+  // StyleguideRule-violations (`styleguide:<section>:<id>`): de sectie is het
+  // merk-domein-signaal. Voice-achtige secties krijgen VOICE; visuele secties
+  // met een tekst-regel zeggen niets over de categorie en vallen door naar de
+  // ruleType-routing hieronder.
+  if (ruleId.startsWith('styleguide:')) {
+    const section = ruleId.split(':')[1] ?? '';
+    if (section === 'voice' || section === 'copy' || section === 'tone' || section === 'messaging') {
+      return FindingCategory.VOICE;
     }
   }
 
