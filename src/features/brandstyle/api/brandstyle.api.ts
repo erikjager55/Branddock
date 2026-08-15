@@ -1,4 +1,8 @@
 import type {
+  CalibrationAskAction,
+  RuleViolationInput,
+} from "@/lib/brandstyle/calibration-report";
+import type {
   BrandStyleguide,
   AnalysisStatusResponse,
   LogoSection,
@@ -351,4 +355,95 @@ export async function finalizeReview(): Promise<{ success: true }> {
     throw new Error(body?.error ?? "Failed to close review");
   }
   return res.json();
+}
+
+// === Curatie-signalen (R4-feedback-loop) ===
+
+/** Eén regel die vaak genoeg botst om te bevragen, met de correcties erbij. */
+export interface CurationSignalsResponse {
+  signals: RuleViolationInput[];
+  window: { generations: number; cap: number };
+  /** True als er wél gemeten is maar niets de drempel haalde. */
+  evaluated: boolean;
+  truncated: boolean;
+}
+
+export async function fetchCurationSignals(): Promise<CurationSignalsResponse> {
+  const res = await fetch(`${BASE}/curation-signals`);
+  if (!res.ok) throw new Error("Failed to load curation signals");
+  return res.json();
+}
+
+/**
+ * Voert één inline correctie uit. Wélke route je raakt hangt af van waar de
+ * regel vandaan komt: een uit de voiceguide gesyncte BrandRule is niet direct
+ * bewerkbaar (`/api/brand-rules/[id]` weigert `auto:*`), dus daar cureren we op
+ * het bronveld en ruimt de re-sync de regel op.
+ */
+export async function runCurationAction(action: CalibrationAskAction): Promise<void> {
+  switch (action.kind) {
+    case "remove-voiceguide-term": {
+      if (!action.sourceFields?.length || !action.term) {
+        throw new Error("Missing source field for voice-guide correction");
+      }
+      const current = await fetch("/api/brandvoiceguide");
+      if (!current.ok) throw new Error("Failed to load voice guide");
+      const { voiceguide } = await current.json();
+      const term = action.term.trim().toLowerCase();
+
+      // Álle bronvelden in één PATCH. Dezelfde term kan uit `wordsWeAvoid` én
+      // `vocabularyDont` gesynct zijn; één veld opschonen laat de regel dan
+      // vanuit het andere veld gewoon bestaan en de suggestie komt terug.
+      const body: Record<string, string[]> = {};
+      for (const field of action.sourceFields) {
+        const existing: string[] = voiceguide?.[field] ?? [];
+        const next = existing.filter((w) => w.trim().toLowerCase() !== term);
+        if (next.length !== existing.length) body[field] = next;
+      }
+      if (Object.keys(body).length === 0) {
+        throw new Error(`"${action.term}" is no longer in your voice guide`);
+      }
+      const res = await fetch("/api/brandvoiceguide", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error("Failed to update voice guide");
+      return;
+    }
+    case "weaken-brand-rule": {
+      const res = await fetch(`/api/brand-rules/${action.ruleId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ severity: "info" }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error ?? "Failed to weaken rule");
+      }
+      return;
+    }
+    case "delete-brand-rule": {
+      const res = await fetch(`/api/brand-rules/${action.ruleId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error ?? "Failed to delete rule");
+      }
+      return;
+    }
+    case "weaken-styleguide-rule": {
+      const res = await fetch(`${BASE}/rules/${action.ruleId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ severity: "ADVISORY" }),
+      });
+      if (!res.ok) throw new Error("Failed to weaken rule");
+      return;
+    }
+    case "delete-styleguide-rule": {
+      const res = await fetch(`${BASE}/rules/${action.ruleId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete rule");
+      return;
+    }
+  }
 }

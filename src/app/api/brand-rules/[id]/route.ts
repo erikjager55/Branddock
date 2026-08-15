@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { clearRuleCompilerCache } from '@/lib/brand-fidelity/rule-compiler';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 
 async function getWorkspaceOrError() {
   const workspaceId = await resolveWorkspaceId();
@@ -67,6 +69,10 @@ export async function PATCH(
     });
 
     clearRuleCompilerCache(workspaceId);
+    // Ook de brandstyle-prefix: de curatie-signalen in het kalibratie-paneel
+    // hangen daaronder, en een regel die je net wegcureerde hoort niet nog
+    // een cache-TTL lang als suggestie te blijven staan (CLAUDE.md #10).
+    invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
     return NextResponse.json({ rule: updated });
   } catch (err) {
     console.error('[PATCH /api/brand-rules/:id]', err);
@@ -96,6 +102,7 @@ export async function DELETE(
 
     await prisma.brandRule.delete({ where: { id } });
     clearRuleCompilerCache(workspaceId);
+    invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[DELETE /api/brand-rules/:id]', err);

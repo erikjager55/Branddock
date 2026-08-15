@@ -568,6 +568,9 @@ const brandstyle = {
     summaryCritical: '{{count}} critical',
     summaryToFix: '{{count}} to fix',
     summaryToReview: '{{count}} to review',
+    signalsUnavailable: 'Rule check unavailable — could not load which rules clash with your output.',
+    actionRunning: 'Applying…',
+    actionFailed: 'Could not apply that change: {{error}}',
   },
   components: {
     title: 'Components',

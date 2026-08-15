@@ -21,7 +21,45 @@ export type CalibrationSection =
   | 'colors'
   | 'typography'
   | 'imagery'
-  | 'design-language';
+  | 'design-language'
+  /** Merkregels — deep-linkt naar de Manifest-tab, waar de regels staan. */
+  | 'rules';
+
+/**
+ * Een uitvoerbare correctie bij een ask. Het rapport blijft puur: het
+ * *beschrijft* de actie, de UI voert 'm uit. Zonder dit veld zou een suggestie
+ * als "deze regel botst structureel" nergens heen leiden — precies de
+ * vlag-zonder-schrijver-val uit W5.
+ */
+export interface CalibrationAskAction {
+  /**
+   * Welke laag de correctie raakt. Een uit de voiceguide gesyncte regel is
+   * niet direct bewerkbaar (`/api/brand-rules/[id]` weigert `auto:*`); daar is
+   * het bronveld het curatiepunt en verdwijnt de regel via de re-sync.
+   */
+  kind:
+    | 'remove-voiceguide-term'
+    | 'weaken-brand-rule'
+    | 'delete-brand-rule'
+    | 'weaken-styleguide-rule'
+    | 'delete-styleguide-rule';
+  /** Knoplabel. */
+  label: string;
+  /** Doel-id: de regel, of (bij een voiceguide-term) de regel die verdwijnt. */
+  ruleId: string;
+  /**
+   * De term zoals hij in de voiceguide staat — níet het regel-pattern. De sync
+   * expandeert stem-varianten ("exclusief" → "exclusieve"), dus filteren op het
+   * pattern vindt niets en zou de knop gegarandeerd laten falen.
+   */
+  term?: string;
+  /**
+   * Álle voiceguide-velden waar de term in staat. Dezelfde term kan uit
+   * `wordsWeAvoid` én `vocabularyDont` gesynct zijn; één veld opschonen laat
+   * de regel dan gewoon bestaan.
+   */
+  sourceFields?: Array<'wordsWeAvoid' | 'vocabularyDont' | 'antiPatterns'>;
+}
 
 export interface CalibrationAsk {
   /** Stable key for dedup/telemetry, e.g. 'logo-primary-missing'. */
@@ -32,6 +70,15 @@ export interface CalibrationAsk {
   title: string;
   /** What we need and why it matters. */
   detail: string;
+  /** Inline correcties; leeg/afwezig betekent "alleen deep-link". */
+  actions?: CalibrationAskAction[];
+  /**
+   * Onderdruk de deep-link-knop. Nodig wanneer geen enkele styleguide-tab het
+   * item toont: het Manifest rendert alleen StyleguideRules, dus voor een ask
+   * over een BrandRule zou "Manifest →" naar een scherm leiden waar de regel
+   * niet staat.
+   */
+  hideJump?: boolean;
 }
 
 export interface BrandstyleCalibrationReport {
@@ -56,6 +103,33 @@ export interface CalibrationInput {
    * `staleAt`-stempel aan; hier worden ze actionable asks.
    */
   staleReviews?: StaleReviewInput[];
+  /**
+   * Regels die structureel botsen met wat we genereren (R4-feedback-loop). De
+   * caller levert de al-geaggregeerde signalen aan; de drempel en de
+   * levende-regel-filter zitten in `rule-violation-stats.ts`.
+   */
+  ruleViolations?: RuleViolationInput[];
+}
+
+/** Eén regel die vaak genoeg wordt overtreden om te bevragen. */
+export interface RuleViolationInput {
+  /** Stabiele sleutel (`<ruleType>::<pattern>`), voor dedup/telemetrie. */
+  key: string;
+  /** Leesbare regel — het verboden woord of de constraint-omschrijving. */
+  label: string;
+  /** Aantal generaties waarin de regel werd overtreden. */
+  generationsHit: number;
+  /** Totaal aantal generaties in het venster. */
+  generationsTotal: number;
+  /** Afgerond percentage, voor de tekst. */
+  ratePercent: number;
+  /** Uitvoerbare correcties. */
+  actions: CalibrationAskAction[];
+  /**
+   * Of het Manifest deze regel daadwerkelijk toont. Alleen StyleguideRules
+   * staan daar; voor een BrandRule is de deep-link een doodlopend spoor.
+   */
+  visibleInManifest: boolean;
 }
 
 /** Eén sectie waarvan de goedkeuring is ingetrokken door drift. */
@@ -108,6 +182,25 @@ export function buildBrandstyleCalibrationReport(
     });
   }
 
+  // ── Regels die structureel botsen ───────────────────────
+  // De bibliotheek leert van haar eigen gebruik (R4). Een regel die telkens
+  // sneuvelt is óf te streng geformuleerd óf verkeerd geëxtraheerd — beide
+  // zijn curatie-signalen, en de ask stelt precies die vraag.
+  for (const v of input.ruleViolations ?? []) {
+    asks.push({
+      id: `rule-violated-${v.key}`,
+      severity: 'suggestion',
+      section: 'rules',
+      title: `"${v.label}" clashes with what you generate`,
+      detail:
+        `Violated in ${v.ratePercent}% of recent generations ` +
+        `(${v.generationsHit} of ${v.generationsTotal}). Either the rule is stricter than you ` +
+        `meant, or it was extracted wrong — both are worth a look. Percentages count every ` +
+        `generation in the workspace, also the ones this rule never applied to.`,
+      actions: v.actions,
+      hideJump: !v.visibleInManifest,
+    });
+  }
   // ── Logo ────────────────────────────────────────────────
   const hasPrimaryLogo = input.logos.some((l) => l.variant === 'PRIMARY');
   if (!hasPrimaryLogo) {

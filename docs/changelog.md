@@ -37,6 +37,66 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 466. De bibliotheek leert van haar eigen gebruik — curatie-suggesties uit F-VAL-overtredingen (R4)
+
+Het verbeterplan vroeg om een feedback-loop: *"regel X wordt in 80% van generaties overtreden — te
+streng geformuleerd of verkeerd geëxtraheerd?"* De **logging bleek al te bestaan**: elke generatie
+schrijft een `ContentFidelityScore` met geneste `BrandReviewFinding`-rijen, en
+`mapViolationToFindingInput` zet `{ ruleId, ruleType, pattern }` in `evidence` — lokaal 331 scores
+en 1141 findings. Wat ontbrak was de aggregatie per regel en het tonen ervan. Deze entry voegt dus
+geen meting toe, alleen de lus die 'm terugkoppelt. Geen schema-wijziging.
+
+**Aggregeer niet op `ruleId`** — dat is de voor de hand liggende sleutel en precies de verkeerde.
+`brand-rule-sync` en `rule-structurer` doen allebei `deleteMany` + `createMany`, dus élke sync deelt
+verse cuid's uit en verweest de historie: van de 24 gerefereerde regel-ID's bestonden er nog **3**.
+Op `(ruleType, pattern)` aggregeren overleeft de sync wél, werkt met terugwerkende kracht op alle
+bestaande findings, en levert meteen leesbare uitkomsten (6 van 7 regels nog levend).
+
+**Het venster is een aantal, geen periode.** De eerste versie gebruikte 30 dagen; het
+verificatie-harnas gaf nul signalen op alle vijf workspaces terwijl er 331 metingen lagen — het
+gebruik is bursty (178 generaties in vijf weken, daarna niets, inmiddels 45+ dagen terug). Op de
+laatste 200 generaties begrenzen werkt voor beide patronen en maakt de noemer precies "de
+generaties waar we naar gekeken hebben". Zonder dat harnas was dit gemerged als een feature die op
+geen enkele workspace iets liet zien.
+
+**De actie zit op de bron, niet op de regel.** Van de 398 BrandRules zijn er 388 `auto:*`, en
+`/api/brand-rules/[id]` weigert die expliciet te bewerken ("update the source field instead") —
+terwijl élke top-overtreden regel ("luxe", "perfect", "exclusieve") juist auto-synced is. Die guard
+wordt gerespecteerd, niet omzeild: het curatiepunt van een gesynct artefact is de bron, dus de
+suggestie haalt de term uit `wordsWeAvoid`/`vocabularyDont` via `PATCH /api/brandvoiceguide` waarna
+de re-sync de regel opruimt. Handmatige BrandRules en StyleguideRules gebruiken hun eigen CRUD.
+
+Drempel ≥15% van de generaties bij minimaal 10 — afgestemd op de echte verdeling, niet op het
+spec-voorbeeld van 80% (dat haalt geen enkele regel). Alleen regels die nog bestaan leveren een ask
+op, waarmee het dangling-reference-probleem zichzelf oplost. De `heuristic:*`-regels blijven eruit:
+die zijn niet te cureren en horen bij contentcoaching, niet bij bibliotheek-kwaliteit. De
+StyleguideRule-lane haalt zijn levende regels door **dezelfde `compileStyleguideRules`** die de
+violations produceerde — elke andere afleiding zou stil naast de sleutel grijpen.
+
+**Wat de reviews eruit haalden.** Alle gates waren groen en het actiepad stond op 4/4, en tóch faalde
+de knop voor de meeste regels: de sync expandeert stem-varianten, dus de regel met pattern
+`exclusieve` hoort bij de voiceguide-term `exclusief`. De correctie filterde op het pattern, vond
+niets, en gooide een fout — mét een label dat een woord toonde dat de gebruiker nooit had ingetypt.
+Het harnas miste dat omdat het uitsluitend `luxe` testte, precies het woord waarvan de basisvorm de
+expansie overleeft. Nu resolvet een reverse-index eerst de bron-term, en zonder resolveerbare term
+komt er géén knop in plaats van een knop die zeker faalt. Verder bleek `auto:wordsWeAvoid` (zonder
+`voiceguide.`) de legacy-stream uit `BrandPersonality` te zijn die een voiceguide-PATCH nooit raakt —
+uit de mapping gehaald. En: drie van de vier correctie-routes invalideerden de brandstyle-cache niet,
+de findings-query had geen `orderBy` onder zijn cap, dezelfde term uit twee bronvelden werd maar in
+één veld opgeruimd, beide lanes deelden een sleutel, en de StyleguideRule-lane leverde knoploze asks
+omdat de structurer élke regel ADVISORY maakt.
+
+Gates: tsc 0 · lint 0 nieuwe errors (1 pre-existing) · `smoke:rule-violation-stats` 29/29 (DB-vrij) ·
+`smoke:preserve-user-rows` 43/43 · `smoke:brand-library` 36/36 · `smoke:styleguide-rules` 51/51 ·
+`smoke:styleguide-rules-fval` 17/17 · `smoke:review-drift` 23/23 · `smoke:review-drift-reset` 14/14 ·
+`eval:brand-manifest-golden` 14/14 · `smoke:geo-fidelity` 20/20. Plus twee dev-harnassen: de
+aggregatie over de échte findings (Linfi surfacet *luxe · 19% · 34/178*, en toont per regel of er
+een wérkende correctie bij hoort) en het actiepad op een wegwerp-workspace (6/6 — de term eruit, de
+regel weg, de andere lanes intact).
+
+**Uit scope**: de token-overrides uit R4 — die pijp is vandaag leeg (alle 158 kleuren `scraped`,
+nul claims) en vult zich pas na #465 naarmate gebruikers gaan bewerken.
+
 ### 465. Een re-analyse vernietigt geen user-edits meer (W5, relatie-niveau)
 
 W5 beloofde dat een re-scrape "alle overrides en reviews behoudt". De helft klopte: de
@@ -66,6 +126,8 @@ PATCH-route en gerespecteerd door de engine. Een veld leegmaken geeft het terug 
 **Tweede destructieve deur dicht**: `website-scanner/scanner-pipeline.ts` deed vóór een re-scan een
 `brandStyleguide.delete` die zichzelf "atomic pattern" noemde. Élke relatie hangt aan
 `onDelete: Cascade`, dus dat pad wiste ook de `StyleguideRule`-regels uit #461, de reviews en de
+snapshots waar de driftdetectie van #463 op leunt. Nu hergebruikt hij de rij, net als
+
 snapshots waar de driftdetectie van #464 op leunt. Nu hergebruikt hij de rij, net als
 `/api/brandstyle/analyze/url` sinds W5.
 
@@ -77,6 +139,8 @@ exact het vlag-zonder-schrijver-patroon dat deze taak bij de `*Override`-vlaggen
 verificatie-harnas testte er langsheen door de kolom rechtstreeks te schrijven; de
 sortOrder-herstempeling schoof de merkkleur naar achteren, waarna `pickBrand` in de LP-renderer een
 andere kleur koos; en `resolveSemanticTokens` miste een `orderBy`, wat pas kapot gaat zodra rijen
+een analyse overleven — met spontane review-drift (#463) tot gevolg. Verder: `colorPairings` misten
+
 een analyse overleven — met spontane review-drift (#464) tot gevolg. Verder: `colorPairings` misten
 de user-kleuren en draaiden de `recomputeColorPairings`-fix uit #17/#18 terug, één geüploade LOCKUP
 blokkeerde álle gedetecteerde lockups, een component-rename brak de natural key (vandaar

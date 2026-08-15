@@ -568,6 +568,9 @@ const brandstyle = {
     summaryCritical: '{{count}} kritiek',
     summaryToFix: '{{count}} te fixen',
     summaryToReview: '{{count}} te beoordelen',
+    signalsUnavailable: 'Regelcheck niet beschikbaar — kon niet ophalen welke regels botsen met je output.',
+    actionRunning: 'Bezig…',
+    actionFailed: 'Die wijziging is niet gelukt: {{error}}',
   },
   components: {
     title: 'Componenten',
