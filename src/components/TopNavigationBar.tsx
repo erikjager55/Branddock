@@ -50,6 +50,7 @@ export function TopNavigationBar({
             <Button
               variant="outline"
               size="sm"
+              data-testid="topnav-quick-content"
               onClick={onQuickContent}
               className="gap-1.5 hidden sm:flex"
             >

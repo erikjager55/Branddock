@@ -15,6 +15,7 @@ import { prisma } from '@/lib/prisma';
 import { getHandler } from './handlers';
 import { trackEvent } from '@/lib/analytics/posthog';
 import type { JobRunResult, RunPendingJobsResult, AgentJob } from './types';
+import { NonRetryableJobError } from './types';
 
 const DEFAULT_LIMIT = 20;
 // Max gelijktijdige rest-handlers per invocation (naast de agent-lane).
@@ -159,7 +160,10 @@ async function runJob(job: AgentJob): Promise<JobRunResult> {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const willRetry = freshJob.attempts < freshJob.maxAttempts;
+    // Een domein-fout is definitief: wél FAILED (zichtbaar voor monitoring),
+    // géén retry (de pipeline erachter is duur en zou identiek falen).
+    const willRetry =
+      !(err instanceof NonRetryableJobError) && freshJob.attempts < freshJob.maxAttempts;
     const nextAttemptAt = willRetry ? new Date(Date.now() + computeBackoffMs(freshJob.attempts)) : null;
 
     // Zelfde eigen-claim-guard als het success-pad.

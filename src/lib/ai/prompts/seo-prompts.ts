@@ -363,7 +363,9 @@ Respond with a JSON object (no article body — checklist only):
 }`,
     userPrompt: `${accumulatedBlock(ctx.accumulatedOutputs)}
 ${outputLanguageInstruction(ctx.voiceDirective)}
-Prepare the final publication-ready version and the technical SEO checklist. Ensure all meta tags, schema markup, and internal links are complete and accurate.`,
+Produce ONLY the technical SEO checklist JSON described above. Do NOT reproduce, rewrite or summarise the article body — step 7 already delivered the final prose.
+
+Keep the schema snippets compact: cap faqSchema at the 4 most valuable questions and omit howToSchema entirely when the page has no genuine step-by-step content. Return null for any field that does not apply rather than inventing one.`,
   };
 }
 

@@ -1328,7 +1328,7 @@ export function LandingPageGenerateBlock({
       );
     }
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" data-testid="canvas-generate-error">
         <InfoBox variant="error" size="md" title={t('lp.errors.generationFailed')}>{error}</InfoBox>
         <button
           type="button"
@@ -1366,7 +1366,11 @@ export function LandingPageGenerateBlock({
             {structureRefreshError}
           </InfoBox>
         ) : null}
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-900 flex items-center gap-2">
+        <div
+          data-testid="canvas-variants-ready"
+          data-variant-count={variantOptions.length}
+          className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-900 flex items-center gap-2"
+        >
           <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
           <p className="font-medium">
             {t('lp.variantsReady', { count: variantOptions.length })}

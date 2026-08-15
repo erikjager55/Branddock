@@ -17,15 +17,18 @@ interface SelectionCardProps {
   /** Extra content in de card */
   children?: ReactNode;
   className?: string;
+  /** Stabiele selector-haak voor e2e; puur gedragsneutraal. */
+  testId?: string;
 }
 
 export function SelectionCard({
   icon: Icon, title, subtitle, selected = false, onSelect,
-  badges, selectionMode = 'radio', children, className,
+  badges, selectionMode = 'radio', children, className, testId,
 }: SelectionCardProps) {
   return (
     <button
       type="button"
+      data-testid={testId}
       onClick={onSelect}
       className={cn(
         selected ? SELECTION_STATES.selected : SELECTION_STATES.default,

@@ -173,6 +173,24 @@ export async function persistAdditionalContext(
  * Set or replace the hero image of a deliverable. Upserts a single
  * DeliverableComponent row with variantGroup='hero-image'.
  */
+/**
+ * Alt-tekst begrenzen op het contract van de hero-image-route
+ * (`alt: z.string().max(500)`).
+ *
+ * Zeven van de acht call-sites geven de beeld-generatieprompt door als alt, en
+ * die is routineus langer dan 500 tekens — dat gaf een HTTP 400 waarna het
+ * beeld stil verdween (alleen een console-regel; gevonden in de e2e-sweep van
+ * 2026-08-15). De cap zit hier in de gedeelde functie en niet per call-site,
+ * omdat één gefixte route niets bewijst over de andere (gotcha 2026-07-21).
+ */
+const ALT_MAX = 500;
+function capAlt(alt: string | null | undefined): string | null | undefined {
+  if (typeof alt !== 'string') return alt;
+  const trimmed = alt.trim();
+  if (trimmed.length <= ALT_MAX) return trimmed;
+  return `${trimmed.slice(0, ALT_MAX - 1).trimEnd()}…`;
+}
+
 export async function setHeroImage(
   deliverableId: string,
   body: {
@@ -185,7 +203,7 @@ export async function setHeroImage(
   const res = await fetch(`/api/studio/${deliverableId}/hero-image`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, alt: capAlt(body.alt) }),
   });
   if (!res.ok) {
     // Surface de echte API-response (status + body details) i.p.v. een
