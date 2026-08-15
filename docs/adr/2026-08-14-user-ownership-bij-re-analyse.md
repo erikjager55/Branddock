@@ -2,7 +2,7 @@
 
 **Datum**: 2026-08-14
 **Status**: geaccepteerd
-**Context**: verbeterplan W5 · changelog #463 · task `refresh-preserves-user-data`
+**Context**: verbeterplan W5 · changelog #464 · task `refresh-preserves-user-data`
 
 ## Context
 
@@ -67,7 +67,7 @@ Diezelfde verschuiving legde een tweede aanname bloot: `resolveSemanticTokens` h
 zonder `orderBy` op. Dat werkte zolang elke analyse álle rijen wiste en op volgorde herschreef —
 insertion-order was dan toevallig gelijk aan sortOrder. Zodra rijen overleven klopt dat niet meer,
 en dan wisselt de "deterministische" resolver-output tussen twee identieke analyses. Dat had via de
-snapshot-diff spontane review-resets (#462) opgeleverd.
+snapshot-diff spontane review-resets (#463) opgeleverd.
 
 **Les**: een rij die een analyse overleeft, breekt elke impliciete aanname over rij-volgorde.
 
