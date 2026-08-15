@@ -30,7 +30,12 @@ import {
   brandMdUnsubscribeUrl,
   claimUrl,
   BRAND_MD_GENERATOR_PATH,
+  BRAND_MD_USE_HUB_PATH,
 } from '@/lib/brandmd/constants';
+import { draftPayloadToModel, type BrandMdDraftPayload } from '@/lib/brandmd/scan';
+
+/** Secties waarvan de BRAND.md een validatiestatus bijhoudt. */
+const VALIDATED_SECTION_KEYS = ['strategy', 'voice', 'visual', 'audience', 'products'] as const;
 
 export const dynamic = 'force-dynamic';
 
@@ -80,6 +85,7 @@ export async function GET(request: NextRequest) {
         expiresAt: true,
         emailCapturedAt: true,
         claimTokenEnc: true,
+        payload: true,
         lifecycleOptInAt: true,
         lifecycleOptOutAt: true,
         lifecycleStagesSent: true,
@@ -140,6 +146,36 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
+      // Per-merk feiten uit het opgeslagen scan-payload. Zonder deze twee
+      // waren 2.2 en 2.4 onderling uitwisselbaar — precies de reden dat de
+      // eerste versie van deze reeks generiek aanvoelde (review 2026-08-15).
+      // `validation` hangt aan de BrandMd-extensie van het model, niet aan het
+      // rauwe payload — `draftPayloadToModel` is puur en goedkoop, dus die
+      // mapping is de goedkoopste eerlijke bron.
+      const payload = profile.payload as unknown as BrandMdDraftPayload | null;
+      let unvalidatedSections: string[] = [];
+      let hasVoice = false;
+      let inferredPositioning: string | undefined;
+      if (payload) {
+        try {
+          const md = draftPayloadToModel(payload).extensions.brandMd;
+          unvalidatedSections = VALIDATED_SECTION_KEYS.filter(
+            (k) => md?.validation?.[k]?.status !== 'validated',
+          );
+          hasVoice = !!md?.voiceDescription;
+          // Positionering eerst; promise en tagline als terugval — alle drie
+          // per merk verschillend en kort genoeg om te citeren.
+          const candidate =
+            payload.strategy?.positioning ?? payload.strategy?.promise ?? payload.tagline;
+          inferredPositioning =
+            candidate && candidate.trim().length > 20 ? candidate.trim() : undefined;
+        } catch (error) {
+          // Een onverwacht payload-formaat mag de mail niet blokkeren — de
+          // template valt terug op de niet-gepersonaliseerde variant.
+          console.warn(`[cron/brandmd-lifecycle] payload onbruikbaar voor ${profile.id}:`, error);
+        }
+      }
+
       const rendered = renderLifecycleEmail(decision.stage, {
         brandName: profile.brandName,
         domain: profile.domain,
@@ -147,9 +183,13 @@ export async function GET(request: NextRequest) {
         downloadUrl,
         claimUrl: claimUrl(rawToken),
         generatorUrl: `${base}${BRAND_MD_GENERATOR_PATH}`,
+        useHubUrl: `${base}${BRAND_MD_USE_HUB_PATH}`,
         unsubscribeUrl,
         generatedAt: profile.createdAt,
         expiresAt: profile.expiresAt,
+        unvalidatedSections,
+        hasVoice,
+        inferredPositioning,
       });
 
       const result = await trySendTransactional({

@@ -16,10 +16,18 @@ const BRAND_CTA_TEXT = '#0B3B2E';
 // Absolute asset-URL: e-mailclients kunnen alleen remote afbeeldingen laden.
 const LOGO_URL = 'https://branddock.app/marketing/email/branddock-logo-white.png';
 
+export type EmailLocale = 'en' | 'nl';
+
 export interface LayoutOptions {
   preheader?: string;
   title: string;
   intro?: string;
+  /**
+   * Taal van deze mail. Stuurt `<html lang>` — screenreaders en
+   * spamfilters lezen dat, en Gmail hangt er zijn vertaalprompt aan op.
+   * Default 'en' zodat bestaande templates ongewijzigd blijven werken.
+   */
+  locale?: EmailLocale;
   body: string; // pre-rendered HTML (paragraphs, cta block, etc.)
   footerNote?: string;
   /**
@@ -33,7 +41,7 @@ export interface LayoutOptions {
 export function renderLayout(opts: LayoutOptions): string {
   const preheader = opts.preheader ?? opts.title;
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${opts.locale ?? 'en'}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -85,6 +93,43 @@ export function escape(value: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// ─── Body-bouwstenen ──────────────────────────────────────────
+//
+// Elke mail componeerde tot 2026-08-15 zijn eigen inline-styled <p>'s, met
+// als gevolg dat "identiek format" een afspraak was in plaats van iets
+// afdwingbaars. Deze primitives zijn de enige toegestane bouwstenen voor een
+// body; wie ze gebruikt krijgt automatisch dezelfde typografie.
+
+/** Standaard bodyparagraaf. `html` mag inline-markup bevatten (bv. <strong>). */
+export function paragraph(html: string): string {
+  return `<p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#334155;">${html}</p>`;
+}
+
+/** Kleinere, grijze regel — voor secundaire links onder de CTA. */
+export function note(html: string): string {
+  return `<p style="margin:16px 0 0 0;font-size:13px;line-height:1.5;color:#64748b;">${html}</p>`;
+}
+
+/** Inline tekstlink in de body-stijl. */
+export function link(href: string, label: string): string {
+  return `<a href="${escape(href)}" style="color:#0f766e;">${escape(label)}</a>`;
+}
+
+/**
+ * Opsomming van concrete bevindingen uit de scan — het verschil tussen een
+ * generieke mail en een die het merk kent.
+ */
+export function bulletList(items: string[]): string {
+  if (items.length === 0) return '';
+  const lis = items
+    .map(
+      (i) =>
+        `<li style="margin:0 0 8px 0;font-size:15px;line-height:1.6;color:#334155;">${escape(i)}</li>`,
+    )
+    .join('');
+  return `<ul style="margin:0 0 16px 0;padding-left:20px;">${lis}</ul>`;
 }
 
 const COPY_LINK_LABEL: Record<'en' | 'nl', string> = {

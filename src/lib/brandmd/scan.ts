@@ -23,6 +23,7 @@ import type {
   SemanticColorRole,
 } from '@/lib/export/design-system/canonical';
 import { DRAFT_PAYLOAD_VERSION } from './constants';
+import { relativeLuminance } from '@/lib/landing-pages/brand-tokens';
 
 const MAX_HTML_BYTES = 900_000;
 const MAX_CSS_FILES = 3;
@@ -81,7 +82,7 @@ export async function scanWebsiteForBrandMd(rawUrl: string): Promise<BrandMdDraf
   const url = new URL(rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`).toString();
   const domain = normalizeDomain(url);
 
-  const html = await fetchBounded(url, MAX_HTML_BYTES);
+  const html = await fetchPrimaryWithRetry(url);
   const meta = extractMeta(html);
   const css = await fetchStylesheets(url, html);
   const colors = extractColors(html + '\n' + css);
@@ -155,6 +156,32 @@ async function fetchKeyPages(
     }
   }
   return { texts, paths };
+}
+
+/**
+ * De hoofdpagina één keer opnieuw proberen bij een timeout of netwerkfout.
+ *
+ * Subpagina's falen al fail-soft, maar een timeout op de hóófdpagina liet de
+ * hele scan klappen — en daarmee de lead. Gezien tijdens de benchmark van
+ * 2026-08-15: zwarthout.com timede twee van de drie keer uit op de 15s-grens
+ * en lukte de derde keer wel. Een trage-maar-bereikbare site kost je zo een
+ * bezoeker die verder niets verkeerd deed.
+ *
+ * Bewust één retry, geen backoff-ladder: de generator draait synchroon met
+ * een wachtende bezoeker voor zich, dus doorlooptijd is hier een kost.
+ * Een 4xx (bewuste weigering) wordt niet herhaald — alleen timeouts en
+ * netwerkfouten.
+ */
+async function fetchPrimaryWithRetry(url: string): Promise<string> {
+  try {
+    return await fetchBounded(url, MAX_HTML_BYTES);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const isHttpRefusal = /HTTP [45]\d\d/.test(message);
+    if (isHttpRefusal) throw err;
+    console.warn(`[brandmd-scan] eerste poging op ${url} mislukt (${message}) — één retry`);
+    return fetchBounded(url, MAX_HTML_BYTES);
+  }
 }
 
 async function fetchBounded(url: string, maxBytes: number): Promise<string> {
@@ -440,6 +467,15 @@ async function callExtractionModel(
 
 // ─── Payload → DesignSystemModel (hergebruik emitter + score) ─────────
 
+/**
+ * Leesbare tekstkleur óp een achtergrondkleur (WCAG-drempel 0.179 op relatieve
+ * luminantie). Hergebruikt `relativeLuminance` uit brand-tokens zodat er maar
+ * één definitie van luminantie in de codebase bestaat.
+ */
+function readableTextOn(hex: string): string {
+  return relativeLuminance(hex) > 0.179 ? '#111827' : '#FFFFFF';
+}
+
 export function draftPayloadToModel(payload: BrandMdDraftPayload, claimCanonicalUrl?: string): DesignSystemModel {
   const colorRoles: SemanticColorRole[] = ['primary', 'secondary', 'tertiary', 'surface', 'outline'];
   const colors: Partial<Record<SemanticColorRole, ColorToken>> = {};
@@ -447,6 +483,18 @@ export function draftPayloadToModel(payload: BrandMdDraftPayload, claimCanonical
     const role = colorRoles[i];
     colors[role] = { value: hex, role, source: 'scan' };
   });
+
+  // `on-primary` is de tekstkleur die ópaan primary ligt en is puur af te
+  // leiden — hij stond alleen niet in de rollenlijst, waardoor de paar-check
+  // in `scoreConsistency` bij ELKE scan faalde en iedereen dezelfde 40 punten
+  // verloor (meting 2026-08-15: zes uiteenlopende sites scoorden allemaal 70).
+  if (colors.primary) {
+    colors['on-primary'] = {
+      value: readableTextOn(colors.primary.value),
+      role: 'on-primary',
+      source: 'scan',
+    };
+  }
 
   const brandMd: BrandMdExtension = {
     tagline: payload.tagline,
