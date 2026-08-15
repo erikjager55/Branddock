@@ -92,6 +92,14 @@ const draft = draftPayloadToModel(
     },
     audience: [{ name: 'Product managers', description: 'B2B SaaS, 10-200 employees' }],
     products: [{ name: 'Changelog Autopilot', description: 'Turns merged PRs into customer-readable updates.' }],
+    messagePillars: [
+      { pillar: 'Close the loop', statements: ['Users deserve to know what shipped'] },
+      { pillar: 'Zero busywork', statements: ['Release notes that write themselves'] },
+    ],
+    artDirection: {
+      keywords: ['clean', 'developer-native', 'high-contrast'],
+      statement: 'Reads like good documentation: quiet surfaces, one confident accent color.',
+    },
   },
   'https://branddock.app/brandmd/claim/EXAMPLE-TOKEN',
 );

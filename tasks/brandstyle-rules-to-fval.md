@@ -70,7 +70,7 @@ Ontwerpbeslissingen D1-D5 staan in de ADR.
 - [x] `npx tsc --noEmit` 0 errors
 - [x] `npm run lint` — 0 nieuwe errors (1 pre-existing error op `main`, zie Notes)
 - [x] Smoke-test uitgevoerd: 51/51 puur, 17/17 DB, spike-verificatie op DTS Ede
-- [x] ADR + changelog-entry (#457) bijgewerkt
+- [x] ADR + changelog-entry (#460) bijgewerkt
 
 # Bestanden die ik aanraak
 

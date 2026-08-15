@@ -203,6 +203,10 @@ export interface BrandMdExtension {
   products: ProductSummary[];
   /** Machine-checkbare guardrails (full-profile upgrade van prose-dosDonts) */
   guardrails: { do: string[]; dont: string[] };
+  /** 0.3 Voice > Message Pillars — scan-afgeleid (draft) of workspace-data (later) */
+  messagePillars?: Array<{ pillar: string; statements: string[] }>;
+  /** 0.3 Visual > Art Direction — keywords + direction statement */
+  artDirection?: { keywords: string[]; statement?: string };
   validation: Partial<Record<BrandMdSectionKey, SectionValidation>>;
   provenance: BrandMdProvenance;
 }

@@ -185,7 +185,7 @@ function registerBrandTools(server: McpServer, ctx: PublicMcpContext): void {
     {
       title: 'Get brand.md file',
       description:
-        'Het merk als brand.md-bestand (open standaard, v0.2-kern + Branddock full profile): ' +
+        'Het merk als BRAND.md-bestand (open standaard, spec v0.3 + Branddock full profile): ' +
         'strategy, voice, visual, audience, products, guardrails — met validation- en ' +
         'provenance-frontmatter uit de levende workspace. profile=public is het deelbare bestand ' +
         '(zonder concurrenten); profile=extended voegt Market Context toe en is alleen voor eigen ' +

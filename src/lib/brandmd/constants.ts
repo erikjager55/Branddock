@@ -5,8 +5,11 @@
 // emitter-route, MCP-tool en dashboard nooit uit de pas lopen.
 // =============================================================
 
-/** Upstream-kernversie waartegen elk gegenereerd bestand valideert (gepind). */
-export const BRAND_MD_CORE_VERSION = '0.2';
+/** Upstream-specversie waartegen elk gegenereerd bestand valideert (gepind). */
+export const BRAND_MD_CORE_VERSION = '0.3.0';
+
+/** Canonieke bestandsnaam per spec 0.3 (uppercase, exact). */
+export const BRAND_MD_FILE_NAME = 'BRAND.md';
 
 /** Publieke paden (App Router; buiten de SPA-shell zodat ze zonder auth werken). */
 export const BRAND_MD_GENERATOR_PATH = '/brandmd';
