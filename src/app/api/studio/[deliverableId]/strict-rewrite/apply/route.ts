@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
 import { prisma } from '@/lib/prisma';
+import { resolveDeliverableContent } from '@/lib/content/resolve-deliverable-content';
 
 interface StrictRewriteSnapshot {
   text?: string;
@@ -92,12 +93,28 @@ export async function POST(
         select: { id: true, generatedContent: true, componentType: true },
       });
       if (components.length === 0) {
+        // Voor de 11 keten-B-types bestaat er geen component om in te schrijven: hun copy
+        // staat in `settings.structuredVariant`. Deze route HERSCHRIJFT componenten, en de
+        // schrijf-kant van keten B is bewust buiten scope (zie tasks/content-chain-accessor.md,
+        // "Bestanden die ik NIET aanraak"). Wat hier wél moest veranderen is de melding:
+        // "No first-variant text components found" leest als "je pagina is leeg" terwijl hij
+        // vol staat, en laat de gebruiker zoeken naar iets dat niet kapot is.
+        const resolved = resolveDeliverableContent(deliverable);
+        const isStructuredChain =
+          resolved.kind === 'structured' || resolved.kind === 'structured-unchosen';
         console.warn('[strict-rewrite/apply] no target component', {
           deliverableId,
-          reason: 'no variant-0 text-component with content found',
+          reason: isStructuredChain
+            ? 'content lives in the structured chain — not rewritable here'
+            : 'no variant-0 text-component with content found',
+          contentKind: resolved.kind,
         });
         return NextResponse.json(
-          { error: 'No first-variant text components found on this deliverable' },
+          {
+            error: isStructuredChain
+              ? 'This page stores its content as a structured variant, which this action cannot rewrite yet. Edit it in the Canvas instead.'
+              : 'No first-variant text components found on this deliverable',
+          },
           { status: 400 },
         );
       }

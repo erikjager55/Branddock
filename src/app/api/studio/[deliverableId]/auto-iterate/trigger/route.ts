@@ -19,6 +19,7 @@
 
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { resolveDeliverableContent } from '@/lib/content/resolve-deliverable-content';
 import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
 import { runFidelityScoring, resolveScoringWordCountOverride } from '@/lib/brand-fidelity/fidelity-runner';
@@ -45,7 +46,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   const deliverable = await prisma.deliverable.findFirst({
     where: { id: deliverableId, campaign: { workspaceId } },
-    select: { id: true, contentType: true, campaignId: true },
+    // settings + generatedText nodig voor de keten-B/C-fallback hieronder: voor de 11
+    // keten-B-types is de component-keten structureel leeg.
+    select: {
+      id: true,
+      contentType: true,
+      campaignId: true,
+      settings: true,
+      generatedText: true,
+    },
   });
   if (!deliverable) {
     return new Response(JSON.stringify({ error: 'Deliverable not found' }), {
@@ -90,10 +99,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           orderBy: [{ order: 'asc' }, { variantIndex: 'asc' }, { id: 'asc' }],
           select: { generatedContent: true, componentType: true },
         });
-        const blobText = components
+        let blobText = components
           .map((c) => c.generatedContent ?? '')
           .filter((s) => s.length > 0)
           .join('\n\n');
+        // Keten B/C — zonder deze fallback meldt de gate "Variant A contains 0 words" op
+        // een pagina die vol staat, want voor de 11 keten-B-types is de component-keten
+        // structureel leeg (content-chain-accessor, kruising #5).
+        if (blobText.trim().length === 0) {
+          const resolved = resolveDeliverableContent(deliverable);
+          if (resolved.kind === 'structured' || resolved.kind === 'components') {
+            blobText = resolved.text;
+          }
+        }
         const wordCount = blobText.split(/\s+/).filter(Boolean).length;
         // Gate floor = F-VAL hard floor (50). Hier NIET type-aware: F-VAL
         // weigert <50 woorden in `fidelity-runner.ts:455`, dus accepteren
