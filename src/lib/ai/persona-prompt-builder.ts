@@ -175,11 +175,17 @@ function formatContextData(sourceType: string, data: Record<string, unknown>): s
       break;
     case 'deliverable':
       if (data.contentType) lines.push(`Content type: ${data.contentType}`);
-      // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#14) — persona-reactie krijgt geen content-snippet
-      if (data.generatedText) {
-        // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#14) — idem
-        const snippet = String(data.generatedText).slice(0, 500);
-        lines.push(`Content: ${snippet}`);
+      // `contentSnippet` wordt door knowledge-context-fetcher gevuld via de
+      // content-accessor en dekt alle drie de ketens; `generatedText` blijft als
+      // fallback staan voor context-objecten van oudere makelij
+      // (content-chain-accessor, kruising #14).
+      // Fallback op een LOS context-object (geen Deliverable-rij), voor snapshots van
+      // vóór de accessor. De accessor kan hier niet gebruikt worden: `data` is een platte
+      // Record zonder settings of componenten.
+      // eslint-disable-next-line no-restricted-syntax -- zie noot hierboven
+      const contentValue = data.contentSnippet ?? data.generatedText;
+      if (contentValue) {
+        lines.push(`Content: ${String(contentValue).slice(0, 500)}`);
       }
       break;
     case 'brandstyle':
