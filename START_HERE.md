@@ -1,8 +1,8 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> **Laatst bijgewerkt: 2026-08-15** (volledig herschreven — de vorige versie was een
-> maand oud en noemde het credit-model nog als kritiek pad).
+> **Laatst bijgewerkt: 2026-08-16** (resync na #266/#267 — het ongecommitte werk is
+> vastgelegd en de HNG-import is gedraaid, dus die secties zijn weg).
 
 ---
 
@@ -27,31 +27,31 @@ plus één echte betaal-smoke.
 
 ---
 
-## ⚠️ Eerst afmaken: ongecommit werk in de main-worktree
+## Wat er landde (2026-08-16)
 
-Dit staat al dagen los in `branddock-app` en gaat verloren bij een `git checkout` of
-een onvoorzichtige pull. **Begin hiermee.**
+**Het ongecommitte werk is weg** (#266). De zeven bestanden die dagen los in de
+main-worktree lagen staan vast: het complete HNG-invulboekwerk (fill-script,
+hertest-script, prod-bundle, task-file), de bijgewerkte open-acties en de
+lockfile-sync. **HNG is af** — de prod-import is gedraaid en de kennisbronnen zijn
+geüpload. `docs/Branddock branddoc v3.pdf` blijft bewust buiten git (gitignore-regel
+op `Branddock branddoc*.pdf`; klant-branddocs blijven wél tracked).
 
-| Bestand | Wat het is | Actie |
-|---|---|---|
-| `tasks/hng-invulboek-2026-08-14.md` | Task-file, status `done`, HNG-invulboek volledig verwerkt | committen |
-| `scripts/fill-nieuwe-golfen.ts` | Het fill-script dat dat werk uitvoerde | committen |
-| `scripts/score-hng-referentieteksten.ts` | Hertest-script (A=91 / B=61 / C=68) | committen |
-| `scripts/migrate-brand-dna/bundles/het-nieuwe-golfen-2026-08-14.json` | Prod-bundle, klaar voor import | committen (andere bundles zijn ook getrackt) |
-| `tasks/open-acties-2026-07-23.md` | Gewijzigd, niet gecommit | doorlezen en committen |
-| `docs/Branddock branddoc v3.pdf` | Untracked sinds juli | **besluit nodig**: committen, verplaatsen of weggooien |
-| `integrations/browser-extension/package-lock.json` | Gewijzigd | checken of dit bedoeld is |
-
-Het HNG-werk oogt af — het task-file staat op `done` met alle criteria afgevinkt — maar
-is nooit vastgelegd. Eén commit lost het op.
-
-**Daarna nog open bij HNG**: de prod-import draaien (workspace `cmrxl41sm00230akjshqksl17`,
-runbook in `scripts/migrate-brand-dna/README.md`) en de kennisbronnen handmatig uploaden;
-die zitten niet in de bundle.
+**De golden-set-gate is gesplitst** (#267) — en de "flake" bleek een stabiele
+bevinding. Twee dingen klopten niet aan het oude beeld. Het diagnose-pad was
+onuitvoerbaar: het artefact `golden-set-results-<sha>` heeft nooit bestaan, want
+`.promptfoo-results/` begint met een punt en `upload-artifact` slaat hidden files
+over — de stap meldde `success` met alleen een warning. En het zijn geen flakes:
+over vijf nachten zakken steeds dezelfde cases (SEO-focus extreem 5/5, lege
+knowledge-context 4/5, vage brief 4/5, thought-leadership 4/5). Echt niveau ~50-60%
+tegen een drempel van 70% die op de rand was gekalibreerd. Nu: `deterministic`
+(key-loos, 1m16s) blokkeert PR's, `live-eval` draait nightly-only en faalt daar nog
+steeds hard. **Een rode check op je PR is voortaan altijd van jou.** De drempel is
+bewust niet verlaagd; de inhoudelijke vraag staat als
+[`golden-set-blogpost-quality`](tasks/golden-set-blogpost-quality.md).
 
 ---
 
-## Wat er vandaag landde (2026-08-15)
+## Wat er landde (2026-08-15)
 
 Twee parallelle sessies, negen PR's, alles gemerged met groene CI.
 
@@ -71,10 +71,13 @@ nu 71-98 met uitleg. Mails herschreven naar Nederlands, één CTA per stuk.
 
 ## Top 3 om mee te beginnen
 
-**1. Het ongecommitte werk hierboven.** Tien minuten, en het risico is weg.
-
-**2. 💳 TOPUP aanzetten.** Nog steeds het enige met directe omzet-impact, en er is geen
+**1. 💳 TOPUP aanzetten.** Nog steeds het enige met directe omzet-impact, en er is geen
 technisch werk meer — alleen `NEXT_PUBLIC_TOPUP_ENABLED=true` en één betaal-smoke.
+
+**2. 🧹 [`lp-review-followups`](tasks/lp-review-followups.md) — de retentie-items.**
+Naar voren gehaald omdat ze als enige tijdgevoelig zijn en met de dag duurder worden:
+`PageEvent` groeit onbegrensd en `FormSubmission` bevat PII zonder wisroutine. Dat is
+geen feature-werk maar een schuld die zichzelf oplaadt.
 
 **3. 🧩 [`content-chain-accessor`](tasks/content-chain-accessor.md) fase 1.** Content woont
 op drie plekken; 21 kruisingen in kaart, ADR ligt er. Fase 1 raakt geen consument en is
@@ -92,10 +95,9 @@ de componentketen leeg was terwijl de content in `settings.structuredVariantOpti
 2. **`guard-hooks-hardening`** — raakt je veiligheidsnet, vraagt expliciet akkoord.
    Kernvraag: móet `gh pr merge` blokkeren bij een co-sessie, of volstaat waarschuwen?
    Deze sessie bewees dat de guard werkt maar eenrichting beschermt (zie gotchas 15-08).
-3. **`docs/Branddock branddoc v3.pdf`** — committen, verplaatsen of weggooien?
-4. **brand.md-strategie** — akkoord op de omarm-strategie + outreach naar de maintainer;
+3. **brand.md-strategie** — akkoord op de omarm-strategie + outreach naar de maintainer;
    de upstream-PR's liggen als tekstpakket klaar.
-5. **Meertaligheid brand.md-funnel** — de pagina's en mails zijn nu Nederlands. De wens was
+4. **Meertaligheid brand.md-funnel** — de pagina's en mails zijn nu Nederlands. De wens was
    breder: site meertalig, mails volgen de gekozen taal. Vereist een locale-kolom op
    `GeneratedBrandProfile` (schemawijziging → Neon-push) en template-lookup per taal.
    Het fundament ligt er: `renderLayout` kent al een `locale`.
@@ -113,11 +115,10 @@ de componentketen leeg was terwijl de content in `settings.structuredVariantOpti
 | [`seo-pipeline-speedup`](tasks/seo-pipeline-speedup.md) | open — fase 4a deed 12→7,5 min |
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
 | [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst, deels achterhaald |
+| [`lp-review-followups`](tasks/lp-review-followups.md) | open — ⚠️ naar Nu gehaald 16-08: de retentie-items zijn tijdgevoelig (`PageEvent` groeit onbegrensd, `FormSubmission` bevat PII zonder wisroutine) |
 
 ### Volgende
 `workspaces-online-migratie` (4 workspaces resteren, jouw keuze) ·
-[`lp-review-followups`](tasks/lp-review-followups.md) (⚠️ retentie-items zijn tijdgevoelig:
-`PageEvent` groeit onbegrensd, `FormSubmission` bevat PII zonder wisroutine) ·
 [`golden-set-blogpost-quality`](tasks/golden-set-blogpost-quality.md) (⚠️ de golden-set-gate is
 per 16-08 gesplitst — `evaluate` kleurt je PR's niet meer rood; wat resteert is de inhoudelijke
 vraag waarom 4-5 cases stabiel zakken) ·
