@@ -1173,10 +1173,21 @@ model Deliverable {
   contentTab String? // "text", "images", "video", "carousel"
   prompt     String? @db.Text
   aiModel    String? // "gpt-4", "claude", "gemini", "veo", "nanobanana"
-  settings   Json? // Type-specifieke settings
+  // ⚠️ NIET alleen configuratie — hier woont ook CONTENT.
+  // Voor de 11 keten-B-types (4 PUCK-webpage + 7 long-form GEO) staat de tekst
+  // in `structuredVariant` (gekozen variant), `structuredVariantOptions` (nog
+  // niet gekozen) en `puckData` (render-boom). Voor die types is de
+  // component-keten (`DeliverableComponent.generatedContent`) STRUCTUREEL leeg.
+  // De oude omschrijving "Type-specifieke settings" wees consumenten naar de
+  // verkeerde keten en leverde in acht weken vier keer dezelfde bug op.
+  // Lees content via resolveDeliverableContent() (@/lib/content/resolve-deliverable-content).
+  settings   Json?
 
   // Generated Content
   generatedContent   Json? // legacy
+  /// @deprecated keten C — vrijwel dood. Nieuwe schrijvers gebruiken componenten
+  /// of `settings.structuredVariant`; lezers gaan via resolveDeliverableContent(),
+  /// die hier alleen op terugvalt als de andere twee ketens leeg zijn.
   generatedText      String?  @db.Text
   generatedImageUrls String[]
   generatedVideoUrl  String?

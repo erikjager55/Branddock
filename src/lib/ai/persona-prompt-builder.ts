@@ -175,7 +175,9 @@ function formatContextData(sourceType: string, data: Record<string, unknown>): s
       break;
     case 'deliverable':
       if (data.contentType) lines.push(`Content type: ${data.contentType}`);
+      // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#14) — persona-reactie krijgt geen content-snippet
       if (data.generatedText) {
+        // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#14) — idem
         const snippet = String(data.generatedText).slice(0, 500);
         lines.push(`Content: ${snippet}`);
       }

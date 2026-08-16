@@ -48,6 +48,7 @@ export async function GET(
     const slides = deliverable.generatedSlides as unknown[] | null;
 
     const isTabLocked =
+      // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#16) — isTabLocked false op een volle pagina
       deliverable.generatedText != null ||
       (imageUrls != null && imageUrls.length > 0) ||
       deliverable.generatedVideoUrl != null ||
@@ -64,6 +65,7 @@ export async function GET(
         prompt: deliverable.prompt,
         aiModel: deliverable.aiModel,
         settings: deliverable.settings,
+        // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#16) — idem
         generatedText: deliverable.generatedText,
         generatedImageUrls: deliverable.generatedImageUrls,
         generatedVideoUrl: deliverable.generatedVideoUrl,
@@ -191,6 +193,10 @@ export async function PATCH(
       // out-of-band gezette hero op beide tracks terugdraaien.
       const merged = { ...existingSettings, ...preservedIncoming };
       const incomingSettings = settings as Record<string, unknown>;
+      // Schrijfpad: inspecteert de VORM van de binnenkomende payload om een autosave te
+      // herkennen, en leest geen content. De accessor is een leeslaag en heeft hier niets
+      // te zoeken.
+      // eslint-disable-next-line no-restricted-syntax -- zie noot hierboven
       const autosaveShapedWrite = !!incomingSettings.puckData && !incomingSettings.structuredVariant;
       updateData.settings = JSON.parse(
         JSON.stringify(autosaveShapedWrite ? syncHeroFromPuck(merged) : merged),

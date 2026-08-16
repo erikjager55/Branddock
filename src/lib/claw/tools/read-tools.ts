@@ -855,6 +855,7 @@ export const readTools: ClawToolDefinition[] = [
         .map((c) => c.generatedContent ?? '')
         .filter((t) => t.trim().length > 0)
         .join('\n\n');
+      // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 2 (#3) — Brand Assistant meldt onterecht "nog geen content"; wacht op productbesluit
       const raw = assembled.trim().length > 0 ? assembled : (deliverable.generatedText ?? '');
       // In-tool cap ruim ónder de bridge-limiet van 16k (MAX_TOOL_RESULT_CHARS):
       // een afgekapte JSON-payload is onbruikbaar, een gemarkeerd afgekapte

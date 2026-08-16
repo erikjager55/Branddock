@@ -76,6 +76,54 @@ bouw je een onreviewbare stapel:
 bestaande rauwe toegangen** (bewijs dat 'ie discrimineert; die worden in fase 2/3 opgeruimd,
 tot dan een `eslint-disable` mét TODO-verwijzing naar deze task).
 
+## ✅ Fase 1 — opgeleverd 2026-08-16
+
+Acceptatie gehaald: `tsc` 0 · `lint` 0 errors · smoke **46/46** · lint-regel vlagde **17**
+rauwe toegangen in 10 bestanden vóór de disables (discriminatie-bewijs). `prisma migrate diff`
+tegen het main-schema: *No difference detected* — comment-only, dus **geen Neon-push**.
+
+**Vier afwijkingen van de specificatie hierboven, elk met reden.**
+
+1. **Naam.** De spec schrijft `getDeliverableContent()` in
+   `src/lib/content/deliverable-content.ts` voor. Dat pad én die functienaam zijn sinds deze
+   task is geschreven ingenomen door de publieke-API/MCP-reader (ADR `2026-07-17-public-brand-api`),
+   met een ándere signatuur (async, workspace-gescoped, DB-query). Hernoemen raakt publiek
+   API-oppervlak, dus de nieuwe accessor heet `resolveDeliverableContent()` in
+   `src/lib/content/resolve-deliverable-content.ts`.
+   ⚠️ **Die bestaande reader is zelf een kruising**: hij levert alleen `components` en geeft
+   voor de 11 keten-B-types dus een lege lijst terug. De MCP-tool `get_deliverable_content` en
+   `GET /api/v1/deliverable` hebben daarmee exact de bug die deze task bestrijdt. Opgenomen als
+   **#23** hieronder.
+2. **Precedentie omgedraaid.** De spec zegt "componenten-mét-inhoud → gekozen variant", maar de
+   sectie *De flip* eist het tegenovergestelde en geeft daar de reden bij. Geïmplementeerd:
+   **gekozen variant → componenten → opties-zonder-keuze → generatedText → empty.** Anders geeft
+   de accessor na een GEO-flip juist de verouderde pre-flip-tekst terug. Er is een smoke die
+   hierop assert.
+3. **Lint-regel-sleutel en scope.** De spec zegt `no-restricted-syntax` zonder scope. Het
+   config-bestand documenteert echter expliciet dat flat-config **last-wins per rule-key** doet
+   en dat een extra `no-restricted-syntax`-blok de bestaande NL- en i18n-guards op elk
+   overlappend bestand stil uitschakelt. De guard is daarom gescoped op
+   `src/lib/**/*.ts` + `src/app/api/**/*.ts` — geen overlap met de andere twee blokken.
+   Gevolg: de twee `.tsx`-call-sites (#8 Step4Timeline, #20 FeedbackBar) zijn niet lint-gedekt
+   en worden in fase 2 met de hand gemigreerd.
+4. **`puckData` niet in de guard.** 77 vindplaatsen, vrijwel allemaal legitiem render-werk in
+   het landing-pages-domein. Het is een render-artefact, geen tekstbron.
+
+**Twee ontwerpkeuzes die de spec openliet:**
+
+- **Beeld- en videocomponenten tellen niet als tekst.** Hun `generatedContent` bevat de gebruikte
+  *prompt* (zie de doc-comment op `DeliverableContentComponent`). Meenemen zou beeldprompts als
+  artikeltekst laten doorgaan — tot in exports en F-VAL-scoring.
+- **Variant-selectie binnen een groep**: de geselecteerde component wint, en zonder selectie
+  variant 0. Zonder die filter plakt een tekstprojectie varianten A/B/C achter elkaar.
+
+**Nieuw gevonden kruisingen** (stonden niet in de inventaris van 17-07):
+
+| # | pad:regel | leest | wat er misgaat |
+|---|---|---|---|
+| 22 | `lib/agents/registry/seo-watchdog-scan.ts:171` | B (rauw) | Iris parseert `settings.structuredVariant` rechtstreeks; de accessor levert de variant via `kind: 'structured'` |
+| 23 | `lib/content/deliverable-content.ts` (publieke API + MCP) | A | `get_deliverable_content` en `GET /api/v1/deliverable` geven voor keten-B-types een lege componentenlijst — de bug, maar dan extern zichtbaar |
+
 # Fase 2 — de 9 gebruiker-zichtbare kruisingen (eigen PR)
 
 Elk met een echte verificatie, niet alleen tsc.

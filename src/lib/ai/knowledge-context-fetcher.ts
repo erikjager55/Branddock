@@ -143,7 +143,9 @@ export async function fetchContextData(
         contextData: {
           contentType: deliverable.contentType,
           status: deliverable.status,
+          // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#13) — pillar-page als knowledge-source geeft alleen titel + type
           generatedText: deliverable.generatedText
+            // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#13) — idem
             ? deliverable.generatedText.slice(0, 500)
             : null,
         },
