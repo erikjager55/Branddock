@@ -121,6 +121,18 @@ export async function GET() {
               id: true, title: true, contentType: true, status: true,
               generatedText: true, qualityScore: true, qualityMetrics: true,
               settings: true, createdAt: true,
+              // GDPR-export hoort compleet te zijn. `settings` (keten B) ging al mee als
+              // rauwe JSON, maar de componenten — waar de meeste content-types hun tekst
+              // bewaren — ontbraken volledig. Een export die de helft van iemands content
+              // weglaat voldoet niet aan het doel (content-chain-accessor, kruising #15).
+              components: {
+                select: {
+                  id: true, componentType: true, groupType: true, generatedContent: true,
+                  imageUrl: true, videoUrl: true, order: true, variantGroup: true,
+                  variantIndex: true, isSelected: true,
+                },
+                orderBy: { order: 'asc' },
+              },
             },
             orderBy: { createdAt: 'asc' },
           },

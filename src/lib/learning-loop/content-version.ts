@@ -17,6 +17,7 @@ import { Prisma } from '@prisma/client';
 import type { ContentVersion } from '@prisma/client';
 import { buildDiff } from './diff-builder';
 import { classifyEdit } from './edit-classifier';
+import { resolveDeliverableContent } from '@/lib/content/resolve-deliverable-content';
 
 const VERSION_NUMBER_MAX_RETRIES = 3;
 
@@ -194,10 +195,24 @@ export async function createContentVersion(
  * paragraph-boundaries are preserved across component boundaries.
  */
 function snapshotToText(snapshot: DeliverableSnapshot): string {
-  if (!snapshot.components || !Array.isArray(snapshot.components)) return '';
-  return snapshot.components
-    .map((c) => `[${c.componentType}]\n${c.generatedContent ?? ''}`)
-    .join('\n\n');
+  const componentText = Array.isArray(snapshot.components)
+    ? snapshot.components
+        .map((c) => `[${c.componentType}]\n${c.generatedContent ?? ''}`)
+        .join('\n\n')
+    : '';
+  if (componentText.replace(/\[[^\]]*\]/g, '').trim().length > 0) return componentText;
+
+  // Keten B — de snapshot bevat `settings` wél, maar zonder deze stap was de tekst voor
+  // de 11 structured-types altijd leeg. Gevolg: `beforeText === afterText === ''`, dus
+  // geen diff en `editType = null` — versie-historie zonder edit-badges, en de
+  // learning-loop leerde niets van elke web-page-bewerking
+  // (content-chain-accessor, kruising #10).
+  const resolved = resolveDeliverableContent({
+    contentType: snapshot.contentType,
+    settings: snapshot.settings,
+    components: snapshot.components,
+  });
+  return resolved.kind === 'structured' || resolved.kind === 'components' ? resolved.text : '';
 }
 
 /**

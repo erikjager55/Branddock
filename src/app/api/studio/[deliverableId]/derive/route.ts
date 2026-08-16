@@ -83,10 +83,27 @@ export async function POST(
     // Strip iteration-specific snapshots uit settings — brief + visualBrief
     // moeten meegaan, maar strictRewrite + autoIterate behoren bij het bron-
     // document, niet bij de derived versie.
+    //
+    // Sinds 2026-08-16 gaan de keten-B-velden er óók af (content-chain-accessor,
+    // kruising #19). `structuredVariant`, `structuredVariantOptions` en `puckData`
+    // beschrijven de PAGINA van het brondocument; een afgeleide instagram-post erfde ze
+    // als dode ballast. Erger dan verspilling: de accessor leest `structuredVariant` als
+    // de waarheid, dus de afgeleide post zou de tekst van de bronpagina teruggeven
+    // i.p.v. zijn eigen content.
     const sourceSettings = (source.settings as Record<string, unknown> | null) ?? {};
-    const { strictRewrite: _strict, autoIterate: _auto, ...cleanSettings } = sourceSettings;
+    const {
+      strictRewrite: _strict,
+      autoIterate: _auto,
+      structuredVariant: _variant,
+      structuredVariantOptions: _variantOptions,
+      puckData: _puck,
+      ...cleanSettings
+    } = sourceSettings;
     void _strict;
     void _auto;
+    void _variant;
+    void _variantOptions;
+    void _puck;
 
     // Create derived deliverable
     const derived = await prisma.deliverable.create({
