@@ -41,10 +41,13 @@ Content Canvas → genereren → wachten op afronding → output + F-VAL vastleg
 - [x] Eigen config: ruime timeout, `retries: 0`, 1 worker, **geen** destructieve reseed
 - [x] Spec loopt over de 24 zichtbare type-IDs uit `deliverable-types.ts` — alle 24 gemeten
 - [x] Per type vastgelegd: aangemaakt, generatie geslaagd, foutmelding, F-VAL-score
-- [x] Campagnegenerator: gestopt op de briefing-gate (AI-score 68 < drempel 80) — **correct
+- [~] Campagnegenerator: gestopt op de briefing-gate (AI-score 68 < drempel 80) — **correct
       productgedrag, geen storing**. Setup + Knowledge + briefingvalidatie werken aantoonbaar.
       De stappen ná de gate (foundation, concept, deliverables, review) zijn hiermee **niet**
       afgedekt; daarvoor is een briefing nodig die ≥80 scoort.
+      **Vinkje gecorrigeerd naar `[~]` op 2026-08-16**: dit stond op `[x]` terwijl de regel zelf
+      zegt dat vier wizard-stappen ongedekt zijn. Het restwerk staat nu als eigen taak:
+      [`campagne-wizard-e2e-restscope`](../campagne-wizard-e2e-restscope.md).
 - [x] Resultatentabel opgeleverd (`scripts/dev/content-sweep-report.ts`) + 8 bugs gemeld
 - [x] `npx tsc --noEmit` 0 errors · `eslint` 0 errors (15 pre-existing warnings)
 

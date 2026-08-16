@@ -36,6 +36,12 @@ lockfile-sync. **HNG is af** — de prod-import is gedraaid en de kennisbronnen 
 geüpload. `docs/Branddock branddoc v3.pdf` blijft bewust buiten git (gitignore-regel
 op `Branddock branddoc*.pdf`; klant-branddocs blijven wél tracked).
 
+**Done-audit over 165 afgeronde taken** (16-08). Aanleiding: de e2e-sweep stond op `done`
+terwijl vier campagnewizard-stappen ongetest waren. Uitkomst: 90 van de 165 done-taken hebben
+onafgevinkte vakjes — dat is vooral een boekhoudgewoonte, geen verborgen werk. Drie gevallen
+waren écht restwerk en zijn nu taken: de campagnewizard, twee visual-brief-smokes waarvan de
+blocker sinds 05-07 weg is, en een Typography-browser-smoke. Les vastgelegd in `gotchas.md`.
+
 **De content-keten heeft één deur gekregen** (#270-#276, zeven PR's). Content woonde op
 drie plekken en het type-systeem wees consumenten naar de verkeerde; dat leverde in acht
 weken vier keer dezelfde bug op. `resolveDeliverableContent()` handelt dat verschil nu één
@@ -126,9 +132,12 @@ halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
 | [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst, deels achterhaald |
 | [`lp-review-followups`](tasks/lp-review-followups.md) | open — ⚠️ naar Nu gehaald 16-08: de retentie-items zijn tijdgevoelig (`PageEvent` groeit onbegrensd, `FormSubmission` bevat PII zonder wisroutine) |
+| [`campagne-wizard-e2e-restscope`](tasks/campagne-wizard-e2e-restscope.md) | open — vier wizard-stappen nooit getest; onderzoek de 80-gate eerst |
 
 ### Volgende
 `workspaces-online-migratie` (4 workspaces resteren, jouw keuze) ·
+[`deferred-browser-smokes-unblocked`](tasks/deferred-browser-smokes-unblocked.md)
+(3 smokes wachtten op een blocker die sinds 05-07 weg is) ·
 [`golden-set-blogpost-quality`](tasks/golden-set-blogpost-quality.md) (⚠️ de golden-set-gate is
 per 16-08 gesplitst — `evaluate` kleurt je PR's niet meer rood; wat resteert is de inhoudelijke
 vraag waarom 4-5 cases stabiel zakken) ·
@@ -150,9 +159,9 @@ vraag waarom 4-5 cases stabiel zakken) ·
 - **F-VAL onder de drempel** bij `linkedin-post` (69), `linkedin-poll` (70), `search-ad`
   (70,5) en `twitter-thread` (71). Signaal, geen conclusie: Napking's styleguide staat op
   `published = false`, dus de stijl-pijler mist context. Sluit dat eerst uit.
-- **Campagnewizard voorbij stap 3 ongetest** — foundation, concept, deliverables en review.
-  Vereist een briefing die ≥80 scoort; een rijk ingevulde testbriefing haalde 68. Dat de
-  gate zo streng is, is op zichzelf het bekijken waard.
+- ~~Campagnewizard voorbij stap 3 ongetest~~ → **eigen taak sinds 16-08**:
+  [`campagne-wizard-e2e-restscope`](tasks/campagne-wizard-e2e-restscope.md). Inclusief de
+  vraag of de 80-drempel klopt — een rijk ingevulde briefing haalde 68.
 - **`rule-structurer` en `brief-week-theme-prompt`** zijn dezelfde soort STRUCTURED-calls
   als de variant-generator en dus theoretisch kwetsbaar voor thinking-uitputting. Daar
   thinking uitzetten is een kwaliteitsafweging (ze redeneren over merkregels), geen bugfix.
