@@ -383,7 +383,27 @@ export async function createGeminiStructuredCompletion<T>(
         parsed = JSON.parse(cleaned) as T;
       } catch (parseError) {
         const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
-        throw new Error(`Failed to parse Gemini response as JSON: ${msg}. Response starts with: "${cleaned.slice(0, 200)}"`);
+        // Toon het venster ROND de foutpositie, niet de eerste 200 tekens. `JSON.parse`
+        // meldt waar het misging; die plek ligt vrijwel nooit aan het begin. De oude
+        // melding liet de kop van een verder correcte respons zien en zei dus niets over
+        // de fout — een parsefout op positie 1643 was daardoor niet te diagnosticeren
+        // (campagnewizard, 2026-08-16).
+        const pos = Number(/position (\d+)/.exec(msg)?.[1] ?? -1);
+        const context =
+          pos >= 0
+            ? `…${cleaned.slice(Math.max(0, pos - 240), pos)}⟪PARSE FAALT HIER⟫${cleaned.slice(pos, pos + 240)}…`
+            : cleaned.slice(0, 480);
+        console.error('[gemini-client] JSON-parse mislukt', {
+          model,
+          finishReason,
+          responseChars: cleaned.length,
+          errorPosition: pos,
+        });
+        throw new Error(
+          `Failed to parse Gemini response as JSON: ${msg}. ` +
+            `Respons was ${cleaned.length} tekens, finishReason=${finishReason ?? 'onbekend'}. ` +
+            `Rond de foutpositie: "${context}"`,
+        );
       }
 
       // Success — track met fine response-metadata

@@ -174,9 +174,22 @@ Positie 1643 is vroeg — dit is dus geen afkapping (die was het `maxTokens`-pro
 en dat is gefixt) maar **malformed JSON midden in een array**. Andere oorzaak, zelfde gevolg:
 de gebruiker ziet geen score maar een fout, en de wizard blijft staan.
 
-Niet blind gerepareerd. Wat hier hoort te gebeuren is eerst vaststellen wát het model
-uitpoept (de ruwe respons loggen bij een parse-fout), niet een retry eromheen bouwen die het
-symptoom verbergt.
+**Opgevolgd 2026-08-16.** De foutmelding was zelf het grootste probleem: hij toonde de
+**eerste 200 tekens** van de respons terwijl de fout op positie 1643 zat. Je kreeg dus de kop
+van een verder correcte JSON te zien en niets over de fout — daarom was dit niet te
+diagnosticeren. De melding toont nu een venster van 240 tekens róndom de foutpositie, met een
+`⟪PARSE FAALT HIER⟫`-markering, plus responslengte en `finishReason`.
+
+**Reproductie mislukt, en dat is zelf een bevinding.** 22 echte validaties (14 via de
+kalibratie, 8 gericht met exact de briefing die het brak) gaven **nul** parse-fouten. De
+frequentie is dus veel lager dan de "1 op 4" die ik uit één waarneming afleidde — dat was een
+steekproef van vier.
+
+**Bewust géén retry toegevoegd.** Dat was verleidelijk (de gebruiker ziet nu een harde fout op
+een geldige briefing), maar `createStructuredCompletion` is gedeeld door tientallen flows. Een
+gedragswijziging daar, op een defect dat ik 22 keer niet kon reproduceren, is een gok met een
+groot bereik. De volgende keer dat het gebeurt — in dev of op prod — staat er nu wél in de log
+wat er precies misging; dán is er een onderbouwde fix mogelijk in plaats van een vangnet.
 
 ### Stand van de vier stappen
 
