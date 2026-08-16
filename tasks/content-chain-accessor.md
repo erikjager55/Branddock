@@ -130,7 +130,7 @@ Elk met een echte verificatie, niet alleen tsc.
 
 | # | pad:regel | leest | wat de gebruiker ziet bij een pillar-page |
 |---|---|---|---|
-| 1 | `studio/[deliverableId]/publish-to-channel/route.ts:122` | A | **lege post extern** — guard staat (#412), maar publiceert nog steeds niets i.p.v. de content |
+| 1 | `studio/[deliverableId]/publish-to-channel/route.ts:122` | A | ✅ **gefixt 2026-08-16** — `buildChannelPayload` leest nu beide ketens; guard blijft, `structured-unchosen` blokkeert nog steeds |
 | 2 | `content-library/route.ts:208-211,230,246` | C | rood stoplicht + **"No content generated"** op een volle, gepubliceerde pagina; voedt `deriveTrafficLight` + de readiness-filter → verkeerde bucket. `wordCount` is `null` (dood veld) |
 | 3 | `lib/claw/tools/read-tools.ts:861-865` | A + C | Brand Assistant: *"deze pagina heeft nog geen content"*, `hasContent: false` — repurpose/samenvat-vragen falen. Dezelfde file heeft op `:985` wél een gate voor `read_landing_page_content` |
 | 4 | `features/campaigns/lib/export-zip.ts:40,64` | C | ZIP-export → `<p>No content generated yet.</p>` |

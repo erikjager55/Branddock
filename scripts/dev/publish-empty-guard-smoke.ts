@@ -102,5 +102,86 @@ console.log('\n6. Fallbacks op alternatieve variant-groups blijven werken');
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// 7-9: sinds content-chain-accessor fase 2 leest de payload-builder BEIDE ketens.
+// De guard blijft, maar blokkeert nu alleen nog wat écht leeg is.
+// ─────────────────────────────────────────────────────────────
+
+/** Schema-complete FAQ-variant — de eenvoudigste tak van de flatten-dispatch. */
+function faqVariant(headline: string) {
+  return {
+    hero: { headline, subline: 'Alles over onze dienstverlening' },
+    popularQuestions: [{ question: 'Wat kost het?', answer: 'Vanaf 39 euro per maand.' }],
+    categories: [{ label: 'Facturatie', items: [{ question: 'Opzeggen?', answer: 'Maandelijks.' }] }],
+    contactEscape: { heading: 'Niet gevonden?', body: 'Mail ons.', ctaLabel: 'Contact' },
+    closingCta: { heading: 'Aan de slag', ctaLabel: 'Start' },
+  };
+}
+
+console.log('\n7. Een GEVULDE structured-pagina publiceert nu wél (de eigenlijke fix)');
+{
+  // Exact de rij uit scenario 1 — lege component-keten, hero-image aanwezig — maar nu mét
+  // de copy waar hij altijd al stond. Vóór deze fix blokkeerde de guard een pagina die vol
+  // stond; dat was terecht (niets te versturen) maar de gebruiker zag een onterecht "leeg".
+  const components: ChannelPayloadComponent[] = [
+    { variantGroup: 'hero-image', generatedContent: null, imageUrl: 'https://cdn.example/hero.png' },
+  ];
+  const payload = buildChannelPayload(components, 'pillar-page', {
+    contentType: 'faq-page',
+    settings: { structuredVariant: faqVariant('Veelgestelde vragen over Napking') },
+    components,
+  });
+  check('body komt uit de structured-keten', payload.bodyText.includes('Veelgestelde vragen'));
+  check('titel afgeleid uit de hero-headline', payload.title === 'Veelgestelde vragen over Napking');
+  check('hero-image blijft behouden', payload.heroImageUrl === 'https://cdn.example/hero.png');
+  for (const p of PROVIDERS) {
+    check(`${p} → publiceert nu wél`, isPublishable(payload, p));
+  }
+}
+
+console.log('\n8. Varianten zonder keuze blijven GEBLOKKEERD');
+{
+  // Content bestaat, maar de gebruiker koos nog geen variant. Gokken welke hij bedoelde is
+  // erger dan niet publiceren — dit gaat naar de LinkedIn/WordPress van een klant.
+  const components: ChannelPayloadComponent[] = [
+    { variantGroup: 'hero-image', generatedContent: null, imageUrl: 'https://cdn.example/hero.png' },
+  ];
+  const payload = buildChannelPayload(components, 'pillar-page', {
+    contentType: 'faq-page',
+    settings: { structuredVariantOptions: [faqVariant('Variant A'), faqVariant('Variant B')] },
+    components,
+  });
+  check('body blijft leeg bij structured-unchosen', payload.bodyText === '');
+  for (const p of PROVIDERS) {
+    check(`${p} → nog steeds geblokkeerd`, !isPublishable(payload, p));
+  }
+}
+
+console.log('\n9. Component-keten wint; legacy generatedText is het laatste vangnet');
+{
+  const withComponents = buildChannelPayload(
+    [{ variantGroup: 'body', generatedContent: 'Verse componenttekst.' }],
+    'x',
+    { generatedText: 'Oude losse tekst.', components: [] },
+  );
+  check('componenten gaan vóór legacy', withComponents.bodyText === 'Verse componenttekst.');
+
+  const legacyOnly = buildChannelPayload([], 'x', { generatedText: 'Oude losse tekst.', components: [] });
+  check('legacy vult de body als laatste redmiddel', legacyOnly.bodyText === 'Oude losse tekst.');
+  check('legacy is publiceerbaar', isPublishable(legacyOnly, 'wordpress-rest'));
+}
+
+console.log('\n10. Zonder `source` gedraagt de builder zich exact als vóór de fix');
+{
+  // De guard-smoke van #412 draaide op alleen componenten; die aanroepvorm moet
+  // ongewijzigd blijven werken, anders is dit een stille breaking change.
+  const payload = buildChannelPayload(
+    [{ variantGroup: 'hero-image', generatedContent: null, imageUrl: 'https://cdn.example/hero.png' }],
+    'pillar-page',
+  );
+  check('geen source → body leeg', payload.bodyText === '');
+  check('geen source → geblokkeerd', !isPublishable(payload, 'linkedin-direct'));
+}
+
 console.log(`\n${pass}/${pass + fail} checks groen${fail ? ` — ${fail} FAIL` : ''}\n`);
 process.exit(fail ? 1 : 0);
