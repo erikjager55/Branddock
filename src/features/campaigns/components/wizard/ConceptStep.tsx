@@ -494,8 +494,30 @@ export function ConceptStep() {
   // ─── Elaborate Journey ──────────────────────────────────
 
   const handleElaborate = useCallback(() => {
-    const { synthesizedStrategy: strat, synthesizedArchitecture: arch, personaValidation: pv } = useCampaignWizardStore.getState();
-    if (!strat || !arch) return;
+    const state = useCampaignWizardStore.getState();
+    // Zelfde bronkeuze als ConceptReviewView en handleApprove: `finalStrategy` (gezet
+    // door setFinalStrategyResult ná build-strategy) gaat vóór `synthesizedStrategy`.
+    //
+    // Zonder die fallback las deze handler alleen `synthesized*`, die in het
+    // multi-variant campagnepad NULL blijft — en dan viel hij hier stil terug zonder
+    // melding, zonder state-wijziging. Voor de gebruiker: de Continue-knop is zichtbaar
+    // en klikbaar en er gebeurt niets. `handleApprove` kreeg deze fallback al; deze
+    // handler werd toen overgeslagen (gevonden 2026-08-16 via de wizard-e2e, die
+    // eindeloos op `review_final_strategy` bleef staan).
+    const strat = state.finalStrategy ?? state.synthesizedStrategy;
+    const arch = state.finalArchitecture ?? state.synthesizedArchitecture;
+    const pv = state.personaValidation;
+    if (!strat || !arch) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[concept-elaborate] handleElaborate early-return:', {
+          hasFinalStrategy: !!state.finalStrategy,
+          hasSynthesizedStrategy: !!state.synthesizedStrategy,
+          hasFinalArchitecture: !!state.finalArchitecture,
+          hasSynthesizedArchitecture: !!state.synthesizedArchitecture,
+        });
+      }
+      return;
+    }
     const currentGenId = ++generationIdRef.current;
     setPhaseError(null);
 

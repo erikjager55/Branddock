@@ -317,6 +317,11 @@ export function ConceptReviewView({
             size="lg"
             icon={CheckCircle2}
             onClick={handleApproveClick}
+            // Test-contract: dit is de PRIMAIRE actie in deze fase — "Approve Concept
+            // does everything in one click" (ConceptStep.tsx:975). De generieke
+            // Continue-knop rechtsonder is hier niet de bedoelde weg, en een e2e die
+            // alleen daarop klikte bleef eindeloos op `review_final_strategy` staan.
+            data-testid="approve-concept"
           >
             {t("conceptReview.approveConcept")}
           </Button>

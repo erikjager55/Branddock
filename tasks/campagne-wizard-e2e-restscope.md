@@ -225,6 +225,38 @@ data-attribuut op de wizard-root, zodat de positie `4:review_final_strategy:elab
 wordt en de driver de overgang wél ziet. Daarna is de weg naar Deliverables en Review
 vrij — dat is dan naar verwachting het laatste stuk.
 
+### 🐛 Productiebug 2: `handleElaborate` viel stil terug — een half afgemaakte fix
+
+Bij `review_final_strategy` staan TWEE knoppen die allebei "verder" suggereren: de
+in-page **"Approve Concept"** en de generieke **Continue** rechtsonder. Die tweede deed
+niets. Geen melding, geen state-wijziging — de gebruiker klikt en er gebeurt niets.
+
+Oorzaak in `ConceptStep.tsx:496`:
+
+```ts
+const { synthesizedStrategy: strat, synthesizedArchitecture: arch } = getState();
+if (!strat || !arch) return;   // stil
+```
+
+In het multi-variant campagnepad blijft `synthesizedStrategy` **null**; de strategie zit
+dan in `finalStrategy`. Het bewijs dat dit bekend was staat vier regels boven
+`handleApprove`, in dezelfde file:
+
+> *"Without this fallback, clicking 'Approve Concept' silently no-ops in the multi-variant
+> campaign path where `synthesizedStrategy` stays null."*
+
+Die fallback is destijds aan `handleApprove` gegeven en `handleElaborate` werd
+overgeslagen. Dezelfde bug, dezelfde oorzaak, één handler verder.
+
+**Fix**: identieke bronkeuze (`finalStrategy ?? synthesizedStrategy`) plus dezelfde
+dev-warn bij early return. Bestand nagelopen op andere blinde lezers: er is er nog één op
+regel 649, maar die *bouwt* juist een minimale strategie — bewust en gedocumenteerd.
+
+⚠️ **Nog niet end-to-end geverifieerd**: deze fix landde ná de laatste e2e-run. Die run
+strandde nog steeds op `review_final_strategy`, en door een tekortkoming in de driver
+(de stall-tak overschreef de notitie) was niet af te lezen wélke knop gebruikt was. Dat
+is nu een apart logveld; de volgende run zegt het wel.
+
 ### Stand van de vier stappen
 
 | stap | status |

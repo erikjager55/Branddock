@@ -49,7 +49,10 @@ interface StepLog {
   briefingScore?: string | null;
   /** Zichtbare foutmeldingen op het moment dat de wizard bleef staan. */
   errors?: string[];
-  /** `stap:fase` vóór en ná de Continue-klik — de echte voortgangsmeter. */
+  /** Welke knop deze stap gebruikte. Apart veld: `note` wordt in de stall-tak
+   *  overschreven, waardoor juist bij een vastloper onbekend bleef wát er geklikt was. */
+  action?: 'approve-concept' | 'continue';
+  /** `stap:fase` vóór en ná de klik — de echte voortgangsmeter. */
   positionBefore?: string;
   positionAfter?: string;
 }
@@ -60,7 +63,10 @@ async function readPosition(page: import('@playwright/test').Page): Promise<stri
   if (!(await root.isVisible().catch(() => false))) return 'weg';
   const step = await root.getAttribute('data-wizard-step').catch(() => null);
   const phase = await root.getAttribute('data-strategy-phase').catch(() => null);
-  return `${step ?? '?'}:${phase ?? '?'}`;
+  // `elaborated` hoort in de positie: binnen `review_final_strategy` is dát het enige
+  // dat verandert tussen de elaboratie-klik en de goedkeur-klik.
+  const elaborated = await root.getAttribute('data-elaborated').catch(() => null);
+  return `${step ?? '?'}:${phase ?? '?'}:${elaborated ?? '?'}`;
 }
 
 // De config staat op 15 min; dat is genoeg voor de content-type-sweep maar niet voor
@@ -245,7 +251,19 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
         log.briefingScore = await reviewPass.getAttribute('data-briefing-score').catch(() => null);
       }
 
-      await continueBtn.click();
+      // Sommige fasen hebben een eigen primaire actie IN de pagina; de generieke
+      // Continue rechtsonder is dan niet de bedoelde weg. Bij `review_final_strategy`
+      // is dat "Approve Concept", dat volgens de code "everything in one click" doet
+      // (ConceptStep.tsx:975). Alleen op Continue klikken liet de wizard daar eindeloos
+      // staan — de driver kiest nu de primaire actie als die er is.
+      const approveBtn = page.getByTestId('approve-concept');
+      const usedPrimary = await approveBtn.isVisible().catch(() => false);
+      log.action = usedPrimary ? 'approve-concept' : 'continue';
+      if (usedPrimary) {
+        await approveBtn.click();
+      } else {
+        await continueBtn.click();
+      }
       // Wacht tot de positie daadwerkelijk verandert i.p.v. een vaste 2s: een fase-
       // overgang binnen Concept start een AI-keten die minuten kan duren.
       await page
@@ -253,7 +271,7 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
           (prev) => {
             const el = document.querySelector('[data-testid="campaign-wizard"]');
             if (!el) return true; // wizard weg = afgerond
-            const now = `${el.getAttribute('data-wizard-step')}:${el.getAttribute('data-strategy-phase')}`;
+            const now = `${el.getAttribute('data-wizard-step')}:${el.getAttribute('data-strategy-phase')}:${el.getAttribute('data-elaborated')}`;
             return now !== prev;
           },
           positionBefore,
