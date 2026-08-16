@@ -493,6 +493,12 @@ export function ConceptStep() {
 
   // ─── Elaborate Journey ──────────────────────────────────
 
+  /**
+   * Zet op true wanneer "Approve Concept" de elaboratie moest starten. Zodra
+   * `elaborateResult` binnenkomt, hervat de effect hieronder de goedkeuring.
+   */
+  const approveAfterElaborateRef = useRef(false);
+
   const handleElaborate = useCallback(() => {
     const state = useCampaignWizardStore.getState();
     // Zelfde bronkeuze als ConceptReviewView en handleApprove: `finalStrategy` (gezet
@@ -772,6 +778,23 @@ export function ConceptStep() {
       return;
     }
 
+    // Campaign mode VEREIST een elaborateResult (journey + kanaal- + assetplan); alleen
+    // content mode mag met lege plannen door. Zonder deze tak viel campaign mode terug op
+    // dezelfde lege default, en dan kreeg de Deliverables-stap NUL aanbevelingen — de
+    // gebruiker die op de opvallendste knop klikte kreeg stil een campagne zonder
+    // AI-assetplan, en kon dat nergens aan zien. Het comment hierboven beloofde al dat
+    // approve "does everything in one click"; dit maakt dat waar.
+    //
+    // De elaboratie is een SSE-keten van enkele minuten. Er is geen nieuwe laadstaat
+    // nodig: `handleElaborate` zet `generating_journey` + `isGenerating`, waarvoor al een
+    // voortgangsweergave bestaat. Zodra het resultaat binnen is hervat de effect
+    // hieronder deze goedkeuring.
+    if (mode !== 'content' && !elaborateResult) {
+      approveAfterElaborateRef.current = true;
+      handleElaborate();
+      return;
+    }
+
     const channelPlan = elaborateResult?.channelPlan ?? {
       channels: [],
       timingStrategy: '',
@@ -808,7 +831,18 @@ export function ConceptStep() {
     if (mode === 'content') {
       state.nextStep();
     }
-  }, [elaborateResult]);
+  }, [elaborateResult, handleElaborate]);
+
+  // Hervat de goedkeuring zodra de elaboratie klaar is. `handleElaborate` levert zijn
+  // resultaat via een SSE-callback, niet via een promise — vandaar een effect en geen
+  // `await`. De ref voorkomt dat een elaboratie die de GEBRUIKER zelf startte (via
+  // Continue) ongevraagd doorschiet naar goedkeuren.
+  useEffect(() => {
+    if (!approveAfterElaborateRef.current) return;
+    if (!elaborateResult || isGenerating) return;
+    approveAfterElaborateRef.current = false;
+    handleApprove();
+  }, [elaborateResult, isGenerating, handleApprove]);
 
   // Keep the forward-ref in sync so handleConceptProceed (content mode)
   // always dispatches to the latest handleApprove closure.
