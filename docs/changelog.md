@@ -37,6 +37,28 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 472. Content-chain-accessor fase 2 + 3 — 21 van de 23 kruisingen omgezet
+
+Vervolg op #471. De accessor stond er; deze zes PR's (#271-#276) zetten de consumenten om. Elke stap is geverifieerd tegen de ECHTE opgeslagen rijen via een nieuw script (`scripts/dev/content-chain-accessor-real-data.ts`), niet alleen tegen fixtures — de gotcha van 2026-07-12 zegt het expliciet: tsc bewijst hier per definitie niets, want beide takken compileren. Uitkomst over 39 keten-B-deliverables: **13 pagina's van 0 naar 497-1306 woorden**, 1 terecht leeg (`structured-unchosen`), **0 exceptions**.
+
+**Fase 2 — de gebruiker-zichtbare kruisingen.** `publish-to-channel` (#1) bouwde zijn payload alleen uit de componentketen; een volle pillar-page leverde een lege payload waarop de guard uit #412 terecht blokkeerde — de gebruiker zag zijn volle pagina geweigerd. De guard is NIET soepeler geworden: `structured-unchosen` laat de body bewust leeg, want gokken wélke variant iemand bedoelde is erger dan niet publiceren naar de LinkedIn van een klant. `auto-iterate/trigger` (#5) meldde "Variant A contains 0 words" op volle pagina's. De twee apply-routes (#6/#7) schríjven een herschrijving in een component en kunnen dat voor keten B niet — de schrijf-kant staat op de niet-aanraken-lijst — dus daar is de mísleidende melding gefixt, niet het gedrag.
+
+**De ZIP-export (#4) bleek voor élk content-type leeg**, niet alleen voor keten B: `fetchDeliverableContent` las `json.generatedText` terwijl de studio-route genest antwoordt als `{deliverable:{…}}`. Die property bestond nooit. Een type-fout kon dit niet vangen — de helper typeerde zijn eigen returnwaarde en `res.json()` is `any`; de belofte kwam van de helper, niet van de route. De "onbereikbare" canvas-export-route (#9) bleek precies de deur die dat nodig had (server-side, mét componenten) en is aangesloten in plaats van verwijderd — meteen ook de fetch-loop weg die CLAUDE.md verbiedt.
+
+**Fase 3 — de stille kruisingen.** Hero-beelden werden gescoord zónder copy-context (#11): de coherence-judge kreeg nul context en scoorde gewoon door — geen fout, wel een betekenisloze meting. Een pillar-page als knowledge-source gaf de AI alleen titel + contentType (#13). Versie-historie kreeg nooit edit-badges voor web-pages, dus de learning-loop leerde niets van elke bewerking (#10). De **GDPR-export liet componenten volledig weg** (#15). En `derive` (#19) stond genoteerd als "dode ballast", maar was sinds fase 1 een correctheidsfout: de accessor leest `structuredVariant` als waarheid, dus een afgeleide instagram-post zou de tekst van de BRONPAGINA hebben teruggegeven — precies het risico dat de task-file zelf noemde ("de accessor kan zelf de volgende single point of failure worden").
+
+**#18 vroeg om een ontwerp, niet om een fix.** Puck-bewerkingen emitten nooit een LearningEvent, maar naïef emitten op het PATCH-pad zou elke autosave-tick registreren. Nieuw `puck-data-text.ts` vergelijkt de COPY uit de render-boom (gesorteerde sleutels, zonder URL's/ids/enums), zodat een autosave die alleen layout of hero verzet een identieke string oplevert en dus geen event. **#21 was een half gat**: alleen de guard omzetten had het probleem één regel verplaatst en een LEGE mail naar echte ontvangers gestuurd, want `htmlBody` las nog `generatedText`. **#12 blijkt dode code** — `compileComponentFeedback` heeft zelf nul aanroepers; een keten-fix daar zou speculatief werk zijn.
+
+⚠️ **Geverifieerd en weerlegd**: het vermoeden dat `puckData` en `structuredVariant` uit elkaar lopen (Puck-edits schrijven immers alleen `puckData`), waardoor de accessor stale tekst zou geven. Over 20 echte rijen bleek elk verschil een compositie-artefact — testimonials die de Puck-renderer samenvoegt uit losse variant-velden. Geen content-drift, geen fix nodig.
+
+**Open**: kruisingen #2 (Content Library-stoplicht) en #3 (Brand Assistant-antwoord) — twee productkeuzes bij `structured-unchosen`, geen techniek.
+
+Gates per PR: tsc 0 · lint 0 errors · accessor-smoke 52/52 · publish-guard-smoke 38/38 · real-data-run 0 exceptions.
+
+- Task: [tasks/content-chain-accessor.md](../tasks/content-chain-accessor.md)
+- ADR: [docs/adr/2026-07-17-deliverable-content-accessor.md](adr/2026-07-17-deliverable-content-accessor.md)
+- Commits: PR #271 · #272 · #273 · #274 · #275 · #276
+
 ### 471. Content-chain-accessor fase 1 — één deur naar de drie content-ketens
 
 Content woont in Branddock op **drie** plekken: de componentketen (`DeliverableComponent.generatedContent`), `settings.structuredVariant` voor de 11 keten-B-types (4 PUCK-webpage + 7 long-form GEO), en het vrijwel dode `generatedText`. Voor die 11 types is de componentketen **structureel leeg**, terwijl het type-systeem er juist naar wijst — 240 getypeerde toegangen tot keten A tegen ~42 rauwe tot B, en `settings` stond in het schema omschreven als "Type-specifieke settings". Dat misverstand leverde in acht weken vier keer dezelfde bug op: een volle pagina die zich als leeg voordoet. Fase 1 levert de leeslaag die dat verschil één keer afhandelt: `resolveDeliverableContent()` met een discriminated union (`components` / `structured` / `structured-unchosen` / `empty`) die de compiler exhaustiviteit laat afdwingen, plus een getypeerde `settings`-parser die Prisma-JSON defensief leest. Nog **zonder consumenten** — fase 2 en 3 migreren de call-sites.
