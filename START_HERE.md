@@ -118,7 +118,9 @@ de componentketen leeg was terwijl de content in `settings.structuredVariantOpti
 `workspaces-online-migratie` (4 workspaces resteren, jouw keuze) ·
 [`lp-review-followups`](tasks/lp-review-followups.md) (⚠️ retentie-items zijn tijdgevoelig:
 `PageEvent` groeit onbegrensd, `FormSubmission` bevat PII zonder wisroutine) ·
-[`golden-set-gate-decouple`](tasks/golden-set-gate-decouple.md) ·
+[`golden-set-blogpost-quality`](tasks/golden-set-blogpost-quality.md) (⚠️ de golden-set-gate is
+per 16-08 gesplitst — `evaluate` kleurt je PR's niet meer rood; wat resteert is de inhoudelijke
+vraag waarom 4-5 cases stabiel zakken) ·
 [`guard-hooks-hardening`](tasks/guard-hooks-hardening.md) ·
 [`headless-content-service`](tasks/headless-content-service.md) (P3.0a) ·
 [`brand-assistant-quick-create`](tasks/brand-assistant-quick-create.md) (P3.0b)
