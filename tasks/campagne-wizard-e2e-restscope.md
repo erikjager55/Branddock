@@ -191,12 +191,46 @@ gedragswijziging daar, op een defect dat ik 22 keer niet kon reproduceren, is ee
 groot bereik. De volgende keer dat het gebeurt — in dev of op prod — staat er nu wél in de log
 wat er precies misging; dán is er een onderbouwde fix mogelijk in plaats van een vangnet.
 
+### Stap 4 (Concept) draait volledig — gemeten traject
+
+    1:idle → 2:idle → 3:idle → 3:building_foundation
+    → 4:mining_insights → 4:building_strategy → 4:review_final_strategy
+
+Met tijden: briefingvalidatie 12s (score 88), foundation 117s, insights→strategy 87s,
+strategy→final 141s. Vóór #280 was dit een directe 400.
+
+### Waar het nu staat: `review_final_strategy` vraagt TWEE keer Continue
+
+De driver blijft hier hangen, en dat is opnieuw een tekortkoming van de test, niet van
+het product. `ConceptStep.tsx:804-808`:
+
+```ts
+} else if (strategyPhase === "review_final_strategy" && elaborateResult) {
+  store.setStepProceedOverride(handleApprove);   // 2e klik: blueprint samenstellen
+} else if (strategyPhase === "review_final_strategy") {
+  store.setStepProceedOverride(handleElaborate); // 1e klik: kanaal- + assetplan
+}
+```
+
+Eén fase, twee betekenissen. De eerste klik start `handleElaborate` — een AI-keten van
+minuten — en de fase blijft ondertussen op `review_final_strategy`. Pas als
+`elaborateResult` gezet is, betekent dezelfde knop `handleApprove`.
+
+Mijn positiemeter (`stap:fase`) kan dat onderscheid niet zien: hij wacht op een
+fasewijziging die niet komt, geeft na 6 minuten op, klikt opnieuw, en start daarmee
+mogelijk de elaboratie nog eens. Dat verklaart de 18 minuten runtime.
+
+**Concrete volgende stap** (klein, één iteratie): `elaborateResult !== null` als derde
+data-attribuut op de wizard-root, zodat de positie `4:review_final_strategy:elaborated`
+wordt en de driver de overgang wél ziet. Daarna is de weg naar Deliverables en Review
+vrij — dat is dan naar verwachting het laatste stuk.
+
 ### Stand van de vier stappen
 
 | stap | status |
 |---|---|
-| 4 Concept / Foundation | 🐛 was volledig stuk (400) — gefixt, herverificatie nodig |
-| 5 Deliverables | nog niet bereikt |
+| 4 Concept / Foundation | ✅ **draait volledig** — alle fasen doorlopen, gemeten |
+| 5 Deliverables | nog niet bereikt — geblokkeerd op de dubbele-Continue hierboven |
 | 6 Review | nog niet bereikt |
 | 7 Afronding | nog niet bereikt |
 
