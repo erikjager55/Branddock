@@ -191,14 +191,136 @@ gedragswijziging daar, op een defect dat ik 22 keer niet kon reproduceren, is ee
 groot bereik. De volgende keer dat het gebeurt — in dev of op prod — staat er nu wél in de log
 wat er precies misging; dán is er een onderbouwde fix mogelijk in plaats van een vangnet.
 
+### Stap 4 (Concept) draait volledig — gemeten traject
+
+    1:idle → 2:idle → 3:idle → 3:building_foundation
+    → 4:mining_insights → 4:building_strategy → 4:review_final_strategy
+
+Met tijden: briefingvalidatie 12s (score 88), foundation 117s, insights→strategy 87s,
+strategy→final 141s. Vóór #280 was dit een directe 400.
+
+### ~~Waar het nu staat: `review_final_strategy` vraagt TWEE keer Continue~~ (achterhaald)
+
+> **Achterhaald door wat er daarna kwam.** Deze analyse klopt technisch — Continue betekent in
+> die fase twee dingen — maar het was NIET de blokkade. Dat bleek de ratingpoort: "Approve
+> Concept" doet niets zolang niet elk concept-element beoordeeld is. Hieronder blijft staan als
+> spoor van de redenering, niet als conclusie.
+
+De driver blijft hier hangen, en dat is opnieuw een tekortkoming van de test, niet van
+het product. `ConceptStep.tsx:804-808`:
+
+```ts
+} else if (strategyPhase === "review_final_strategy" && elaborateResult) {
+  store.setStepProceedOverride(handleApprove);   // 2e klik: blueprint samenstellen
+} else if (strategyPhase === "review_final_strategy") {
+  store.setStepProceedOverride(handleElaborate); // 1e klik: kanaal- + assetplan
+}
+```
+
+Eén fase, twee betekenissen. De eerste klik start `handleElaborate` — een AI-keten van
+minuten — en de fase blijft ondertussen op `review_final_strategy`. Pas als
+`elaborateResult` gezet is, betekent dezelfde knop `handleApprove`.
+
+Mijn positiemeter (`stap:fase`) kan dat onderscheid niet zien: hij wacht op een
+fasewijziging die niet komt, geeft na 6 minuten op, klikt opnieuw, en start daarmee
+mogelijk de elaboratie nog eens. Dat verklaart de 18 minuten runtime.
+
+**Concrete volgende stap** (klein, één iteratie): `elaborateResult !== null` als derde
+data-attribuut op de wizard-root, zodat de positie `4:review_final_strategy:elaborated`
+wordt en de driver de overgang wél ziet. Daarna is de weg naar Deliverables en Review
+vrij — dat is dan naar verwachting het laatste stuk.
+
+### ⚠️ Openstaande productvraag: leeg assetplan bij "Approve Concept"
+
+`handleApprove` bouwt de blueprint met `elaborateResult?.assetPlan ?? { deliverables: [] }`.
+In de gemeten runs blijft `elaborateResult` NULL — de elaboratie draait nooit in dit pad.
+
+Gevolg voor de gebruiker: wie op de grote groene **"Approve Concept"** klikt krijgt een
+campagne **zonder AI-aanbevolen deliverables**. De autoselectie op stap 5 heeft niets om
+te selecteren, Continue blijft disabled, en de gebruiker moet zelf uit de catalogus kiezen
+zonder te weten dat de AI iets had kunnen aanraden.
+
+Het comment boven `handleApprove` belooft het tegenovergestelde:
+*"Campaign mode: approve directly — elaborate is done inline by handleApprove."* Dat doet
+hij niet. Code en comment spreken elkaar tegen.
+
+**Twee richtingen, dit is een productkeuze:**
+1. `handleApprove` laat elaboreren wanneer `elaborateResult` ontbreekt (comment wordt waar);
+2. of de stille terugval naar een leeg assetplan vervangen door iets zichtbaars, zodat de
+   gebruiker weet dat er geen aanbevelingen zijn.
+
+De e2e kiest nu zelf een deliverable om verder te komen, met een comment dat dit een
+omweg is en geen normaal gedrag.
+
+### 🐛 Productiebug 2: `handleElaborate` viel stil terug — een half afgemaakte fix
+
+Bij `review_final_strategy` staan TWEE knoppen die allebei "verder" suggereren: de
+in-page **"Approve Concept"** en de generieke **Continue** rechtsonder. Die tweede deed
+niets. Geen melding, geen state-wijziging — de gebruiker klikt en er gebeurt niets.
+
+Oorzaak in `ConceptStep.tsx:496`:
+
+```ts
+const { synthesizedStrategy: strat, synthesizedArchitecture: arch } = getState();
+if (!strat || !arch) return;   // stil
+```
+
+In het multi-variant campagnepad blijft `synthesizedStrategy` **null**; de strategie zit
+dan in `finalStrategy`. Het bewijs dat dit bekend was staat vier regels boven
+`handleApprove`, in dezelfde file:
+
+> *"Without this fallback, clicking 'Approve Concept' silently no-ops in the multi-variant
+> campaign path where `synthesizedStrategy` stays null."*
+
+Die fallback is destijds aan `handleApprove` gegeven en `handleElaborate` werd
+overgeslagen. Dezelfde bug, dezelfde oorzaak, één handler verder.
+
+**Fix**: identieke bronkeuze (`finalStrategy ?? synthesizedStrategy`) plus dezelfde
+dev-warn bij early return. Bestand nagelopen op andere blinde lezers: er is er nog één op
+regel 649, maar die *bouwt* juist een minimale strategie — bewust en gedocumenteerd.
+
+⚠️ **Nog niet end-to-end geverifieerd**: deze fix landde ná de laatste e2e-run. Die run
+strandde nog steeds op `review_final_strategy`, en door een tekortkoming in de driver
+(de stall-tak overschreef de notitie) was niet af te lezen wélke knop gebruikt was. Dat
+is nu een apart logveld; de volgende run zegt het wel.
+
 ### Stand van de vier stappen
 
 | stap | status |
 |---|---|
-| 4 Concept / Foundation | 🐛 was volledig stuk (400) — gefixt, herverificatie nodig |
-| 5 Deliverables | nog niet bereikt |
-| 6 Review | nog niet bereikt |
-| 7 Afronding | nog niet bereikt |
+| 4 Concept / Foundation | ✅ **draait volledig** — alle fasen doorlopen, gemeten |
+| 5 Deliverables | ✅ **gedekt** — vereist ≥1 selectie |
+| 6 Review | ✅ **gedekt** |
+| 7 Afronding | ✅ **gedekt** — campagne op `ACTIVE` met 1 deliverable in de DB |
+
+**De vier ongeteste stappen zijn daarmee alle vier afgedekt.** Volledig traject:
+
+    1:idle → 2:idle → 3:idle → 3:building_foundation → 4:mining_insights
+    → 4:building_strategy → 4:complete → 5:complete → 6:complete → 1:idle (reset)
+
+Geverifieerd aan de DATA, niet aan het scherm: `Campaign.status = ACTIVE` met één
+deliverable. Runtime 11,8 min.
+
+### Hoe stap 5 bereikt werd — en wat de wizard onderweg eist
+
+Volledig traject van de laatste run (12,1 min):
+
+    1:idle → 2:idle → 3:idle → 3:building_foundation → 4:mining_insights
+    → 4:building_strategy → 4:complete → 5:complete
+
+Drie poorten die de wizard onderweg stelt, geen daarvan een bug:
+
+1. **Briefing ≥ 80.** Herstel via "verbeter met AI" wanneer een run onder de lijn landt.
+2. **Elk concept-element beoordeeld** vóór "Approve Concept" iets doet. De weigering komt
+   als **toast** — geen `[role=alert]`, geen console-melding — dus geen van de drie
+   diagnose-kanalen ving 'm. De screenshot loste dit op: "0 of 6 elements rated" stond
+   gewoon op het scherm. De driver gebruikt nu de bulk-actie "markeer alles goedgekeurd".
+3. **Stap 5 houdt Continue disabled** — de volgende horde, nog niet uitgezocht.
+
+⚠️ **Correctie op een eerdere conclusie**: ik noemde `handleElaborate` "de reden dat de
+wizard vastliep". Dat was voorbarig. Die stille early-return is echt en de fallback hoort
+er te zijn, maar het obstakel hier was de ratingpoort. Twee losse dingen die ik te snel
+aan elkaar knoopte.
 
 **De e2e is nu bruikbaar maar niet betrouwbaar**: 4 runs gaven 4 verschillende uitkomsten,
 telkens door een andere oorzaak (gate 68 → gate 78 → door met 85 → fase-1-parsefout). Elke run

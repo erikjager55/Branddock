@@ -23,9 +23,18 @@ import { test, expect } from '../../fixtures/auth.fixture';
  */
 
 const WORKSPACE_ID = 'e2e-ws-napking-001';
+const CAMPAIGN_TITLE = 'E2E Contentcampagne Napking';
 const OUT_FILE = path.resolve(__dirname, '../../../campaign-generator-outcome.json');
 
-const MAX_STEPS = 8;
+const MAX_STEPS = 10;
+/**
+ * Hoe vaak de test de ingebouwde "verbeter met AI"-knop gebruikt als de briefing onder
+ * de gate scoort. Dit is GEEN omzeiling van de gate: het is exact het herstelpad dat een
+ * gebruiker krijgt aangeboden, en het was zelf nooit getest. Nodig omdat de validatie
+ * ~5-10 punten varieert (kalibratie 2026-08-16) — dezelfde briefing haalt de ene run 85
+ * en de andere 78, en dan meet je de variantie i.p.v. de wizard.
+ */
+const MAX_IMPROVE_ATTEMPTS = 2;
 /** Ruim: elke stap kan een meerstaps AI-keten starten. */
 const STEP_TIMEOUT = 6 * 60_000;
 
@@ -40,12 +49,56 @@ interface StepLog {
   briefingScore?: string | null;
   /** Zichtbare foutmeldingen op het moment dat de wizard bleef staan. */
   errors?: string[];
+  /** Welke knop deze stap gebruikte. Apart veld: `note` wordt in de stall-tak
+   *  overschreven, waardoor juist bij een vastloper onbekend bleef wát er geklikt was. */
+  action?: 'approve-concept' | 'continue';
+  /** True wanneer de driver eerst alle concept-elementen als goedgekeurd markeerde. */
+  ratedAll?: boolean;
+  /** True wanneer de driver zelf een deliverable moest kiezen (geen AI-aanbeveling). */
+  pickedDeliverable?: boolean;
+  /** `stap:fase` vóór en ná de klik — de echte voortgangsmeter. */
+  positionBefore?: string;
+  positionAfter?: string;
 }
+
+/** `stap:fase` van de wizard, of 'weg' als de wizard niet meer in de DOM staat. */
+async function readPosition(page: import('@playwright/test').Page): Promise<string> {
+  const root = page.getByTestId('campaign-wizard');
+  if (!(await root.isVisible().catch(() => false))) return 'weg';
+  const step = await root.getAttribute('data-wizard-step').catch(() => null);
+  const phase = await root.getAttribute('data-strategy-phase').catch(() => null);
+  // `elaborated` hoort in de positie: binnen `review_final_strategy` is dát het enige
+  // dat verandert tussen de elaboratie-klik en de goedkeur-klik.
+  const elaborated = await root.getAttribute('data-elaborated').catch(() => null);
+  return `${step ?? '?'}:${phase ?? '?'}:${elaborated ?? '?'}`;
+}
+
+// De config staat op 15 min; dat is genoeg voor de content-type-sweep maar niet voor
+// deze flow. Gemeten 2026-08-16: alleen al de Concept-fasen kosten 123 + 102 + 141 s,
+// bovenop briefingvalidatie en eventueel het verbeter-pad. De run tikte de 15 min met
+// een paar seconden aan — en een timeout ziet er in de rapportage uit als een
+// vastloper, terwijl het gewoon de klok was.
+test.setTimeout(35 * 60_000);
 
 test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page }) => {
   const steps: StepLog[] = [];
   const started = Date.now();
+
+  // Browserconsole meelezen. `handleApprove` en `handleElaborate` loggen bij een stille
+  // early-return exact WELKE strategie-bron ontbreekt (`[concept-approval]` /
+  // `[concept-elaborate]`) — maar dat komt in de browser terecht, niet in de serverlog.
+  // Die diagnostiek bestond dus al en werd door niemand gelezen; daardoor bleef een
+  // knop-die-niets-doet drie runs lang onverklaard.
+  const consoleLog: string[] = [];
+  page.on('console', (msg) => {
+    const text = msg.text();
+    if (/\[concept-|\[campaign|error|warn/i.test(text)) {
+      consoleLog.push(`${msg.type()}: ${text.slice(0, 300)}`);
+    }
+  });
+  page.on('pageerror', (err) => consoleLog.push(`pageerror: ${err.message.slice(0, 300)}`));
   let finalNote = '';
+  let improveAttempts = 0;
 
   try {
     const switched = await page.request.post('/api/workspace/switch', {
@@ -55,6 +108,23 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
     await page.reload();
     await page.waitForSelector('[data-testid="dashboard"]', { timeout: 30_000 });
 
+    // ── Eigen residu opruimen ───────────────────────────────────
+    // Elke run maakt een nieuwe draft-campagne aan. Na vijf runs blokkeert de wizard
+    // met "Max 5 drafts per user. Archive or launch one before creating a new draft."
+    // en meet de suite haar eigen vervuiling i.p.v. het product — dat kostte een
+    // debugronde (2026-08-16): de wizard leek vast te lopen op stap 5/6, maar de
+    // enige zichtbare fout was de draft-limiet.
+    const draftsRes = await page.request.get('/api/campaigns?status=DRAFT');
+    if (draftsRes.ok()) {
+      const { campaigns = [] } = (await draftsRes.json()) as { campaigns?: Array<{ id: string }> };
+      for (const draft of campaigns) {
+        await page.request.delete(`/api/campaigns/${draft.id}`).catch(() => {});
+      }
+      if (campaigns.length > 0) {
+        console.log(`[campaign-generator] ${campaigns.length} oude draft(s) opgeruimd vóór de run`);
+      }
+    }
+
     // ── Naar Campagnes + wizard starten ─────────────────────────
     await page.click('[data-section-id="active-campaigns"]');
     await page.waitForSelector('[data-testid="page-shell"]', { timeout: 20_000 });
@@ -62,7 +132,7 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
     await expect(page.getByTestId('campaign-wizard')).toBeVisible({ timeout: 20_000 });
 
     // ── Stap 1: setup invullen ──────────────────────────────────
-    await page.getByTestId('setup-name').fill('E2E Contentcampagne Napking');
+    await page.getByTestId('setup-name').fill(CAMPAIGN_TITLE);
     await page
       .getByTestId('setup-briefing-occasion')
       .fill(
@@ -116,7 +186,29 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
 
     for (let i = 1; i <= MAX_STEPS; i++) {
       const stepStart = Date.now();
+      let log0PickedDeliverable = false;
       const stepperText = (await page.getByTestId('wizard-stepper').innerText().catch(() => '')) ?? '';
+      // De echte positie: stap-nummer + strategyPhase. Het stepper-LABEL blijft binnen
+      // de Concept-stap acht fasen lang onveranderd, dus daarop meten zou echt werk als
+      // stilstand lezen (2026-08-16).
+      const positionBefore = await readPosition(page);
+
+      // Stap 5 laat Continue pas toe bij >= 1 geselecteerde deliverable
+      // (DELIVERABLES_STEP.canProceed). Normaal preselecteert de wizard de
+      // AI-aanbevelingen uit het assetplan, maar dat plan is leeg zolang
+      // `elaborateResult` null is — zie de productbevinding in het task-file. De driver
+      // kiest er daarom zelf één.
+      //
+      // MOET vóór de wacht-op-Continue: die wacht faalt juist omdát er niets geselecteerd
+      // is, en de code erna wordt dan nooit bereikt.
+      const deliverableCard = page.locator('[data-testid^="deliverable-card-"]').first();
+      if (await deliverableCard.isVisible().catch(() => false)) {
+        if (await continueBtn.isDisabled().catch(() => false)) {
+          await deliverableCard.click();
+          await page.waitForTimeout(1_000);
+          log0PickedDeliverable = true;
+        }
+      }
 
       // Wacht tot Continue klikbaar wordt — hier zit de AI-tijd én de gate.
       const enabled = await continueBtn
@@ -133,6 +225,7 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
 
       const log: StepLog = {
         index: i,
+        pickedDeliverable: log0PickedDeliverable || undefined,
         stepperText: stepperText.replace(/\s+/g, ' ').trim().slice(0, 200),
         continueEnabled: enabled,
         advanced: false,
@@ -147,7 +240,36 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
         const review = page.getByTestId('strategy-review-briefing');
         if (await review.isVisible().catch(() => false)) {
           const score = await review.getAttribute('data-briefing-score').catch(() => null);
-          log.note = `briefing-gate niet gehaald — AI-score ${score ?? '?'} (drempel 80). Correct productgedrag, geen storing.`;
+
+          // Onder de gate? Doe wat de gebruiker doet: "verbeter met AI". Dat pad hoort
+          // hier getest te worden — het is de enige uitweg die het product aanbiedt.
+          const improveBtn = page.getByTestId('briefing-improve-with-ai');
+          if (improveAttempts < MAX_IMPROVE_ATTEMPTS && (await improveBtn.isVisible().catch(() => false))) {
+            improveAttempts++;
+            log.note = `AI-score ${score ?? '?'} < 80 — "verbeter met AI" gebruikt (poging ${improveAttempts}/${MAX_IMPROVE_ATTEMPTS})`;
+            log.briefingScore = score;
+            steps.push(log);
+            await improveBtn.click();
+            // Wacht tot de verbeter-actie klaar is: de knop is disabled zolang hij loopt.
+            await page
+              .waitForFunction(
+                () => {
+                  const el = document.querySelector('[data-testid="briefing-improve-with-ai"]');
+                  return !el || !(el as HTMLButtonElement).disabled;
+                },
+                undefined,
+                { timeout: 3 * 60_000 },
+              )
+              .catch(() => {});
+            await page.waitForTimeout(3_000);
+            i--; // deze stap opnieuw beoordelen met de verbeterde briefing
+            continue;
+          }
+
+          log.briefingScore = score;
+          log.note =
+            `briefing-gate niet gehaald — AI-score ${score ?? '?'} (drempel 80) na ` +
+            `${improveAttempts} verbeterpoging(en). Correct productgedrag, geen storing.`;
         } else {
           const body = ((await page.locator('body').innerText().catch(() => '')) ?? '')
             .replace(/\s+/g, ' ')
@@ -166,11 +288,59 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
         log.briefingScore = await reviewPass.getAttribute('data-briefing-score').catch(() => null);
       }
 
-      const before = log.stepperText;
-      await continueBtn.click();
-      await page.waitForTimeout(2_000);
-      const after = (await page.getByTestId('wizard-stepper').innerText().catch(() => '')) ?? '';
-      log.advanced = after.replace(/\s+/g, ' ').trim().slice(0, 200) !== before;
+      // Sommige fasen hebben een eigen primaire actie IN de pagina; de generieke
+      // Continue rechtsonder is dan niet de bedoelde weg. Bij `review_final_strategy`
+      // is dat "Approve Concept", dat volgens de code "everything in one click" doet
+      // (ConceptStep.tsx:975). Alleen op Continue klikken liet de wizard daar eindeloos
+      // staan — de driver kiest nu de primaire actie als die er is.
+      // "Approve Concept" weigert zolang niet élk concept-element beoordeeld is — de
+      // knop toont dan een toast en doet verder niets (ConceptReviewView:114-128). Dat
+      // is correct productgedrag, geen bug: de wizard vraagt om een oordeel vóór hij
+      // een concept vastlegt. Een gebruiker klikt daarvoor "markeer alles goedgekeurd";
+      // deze driver doet hetzelfde. Zonder die stap bleef de wizard hier hangen zonder
+      // zichtbare reden (de toast is geen [role=alert] en haalde de foutafvang niet).
+      const markAllBtn = page.getByTestId('mark-all-approved');
+      if (await markAllBtn.isVisible().catch(() => false)) {
+        await markAllBtn.click();
+        await page.waitForTimeout(1_000);
+        log.ratedAll = true;
+      }
+
+      // Bij `review_final_strategy` is de volgorde belangrijk. "Approve Concept" bouwt de
+      // blueprint met `elaborateResult?.assetPlan ?? {leeg}` — klik je hem vóór de
+      // elaboratie, dan krijgt stap 5 nul aanbevelingen, selecteert de autoselectie niets
+      // en blijft Continue daar disabled. Continue draait eerst `handleElaborate`.
+      // Daarom: zolang `data-elaborated=false` in die fase → Continue; daarna pas Approve.
+      const needsElaborateFirst =
+        positionBefore.startsWith('4:review_final_strategy') && positionBefore.endsWith(':false');
+
+      const approveBtn = page.getByTestId('approve-concept');
+      const usedPrimary =
+        !needsElaborateFirst && (await approveBtn.isVisible().catch(() => false));
+      log.action = usedPrimary ? 'approve-concept' : 'continue';
+      if (usedPrimary) {
+        await approveBtn.click();
+      } else {
+        await continueBtn.click();
+      }
+      // Wacht tot de positie daadwerkelijk verandert i.p.v. een vaste 2s: een fase-
+      // overgang binnen Concept start een AI-keten die minuten kan duren.
+      await page
+        .waitForFunction(
+          (prev) => {
+            const el = document.querySelector('[data-testid="campaign-wizard"]');
+            if (!el) return true; // wizard weg = afgerond
+            const now = `${el.getAttribute('data-wizard-step')}:${el.getAttribute('data-strategy-phase')}:${el.getAttribute('data-elaborated')}`;
+            return now !== prev;
+          },
+          positionBefore,
+          { timeout: STEP_TIMEOUT },
+        )
+        .catch(() => {});
+      const positionAfter = await readPosition(page);
+      log.positionBefore = positionBefore;
+      log.positionAfter = positionAfter;
+      log.advanced = positionAfter !== positionBefore;
 
       if (log.advanced) {
         log.note = 'doorgestoken naar volgende stap';
@@ -210,9 +380,32 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
       }
       steps.push(log);
 
-      // Wizard verdwenen = flow afgerond.
+      // Terug op stap 1 nadat we verder waren = de wizard is afgerond en heeft zichzelf
+      // gereset voor een volgende campagne. Zonder deze detectie begint de driver
+      // vrolijk aan een nieuwe wizard en rapporteert hij die tweede briefing-gate als
+      // "vastgelopen" — een succes dat zich als mislukking voordoet.
+      const posNow = await readPosition(page);
+      if (posNow.startsWith('1:') && !positionBefore.startsWith('1:') && i > 2) {
+        finalNote = `wizard afgerond na stap ${i} — terug op stap 1 (reset voor een nieuwe campagne)`;
+        break;
+      }
+
+      // Wizard verdwenen betekent NIET automatisch "afgerond". Bij een test-timeout
+      // breekt Playwright de pagina af en verdwijnt het element ook — die run werd
+      // daardoor als succes gerapporteerd terwijl de campagne op DRAFT stond met nul
+      // deliverables (2026-08-16). Vraag het aan de data, niet aan de DOM.
       if (!(await page.getByTestId('campaign-wizard').isVisible().catch(() => false))) {
-        finalNote = `wizard afgerond na stap ${i}`;
+        const check = await page.request.get('/api/campaigns?status=DRAFT');
+        const stillDraft = check.ok()
+          ? ((await check.json()) as { campaigns?: Array<{ title: string }> }).campaigns?.some(
+              (c) => c.title === CAMPAIGN_TITLE,
+            )
+          : undefined;
+        finalNote =
+          stillDraft === false
+            ? `wizard afgerond na stap ${i} — campagne is geen DRAFT meer`
+            : `wizard-element weg na stap ${i}, maar campagne staat nog op DRAFT` +
+              ` (stillDraft=${String(stillDraft)}) — NIET afgerond`;
         break;
       }
 
@@ -232,7 +425,15 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
     fs.writeFileSync(
       OUT_FILE,
       JSON.stringify(
-        { totalElapsedMs: Date.now() - started, finalNote, stepsCompleted: steps.length, steps },
+        {
+          totalElapsedMs: Date.now() - started,
+          finalNote,
+          stepsCompleted: steps.length,
+          steps,
+          // Laatste 40 relevante consoleregels — genoeg om een stille early-return te
+          // verklaren zonder het rapport onleesbaar te maken.
+          browserConsole: consoleLog.slice(-40),
+        },
         null,
         2,
       ),

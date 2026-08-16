@@ -59,9 +59,46 @@ const DEFAULT_MODEL = 'gemini-3.1-pro-preview';
 const GEMINI_MAX_RETRIES = 3;
 const GEMINI_BASE_DELAY_MS = 2000;
 
+/**
+ * Marker in de foutmelding van een afgekapte JSON-respons. Wordt door
+ * `isGeminiTransientError` herkend zodat de bestaande retry-loop 'm oppakt.
+ */
+const GEMINI_TRUNCATED_JSON = 'GEMINI_TRUNCATED_JSON';
+
 function isGeminiTransientError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error);
+  // Afgekapte JSON is een transient modelhik, geen programmeerfout: gemeten op een
+  // respons van 1320 tekens met finishReason=STOP — ruim onder het tokenbudget, dus
+  // het model stopte gewoon te vroeg. Precies waar de bestaande retry-loop voor is.
+  if (msg.includes(GEMINI_TRUNCATED_JSON)) return true;
   return /overloaded|rate.?limit|too many requests|resource.?exhausted|service.?unavailable|quota.?exceeded|internal.?error|\b429\b|\b500\b|\b503\b/i.test(msg);
+}
+
+/**
+ * Index van de `}` die hoort bij de `{` op `start`, of -1 wanneer die ontbreekt.
+ *
+ * Vervangt `lastIndexOf('}')`. Bij een afgekapte respons vindt die namelijk de
+ * sluithaak van het laatste COMPLETE object bínnen een array en snijdt daar af — het
+ * resultaat is `[{…},{…}}`, wat parset als "Expected ',' or ']' after array element".
+ * De opschoonstap fabriceerde zo een syntaxfout uit een truncatie, en stuurde iedereen
+ * die 'm onderzocht de verkeerde kant op (2026-08-16).
+ *
+ * Respecteert strings en escapes, zodat een `}` in een tekstwaarde niet meetelt.
+ */
+function findMatchingBrace(text: string, start: number): number {
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === '\\') { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{') depth++;
+    else if (ch === '}') { depth--; if (depth === 0) return i; }
+  }
+  return -1;
 }
 
 function geminiSleep(ms: number): Promise<void> {
@@ -373,8 +410,22 @@ export async function createGeminiStructuredCompletion<T>(
       }
 
       const jsonStart = cleaned.indexOf('{');
-      const jsonEnd = cleaned.lastIndexOf('}');
-      if (jsonStart !== -1 && jsonEnd !== -1 && jsonStart < jsonEnd) {
+      if (jsonStart !== -1) {
+        const jsonEnd = findMatchingBrace(cleaned, jsonStart);
+        if (jsonEnd === -1) {
+          // Geen bijpassende sluithaak = de respons is halverwege gestopt. Meld dat als
+          // zodanig i.p.v. een misleidende syntaxfout te laten ontstaan.
+          console.error('[gemini-client] afgekapte JSON', {
+            model,
+            finishReason,
+            responseChars: cleaned.length,
+          });
+          throw new Error(
+            `${GEMINI_TRUNCATED_JSON}: Gemini leverde onvolledige JSON — geen sluithaak voor het ` +
+              `hoofdobject. Respons was ${cleaned.length} tekens, finishReason=${finishReason ?? 'onbekend'}. ` +
+              `Einde van de respons: "${cleaned.slice(-160)}"`,
+          );
+        }
         cleaned = cleaned.slice(jsonStart, jsonEnd + 1);
       }
 

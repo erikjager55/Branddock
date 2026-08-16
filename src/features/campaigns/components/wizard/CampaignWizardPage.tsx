@@ -61,6 +61,11 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   const canProceedResult = useCampaignWizardStore((s) => s.canProceed());
   const resetWizard = useCampaignWizardStore((s) => s.resetWizard);
   const strategyPhase = useCampaignWizardStore((s) => s.strategyPhase);
+  // Binnen `review_final_strategy` betekent Continue twee dingen: zonder resultaat
+  // `handleElaborate`, mét resultaat `handleApprove` (ConceptStep.tsx:804-808). De fase
+  // verandert daar niet tussenin, dus zonder dit vlaggetje is die overgang van buitenaf
+  // onzichtbaar en leest een e2e de elaboratie als een vastloper (2026-08-16).
+  const hasElaborateResult = useCampaignWizardStore((s) => s.elaborateResult !== null);
   const isContentMode = wizardMode === 'content';
 
   // Launch state
@@ -227,7 +232,19 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
 
   return (
     <PageShell>
-    <div data-testid="campaign-wizard" className="space-y-6">
+    <div
+      data-testid="campaign-wizard"
+      // Test-contract. De Concept-stap doorloopt intern ACHT fasen
+      // (mining_insights → generating_concepts → review_concepts → building_strategy → …)
+      // terwijl het stepper-label onveranderd "Concept" blijft. Een e2e die voortgang aan
+      // de stepper afmeet ziet echt werk dus aan voor stilstand — dat kostte een
+      // debugronde (2026-08-16). Deze twee attributen maken de werkelijke positie
+      // afleesbaar, net als `data-briefing-score` dat voor de gate doet.
+      data-wizard-step={currentStep}
+      data-strategy-phase={strategyPhase}
+      data-elaborated={hasElaborateResult ? 'true' : 'false'}
+      className="space-y-6"
+    >
       {/* Breadcrumb */}
       <button
         data-testid="wizard-back-link"

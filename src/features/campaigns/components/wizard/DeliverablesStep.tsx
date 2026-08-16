@@ -232,6 +232,10 @@ export function DeliverablesStep() {
                   : "hover:shadow-md"
               }`}
               onClick={() => toggleDeliverable(item.id)}
+              // Test-contract: deze stap laat Continue pas toe bij >= 1 selectie
+              // (DELIVERABLES_STEP.canProceed). Zonder haakje kan een e2e die voorwaarde
+              // niet vervullen en blijft de wizard hier staan zonder zichtbare reden.
+              data-testid={`deliverable-card-${item.id}`}
             >
               <div className="p-4 space-y-3">
                 {/* Header row */}

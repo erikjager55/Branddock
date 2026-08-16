@@ -70,3 +70,11 @@ test-screenshots/
 # 2,3 MB PDF die per versie ververst hoort niet permanent in de historie.
 # Klant-branddocs in docs/ (WRA, DTS Ede) blijven wél tracked.
 docs/Branddock branddoc*.pdf
+
+# E2E-run-artefacten (content-sweep). Dit zijn PER-RUN outputs: elke run wijzigt ze,
+# dus getrackt maken ze elke werkboom vies en vullen ze PR's met wisselende JSON en
+# binaire screenshots. Per ongeluk mee-gecommit in #280 (git add -A); 2026-08-16 losgekoppeld.
+campaign-generator-outcome.json
+campaign-stall-step-*.png
+e2e/content-sweep-results.json
+e2e/playwright-report-content-sweep/

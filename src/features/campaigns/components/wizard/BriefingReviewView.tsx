@@ -467,6 +467,11 @@ export function BriefingReviewView({
             icon={isImprovingWithAI ? Loader2 : Sparkles}
             onClick={handleImproveWithAI}
             disabled={isImprovingWithAI || isRevalidating}
+            // Test-contract: dit is het herstelpad wanneer de briefing onder de gate
+            // scoort. De e2e moet 'm kunnen vinden zonder op zichtbare tekst te leunen —
+            // die is vertaald en verandert (gotcha 2026-07-07: stale testid liet stap 5
+            // van de content-sweep stilvallen).
+            data-testid="briefing-improve-with-ai"
           >
             {isImprovingWithAI ? t("briefingReview.improving") : t("briefingReview.improveWithAi")}
           </Button>
