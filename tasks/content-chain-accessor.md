@@ -134,9 +134,9 @@ Elk met een echte verificatie, niet alleen tsc.
 | 2 | `content-library/route.ts:208-211,230,246` | C | rood stoplicht + **"No content generated"** op een volle, gepubliceerde pagina; voedt `deriveTrafficLight` + de readiness-filter → verkeerde bucket. `wordCount` is `null` (dood veld) |
 | 3 | `lib/claw/tools/read-tools.ts:861-865` | A + C | Brand Assistant: *"deze pagina heeft nog geen content"*, `hasContent: false` — repurpose/samenvat-vragen falen. Dezelfde file heeft op `:985` wél een gate voor `read_landing_page_content` |
 | 4 | `features/campaigns/lib/export-zip.ts:40,64` | C | ZIP-export → `<p>No content generated yet.</p>` |
-| 5 | `studio/[deliverableId]/auto-iterate/trigger/route.ts:84-140` | A | *"Variant A contains 0 words. At least 50 words are needed…"* (half gepatcht via `suppressAutoIterateCta`) |
-| 6 | `studio/[deliverableId]/strict-rewrite/apply/route.ts:84-107` | A | 400 *"No first-variant text components found"* |
-| 7 | `studio/[deliverableId]/auto-iterate/apply/route.ts:79-101` | A | idem |
+| 5 | `studio/[deliverableId]/auto-iterate/trigger/route.ts:84-140` | A | ✅ **gefixt 2026-08-16** — blobText valt terug op de accessor; de gate ziet nu de echte woordentelling |
+| 6 | `studio/[deliverableId]/strict-rewrite/apply/route.ts:84-107` | A | ✅ **melding gefixt 2026-08-16** — keten-B krijgt nu een eerlijke uitleg i.p.v. "geen componenten". Écht herschrijven vereist de schrijf-kant van keten B = out of scope |
+| 7 | `studio/[deliverableId]/auto-iterate/apply/route.ts:79-101` | A | ✅ **melding gefixt 2026-08-16** — idem #6 |
 | 8 | `canvas/accordion/Step4Timeline.tsx:100` | A | **gefixt in #174** — migreren naar de accessor |
 | 9 | `campaigns/[id]/canvas/export/route.ts:37-66` | A | **gefixt in #174** — migreren; route is bovendien onbereikbaar (`useExportDeliverables` heeft geen consumers) → overweeg verwijderen i.p.v. migreren |
 
