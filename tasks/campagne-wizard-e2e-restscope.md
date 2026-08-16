@@ -199,7 +199,12 @@ wat er precies misging; dán is er een onderbouwde fix mogelijk in plaats van ee
 Met tijden: briefingvalidatie 12s (score 88), foundation 117s, insights→strategy 87s,
 strategy→final 141s. Vóór #280 was dit een directe 400.
 
-### Waar het nu staat: `review_final_strategy` vraagt TWEE keer Continue
+### ~~Waar het nu staat: `review_final_strategy` vraagt TWEE keer Continue~~ (achterhaald)
+
+> **Achterhaald door wat er daarna kwam.** Deze analyse klopt technisch — Continue betekent in
+> die fase twee dingen — maar het was NIET de blokkade. Dat bleek de ratingpoort: "Approve
+> Concept" doet niets zolang niet elk concept-element beoordeeld is. Hieronder blijft staan als
+> spoor van de redenering, niet als conclusie.
 
 De driver blijft hier hangen, en dat is opnieuw een tekortkoming van de test, niet van
 het product. `ConceptStep.tsx:804-808`:
