@@ -506,13 +506,27 @@ export async function createClaudeStructuredCompletion<T>(
       }
 
       if (useThinking) {
-        // F27 (audit 2026-05-13): Opus 4.7 vereist NIEUWE thinking-API
-        // (type: 'adaptive' + output_config.effort) ipv legacy
-        // (type: 'enabled' + budget_tokens). Voorheen falden Opus calls
-        // silently: 400 error → fallback-provider takeover.
-        // Sonnet 4.6 + 4.5 + Opus 4.5/4.6 ondersteunen nog legacy syntax.
-        const isOpus47Plus = /opus-4-7|opus-4-8|opus-5/.test(model);
-        if (isOpus47Plus) {
+        // Modellen vanaf generatie 4.7 vereisen de NIEUWE thinking-API
+        // (type: 'adaptive' + output_config.effort); ouder gebruikt legacy
+        // (type: 'enabled' + budget_tokens). Verkeerd gekozen = harde 400.
+        //
+        // Dit stond als `/opus-4-7|opus-4-8|opus-5/` — een handmatige namenlijst,
+        // en die miste `claude-sonnet-5`. Gevolg: stap 2 van de campagnewizard
+        // (Strategy Foundation, default sonnet-5) gaf ELKE keer een 400 en de
+        // wizard bleef staan met een Continue-knop die niets deed. Gevonden
+        // 2026-08-16 toen de e2e voor het eerst voorbij de briefing-gate kwam.
+        //
+        // Tweede keer dat deze klasse toeslaat — in mei was het Opus, nu Sonnet.
+        // Daarom nu op GENERATIE i.p.v. op naam: elke nieuwe familie die op 5 (of
+        // hoger) uitkomt valt vanzelf goed, zonder dat iemand deze regel moet
+        // onthouden.
+        const modelGeneration = (() => {
+          const m = /(?:opus|sonnet|haiku)-(\d+)(?:-(\d+))?/.exec(model);
+          if (!m) return null;
+          return Number(m[1]) + (m[2] ? Number(m[2]) / 10 : 0);
+        })();
+        const requiresAdaptiveThinking = modelGeneration !== null && modelGeneration >= 4.7;
+        if (requiresAdaptiveThinking) {
           // Adaptive thinking met effort-level afgeleid van budget-tokens.
           // <4000 = low, 4000-8000 = medium, >8000 = high.
           const budget = options!.thinking!.budgetTokens;

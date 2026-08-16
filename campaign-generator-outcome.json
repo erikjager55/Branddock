@@ -1,0 +1,31 @@
+{
+  "totalElapsedMs": 367297,
+  "finalNote": "gestopt op stap 3",
+  "stepsCompleted": 3,
+  "steps": [
+    {
+      "index": 1,
+      "stepperText": "1 Setup 2 Knowledge 3 Strategy 4 Concept 5 Deliverables 6 Review",
+      "continueEnabled": true,
+      "advanced": true,
+      "elapsedMs": 8,
+      "note": "doorgestoken naar volgende stap"
+    },
+    {
+      "index": 2,
+      "stepperText": "Setup 2 Knowledge 3 Strategy 4 Concept 5 Deliverables 6 Review Max 5 drafts per user. Archive or launch one before creating a new draft.",
+      "continueEnabled": true,
+      "advanced": true,
+      "elapsedMs": 11,
+      "note": "doorgestoken naar volgende stap"
+    },
+    {
+      "index": 3,
+      "stepperText": "Setup Knowledge 3 Strategy 4 Concept 5 Deliverables 6 Review Max 5 drafts per user. Archive or launch one before creating a new draft.",
+      "continueEnabled": false,
+      "advanced": false,
+      "elapsedMs": 361668,
+      "note": "Continue bleef disabled, geen briefing-review zichtbaar. Scherm: Branddock Agency Napking E2E Dashboard Campaigns Quick Content Brand Assistant Search ⌘ + K Show Help ? WORKSPACE Overview CREATE Campaigns Content Agents KNOWLEDGE Brand Foundation Brandstyle Brand V"
+    }
+  ]
+}

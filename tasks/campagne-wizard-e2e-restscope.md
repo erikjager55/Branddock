@@ -132,13 +132,74 @@ met alle velden kort-maar-concreet (case 3) haalt 75-78 en gaat niet door; een e
 briefing haalt 85+. De klacht "de gate is te streng" kwam voort uit een kapotte meting, niet uit
 een verkeerde drempel.
 
+## Stap 3 — e2e voorbij de gate: één productiebug gevonden, één open (2026-08-16)
+
+De bestaande `campaign-generator.spec.ts` bleek al een volwaardige driver. Hij hoefde niet
+herschreven — alleen zijn briefing moest naar het niveau dat stabiel boven de 80 landt (zie
+kalibratie hierboven). Dat lukte: **score 85, gate gepasseerd**, voor het eerst.
+
+### 🐛 Productiebug: stap 4 van de wizard was volledig stuk
+
+Direct achter de gate:
+
+    Phase 2 (Strategy Foundation) failed: 400
+    "thinking.type.enabled" is not supported for this model.
+    Use "thinking.type.adaptive" and "output_config.effort"
+
+Elke poging om de strategie-foundation te bouwen gaf een harde 400. In de UI zag dat eruit als
+een Continue-knop die klikbaar is maar niets doet — geen foutmelding, geen voortgang.
+
+**Oorzaak**: `ai-caller.ts` koos de thinking-API op een handmatige namenlijst
+(`/opus-4-7|opus-4-8|opus-5/`). De strategy-chain draait op `claude-sonnet-5` en matchte niet.
+Er stond zelfs een comment bij uit mei 2026 over precies deze klasse ("Voorheen falden Opus
+calls silently") — tweede keer, andere familie.
+
+**Fix**: detectie op **generatie** i.p.v. op naam (≥ 4.7 → adaptive). Geverifieerd tegen de
+acht modelnamen die in de codebase voorkomen; het gedrag komt exact overeen met wat de comment
+beschreef, maar een nieuwe familie op generatie 5 valt nu vanzelf goed.
+
+**Waarom dit nooit eerder opviel**: de briefing-gate blokkeerde op stap 3, dus stap 4 werd nooit
+bereikt. De sweep noteerde "correct productgedrag, geen storing" en de taak ging op `done`.
+Achter die gate zat een dode stap. Exact het patroon uit de gotcha van diezelfde dag: een dode
+feature verbergt zijn eigen gaten.
+
+### ⚠️ Nog open: fase 1 produceert soms onparseerbare JSON
+
+In 1 van de 4 runs faalde de briefing-validatie zelf:
+
+    [validate-briefing] Failed to parse Gemini response as JSON:
+    Expected ',' or ']' after array element at position 1643
+
+Positie 1643 is vroeg — dit is dus geen afkapping (die was het `maxTokens`-probleem hierboven,
+en dat is gefixt) maar **malformed JSON midden in een array**. Andere oorzaak, zelfde gevolg:
+de gebruiker ziet geen score maar een fout, en de wizard blijft staan.
+
+Niet blind gerepareerd. Wat hier hoort te gebeuren is eerst vaststellen wát het model
+uitpoept (de ruwe respons loggen bij een parse-fout), niet een retry eromheen bouwen die het
+symptoom verbergt.
+
+### Stand van de vier stappen
+
+| stap | status |
+|---|---|
+| 4 Concept / Foundation | 🐛 was volledig stuk (400) — gefixt, herverificatie nodig |
+| 5 Deliverables | nog niet bereikt |
+| 6 Review | nog niet bereikt |
+| 7 Afronding | nog niet bereikt |
+
+**De e2e is nu bruikbaar maar niet betrouwbaar**: 4 runs gaven 4 verschillende uitkomsten,
+telkens door een andere oorzaak (gate 68 → gate 78 → door met 85 → fase-1-parsefout). Elke run
+kost ~6 minuten met echte AI-calls. De resterende stappen afdekken vraagt eerst dat fase 1
+betrouwbaar is; anders meet je de flakiness, niet de wizard.
+
 # Acceptatiecriteria
 
 - [x] Scoreverdeling van 7 briefings vastgelegd (2 runs vóór, 2 ná de fixes)
 - [x] Onderbouwd besluit: **scoring bijgesteld, drempel gelaten** — zie meetresultaat
-- [ ] E2E dekt foundation, concept, deliverables en review — elk met vastgelegde uitkomst
-- [ ] De e2e komt langs de gate op een briefing die een mens realistisch zou indienen, niet op
-      een kunstmatig opgepompte
+- [~] E2E komt voorbij de gate en bereikte stap 4 (daar zat een 400-bug, nu gefixt).
+      Stap 5-7 nog niet bereikt — geblokkeerd op de fase-1-parsefout hierboven
+- [x] De e2e komt langs de gate op een realistische (zij het bewust overcomplete) briefing —
+      score 85, zonder de gate te omzeilen
 - [ ] `/api/campaigns/wizard/deliverable-types` + `useDeliverableTypes()`: verwijderd óf
       gedocumenteerd waarom ze blijven
 - [ ] `npx tsc --noEmit` 0 errors · `eslint` 0 errors
