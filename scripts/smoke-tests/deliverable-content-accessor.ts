@@ -16,6 +16,7 @@ import {
   resolveDeliverableContent,
   type DeliverableLike,
 } from '../../src/lib/content/resolve-deliverable-content';
+import { flattenPuckData } from '../../src/lib/content/puck-data-text';
 import {
   countVariantOptions,
   readChosenVariant,
@@ -274,6 +275,42 @@ console.log('\n## 9. settings-parser los');
   assert('readChosenVariant: string → null', readChosenVariant({ structuredVariant: 'x' } as never) === null);
   assert('countVariantOptions: telt alleen objecten',
     countVariantOptions({ structuredVariantOptions: [{}, null, 'x', {}] } as never) === 2);
+}
+
+console.log('\n## 10. puckData-tekst — het anti-spam-fundament onder kruising #18');
+
+{
+  const page = (headline: string, body: string, heroUrl: string, align: string) => ({
+    content: [
+      { type: 'BrandHero', props: { id: 'hero-1', headline, heroVisualUrl: heroUrl, align } },
+      { type: 'TextBlock', props: { id: 'txt-1', body, style: 'compact' } },
+    ],
+    root: { props: { title: 'Landing Page' } },
+  });
+
+  const base = flattenPuckData(page('Hout dat 50 jaar meegaat', 'Onze vuurmeesters werken met FSC-hout.', 'https://cdn/a.jpg', 'left'));
+
+  // Alleen layout/hero verzet — dít is wat een autosave-tick typisch doet.
+  const layoutOnly = flattenPuckData(page('Hout dat 50 jaar meegaat', 'Onze vuurmeesters werken met FSC-hout.', 'https://cdn/ANDERS.jpg', 'center'));
+  assert('layout/hero-wijziging geeft IDENTIEKE tekst (geen event)', base === layoutOnly);
+
+  // Echte tekstwijziging.
+  const textChanged = flattenPuckData(page('Hout dat 60 jaar meegaat', 'Onze vuurmeesters werken met FSC-hout.', 'https://cdn/a.jpg', 'left'));
+  assert('tekstwijziging geeft WEL een andere tekst', base !== textChanged);
+
+  // Herordende sleutels mogen geen valse edit opleveren.
+  const reordered = flattenPuckData({
+    root: { props: { title: 'Landing Page' } },
+    content: [
+      { props: { align: 'left', headline: 'Hout dat 50 jaar meegaat', heroVisualUrl: 'https://cdn/a.jpg', id: 'hero-1' }, type: 'BrandHero' },
+      { props: { body: 'Onze vuurmeesters werken met FSC-hout.', id: 'txt-1', style: 'compact' }, type: 'TextBlock' },
+    ],
+  });
+  assert('herordende sleutels geven identieke tekst', base === reordered);
+
+  assert('technische waarden tellen niet mee', !base.includes('https://') && !base.includes('hero-1'));
+  assert('echte copy telt wel mee', base.includes('Hout dat 50 jaar meegaat'));
+  assert('lege boom → lege string', flattenPuckData(null) === '' && flattenPuckData(undefined) === '');
 }
 
 console.log(`\n${'='.repeat(56)}`);

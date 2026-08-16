@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { getDeliverableText } from '@/lib/content/resolve-deliverable-content';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { sendTransactional } from '@/lib/email/transactional';
 import { isEmailitConfigured } from '@/lib/email/emailit-client';
@@ -90,8 +91,13 @@ export async function POST(
         { status: 409 },
       );
     }
-    // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#21) — onbereikbaar pad, gated op contentType.includes("email")
-    if (!deliverable.generatedText?.trim()) {
+    // Alle drie de ketens. Dit pad is in de praktijk onbereikbaar (gated op
+    // contentType.includes('email'), en e-mail-types gebruiken keten A), maar een
+    // verzendroute die "geen content" zegt over een volle deliverable is precies de
+    // klasse fout die deze task uitroeit — dus consistent meegenomen
+    // (content-chain-accessor, kruising #21).
+    const deliverableText = getDeliverableText(deliverable);
+    if (!deliverableText) {
       return NextResponse.json(
         { error: 'Deliverable has no generated content to send' },
         { status: 409 },
@@ -122,8 +128,11 @@ export async function POST(
     }
 
     const subject = parsed.data.subject ?? deliverable.title;
-    // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#21) — idem, meegenomen voor volledigheid
-    const htmlBody = deliverable.generatedText;
+    // Uit dezelfde bron als de guard hierboven. Zou dit `generatedText` blijven terwijl de
+    // guard alle drie de ketens accepteert, dan liet de guard een deliverable door en
+    // verstuurde de route vervolgens een LEGE mail — precies het gat dat de guard moest
+    // dichten, verplaatst naar één regel lager.
+    const htmlBody = deliverableText;
 
     // Create the send record upfront so the UI has something to poll.
     const campaignSend = await prisma.campaignSend.create({
