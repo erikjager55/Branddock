@@ -29,6 +29,9 @@ worktree: branddock-feat-brandstyle-typography
 **Follow-up fix (2026-06-05, na browser-review):** Type-Scale- en In-Context-secties renderden dezelfde heading verschillend — **font-familie was identiek** (beide via `getFontForLevel`), maar **font-weight divergeerde** bij lege scrape: Type Scale `row.weight || 'inherit'` (→400) vs In Context `h1?.weight || 700` (→bold). Napking heeft alle weights NULL → kop regular in Type Scale, bold in In Context. Opgelost met gedeelde pure helper `weightForLevel(level, scrapedWeight)` in `typography-display.ts` (H1→700, H2-H6→600, body→normaal, scraped wint) — beide secties gebruiken 'm nu. Sizes verschillen blijven bewust (In Context = genormaliseerde mock). 6 unit-tests in phase45-font-loading. tsc/eslint 0.
 
 **Nog te doen (handmatig — bewust niet autonoom gedaan):**
+
+> **2026-08-16**: deze handmatige restjes zijn nooit gedraaid. Meegenomen in
+> [`deferred-browser-smokes-unblocked`](../deferred-browser-smokes-unblocked.md).
 - [ ] `npx tsx scripts/rescrape-linfi.ts` als positieve fidelity-cross-check (optioneel; phase45-font-loading dekt het GOOGLE_FONTS-pad al).
 - [ ] Browser-smoke Typography-tab (checklist F4 stap 13) + before/after-screenshots.
 - [ ] `task-finalize` (2-subagent review + changelog + commit) — user-getriggerd.

@@ -28,6 +28,11 @@ Eén batch van 4 browser-smokes, achter elkaar uitvoerbaar in ~1-2u op een gewar
 
 - [x] **Δ-1 Surface C** — getest 2026-05-12: paste-flow score 12 (2 findings: state-of-the-art / innovatieve), URL-flow Philips score 59 (16 findings, 5 Voice + 6 Terminology + 5 Claims, run 13.6s), Coolblue 403 graceful, severity+category filters werken. F-VAL rules-audit stem-variants + brand-language auto-detect + locale-resolver allemaal end-to-end gevalideerd.
 - [x] **claw-page-awareness vervolg** — getest 2026-05-12 door user, alle 5 sub-stappen werken (Step1Context fill / Persona behaviors fill 1-PATCH / BrandAsset proofPoints / Canvas Step 4 review-content geen regressie / null-coercion edge-case)
+> **2026-08-16 — de blocker onder de twee ⏸️-items bestaat niet meer.** Beide wachtten op
+> `vercel-deployment` voor publiek bereikbare storage-URL's; dat is sinds 2026-07-05 live en R2
+> draait met `R2_PUBLIC_URL`. Ze zijn nooit alsnog gedraaid. Opgepakt in
+> [`deferred-browser-smokes-unblocked`](../deferred-browser-smokes-unblocked.md).
+
 - [⏸️] **Visual Brief Compose** — **deferred to post-vercel-deployment** (2026-05-12): localhost storage URLs (`/uploads/media/...`) zijn niet publiek bereikbaar voor FAL/Gemini compose-pipeline. Smoke vereist Vercel Blob / S3 / Cloudinary publieke URLs (Track C `vercel-deployment` levert die). Bovendien: pipeline-migratie naar Gemini Image (nano-banana) gepland in sprint #5 (`compose-pipeline-gemini-migration`) — smoke runt dáárna met betere quality dan huidige FAL Flux Pro Kontext.
 - [⏸️] **Visual Brief Trained-Style** — **deferred to post-vercel-deployment** (2026-05-12): zelfde storage blocker als Compose. FAL trained-LoRA model heeft publieke source-URLs nodig.
 - [x] **Locale-picker UI** — getest 2026-05-12 (eerder vandaag tijdens implementatie): dropdown wisselt, "Currently active" pill refresht na Save, auto-detected zichtbaar
