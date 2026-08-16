@@ -206,6 +206,7 @@ export async function GET(request: NextRequest) {
     const rawItems = deliverables.map((d) => {
       // Determine publish readiness
       const hasContent =
+        // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 2 (#2) — stoplicht + "No content generated"; wacht op productbesluit structured-unchosen
         d.generatedText != null ||
         (Array.isArray(d.generatedImageUrls) && d.generatedImageUrls.length > 0) ||
         d.generatedVideoUrl != null;
@@ -243,6 +244,7 @@ export async function GET(request: NextRequest) {
         campaignName: d.campaign.title,
         campaignType: d.campaign.type as "STRATEGIC" | "QUICK",
         isFavorite: d.isFavorite,
+        // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 2 (#2) — idem, readiness-filter
         wordCount: computeWordCount(d.generatedText),
         updatedAt: d.updatedAt.toISOString(),
         // Calendar view date fields

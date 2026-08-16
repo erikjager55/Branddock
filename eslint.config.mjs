@@ -182,6 +182,66 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // ─────────────────────────────────────────────────────────────
+  // Content-keten-guard — lees deliverable-content via de accessor.
+  //
+  // Content woont op drie plekken (component-keten, `settings.structuredVariant`,
+  // legacy `generatedText`). Wie er één rechtstreeks leest, mist de andere twee:
+  // dat leverde in acht weken vier keer dezelfde bug op — een volle pagina die
+  // zich als leeg voordoet. Lezen gaat via `resolveDeliverableContent()` uit
+  // @/lib/content/resolve-deliverable-content.
+  //
+  // ⚠️ SCOPE IS BEWUST `src/lib/**` + `src/app/api/**` EN GEEN `src/**`.
+  // Flat-config doet last-wins per rule-key, en `no-restricted-syntax` is
+  // hierboven al twee keer in gebruik (NL-denylist op components/features/app-tsx,
+  // i18n-guard op een allowlist). Een blok dat die paden óók raakt zou die guards
+  // stil uitschakelen — precies de val die het `no-restricted-properties`-commentaar
+  // hierboven beschrijft. `src/app/api/**\/*.ts` overlapt niet met `src/app/**\/*.tsx`,
+  // en `src/lib/**` komt in geen van beide voor. Verbreed dit dus niet zonder de
+  // andere twee guards expliciet mee te nemen.
+  //
+  // Gevolg van die scope: de twee .tsx-call-sites (Step4Timeline, FeedbackBar)
+  // zijn niet lint-gedekt. Beide staan in de fase-2-lijst van
+  // tasks/content-chain-accessor.md en worden daar met de hand gemigreerd.
+  //
+  // `puckData` staat bewust NIET in de lijst: 77 vindplaatsen, vrijwel allemaal
+  // legitiem render-werk in het landing-pages-domein. Het is een render-artefact,
+  // geen tekstbron.
+  {
+    files: ["src/lib/**/*.ts", "src/app/api/**/*.ts"],
+    ignores: [
+      // De accessor zelf.
+      "src/lib/content/resolve-deliverable-content.ts",
+      "src/lib/content/deliverable-settings.ts",
+
+      // Schrijf- en render-paden: het landing-pages-domein bezit keten B.
+      "src/lib/landing-pages/**",
+      "src/app/api/landing-pages/**",
+      // Schrijver: patcht de hero-URL IN de variant. Een leesaccessor helpt hier
+      // niet — dit pad muteert bewust de opslag.
+      "src/lib/deliverable/patch-hero-visual.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "MemberExpression[property.name='structuredVariant']",
+          message:
+            "Raw access to settings.structuredVariant. Read content through resolveDeliverableContent() from @/lib/content/resolve-deliverable-content — it handles all three content chains (tasks/content-chain-accessor.md).",
+        },
+        {
+          selector: "MemberExpression[property.name='structuredVariantOptions']",
+          message:
+            "Raw access to settings.structuredVariantOptions. Use resolveDeliverableContent() — the 'structured-unchosen' kind tells you content exists but no variant was picked.",
+        },
+        {
+          selector: "MemberExpression[property.name='generatedText']",
+          message:
+            "Raw access to the legacy generatedText chain. Use resolveDeliverableContent() — it falls back to generatedText only when the other two chains are empty.",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

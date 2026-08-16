@@ -52,6 +52,7 @@ export async function GET(
     const currentSettings = (deliverable.settings as Record<string, unknown>) ?? {};
     const alreadyInherited = !!currentSettings.inheritedFrom;
     const hasGeneratedContent =
+      // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#17) — hasGeneratedContent false op een volle pagina
       !!deliverable.generatedText ||
       !!deliverable.generatedVideoUrl ||
       (Array.isArray(deliverable.generatedImageUrls) && deliverable.generatedImageUrls.length > 0);

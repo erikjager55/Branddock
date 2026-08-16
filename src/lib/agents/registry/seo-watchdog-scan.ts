@@ -168,6 +168,7 @@ export const scanPublishedGeoContentTool: BrandclawTool = {
           skipped += 1;
           continue;
         }
+        // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 2 (#22, nieuw) — Iris leest de variant rauw; accessor levert hem via kind "structured"
         const parsedVariant = longFormGeoVariantSchema.safeParse(settings.structuredVariant);
         if (!parsedVariant.success) {
           // Analyse aanwezig maar de canonieke contentbron is gedrift —

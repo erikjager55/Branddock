@@ -90,6 +90,7 @@ export async function POST(
         { status: 409 },
       );
     }
+    // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#21) — onbereikbaar pad, gated op contentType.includes("email")
     if (!deliverable.generatedText?.trim()) {
       return NextResponse.json(
         { error: 'Deliverable has no generated content to send' },
@@ -121,6 +122,7 @@ export async function POST(
     }
 
     const subject = parsed.data.subject ?? deliverable.title;
+    // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#21) — idem, meegenomen voor volledigheid
     const htmlBody = deliverable.generatedText;
 
     // Create the send record upfront so the UI has something to poll.

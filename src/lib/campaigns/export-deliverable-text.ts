@@ -48,6 +48,7 @@ export function buildDeliverableBody(d: ExportableDeliverable): string {
   if (componentText.length > 0) return componentText.join('\n');
 
   const settings = asRecord(d.settings);
+  // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 2 — deze proto-accessor gaat op in resolveDeliverableContent()
   const chosen = settings.structuredVariant as PageVariantContent | undefined;
   if (chosen) {
     // flattenPageVariantToText gaat uit van een schema-complete variant en itereert
@@ -68,6 +69,7 @@ export function buildDeliverableBody(d: ExportableDeliverable): string {
     return '(A variant is chosen but could not be rendered as text — open it in the Canvas.)\n';
   }
 
+  // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 2 — idem
   const options = settings.structuredVariantOptions;
   if (Array.isArray(options) && options.length > 0) {
     // Content bestaat wél, maar de gebruiker koos nog geen variant. Niet gokken welke
