@@ -4,8 +4,6 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
-import { flattenPageVariantToText } from '@/lib/landing-pages/flatten-variant';
-import type { PageVariantContent } from '@/lib/landing-pages/page-type-schemas';
 import { useClawStore } from '@/stores/useClawStore';
 import { campaignKeys, contentLibraryKeys } from '../../../hooks';
 import { resolvePreviewComponent } from '../previews/preview-map';
@@ -26,6 +24,7 @@ import { GeoOptimizationPanel } from '../GeoOptimizationPanel';
 import { WebPagePublishPanel } from '../WebPagePublishPanel';
 import { VersionHistorySidebar } from '../VersionHistorySidebar';
 import type { PreviewContent } from '../../../types/canvas.types';
+import { resolveDeliverableContent } from '@/lib/content/resolve-deliverable-content';
 import {
   Calendar,
   Clock,
@@ -118,21 +117,13 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
       .map((v) => v.content)
       .join('\n\n');
     if (componentText.trim().length > 0) return componentText;
-    if (!structuredVariant) return '';
-    // De store houdt dit bewust op `unknown` (generatie-snapshot uit
-    // settings.structuredVariant). flattenPageVariantToText itereert rechtstreeks over
-    // arrays (tldr/sections/citeableStats/qa) en gooit op een half-complete opgeslagen
-    // variant — vandaar de cast mét try/catch i.p.v. een blind vertrouwen op de vorm
-    // (gotcha 2026-03-24: een opgeslagen AI-payload garandeert zijn schema niet). Een
-    // export-knop mag hier niet op stukvallen.
-    try {
-      return flattenPageVariantToText(structuredVariant as PageVariantContent);
-    } catch (err) {
-      console.warn('[canvas-export] flatten van structuredVariant faalde', {
-        message: err instanceof Error ? err.message : String(err),
-      });
-      return '';
-    }
+    // Keten B via de gedeelde accessor (content-chain-accessor fase 2). Die vangt de
+    // half-complete opgeslagen variant af — `flattenPageVariantToText` itereert
+    // rechtstreeks over arrays en gooit daarop (gotcha 2026-03-24: een opgeslagen
+    // AI-payload garandeert zijn schema niet). De cast + try/catch die hier stond was een
+    // tweede kopie van diezelfde regel; twee kopieën lopen gegarandeerd uit elkaar.
+    const resolved = resolveDeliverableContent({ settings: { structuredVariant } });
+    return resolved.kind === 'structured' ? resolved.text : '';
   }, [previewContent, structuredVariant]);
 
   // 2026-05-20 — contentType (already destructured above) used as a
