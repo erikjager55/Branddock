@@ -49,7 +49,7 @@ taken-spiegel daarvan + de twee nieuwe items uit deze sessie.
 ## E. Nieuw uit deze sessie
 - [ ] **"Connected apps"-paneel verifiëren** — Settings → API & Connectors op prod: koppelingen zichtbaar + "Revoke" werkt (OAuth-intrek ging vandaag live, PR #250)
 - [ ] **Emailit event-parser** — `data.object`-veldnamen bevestigen zodra een echte bounce/complaint-delivery binnenkomt, dan hardharden
-- [ ] **Offline workspaces → prod** — zie aparte task `tasks/workspaces-online-migratie.md` (9 rijk-gevulde lokaal-only workspaces geïdentificeerd; Erik kiest de set)
+- [x] **Offline workspaces → prod** — ✅ 8 gemigreerd + geverifieerd op prod 2026-07-23 (Linfi, DTS Ede, Zwarthout, Napking, Goed-Bouw, PartnerSelect, Het Nieuwe Golfen, WRA Juristen; commit #453). Rest (Eriks keuze, later): People Masterminds, QonnecQt.ai, Lookaal, Wassink Groep. ⚠️ Erik: prod-DB-wachtwoord roteren (URL stond even lokaal). Linfi mist 18 cosmetische styleguide-previews.
 
 # Acceptatiecriteria
 

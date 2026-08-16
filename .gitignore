@@ -65,3 +65,8 @@ scripts/dev/.backup-lp-fidelity-baseline-*.json
 
 # Browser-smoke screenshots (artefacten, niet voor git)
 test-screenshots/
+
+# Branddocks eigen branddoc — bewust buiten git (besluit 2026-08-16): een
+# 2,3 MB PDF die per versie ververst hoort niet permanent in de historie.
+# Klant-branddocs in docs/ (WRA, DTS Ede) blijven wél tracked.
+docs/Branddock branddoc*.pdf
