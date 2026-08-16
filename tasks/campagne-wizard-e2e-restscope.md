@@ -225,6 +225,28 @@ data-attribuut op de wizard-root, zodat de positie `4:review_final_strategy:elab
 wordt en de driver de overgang wél ziet. Daarna is de weg naar Deliverables en Review
 vrij — dat is dan naar verwachting het laatste stuk.
 
+### ⚠️ Openstaande productvraag: leeg assetplan bij "Approve Concept"
+
+`handleApprove` bouwt de blueprint met `elaborateResult?.assetPlan ?? { deliverables: [] }`.
+In de gemeten runs blijft `elaborateResult` NULL — de elaboratie draait nooit in dit pad.
+
+Gevolg voor de gebruiker: wie op de grote groene **"Approve Concept"** klikt krijgt een
+campagne **zonder AI-aanbevolen deliverables**. De autoselectie op stap 5 heeft niets om
+te selecteren, Continue blijft disabled, en de gebruiker moet zelf uit de catalogus kiezen
+zonder te weten dat de AI iets had kunnen aanraden.
+
+Het comment boven `handleApprove` belooft het tegenovergestelde:
+*"Campaign mode: approve directly — elaborate is done inline by handleApprove."* Dat doet
+hij niet. Code en comment spreken elkaar tegen.
+
+**Twee richtingen, dit is een productkeuze:**
+1. `handleApprove` laat elaboreren wanneer `elaborateResult` ontbreekt (comment wordt waar);
+2. of de stille terugval naar een leeg assetplan vervangen door iets zichtbaars, zodat de
+   gebruiker weet dat er geen aanbevelingen zijn.
+
+De e2e kiest nu zelf een deliverable om verder te komen, met een comment dat dit een
+omweg is en geen normaal gedrag.
+
 ### 🐛 Productiebug 2: `handleElaborate` viel stil terug — een half afgemaakte fix
 
 Bij `review_final_strategy` staan TWEE knoppen die allebei "verder" suggereren: de
@@ -262,9 +284,17 @@ is nu een apart logveld; de volgende run zegt het wel.
 | stap | status |
 |---|---|
 | 4 Concept / Foundation | ✅ **draait volledig** — alle fasen doorlopen, gemeten |
-| 5 Deliverables | ✅ **BEREIKT** (2026-08-16) — Continue blijft daar 6 min disabled; volgende horde |
-| 6 Review | nog niet bereikt |
-| 7 Afronding | nog niet bereikt |
+| 5 Deliverables | ✅ **gedekt** — vereist ≥1 selectie |
+| 6 Review | ✅ **gedekt** |
+| 7 Afronding | ✅ **gedekt** — campagne op `ACTIVE` met 1 deliverable in de DB |
+
+**De vier ongeteste stappen zijn daarmee alle vier afgedekt.** Volledig traject:
+
+    1:idle → 2:idle → 3:idle → 3:building_foundation → 4:mining_insights
+    → 4:building_strategy → 4:complete → 5:complete → 6:complete → 1:idle (reset)
+
+Geverifieerd aan de DATA, niet aan het scherm: `Campaign.status = ACTIVE` met één
+deliverable. Runtime 11,8 min.
 
 ### Hoe stap 5 bereikt werd — en wat de wizard onderweg eist
 

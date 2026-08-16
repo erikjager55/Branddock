@@ -54,6 +54,8 @@ interface StepLog {
   action?: 'approve-concept' | 'continue';
   /** True wanneer de driver eerst alle concept-elementen als goedgekeurd markeerde. */
   ratedAll?: boolean;
+  /** True wanneer de driver zelf een deliverable moest kiezen (geen AI-aanbeveling). */
+  pickedDeliverable?: boolean;
   /** `stap:fase` vóór en ná de klik — de echte voortgangsmeter. */
   positionBefore?: string;
   positionAfter?: string;
@@ -184,11 +186,29 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
 
     for (let i = 1; i <= MAX_STEPS; i++) {
       const stepStart = Date.now();
+      let log0PickedDeliverable = false;
       const stepperText = (await page.getByTestId('wizard-stepper').innerText().catch(() => '')) ?? '';
       // De echte positie: stap-nummer + strategyPhase. Het stepper-LABEL blijft binnen
       // de Concept-stap acht fasen lang onveranderd, dus daarop meten zou echt werk als
       // stilstand lezen (2026-08-16).
       const positionBefore = await readPosition(page);
+
+      // Stap 5 laat Continue pas toe bij >= 1 geselecteerde deliverable
+      // (DELIVERABLES_STEP.canProceed). Normaal preselecteert de wizard de
+      // AI-aanbevelingen uit het assetplan, maar dat plan is leeg zolang
+      // `elaborateResult` null is — zie de productbevinding in het task-file. De driver
+      // kiest er daarom zelf één.
+      //
+      // MOET vóór de wacht-op-Continue: die wacht faalt juist omdát er niets geselecteerd
+      // is, en de code erna wordt dan nooit bereikt.
+      const deliverableCard = page.locator('[data-testid^="deliverable-card-"]').first();
+      if (await deliverableCard.isVisible().catch(() => false)) {
+        if (await continueBtn.isDisabled().catch(() => false)) {
+          await deliverableCard.click();
+          await page.waitForTimeout(1_000);
+          log0PickedDeliverable = true;
+        }
+      }
 
       // Wacht tot Continue klikbaar wordt — hier zit de AI-tijd én de gate.
       const enabled = await continueBtn
@@ -205,6 +225,7 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
 
       const log: StepLog = {
         index: i,
+        pickedDeliverable: log0PickedDeliverable || undefined,
         stepperText: stepperText.replace(/\s+/g, ' ').trim().slice(0, 200),
         continueEnabled: enabled,
         advanced: false,
@@ -285,8 +306,17 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
         log.ratedAll = true;
       }
 
+      // Bij `review_final_strategy` is de volgorde belangrijk. "Approve Concept" bouwt de
+      // blueprint met `elaborateResult?.assetPlan ?? {leeg}` — klik je hem vóór de
+      // elaboratie, dan krijgt stap 5 nul aanbevelingen, selecteert de autoselectie niets
+      // en blijft Continue daar disabled. Continue draait eerst `handleElaborate`.
+      // Daarom: zolang `data-elaborated=false` in die fase → Continue; daarna pas Approve.
+      const needsElaborateFirst =
+        positionBefore.startsWith('4:review_final_strategy') && positionBefore.endsWith(':false');
+
       const approveBtn = page.getByTestId('approve-concept');
-      const usedPrimary = await approveBtn.isVisible().catch(() => false);
+      const usedPrimary =
+        !needsElaborateFirst && (await approveBtn.isVisible().catch(() => false));
       log.action = usedPrimary ? 'approve-concept' : 'continue';
       if (usedPrimary) {
         await approveBtn.click();
@@ -349,6 +379,16 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
         }
       }
       steps.push(log);
+
+      // Terug op stap 1 nadat we verder waren = de wizard is afgerond en heeft zichzelf
+      // gereset voor een volgende campagne. Zonder deze detectie begint de driver
+      // vrolijk aan een nieuwe wizard en rapporteert hij die tweede briefing-gate als
+      // "vastgelopen" — een succes dat zich als mislukking voordoet.
+      const posNow = await readPosition(page);
+      if (posNow.startsWith('1:') && !positionBefore.startsWith('1:') && i > 2) {
+        finalNote = `wizard afgerond na stap ${i} — terug op stap 1 (reset voor een nieuwe campagne)`;
+        break;
+      }
 
       // Wizard verdwenen betekent NIET automatisch "afgerond". Bij een test-timeout
       // breekt Playwright de pagina af en verdwijnt het element ook — die run werd
