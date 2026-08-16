@@ -36,6 +36,16 @@ lockfile-sync. **HNG is af** — de prod-import is gedraaid en de kennisbronnen 
 geüpload. `docs/Branddock branddoc v3.pdf` blijft bewust buiten git (gitignore-regel
 op `Branddock branddoc*.pdf`; klant-branddocs blijven wél tracked).
 
+**De content-keten heeft één deur gekregen** (#270-#276, zeven PR's). Content woonde op
+drie plekken en het type-systeem wees consumenten naar de verkeerde; dat leverde in acht
+weken vier keer dezelfde bug op. `resolveDeliverableContent()` handelt dat verschil nu één
+keer af, en 21 van de 23 kruisingen zijn omgezet. Geverifieerd op je échte data, niet op
+fixtures: **13 opgeslagen pagina's die 0 woorden opleverden geven er nu 497-1306**, en de
+accessor gooide op geen enkele rij. Onderweg bleek de **ZIP-export voor élk content-type
+leeg** (een geneste API-response die nooit werd uitgepakt), en zou een `derive` van een
+web-page de tekst van de bronpagina hebben overgenomen. Twee kruisingen wachten op jouw
+productkeuze; #12 bleek dode code.
+
 **De golden-set-gate is gesplitst** (#267) — en de "flake" bleek een stabiele
 bevinding. Twee dingen klopten niet aan het oude beeld. Het diagnose-pad was
 onuitvoerbaar: het artefact `golden-set-results-<sha>` heeft nooit bestaan, want
@@ -79,11 +89,11 @@ Naar voren gehaald omdat ze als enige tijdgevoelig zijn en met de dag duurder wo
 `PageEvent` groeit onbegrensd en `FormSubmission` bevat PII zonder wisroutine. Dat is
 geen feature-werk maar een schuld die zichzelf oplaadt.
 
-**3. 🧩 [`content-chain-accessor`](tasks/content-chain-accessor.md) fase 1.** Content woont
-op drie plekken; 21 kruisingen in kaart, ADR ligt er. Fase 1 raakt geen consument en is
-veilig te mergen. Deze sessie liep er nog live tegenaan: `product-page` leek mislukt omdat
-de componentketen leeg was terwijl de content in `settings.structuredVariantOptions` stond.
-⚠️ Fase 2 wacht op twee productbeslissingen (zie Open beslissingen).
+**3. 🧩 [`content-chain-accessor`](tasks/content-chain-accessor.md) — de laatste twee
+kruisingen.** Fase 1 en 3 zijn af, fase 2 op #2 en #3 na. Die twee vragen géén techniek maar
+een productkeuze van jou: wat toont het Content Library-stoplicht, en wat zegt de Brand
+Assistant, bij `structured-unchosen`? Zie Open beslissingen #1. Zodra je kiest is het een
+halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
 
 ---
 
@@ -110,7 +120,7 @@ de componentketen leeg was terwijl de content in `settings.structuredVariantOpti
 | Taak | Staat |
 |---|---|
 | [`brand-md-open-standaard`](tasks/brand-md-open-standaard.md) | in-progress — funnel live; rest is upstream-PR's + jouw strategie-akkoord |
-| [`content-chain-accessor`](tasks/content-chain-accessor.md) | open — fase 1 veilig, fase 2 geblokkeerd |
+| [`content-chain-accessor`](tasks/content-chain-accessor.md) | in-progress — fase 1 ✅ + fase 3 ✅; alleen kruisingen #2/#3 open (jouw productkeuze) |
 | [`lp-image-routes`](tasks/lp-image-routes.md) | review — wacht op één prod-smoke door jou |
 | [`seo-pipeline-speedup`](tasks/seo-pipeline-speedup.md) | open — fase 4a deed 12→7,5 min |
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
