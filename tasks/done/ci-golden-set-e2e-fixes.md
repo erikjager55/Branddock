@@ -43,6 +43,26 @@ een échte regressie niet in de ruis van permanent-rode checks verdwijnt.
 - [x] `e2e` groen + `onboarding.skipTour` vertaald.
 - [x] Beide gates groen vóór go-live.
 
+## Naschrift 2026-08-16 — de "NB" hierboven is uitgekomen
+
+Deze taak ging op `done` met de eigen waarschuwing *"70% is de rand — nightly kan flappen;
+structurele volgende stap is de v2 (orchestrator-wrapped prompts)"*. Die v2 is nooit gekomen,
+en de flap werd structureel: **6 failures op 14 nachten (43%)**, gemeten 2026-08-16.
+
+Twee correcties op wat hierboven staat:
+
+- **"De 3 resterende fails zijn llm-rubric-borderline-cases (judge-variantie)" klopt niet.**
+  Log-analyse over vijf nachten laat zien dat steeds dezelfde cases zakken — één 5/5, drie 4/5.
+  Dat is geen variantie maar een stabiele bevinding.
+- **De kalibratie op exact 7/10 = 70% was de fout.** Een gate op precies de gemeten waarde is
+  per constructie een muntworp. Niet de drempel had bijgesteld moeten worden, maar de vraag
+  waaróm die cases zakken.
+
+Opgevolgd in [`golden-set-gate-decouple`](golden-set-gate-decouple.md) (CI gesplitst: de live-eval
+raakt geen PR's meer) en [`golden-set-blogpost-quality`](../golden-set-blogpost-quality.md)
+(de inhoudelijke vraag). De acceptatie hierboven blijft kloppen voor wát deze taak fixte — het
+model-ID en de twee kapotte testgevallen waren echt en zijn echt opgelost.
+
 ## Context
 Ontdekt tijdens de serverless-hardening + SEO-pipeline-work (2026-07-06). Beide checks zijn
 niet-verplicht (branch-protection vereist enkel `check`), dus ze blokkeerden de merges niet —
