@@ -1331,7 +1331,14 @@ export async function validateBriefing(
     createStructuredCompletion<BriefingValidation>(
       'google', GEMINI_FLASH,
       prompt.system, prompt.user,
-      { temperature: 0.3, maxTokens: 8192, timeoutMs: 45_000 },
+      // maxTokens 8192 → 16384 (2026-08-16). Bij een rijk gevulde briefing tegen een
+      // workspace met volledig merk-DNA brak de JSON middenin af — de validatie gooide
+      // dan volledig, dus de gebruiker zag geen score maar een fout. Gemeten: 2 van de 9
+      // runs tijdens de gate-kalibratie. Zelfde klasse als B6 (changelog #468): Gemini
+      // rekent thinking-tokens mee in het output-budget, dus een lange strengths/gaps-
+      // lijst plus redeneren past niet in 8192. Bewust het budget verhoogd i.p.v.
+      // thinking uitzetten — dit is een beoordelende call, daar is redeneren de kwaliteit.
+      { temperature: 0.3, maxTokens: 16384, timeoutMs: 45_000 },
       buildStrategyTracking(ctx, 'validateBriefing', 1),
     ),
   );

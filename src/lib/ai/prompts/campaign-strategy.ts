@@ -1137,10 +1137,17 @@ Evaluation criteria:
 
 Scoring rules:
 - overallScore: 0-100. Below 50 = missing critical information, 50-70 = workable but gaps exist, 70-90 = good brief, 90+ = excellent brief.
-- isComplete: true ONLY if overallScore >= 70 AND no "critical" severity gaps exist.
+- isComplete: true ONLY if overallScore >= 80 AND no "critical" severity gaps exist.
 - strengths: List 2-5 strong elements already present in the briefing.
-- gaps: List each missing or weak element with severity ("critical" = blocks strategy, "recommended" = improves quality, "nice-to-have" = marginal benefit) and a specific suggestion for what to add.
+- gaps: List each missing or weak part of the briefing.
 - suggestions: List 2-4 actionable suggestions to strengthen the briefing before proceeding.
+
+Each entry in "gaps" MUST use exactly these three keys:
+- "field": the briefing field this gap is about. Use one of: occasion, audienceObjective,
+  coreMessage, tonePreference, constraints. If the gap is not about a specific field, use a
+  short label such as "product context" or "competitive landscape".
+- "severity": "critical" (blocks strategy) | "recommended" (improves quality) | "nice-to-have" (marginal benefit)
+- "suggestion": a specific, actionable sentence describing what to add.
 
 Respond with a JSON object matching the BriefingValidation schema.`;
 

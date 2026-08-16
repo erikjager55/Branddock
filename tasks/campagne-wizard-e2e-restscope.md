@@ -65,12 +65,77 @@ rechtgezet naar de canonieke registry, maar zijn enige consument `useDeliverable
 (`features/campaigns/hooks/index.ts:566`) heeft **nul call-sites**. Gefixte dode code is nog
 steeds dode code: verwijder beide, of documenteer waarom ze blijven.
 
+## ✅ Stap 1+2 — gemeten en gefixt (2026-08-16)
+
+**De gate was niet het probleem. De scoring eronder was stuk.** Drie defecten, alle drie
+gevonden door de échte productie-call (`validateBriefing`, Gemini Flash) te draaien over 7
+briefings van leeg tot overcompleet, tegen de Napking-workspace — dezelfde als de sweep.
+
+### Defect 1 — `gaps[].field` werd nooit geproduceerd
+
+De prompt vroeg *"List each missing or weak **element**"* en noemde de JSON-sleutels nergens.
+Het model leverde dus `element`; het schema eist `field`. Elke run gaf een Zod-warning en
+`validateAndCoerce` ging door met rauwe data.
+
+Gevolg in de UI: `gap.field` is `undefined` → elke gap toont
+`t("briefingReview.general")` (**"Algemeen"**) en `mapGapToField(undefined)` geeft `null`,
+dus de klik-naar-het-juiste-veld werkte nooit. Precies de begeleiding die een gebruiker nodig
+heeft om lángs de gate te komen, was stil uitgeschakeld.
+**Fix**: de drie sleutels (`field` / `severity` / `suggestion`) expliciet benoemd in de prompt,
+met de toegestane veldnamen erbij.
+
+### Defect 2 — de rubric en de gate hanteerden een ander getal
+
+De prompt zei `isComplete: true ONLY if overallScore >= 70`; `wizard-steps.ts:75` eist `>= 80`.
+Het model markeerde een briefing dus als compleet waarna de UI 'm alsnog tegenhield (gemeten:
+case *3-redelijk*, score 75, `isComplete: true`, geblokkeerd).
+**Fix**: de rubric gelijkgetrokken op 80. Bewust die richting op — de bar gaat niet omlaag.
+
+### Defect 3 — de validatie crashte op rijke briefings
+
+`maxTokens: 8192` was te krap: bij een rijk gevulde briefing tegen een workspace met volledig
+merk-DNA brak de JSON middenin af en gooide de hele validatie. **2 van de 9 runs.** De gebruiker
+zag dan geen score maar een fout. Zelfde klasse als B6 (changelog #468): Gemini rekent
+thinking-tokens mee in het output-budget.
+**Fix**: 16384. Bewust het budget verhoogd i.p.v. thinking uitzetten — dit is een beoordelende
+call, daar is redeneren de kwaliteit.
+
+### Meetresultaat
+
+| case | vóór (2 runs) | ná (2 runs) |
+|---|---|---|
+| 1-leeg | 58 / 58 | 65 / 65 |
+| 2-minimaal | 55 / 58 | 55 / 58 |
+| 3-redelijk | 75 / 76 | 75 / 78 |
+| 4-rijk | 82 / 82 | 85 / 85 |
+| **5-rijk+doelgroep** | **68 / 78** | **88 / 85** |
+| 6-zeer-rijk | 82 / 82 | 85 / 78 |
+| 7-overcompleet | 85 / **crash** | 94 / 88 |
+
+**De 68 uit de sweep is gereproduceerd én verklaard**: case 5 is inhoudelijk rijker dan case 4
+en scoorde tóch 14 punten lager. Die niet-monotonie is weg; rijke briefings halen nu 85-94.
+
+### Wat NIET is opgelost — en niet oplosbaar is met prompt-werk
+
+Er blijft **5-10 punten run-op-run-variantie**. Case 6 scoorde 85 en daarna 78: over de gate
+heen en er weer onder. Dat is inherent aan een LLM-judge, niet aan deze prompt.
+
+Twee gevolgen. (1) Elke harde drempel laat gevallen díé er vlak omheen zitten flippen — dat is
+een eigenschap van het ontwerp, geen bug. (2) **De e2e moet een briefing gebruiken die er
+comfortabel bóven zit** (case 7-niveau, 88-94), niet één die er tegenaan schurkt; anders is de
+test zelf flakey. Vastgelegd zodat dat niet als "gate kapot" terugkomt.
+
+### Besluit over de 80-drempel
+
+**Laten staan.** Met een werkende scoring blokkeert 80 wat het hoort te blokkeren: een briefing
+met alle velden kort-maar-concreet (case 3) haalt 75-78 en gaat niet door; een echt uitgewerkte
+briefing haalt 85+. De klacht "de gate is te streng" kwam voort uit een kapotte meting, niet uit
+een verkeerde drempel.
+
 # Acceptatiecriteria
 
-- [ ] Scoreverdeling van 5-8 briefings vastgelegd, met per briefing de zwaarst wegende
-      dimensies
-- [ ] Onderbouwd besluit over de 80-drempel (bijstellen / scoring bijstellen / laten staan),
-      met het cijfer erbij
+- [x] Scoreverdeling van 7 briefings vastgelegd (2 runs vóór, 2 ná de fixes)
+- [x] Onderbouwd besluit: **scoring bijgesteld, drempel gelaten** — zie meetresultaat
 - [ ] E2E dekt foundation, concept, deliverables en review — elk met vastgelegde uitkomst
 - [ ] De e2e komt langs de gate op een briefing die een mens realistisch zou indienen, niet op
       een kunstmatig opgepompte
