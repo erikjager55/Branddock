@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getDeliverableText } from "@/lib/content/resolve-deliverable-content";
+import { flattenPuckData } from "@/lib/content/puck-data-text";
+import { computeEditDistance } from "@/lib/content-test/edit-distance";
 import { requireDeliverableAccess } from "@/lib/deliverable/deliverable-access";
 import { preserveHeroOnSettings, syncHeroFromPuck } from "@/features/campaigns/components/canvas/medium/hero-visual-preserve";
 import { preserveFeatureVisualsOnSettings } from "@/features/campaigns/lib/feature-visual-preserve";
@@ -224,6 +226,49 @@ export async function PATCH(
       where: { id: deliverableId },
       data: updateData,
     });
+
+    // ── Edit-distance signal voor web-page-bewerkingen ───────
+    //
+    // Componentbewerkingen emitten al een `content.edited`-LearningEvent
+    // (components/[componentId]/route.ts), maar een inline edit in de Puck-editor
+    // landt hier: de autosave schrijft `settings.puckData`. Daardoor telde
+    // `feedback-loop-metrics` LP-bewerkingen niet mee — het leersignaal van een hele
+    // contentcategorie ontbrak (content-chain-accessor, kruising #18).
+    //
+    // Bewust vergeleken op de COPY uit puckData, niet op de JSON: een autosave die
+    // alleen layout, hero of props verzet levert een identieke tekst op en dus geen
+    // event. Zonder dat onderscheid zou elke autosave-tick de tabel volspammen.
+    if (settings !== undefined) {
+      try {
+        const beforeText = flattenPuckData(
+          (existing.settings as Record<string, unknown> | null)?.puckData,
+        );
+        const afterText = flattenPuckData(
+          (updated.settings as Record<string, unknown> | null)?.puckData,
+        );
+        if (beforeText.length > 0 && afterText.length > 0 && beforeText !== afterText) {
+          await prisma.learningEvent.create({
+            data: {
+              workspaceId: existing.campaign.workspaceId,
+              eventType: 'content.edited',
+              entityType: 'Deliverable',
+              entityId: deliverableId,
+              editDistance: computeEditDistance(beforeText, afterText),
+              data: {
+                source: 'puck-inline-edit',
+                contentType: existing.contentType,
+                originalLength: beforeText.length,
+                editedLength: afterText.length,
+              },
+            },
+          });
+        }
+      } catch (err) {
+        // Boekhouding mag een geslaagde opslag nooit laten falen (zelfde regel als de
+        // status-sync na publish, gotcha 2026-06-24).
+        console.warn('[studio PATCH] learning-event voor puck-edit mislukt', err);
+      }
+    }
 
     return NextResponse.json({ deliverable: updated });
   } catch (error) {

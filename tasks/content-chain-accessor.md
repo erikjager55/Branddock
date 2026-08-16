@@ -148,32 +148,32 @@ Data- en AI-kwaliteit; geen directe UI-schade, wel structureel.
 |---|---|---|---|
 | 10 | `lib/learning-loop/content-version.ts:196-201` | A | ✅ **gefixt 2026-08-16** — valt terug op de accessor via `snapshot.settings`; diffs en edit-badges werken weer voor web-pages |
 | 11 | `lib/brand-fidelity/visual-fidelity-scorer.ts:460-475` | A | ✅ **gefixt 2026-08-16** — valt terug op de accessor; de coherence-judge krijgt weer copy-context |
-| 12 | `lib/studio/context-builder.ts:211-231` | A | `buildCascadingContext` → lege headline/keyMessage; volgende AI-calls krijgen geen sibling-context |
+| 12 | `lib/studio/context-builder.ts:211-231` | A | ⚪ **DODE CODE (2026-08-16)** — `compileComponentFeedback`, de enige aanroeper van `buildCascadingComponentContext`, heeft ZELF nul aanroepers. Dit pad draait nooit; een fix zou speculatief werk op dode code zijn. Verdient een opruim-besluit, geen keten-fix |
 | 13 | `lib/ai/knowledge-context-fetcher.ts:145-147` | C | ✅ **gefixt 2026-08-16** — `contentSnippet` via de accessor (incl. componenten in de query) |
 | 14 | `lib/ai/persona-prompt-builder.ts:178-179` | C | ✅ **gefixt 2026-08-16** — leest `contentSnippet`, `generatedText` blijft fallback voor oude context-objecten |
 | 15 | `api/workspace/export/route.ts:122` | ✅ **gefixt 2026-08-16** — `components` gaan nu mee in de export; een GDPR-export die de helft van iemands content weglaat voldoet niet aan zijn doel |
 | 16 | `studio/[deliverableId]/route.ts:51-54` | C | ✅ **gefixt 2026-08-16** — alle drie de ketens tellen mee (keten A via een `take: 1`-existentiecheck) |
 | 17 | `studio/[deliverableId]/context/route.ts:55-58` | C | ✅ **gefixt 2026-08-16** — via de accessor |
-| 18 | `studio/[deliverableId]/components/[componentId]/route.ts:82-93` | A | **Puck-edits emitten nooit een LearningEvent** → `feedback-loop-metrics:147` telt LP-edits niet mee. Raakt ook Claw's `update_landing_page_content` |
+| 18 | `studio/[deliverableId]/components/[componentId]/route.ts:82-93` | A | ✅ **gefixt 2026-08-16** — de studio-PATCH emit nu `content.edited` bij een echte Puck-tekstwijziging. Vergelijking op de COPY uit `puckData` (niet op de JSON), zodat een autosave die alleen layout/hero verzet géén event geeft — anders spamt elke autosave-tick de tabel vol |
 | 19 | `studio/[deliverableId]/derive/route.ts:43,84-92` | A (dood) | ✅ **gefixt 2026-08-16** — keten-B-velden worden nu gestript. Bleek méér dan ballast: de accessor leest `structuredVariant` als waarheid, dus een afgeleide post gaf de tekst van de BRONPAGINA terug i.p.v. zijn eigen content. ⚠️ Rest-gap: repurpose neemt nog steeds géén bron-content mee (eigen feature-beslissing) |
-| 20 | `canvas/FeedbackBar.tsx:40` | A | benigne (Step2 returnt eerder), meenemen voor consistentie |
-| 21 | `campaigns/[id]/deliverables/[did]/send/route.ts:93` | C | onbereikbaar (gated op `contentType.includes('email')`) — alleen voor volledigheid |
+| 20 | `canvas/FeedbackBar.tsx:40` | A | ✅ **gefixt 2026-08-16** — `structuredVariant` telt mee als tekst |
+| 21 | `campaigns/[id]/deliverables/[did]/send/route.ts:93` | C | ✅ **gefixt 2026-08-16** — guard én `htmlBody` uit dezelfde bron. ⚠️ Alleen de guard omzetten zou een LEGE mail hebben verstuurd: het gat verplaatst naar één regel lager |
 
-## Fase 3 — bewust NIET gefixt (2026-08-16)
+## Fase 3 — afgerond 2026-08-16
 
-- **#12 `buildCascadingContext`** — is een pure functie over een meegegeven
-  `allComponents`-array. Keten B bereiken vraagt een signatuurwijziging tot in de callers;
-  dat is een grotere ingreep dan de rest van fase 3 en verdient een eigen ronde.
-- **#18 Puck-edits emitten geen LearningEvent** — dit vraagt event-emissie op het
-  PATCH-**schrijf**pad. Diezelfde PATCH draagt de puckData-autosave, die vaak vuurt; zonder
-  eerst het volume te meten is de kans groot dat we `LearningEvent` volspammen. De
-  component-route emit bewust alleen bij een échte contentwijziging — dat onderscheid moet
-  hier eerst nagebouwd worden.
-- **#20 `FeedbackBar`** — het task-file noemt 'm zelf benigne (Step2 returnt eerder). Een
-  speculatieve wijziging aan zichtbaarheidslogica die ik niet in een browser kan verifiëren
-  is meer risico dan winst.
-- **#21 send-route** — onbereikbaar (gated op `contentType.includes('email')`); stond al als
-  "alleen voor volledigheid" in de lijst.
+Alle twaalf kruisingen behandeld. Eén bleek dode code (#12); de rest is gefixt.
+
+**Twee bevindingen die niet in de inventaris stonden:**
+
+- **#19 was geen ballast maar een correctheidsfout.** Sinds de accessor `structuredVariant`
+  als waarheid leest, zou een afgeleide post de tekst van de BRONPAGINA teruggeven.
+- **#21 was een half gat.** Alleen de guard omzetten zou een LEGE mail hebben verstuurd —
+  `htmlBody` las nog `generatedText`. Het gat verplaatst zich dan één regel naar beneden.
+
+**Geverifieerd en NIET waar gebleken**: het vermoeden dat `puckData` en `structuredVariant`
+uit elkaar lopen, waardoor de accessor stale tekst zou geven. Over 20 echte rijen bleek elk
+verschil een compositie-artefact (testimonials die de Puck-renderer samenvoegt uit losse
+variant-velden), geen content-drift.
 
 # De flip — apart afhandelen in fase 1
 

@@ -33,11 +33,16 @@ export function FeedbackBar({ onRegenerate, onAbort, onRegenerateVisual, isVisua
   const setFeedbackGroup = useCanvasStore((s) => s.setFeedbackGroup);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
   const variantGroups = useCanvasStore((s) => s.variantGroups);
+  const structuredVariant = useCanvasStore((s) => s.structuredVariant);
   const imageVariants = useCanvasStore((s) => s.imageVariants);
 
   const isTextGenerating = globalStatus === 'generating';
   const isGenerating = isTextGenerating || !!isVisualGenerating;
-  const hasTextVariants = variantGroups.size > 0;
+  // Keten B telt ook als "er is tekst": voor de 11 structured-types blijft
+  // `variantGroups` structureel leeg terwijl de pagina vol staat. In de praktijk
+  // benigne (Step 2 returnt eerder), maar één regel die hetzelfde zegt als de rest van
+  // de app is de consistentie waard (content-chain-accessor, kruising #20).
+  const hasTextVariants = variantGroups.size > 0 || !!structuredVariant;
   const hasImageVariants = imageVariants.length > 0 && !!onRegenerateVisual;
 
   // Show the bar whenever either text OR image variants exist.
