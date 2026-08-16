@@ -55,9 +55,10 @@ met concrete rule-findings op de vier kernovertredingen van tekst C.
 
 # Out-of-scope / restpunten
 
-- Prod-import (workspace `cmrxl41sm00230akjshqksl17`) draait Erik met prod-creds:
-  dry-run + `--force` + `--confirm-host` + nazorg `--lang nl` (zie runbook in README
-  migrate-brand-dna). Kennisbronnen zitten NIET in de bundle → op prod handmatig uploaden.
+- ~~Prod-import (workspace `cmrxl41sm00230akjshqksl17`) draait Erik met prod-creds~~ —
+  ✅ **afgerond 2026-08-16 door Erik**, inclusief de kennisbronnen die niet in de bundle
+  zaten. Runbook stond in README migrate-brand-dna. De bundle bevatte 0 lokale
+  `/uploads/`-referenties, dus de R2-uploadstap was niet nodig.
 - Ontbrekende brondocumenten: "Schrijven voor het brein — HNG-context" en
   "HNG Sitemap & Priority Guide 2026" (niet lokaal gevonden).
 - `Product_Ecosysteem_HNG_2026.xlsx` bewust niet toegevoegd (interne bijnamen +
