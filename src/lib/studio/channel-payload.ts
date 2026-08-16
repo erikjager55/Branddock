@@ -5,20 +5,45 @@
  * symbolen exporteren, en dit is een pad dat écht naar buiten publiceert — het verdient
  * een test die niet de halve stack nodig heeft.
  *
- * ⚠️ Deze extractie leest UITSLUITEND de component-keten. Dat is een bekend gat: de
- * structured/PUCK-types (landing-page/faq-page/product-page/microsite + de long-form
- * GEO-types) bewaren hun copy in `Deliverable.settings.structuredVariant` en hebben een
- * structureel lege component-keten. Voor die types levert dit dus een lege payload — en
- * dáárom staat `assertPublishable()` ertussen. De structurele fix (beide ketens lezen via
- * één accessor) volgt in een aparte task; deze module is bewust het chokepoint waar die
- * accessor straks inplugt, zodat er precies één plek is om te wijzigen.
+ * Leest BEIDE content-ketens (2026-08-16, content-chain-accessor fase 2). De
+ * component-keten levert de gestructureerde velden (title/body/cta/hashtags); is die leeg
+ * — wat structureel het geval is voor de 11 keten-B-types (landing-page/faq-page/
+ * product-page/microsite + de 7 long-form GEO-types) — dan valt de body terug op
+ * `resolveDeliverableContent()`, dat `settings.structuredVariant` en het legacy
+ * `generatedText` afhandelt.
+ *
+ * `assertPublishable()` blijft ertussen staan en wordt daar NIET soepeler van: een
+ * deliverable met gegenereerde varianten waaruit nog niets is gekozen
+ * (`structured-unchosen`) levert bewust nog steeds een lege body op. Extern publiceren
+ * mag nooit gokken wélke variant de gebruiker bedoelde — beter geblokkeerd dan de
+ * verkeerde tekst op LinkedIn.
  */
+
+import {
+  resolveDeliverableContent,
+  type DeliverableLike,
+} from '@/lib/content/resolve-deliverable-content';
 
 export interface ChannelPayloadComponent {
   variantGroup: string | null;
   generatedContent: string | null;
   imageUrl?: string | null;
+  componentType?: string;
+  groupType?: string | null;
+  order?: number | null;
+  isSelected?: boolean | null;
+  variantIndex?: number | null;
 }
+
+/**
+ * Het deliverable zelf, zodat de accessor ook keten B/C kan lezen. Optioneel, zodat
+ * bestaande call-sites en de guard-smoke ongewijzigd blijven werken op alleen componenten.
+ *
+ * Bewust het hele object en geen uitgepakte velden: dan noemt deze module `generatedText`
+ * en `structuredVariant` nergens bij naam, en blijft de keten-guard van kracht zonder
+ * `eslint-disable`. Doorgeven is geen lezen.
+ */
+export type ChannelPayloadSource = DeliverableLike;
 
 export interface ChannelPayload {
   title: string;
@@ -34,6 +59,7 @@ export interface ChannelPayload {
 export function buildChannelPayload(
   components: ChannelPayloadComponent[],
   fallbackTitle: string,
+  source?: ChannelPayloadSource,
 ): ChannelPayload {
   const textComponents = components.filter(
     (c) => c.generatedContent && c.variantGroup !== 'hero-image',
@@ -45,12 +71,28 @@ export function buildChannelPayload(
     if (comp.variantGroup && comp.generatedContent) byGroup[comp.variantGroup] = comp.generatedContent;
   }
 
-  const bodyText =
+  let bodyText =
     byGroup.body ?? byGroup.caption ?? byGroup['body-sections'] ?? byGroup.introduction ?? '';
   const hashtags = byGroup.hashtags ?? '';
+  let title = byGroup.title ?? byGroup.headline ?? byGroup.subject ?? fallbackTitle;
+
+  // Keten B/C — alleen aanspreken als de component-keten niets opleverde. Voor de 11
+  // keten-B-types is die keten structureel leeg; zonder deze stap publiceert de route
+  // een lege post naar LinkedIn/WordPress (of blokkeert de guard een pagina die wél vol staat).
+  if (bodyText.trim().length === 0 && source) {
+    const resolved = resolveDeliverableContent(source);
+    // `structured-unchosen` en `empty` laten de body bewust leeg: de guard hoort dan te
+    // blokkeren. Gokken welke variant de gebruiker bedoelde is erger dan niet publiceren.
+    if (resolved.kind === 'structured' || resolved.kind === 'components') {
+      bodyText = resolved.text;
+      if (!byGroup.title && !byGroup.headline && !byGroup.subject) {
+        title = deriveTitleFromText(resolved.text) ?? title;
+      }
+    }
+  }
 
   return {
-    title: byGroup.title ?? byGroup.headline ?? byGroup.subject ?? fallbackTitle,
+    title,
     bodyText,
     cta: byGroup.cta ?? byGroup['call-to-action'] ?? '',
     hashtags,
@@ -58,6 +100,20 @@ export function buildChannelPayload(
     fullText: [bodyText, hashtags].filter(Boolean).join('\n\n'),
     heroImageUrl: heroComponent?.imageUrl ?? null,
   };
+}
+
+/**
+ * Eerste zinvolle regel als titel, wanneer de component-keten geen titel-groep had.
+ * Structured varianten beginnen met de hero-headline, dus die eerste regel is precies
+ * wat een mens als titel zou kiezen. Cap op 120 tekens — een titelveld is geen alinea.
+ */
+function deriveTitleFromText(text: string): string | null {
+  const first = text
+    .split('\n')
+    .map((line) => line.trim())
+    .find((line) => line.length > 0);
+  if (!first) return null;
+  return first.length > 120 ? `${first.slice(0, 117)}...` : first;
 }
 
 /**

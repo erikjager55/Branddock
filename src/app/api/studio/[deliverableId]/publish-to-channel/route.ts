@@ -122,7 +122,10 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     // ─── Extract content from deliverable components ─────────
     const { title, bodyText, cta, hashtags, metaDescription, fullText, heroImageUrl } =
-      buildChannelPayload(deliverable.components, deliverable.title);
+      // Het hele deliverable meegeven i.p.v. losse velden: dan noemt deze route
+      // `generatedText`/`structuredVariant` nergens bij naam en blijft de keten-guard
+      // van kracht. De payload-builder beslist welke keten hij aanspreekt.
+      buildChannelPayload(deliverable.components, deliverable.title, deliverable);
 
     // ─── Leeg-guard: verstuur nooit een lege publicatie ──────
     //

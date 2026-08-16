@@ -42,7 +42,10 @@ const HERO_VARIANT_GROUP = 'hero-image';
 const NON_TEXT_COMPONENT_TYPES = new Set(['image', 'video']);
 
 export interface DeliverableComponentLike {
-  componentType: string;
+  /** Optioneel: niet elke call-site heeft dit veld geselecteerd. Ontbreekt hij, dan
+   *  telt de component als tekstdrager — dat is de veilige aanname, want alleen
+   *  image/video worden uitgesloten. */
+  componentType?: string | null;
   groupType?: string | null;
   generatedContent?: string | null;
   imageUrl?: string | null;
@@ -138,14 +141,14 @@ export function resolveDeliverableContent(d: DeliverableLike): ResolvedDeliverab
 
   const components = selectLiveComponents(d.components ?? []);
   const textComponents = components
-    .filter((c) => !NON_TEXT_COMPONENT_TYPES.has(c.componentType))
+    .filter((c) => !NON_TEXT_COMPONENT_TYPES.has(c.componentType ?? ''))
     .filter((c) => (c.generatedContent ?? '').trim().length > 0)
     .sort(byOrder);
 
   if (textComponents.length > 0) {
     const byGroup: Record<string, string> = {};
     for (const c of textComponents) {
-      const group = c.groupType ?? c.componentType;
+      const group = c.groupType ?? c.componentType ?? 'body';
       const body = (c.generatedContent ?? '').trim();
       byGroup[group] = byGroup[group] ? `${byGroup[group]}\n\n${body}` : body;
     }
