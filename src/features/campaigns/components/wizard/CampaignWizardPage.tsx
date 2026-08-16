@@ -227,7 +227,18 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
 
   return (
     <PageShell>
-    <div data-testid="campaign-wizard" className="space-y-6">
+    <div
+      data-testid="campaign-wizard"
+      // Test-contract. De Concept-stap doorloopt intern ACHT fasen
+      // (mining_insights → generating_concepts → review_concepts → building_strategy → …)
+      // terwijl het stepper-label onveranderd "Concept" blijft. Een e2e die voortgang aan
+      // de stepper afmeet ziet echt werk dus aan voor stilstand — dat kostte een
+      // debugronde (2026-08-16). Deze twee attributen maken de werkelijke positie
+      // afleesbaar, net als `data-briefing-score` dat voor de gate doet.
+      data-wizard-step={currentStep}
+      data-strategy-phase={strategyPhase}
+      className="space-y-6"
+    >
       {/* Breadcrumb */}
       <button
         data-testid="wizard-back-link"
