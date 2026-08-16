@@ -52,6 +52,8 @@ interface StepLog {
   /** Welke knop deze stap gebruikte. Apart veld: `note` wordt in de stall-tak
    *  overschreven, waardoor juist bij een vastloper onbekend bleef wát er geklikt was. */
   action?: 'approve-concept' | 'continue';
+  /** True wanneer de driver eerst alle concept-elementen als goedgekeurd markeerde. */
+  ratedAll?: boolean;
   /** `stap:fase` vóór en ná de klik — de echte voortgangsmeter. */
   positionBefore?: string;
   positionAfter?: string;
@@ -79,6 +81,20 @@ test.setTimeout(35 * 60_000);
 test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page }) => {
   const steps: StepLog[] = [];
   const started = Date.now();
+
+  // Browserconsole meelezen. `handleApprove` en `handleElaborate` loggen bij een stille
+  // early-return exact WELKE strategie-bron ontbreekt (`[concept-approval]` /
+  // `[concept-elaborate]`) — maar dat komt in de browser terecht, niet in de serverlog.
+  // Die diagnostiek bestond dus al en werd door niemand gelezen; daardoor bleef een
+  // knop-die-niets-doet drie runs lang onverklaard.
+  const consoleLog: string[] = [];
+  page.on('console', (msg) => {
+    const text = msg.text();
+    if (/\[concept-|\[campaign|error|warn/i.test(text)) {
+      consoleLog.push(`${msg.type()}: ${text.slice(0, 300)}`);
+    }
+  });
+  page.on('pageerror', (err) => consoleLog.push(`pageerror: ${err.message.slice(0, 300)}`));
   let finalNote = '';
   let improveAttempts = 0;
 
@@ -256,6 +272,19 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
       // is dat "Approve Concept", dat volgens de code "everything in one click" doet
       // (ConceptStep.tsx:975). Alleen op Continue klikken liet de wizard daar eindeloos
       // staan — de driver kiest nu de primaire actie als die er is.
+      // "Approve Concept" weigert zolang niet élk concept-element beoordeeld is — de
+      // knop toont dan een toast en doet verder niets (ConceptReviewView:114-128). Dat
+      // is correct productgedrag, geen bug: de wizard vraagt om een oordeel vóór hij
+      // een concept vastlegt. Een gebruiker klikt daarvoor "markeer alles goedgekeurd";
+      // deze driver doet hetzelfde. Zonder die stap bleef de wizard hier hangen zonder
+      // zichtbare reden (de toast is geen [role=alert] en haalde de foutafvang niet).
+      const markAllBtn = page.getByTestId('mark-all-approved');
+      if (await markAllBtn.isVisible().catch(() => false)) {
+        await markAllBtn.click();
+        await page.waitForTimeout(1_000);
+        log.ratedAll = true;
+      }
+
       const approveBtn = page.getByTestId('approve-concept');
       const usedPrimary = await approveBtn.isVisible().catch(() => false);
       log.action = usedPrimary ? 'approve-concept' : 'continue';
@@ -356,7 +385,15 @@ test('campagnegenerator: wizard end-to-end', async ({ authenticatedPage: page })
     fs.writeFileSync(
       OUT_FILE,
       JSON.stringify(
-        { totalElapsedMs: Date.now() - started, finalNote, stepsCompleted: steps.length, steps },
+        {
+          totalElapsedMs: Date.now() - started,
+          finalNote,
+          stepsCompleted: steps.length,
+          steps,
+          // Laatste 40 relevante consoleregels — genoeg om een stille early-return te
+          // verklaren zonder het rapport onleesbaar te maken.
+          browserConsole: consoleLog.slice(-40),
+        },
         null,
         2,
       ),

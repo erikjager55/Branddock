@@ -226,6 +226,10 @@ export function ConceptReviewView({
                 icon={CheckCheck}
                 onClick={handleApproveAll}
                 title={t("conceptReview.markAllTooltip")}
+                // Test-contract: "Approve Concept" weigert zolang niet elk element
+                // beoordeeld is (handleApproveClick → toast "rate every element"). Een
+                // e2e moet die voorwaarde kunnen vervullen zoals een gebruiker dat doet.
+                data-testid="mark-all-approved"
               >
                 {t("conceptReview.markAllApproved")}
               </Button>

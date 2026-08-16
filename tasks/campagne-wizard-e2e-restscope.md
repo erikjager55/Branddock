@@ -262,9 +262,30 @@ is nu een apart logveld; de volgende run zegt het wel.
 | stap | status |
 |---|---|
 | 4 Concept / Foundation | ✅ **draait volledig** — alle fasen doorlopen, gemeten |
-| 5 Deliverables | nog niet bereikt — geblokkeerd op de dubbele-Continue hierboven |
+| 5 Deliverables | ✅ **BEREIKT** (2026-08-16) — Continue blijft daar 6 min disabled; volgende horde |
 | 6 Review | nog niet bereikt |
 | 7 Afronding | nog niet bereikt |
+
+### Hoe stap 5 bereikt werd — en wat de wizard onderweg eist
+
+Volledig traject van de laatste run (12,1 min):
+
+    1:idle → 2:idle → 3:idle → 3:building_foundation → 4:mining_insights
+    → 4:building_strategy → 4:complete → 5:complete
+
+Drie poorten die de wizard onderweg stelt, geen daarvan een bug:
+
+1. **Briefing ≥ 80.** Herstel via "verbeter met AI" wanneer een run onder de lijn landt.
+2. **Elk concept-element beoordeeld** vóór "Approve Concept" iets doet. De weigering komt
+   als **toast** — geen `[role=alert]`, geen console-melding — dus geen van de drie
+   diagnose-kanalen ving 'm. De screenshot loste dit op: "0 of 6 elements rated" stond
+   gewoon op het scherm. De driver gebruikt nu de bulk-actie "markeer alles goedgekeurd".
+3. **Stap 5 houdt Continue disabled** — de volgende horde, nog niet uitgezocht.
+
+⚠️ **Correctie op een eerdere conclusie**: ik noemde `handleElaborate` "de reden dat de
+wizard vastliep". Dat was voorbarig. Die stille early-return is echt en de fallback hoort
+er te zijn, maar het obstakel hier was de ratingpoort. Twee losse dingen die ik te snel
+aan elkaar knoopte.
 
 **De e2e is nu bruikbaar maar niet betrouwbaar**: 4 runs gaven 4 verschillende uitkomsten,
 telkens door een andere oorzaak (gate 68 → gate 78 → door met 85 → fase-1-parsefout). Elke run
