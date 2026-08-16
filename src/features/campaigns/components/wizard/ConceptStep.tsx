@@ -529,6 +529,16 @@ export function ConceptStep() {
 
     const store = useCampaignWizardStore.getState();
     store.resetPipeline();
+    // `resetPipeline` zet finalStrategy + finalArchitecture op null. In het
+    // multi-variant pad is `finalStrategy` de ENIGE strategiebron (`synthesized*`
+    // blijft daar null), dus de elaboratie wiste precies wat de goedkeuring erna nodig
+    // heeft: `handleApprove` viel dan terug met alle vier de bronnen op null en de
+    // wizard bleef eeuwig op `generating_journey` staan.
+    //
+    // We hebben ze hierboven al vastgepakt in `strat`/`arch` — zet ze meteen terug.
+    // Bewust hier en niet in `resetPipeline`: die wordt door meer paden gebruikt, en
+    // "gooi de pipeline leeg" is daar het juiste gedrag. Alleen dit pad heeft ze nog nodig.
+    useCampaignWizardStore.setState({ finalStrategy: strat, finalArchitecture: arch });
     store.setIsGenerating(true);
     store.setStrategyPhase("generating_journey");
 
