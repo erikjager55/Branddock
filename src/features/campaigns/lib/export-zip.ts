@@ -2,10 +2,31 @@ import JSZip from 'jszip';
 import { sanitizeFilename } from '@/lib/studio/export-studio-content';
 import type { DeliverableResponse } from '@/types/campaign';
 
-async function fetchDeliverableContent(deliverableId: string): Promise<{ generatedText?: string }> {
-  const res = await fetch(`/api/studio/${deliverableId}`);
-  if (!res.ok) return {};
-  return res.json();
+/**
+ * Haalt de export-tekst van alle deliverables in ÉÉN aanroep op.
+ *
+ * Verving 2026-08-16 een per-deliverable `GET /api/studio/:id` in een lus. Die had twee
+ * problemen. (1) Hij las `json.generatedText`, maar die route antwoordt genest als
+ * `{ deliverable: { … } }` — dus de waarde was ALTIJD `undefined` en élk bestand in de ZIP
+ * kreeg "No content generated yet", ongeacht content-type. (2) Een fetch per deliverable is
+ * een fetch-loop (CLAUDE.md: "geen fetch loops — batch requests").
+ *
+ * De canvas-export-route doet het werk server-side mét de component-keten erbij, en gaat
+ * door dezelfde `resolveDeliverableContent()` als de rest van de app — dus ook keten B
+ * (structured variants) en C (legacy) komen mee.
+ */
+async function fetchExportTexts(
+  campaignId: string,
+  deliverableIds: string[],
+): Promise<Map<string, string>> {
+  const res = await fetch(`/api/campaigns/${campaignId}/canvas/export`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deliverableIds }),
+  });
+  if (!res.ok) throw new Error(`Export request failed (${res.status})`);
+  const json: { items?: Array<{ id: string; text: string }> } = await res.json();
+  return new Map((json.items ?? []).map((i) => [i.id, i.text]));
 }
 
 interface ExportProgress {
@@ -19,6 +40,7 @@ interface ExportProgress {
  * Fetches generatedText per deliverable via the studio API and bundles as HTML files.
  */
 export async function exportApprovedDeliverablesZip(
+  campaignId: string,
   campaignTitle: string,
   deliverables: DeliverableResponse[],
   onProgress?: (progress: ExportProgress) => void,
@@ -30,17 +52,24 @@ export async function exportApprovedDeliverablesZip(
   const folderName = sanitizeFilename(campaignTitle);
   const folder = zip.folder(folderName)!;
 
+  // Eén aanroep voor alle deliverables. Faalt die, dan krijgt elk bestand dezelfde
+  // eerlijke melding i.p.v. een stil leeg document.
+  let texts = new Map<string, string>();
+  let fetchFailed = false;
+  try {
+    texts = await fetchExportTexts(campaignId, completed.map((d) => d.id));
+  } catch (err) {
+    fetchFailed = true;
+    console.error('[export-zip] ophalen van export-teksten mislukt', err);
+  }
+
   for (let i = 0; i < completed.length; i++) {
     const d = completed[i];
     onProgress?.({ current: i + 1, total: completed.length, deliverableTitle: d.title });
 
-    let textContent = '';
-    try {
-      const studio = await fetchDeliverableContent(d.id);
-      textContent = studio.generatedText ?? '';
-    } catch {
-      textContent = '<p>Content could not be loaded.</p>';
-    }
+    const textContent = fetchFailed
+      ? '<p>Content could not be loaded.</p>'
+      : (texts.get(d.id) ?? '');
 
     const html = buildHtmlFile(d.title, campaignTitle, d.contentType, textContent, d.qualityScore);
     const filename = `${sanitizeFilename(d.title)}.html`;

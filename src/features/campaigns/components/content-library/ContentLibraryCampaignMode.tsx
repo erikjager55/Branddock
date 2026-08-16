@@ -210,7 +210,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
     if (!campaign || !deliverables || completedCount === 0 || isExporting) return;
     setIsExporting(true);
     try {
-      await exportApprovedDeliverablesZip(campaign.title, deliverables);
+      await exportApprovedDeliverablesZip(campaignId, campaign.title, deliverables);
     } catch (err) {
       console.error("[handleExportApproved]", err);
     } finally {
