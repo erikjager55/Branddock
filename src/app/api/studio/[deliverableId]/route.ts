@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getDeliverableText } from "@/lib/content/resolve-deliverable-content";
 import { requireDeliverableAccess } from "@/lib/deliverable/deliverable-access";
 import { preserveHeroOnSettings, syncHeroFromPuck } from "@/features/campaigns/components/canvas/medium/hero-visual-preserve";
 import { preserveFeatureVisualsOnSettings } from "@/features/campaigns/lib/feature-visual-preserve";
@@ -34,6 +35,13 @@ export async function GET(
         _count: {
           select: { versions: true },
         },
+        // Alleen voor de isTabLocked-check hieronder: één tekstdragende component is
+        // genoeg bewijs dat er content is. Bewust `take: 1` — dit is een hot route.
+        components: {
+          where: { generatedContent: { not: null } },
+          select: { generatedContent: true },
+          take: 1,
+        },
       },
     });
 
@@ -47,9 +55,12 @@ export async function GET(
     const imageUrls = deliverable.generatedImageUrls as string[] | null;
     const slides = deliverable.generatedSlides as unknown[] | null;
 
+    // Tekst uit ALLE drie de ketens telt mee. Stond hier alleen `generatedText`, dan
+    // bleef de tab wisselbaar op een volle structured-pagina en kon de gebruiker zijn
+    // content kwijtraken door van tab te wisselen (content-chain-accessor, kruising #16).
+    const hasText = getDeliverableText(deliverable) != null;
     const isTabLocked =
-      // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#16) — isTabLocked false op een volle pagina
-      deliverable.generatedText != null ||
+      hasText ||
       (imageUrls != null && imageUrls.length > 0) ||
       deliverable.generatedVideoUrl != null ||
       (slides != null && slides.length > 0);
@@ -65,7 +76,9 @@ export async function GET(
         prompt: deliverable.prompt,
         aiModel: deliverable.aiModel,
         settings: deliverable.settings,
-        // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#16) — idem
+        // Blijft in de response: de canvas-store leest dit veld nog rechtstreeks.
+        // Consumenten die de INHOUD willen, horen via de accessor te gaan.
+        // eslint-disable-next-line no-restricted-syntax -- doorgeefluik, geen contentbeslissing
         generatedText: deliverable.generatedText,
         generatedImageUrls: deliverable.generatedImageUrls,
         generatedVideoUrl: deliverable.generatedVideoUrl,

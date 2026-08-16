@@ -147,13 +147,13 @@ Data- en AI-kwaliteit; geen directe UI-schade, wel structureel.
 | # | pad:regel | leest | wat er misgaat |
 |---|---|---|---|
 | 10 | `lib/learning-loop/content-version.ts:196-201` | A | `snapshotToText` → `beforeText === afterText === ''` → geen diff, `editType = null`. Versie-historie zonder edit-badges. Snapshot zelf is oké (includeert `settings`) |
-| 11 | `lib/brand-fidelity/visual-fidelity-scorer.ts:460-475` | A | `fetchSiblingTextContent` → `""` → **hero-beeld wordt gescoord zonder enige copy-context**. Raakt generate-visual/-trained/-compose/refine-visual |
+| 11 | `lib/brand-fidelity/visual-fidelity-scorer.ts:460-475` | A | ✅ **gefixt 2026-08-16** — valt terug op de accessor; de coherence-judge krijgt weer copy-context |
 | 12 | `lib/studio/context-builder.ts:211-231` | A | `buildCascadingContext` → lege headline/keyMessage; volgende AI-calls krijgen geen sibling-context |
-| 13 | `lib/ai/knowledge-context-fetcher.ts:145-147` | C | pillar-page als knowledge-source → alleen titel + contentType |
-| 14 | `lib/ai/persona-prompt-builder.ts:178-179` | C | persona-reactie krijgt geen content-snippet |
+| 13 | `lib/ai/knowledge-context-fetcher.ts:145-147` | C | ✅ **gefixt 2026-08-16** — `contentSnippet` via de accessor (incl. componenten in de query) |
+| 14 | `lib/ai/persona-prompt-builder.ts:178-179` | C | ✅ **gefixt 2026-08-16** — leest `contentSnippet`, `generatedText` blijft fallback voor oude context-objecten |
 | 15 | `api/workspace/export/route.ts:122` | C | GDPR-export: `generatedText: null`; `settings` gaat wél mee (rauwe JSON), `components` ontbreekt volledig |
-| 16 | `studio/[deliverableId]/route.ts:51-54` | C | `isTabLocked` false op een volle pagina → tab blijft wisselbaar |
-| 17 | `studio/[deliverableId]/context/route.ts:55-58` | C | `hasGeneratedContent` false → gegenereerde pagina krijgt een inheritance-candidate |
+| 16 | `studio/[deliverableId]/route.ts:51-54` | C | ✅ **gefixt 2026-08-16** — alle drie de ketens tellen mee (keten A via een `take: 1`-existentiecheck) |
+| 17 | `studio/[deliverableId]/context/route.ts:55-58` | C | ✅ **gefixt 2026-08-16** — via de accessor |
 | 18 | `studio/[deliverableId]/components/[componentId]/route.ts:82-93` | A | **Puck-edits emitten nooit een LearningEvent** → `feedback-loop-metrics:147` telt LP-edits niet mee. Raakt ook Claw's `update_landing_page_content` |
 | 19 | `studio/[deliverableId]/derive/route.ts:43,84-92` | A (dood) | de opgehaalde `components` worden nergens gebruikt (repurpose neemt géén bron-content mee, voor geen enkel type); `cleanSettings` kopieert ongefilterd → een afgeleide instagram-post erft `puckData` als dode ballast |
 | 20 | `canvas/FeedbackBar.tsx:40` | A | benigne (Step2 returnt eerder), meenemen voor consistentie |

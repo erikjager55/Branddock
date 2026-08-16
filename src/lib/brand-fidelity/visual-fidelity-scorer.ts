@@ -37,6 +37,7 @@ import { getPromptVersion } from "@/lib/ai/prompt-version-registry";
 import { emitLearningEvent } from "@/lib/learning-loop/event-emitter";
 import { extractTextFromImage, computeTextPollutionPenalty, type OcrCheckResult } from "@/lib/ai/image-quality/ocr-check";
 import { runCopyImageCoherenceJudge, type CoherenceJudgeResult } from "./copy-image-coherence-judge";
+import { resolveDeliverableContent } from "@/lib/content/resolve-deliverable-content";
 
 const SCORER_VERSION = "visual-fidelity-v1.0";
 const COLOR_WEIGHT = 0.4;
@@ -455,8 +456,6 @@ async function fetchSiblingTextContent(
     orderBy: { order: "asc" },
   });
 
-  if (siblings.length === 0) return "";
-
   const parts: string[] = [];
   for (const s of siblings) {
     const groupLabel = s.variantGroup ?? s.componentType;
@@ -465,5 +464,18 @@ async function fetchSiblingTextContent(
       parts.push(`[${groupLabel}]\n${content}`);
     }
   }
-  return parts.join("\n\n");
+  if (parts.length > 0) return parts.join("\n\n");
+
+  // Keten B/C — voor de 11 structured-types is de componentketen structureel leeg, en
+  // dan kreeg de coherence-judge NUL copy-context: het hero-beeld werd beoordeeld
+  // zonder te weten waar de pagina over gaat. Dat is geen ontbrekende feature maar een
+  // stil verkeerde meting, want de judge scoort gewoon door op wat hij wél heeft.
+  // (content-chain-accessor, kruising #11.)
+  const deliverable = await prisma.deliverable.findUnique({
+    where: { id: deliverableId },
+    select: { contentType: true, settings: true, generatedText: true },
+  });
+  if (!deliverable) return "";
+  const resolved = resolveDeliverableContent(deliverable);
+  return resolved.kind === "structured" || resolved.kind === "components" ? resolved.text : "";
 }

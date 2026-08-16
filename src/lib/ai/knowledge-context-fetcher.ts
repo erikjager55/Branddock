@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getBrandLibrary } from "@/lib/brand-library";
+import { getDeliverableText } from "@/lib/content/resolve-deliverable-content";
 
 interface ContextResult {
   name: string;
@@ -135,19 +136,32 @@ export async function fetchContextData(
           campaign: {
             select: { workspaceId: true },
           },
+          // Componenten mee: zonder deze keten leest de accessor alleen settings, en
+          // dan valt de content van álle component-types weg.
+          components: {
+            select: {
+              componentType: true,
+              groupType: true,
+              generatedContent: true,
+              variantGroup: true,
+              variantIndex: true,
+              isSelected: true,
+              order: true,
+            },
+          },
         },
       });
       if (!deliverable || deliverable.campaign.workspaceId !== workspaceId) return null;
+      // Alle drie de ketens: als knowledge-source kreeg een pillar-page hiervoor
+      // alleen titel + contentType mee, want zijn copy staat niet in `generatedText`.
+      // De AI kreeg dus een "bron" zonder inhoud (content-chain-accessor, kruising #13).
+      const deliverableText = getDeliverableText(deliverable);
       return {
         name: deliverable.title,
         contextData: {
           contentType: deliverable.contentType,
           status: deliverable.status,
-          // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#13) — pillar-page als knowledge-source geeft alleen titel + type
-          generatedText: deliverable.generatedText
-            // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 3 (#13) — idem
-            ? deliverable.generatedText.slice(0, 500)
-            : null,
+          contentSnippet: deliverableText ? deliverableText.slice(0, 500) : null,
         },
       };
     }
