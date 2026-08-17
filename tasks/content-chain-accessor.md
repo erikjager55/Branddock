@@ -5,7 +5,7 @@ fase: launch
 priority: now
 effort: 5-8 dagen (3 fasen)
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-07-17
 completed:
 related-adr: docs/adr/2026-07-17-deliverable-content-accessor.md

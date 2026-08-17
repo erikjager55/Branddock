@@ -1,9 +1,21 @@
+---
+id: kpi-fase0
+title: Meetfundament €100k-plan (Fase 0) — funnel, activatie, noordster en Gate-1 als developer-tab
+fase: post-launch
+priority: now
+effort: 2-3 dagen
+owner: claude-code
+status: in-progress
+created: 2026-07-20
+completed:
+related-adr: -
+related-spec: docs/reports/100k-plan-fasering-2026-07-20.md
+worktree: branddock-kpi-fase0
+---
+
 # kpi-fase0 — meetfundament €100k-plan (Fase 0)
 
-- **Status**: in-progress
-- **Datum**: 2026-07-20
 - **Bron**: `docs/reports/100k-plan-fasering-2026-07-20.md` · go van Erik 2026-07-20
-- **Worktree**: branddock-kpi-fase0
 
 ## Scope
 

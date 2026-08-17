@@ -2,7 +2,9 @@
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
 > **Laatst bijgewerkt: 2026-08-17** (na de campagnewizard-sessie: #279-#284 gemerged,
-> vijf productiebugs weg, wizard voor het eerst end-to-end getest).
+> vijf productiebugs weg, wizard voor het eerst end-to-end getest. Daarna een
+> takenlijst-opruiming: 39 afgeronde task-files naar `tasks/done/`, `kpi-fase0` +
+> `marketing-homepage-v2` alsnog opgenomen, research-stack-bundel in `roadmap.md` afgesloten).
 
 ---
 
@@ -151,8 +153,10 @@ halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
 | [`lp-image-routes`](tasks/lp-image-routes.md) | review — wacht op één prod-smoke door jou |
 | [`seo-pipeline-speedup`](tasks/seo-pipeline-speedup.md) | open — fase 4a deed 12→7,5 min |
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
-| [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst, deels achterhaald |
+| [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst, deels achterhaald. ⚠️ Nieuw in §B: twee retentie-indexen op Neon (uit PR #286) — `CREATE INDEX CONCURRENTLY`, níet `prisma db push` |
 | [`lp-review-followups`](tasks/lp-review-followups.md) | open — ⚠️ naar Nu gehaald 16-08: de retentie-items zijn tijdgevoelig (`PageEvent` groeit onbegrensd, `FormSubmission` bevat PII zonder wisroutine) |
+| [`kpi-fase0`](tasks/kpi-fase0.md) | in-progress — meetfundament €100k-plan (funnel/activatie/noordster/Gate-1 als developer-tab); worktree `branddock-kpi-fase0` |
+| [`marketing-homepage-v2`](tasks/marketing-homepage-v2.md) | in-progress — homepage-herbouw + nav/footer NL-first; worktree `branddock-marketing-homepage-v2` |
 
 ### Volgende
 `workspaces-online-migratie` (4 workspaces resteren, jouw keuze) ·
@@ -161,9 +165,11 @@ halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
 [`golden-set-blogpost-quality`](tasks/golden-set-blogpost-quality.md) (⚠️ de golden-set-gate is
 per 16-08 gesplitst — `evaluate` kleurt je PR's niet meer rood; wat resteert is de inhoudelijke
 vraag waarom 4-5 cases stabiel zakken) ·
-[`guard-hooks-hardening`](tasks/guard-hooks-hardening.md) ·
-[`headless-content-service`](tasks/headless-content-service.md) (P3.0a) ·
-[`brand-assistant-quick-create`](tasks/brand-assistant-quick-create.md) (P3.0b)
+[`guard-hooks-hardening`](tasks/guard-hooks-hardening.md)
+
+> ~~`headless-content-service` (P3.0a) · `brand-assistant-quick-create` (P3.0b)~~ — **beide bleken
+> al gebouwd en gemerged** (changelog #413, PR's #185/#187/#188/#190/#192/#196). Er stond nog een
+> stale kopie in `tasks/` naast de afgevinkte in `tasks/done/`; de duplicaten zijn 17-08 verwijderd.
 
 ### Later
 `agent-vera-triggers` · `security-residual-hardening` (rest: CSP-enforce-flip) ·

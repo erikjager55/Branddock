@@ -82,5 +82,5 @@ artifact in de DB leeft tot R2-serving loont**.
 
 # Notes
 
-- Uitvoering: verbeterplan v3 §5 taak P2; task-file `tasks/publish-static-compile.md`.
+- Uitvoering: verbeterplan v3 §5 taak P2; task-file `tasks/done/publish-static-compile.md`.
 - Follow-up expliciet: batch-"republish met nieuw thema" (raakvlak C-spoor), R2-migratietrigger, forms-island (P3).

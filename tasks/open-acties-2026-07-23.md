@@ -33,6 +33,21 @@ taken-spiegel daarvan + de twee nieuwe items uit deze sessie.
 - [ ] **Browser-smoke LP-matrix** — eigenaarschap onduidelijk: Erik zelf (visueel) of Claude functioneel?
 
 ## B. Klein prod-nawerk (Erik, kan direct)
+- [ ] **Twee retentie-indexen op Neon** (uit PR #286, ADR `2026-08-17-landing-page-data-retention`).
+      Niet met `prisma db push`: die vergelijkt het héle schema en neemt eventuele
+      prod-drift mee, en de `CREATE INDEX` die Prisma uitstuurt locked `PageEvent`
+      tegen writes. Twee losse statements, concurrent, buiten een transactie:
+      ```sql
+      CREATE INDEX CONCURRENTLY IF NOT EXISTS "PageEvent_createdAt_idx"
+        ON "PageEvent" ("createdAt");
+      CREATE INDEX CONCURRENTLY IF NOT EXISTS "FormSubmission_createdAt_idx"
+        ON "FormSubmission" ("createdAt");
+      ```
+      Namen zijn exact wat Prisma genereert, dus een latere `db push`/`migrate` ziet
+      geen diff. Controle:
+      `SELECT indexname FROM pg_indexes WHERE tablename IN ('PageEvent','FormSubmission') AND indexname LIKE '%createdAt_idx';`
+      **Geen haast**: de retentie-cron (02:00) werkt zonder deze indexen functioneel
+      prima, alleen als volledige tabelscan. Wél doen vóór `PageEvent` serieus groeit.
 - [ ] **Barneveld-logo** uploaden — `~/Downloads/logo_barneveld.svg` in Brandstyle
 - [ ] **"+12"-proof point** nog in prod-HQ-workspace — in-app aanpassen (Brand Promise → proof points) of her-import
 - [ ] **Marketing-site restjes** — copy-review, quote/testimonial, 3 ontbrekende feature-screenshots

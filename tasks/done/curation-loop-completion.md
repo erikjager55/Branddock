@@ -62,7 +62,7 @@ toevoegen, en de twee R4-poten bouwen mét een eerlijke lege staat.
 # Bestanden die ik NIET aanraak
 
 - De drie beperkingen die bewust blijven staan (claim-release-knop, transactie op `claim-fields`,
-  component-rename-duplicaat) — zie `tasks/refresh-preserves-user-data.md`
+  component-rename-duplicaat) — zie `tasks/done/refresh-preserves-user-data.md`
 - De regels-beheer-UI · de heuristiek-regels
 
 # Smoke test plan

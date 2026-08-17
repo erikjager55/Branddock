@@ -71,7 +71,7 @@ scripts die nog Puck-CSS uit `node_modules` lazen saneren. Doel-invariant:
 - `scripts/workers/lp-screenshot-worker.tsx`
 - `scripts/dev/render-puckdata.tsx` + `render-lp-brand.tsx` + `render-lp-screenshot.tsx`
 - `scripts/smoke-tests/web-page-builder-phase18-brand-hero-emergent.ts` (stale suppress)
-- `tasks/puck-dependency-removal.md`
+- `tasks/done/puck-dependency-removal.md`
 
 # Bestanden die ik NIET aanraak
 

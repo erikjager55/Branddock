@@ -65,7 +65,7 @@ in `PuckPageBuilder`:
 - `src/lib/ui-i18n/locales/nl/campaigns-canvas-medium.ts` (pageBuilder-keys)
 - `scripts/smoke-tests/web-page-builder-phase48-preview-editing.ts` (nieuw)
 - `package.json` (smoke:web-page-builder-keten)
-- `tasks/lp-preview-editing.md` (deze file)
+- `tasks/done/lp-preview-editing.md` (deze file)
 
 # Bestanden die ik NIET aanraak
 
