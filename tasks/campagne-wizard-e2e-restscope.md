@@ -230,7 +230,41 @@ data-attribuut op de wizard-root, zodat de positie `4:review_final_strategy:elab
 wordt en de driver de overgang wél ziet. Daarna is de weg naar Deliverables en Review
 vrij — dat is dan naar verwachting het laatste stuk.
 
-### ⚠️ Openstaande productvraag: leeg assetplan bij "Approve Concept"
+### ✅ OPGELOST 2026-08-16 — leeg assetplan bij "Approve Concept"
+
+Erik koos richting 2: approve moet zelf elaboreren. Gedaan, en onderweg kwam een
+tweede, dieper liggende bug boven water.
+
+**Bewijs, hard en meetbaar** — dezelfde wizard, dezelfde briefing:
+
+| campagne | deliverables |
+|---|---|
+| vóór de fix (driver koos zelf één kaart) | **1** |
+| ná de fix (autoselectie op AI-aanbevelingen) | **8** |
+
+blog-post ×2, linkedin-video, case-study, linkedin-carousel, landing-page,
+promotional-email, newsletter. Runtime zakte van 18-24 min naar **6,0 min**, en de
+wizard liep voor het eerst volledig door tot de reset.
+
+**De tweede bug**: `handleElaborate` begint met `store.resetPipeline()`, en die zet
+`finalStrategy` én `finalArchitecture` op null. In het multi-variant pad is
+`finalStrategy` de ENIGE strategiebron — `synthesized*` blijft daar leeg. De elaboratie
+wiste dus precies wat de goedkeuring erna nodig heeft: `handleApprove` viel terug met
+alle vier de bronnen op null en de wizard bleef eeuwig op `generating_journey` staan.
+
+Dat gold **al** voor de bestaande twee-kliks-route via Continue; de nieuwe
+approve-elaboreert-zelf-tak maakte het alleen bereikbaar en daarmee zichtbaar.
+
+Cure: de strategie meteen terugzetten na de reset (ze is een paar regels eerder al
+vastgepakt). Bewust niet in `resetPipeline` zelf — die wordt door meer paden gebruikt en
+"gooi de pipeline leeg" is daar het juiste gedrag.
+
+**Hoe dit gevonden werd**: de `console.warn` in `handleApprove` bevatte het antwoord al —
+vier booleans die de oorzaak aanwijzen — maar niemand las de browserconsole. Die had ik
+een paar runs eerder aangesloten omdat het "gratis" leek. Zonder die stap had ik opnieuw
+de timeout verhoogd en een niet-bestaande traagheid onderzocht.
+
+### ~~Openstaande productvraag: leeg assetplan bij "Approve Concept"~~ (opgelost, zie boven)
 
 `handleApprove` bouwt de blueprint met `elaborateResult?.assetPlan ?? { deliverables: [] }`.
 In de gemeten runs blijft `elaborateResult` NULL — de elaboratie draait nooit in dit pad.

@@ -36,7 +36,11 @@ const MAX_STEPS = 10;
  */
 const MAX_IMPROVE_ATTEMPTS = 2;
 /** Ruim: elke stap kan een meerstaps AI-keten starten. */
-const STEP_TIMEOUT = 6 * 60_000;
+const STEP_TIMEOUT = 12 * 60_000;
+// 6 → 12 min (2026-08-16). De elaboratie (journey + kanaal- + assetplan) is een langere
+// keten dan de fasen ervoor, die elk 87-150s deden. Met 6 min gaf de driver op terwijl
+// `generating_journey` nog liep — en dat leest in het rapport als een vastloper terwijl
+// het gewoon de klok was.
 
 interface StepLog {
   index: number;
