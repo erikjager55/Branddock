@@ -6964,6 +6964,11 @@ model FormSubmission {
   /// Submissions-route filtert óók op landingPageId-IN binnen de workspace
   /// (OR-tak) — zonder deze index wordt dat een scan bij volume.
   @@index([workspaceId, landingPageId, createdAt])
+  /// Retentie-cron (ADR 2026-08-17) filtert op kále `createdAt < cutoff`. De
+  /// indexen hierboven zijn workspace-first en leiden dus niet met `createdAt`;
+  /// zonder deze was de nachtelijke prune een volledige tabelscan — óók als er
+  /// niets te verwijderen valt.
+  @@index([createdAt])
 }
 
 /**
@@ -6987,6 +6992,10 @@ model PageEvent {
 
   @@index([landingPageId, kind, createdAt])
   @@index([workspaceId, createdAt])
+  /// Retentie-cron (ADR 2026-08-17): zie de gelijknamige index op
+  /// `FormSubmission` — kale `createdAt < cutoff` heeft een createdAt-first
+  /// index nodig, en dit is de tabel die het hardst groeit.
+  @@index([createdAt])
 }
 
 // ─── Publieke Brand-API (ADR 2026-07-17-public-brand-api) ────────────────────

@@ -23,13 +23,44 @@ export const COMPILED_HTML_KEEP_VERSIONS = 5;
 /**
  * Kalender-correcte afkapdatum: `months` terug vanaf `now`.
  *
- * Bewust `setMonth()` en geen `months * 30`-benadering — die schuift per
- * jaar merkbaar weg, wat bij een AVG-termijn niet uit te leggen is.
+ * Geen `months * 30`-benadering — die schuift per jaar merkbaar weg, wat bij
+ * een AVG-termijn niet uit te leggen is.
+ *
+ * Ook geen kale `setMonth()`: die rolt op maandeinden vóóruit in plaats van te
+ * clampen. Op 31-03 leverde `setMonth(-13)` 03-03 op in plaats van 28-02, dus
+ * een latere cutoff en dáármee tot drie dagen data té veel verwijderd — precies
+ * het tegenovergestelde van de bedoelde termijn. De dag wordt daarom geclampt
+ * op de laatste dag van de doelmaand.
+ *
+ * Rekent in UTC, zodat de termijn niet een uur verschuift rond een
+ * DST-overgang op een host met lokale tijdzone.
  */
 export function retentionCutoff(months: number, now: Date = new Date()): Date {
-  const cutoff = new Date(now.getTime());
-  cutoff.setMonth(cutoff.getMonth() - months);
-  return cutoff;
+  // Harde guard: `0` levert `now` op (wist praktisch de hele tabel) en een
+  // negatieve waarde een cutoff in de toekomst (wist álles, van alle tenants).
+  // Er is geen soft-delete, dus één tekenfout in een constante hierboven is
+  // onherstelbaar. Liever een gefaalde cron-stap dan stille massa-verwijdering.
+  if (!Number.isInteger(months) || months <= 0) {
+    throw new Error(
+      `retentionCutoff: months moet een positief geheel getal zijn, kreeg ${months}`,
+    );
+  }
+  const targetMonth = now.getUTCMonth() - months;
+  // Dag 0 van de maand ná de doelmaand = laatste dag van de doelmaand.
+  const daysInTargetMonth = new Date(
+    Date.UTC(now.getUTCFullYear(), targetMonth + 1, 0),
+  ).getUTCDate();
+  return new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      targetMonth,
+      Math.min(now.getUTCDate(), daysInTargetMonth),
+      now.getUTCHours(),
+      now.getUTCMinutes(),
+      now.getUTCSeconds(),
+      now.getUTCMilliseconds(),
+    ),
+  );
 }
 
 /** Minimale vorm die `selectPrunableCompiledHtml` nodig heeft. */

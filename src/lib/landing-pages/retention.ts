@@ -8,10 +8,10 @@
 
 import { prisma } from '@/lib/prisma';
 import {
+  COMPILED_HTML_KEEP_VERSIONS,
   FORM_SUBMISSION_RETENTION_MONTHS,
   PAGE_EVENT_RETENTION_MONTHS,
   retentionCutoff,
-  selectPrunableCompiledHtml,
 } from './retention-policy';
 
 export {
@@ -27,35 +27,46 @@ export type { PublishVersionRef } from './retention-policy';
  *  je een serverless-timeout of een lange lock op Neon koopt. */
 const DELETE_BATCH_SIZE = 5_000;
 
-/** Harde lus-begrenzing per run — voorkomt dat een onverwacht grote tabel
- *  de cron-invocatie laat doorlopen tot de platform-timeout. */
-const MAX_BATCHES_PER_RUN = 40;
+/** Max delete-batches per run → plafond van 200.000 rijen per tabel per nacht.
+ *  Bereikt de lus dit plafond, dan is `truncated: true` — anders is
+ *  "cap geraakt" niet te onderscheiden van "klaar". */
+const MAX_DELETE_BATCHES = 40;
 
-/** Pagina's per iteratie bij het pruning-pad. */
-const PAGE_SCAN_BATCH_SIZE = 100;
+/**
+ * Uitkomst van een opruimstap.
+ *
+ * `truncated` betekent: de lus-cap is geraakt, er staat nog werk open. Zonder
+ * dit signaal leest een afgekapte run identiek aan een voltooide, en een tabel
+ * die sneller groeit dan de cap hem leegt zou stil achterlopen.
+ */
+export interface PruneResult {
+  count: number;
+  truncated: boolean;
+}
 
 /** Gedeelde batched-delete lus: id's ophalen, per batch wissen, tellen. */
 async function deleteInBatches(
   findIds: (take: number) => Promise<{ id: string }[]>,
   deleteByIds: (ids: string[]) => Promise<{ count: number }>,
-): Promise<number> {
+): Promise<PruneResult> {
   let deleted = 0;
-  for (let batch = 0; batch < MAX_BATCHES_PER_RUN; batch++) {
+  for (let batch = 0; batch < MAX_DELETE_BATCHES; batch++) {
     const rows = await findIds(DELETE_BATCH_SIZE);
-    if (rows.length === 0) break;
+    if (rows.length === 0) return { count: deleted, truncated: false };
     const result = await deleteByIds(rows.map((row) => row.id));
     deleted += result.count;
-    if (rows.length < DELETE_BATCH_SIZE) break;
+    if (rows.length < DELETE_BATCH_SIZE) return { count: deleted, truncated: false };
   }
-  return deleted;
+  return { count: deleted, truncated: true };
 }
 
 /**
  * Verwijdert PageEvents ouder dan het retentie-window.
  *
- * @returns aantal verwijderde rijen
+ * Leunt op de `@@index([createdAt])` op `PageEvent` — zonder die index is dit
+ * elke nacht een volledige tabelscan, óók als er niets te verwijderen valt.
  */
-export async function prunePageEvents(now: Date = new Date()): Promise<number> {
+export async function prunePageEvents(now: Date = new Date()): Promise<PruneResult> {
   const cutoff = retentionCutoff(PAGE_EVENT_RETENTION_MONTHS, now);
   return deleteInBatches(
     (take) =>
@@ -71,9 +82,9 @@ export async function prunePageEvents(now: Date = new Date()): Promise<number> {
 /**
  * Verwijdert FormSubmissions ouder dan het retentie-window (lead-PII).
  *
- * @returns aantal verwijderde rijen
+ * Leunt op de `@@index([createdAt])` op `FormSubmission`.
  */
-export async function pruneFormSubmissions(now: Date = new Date()): Promise<number> {
+export async function pruneFormSubmissions(now: Date = new Date()): Promise<PruneResult> {
   const cutoff = retentionCutoff(FORM_SUBMISSION_RETENTION_MONTHS, now);
   return deleteInBatches(
     (take) =>
@@ -86,42 +97,70 @@ export async function pruneFormSubmissions(now: Date = new Date()): Promise<numb
   );
 }
 
+/** Rijen per `compiledHtml`-batch. */
+const HTML_PRUNE_BATCH_SIZE = 1_000;
+
+/** Max `compiledHtml`-batches per run. */
+const MAX_HTML_PRUNE_BATCHES = 40;
+
 /**
  * Leegt `compiledHtml` op publishes voorbij het bewaar-venster.
  *
  * `puckData` en de publish-metadata blijven staan, dus rollback naar zo'n
  * versie blijft werken — die rendert dan via het runtime-fallback-pad.
  *
- * @returns aantal publishes waarvan de HTML is geleegd
+ * **Waarom één SQL-statement en niet een Prisma-lus.** Twee eerdere varianten
+ * liepen vast op hetzelfde: "pagina die kandidaat is" en "pagina die werk heeft"
+ * zijn niet hetzelfde. Een pagina met 6 HTML-dragende publishes waarvan de
+ * live-pointer de oudste is blijft eeuwig kandidaat (6 > 5) terwijl er niets te
+ * prunen valt, en geen enkele `groupBy`+`having`-drempel kan dat onderscheiden —
+ * of de pointer binnen of buiten het venster valt is geen kwestie van aantallen.
+ * Zulke pagina's hopen vooraan de id-ordening op en verhongeren de rest.
+ *
+ * `row_number()` drukt de regel exact uit: rangschik per pagina op versie,
+ * neem wat voorbij het venster valt, laat weg wat nog HTML draagt niet én sluit
+ * de live-pointer uit. Kandidaten zijn dus precies de prunebare rijen — ze
+ * verlaten de verzameling zodra ze geleegd zijn, dus elke batch boekt
+ * vooruitgang en er bestaat geen vastgelopen pagina. Bijkomend: de
+ * live-uitsluiting zit in hetzelfde statement als de update, dus een rollback
+ * die tussen selectie en update valt kan de net-live geworden versie niet meer
+ * haar artifact ontnemen (die race bestond in de vorige variant).
+ *
+ * `compiledHtml` wordt nooit geselecteerd, alleen `IS NOT NULL` getoetst — de
+ * HTML zelf komt het geheugen niet in.
+ *
+ * De selectie-regel staat óók als pure functie in `selectPrunableCompiledHtml`;
+ * die is de leesbare specificatie en wordt in de smoke tegen dit SQL-pad
+ * afgezet (fixture met 8 publishes en live op v2).
  */
-export async function pruneCompiledHtml(): Promise<number> {
+export async function pruneCompiledHtml(options?: {
+  /** Alleen voor tests: verkleint de batch zodat het lus-gedrag te zien is. */
+  batchSize?: number;
+}): Promise<PruneResult> {
+  const batchSize = options?.batchSize ?? HTML_PRUNE_BATCH_SIZE;
   let cleared = 0;
-  let cursor: string | undefined;
-  for (let batch = 0; batch < MAX_BATCHES_PER_RUN; batch++) {
-    const pages = await prisma.landingPage.findMany({
-      take: PAGE_SCAN_BATCH_SIZE,
-      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
-      orderBy: { id: 'asc' },
-      select: {
-        id: true,
-        livePublishId: true,
-        publishes: { select: { id: true, version: true } },
-      },
-    });
-    if (pages.length === 0) break;
-    cursor = pages[pages.length - 1].id;
 
-    const prunableIds = pages.flatMap((page) =>
-      selectPrunableCompiledHtml(page.publishes, page.livePublishId),
-    );
-    if (prunableIds.length > 0) {
-      const result = await prisma.pagePublish.updateMany({
-        where: { id: { in: prunableIds }, compiledHtml: { not: null } },
-        data: { compiledHtml: null },
-      });
-      cleared += result.count;
-    }
-    if (pages.length < PAGE_SCAN_BATCH_SIZE) break;
+  for (let batch = 0; batch < MAX_HTML_PRUNE_BATCHES; batch++) {
+    const affected = await prisma.$executeRaw`
+      UPDATE "PagePublish" SET "compiledHtml" = NULL
+      WHERE id IN (
+        SELECT ranked.id FROM (
+          SELECT pp.id,
+                 pp."compiledHtml" IS NOT NULL AS has_html,
+                 lp.id IS NOT NULL AS is_live,
+                 row_number() OVER (
+                   PARTITION BY pp."landingPageId" ORDER BY pp.version DESC
+                 ) AS rn
+          FROM "PagePublish" pp
+          LEFT JOIN "LandingPage" lp ON lp."livePublishId" = pp.id
+        ) ranked
+        WHERE ranked.rn > ${COMPILED_HTML_KEEP_VERSIONS}
+          AND ranked.has_html
+          AND NOT ranked.is_live
+        LIMIT ${batchSize}
+      )`;
+    cleared += affected;
+    if (affected < batchSize) return { count: cleared, truncated: false };
   }
-  return cleared;
+  return { count: cleared, truncated: true };
 }

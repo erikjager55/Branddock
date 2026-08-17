@@ -1,23 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
+import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { buildLeadFormId, listLeadFormSectionIds } from '@/lib/landing-pages/lead-form';
+import { buildSubmissionScope } from '@/lib/landing-pages/submission-scope';
 
 /**
  * Resolveert de submissie-scope van dit deliverable voor de ingelogde caller.
  *
- * Levert óf een klaargemaakte `where` (de enige toegestane blik op
- * FormSubmission voor deze caller), óf de foutrespons die de route moet
- * teruggeven. `where: null` betekent: geldige toegang, maar dit deliverable
- * heeft geen enkel formulier of pagina — dus per definitie 0 submissions.
- *
- * Matching is tweeledig (OR) omdat submissions op twee assen binnenkomen:
- *  - `formId in (…)`: de LeadForm-sectie-id's uit de HUIDIGE draft-tree
- *    (`deliverable.settings.puckData`) — vangt óók zip-/WP-export-submissions
- *    zonder herleidbare landingPage;
- *  - `landingPageId in (…)`: de pagina's van dit deliverable — vangt
- *    submissions van secties die inmiddels uit de draft verwijderd zijn.
+ * Doet de auth-keten (sessie → deliverable → membership) en levert óf de
+ * foutrespons die de route moet teruggeven, óf de scope plus de rol van de
+ * caller. De scope-regel zelf staat in `buildSubmissionScope`; `where: null`
+ * betekent daar: dit deliverable heeft geen formulier én geen pagina, dus per
+ * definitie 0 submissions.
  *
  * Auth: caller must belong to the workspace that owns the deliverable
  * (zelfde patroon als publishes/route.ts). GET en DELETE delen deze functie
@@ -45,9 +41,12 @@ async function resolveSubmissionScope(deliverableId: string) {
   const membership = await prisma.organizationMember.findFirst({
     where: {
       userId: session.user.id,
+      // `isActive` telt mee: deze rij autoriseert een onomkeerbare PII-delete,
+      // en een gedeactiveerd lid mag die net zo min als de leads lezen.
+      isActive: true,
       organization: { workspaces: { some: { id: workspaceId } } },
     },
-    select: { id: true },
+    select: { id: true, role: true },
   });
   if (!membership) {
     return {
@@ -63,24 +62,21 @@ async function resolveSubmissionScope(deliverableId: string) {
     buildLeadFormId(workspaceId, sectionId),
   );
 
+  // `workspaceId` staat er expliciet bij, niet alleen `deliverableId`: de
+  // tenant-veiligheid van de pagina-tak mag niet leunen op de aanname dat elke
+  // schrijver `LandingPage.workspaceId` gelijk houdt aan die van de campagne.
   const pages = await prisma.landingPage.findMany({
-    where: { deliverableId },
+    where: { deliverableId, workspaceId },
     select: { id: true },
   });
   const pageIds = pages.map((p) => p.id);
 
-  if (formIds.length === 0 && pageIds.length === 0) {
-    return { where: null };
-  }
-
+  // Scope-regel staat in `buildSubmissionScope` — Prisma-vrij en dus direct
+  // testbaar; zie de smoke voor de cross-tenant- en duplicaat-assertie.
   return {
-    where: {
-      workspaceId,
-      OR: [
-        ...(formIds.length > 0 ? [{ formId: { in: formIds } }] : []),
-        ...(pageIds.length > 0 ? [{ landingPageId: { in: pageIds } }] : []),
-      ],
-    },
+    ...buildSubmissionScope({ workspaceId, formIds, pageIds }),
+    role: membership.role,
+    userId: session.user.id,
   };
 }
 
@@ -118,16 +114,29 @@ export async function GET(
   return NextResponse.json({ total, recent });
 }
 
+/** Rollen die lead-PII mogen wissen. */
+const ERASURE_ROLES = ['owner', 'admin'] as const;
+
+const submissionIdSchema = z.string().min(1).max(64);
+
 /**
  * DELETE /api/landing-pages/[deliverableId]/submissions?id=<submissionId>
  *
  * AVG-wisroutine (ADR 2026-08-17): wist één submissie op verzoek — art. 17
  * recht op vergetelheid, náást de tijdgebonden retentie-cron.
  *
- * De wis draait als `deleteMany` over de scope-`where` mét het id erbij, niet
- * als `delete` op id alleen. Dat is het verschil tussen "wis mijn lead" en een
- * IDOR waarmee een lid van workspace A een lead van workspace B wist: een id
- * buiten de eigen scope raakt 0 rijen en levert 404, niet 200.
+ * Drie lagen die elk iets anders tegenhouden:
+ *
+ *  1. **Rol** — alleen owner/admin. Strenger dan de rollback-route hiernaast
+ *     (die alleen `viewer` weert), omdat een pointer-swap terug te draaien is
+ *     en dit niet: er is bewust geen soft-delete of archief. `require-role.ts`
+ *     stelt owner/admin als norm voor destructieve acties.
+ *  2. **Scope** — `deleteWhere`, niet de ruimere lees-`where`; zie de toelichting
+ *     bij `resolveSubmissionScope`.
+ *  3. **Vorm** — `deleteMany` over die scope mét het id erbij, niet `delete` op
+ *     id alleen. Dat is het verschil tussen "wis mijn lead" en een IDOR waarmee
+ *     een lid van workspace A een lead van workspace B wist: een id buiten de
+ *     scope raakt 0 rijen en levert 404, niet 200.
  */
 export async function DELETE(
   request: NextRequest,
@@ -141,22 +150,51 @@ export async function DELETE(
   if ('error' in scope) {
     return scope.error;
   }
-
-  const submissionId = request.nextUrl.searchParams.get('id');
-  if (!submissionId) {
-    return NextResponse.json({ error: 'Missing required query param: id' }, { status: 400 });
+  if (!ERASURE_ROLES.includes(scope.role as (typeof ERASURE_ROLES)[number])) {
+    return NextResponse.json(
+      { error: 'Only owners and admins can erase form submissions' },
+      { status: 403 },
+    );
   }
 
-  if (scope.where === null) {
+  const parsed = submissionIdSchema.safeParse(request.nextUrl.searchParams.get('id'));
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Missing or invalid required query param: id' },
+      { status: 400 },
+    );
+  }
+
+  if (scope.deleteWhere === null) {
     return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
   }
 
   const { count } = await prisma.formSubmission.deleteMany({
-    where: { ...scope.where, id: submissionId },
+    where: { ...scope.deleteWhere, id: parsed.data },
   });
   if (count === 0) {
+    // De wis-scope is strikter dan de lees-scope. Zonder dit onderscheid ziet
+    // een beheerder de lead in het Leads-blok staan en krijgt "bestaat niet"
+    // terug — een misleidende 404 op wat een scope-beslissing is.
+    const readableElsewhere =
+      scope.where !== null &&
+      (await prisma.formSubmission.count({ where: { ...scope.where, id: parsed.data } })) > 0;
+    if (readableElsewhere) {
+      return NextResponse.json(
+        {
+          error:
+            'Submission is visible here but belongs to another deliverable — erase it from the deliverable that owns its page',
+        },
+        { status: 409 },
+      );
+    }
     return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
   }
 
+  // Erasure-spoor: wie wiste wat, wanneer. Er is geen AuditLog-model, dus dit
+  // is de enige plek waar dat terug te vinden is.
+  console.info(
+    `[DELETE submissions] user ${scope.userId} erased submission ${parsed.data} from deliverable ${deliverableId}`,
+  );
   return NextResponse.json({ deleted: count });
 }

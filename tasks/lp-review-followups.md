@@ -35,10 +35,13 @@ windows in `src/lib/landing-pages/retention-policy.ts`.
       voorbij ~10k events/maand.
 - [x] **FormSubmission-retentie + AVG-wisroutine**: 26-maands-window plus
       `DELETE .../submissions?id=…` voor een individueel wisverzoek (art. 17 —
-      retentie ná 26 maanden is geen antwoord op "wis mijn gegevens nú"). De wis
-      draait als `deleteMany` over de scope-`where` van de GET mét het id erbij,
-      niet als `delete` op id alleen: een id buiten de eigen workspace raakt 0
-      rijen en levert 404. Vast window, niet per workspace — zie ADR §Windows.
+      retentie ná 26 maanden is geen antwoord op "wis mijn gegevens nú"). Drie
+      lagen: rol (owner/admin), scope (`deleteWhere`, striktere variant van de
+      lees-scope) en vorm (`deleteMany` mét id, niet `delete` op id alleen → 404).
+      Vast window, niet per workspace — zie ADR §Windows.
+      ⚠️ **Bekende grens**: een submissie zónder `landingPageId` wiens sectie-id
+      niet meer in de draft-tree staat is via geen route bereikbaar; wissen is
+      voor die rijen vandaag ruwe SQL. Zie ADR §Consequences.
 - [x] **PagePublish.compiledHtml-pruning**: nieuwste 5 versies per pagina houden
       hun HTML, ouder → `null`; `puckData` en metadata blijven, dus rollback werkt
       via het bestaande runtime-fallback-pad. **De live versie wordt altijd
@@ -46,12 +49,22 @@ windows in `src/lib/landing-pages/retention-policy.ts`.
       de live versie is niet altijd de nieuwste; zonder die uitzondering verliest
       juist de live pagina haar bevroren artifact.
 
-**Bewijs**: `npm run smoke:lp-retention` → **20/20** tegen een echte Postgres
-(9 pure checks incl. de live-pointer-casus, 11 DB-checks). Cron end-to-end:
-401 zonder token, 401 met verkeerd token, en met 7 oude events / 3 oude
-submissions / 8 publishes gezaaid → `{"pageEvents":7,"formSubmissions":3,
-"compiledHtml":3}`, daarna 0 events, 0 submissions, 5 publishes mét HTML,
-3 zonder, `puckData` intact op alle 8. `tsc` 0 errors · `lint` 0 errors.
+**Bewijs**: `SMOKE_DB=1 npm run smoke:lp-retention` → **41/41** tegen een echte
+Postgres (18 puur, 23 DB). Vijf mutatietests bevestigen dat de smoke tanden heeft,
+met het aantal checks dat valt: live-pointer-uitzondering uit de pure functie (4),
+terug naar de kale `setMonth()` (4), `workspaceId` uit de scope (1), de twee
+retentie-vensters verwisseld (1), live-uitsluiting uit het SQL (2).
+Cron end-to-end: 401 zonder token, 401 met verkeerd token, 200 met `truncated`
+per stap; in de eerste ronde met 7 oude events / 3 oude submissions / 8 publishes
+gezaaid → 0 events, 0 submissions, 5 publishes mét HTML, 3 zonder, `puckData`
+intact op alle 8. `tsc` 0 errors · `lint` 0 errors.
+
+**Na de 2-reviewer-ronde bijgesteld** (2 blockers, 7 warnings): afkapdatum clampte
+niet op maandeinden (wiste tot 3 dagen te veel), HTML-pruner sloeg alles voorbij
+4.000 pagina's stil over, `viewer` kon lead-PII wissen, de smoke was zelf een
+tabelbreed wisscript, twee `createdAt`-indexen ontbraken (énige schemawijziging,
+additief), afgekapte runs waren niet te onderscheiden van voltooide, en de
+IDOR-garantie werd door geen enkele check gedekt. Details in changelog #474.
 
 ## Robuustheid (geen waargenomen impact, wel echt)
 - [ ] **Registry-type versmallen (`buildSpikePuckConfig`)**: sinds E3 het
@@ -90,7 +103,7 @@ submissions / 8 publishes gezaaid → `{"pageEvents":7,"formSubmissions":3,
 # Acceptatiecriteria
 
 - [x] Retentie-items gebouwd of expliciet her-geprioriteerd vóór de eerste
-      workspace met >10k events/maand — gebouwd 2026-08-17 (ADR + cron + smoke 20/20)
+      workspace met >10k events/maand — gebouwd 2026-08-17 (ADR + cron + smoke 41/41)
 - [ ] Robuustheid-items opgepakt in een reguliere hardening-sessie — **nog open**,
       de zes items hierboven zijn níet van deze ronde
 

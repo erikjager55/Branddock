@@ -17,20 +17,24 @@ import {
   prunePageEvents,
   pruneFormSubmissions,
   pruneCompiledHtml,
+  type PruneResult,
 } from '@/lib/landing-pages/retention';
 
-/** Uitkomst per stap: het aantal geraakte rijen, of de fout die het brak. */
-type StepResult = { count: number } | { error: string };
+/** Uitkomst per stap: het resultaat, of dat de stap gefaald is. */
+type StepOutcome = PruneResult | { error: string };
 
 async function runStep(
   label: string,
-  step: () => Promise<number>,
-): Promise<StepResult> {
+  step: () => Promise<PruneResult>,
+): Promise<StepOutcome> {
   try {
-    return { count: await step() };
+    return await step();
   } catch (error) {
+    // Volledige fout naar de log, generieke tekst naar de response — zelfde
+    // keuze als brandmd-draft-cleanup; Prisma-berichten kunnen kolom- en
+    // querydetails bevatten.
     console.error(`[GET /api/cron/lp-retention] step "${label}" failed`, error);
-    return { error: error instanceof Error ? error.message : 'Unknown error' };
+    return { error: `Step "${label}" failed — see server logs` };
   }
 }
 
@@ -46,11 +50,20 @@ export async function GET(request: NextRequest) {
   );
   const compiledHtml = await runStep('compiledHtml', () => pruneCompiledHtml());
 
-  const failed = [pageEvents, formSubmissions, compiledHtml].some(
-    (result) => 'error' in result,
+  const steps = { pageEvents, formSubmissions, compiledHtml };
+  const outcomes = Object.values(steps);
+  const failed = outcomes.some((outcome) => 'error' in outcome);
+  // "Er staat nog werk open" geldt óók als een stap crashte: die deed niets, en
+  // `truncated: false` zou dat als "klaar" laten lezen.
+  const truncated = outcomes.some(
+    (outcome) => 'error' in outcome || outcome.truncated,
   );
+  if (truncated) {
+    console.warn('[GET /api/cron/lp-retention] run truncated — work remains', steps);
+  }
+
   return NextResponse.json(
-    { pageEvents, formSubmissions, compiledHtml },
+    { ...steps, truncated },
     { status: failed ? 500 : 200 },
   );
 }
