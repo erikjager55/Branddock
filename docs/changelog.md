@@ -37,6 +37,23 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 474. Landing-page-data heeft een plafond — drie onbegrensde tabellen + een AVG-wisroutine
+
+Drie retentie-punten uit de webpage-builder-review van 13-08 stonden bewust geparkeerd als "geen launch-blocker, wel afmaken vóór volume-groei". Ze zijn 16-08 naar Nu gehaald omdat ze als enige met de dag duurder worden, en nu gebouwd: **`PageEvent`** groeide onbegrensd via een publiek endpoint dat 60 events/min/IP toestaat terwijl het dashboard maar 30 dagen leest; **`FormSubmission`** bevatte lead-PII zonder enige wisroutine — workspace-delete cascadeerde wel, maar er was geen manier om één submissie te wissen, precies wat AVG art. 17 en een verwerkersafspraak eisen; **`PagePublish.compiledHtml`** bewaarde sinds ADR 2026-08-12 elk volledig HTML-artifact append-only.
+
+Eén dagelijkse cron (`/api/cron/lp-retention`, 02:00) doet alle drie: 13 maanden voor events, 26 maanden voor leads, nieuwste 5 versies per pagina voor HTML. Elke stap wordt afzonderlijk afgevangen — een fout in de ene stap mag de andere twee niet laten groeien. Deletes lopen in batches van 5.000 met een lus-cap, niet als één `deleteMany` over de hele tabel: dat laatste is hoe je op een groeiende tabel een serverless-timeout of een lange lock op Neon koopt. Naast de tijdgebonden cron een **`DELETE .../submissions?id=…`** voor een individueel wisverzoek, want retentie ná 26 maanden is geen antwoord op "wis mijn gegevens nú".
+
+⚠️ **De interessante bug is degene die niet gebeurd is.** "Bewaar de nieuwste 5 versies" is fout, en stil fout: rollback is een pointer-swap (`LandingPage.livePublishId`), dus ná een rollback naar een oude versie is de live pagina **niet** de nieuwste. Een naïeve pruner had juist de live pagina haar bevroren artifact afgenomen, waarna die terugvalt op runtime-render met verse merk-tokens — exact de stille herstijling die ADR 2026-08-12 wilde uitbannen, en niets in de UI dat het meldt. De pruner slaat de live versie daarom altijd over, ook buiten het venster, en dat is de zwaarste assertie in de smoke.
+
+Twee dingen kwamen uit het bouwen zelf. De pure selectie-logica stond eerst in hetzelfde bestand als de Prisma-import, waardoor ze **alleen mét database te verifiëren was** (`src/lib/prisma.ts` gooit al bij module-load zonder `DATABASE_URL`) — gesplitst naar `retention-policy.ts`, zodat juist de riskante logica overal draait. En de smoke maakte zijn fixtures vóór de `try`, dus een mislukking halverwege liet een organisatie achter op de DB; nu staat alle creatie ín de `try` met één cascade-delete in de `finally`.
+
+De IDOR-kant is bewust niet aan een nieuwe check overgelaten: `DELETE` hergebruikt de scope-`where` van de `GET` via een gedeelde `resolveSubmissionScope()` en draait als `deleteMany` mét het id erbij, niet als `delete` op id alleen. Een id buiten de eigen workspace raakt 0 rijen → 404. Auth gaat vóór input-validatie, zodat een niet-ingelogde caller 401 krijgt en niet een 400 die de route-vorm verklapt.
+
+**Bewijs**: `npm run smoke:lp-retention` **20/20** tegen een echte Postgres (9 pure checks incl. de live-pointer-casus, 11 DB-checks). Cron end-to-end: 401 zonder token, 401 met verkeerd token, en met 7 oude events / 3 oude submissions / 8 publishes gezaaid → `{"pageEvents":7,"formSubmissions":3,"compiledHtml":3}`, daarna 0 events, 0 submissions, 5 publishes mét HTML, 3 zonder, `puckData` intact op alle 8. HTTP-paden: GET 401, DELETE zonder sessie 401. `tsc` 0 · `lint` 0 errors (964 warnings, ongewijzigd). Geen schemawijziging, dus geen Neon-migratie. De zes robuustheid-items in dezelfde task-file blijven expliciet open.
+
+- ADR: [docs/adr/2026-08-17-landing-page-data-retention.md](adr/2026-08-17-landing-page-data-retention.md)
+- Task: [tasks/lp-review-followups.md](../tasks/lp-review-followups.md)
+
 ### 473. Campagnewizard end-to-end getest — vijf productiebugs die achter een gate zaten
 
 De e2e-sweep van 15-08 had de campagnegenerator in zijn titel en zette het criterium op afgevinkt, met in dezelfde regel: *"De stappen ná de gate (foundation, concept, deliverables, review) zijn hiermee **niet** afgedekt."* Vier van de zeven wizard-stappen waren nooit door het klikpad gegaan. Die zijn nu alle vier gedekt — en achter die gate lagen **vijf productiebugs**, elk onzichtbaar zolang niemand er langskwam.

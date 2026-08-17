@@ -38,6 +38,10 @@
     {
       "path": "/api/cron/brandmd-lifecycle",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/lp-retention",
+      "schedule": "0 2 * * *"
     }
   ],
   "functions": {
