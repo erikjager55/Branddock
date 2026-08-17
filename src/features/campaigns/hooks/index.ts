@@ -279,7 +279,6 @@ import type {
 } from '../types/content-library.types';
 import type {
   WizardKnowledgeResponse,
-  DeliverableTypeOption,
   LaunchCampaignBody,
   LaunchCampaignResponse,
   EstimateTimelineResponse,
@@ -298,8 +297,6 @@ export const campaignWizardKeys = {
   all: ['campaign-wizard'] as const,
   knowledge: () => [...campaignWizardKeys.all, 'knowledge'] as const,
   strategy: () => [...campaignWizardKeys.all, 'strategy'] as const,
-  deliverableTypes: () =>
-    [...campaignWizardKeys.all, 'deliverable-types'] as const,
   timeline: () => [...campaignWizardKeys.all, 'timeline'] as const,
 };
 
@@ -356,12 +353,6 @@ async function toggleContentFavorite(
 async function fetchWizardKnowledge(): Promise<WizardKnowledgeResponse> {
   const res = await fetch('/api/campaigns/wizard/knowledge');
   if (!res.ok) throw new Error('Failed to fetch knowledge');
-  return res.json();
-}
-
-async function fetchDeliverableTypes(): Promise<DeliverableTypeOption[]> {
-  const res = await fetch('/api/campaigns/wizard/deliverable-types');
-  if (!res.ok) throw new Error('Failed to fetch deliverable types');
   return res.json();
 }
 
@@ -560,13 +551,6 @@ export function useRegenerateBlueprintLayer(campaignId: string): UseMutationResu
       qc.invalidateQueries({ queryKey: campaignKeys.detail(campaignId) });
       qc.invalidateQueries({ queryKey: campaignKeys.all });
     },
-  });
-}
-
-export function useDeliverableTypes() {
-  return useQuery({
-    queryKey: campaignWizardKeys.deliverableTypes(),
-    queryFn: fetchDeliverableTypes,
   });
 }
 
