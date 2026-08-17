@@ -1,8 +1,8 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> **Laatst bijgewerkt: 2026-08-16** (resync na #266/#267 — het ongecommitte werk is
-> vastgelegd en de HNG-import is gedraaid, dus die secties zijn weg).
+> **Laatst bijgewerkt: 2026-08-17** (na de campagnewizard-sessie: #279-#284 gemerged,
+> vijf productiebugs weg, wizard voor het eerst end-to-end getest).
 
 ---
 
@@ -19,11 +19,32 @@ sporen dragen dat:
    werkend: generator, Brand Score, rapport-mail, lifecycle-reeks 2.2-2.5, claim-flow
    en leads-dashboard staan er.
 2. **De designbibliotheek** — Brand Manifest, Brand Library-accessor, StyleguideRule
-   als eersteklas datatype, en sinds vandaag ook de F-VAL-rules-pijler die ze écht leest.
+   als eersteklas datatype, en sinds 15-08 ook de F-VAL-rules-pijler die ze écht leest.
 
 **Wat er niét meer speelt:** het credit-model is compleet (bouw, Stripe-config,
 smokes). Het enige dat rest is jouw schakelmoment: `NEXT_PUBLIC_TOPUP_ENABLED=true`
 plus één echte betaal-smoke.
+
+---
+
+## Wat er landde (2026-08-17)
+
+**De campagnewizard is voor het eerst end-to-end getest** (#279-#284, changelog 473). De sweep
+van 15-08 zette de campagnegenerator op afgevinkt met in dezelfde regel "de stappen ná de gate
+zijn níét afgedekt" — vier van de zeven stappen waren nooit door het klikpad gegaan. Achter die
+gate lagen **vijf productiebugs**: de briefing-scoring (drie defecten, waaronder gap-labels die
+allemaal "Algemeen" toonden), stap 4 die met een harde 400 faalde door een modelnamen-lijst die
+`claude-sonnet-5` miste, afgekapte JSON die als syntaxfout verscheen, en twee bugs die samen
+maakten dat "Approve Concept" een campagne zónder AI-deliverables opleverde.
+
+Meetbaar: dezelfde wizard en briefing gaven **1 deliverable vóór en 8 erna**, runtime 18-24 min
+→ 6,0 min. De 80-drempel is bewust blijven staan — met werkende scoring blokkeert die precies
+wat hij hoort te blokkeren.
+
+⚠️ De rode draad is het onthouden waard: in vrijwel elk geval **bestond de diagnostiek al, maar
+kwam ze nergens aan**. De parse-fout wees naar de verkeerde plek in de respons, de weigering bij
+de conceptbeoordeling kwam als toast die geen enkele foutafvang ziet, en de `console.warn` die
+de laatste bug verklaarde stond in de browserconsole die niemand las.
 
 ---
 
@@ -132,7 +153,6 @@ halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
 | [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst, deels achterhaald |
 | [`lp-review-followups`](tasks/lp-review-followups.md) | open — ⚠️ naar Nu gehaald 16-08: de retentie-items zijn tijdgevoelig (`PageEvent` groeit onbegrensd, `FormSubmission` bevat PII zonder wisroutine) |
-| [`campagne-wizard-e2e-restscope`](tasks/campagne-wizard-e2e-restscope.md) | open — vier wizard-stappen nooit getest; onderzoek de 80-gate eerst |
 
 ### Volgende
 `workspaces-online-migratie` (4 workspaces resteren, jouw keuze) ·
