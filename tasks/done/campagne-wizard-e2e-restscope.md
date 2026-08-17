@@ -5,9 +5,9 @@ fase: post-launch
 priority: now
 effort: 1-2 dagen (½ dag gate-onderzoek, 1 dag e2e-uitbreiding)
 owner: claude-code
-status: open
+status: done
 created: 2026-08-16
-completed:
+completed: 2026-08-16
 related-adr: -
 related-spec: docs/playbooks/testplan-content-items.md
 worktree: -
@@ -369,9 +369,12 @@ betrouwbaar is; anders meet je de flakiness, niet de wizard.
       Stap 5-7 nog niet bereikt — geblokkeerd op de fase-1-parsefout hierboven
 - [x] De e2e komt langs de gate op een realistische (zij het bewust overcomplete) briefing —
       score 85, zonder de gate te omzeilen
-- [ ] `/api/campaigns/wizard/deliverable-types` + `useDeliverableTypes()`: verwijderd óf
-      gedocumenteerd waarom ze blijven
-- [ ] `npx tsc --noEmit` 0 errors · `eslint` 0 errors
+- [x] `/api/campaigns/wizard/deliverable-types` + `useDeliverableTypes()`: **verwijderd**
+      (2026-08-16). De hele keten was dood — route, hook, fetcher, query-key én het
+      `DeliverableTypeOption`-type. Enige "consument" was een e2e-test die alleen
+      `status === 200` controleerde: een test die bestaansrecht verleent aan code die
+      niemand gebruikt. Ook verwijderd.
+- [x] `npx tsc --noEmit` 0 errors · `eslint` 0 errors
 
 # Smoke test plan
 

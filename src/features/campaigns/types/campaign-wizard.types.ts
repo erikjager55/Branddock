@@ -131,15 +131,6 @@ export interface StrategyResultResponse {
   recommendedChannels: string[];
 }
 
-export interface DeliverableTypeOption {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  outputFormats: string[];
-  icon: string;
-}
-
 export interface LaunchCampaignBody {
   name: string;
   description: string;

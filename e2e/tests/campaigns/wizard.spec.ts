@@ -62,11 +62,6 @@ test.describe('Campaigns — Wizard', () => {
     expect(Array.isArray(data)).toBe(true);
   });
 
-  test('wizard deliverable types endpoint works', async ({ page }) => {
-    const response = await page.request.get('/api/campaigns/wizard/deliverable-types');
-    expect(response.status()).toBe(200);
-  });
-
   test('launch campaign via API', async ({ page }) => {
     const response = await page.request.post('/api/campaigns/wizard/launch', {
       data: {
