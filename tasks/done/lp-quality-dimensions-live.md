@@ -41,7 +41,7 @@ Een type-aware composer `evaluatePageQualityForType(tree, contentType)` in `page
 - `src/app/api/landing-pages/auto-iterate/route.ts` — contentType-resolve + type-aware scoring + additieve response-velden
 - `src/app/api/landing-pages/strict-rewrite/route.ts` — optioneel `contentType`-bodyveld + type-aware scoring + additieve response-velden
 - `scripts/smoke-tests/web-page-builder-phase10-quality-dimensions.ts` — B5-dispatch-assertions
-- `tasks/lp-quality-dimensions-live.md` — deze task-file
+- `tasks/done/lp-quality-dimensions-live.md` — deze task-file
 
 # Bestanden die ik NIET aanraak
 

@@ -296,18 +296,18 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 
 ---
 
-### 🔬 Research-stack-bundel (post-launch — gepland 2026-07-15)
+### 🔬 Research-stack-bundel (✅ afgesloten — 3 gebouwd, 1 gevalideerd-en-geparkeerd)
 
-> Exa + S2 + Nova's deep-research doortrekken naar vier oppervlakken. Volledig uitvoeringsklaar
-> gepland voor een aparte (Sonnet 5-)sessie: [`docs/reports/research-stack-plan-2026-07-15.md`](docs/reports/research-stack-plan-2026-07-15.md).
+> Exa + S2 + Nova's deep-research doortrekken naar vier oppervlakken. Plan:
+> [`docs/reports/research-stack-plan-2026-07-15.md`](docs/reports/research-stack-plan-2026-07-15.md).
 > Aanleiding: keys live + scholar-wiring gedicht (#402); drie onafhankelijke checks wezen dezelfde kandidaten aan.
 
 | Task | Wat | Status/gate | Effort |
 |---|---|---|---|
-| [`research-stack-trend-radar`](tasks/research-stack-trend-radar.md) | Exa + S2 als extra bronlagen in de trend-radar-researcher | open — geen gate (patroon #402) | 1-2d |
-| [`research-stack-marco-web-signals`](tasks/research-stack-marco-web-signals.md) | Curated tool: extern web-/nieuwsbeeld per concurrent (Exa) voor Marco | open — geen gate | 1-2d |
-| [`research-stack-geo-research-backed`](tasks/research-stack-geo-research-backed.md) | Research-backed `citeableStats` (Exa+S2) in de GEO-long-form-generatie | open — raakt de generatie-route: kleine additieve diff + A/B-datapunt verplicht | 2-4d |
-| [`brand-mention-monitor`](tasks/brand-mention-monitor.md) | 10e agent: merkvermeldingen-waakhond op Exa | **Fase-0-gated** (Exa-dekking voor NL-MKB-merken onbewezen; idea-doc + Red Team in `_drafts`) | ½d + 3-5d na GO |
+| [`research-stack-trend-radar`](tasks/done/research-stack-trend-radar.md) | Exa + S2 als extra bronlagen in de trend-radar-researcher | ✅ **done** (#404) — smoke 21/21 + end-to-end 22/22 | 1-2d |
+| [`research-stack-marco-web-signals`](tasks/done/research-stack-marco-web-signals.md) | Curated tool: extern web-/nieuwsbeeld per concurrent (Exa) voor Marco | ✅ **done** (#406) — smoke 13/13, `FULL_RUN` 16/16 | 1-2d |
+| [`research-stack-geo-research-backed`](tasks/done/research-stack-geo-research-backed.md) | Research-backed `citeableStats` (Exa+S2) in de GEO-long-form-generatie | ✅ **done** (#407) — smoke 15/15; GEO-scoring/schema/sanitizer bevroren | 2-4d |
+| [`brand-mention-monitor`](tasks/brand-mention-monitor.md) | 10e agent: merkvermeldingen-waakhond op Exa | **blocked — Fase-0 NO-GO** (#408): NL-MKB-merken 0-1 vermelding/30d bij 90% ruis; géén code gebouwd. Reopen bij bredere bron (social/news-API) of scale-up-pilotklanten | ½d + 3-5d na GO |
 
 ### 🔌 MCP Integration Layer (post-launch — besluit 2026-06-19)
 

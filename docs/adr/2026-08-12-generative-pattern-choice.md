@@ -138,10 +138,10 @@ stilzwijgend naar 'default' degradeert i.p.v. te corrigeren via een retry**.
 
 # Notes
 
-- Uitvoering: `tasks/lp-generative-pattern-choice.md`; plan §5 Fase C taak C3
+- Uitvoering: `tasks/done/lp-generative-pattern-choice.md`; plan §5 Fase C taak C3
   + §7 (pattern-spreiding-metriek). Bouwstenen: C1
   (`section-patterns.ts`, ADR-loos gedocumenteerd in
-  `tasks/lp-section-pattern-library.md`) en C2 (`lp-pattern-swap-ui`).
+  `tasks/done/lp-section-pattern-library.md`) en C2 (`lp-pattern-swap-ui`).
 - Nieuwe module: `src/lib/landing-pages/pattern-choice.ts` (slots per type,
   prompt-blok, sanitize, `patternProp`-mapper-helper,
   `variantLayoutPatterns`-accessor voor de meting).

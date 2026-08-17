@@ -6946,7 +6946,7 @@ enum SslStatus {
  * bewust FK-loze referentie: submissions zijn lead-data en moeten een
  * pagina-delete overleven; hij is null wanneer de bron niet herleidbaar is
  * (zip-/WP-export). AVG: `data` bevat persoonsgegevens — retentie- en
- * verwerkersafspraken in `tasks/lp-forms-leads.md`.
+ * verwerkersafspraken in `tasks/done/lp-forms-leads.md`.
  */
 model FormSubmission {
   id            String   @id @default(cuid())

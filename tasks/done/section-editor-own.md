@@ -43,7 +43,7 @@ Eigen fullscreen `SectionEditor` (drie kolommen: sectie-lijst / live `<PageRende
 - `src/features/campaigns/components/canvas/medium/PuckPageBuilder.tsx` (modal-swap + Puck-sanering)
 - `src/lib/ui-i18n/locales/en/campaigns-canvas-medium.ts` + `nl/campaigns-canvas-medium.ts`
 - `scripts/smoke-tests/web-page-builder-phase53-section-editor.ts` (nieuw)
-- `tasks/section-editor-own.md`
+- `tasks/done/section-editor-own.md`
 
 # Bestanden die ik NIET aanraak
 

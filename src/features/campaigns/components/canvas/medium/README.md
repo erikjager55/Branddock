@@ -87,4 +87,4 @@ src/lib/landing-pages/
   (beslissingen 1/3/4/5 nog van kracht; beslissing 2 herzien)
 - Plan: `docs/specs/2026-08-07-webpage-builder-verbeterplan.md` (v3) +
   marktonderzoek `docs/reports/webpage-bouw-en-publicatie-marktonderzoek-2026-08-07.md`
-- Task-files: `tasks/page-render-own-loop.md` e.v. (E-/A-/B-/C-/P-reeks, 2026-08-12)
+- Task-files: `tasks/done/page-render-own-loop.md` e.v. (E-/A-/B-/C-/P-reeks, 2026-08-12)

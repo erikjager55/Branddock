@@ -19,9 +19,9 @@ aparte sessie.
 
 | # | Task-file | Wat | Effort | Waarom deze volgorde |
 |---|---|---|---|---|
-| 1 | [`tasks/research-stack-trend-radar.md`](../../tasks/research-stack-trend-radar.md) | Exa + S2 als extra bronlagen in de trend-radar-researcher | 1-2d | Kleinste scope, zelfde "optionele verrijking"-patroon als #402 — warmdraai-taak |
-| 2 | [`tasks/research-stack-marco-web-signals.md`](../../tasks/research-stack-marco-web-signals.md) | Nieuwe curated tool: extern web-/nieuwsbeeld per concurrent (Exa) voor Marco | 1-2d | Bouwt op patroon uit taak 1; raakt alleen de agents-registry |
-| 3 | [`tasks/research-stack-geo-research-backed.md`](../../tasks/research-stack-geo-research-backed.md) | Research-backed `citeableStats` (Exa + S2) in de GEO-long-form-generatie | 2-4d | Grootste waarde (GEO-differentiator), raakt de generatie-keten — doe dit met de ervaring van 1+2 |
+| 1 | [`tasks/done/research-stack-trend-radar.md`](../../tasks/done/research-stack-trend-radar.md) | Exa + S2 als extra bronlagen in de trend-radar-researcher | 1-2d | Kleinste scope, zelfde "optionele verrijking"-patroon als #402 — warmdraai-taak |
+| 2 | [`tasks/done/research-stack-marco-web-signals.md`](../../tasks/done/research-stack-marco-web-signals.md) | Nieuwe curated tool: extern web-/nieuwsbeeld per concurrent (Exa) voor Marco | 1-2d | Bouwt op patroon uit taak 1; raakt alleen de agents-registry |
+| 3 | [`tasks/done/research-stack-geo-research-backed.md`](../../tasks/done/research-stack-geo-research-backed.md) | Research-backed `citeableStats` (Exa + S2) in de GEO-long-form-generatie | 2-4d | Grootste waarde (GEO-differentiator), raakt de generatie-keten — doe dit met de ervaring van 1+2 |
 | 4 | [`tasks/brand-mention-monitor.md`](../../tasks/brand-mention-monitor.md) | Nieuwe capability: merkvermeldingen-monitor (Fase-0-gated) | Fase 0 ~½d · bouw 3-5d na GO | Echt nieuw — heeft een Fase-0-validatie vóór er code komt (idea-doc: `tasks/_drafts/idea-brand-mention-monitor.md`) |
 
 Taken 1-3 zijn onafhankelijk uitvoerbaar (geen gedeelde bestanden behalve triviale

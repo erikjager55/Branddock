@@ -29,7 +29,7 @@ geen launch-blockers, wel afmaken vóór volume-groei.
       of maandpartities. `prisma/schema.prisma` model `PageEvent`.
 - [ ] **FormSubmission-retentie + AVG-wisroutine**: PII in `data Json`;
       workspace-delete cascadeert al, maar per-submission retentie/erasure
-      (verwerkersafspraak!) ontbreekt. Zie ook `tasks/lp-forms-leads.md` §AVG.
+      (verwerkersafspraak!) ontbreekt. Zie ook `tasks/done/lp-forms-leads.md` §AVG.
 - [ ] **PagePublish.compiledHtml-pruning**: elk publish-artifact (volledige
       HTML) blijft append-only bewaard. Pruning-strategie: bv. artifacts
       ouder dan N versies leegmaken (metadata behouden — rollback op de

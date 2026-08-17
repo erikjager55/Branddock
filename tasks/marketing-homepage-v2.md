@@ -1,6 +1,20 @@
+---
+id: marketing-homepage-v2
+title: Marketing-homepage v2 (Fase 1) — homepage-herbouw + nav/footer-herstructuur, NL-first
+fase: post-launch
+priority: now
+effort: 2-4 dagen
+owner: claude-code
+status: in-progress
+created: 2026-08-12
+completed:
+related-adr: -
+related-spec: -
+worktree: branddock-marketing-homepage-v2
+---
+
 # Task: marketing-homepage-v2 — Fase 1 website-verbeterplan
 
-**Status**: in-progress
 **Branch/worktree**: `feat/marketing-homepage-v2` · `branddock-marketing-homepage-v2`
 **Plan**: website-verbeterplan v2 (in-house marketingteams · platform-breedte · NL-first · F-VAL bescheiden · geen quote/logo's)
 
