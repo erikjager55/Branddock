@@ -435,11 +435,22 @@ async function main() {
   const seedPassword = await hashPassword("Password123!");
 
   for (const seedUser of [user, teamMember, adminUser, viewerUser, directUser]) {
-    // Skip if account already exists (demo user preserved across seeds)
+    // De demo-user (DEMO_USER_ID) is uitgezonderd van de account-cleanup hierboven,
+    // dus zijn Account-rij overleeft elke re-seed. Tot 2026-08-17 sloeg deze lus
+    // bestaande accounts over ("skip if exists") — daardoor herstelde de seed het
+    // gedocumenteerde wachtwoord (Password123!) juist voor de één gebruiker die het
+    // nodig had NOOIT; een eerdere wachtwoordwijziging bleef eeuwig staan.
+    // Nu: hash altijd terugzetten via update (rij blijft bestaan → lopende sessies
+    // en gekoppelde OAuth-tokens blijven heel).
     const existing = await prisma.account.findFirst({
       where: { userId: seedUser.id, providerId: "credential" },
     });
-    if (!existing) {
+    if (existing) {
+      await prisma.account.update({
+        where: { id: existing.id },
+        data: { password: seedPassword },
+      });
+    } else {
       await prisma.account.create({
         data: {
           accountId: seedUser.id,
