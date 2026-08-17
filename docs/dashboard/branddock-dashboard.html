@@ -57,8 +57,10 @@
   .itembody{margin:10px 0 8px 1em; display:flex; flex-direction:column; gap:12px; font-size:15px; color:var(--ink-2)}
   .itembody .kader{border-left:2px solid var(--line); padding-left:14px}
   .itembody .kader b{color:var(--ink); font-weight:600}
-  button.copy{align-self:flex-start; font:500 14px/1 -apple-system,"Segoe UI",sans-serif; padding:9px 16px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--accent); cursor:pointer}
-  button.copy:hover{border-color:var(--accent)}
+  .copy{display:inline-block; font:500 14px/1 -apple-system,"Segoe UI",sans-serif; padding:9px 16px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--accent); cursor:pointer}
+  .copy:hover{border-color:var(--accent)}
+  button.alt{font:400 13px/1 -apple-system,"Segoe UI",sans-serif; border:0; background:transparent; color:var(--ink-3); cursor:pointer; padding:6px 0; font-style:italic}
+  button.alt:hover{color:var(--ink-2)}
   .techniek{font-size:12.5px; color:var(--ink-3); font-family:ui-monospace,Menlo,monospace}
 
   .voorjou{display:flex; flex-direction:column}
@@ -151,9 +153,34 @@ const STATUS = {
   "aan te maken": "nog aan te maken", "wacht op go": "wacht op jou",
 };
 
+function bronVan(it) {
+  return it.virtueel ? (it.bron || "docs/specs/brandclaw-vision.md") : it.bron;
+}
+// Zelfvoorzienend gespreks-prompt: het nieuwe gesprek heeft geen repo-toegang,
+// dus alle context van het item reist mee in het bericht zelf.
+function gesprekPrompt(it) {
+  const r = [
+    "Ik wil sparren over een openstaand punt uit mijn Branddock-dashboard (SaaS-platform voor brand strategy en AI-content; ik ben de founder).",
+    "",
+    `Item: ${it.titel}`,
+    `Status: ${it.status}`,
+    `Toelichting: ${it.oms}`,
+  ];
+  if (it.gate) r.push(`Waarom dit nu rust: ${it.gate}`);
+  if (it.vragen.length) r.push(`Open vragen: ${it.vragen.join(" | ")}`);
+  r.push(
+    "",
+    "Vat eerst in twee zinnen samen hoe jij dit item begrijpt. Stel me daarna drie gerichte vragen die me helpen tot een besluit of aanpak te komen — wees kritisch en eerlijk, geen meepraterij. Als we tot een besluit komen, sluit dan af met één concreet actiepunt dat ik in Claude Code kan laten uitvoeren" +
+      ` (verwijs daarin naar ${bronVan(it)} en naar docs/dashboard/README.md voor het bijwerken van het dashboard).`
+  );
+  return r.join("\n");
+}
+function gesprekUrl(it) {
+  return "https://claude.ai/new?q=" + encodeURIComponent(gesprekPrompt(it));
+}
+// Kopieer-variant voor Claude Code: mag wél op de repo leunen.
 function startPrompt(it) {
-  const bron = it.virtueel ? (it.bron || "docs/specs/brandclaw-vision.md") : it.bron;
-  return `Lees CLAUDE.md, gotchas.md en START_HERE.md. Ik wil doorpraten over "${it.titel}" (${bron}${it.virtueel ? " — nog geen task-file" : ""}). Geef eerst een korte samenvatting van dit item, de actuele status en de open vragen${it.vragen.length ? ` (o.a.: ${it.vragen.join(" | ")})` : ""}. Stel me daarna 3 gerichte verdiepingsvragen zodat we samen tot een besluit of aanpak komen. Werk het dashboard bij als we iets besluiten (docs/dashboard/README.md).`;
+  return `Lees CLAUDE.md, gotchas.md en START_HERE.md. Ik wil doorpraten over "${it.titel}" (${bronVan(it)}${it.virtueel ? " — nog geen task-file" : ""}). Geef eerst een korte samenvatting van dit item, de actuele status en de open vragen${it.vragen.length ? ` (o.a.: ${it.vragen.join(" | ")})` : ""}. Stel me daarna 3 gerichte verdiepingsvragen zodat we samen tot een besluit of aanpak komen. Werk het dashboard bij als we iets besluiten (docs/dashboard/README.md).`;
 }
 
 for (const k of ["A", "B", "C"]) {
@@ -175,13 +202,21 @@ for (const k of ["A", "B", "C"]) {
     body.append(el("p", "", esc(it.oms)));
     if (it.gate) body.append(el("div", "kader", `<b>Waarom dit rust:</b> ${esc(it.gate)}`));
     for (const v of it.vragen) body.append(el("div", "kader", `<b>Vraag aan jou:</b> ${esc(v)}`));
-    const btn = el("button", "copy", "Praat hierover door met Claude");
-    btn.addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText(startPrompt(it)); btn.textContent = "Gekopieerd — plak dit in een nieuw gesprek"; }
-      catch { btn.textContent = "Kopiëren lukte niet — tekst staat hieronder"; body.append(el("p", "techniek", esc(startPrompt(it)))); }
-      setTimeout(() => (btn.textContent = "Praat hierover door met Claude"), 4500);
+    const rij = el("div", "", "");
+    rij.style.cssText = "display:flex; gap:14px; align-items:center; flex-wrap:wrap";
+    const link = el("a", "copy", "Praat hierover door met Claude");
+    link.href = gesprekUrl(it);
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.style.textDecoration = "none";
+    const alt = el("button", "alt", "of kopieer voor Claude Code");
+    alt.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(startPrompt(it)); alt.textContent = "gekopieerd — plak in een Claude Code-sessie"; }
+      catch { alt.textContent = "kopiëren lukte niet — tekst staat hieronder"; body.append(el("p", "techniek", esc(startPrompt(it)))); }
+      setTimeout(() => (alt.textContent = "of kopieer voor Claude Code"), 4500);
     });
-    body.append(btn);
+    rij.append(link, alt);
+    body.append(rij);
     body.append(el("p", "techniek", esc(it.id) + (it.effort ? ` · ${it.effort}` : "") + " · " + esc(it.virtueel ? "voorstel" : it.bron)));
     d.append(isum, body);
     lijst.append(d);

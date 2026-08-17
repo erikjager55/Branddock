@@ -29,11 +29,14 @@ artifact herpubliceren naar de vaste URL
 
 Gepubliceerde weergave (artifact, privé): https://claude.ai/code/artifact/10805dd2-ff12-4fe0-8f07-5b7f24e9e576
 
-## Doorpraten per item
+## Doorpraten per item (werkend sinds 2026-08-10)
 
-Elke taak op het dashboard klapt uit naar detail (titel, effort, gate, open vragen, bronbestand) met een knop **"Kopieer start-prompt voor doorpraten"**. Dat prompt opent in een nieuwe Claude Code-sessie het gesprek mét alle context van dat item (leest CLAUDE.md/gotchas/START_HERE, vat het item samen, stelt verdiepingsvragen, en werkt bij besluit het dashboard bij).
+Elke taak klapt uit naar detail (toelichting, rust-reden, open vragen) met twee routes:
 
-> Onderzocht 2026-08-10: chat ín de dashboard-pagina zelf is met de huidige artifact-capabilities (alleen `downloads` + `mcp`-connectors) niet mogelijk — er is geen in-page AI-completion. Het kopieer-prompt-patroon is het beste werkende alternatief; herzie dit wanneer de artifact-runtime een completion-capability krijgt.
+1. **"Praat hierover door met Claude"** — één klik. Opent een nieuw claude.ai-gesprek met een voorgevuld, **zelfvoorzienend** startbericht (titel, status, toelichting, rust-reden en vragen reizen mee in het bericht — het gesprek heeft geen repo-toegang nodig). Het prompt stuurt op kritisch sparren en eindigt bij een besluit met één concreet actiepunt voor Claude Code.
+2. **"of kopieer voor Claude Code"** — kopieert een repo-bewust startbericht (leest CLAUDE.md/gotchas/START_HERE, mag bestanden inzien en het dashboard bijwerken) om te plakken in een nieuwe Claude Code-sessie.
+
+> Achtergrond: chat ín de dashboard-pagina zelf kan niet met de huidige artifact-capabilities (geen in-page AI-completion); de claude.ai/new-link is het werkende alternatief. Herzie dit wanneer de artifact-runtime een completion-capability krijgt.
 
 ## Het bijwerk-ritueel (verplicht)
 
