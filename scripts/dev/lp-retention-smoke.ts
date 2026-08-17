@@ -84,6 +84,18 @@ function runPureChecks(): void {
     retentionCutoff(13, new Date('2026-03-31T12:00:00Z')) <
       new Date('2026-03-31T12:00:00Z'),
   );
+  // De guard bestaat om een tekenfout in een constante te stoppen die anders de
+  // hele tabel wist. Drie regels code, dus tot nu nul checks — precies het soort
+  // vangnet dat ongetest blijft tot het nodig is.
+  for (const bad of [0, -1, 1.5, Number.NaN]) {
+    let threw = false;
+    try {
+      retentionCutoff(bad, new Date('2026-08-17T12:00:00Z'));
+    } catch {
+      threw = true;
+    }
+    check(`retentionCutoff(${bad}) weigert (zou anders alles wissen)`, threw);
+  }
 
   const publishes = [8, 7, 6, 5, 4, 3, 2, 1].map((version) => ({
     id: `v${version}`,
@@ -111,6 +123,14 @@ function runPureChecks(): void {
   check(
     'zonder live-pointer (legacy rij) → de oudste voorbij het venster',
     selectPrunableCompiledHtml(publishes, null).join(',') === 'v3,v2,v1',
+  );
+  // Het venster telt beschikbare artifacts, geen publish-rijen. Compile is
+  // fail-soft, dus een pagina kan vijf null-html publishes op rij hebben; telde
+  // het venster rijen, dan verloor zo'n pagina élk artifact dat ze nog had.
+  check(
+    'venster telt artifacts: alleen HTML-dragende rijen als input → 2 artifacts blijven',
+    selectPrunableCompiledHtml([{ id: 'v2', version: 2 }, { id: 'v1', version: 1 }], 'v7')
+      .length === 0,
   );
 
   console.log('\n   Scope-regel van de wis-route');
@@ -363,6 +383,30 @@ async function runDbChecks(): Promise<void> {
       data: { livePublishId: blockerPublishes[1] },
     });
 
+    // Fail-soft compile: v3..v7 hebben géén HTML (compile mislukte), alleen v1
+    // en v2 dragen nog een artifact, live = v7. Telde het venster publish-rijen,
+    // dan vielen v2 en v1 erbuiten en hield deze pagina NUL artifacts over —
+    // onherstelbaar, want een bevroren artifact is na een token-wijziging niet
+    // opnieuw te maken.
+    const failedCompiles = await seedWorkspace('failed-compiles');
+    const failedIds: Record<number, string> = {};
+    for (let version = 1; version <= 7; version++) {
+      const publish = await prisma.pagePublish.create({
+        data: {
+          landingPageId: failedCompiles.pageId,
+          version,
+          puckData: { version },
+          compiledHtml: version <= 2 ? `<html data-kept="${version}"></html>` : null,
+        },
+        select: { id: true },
+      });
+      failedIds[version] = publish.id;
+    }
+    await prisma.landingPage.update({
+      where: { id: failedCompiles.pageId },
+      data: { livePublishId: failedIds[7] },
+    });
+
     const worker = await seedWorkspace('worker');
     for (let version = 1; version <= 8; version++) {
       await prisma.pagePublish.create({
@@ -375,28 +419,60 @@ async function runDbChecks(): Promise<void> {
       });
     }
 
-    // Batch van 1 dwingt meerdere lus-iteraties, zodat het lus-gedrag echt
-    // doorlopen wordt in plaats van in één statement afgehandeld.
-    await pruneCompiledHtml({ batchSize: 1 });
+    // Default batchgrootte: die verwerkt alle kandidaten in één statement, dus
+    // de assertions hieronder zijn niet afhankelijk van hoeveel prunebare rijen
+    // er nog buiten de fixtures op deze database staan. Met `batchSize: 1` zou
+    // de 40-batch-cap het budget elders kunnen opmaken en deze checks vals rood
+    // laten worden — op een script waarvan deel B onomkeerbaar wist.
+    await pruneCompiledHtml();
+
     const blockerRows = await prisma.pagePublish.findMany({
       where: { landingPageId: blocker.pageId },
       select: { compiledHtml: true },
     });
+    // NB: onder de huidige SQL levert deze pagina per definitie nul kandidaten
+    // (de enige rij voorbij het venster ís de live-pointer), dus deze check kan
+    // niet meer falen door een starvation-regressie — dat pad bestaat niet meer.
+    // Hij blijft staan als vastlegging van het scenario; de échte discriminant
+    // is de live-uitsluiting, en die wordt hierboven en hieronder gedekt.
     check(
       'de blokkerende pagina houdt al haar 6 artifacts (live = oudste)',
       blockerRows.length === 6 && blockerRows.every((r) => typeof r.compiledHtml === 'string'),
     );
-    const workerNulls = await prisma.pagePublish.count({
-      where: { landingPageId: worker.pageId, compiledHtml: null },
-    });
-    check(
-      'een pagina zónder werk verhongert de pagina ernaast niet (3 geleegd)',
-      workerNulls === 3,
-    );
+
     const workerLeft = await prisma.pagePublish.count({
       where: { landingPageId: worker.pageId, compiledHtml: { not: null } },
     });
-    check('de werker houdt haar nieuwste 5', workerLeft === 5);
+    check('een pagina naast een pagina zonder werk wordt wél opgeruimd', workerLeft === 5);
+
+    // De fail-soft-casus: v1 en v2 zijn de énige artifacts en moeten blijven.
+    const failedRows = await prisma.pagePublish.findMany({
+      where: { landingPageId: failedCompiles.pageId, compiledHtml: { not: null } },
+      select: { version: true },
+      orderBy: { version: 'asc' },
+    });
+    check(
+      'pagina met 5 mislukte compiles houdt haar 2 resterende artifacts',
+      failedRows.map((r) => r.version).join(',') === '1,2',
+    );
+
+    // `truncated: true` is het enige signaal dat "cap geraakt, werk blijft
+    // liggen" onderscheidt van "klaar". Een off-by-one op de lus-cap of een
+    // omgedraaide vergelijking glipt zonder deze check door.
+    const capped = await seedWorkspace('capped');
+    for (let version = 1; version <= 8; version++) {
+      await prisma.pagePublish.create({
+        data: {
+          landingPageId: capped.pageId,
+          version,
+          puckData: { version },
+          compiledHtml: `<html data-c="${version}"></html>`,
+        },
+      });
+    }
+    const truncatedRun = await pruneCompiledHtml({ batchSize: 1 });
+    check('batchSize 1 op 3 kandidaten meldt truncated: false na afronden',
+      truncatedRun.truncated === false && truncatedRun.count === 3);
 
     console.log('\n   Wis-scope tegen echte rijen');
     // Exact de scope die de DELETE-route gebruikt, uit dezelfde functie.

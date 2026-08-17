@@ -97,10 +97,14 @@ export async function pruneFormSubmissions(now: Date = new Date()): Promise<Prun
   );
 }
 
-/** Rijen per `compiledHtml`-batch. */
-const HTML_PRUNE_BATCH_SIZE = 1_000;
+/** Rijen per `compiledHtml`-batch. Ruim, en dat is bewust: anders dan bij de
+ *  deletes — waar een batch een index-geleide lookup begrenst — kost elke extra
+ *  iteratie hier een volledige `row_number()`-pass over `PagePublish`. Klein
+ *  batchen vermenigvuldigt het werk dus in plaats van het te beperken. De update
+ *  draait volledig server-side; er komt geen HTML in het geheugen. */
+const HTML_PRUNE_BATCH_SIZE = 20_000;
 
-/** Max `compiledHtml`-batches per run. */
+/** Max `compiledHtml`-batches per run → 800.000 artifacts per nacht. */
 const MAX_HTML_PRUNE_BATCHES = 40;
 
 /**
@@ -117,14 +121,22 @@ const MAX_HTML_PRUNE_BATCHES = 40;
  * of de pointer binnen of buiten het venster valt is geen kwestie van aantallen.
  * Zulke pagina's hopen vooraan de id-ordening op en verhongeren de rest.
  *
- * `row_number()` drukt de regel exact uit: rangschik per pagina op versie,
- * neem wat voorbij het venster valt, laat weg wat nog HTML draagt niet én sluit
- * de live-pointer uit. Kandidaten zijn dus precies de prunebare rijen — ze
- * verlaten de verzameling zodra ze geleegd zijn, dus elke batch boekt
- * vooruitgang en er bestaat geen vastgelopen pagina. Bijkomend: de
- * live-uitsluiting zit in hetzelfde statement als de update, dus een rollback
- * die tussen selectie en update valt kan de net-live geworden versie niet meer
- * haar artifact ontnemen (die race bestond in de vorige variant).
+ * `row_number()` drukt de regel exact uit: rangschik per pagina op versie —
+ * **alleen over rijen die nog HTML dragen** (`WHERE compiledHtml IS NOT NULL` in
+ * de subquery) — neem wat voorbij het venster valt en sluit de live-pointer uit.
+ * Dat "alleen HTML-dragende rijen" is wezenlijk: telde het venster publish-rijen,
+ * dan verloor een pagina wier vijf nieuwste compiles zijn mislukt (fail-soft, dus
+ * rij zonder HTML) élk artifact dat ze nog had. Kandidaten zijn dus precies de
+ * prunebare rijen — ze verlaten de verzameling zodra ze geleegd zijn, dus elke
+ * batch boekt vooruitgang en er bestaat geen vastgelopen pagina.
+ *
+ * De live-uitsluiting zit in hetzelfde statement als de update, wat het venster
+ * voor een gelijktijdige rollback terugbrengt tot één statement. **Gesloten is
+ * het niet**: onder READ COMMITTED leest de subquery het snapshot van
+ * statement-start en er wordt geen lock op `LandingPage` genomen, dus een
+ * pointer-swap die binnen dat venster commit kan de net-live geworden versie
+ * alsnog haar artifact zien verliezen. Gevolg is degradatie (runtime-render),
+ * geen stukke pagina.
  *
  * `compiledHtml` wordt nooit geselecteerd, alleen `IS NOT NULL` getoetst — de
  * HTML zelf komt het geheugen niet in.
@@ -146,16 +158,15 @@ export async function pruneCompiledHtml(options?: {
       WHERE id IN (
         SELECT ranked.id FROM (
           SELECT pp.id,
-                 pp."compiledHtml" IS NOT NULL AS has_html,
                  lp.id IS NOT NULL AS is_live,
                  row_number() OVER (
                    PARTITION BY pp."landingPageId" ORDER BY pp.version DESC
                  ) AS rn
           FROM "PagePublish" pp
           LEFT JOIN "LandingPage" lp ON lp."livePublishId" = pp.id
+          WHERE pp."compiledHtml" IS NOT NULL
         ) ranked
         WHERE ranked.rn > ${COMPILED_HTML_KEEP_VERSIONS}
-          AND ranked.has_html
           AND NOT ranked.is_live
         LIMIT ${batchSize}
       )`;

@@ -38,7 +38,21 @@ async function runStep(
   }
 }
 
+/** Geen static evaluation van een destructieve handler. */
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
+  // `isCronAuthorized` laat een ontbrekende CRON_SECRET buiten productie door.
+  // Dat is onschuldig voor de mail- en sync-crons, maar deze route wist
+  // onherroepelijk lead-PII van álle tenants — hier dus hard vereisen, ook in
+  // dev en op een self-hosted staging.
+  if (!process.env.CRON_SECRET) {
+    console.error('[GET /api/cron/lp-retention] refused: CRON_SECRET is not configured');
+    return NextResponse.json(
+      { error: 'CRON_SECRET must be configured for this endpoint' },
+      { status: 401 },
+    );
+  }
   if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

@@ -75,6 +75,7 @@ async function resolveSubmissionScope(deliverableId: string) {
   // testbaar; zie de smoke voor de cross-tenant- en duplicaat-assertie.
   return {
     ...buildSubmissionScope({ workspaceId, formIds, pageIds }),
+    workspaceId,
     role: membership.role,
     userId: session.user.id,
   };
@@ -173,22 +174,45 @@ export async function DELETE(
     where: { ...scope.deleteWhere, id: parsed.data },
   });
   if (count === 0) {
-    // De wis-scope is strikter dan de lees-scope. Zonder dit onderscheid ziet
-    // een beheerder de lead in het Leads-blok staan en krijgt "bestaat niet"
-    // terug — een misleidende 404 op wat een scope-beslissing is.
-    const readableElsewhere =
-      scope.where !== null &&
-      (await prisma.formSubmission.count({ where: { ...scope.where, id: parsed.data } })) > 0;
-    if (readableElsewhere) {
-      return NextResponse.json(
-        {
-          error:
-            'Submission is visible here but belongs to another deliverable — erase it from the deliverable that owns its page',
-        },
-        { status: 409 },
-      );
+    // De wis-scope is strikter dan de lees-scope. Wie de lead in het Leads-blok
+    // ziet staan en "bestaat niet" terugkrijgt, heeft niets om op te handelen —
+    // dus hier uitzoeken waaróm hij buiten de wis-scope viel.
+    const readable =
+      scope.where === null
+        ? null
+        : await prisma.formSubmission.findFirst({
+            where: { ...scope.where, id: parsed.data },
+            select: { id: true, landingPageId: true },
+          });
+    if (!readable) {
+      return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
     }
-    return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
+
+    // `landingPageId` is bewust FK-loos (leads overleven een pagina-delete), dus
+    // een verwijderd deliverable laat rijen achter met een dood id. Die zijn via
+    // de `formId`-tak wél leesbaar maar door geen enkel deliverable te wissen:
+    // PII die we tonen en niemand kan verwijderen. Dat is precies wat art. 17
+    // verbiedt, dus een verweesde rij mag hier wél weg.
+    const orphaned =
+      readable.landingPageId !== null &&
+      (await prisma.landingPage.count({ where: { id: readable.landingPageId } })) === 0;
+    if (orphaned) {
+      const erased = await prisma.formSubmission.deleteMany({
+        where: { workspaceId: scope.workspaceId, id: parsed.data },
+      });
+      console.info(
+        `[DELETE submissions] user ${scope.userId} erased ORPHANED submission ${parsed.data} (dangling landingPageId ${readable.landingPageId})`,
+      );
+      return NextResponse.json({ deleted: erased.count, orphaned: true });
+    }
+
+    return NextResponse.json(
+      {
+        error:
+          'Submission belongs to another deliverable in this workspace — erase it from the deliverable that owns its page',
+      },
+      { status: 409 },
+    );
   }
 
   // Erasure-spoor: wie wiste wat, wanneer. Er is geen AuditLog-model, dus dit

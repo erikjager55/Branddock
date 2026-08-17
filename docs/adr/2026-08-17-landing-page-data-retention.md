@@ -38,7 +38,13 @@ Drie tabellen groeiden onbegrensd, elk om een andere reden:
 |---|---|---|
 | `PageEvent` | **13 maanden** | Ruim voorbij het 30-daagse dashboard-venster, en houdt jaar-op-jaar-vergelijking mogelijk mocht die er komen |
 | `FormSubmission` | **26 maanden** | Vaste termijn voor lead-PII. Lang genoeg voor een realistische B2B-salescyclus, kort genoeg om als bewaartermijn verdedigbaar te zijn |
-| `compiledHtml` | **nieuwste 5 versies per pagina** | Instant rollback blijft op het bereik waarin praktisch teruggerold wordt |
+| `compiledHtml` | **nieuwste 5 beschikbare artifacts per pagina** | Instant rollback blijft op het bereik waarin praktisch teruggerold wordt |
+
+Let op de formulering van de derde: het venster telt **beschikbare artifacts**, niet
+publish-rijen. Compile bij publish is fail-soft (rij eerst, HTML erna, `console.warn`
+bij falen), en zulke mislukkingen zijn meestal systematisch. Telde het venster rijen,
+dan verloor een pagina wier vijf nieuwste compiles faalden élk artifact dat ze nog
+had — de rijen ervóór vielen dan immers buiten het venster.
 
 De windows staan als maanden in `src/lib/landing-pages/retention-policy.ts`. De
 afkapdatum wordt kalendermatig berekend, niet als `maanden × 30`: een
@@ -126,14 +132,27 @@ geen kwestie van tellen. Zulke pagina's hopen zich op aan de kop van de ordening
 en verhongeren alles erna.
 
 Daarom staat de selectie in één SQL-statement met `row_number()`: rangschik per
-pagina op versie aflopend, neem wat voorbij het venster valt, houd alleen wat nog
-HTML draagt en sluit de live-pointer uit. Kandidaten *zijn* dan precies de
-prunebare rijen — ze verlaten de verzameling zodra ze geleegd zijn, dus elke
-batch boekt vooruitgang en een vastgelopen pagina bestaat niet. Twee bijkomende
-voordelen: de live-uitsluiting zit in hetzelfde statement als de update, dus een
-rollback die tussen selectie en update valt kan de net-live geworden versie niet
-meer haar artifact ontnemen; en `compiledHtml` wordt nooit geselecteerd, alleen
-`IS NOT NULL` getoetst, dus de HTML komt het geheugen niet in.
+pagina op versie aflopend **over alleen de rijen die nog HTML dragen**, neem wat
+voorbij het venster valt en sluit de live-pointer uit. Kandidaten *zijn* dan
+precies de prunebare rijen — ze verlaten de verzameling zodra ze geleegd zijn,
+dus elke batch boekt vooruitgang en een vastgelopen pagina bestaat niet. Ook
+komt de HTML het geheugen niet in: `compiledHtml` wordt nooit geselecteerd,
+alleen `IS NOT NULL` getoetst.
+
+De live-uitsluiting in hetzelfde statement brengt het venster voor een
+gelijktijdige rollback terug tot één statement. **Gesloten is die race niet**:
+onder READ COMMITTED leest de subquery het snapshot van statement-start, en de
+concurrent write raakt `LandingPage.livePublishId` — een andere rij in een andere
+tabel dan de `PagePublish` die geüpdatet wordt — dus er is geen hercontrole. Een
+pointer-swap die binnen dat venster commit kan de net-live geworden versie alsnog
+haar artifact zien verliezen. Gevolg is degradatie naar runtime-render, geen
+stukke pagina; een `FOR SHARE` op de betrokken `LandingPage`-rij zou het sluiten
+als dat ooit de moeite blijkt.
+
+Batchgrootte is hier bewust ruim (20.000). Anders dan bij de deletes, waar een
+batch een index-geleide lookup begrenst, kost elke extra iteratie een volledige
+`row_number()`-pass over `PagePublish` — klein batchen vermenigvuldigt het werk
+dus in plaats van het te beperken.
 
 De regel staat óók als pure functie (`selectPrunableCompiledHtml`) — die is de
 leesbare specificatie en wordt in de smoke tegen het SQL-pad afgezet. Prijs van
@@ -158,21 +177,22 @@ schemawijziging (twee indexen), geen datamigratie.
 - De erasure-route heeft geen UI. Er is nu ook geen submissions-lijst om een knop
   in te hangen (alleen het "Leads"-blok in `WebPagePublishPanel`), dus dit is
   voorlopig een API-actie — en alleen voor owner/admin.
-- **Twee klassen submissions zijn via geen enkele route bereikbaar** — niet om te
-  lezen en niet om te wissen. (a) Zonder `landingPageId` én met een sectie-id dat
-  niet meer in de draft-tree staat: `/api/f/[formId]` schrijft `landingPageId:
-  null` wanneer de sectie niet te herleiden is (zip-/WP-export), en
-  `regenerate-puck-data` vernieuwt sectie-id's. (b) **Met een `landingPageId` dat
-  naar een verwijderde pagina wijst**: dat veld is bewust FK-loos (uit
-  `lp-forms-leads`: leads moeten een pagina-delete overleven), dus een verwijderd
-  deliverable laat submissions achter met een dood id — de lees-scope bevat dat id
-  nooit, en de wis-scope eist voor de `formId`-tak `landingPageId: null`. Klasse
-  (b) ontstaat door een gewone gebruikersactie en is dus de grotere.
-  Voor beide is het wispad vandaag ruwe SQL. Een FK met `onDelete: SetNull` zou
-  (b) in (a) laten vallen maar faalt op bestaande dangling waarden en vraagt eerst
-  een data-opruiming; een wis-route op `formId` binnen de workspace zou beide
-  dichten en heeft een eigen auth-verhaal nodig. Bewust buiten scope, hier
-  vastgelegd zodat het niet onopgemerkt blijft.
+- **Verweesde submissions (`landingPageId` wijst naar een verwijderde pagina).**
+  Dat veld is bewust FK-loos (uit `lp-forms-leads`: leads moeten een pagina-delete
+  overleven), dus een verwijderd deliverable laat rijen achter met een dood id.
+  Die zijn via de `formId`-tak **wél leesbaar** — ze staan in het Leads-blok — en
+  waren tot 17-08 door geen enkel deliverable te wissen: PII die we tonen en
+  niemand kan verwijderen, wat precies is wat art. 17 verbiedt. De wis-route
+  detecteert zo'n rij nu (leesbaar, maar `landingPageId` resolveert niet naar een
+  bestaande pagina) en wist hem binnen de workspace. Structureel hoort hier een
+  FK met `onDelete: SetNull`; die faalt op bestaande dangling waarden en vraagt
+  dus eerst een data-opruiming — eigen taak.
+- **Onbereikbaar blijft**: een submissie zónder `landingPageId` wiens sectie-id
+  niet meer in enige draft-tree staat. `/api/f/[formId]` schrijft
+  `landingPageId: null` als de sectie niet te herleiden is (zip-/WP-export), en
+  `regenerate-puck-data` vernieuwt sectie-id's. Zulke rijen matchen geen enkele
+  scope-tak, dus wissen is ruwe SQL. Een wis-route op `formId` binnen de workspace
+  zou dit dichten en heeft een eigen auth-verhaal nodig.
 - De wis-scope bindt de `formId`-tak aan `landingPageId: null` zodat een
   gedupliceerd deliverable — dat de sectie-id's verbatim erft — niet de
   pagina-gebonden leads van het origineel kan wissen. Restrisico binnen dezelfde

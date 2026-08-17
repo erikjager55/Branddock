@@ -72,12 +72,22 @@ export interface PublishVersionRef {
 /**
  * Welke publishes van één pagina mogen hun `compiledHtml` verliezen.
  *
- * Twee regels: de nieuwste `keepVersions` blijven, én de versie waar de
- * live-pointer naar wijst blijft altijd — óók als die buiten dat venster
- * valt. Dat laatste is geen detail: rollback is een pointer-swap, dus na
- * een rollback naar een oude versie is de live pagina níet de nieuwste.
- * Zonder die uitzondering verliest juist de live pagina haar bevroren
- * artifact en valt ze stil terug op runtime-hercompilatie.
+ * **`publishes` moet alleen de rijen bevatten die nú nog HTML dragen.** Het
+ * venster telt bewust *beschikbare artifacts*, niet publish-rijen. Compile bij
+ * publish is fail-soft (`publish/route.ts` maakt de rij en vult de HTML erna,
+ * met een `console.warn` bij falen), en zo'n mislukking is meestal systematisch
+ * — een onrenderbare sectie, een kapotte context-assembly — dus vijf null-html
+ * publishes op rij is een realistische vorm. Zou het venster rijen tellen, dan
+ * verloor precies zo'n pagina élk artifact dat ze nog had: de nieuwste vijf
+ * rijen dragen niets, en alles daarachter — de laatste werkende artifacts —
+ * viel buiten het venster.
+ *
+ * Twee regels: de nieuwste `keepVersions` artifacts blijven, én de versie waar
+ * de live-pointer naar wijst blijft altijd — óók als die buiten dat venster
+ * valt. Dat laatste is geen detail: rollback is een pointer-swap, dus na een
+ * rollback naar een oude versie is de live pagina níet de nieuwste. Zonder die
+ * uitzondering verliest juist de live pagina haar bevroren artifact en valt ze
+ * stil terug op runtime-hercompilatie.
  */
 export function selectPrunableCompiledHtml(
   publishes: readonly PublishVersionRef[],
