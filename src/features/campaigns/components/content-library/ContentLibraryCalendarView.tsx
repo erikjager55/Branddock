@@ -588,6 +588,7 @@ export function ContentLibraryCalendarView({
                     campaignName={item.campaignName}
                     isPublishReady={item.isPublishReady}
                     hasContent={item.hasContent}
+                    isAwaitingChoice={item.contentState === "awaiting-choice"}
                     readinessHint={item.readinessHint}
                     isDraggable
                     onClick={() =>
@@ -714,6 +715,7 @@ export function ContentLibraryCalendarView({
                           campaignName={p.item.campaignName}
                           isPublishReady={p.item.isPublishReady}
                           hasContent={p.item.hasContent}
+                          isAwaitingChoice={p.item.contentState === "awaiting-choice"}
                           readinessHint={p.item.readinessHint}
                           isDraggable
                           currentDateValue={dateValue}

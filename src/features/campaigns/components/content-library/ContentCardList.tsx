@@ -131,6 +131,7 @@ export function ContentCardList({
           item.status,
           item.publishedAt ? "published" : item.scheduledPublishDate ? "scheduled" : "unscheduled",
           item.hasContent,
+          item.contentState === "awaiting-choice",
         );
         const statusBase = t(`campaigns-cards:contentStatus.${lightKey}`, { defaultValue: lightLabel });
         const statusLabel = lightOverdue

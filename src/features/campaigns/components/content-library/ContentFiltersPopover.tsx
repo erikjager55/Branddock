@@ -30,6 +30,7 @@ const FALLBACK_PHASE_OPTIONS = [
 
 const READINESS_HINT_OPTIONS = [
   { value: "no-content" },
+  { value: "variant-unchosen" },
   { value: "not-reviewed" },
   { value: "pipeline-incomplete" },
 ];

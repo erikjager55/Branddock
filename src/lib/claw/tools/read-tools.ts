@@ -8,6 +8,7 @@ import {
 } from '@/lib/brand-asset-completeness';
 import { collectEditableTextFields } from '@/lib/landing-pages/puck-text-fields';
 import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
+import { resolveDeliverableContent } from '@/lib/content/resolve-deliverable-content';
 
 // ─── Helpers for inspect_current_entity ──────────────────────
 
@@ -818,7 +819,7 @@ export const readTools: ClawToolDefinition[] = [
   {
     name: 'read_deliverable_content',
     description:
-      'Read the full generated text content of one deliverable (assembled from its selected components). Use this to repurpose or summarize existing content. Returns hasContent: false when the deliverable has only a title/brief and no generated content yet.',
+      'Read the full generated text content of one deliverable — works for every content type, including web pages and long-form GEO pages whose text lives in a structured variant. Use this to repurpose or summarize existing content. Returns hasContent: false when the deliverable has only a title/brief and no generated content yet. When pendingVariantChoice is true, versions were generated but the user has not chosen one: report that and point them to Canvas instead of summarizing an unchosen version.',
     inputSchema: z.object({
       deliverableId: z.string().describe('The deliverable ID to read'),
     }),
@@ -841,22 +842,62 @@ export const readTools: ClawToolDefinition[] = [
           title: true,
           contentType: true,
           generatedText: true,
+          settings: true,
           campaign: { select: { id: true, title: true } },
           components: {
-            where: { generatedContent: { not: null }, isSelected: true },
-            select: { generatedContent: true },
+            // Bewust GEEN `isSelected: true`-filter meer: de accessor doet de
+            // variant-selectie zelf, inclusief de val die dit filter had — een
+            // groep zonder expliciete selectie leverde hier nul componenten op
+            // terwijl variant 0 gewoon de levende tekst is.
+            where: { generatedContent: { not: null } },
+            select: {
+              generatedContent: true,
+              componentType: true,
+              groupType: true,
+              variantGroup: true,
+              variantIndex: true,
+              isSelected: true,
+              order: true,
+            },
             orderBy: { order: 'asc' },
           },
         },
       });
       if (!deliverable) return { error: 'Deliverable not found' };
 
-      const assembled = deliverable.components
-        .map((c) => c.generatedContent ?? '')
-        .filter((t) => t.trim().length > 0)
-        .join('\n\n');
-      // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 2 (#3) — Brand Assistant meldt onterecht "nog geen content"; wacht op productbesluit
-      const raw = assembled.trim().length > 0 ? assembled : (deliverable.generatedText ?? '');
+      // Alle drie de content-ketens via één deur (tasks/content-chain-accessor.md
+      // #3). Voorheen las deze tool alleen componenten + `generatedText`, en dus
+      // meldde de assistent "deze pagina heeft nog geen content" op een volle
+      // pillar-page — waarna elke samenvat-/repurpose-vraag strandde.
+      const resolved = resolveDeliverableContent(deliverable);
+
+      const head = {
+        deliverableId: deliverable.id,
+        title: deliverable.title,
+        contentType: deliverable.contentType,
+        campaignId: deliverable.campaign.id,
+        campaignTitle: deliverable.campaign.title,
+      };
+
+      if (resolved.kind === 'structured-unchosen') {
+        // Er ís content, maar de gebruiker koos nog geen variant. Bewust NIET
+        // een van de opties teruggeven: de assistent zou dan samenvatten of
+        // hergebruiken uit een versie die de gebruiker nog kan weggooien, en dat
+        // weglekken naar afgeleide content is erger dan een eerlijk "nog niet".
+        // Wél de echte staat noemen, want "geen content" was een leugen die de
+        // gebruiker geen volgende stap gaf.
+        return {
+          ...head,
+          content: '',
+          truncated: false,
+          hasContent: false,
+          pendingVariantChoice: true,
+          variantOptionCount: resolved.optionCount,
+          note: `This page has ${resolved.optionCount} generated version(s), but the user has not picked one yet. Tell them to open the deliverable in Canvas and choose a version — after that the content is readable. Do not summarize or repurpose an unchosen version.`,
+        };
+      }
+
+      const raw = resolved.kind === 'empty' ? '' : resolved.text;
       // In-tool cap ruim ónder de bridge-limiet van 16k (MAX_TOOL_RESULT_CHARS):
       // een afgekapte JSON-payload is onbruikbaar, een gemarkeerd afgekapte
       // content-string niet — het model wéét dan dat de staart mist.
@@ -864,14 +905,11 @@ export const readTools: ClawToolDefinition[] = [
       const truncated = raw.length > CAP;
       const content = truncated ? raw.slice(0, CAP) : raw;
       return {
-        deliverableId: deliverable.id,
-        title: deliverable.title,
-        contentType: deliverable.contentType,
-        campaignId: deliverable.campaign.id,
-        campaignTitle: deliverable.campaign.title,
+        ...head,
         content,
         truncated,
         hasContent: content.trim().length > 0,
+        pendingVariantChoice: false,
       };
     },
   },
