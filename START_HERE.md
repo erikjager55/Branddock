@@ -153,7 +153,7 @@ halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
 | [`lp-image-routes`](tasks/lp-image-routes.md) | review — wacht op één prod-smoke door jou |
 | [`seo-pipeline-speedup`](tasks/seo-pipeline-speedup.md) | open — fase 4a deed 12→7,5 min |
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
-| [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst, deels achterhaald |
+| [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst, deels achterhaald. ⚠️ Nieuw in §B: twee retentie-indexen op Neon (uit PR #286) — `CREATE INDEX CONCURRENTLY`, níet `prisma db push` |
 | [`lp-review-followups`](tasks/lp-review-followups.md) | open — ⚠️ naar Nu gehaald 16-08: de retentie-items zijn tijdgevoelig (`PageEvent` groeit onbegrensd, `FormSubmission` bevat PII zonder wisroutine) |
 | [`kpi-fase0`](tasks/kpi-fase0.md) | in-progress — meetfundament €100k-plan (funnel/activatie/noordster/Gate-1 als developer-tab); worktree `branddock-kpi-fase0` |
 | [`marketing-homepage-v2`](tasks/marketing-homepage-v2.md) | in-progress — homepage-herbouw + nav/footer NL-first; worktree `branddock-marketing-homepage-v2` |
