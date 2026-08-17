@@ -560,6 +560,23 @@ export function LandingPageGenerateBlock({
     });
   }, []);
 
+  /**
+   * AbortController van de lopende generatie-stream.
+   *
+   * Nodig omdat de server pas stopt als de HTTP-verbinding écht dichtgaat: in
+   * deze SPA unmount de component bij wegnavigeren, maar de browser verbreekt
+   * de fetch dan niet vanzelf. Zonder deze abort genereerde de server door tot
+   * `maxDuration` (480s) en betaalde je alle resterende varianten voor niemand.
+   */
+  const generationAbortRef = useRef<AbortController | null>(null);
+  useEffect(
+    () => () => {
+      generationAbortRef.current?.abort();
+      generationAbortRef.current = null;
+    },
+    [],
+  );
+
   const handleGenerate = useCallback(async (countArg: number = 2) => {
     // Guard: bare onClick={handleGenerate} zou een MouseEvent doorgeven → coerce.
     const count = typeof countArg === 'number' && countArg >= 1 && countArg <= 4 ? countArg : 2;
@@ -568,6 +585,11 @@ export function LandingPageGenerateBlock({
       setErrorUnavailable(false);
       return;
     }
+    // Een nog lopende generatie afbreken vóór we een nieuwe starten — anders
+    // draaien er twee en betaal je beide.
+    generationAbortRef.current?.abort();
+    const abortController = new AbortController();
+    generationAbortRef.current = abortController;
     setIsGenerating(true);
     setError(null);
     setErrorUnavailable(false);
@@ -596,6 +618,7 @@ export function LandingPageGenerateBlock({
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
             body: requestBody,
+            signal: abortController.signal,
           },
         );
         serverResponded = true;
@@ -637,6 +660,11 @@ export function LandingPageGenerateBlock({
           applyGenerationResponse((await streamRes.json()) as GenerationResponsePayload);
         }
       } catch (streamErr) {
+        // Wij hebben zelf geaborteerd (unmount of nieuwe generatie): géén
+        // fallback. Zonder deze guard leest een abort vóór de server-response
+        // als transport-falen en genereert het JSON-pad álles opnieuw — dubbele
+        // kosten in precies het scenario dat we goedkoper wilden maken.
+        if (abortController.signal.aborted) return;
         if (serverResponded) throw streamErr;
         console.warn(
           '[LandingPageGenerateBlock] SSE-transport faalde vóór server-response — fallback naar JSON-pad',
@@ -653,6 +681,7 @@ export function LandingPageGenerateBlock({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: requestBody,
+            signal: abortController.signal,
           },
         );
         if (!res.ok) {
@@ -661,14 +690,22 @@ export function LandingPageGenerateBlock({
         applyGenerationResponse((await res.json()) as GenerationResponsePayload);
       }
     } catch (err) {
+      // Een abort is geen fout: de gebruiker navigeerde weg of startte een
+      // nieuwe generatie. Geen foutmelding, geen retry-toast.
+      if (abortController.signal.aborted) return;
       const e = interpretAiError(err);
       setError(e.message || t('lp.errors.generationFailed'));
       setErrorUnavailable(e.unavailable);
       setErrorType(e.errorType);
       if (e.unavailable) notifyAiError(err, { retry: () => { void handleGenerate(countArg); } });
     } finally {
-      setIsGenerating(false);
-      setStreamProgress(null);
+      // Alleen opruimen als dit nog ónze run is; een nieuwere generatie heeft de
+      // ref inmiddels overgenomen en mag niet op niet-genererend gezet worden.
+      if (generationAbortRef.current === abortController) {
+        generationAbortRef.current = null;
+        setIsGenerating(false);
+        setStreamProgress(null);
+      }
     }
   }, [
     applyGenerationResponse,

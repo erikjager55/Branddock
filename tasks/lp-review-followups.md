@@ -80,10 +80,37 @@ wél leesbaar maar niet wisbaar waren. Details in changelog #474.
       rijke maar benoemde interface die álle door consumenten gelezen
       veld-metadata dekt, of het props-paneel-model loskoppelen van de
       registry-literal.
-- [ ] **SSE-generator + client-disconnect**: `generate-structured-variant`
-      luistert niet naar `request.signal` — na weglopen genereert de server
-      tot 480s door (tokenkosten). Client mist AbortController op de
-      stream-fetch. Route r.745-844.
+- [x] **SSE-generator + client-disconnect** — ✅ 2026-08-17. Beide helften waren
+      nodig: in de SPA unmount de component bij wegnavigeren, maar de browser
+      verbreekt de fetch dan niet vanzelf, dus zonder client-abort ging de
+      server-`signal` nooit af.
+      - Client: `AbortController` per generatie, geaborteerd op unmount én bij het
+        starten van een nieuwe generatie (anders draaien er twee en betaal je beide).
+      - Server: `request.signal` doorgegeven; guard vóór élke dure call — volgende
+        slot, recovery-retry, rewrite, iterate, persist.
+      - Signal doorgezet tot in `generateLandingPageVariant` →
+        `anthropicClient.createChatCompletion` (dat ondersteunde `abortSignal` al),
+        dus óók de lopende call van 30-90s wordt afgebroken in plaats van alleen
+        gestopt tússen varianten.
+      - **Bij abort wordt niets gepersisteerd** (Erik-keuze 17-08): de
+        settings-snapshot is dan minuten oud en de gebruiker kijkt niet, dus een
+        overschreven autosave zou pas veel later opvallen — het venster hieronder
+        staat nog open. Prijs: al betaalde varianten gaan verloren.
+      - Kosten van een gedraaide generatie worden nog wél geboekt
+        (`trackVariantGeneration` staat vóór de skip-guard). Een halverwege
+        afgebroken call is niet te boeken (geen resultaat-object) — die input-tokens
+        vallen dus buiten de meting.
+      - ⚠️ Bijvangst-bug gevonden en gefixt: een abort vóór de server-response zette
+        `fallbackToJson`, waarna het JSON-pad **alles opnieuw** genereerde — dubbele
+        kosten in precies het scenario dat goedkoper moest worden.
+      - ⚠️ **Niet end-to-end geverifieerd**: `tsc` 0 en `lint` 0, en de guard-plaatsing
+        is regel voor regel nagelopen (elke dure call staat achter een guard), maar er
+        is géén AI-key in de dev-container en een echte proef kost een echte generatie.
+        **Handmatige check voor Erik**: start een 4-variant-generatie op een webpage,
+        navigeer na de eerste `variant_complete` weg uit de Canvas, en kijk in de
+        server-log naar `client disconnected`. Verwacht: die regel verschijnt, er
+        volgen géén verdere `variant_started`, en `structuredVariantOptions` in
+        `settings` is onveranderd.
 - [ ] **`persistVariantOptions` read-modify-write-venster**: settings-
       snapshot van vóór een minutenlange SSE-generatie kan een concurrent
       autosave clobberen. Patroon bestond pre-branch; venster is nu langer.

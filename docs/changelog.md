@@ -37,6 +37,20 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 475. Weglopen tijdens een generatie kost geen tokens meer
+
+De SSE-variantgenerator luisterde niet naar `request.signal`: liep een bezoeker weg, dan genereerde de server rustig door tot `maxDuration` (480s) — alle resterende varianten plus hun rewrite- en iterate-stappen, betaald voor niemand. Beide helften waren nodig, en dat is het niet-evidente deel: in deze SPA unmount de component bij wegnavigeren, maar de browser verbreekt de fetch dan **niet** vanzelf. Zonder een client-`AbortController` ging het server-signaal dus nooit af, hoeveel guards je server-side ook zet.
+
+Client: één `AbortController` per generatie, geaborteerd op unmount én bij het starten van een nieuwe generatie — anders draaien er twee en betaal je beide. Server: guard vóór élke dure call (volgende slot, recovery-retry, rewrite, iterate, persist). En omdat `anthropicClient.createChatCompletion` `abortSignal` al ondersteunde, is het signaal doorgezet tot in `generateLandingPageVariant`: de lopende call van 30-90s wordt nu écht afgebroken in plaats van alleen "niet meer opgevolgd".
+
+Twee dingen die aandacht vroegen. **De recovery-retry werkte tegen ons**: een geaborteerde HTTP-call gooit, en de bestaande foutafvang antwoordde daarop met een nieuwe generatie op recovery-temperatuur — dus juist bij weglopen kocht je een extra call. Nu breekt de loop af in plaats van te retryen. En **een abort vóór de server-response zette `fallbackToJson`**, waarna het JSON-pad álles opnieuw genereerde: dubbele kosten in precies het scenario dat goedkoper moest worden.
+
+⚠️ **Bij abort wordt niets gepersisteerd** (bewuste keuze van Erik). De settings-snapshot in `persistVariantOptions` is dan minuten oud en de gebruiker kijkt niet, dus een overschreven autosave zou pas veel later opvallen — het read-modify-write-venster in dezelfde task-file staat nog open. Prijs: al betaalde varianten gaan verloren. Kosten van een gedraaide generatie worden wél geboekt (`trackVariantGeneration` staat vóór de skip-guard); een halverwege afgebroken call is niet te boeken en die input-tokens vallen dus buiten de meting.
+
+⚠️ **Eerlijk over het bewijs**: `tsc` 0, `lint` 0 errors (964 warnings, ongewijzigd), en de guard-plaatsing is regel voor regel nagelopen — elke dure call staat achter een guard, en de kostenboeking staat vóór de skip. Maar dit is **niet end-to-end geverifieerd**: er is geen AI-key in de dev-container en een echte proef kost een echte generatie. De handmatige check staat in de task-file: 4 varianten starten, na de eerste `variant_complete` wegnavigeren, en in de server-log `client disconnected` verwachten zonder verdere `variant_started` en met ongewijzigde `structuredVariantOptions`.
+
+- Task: [tasks/lp-review-followups.md](../tasks/lp-review-followups.md)
+
 ### 474. Landing-page-data heeft een plafond — drie onbegrensde tabellen + een AVG-wisroutine
 
 Drie retentie-punten uit de webpage-builder-review van 13-08 stonden bewust geparkeerd als "geen launch-blocker, wel afmaken vóór volume-groei". Ze zijn 16-08 naar Nu gehaald omdat ze als enige met de dag duurder worden, en nu gebouwd: **`PageEvent`** groeide onbegrensd via een publiek endpoint dat 60 events/min/IP toestaat terwijl het dashboard maar 30 dagen leest; **`FormSubmission`** bevatte lead-PII zonder enige wisroutine — workspace-delete cascadeerde wel, maar er was geen manier om één submissie te wissen, precies wat AVG art. 17 en een verwerkersafspraak eisen; **`PagePublish.compiledHtml`** bewaarde sinds ADR 2026-08-12 elk volledig HTML-artifact append-only.
