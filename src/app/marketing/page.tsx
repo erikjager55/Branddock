@@ -26,7 +26,6 @@ import { appHref } from './app-url';
 import HeroModes from './HeroModes';
 import HowItWorks from './HowItWorks';
 import Mosaic, { MOSAIC_PRODUCT } from './Mosaic';
-import Testimonial from './Testimonial';
 import { PLAN_CONFIGS } from '@/lib/constants/plan-limits';
 import { creditExampleLineCompact } from '@/lib/constants/credit-examples';
 
@@ -37,70 +36,14 @@ export default function MarketingHomePage() {
   return (
     <div>
       <HeroModes />
-      <Problem />
       <HowSection />
       <PlatformBreadth />
       <ValuePillars />
-      <ProofStrip />
       <ForWho />
       <PricingTeaser />
       <FAQ />
       <FinalCTA />
     </div>
-  );
-}
-
-function Problem() {
-  return (
-    <section className="max-w-6xl mx-auto px-6 py-16 md:py-20">
-      {/* UX-16: rechterhelft gevuld met een feitelijk bewijsbeeld — twee
-          scores naast elkaar, cijfers conform de eerlijke pilotmeting
-          (+7 gemiddeld; geen verzonnen extremen). */}
-      <div className="grid md:grid-cols-2 gap-10 items-center">
-        <div>
-          <div className="text-sm font-semibold mkt-accent uppercase tracking-wide mb-3">
-            Het probleem
-          </div>
-          <h2 className="text-gray-900 mb-4">Generieke AI kent je merk niet</h2>
-          <p className="text-lg text-gray-600">
-            AI-tools en -agents schrijven snel, maar clichématig. Je vult telkens opnieuw de context
-            aan, herschrijft de output tot het eindelijk klinkt als jóú, en knoopt losse tools voor
-            tekst, beeld en campagnes aan elkaar. De tijdwinst verdampt in de rework.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-4" aria-hidden>
-          <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
-              Vanilla-AI
-            </div>
-            <div className="space-y-2 mb-4">
-              <div className="h-2 rounded bg-gray-200 w-full" />
-              <div className="h-2 rounded bg-gray-200 w-5/6" />
-              <div className="h-2 rounded bg-gray-200 w-4/6" />
-            </div>
-            <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600">
-              Merk-check: 72
-            </span>
-          </div>
-          <div className="rounded-xl border-2 border-primary/30 bg-white p-5">
-            <div className="text-xs font-semibold uppercase tracking-wide mkt-accent mb-3">
-              Met merk-DNA
-            </div>
-            <div className="space-y-2 mb-4">
-              <div className="h-2 rounded w-full" style={{ background: 'rgba(7,229,171,0.35)' }} />
-              <div className="h-2 rounded w-5/6" style={{ background: 'rgba(7,229,171,0.35)' }} />
-              <div className="h-2 rounded w-4/6" style={{ background: 'rgba(7,229,171,0.35)' }} />
-            </div>
-            <span
-              className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
-              style={{ background: 'rgba(7,229,171,0.12)', color: 'var(--link-ink)' }}
-            >
-              Merk-check: 79 · boven drempel
-            </span>
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -113,7 +56,7 @@ function HowSection() {
             Hoe het werkt
           </div>
           <h2 className="text-gray-900 mb-3">
-            Van merk-DNA naar on-brand content — in vier stappen
+            Van merk-DNA naar on-brand content in vier stappen
           </h2>
           <p className="text-gray-600">
             Leg je merk één keer vast. Branddock gebruikt het overal.
@@ -136,7 +79,7 @@ const MODULES: { Icon: typeof Dna; title: string; desc: string; href?: string }[
   { Icon: Radar, title: 'Trend Radar', desc: 'Trendscan die kansen en signalen in je markt oppikt.', href: '/marketing/features/trend-radar' },
   { Icon: PenLine, title: 'Content Canvas', desc: 'On-brand tekst-generatie over alle kanalen.', href: '/marketing/features/content-canvas' },
   { Icon: Megaphone, title: 'Campagne-strategie', desc: 'Van strategie-blueprint tot concrete deliverables.', href: '/marketing/features/campaigns' },
-  { Icon: Images, title: 'Beeld & video', desc: 'On-brand visuals en video, direct in het platform.' },
+  { Icon: Images, title: 'Beeld', desc: 'On-brand visual, direct in het platform.' },
   { Icon: LayoutTemplate, title: 'Landingspagina’s', desc: 'Publiceren op je eigen subdomein.' },
   { Icon: Bot, title: '9 AI-agents', desc: 'Collega’s met rollen — ze stellen voor, jij keurt goed.', href: '/marketing/features/agents' },
   { Icon: BadgeCheck, title: 'Merk-check', desc: 'F-VAL-score bewaakt dat elke output op merk blijft.', href: '/marketing/features/brand-alignment' },
@@ -150,9 +93,9 @@ function PlatformBreadth() {
         <div className="text-sm font-semibold mkt-accent uppercase tracking-wide mb-3">
           Het platform
         </div>
-        <h2 className="text-gray-900 mb-3">Je AI-team werkt op één merk-platform</h2>
+        <h2 className="text-gray-900 mb-3">Je AI-team werkt op één merkplatform</h2>
         <p className="text-gray-600">
-          Alles draait op hetzelfde merk-DNA-fundament: je agents onderzoeken, adviseren en maken —
+          Alles draait op hetzelfde merk-DNA-fundament: je agents onderzoeken, adviseren en maken;
           van persona’s en trends tot content, campagnes en beeld. Jij keurt goed.
         </p>
       </div>
@@ -275,35 +218,6 @@ const AGENTS: [string, string][] = [
   ['Iris', 'SEO/GEO-watchdog'],
   ['Ada', 'Ads-watchdog'],
 ];
-
-function ProofStrip() {
-  const stats = [
-    { big: '9', cap: 'AI-agents met eigen rollen — van onderzoek tot merkbewaking' },
-    { big: '+7', cap: 'punten on-brand vs. vanilla-AI (gemiddeld; bijna +10 op de nieuwsbrief)' },
-    { big: '17', cap: 'agent-tools via de MCP-connector — je team werkt ook in Claude en ChatGPT' },
-  ];
-  return (
-    <section className="max-w-6xl mx-auto px-6 py-16">
-      {/* md:-varianten — bewust behouden na de purge-sweep van 2026-07-18
-          (sm:-utilities bestaan inmiddels weer in index.css, maar dit
-          breakpoint is de geldende layout-intentie). */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 md:p-8 grid gap-6 md:grid-cols-3">
-        {stats.map((s) => (
-          <div key={s.cap}>
-            <div className="text-4xl font-bold mkt-accent tabular-nums">{s.big}</div>
-            <div className="text-sm text-gray-600 mt-2">{s.cap}</div>
-          </div>
-        ))}
-      </div>
-      <p className="text-sm text-gray-600 mt-4 max-w-2xl">
-        Eerlijke pilotmeting — geen opgeblazen cijfers. De merk-check is één van de garanties in het
-        platform.
-      </p>
-      {/* V2-04: proof-pack — quote of feitelijke pilot-regel. */}
-      <Testimonial context="home" className="mt-6" />
-    </section>
-  );
-}
 
 // TODO(Erik): vijfde voor-wie-kaart voor founders/kleine merken? (V2-08.4 — besluit)
 const FOR_WHO: {

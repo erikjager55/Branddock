@@ -263,10 +263,34 @@
   /* V2-01: de tekstkolom lijnt uit met de max-w-6xl-container (72rem + 1.5rem
      gutter) van nav en secties — de hero bleef full-bleed, maar de inkt hing
      op brede schermen tegen de viewportrand. max() houdt 3rem als vloer. */
-  padding: 3.5rem 3rem 3.5rem max(3rem, calc((100vw - 72rem) / 2 + 1.5rem));
+  padding: 2.5rem 3rem 3.5rem max(3rem, calc((100vw - 72rem) / 2 + 1.5rem));
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+/* De modus-schakelaar staat als eigen rij bovenaan de hero, over beide
+   kolommen en horizontaal gecentreerd — hij bepaalt het hele hero-verhaal en
+   hoort dus niet in de tekstkolom weggestopt. */
+.mkt-hero__switch {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.75rem 1.5rem 0;
+}
+
+.mkt-hero__switch-track {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(4px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .mkt-hero__mosaic {
@@ -284,6 +308,10 @@
 }
 
 .mkt-hero__meta {
+  /* Stond als derde item in een 2-koloms grid en belandde daardoor in kolom 1:
+     de drie blokken deelden de linkerhelft. Spannen over beide kolommen geeft
+     ze de volle breedte en dus bredere kolommen. */
+  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   border-top: 1px solid rgba(255, 255, 255, 0.12);
@@ -325,8 +353,11 @@
   .mkt-hero__meta {
     grid-template-columns: 1fr;
   }
+  .mkt-hero__switch {
+    padding: 2rem 1.5rem 0;
+  }
   .mkt-hero__ink {
-    padding: 2.5rem 1.5rem 2rem;
+    padding: 1.75rem 1.5rem 2rem;
   }
   .mkt-hero__mosaic {
     min-height: 260px;
