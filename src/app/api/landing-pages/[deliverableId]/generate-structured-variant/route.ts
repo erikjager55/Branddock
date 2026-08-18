@@ -379,29 +379,47 @@ async function persistVariantOptions(args: {
     );
   });
 
-  await prisma.deliverable.update({
-    where: { id: args.deliverableId },
-    data: {
-      settings: {
-        ...args.existingSettings,
-        structuredVariantOptions: variants,
-        structuredVariantLabels: variantLabels,
-        structuredGenerationMeta: {
-          generatedAt: new Date().toISOString(),
-          count,
-          requestedCount: count,
-          deliveredCount: variants.length,
-          inputTokens: totalInputTokens + (archetypeResult.inputTokens ?? 0),
-          outputTokens: totalOutputTokens + (archetypeResult.outputTokens ?? 0),
-          archetypeClassified: archetypeResult.classified,
-          archetype: archetypeResult.archetype,
-          archetypeConfidence: archetypeResult.confidence ?? null,
-          layoutStyleInferred: layoutResult.inferred,
-          layoutStyle: layoutResult.layoutStyle,
-          layoutStyleConfidence: layoutResult.confidence ?? null,
+  // Read-modify-write in één interactieve transactie, op een VERSE lees-actie.
+  // `args.existingSettings` is de snapshot van vóór de generatie, en die duurt
+  // minuten: een autosave van puckData of een hero-URL die ondertussen binnenkwam
+  // zou bij een merge op die snapshot stil worden teruggedraaid. De gebruiker
+  // ziet dat niet gebeuren — hij kijkt naar de variant-kaarten — en merkt het pas
+  // veel later, wanneer zijn edit "vanzelf" verdwenen blijkt. Zelfde patroon als
+  // de GEO-haak in `landing-pages/publish/route.ts`.
+  await prisma.$transaction(async (tx) => {
+    const fresh = await tx.deliverable.findUnique({
+      where: { id: args.deliverableId },
+      select: { settings: true },
+    });
+    const freshSettings =
+      fresh?.settings && typeof fresh.settings === 'object' && !Array.isArray(fresh.settings)
+        ? (fresh.settings as Record<string, unknown>)
+        : args.existingSettings;
+
+    await tx.deliverable.update({
+      where: { id: args.deliverableId },
+      data: {
+        settings: {
+            ...freshSettings,
+            structuredVariantOptions: variants,
+          structuredVariantLabels: variantLabels,
+          structuredGenerationMeta: {
+            generatedAt: new Date().toISOString(),
+            count,
+            requestedCount: count,
+            deliveredCount: variants.length,
+            inputTokens: totalInputTokens + (archetypeResult.inputTokens ?? 0),
+            outputTokens: totalOutputTokens + (archetypeResult.outputTokens ?? 0),
+            archetypeClassified: archetypeResult.classified,
+            archetype: archetypeResult.archetype,
+            archetypeConfidence: archetypeResult.confidence ?? null,
+            layoutStyleInferred: layoutResult.inferred,
+            layoutStyle: layoutResult.layoutStyle,
+            layoutStyleConfidence: layoutResult.confidence ?? null,
+          },
         },
       },
-    },
+    });
   });
 
   // Cache-invalidatie per CLAUDE.md API conventies (verplicht na mutatie)
@@ -666,6 +684,7 @@ export async function POST(
       angles,
       generationModel,
       postArgs,
+      signal: request.signal,
       persist: (results) =>
         persistVariantOptions({
           deliverableId,
@@ -739,6 +758,14 @@ function streamSequentialGeneration(args: {
   angles: CreativeAngle[] | null;
   generationModel: string | undefined;
   postArgs: VariantPostProcessArgs;
+  /**
+   * `request.signal` — gaat af zodra de client de verbinding verbreekt. Zonder
+   * dit liep de slot-loop na weglopen door tot `maxDuration` (480s) en betaalde
+   * je alle resterende varianten plus hun rewrite/iterate-stappen voor niemand.
+   * In de SPA is dat het normale geval: de gebruiker navigeert weg, de
+   * component unmount en de client aborteert de fetch.
+   */
+  signal: AbortSignal;
   persist: (results: GenerationResult[]) => Promise<GenerationResponsePayload>;
 }): Response {
   const encoder = new TextEncoder();
@@ -769,6 +796,14 @@ function streamSequentialGeneration(args: {
         const trackingPromises: Promise<void>[] = [];
 
         for (let slot = 0; slot < args.count; slot++) {
+          // Client weg → stop vóór de volgende (dure) generatie-call.
+          if (args.signal.aborted) {
+            console.warn(
+              `[generate-structured-variant] client disconnected — stopped before slot ${slot} of ${args.count} (${results.length} generated, not persisted)`,
+            );
+            break;
+          }
+
           const slotP = variantSlotParams(args.generationParams, args.count, args.angles, slot);
           sendEvent("variant_started", { index: slot, label: slotP.angleLabel ?? null });
 
@@ -777,8 +812,18 @@ function streamSequentialGeneration(args: {
             r = await generateLandingPageVariant(slotP, {
               temperature: temperatures[slot],
               model: args.generationModel,
+              abortSignal: args.signal,
             });
           } catch (err) {
+            // Een abort komt hier óók terecht (de HTTP-call wordt afgebroken).
+            // Dan géén recovery-retry: dat zou een nieuwe dure call zijn voor een
+            // client die er niet meer is.
+            if (args.signal.aborted) {
+              console.warn(
+                `[generate-structured-variant] client disconnected during slot ${slot} generation — no retry`,
+              );
+              break;
+            }
             const msg = err instanceof Error ? err.message : String(err);
             console.warn(`[generate-structured-variant] SSE slot ${slot} failed: ${msg}`);
             const retryTemp = recoveryTemperature(temperatures[slot]);
@@ -787,8 +832,15 @@ function streamSequentialGeneration(args: {
               r = await generateLandingPageVariant(slotP, {
                 temperature: retryTemp,
                 model: args.generationModel,
+                abortSignal: args.signal,
               });
             } catch (retryErr) {
+              if (args.signal.aborted) {
+                console.warn(
+                  `[generate-structured-variant] client disconnected during slot ${slot} retry`,
+                );
+                break;
+              }
               const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
               console.error(`[generate-structured-variant] SSE slot ${slot} retry also failed: ${retryMsg}`);
             }
@@ -802,8 +854,33 @@ function streamSequentialGeneration(args: {
             continue;
           }
 
+          // Kosten altijd boeken: deze generatie is gedraaid en betaald, ook als
+          // de client tijdens de call wegliep.
           trackingPromises.push(trackVariantGeneration(r, slot, args.postArgs));
+
+          // Rewrite en iterate zijn eigen LLM-calls. Is de client tijdens de
+          // generatie weggelopen, dan zijn ze weggegooid geld.
+          if (args.signal.aborted) {
+            console.warn(
+              `[generate-structured-variant] client disconnected during slot ${slot} — skipped rewrite/iterate`,
+            );
+            break;
+          }
+
           r = await applyStrictTellRewrite(r, slot, args.postArgs);
+
+          // Tussencheck: de rewrite is zelf een niet-afbreekbare call van ~90s,
+          // dus een abort die tijdens die call aankomt zien we hier voor het
+          // eerst. Zonder deze check draaide `applySilentIterate` er meteen
+          // achteraan — een judge-call, een rewrite-call en een rescore, alle
+          // drie voor een client die er niet meer is.
+          if (args.signal.aborted) {
+            console.warn(
+              `[generate-structured-variant] client disconnected after rewrite of slot ${slot} — skipped iterate`,
+            );
+            break;
+          }
+
           r = await applySilentIterate(r, slot, args.postArgs);
           results.push(r);
           sendEvent("variant_complete", {
@@ -814,6 +891,26 @@ function streamSequentialGeneration(args: {
         }
 
         await Promise.allSettled(trackingPromises);
+
+        // Weggelopen client: niets persisten. Bewuste productkeuze — de al
+        // betaalde varianten gaan verloren, de database blijft ongemoeid.
+        //
+        // De oorspronkelijke motivering noemde óók het read-modify-write-venster
+        // (een minuten-oude snapshot die een autosave zou overschrijven). Dat
+        // venster is inmiddels dicht: `persistVariantOptions` leest vers binnen
+        // een transactie. Persisteren ná een abort zou dus niet langer gevaarlijk
+        // zijn — het gebeurt niet omdat het niet gewenst is, niet omdat het niet
+        // kan.
+        if (args.signal.aborted) {
+          // `trackingPromises.length`, niet `results.length`: de slot waarin de
+          // abort werd opgemerkt is wél gegenereerd en geboekt, maar nooit in
+          // `results` gepusht. Loggen op results zou minder weggegooid werk
+          // melden dan er betaald is.
+          console.warn(
+            `[generate-structured-variant] client disconnected — paid for ${trackingPromises.length} generation(s), discarded all, nothing persisted`,
+          );
+          return;
+        }
 
         if (results.length === 0) {
           sendEvent(

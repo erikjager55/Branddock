@@ -1,5 +1,17 @@
 // Dutch UI strings — `campaigns-content-library` namespace.
 const ns = {
+  readinessHintText: {
+    'no-content': 'Geen content gegenereerd',
+    'variant-unchosen_one': '1 versie — kies deze',
+    'variant-unchosen_other': '{{count}} versies — kies er een',
+    'pipeline-incomplete': 'Pijplijn onvolledig',
+    'not-reviewed': 'Niet beoordeeld',
+    statusFallback: 'Status: {{status}}',
+    status: {
+      IN_REVIEW: 'In review',
+      CHANGES_REQUESTED: 'Wijzigingen gevraagd',
+    },
+  },
   common: {
     untitled: 'Naamloos',
     prev: 'Vorige',
@@ -26,6 +38,7 @@ const ns = {
     },
     readinessHint: {
       'no-content': 'Geen content',
+      'variant-unchosen': 'Versie niet gekozen',
       'not-reviewed': 'Niet beoordeeld',
       'pipeline-incomplete': 'Pijplijn onvolledig',
     },
@@ -90,6 +103,7 @@ const ns = {
       any: 'Alle',
       options: {
         'no-content': 'Geen content gegenereerd',
+        'variant-unchosen': 'Nog geen versie gekozen',
         'not-reviewed': 'Niet beoordeeld',
         'pipeline-incomplete': 'Pijplijn onvolledig',
       },

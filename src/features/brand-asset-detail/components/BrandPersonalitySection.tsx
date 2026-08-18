@@ -129,7 +129,7 @@ function deriveDimensions(scores: AakerDimensionScores): { primary: string; seco
 
 /** Brand Personality canvas based on Aaker's 5 Dimensions, NN/g tone, and visual expression. */
 export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPersonalitySectionProps) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   const [draft, setDraft] = useState<BrandPersonalityFrameworkData>(() => normalize(data));
   const [expandedDimension, setExpandedDimension] = useState<string | null>(null);
 

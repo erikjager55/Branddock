@@ -39,7 +39,22 @@ const HERO_VARIANT_GROUP = 'hero-image';
  * PROMPT, niet de content — die meenemen in een tekstprojectie zou beeldprompts
  * als artikeltekst laten doorgaan (en bv. in F-VAL-scoring belanden).
  */
-const NON_TEXT_COMPONENT_TYPES = new Set(['image', 'video']);
+export const NON_TEXT_COMPONENT_TYPES = new Set(['image', 'video']);
+
+/**
+ * Dezelfde regel als `NON_TEXT_COMPONENT_TYPES`, maar als Prisma-`where` — voor
+ * lijst-endpoints die alleen willen wéten of er een tekstcomponent is zonder de
+ * bodies op te halen.
+ *
+ * Bewust hier en niet in de route: de vraag "telt deze component als tekst?" op
+ * twee plekken laten staan is precies de drift die deze module opheft. Zet er
+ * ooit een type bij in de Set, dan schuift dit filter mee.
+ */
+export const TEXT_COMPONENT_WHERE = {
+  generatedContent: { not: null },
+  NOT: { generatedContent: '' },
+  componentType: { notIn: [...NON_TEXT_COMPONENT_TYPES] },
+};
 
 export interface DeliverableComponentLike {
   /** Optioneel: niet elke call-site heeft dit veld geselecteerd. Ontbreekt hij, dan
@@ -200,5 +215,87 @@ export function getDeliverableText(d: DeliverableLike): string | null {
     case 'structured-unchosen':
     case 'empty':
       return null;
+  }
+}
+
+// ─── Lijst-signaal ────────────────────────────────────────────────────────────
+
+/**
+ * Wat een LIJST over een deliverable moet weten, zonder de tekst zelf.
+ *
+ * - `ready`          — er is tekst; publiceren/exporteren kan.
+ * - `awaiting-choice`— content is gegenereerd, maar de gebruiker koos nog geen
+ *                      variant. Wél voortgang, géén verzendbare payload.
+ * - `empty`          — niets gegenereerd.
+ */
+export type DeliverableContentState = 'ready' | 'awaiting-choice' | 'empty';
+
+export interface DeliverableContentSignal {
+  state: DeliverableContentState;
+  /** Aantal varianten waaruit nog gekozen moet worden; 0 buiten `awaiting-choice`. */
+  optionCount: number;
+  /**
+   * Woordentelling wanneer die gratis is (keten B en C staan al op de rij zelf).
+   * `null` voor keten A: die telling kost de body van élke component, en dat is
+   * precies wat een lijst-endpoint niet mag ophalen.
+   */
+  wordCount: number | null;
+}
+
+/** Marker, nooit zichtbaar buiten deze functie — zie `resolveDeliverableContentSignal`. */
+const COMPONENT_PROBE = ' component-probe';
+
+function countWords(text: string): number {
+  const trimmed = text.trim();
+  return trimmed.length === 0 ? 0 : trimmed.split(/\s+/).length;
+}
+
+/**
+ * Het content-signaal voor endpoints die over véél deliverables tegelijk gaan.
+ *
+ * Waarom niet gewoon `resolveDeliverableContent()`? Die heeft de componenten
+ * mét hun `generatedContent` nodig. Voor één deliverable is dat prima; voor een
+ * bibliotheek-lijst betekent het de volledige tekst van elke component van elke
+ * deliverable over de lijn trekken. De aanroeper levert daarom alleen een
+ * goedkope **telling** (een `take: 1`-existentiecheck volstaat) en krijgt hier
+ * hetzelfde oordeel terug.
+ *
+ * De precedentie wordt hier bewust NIET herhaald: de telling gaat als
+ * marker-component de echte accessor in, zodat "gekozen variant wint van
+ * componenten" op precies één plek geschreven staat.
+ *
+ * ⚠️ Wat de telling wél benadert: `selectLiveComponents` kiest per variantGroep de
+ * geselecteerde component, en anders variant 0. Een telling weet niet welke groep
+ * wat koos, dus staat álle tekst in niet-levende varianten (geselecteerde component
+ * leeg, of geen variant 0 meer), dan zegt dit signaal `ready` terwijl de volledige
+ * accessor `empty` geeft. De telling zelf is gefilterd met `TEXT_COMPONENT_WHERE`,
+ * dus de tekst/niet-tekst-regel loopt niet uit elkaar — alleen de variantselectie.
+ */
+export function resolveDeliverableContentSignal(
+  d: Omit<DeliverableLike, 'components'> & {
+    /** Aantal componenten mét tekst. Alleen `> 0` doet ertoe. */
+    textComponentCount: number;
+  },
+): DeliverableContentSignal {
+  const components: DeliverableComponentLike[] =
+    d.textComponentCount > 0 ? [{ componentType: 'text', generatedContent: COMPONENT_PROBE }] : [];
+
+  const content = resolveDeliverableContent({ ...d, components });
+
+  switch (content.kind) {
+    case 'structured':
+      return { state: 'ready', optionCount: 0, wordCount: countWords(content.text) };
+    case 'components':
+      // `legacy` = keten C, en die tekst staat écht op de rij. Anders won de
+      // marker, en dan is de echte telling hier per definitie onbekend.
+      return {
+        state: 'ready',
+        optionCount: 0,
+        wordCount: content.legacy ? countWords(content.text) : null,
+      };
+    case 'structured-unchosen':
+      return { state: 'awaiting-choice', optionCount: content.optionCount, wordCount: null };
+    case 'empty':
+      return { state: 'empty', optionCount: 0, wordCount: null };
   }
 }

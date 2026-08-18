@@ -1,5 +1,17 @@
 // Canonical (source-of-truth) English UI strings — `campaigns-content-library` namespace.
 const ns = {
+  readinessHintText: {
+    'no-content': 'No content generated',
+    'variant-unchosen_one': '1 version — choose it',
+    'variant-unchosen_other': '{{count}} versions — choose one',
+    'pipeline-incomplete': 'Pipeline incomplete',
+    'not-reviewed': 'Not reviewed',
+    statusFallback: 'Status: {{status}}',
+    status: {
+      IN_REVIEW: 'In review',
+      CHANGES_REQUESTED: 'Changes requested',
+    },
+  },
   common: {
     untitled: 'Untitled',
     prev: 'Prev',
@@ -26,6 +38,7 @@ const ns = {
     },
     readinessHint: {
       'no-content': 'No content',
+      'variant-unchosen': 'Version not chosen',
       'not-reviewed': 'Not reviewed',
       'pipeline-incomplete': 'Pipeline incomplete',
     },
@@ -90,6 +103,7 @@ const ns = {
       any: 'Any',
       options: {
         'no-content': 'No content generated',
+        'variant-unchosen': 'Version not chosen yet',
         'not-reviewed': 'Not reviewed',
         'pipeline-incomplete': 'Pipeline incomplete',
       },

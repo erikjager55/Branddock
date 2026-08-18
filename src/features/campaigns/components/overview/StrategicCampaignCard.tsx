@@ -20,7 +20,7 @@ interface StrategicCampaignCardProps {
 }
 
 export function StrategicCampaignCard({ campaign, onClick, onArchive, onDelete }: StrategicCampaignCardProps) {
-  const { t } = useTranslation("campaigns-overview");
+  const { t } = useTranslation(["campaigns-overview", "campaigns-cards"]);
   const { formatDate } = useFormat();
   const [deleteTarget, setDeleteTarget] = useState(false);
   const progress = campaign.deliverableCount > 0

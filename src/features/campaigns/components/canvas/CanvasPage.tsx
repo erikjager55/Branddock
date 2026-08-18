@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import { useCanvasComponents } from '../../hooks/canvas.hooks';
 import { HorizontalAccordion } from './accordion/HorizontalAccordion';
+import { scheduleAbort, cancelScheduledAbort } from '../../lib/generation-abort-registry';
 import { CanvasContextSelector } from './CanvasContextSelector';
 import { InsertImageModal } from './InsertImageModal';
 import { GenerationFeedbackBanners } from './GenerationFeedbackBanners';
@@ -103,6 +104,15 @@ async function applyInheritance(
 
 export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPageProps) {
   const { t } = useTranslation('campaigns-canvas-page');
+
+  // Een lopende variantgeneratie hoort bij dít deliverable en overleeft bewust
+  // een stapwissel in de accordion (die unmount het generatieblok). Pas hier,
+  // bij het verlaten van de Canvas, is de gebruiker écht weg en mag de server
+  // stoppen — anders genereert die door tot maxDuration (480s) voor niemand.
+  useEffect(() => {
+    cancelScheduledAbort(deliverableId);
+    return () => scheduleAbort(deliverableId);
+  }, [deliverableId]);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
   const globalErrorMessage = useCanvasStore((s) => s.globalErrorMessage);
   const globalUnavailable = useCanvasStore((s) => s.globalUnavailable);

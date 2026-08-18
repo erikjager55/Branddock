@@ -153,7 +153,7 @@ group('FIX — FeatureGrid renderer SVG-iconen i.p.v. text-label (regression LIN
     brandTokens: tokens,
   } as unknown as CanvasContextStack;
   const config = buildSpikePuckConfig(ctx);
-  const featureGrid = (config.components as Record<string, { render: (p: unknown) => unknown }>)
+  const featureGrid = (config.components as unknown as Record<string, { render: (p: unknown) => unknown }>)
     .FeatureGrid;
 
   const html = renderToStaticMarkup(
@@ -209,7 +209,7 @@ group('FIX — Camel-case icon-namen werken ook (AI varieert)');
     brandTokens: tokens,
   } as unknown as CanvasContextStack;
   const config = buildSpikePuckConfig(ctx);
-  const featureGrid = (config.components as Record<string, { render: (p: unknown) => unknown }>)
+  const featureGrid = (config.components as unknown as Record<string, { render: (p: unknown) => unknown }>)
     .FeatureGrid;
 
   const html = renderToStaticMarkup(

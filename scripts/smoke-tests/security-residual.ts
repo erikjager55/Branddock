@@ -6,21 +6,22 @@
 //
 // Zet een test-key zodat het crypto-pad deterministisch draait, ongeacht de
 // lokale env (moet vóór de crypto-imports staan die de key lazy inlezen).
-import { randomBytes, createCipheriv } from "crypto";
+import { randomBytes, createCipheriv, createHash } from "crypto";
 process.env.TOKEN_ENCRYPTION_KEY = randomBytes(32).toString("base64");
 
 import { escapeHtml, sanitizeMarkdownHref } from "@/lib/security/html-escape";
+import { buildPageRuntimeScriptBody } from "@/lib/landing-pages/static-compile";
 import {
   encryptToken,
   decryptToken,
   _resetKeyCacheForTesting,
 } from "@/lib/ad-tokens/encryption";
 import {
-  buildSecurityHeaders,
+  buildRequestSecurityHeaders,
   buildStaticSecurityHeaders,
-  buildReportOnlyCsp,
+  buildContentSecurityPolicy,
   CSP_REPORT_ENDPOINT,
-  CONTENT_SECURITY_POLICY,
+  LANDING_PAGE_SCRIPT_HASHES,
   DEV_CONTENT_SECURITY_POLICY,
 } from "@/lib/security/security-headers";
 
@@ -87,29 +88,52 @@ try {
 ok("gemanipuleerde ciphertext faalt de auth-tag-check", tampered);
 
 // ── CSP / security-headers-consolidatie ─────────────────────────────────
-const prodHeaders = buildSecurityHeaders(true);
-const devHeaders = buildSecurityHeaders(false);
-ok("prod zet de full Content-Security-Policy (met script-src)", prodHeaders["Content-Security-Policy"] === CONTENT_SECURITY_POLICY && prodHeaders["Content-Security-Policy"].includes("script-src"));
+const NONCE = "test-nonce-abc";
+const prodHeaders = buildRequestSecurityHeaders(true, { scope: "app", nonce: NONCE });
+const devHeaders = buildRequestSecurityHeaders(false, { scope: "app", nonce: NONCE });
+ok("prod zet de full Content-Security-Policy (met script-src)", (prodHeaders["Content-Security-Policy"] ?? "").includes("script-src"));
 ok("prod zet HSTS", (prodHeaders["Strict-Transport-Security"] ?? "").includes("max-age="));
 ok("dev zet de minimale CSP (geen script-src → HMR blijft werken)", devHeaders["Content-Security-Policy"] === DEV_CONTENT_SECURITY_POLICY && !devHeaders["Content-Security-Policy"].includes("script-src"));
 ok("dev CSP dekt base-uri + form-action", devHeaders["Content-Security-Policy"].includes("base-uri 'self'") && devHeaders["Content-Security-Policy"].includes("form-action 'self'"));
 ok("dev zet GEEN HSTS", devHeaders["Strict-Transport-Security"] === undefined);
 ok("Permissions-Policy consistent (interest-cohort in beide)", devHeaders["Permissions-Policy"].includes("interest-cohort=()"));
 ok("X-Frame-Options DENY in beide omgevingen", prodHeaders["X-Frame-Options"] === "DENY" && devHeaders["X-Frame-Options"] === "DENY");
-ok("enforce-CSP staat PostHog-ingest toe in connect-src", CONTENT_SECURITY_POLICY.includes("connect-src 'self' https://api.stripe.com https://eu.i.posthog.com"));
 
-// ── Nonce-migratie stap 1+2: statische laag zonder CSP + Report-Only-CSP ─
+// ── Nonce-migratie stap 3: enforce-flip ─────────────────────────────────
+const appCsp = buildContentSecurityPolicy({ scope: "app", nonce: NONCE });
+const lpCsp = buildContentSecurityPolicy({ scope: "landing-page", nonce: NONCE });
+
+ok("enforce-CSP bevat de per-request nonce", appCsp.includes(`'nonce-${NONCE}'`));
+ok("enforce-CSP gebruikt strict-dynamic", appCsp.includes("'strict-dynamic'"));
+ok("enforce-CSP heeft GEEN unsafe-inline/unsafe-eval meer", !appCsp.includes("unsafe-inline") || !appCsp.split(";").find((d) => d.trim().startsWith("script-src"))?.includes("unsafe-inline"));
+ok("script-src is vrij van unsafe-* (de kern van de flip)", (() => {
+  const scriptSrc = appCsp.split(";").map((d) => d.trim()).find((d) => d.startsWith("script-src")) ?? "";
+  return !scriptSrc.includes("unsafe-inline") && !scriptSrc.includes("unsafe-eval");
+})());
+ok("enforce-CSP blijft rapporteren naar de collector", appCsp.includes(`report-uri ${CSP_REPORT_ENDPOINT}`));
+ok("app-scope draagt GEEN landingspagina-hashes", !LANDING_PAGE_SCRIPT_HASHES.some((h) => appCsp.includes(h)));
+ok("landing-page-scope draagt beide snippet-hashes", LANDING_PAGE_SCRIPT_HASHES.every((h) => lpCsp.includes(h)));
+ok("landing-page-scope houdt nonce + strict-dynamic", lpCsp.includes(`'nonce-${NONCE}'`) && lpCsp.includes("'strict-dynamic'"));
+ok("enforce-CSP staat beide PostHog-hosts toe in connect-src", (() => {
+  const connect = appCsp.split(";").map((d) => d.trim()).find((d) => d.startsWith("connect-src")) ?? "";
+  return connect.includes("https://eu.i.posthog.com") && connect.includes("https://eu-assets.i.posthog.com");
+})());
+
+// Drift-bewaking: de hashes staan als constante in de edge-module (geen
+// node:crypto daar). Deze check hercomputeert ze uit de échte snippets, zodat
+// een wijziging aan het script niet stil élk gepubliceerd artifact breekt.
+const recomputed = [false, true].map((withForms) =>
+  `'sha256-${createHash("sha256").update(buildPageRuntimeScriptBody({ withForms }), "utf8").digest("base64")}'`,
+);
+ok("snippet-hashes komen overeen met de echte buildPageRuntimeScriptBody-output", recomputed.every((h) => (LANDING_PAGE_SCRIPT_HASHES as readonly string[]).includes(h)));
+
+// ── Nonce-migratie stap 1+2: statische laag zonder CSP ──────────────────
 const staticProd = buildStaticSecurityHeaders(true);
 const staticDev = buildStaticSecurityHeaders(false);
 ok("statische laag (next.config) zendt GEEN CSP meer", staticProd["Content-Security-Policy"] === undefined && staticDev["Content-Security-Policy"] === undefined);
 ok("statische laag behoudt HSTS in prod", (staticProd["Strict-Transport-Security"] ?? "").includes("max-age="));
 ok("statische laag behoudt de base-headers", staticProd["X-Frame-Options"] === "DENY" && staticDev["X-Content-Type-Options"] === "nosniff");
-
-const roCsp = buildReportOnlyCsp("test-nonce-abc");
-ok("Report-Only-CSP bevat de per-request nonce", roCsp.includes("'nonce-test-nonce-abc'"));
-ok("Report-Only-CSP gebruikt strict-dynamic", roCsp.includes("'strict-dynamic'"));
-ok("Report-Only-CSP rapporteert naar de collector-route", roCsp.includes(`report-uri ${CSP_REPORT_ENDPOINT}`));
-ok("Report-Only-CSP bevat bewust GEEN unsafe-inline/unsafe-eval (dat is de meting)", !roCsp.includes("unsafe-inline") && !roCsp.includes("unsafe-eval"));
+ok("Reporting-Endpoints wordt in prod meegestuurd", (prodHeaders["Reporting-Endpoints"] ?? "").includes("csp-endpoint"));
 
 console.log(`\nsecurity-residual: ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

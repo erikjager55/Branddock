@@ -71,7 +71,10 @@ vijf nieuwste compiles faalden verloor élk artifact) en dat verweesde submissie
 wél leesbaar maar niet wisbaar waren. Details in changelog #474.
 
 ## Robuustheid (geen waargenomen impact, wel echt)
-- [ ] **Registry-type versmallen (`buildSpikePuckConfig`)**: sinds E3 het
+- [→] **Registry-type / build-heap** — verplaatst naar een eigen taak:
+      [`build-heap-investigation`](build-heap-investigation.md). De annotatie is
+      toegepast (#295) en de hypothese is gemeten weerlegd (#302); wat overblijft is
+      een geheugenonderzoek, geen typing-klus. Origineel: sinds E3 het
       return-type laten inferen (de minimale annotatie brak 149 consumer-
       regels die veld-metadata lezen) instantieert elke consumer een enorm
       anoniem structureel type. Gevolg: de TS-fase van `next build` ging in
@@ -80,25 +83,152 @@ wél leesbaar maar niet wisbaar waren. Details in changelog #474.
       rijke maar benoemde interface die álle door consumenten gelezen
       veld-metadata dekt, of het props-paneel-model loskoppelen van de
       registry-literal.
-- [ ] **SSE-generator + client-disconnect**: `generate-structured-variant`
-      luistert niet naar `request.signal` — na weglopen genereert de server
-      tot 480s door (tokenkosten). Client mist AbortController op de
-      stream-fetch. Route r.745-844.
-- [ ] **`persistVariantOptions` read-modify-write-venster**: settings-
-      snapshot van vóór een minutenlange SSE-generatie kan een concurrent
-      autosave clobberen. Patroon bestond pre-branch; venster is nu langer.
-      Fix-voorbeeld staat in `publish/route.ts` (transactionele fresh-read).
-- [ ] **Id-loze secties**: PageRender synthetiseert `<type>-<index>`-ids maar
-      de kernel matcht alleen echte `props.id` → move/remove/panel zijn dan
-      no-ops met misleidende melding. Alle producers zetten ids (gemitigeerd);
-      structurele fix: load-time id-backfill of `sectionContentIndex`-
-      resolutie in de kernel hergebruiken.
-- [ ] **`addSection` met onbekend `afterSectionId`** appendt stil onderaan —
-      expliciete `not-found` overwegen (raakt de synthetisch-id-casus).
 - [ ] **Turnstile op het publieke form-endpoint** (`/api/f/[formId]`) — de
       gedocumenteerde volgende trede bóven honeypot + timing + gelaagde
       rate-limits (zit er al in). Pas bouwen bij waargenomen spam-druk;
       bron: spec §Deploy-notities + `tasks/done/lp-forms-leads.md`.
+- [x] **SSE-generator + client-disconnect** — ✅ 2026-08-17. Beide helften waren
+      nodig: in de SPA unmount de component bij wegnavigeren, maar de browser
+      verbreekt de fetch dan niet vanzelf, dus zonder client-abort ging de
+      server-`signal` nooit af.
+      - Client: `AbortController` per deliverable in een module-scope registry
+        (`src/features/campaigns/lib/generation-abort-registry.ts`), NIET in het
+        generatieblok. ⚠️ Dat was de eerste opzet en die was een kostenregressie:
+        `HorizontalAccordion` rendert maar één stap, dus een gewone tabwissel
+        unmount het blok → abort → betaalde varianten weg → en bij terugkomst
+        kocht de auto-trigger ze opnieuw. Duurder dán niet aborteren. Nu breekt
+        alleen het verlaten van de Canvas af (`CanvasPage`-unmount), met een
+        gracieperiode van 250ms zodat React StrictMode's cleanup→setup in dev
+        geen generatie per Canvas-opening weggooit.
+      - Een nieuwe generatie voor hetzelfde deliverable breekt de vorige af —
+        anders draaien er twee en betaal je beide.
+      - Run-teller i.p.v. controller-identiteit voor het opruimen van UI-state:
+        na een abort van buitenaf moet `isGenerating` alsnog terug naar false,
+        anders blijft er een spinner hangen die nooit meer weggaat.
+      - Server: `request.signal` doorgegeven; guards vóór volgende slot,
+        recovery-retry, rewrite, tussen rewrite en iterate, en persist.
+        ⚠️ **Dekking is niet volledig**: `applyStrictTellRewrite` en
+        `applySilentIterate` krijgen de signal niet, dus de calls daarbinnen
+        (rewrite + twee judge-rescores) zijn alleen op de grens te skippen, niet
+        af te breken. Het voorbereidende werk vóór de stream (archetype, angles,
+        Exa/S2-stats) draait vóórdat de `Response` bestaat en is niet abortbaar.
+        Het JSON-fallback-pad checkt de signal helemaal niet.
+      - Signal doorgezet tot in `generateLandingPageVariant` →
+        `anthropicClient.createChatCompletion` (dat ondersteunde `abortSignal` al),
+        dus de lopende call van 30-90s wordt afgebroken. ⚠️ Die call is
+        niet-streamend, dus dat scheelt latency — of het ook geld scheelt hangt af
+        van de billing bij abort en is niet bewezen. De harde besparing zit in
+        calls die nooit starten.
+      - **Bij abort wordt niets gepersisteerd** (Erik-keuze 17-08): de
+        settings-snapshot is dan minuten oud en de gebruiker kijkt niet, dus een
+        overschreven autosave zou pas veel later opvallen — het venster hieronder
+        staat nog open. Prijs: al betaalde varianten gaan verloren.
+      - Kosten van een gedraaide generatie worden nog wél geboekt
+        (`trackVariantGeneration` staat vóór de skip-guard). Een halverwege
+        afgebroken call is niet te boeken (geen resultaat-object) — die input-tokens
+        vallen dus buiten de meting.
+      - ⚠️ Bijvangst-bug gevonden en gefixt: een abort vóór de server-response zette
+        `fallbackToJson`, waarna het JSON-pad **alles opnieuw** genereerde — dubbele
+        kosten in precies het scenario dat goedkoper moest worden.
+      - **Bewijs**: `npm run smoke:lp-generation-abort` **8/8** — dekt de laag die
+        zónder AI-key te verifiëren is (wie breekt wat af, overleeft een run een
+        stapwissel, StrictMode-simulatie, gracieperiode). Mutatietest: gracieperiode
+        weghalen laat 2 checks vallen.
+      - ⚠️ **De generatie-keten zelf is niet end-to-end geverifieerd**: `tsc` 0 en
+        `lint` 0, maar er is géén AI-key in de dev-container en een echte proef kost
+        een echte generatie.
+        **Handmatige check voor Erik**: start een 4-variant-generatie op een webpage,
+        navigeer na de eerste `variant_complete` weg uit de Canvas, en kijk in de
+        server-log naar `client disconnected`. Verwacht: die regel verschijnt, er
+        volgen géén verdere `variant_started`, en `structuredVariantOptions` in
+        `settings` is onveranderd.
+
+- [x] **`persistVariantOptions` read-modify-write-venster** — ✅ 2026-08-18.
+      De write loopt nu in één interactieve transactie op een VERSE lees-actie;
+      de minuten-oude snapshot wordt alleen nog als terugval gebruikt wanneer de
+      rij verdwenen is. Zelfde patroon als de GEO-haak in `publish/route.ts`.
+- [x] **Id-loze secties** — ✅ 2026-08-18. `sectionContentIndex` is naar de
+      kernel verhuisd (`section-edit-tools`) en is nu de énige id-resolutie in
+      het edit-pad; `preview-edit-matching` re-exporteert hem. Geen load-time
+      backfill: dat schrijft naar opgeslagen data om een leesprobleem op te
+      lossen. De terugval blijft streng — een sectie mét eigen id is nooit via
+      een synthetisch id te raken, want een edit op de verkéérde sectie is erger
+      dan een geweigerde edit.
+- [x] **`addSection` met onbekend `afterSectionId`** — ✅ 2026-08-18. Geeft nu
+      `after-section-not-found` i.p.v. stil onderaan te appenden, mét uitleg in
+      de Claw-melding. Géén anker meegeven blijft gewoon appenden; dat is een
+      expliciete keuze van de caller. Samen met de vorige fix is dit méér dan
+      een melding: een sectie toevoegen ná een id-loze sectie belandde altijd
+      onderaan en meldde succes.
+
+## ✅ Robuustheid — drie van vier af, 2026-08-18
+
+Drie items zijn gefixt en gesmoked; het vierde is toegepast maar niet te
+bewijzen. De SSE-disconnect zit in [#287](https://github.com/erikjager55/Branddock/pull/287)
+(andere sessie) en is hier bewust niet aangeraakt.
+
+**Wat de eerste twee samen oplossen is groter dan hun beschrijving.** Ze werden
+opgeschreven als "misleidende melding", maar het gedrag was erger: een sectie
+toevoegen ná een id-loze sectie belandde onderaan en meldde succes. Met de
+kernel-resolutie landt hij waar je aanwijst; met de strengere `addSection`
+krijgt een écht verdwenen anker een weigering in plaats van een stille verhuizing.
+
+**Bewijs**: `scripts/smoke-tests/section-edit-synthetic-ids.ts` → **23/23**,
+inclusief de strengheidsgarantie (een sectie mét eigen id is niet synthetisch
+bereikbaar) en het behoud van de verplichte-sectie-guard. De vier aangeraakte
+webpage-builder-smokes blijven groen (21/21, 68/68, 20/20). `tsc` 0 · `lint` 0.
+
+### ⚠️ Item 1 — annotatie toegepast, effect niet aangetoond
+
+`buildSpikePuckConfig` heeft nu een benoemd retourtype. Niet een nieuw type:
+`SectionLibraryConfig<SpikePuckProps>` bestond al sinds E3 en is daar zelfs
+gedocumenteerd als *"de registry-shape zoals `buildSpikePuckConfig` hem
+teruggeeft"* — de builder was er alleen nooit mee geannoteerd. De 149
+consumer-regels uit de oorspronkelijke beschrijving zijn er niet meer: het
+props-paneel leest sinds E3 via `SectionRegistryMeta`, dus er brak nog maar één
+klasse casts in smoke-tests (18 stuks, nu via `unknown` of via de lees-deur).
+
+**Maar het claimde probleem reproduceert hier niet.** Twee metingen:
+
+| Meting | Zonder annotatie | Met annotatie |
+|---|---|---|
+| `tsc --noEmit --extendedDiagnostics` (koud) | 9.059.620 instantiaties · 3,98 GB | 9.059.610 instantiaties · 3,99 GB |
+| `next build` met `--max-old-space-size=4096` | **slaagt** | **slaagt** |
+
+Tien instantiaties verschil, en de build die zonder annotatie zou moeten
+omvallen doet dat niet. Dat is geen tegenspraak met de bevinding van 13-08 — de
+comment bij de tsc-stap in `ci.yml` zegt het zelf: *"Lokaal viel dat niet op —
+macOS schaalt de heap mee met het beschikbare RAM, de runner niet."* Alleen de
+runner kan dit beantwoorden.
+
+**Het experiment is gedraaid (#302, 2026-08-18) en de hypothese is WEERLEGD.**
+Met de annotatie uit #295 erin en de heap-bump eraf viel de build-stap alsnog om,
+in exact dezelfde fase als in augustus:
+
+```
+Running TypeScript ...
+Mark-Compact 4028.2 (4130.1) -> 4013.4 (4130.9) MB
+FATAL ERROR: Ineffective mark-compacts near heap limit
+```
+
+De anonieme structurele inferentie over de 22-component-registry was dus **niet
+de oorzaak** — of in elk geval niet de enige. Dat is de winst van deze run: de
+bewering "type-versmalling is de echte oplossing" stond sinds 13-08 als feit in
+`ci.yml` zonder dat iemand haar had getoetst, en is nu vervangen door de meting.
+
+De bump staat terug (met het bewijs erbij in de comment). **Wat de annotatie wél
+opleverde blijft staan** — de registry heeft nu een benoemd contract in plaats van
+een geïnfereerd type dat iedere consument opnieuw instantieert, en de smokes lezen
+via datzelfde contract.
+
+**Volgende stap voor wie dit oppakt**: eerst méten waar het geheugen heen gaat
+(`tsc --generateTrace` op de build-tsconfig, of `--extendedDiagnostics` per
+project-subset), niet opnieuw een type versmallen op gevoel. Let op dat lokaal
+meten misleidt: macOS schaalt de heap mee met het RAM, dus een 4GB-build slaagt
+hier ook zónder fix.
+
+De bump op de losse `tsc`-stap is een andere zaak (brandstyle-stack
+#255-#259) en blijft staan.
 
 ## Bewuste niet-fixes (gedocumenteerd, geen actie)
 - **`cta_click`-events**: uit het publieke `/api/t`-enum gehaald (spoofbaar);

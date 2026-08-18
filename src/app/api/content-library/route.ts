@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import {
+  deriveReadinessBucket,
+  readinessSignalTokens,
+  resolveLibraryContentSignal,
+  type ReadinessSignal,
+} from "@/lib/content/library-readiness";
+import { TEXT_COMPONENT_WHERE } from "@/lib/content/resolve-deliverable-content";
 
 // Content type → category mapping
 const TYPE_CATEGORY_MAP: Record<string, string> = {
@@ -26,13 +33,6 @@ function getTypeCategory(contentType: string): string {
   return TYPE_CATEGORY_MAP[contentType] ?? "Written";
 }
 
-function computeWordCount(text: string | null): number | null {
-  if (!text) return null;
-  const trimmed = text.trim();
-  if (trimmed.length === 0) return 0;
-  return trimmed.split(/\s+/).length;
-}
-
 /** Parse a comma-separated query param → trimmed non-empty string array */
 function csv(raw: string | null): string[] {
   if (!raw) return [];
@@ -40,43 +40,6 @@ function csv(raw: string | null): string[] {
     .split(",")
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
-}
-
-/** Derive the traffic-light bucket used by both server filter and UI.
- *  Matches user mental model of progress rather than DB status enum alone:
- *    - GREEN  : approved or published
- *    - RED    : genuinely untouched — no content, not scheduled, status
- *               NOT_STARTED
- *    - AMBER  : anything else — content exists, item is scheduled, or
- *               status advanced to IN_PROGRESS / COMPLETED
- *  Overdue is a label modifier (see deriveTrafficLight) and never changes
- *  the bucket. */
-function deriveReadiness(
-  isPublishReady: boolean,
-  status: string | null,
-  hasContent: boolean,
-  isScheduled: boolean,
-  isPublished: boolean,
-): "red" | "amber" | "green" {
-  if (isPublishReady || isPublished) return "green";
-  const hasAnyProgress =
-    hasContent ||
-    isScheduled ||
-    status === "IN_PROGRESS" ||
-    status === "COMPLETED";
-  if (!hasAnyProgress) return "red";
-  return "amber";
-}
-
-/** Classify readiness hints into filter tokens. */
-function hintTokens(hint: string | null): string[] {
-  if (!hint) return [];
-  const tokens: string[] = [];
-  const lower = hint.toLowerCase();
-  if (lower.includes("no content")) tokens.push("no-content");
-  if (lower.includes("not reviewed")) tokens.push("not-reviewed");
-  if (lower.includes("pipeline incomplete")) tokens.push("pipeline-incomplete");
-  return tokens;
 }
 
 // GET /api/content-library
@@ -200,16 +163,25 @@ export async function GET(request: NextRequest) {
             type: true,
           },
         },
+        // Existentie-probe voor keten A, bewust GEEN `generatedContent`: die
+        // body maal elke component maal elke deliverable is precies de payload
+        // die een bibliotheek-lijst niet mag ophalen. `take: 1` volstaat —
+        // `resolveDeliverableContentSignal` heeft alleen de telling nodig.
+        // image/video dragen hun PROMPT in `generatedContent`, geen tekst.
+        components: {
+          where: TEXT_COMPONENT_WHERE,
+          select: { id: true },
+          take: 1,
+        },
       },
     });
 
     const rawItems = deliverables.map((d) => {
-      // Determine publish readiness
-      const hasContent =
-        // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 2 (#2) — stoplicht + "No content generated"; wacht op productbesluit structured-unchosen
-        d.generatedText != null ||
-        (Array.isArray(d.generatedImageUrls) && d.generatedImageUrls.length > 0) ||
-        d.generatedVideoUrl != null;
+      // Alle drie de content-ketens via één deur (tasks/content-chain-accessor.md
+      // #2). Voorheen keek deze regel alleen naar `generatedText` — dood veld voor
+      // de 11 keten-B-types — waardoor een volle, gepubliceerde pillar-page rood
+      // met "No content generated" in de bibliotheek stond.
+      const signal = resolveLibraryContentSignal(d, d.components.length);
       // SCHEDULED + PUBLISHED both count as approved — the user has signed
       // off either way. APPROVED-without-publish-intent is the "Ready" state
       // (Mark as Ready button); SCHEDULED has a future publish date queued.
@@ -226,12 +198,18 @@ export async function GET(request: NextRequest) {
       // green. The status check above covers both cases.
       const isPublishReady = isApproved;
 
-      // Build a human-readable hint about what's missing
-      const hints: string[] = [];
-      if (!hasContent) hints.push("No content generated");
-      if (!isPipelineComplete && hasContent) hints.push("Pipeline incomplete");
-      if (!isApproved) hints.push(d.approvalStatus === "DRAFT" ? "Not reviewed" : `Status: ${d.approvalStatus ?? "DRAFT"}`);
-      const readinessHint = hints.length > 0 ? hints.join(" · ") : null;
+      // Wat er nog mist, als tokens — de UI maakt er de zin van in de taal van
+      // de gebruiker. Zie ReadinessSignal voor waarom dit geen Engelse tekst meer is.
+      const readinessSignals: ReadinessSignal[] = [];
+      if (signal.contentSignal) readinessSignals.push(signal.contentSignal);
+      if (!isPipelineComplete && signal.hasContent) readinessSignals.push({ token: "pipeline-incomplete" });
+      if (!isApproved) {
+        readinessSignals.push(
+          d.approvalStatus === "DRAFT"
+            ? { token: "not-reviewed" }
+            : { token: "status", status: d.approvalStatus ?? "DRAFT" },
+        );
+      }
 
       return {
         id: d.id,
@@ -244,8 +222,9 @@ export async function GET(request: NextRequest) {
         campaignName: d.campaign.title,
         campaignType: d.campaign.type as "STRATEGIC" | "QUICK",
         isFavorite: d.isFavorite,
-        // eslint-disable-next-line no-restricted-syntax -- TODO(content-chain-accessor): fase 2 (#2) — idem, readiness-filter
-        wordCount: computeWordCount(d.generatedText),
+        // Alleen wanneer de telling gratis is (keten B/C); voor de componentketen
+        // `null`, zoals voorheen — de bodies daarvoor ophalen kost de hele lijst.
+        wordCount: signal.wordCount,
         updatedAt: d.updatedAt.toISOString(),
         // Calendar view date fields
         scheduledPublishDate: d.scheduledPublishDate?.toISOString() ?? null,
@@ -253,8 +232,11 @@ export async function GET(request: NextRequest) {
         publishedAt: d.publishedAt?.toISOString() ?? null,
         // Publish readiness
         isPublishReady,
-        hasContent,
-        readinessHint,
+        hasContent: signal.hasContent,
+        /** `awaiting-choice` = gegenereerd, nog geen variant gekozen. Voortgang
+         *  voor het stoplicht, maar géén publiceerbare payload. */
+        contentState: signal.contentState,
+        readinessSignals,
         // Extra bookkeeping used only for post-filtering; stripped below
         _isScheduled: isScheduled,
         _isPublished: d.approvalStatus === "PUBLISHED",
@@ -269,17 +251,18 @@ export async function GET(request: NextRequest) {
     // Post-filter on derived readiness + hints (DB doesn't store these directly)
     const filteredItems = rawItems.filter((it) => {
       if (readinessList.length > 0) {
-        const bucket = deriveReadiness(
-          it.isPublishReady,
-          it.status,
-          it.hasContent,
-          (it as { _isScheduled: boolean })._isScheduled,
-          (it as { _isPublished: boolean })._isPublished,
-        );
+        const bucket = deriveReadinessBucket({
+          isPublishReady: it.isPublishReady,
+          status: it.status,
+          hasContent: it.hasContent,
+          isAwaitingChoice: it.contentState === "awaiting-choice",
+          isScheduled: (it as { _isScheduled: boolean })._isScheduled,
+          isPublished: (it as { _isPublished: boolean })._isPublished,
+        });
         if (!readinessList.includes(bucket)) return false;
       }
       if (readinessHintsList.length > 0) {
-        const tokens = hintTokens(it.readinessHint);
+        const tokens = readinessSignalTokens(it.readinessSignals);
         const matches = readinessHintsList.some((req) => tokens.includes(req));
         if (!matches) return false;
       }

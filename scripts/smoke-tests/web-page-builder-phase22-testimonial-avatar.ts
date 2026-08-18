@@ -66,7 +66,7 @@ function renderTestimonial(
     brandTokens: TOKENS,
   } as unknown as CanvasContextStack;
   const config = buildSpikePuckConfig(ctx);
-  const comp = (config.components as Record<string, { render: (p: unknown) => unknown }>)
+  const comp = (config.components as unknown as Record<string, { render: (p: unknown) => unknown }>)
     .Testimonial;
   const element = comp.render(props);
   return renderToStaticMarkup(element as React.ReactElement);

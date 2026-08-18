@@ -1011,7 +1011,7 @@ export interface GenerationResult {
  */
 export async function generateLandingPageVariant(
   params: LandingPageGenerationParams,
-  opts?: { temperature?: number; model?: string },
+  opts?: { temperature?: number; model?: string; abortSignal?: AbortSignal },
 ): Promise<GenerationResult> {
   const prompt = buildLandingPageVariantPrompt(params);
 
@@ -1045,6 +1045,10 @@ export async function generateLandingPageVariant(
       timeoutMs: 90_000,
       ...(opts?.model ? { model: opts.model } : {}),
       ...(opts?.temperature !== undefined ? { temperature: opts.temperature } : {}),
+      // Breekt de lopende HTTP-call af als de client wegloopt. Zonder dit stopte
+      // de SSE-route alleen tússen varianten en betaalde je de call die net liep
+      // altijd nog helemaal uit (30-90s).
+      ...(opts?.abortSignal ? { abortSignal: opts.abortSignal } : {}),
     },
   );
 

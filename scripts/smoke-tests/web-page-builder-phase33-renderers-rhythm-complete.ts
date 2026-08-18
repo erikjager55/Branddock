@@ -55,7 +55,7 @@ function makeCtx(tokens: BrandTokens): CanvasContextStack {
 group("#2 — Testimonial gebruikt sectionRhythm");
 {
   const config = buildSpikePuckConfig(makeCtx(TOKENS_LINFI));
-  const t = (config.components as Record<string, { render: (p: unknown) => unknown }>).Testimonial;
+  const t = (config.components as unknown as Record<string, { render: (p: unknown) => unknown }>).Testimonial;
   const html = renderToStaticMarkup(
     t.render({ quote: "Top!", author: "Anna", personaId: "" }) as React.ReactElement,
   );
@@ -67,7 +67,7 @@ group("#2 — Testimonial gebruikt sectionRhythm");
 group("#2 — PricingTable gebruikt sectionRhythm");
 {
   const config = buildSpikePuckConfig(makeCtx(TOKENS_LINFI));
-  const t = (config.components as Record<string, { render: (p: unknown) => unknown }>).PricingTable;
+  const t = (config.components as unknown as Record<string, { render: (p: unknown) => unknown }>).PricingTable;
   const html = renderToStaticMarkup(
     t.render({
       tiers: [{ name: "Pro", price: "€99", features: "F1\nF2", highlighted: false }],
@@ -81,7 +81,7 @@ group("#2 — PricingTable gebruikt sectionRhythm");
 group("#2 — FAQ gebruikt sectionRhythm");
 {
   const config = buildSpikePuckConfig(makeCtx(TOKENS_LINFI));
-  const t = (config.components as Record<string, { render: (p: unknown) => unknown }>).FAQ;
+  const t = (config.components as unknown as Record<string, { render: (p: unknown) => unknown }>).FAQ;
   const html = renderToStaticMarkup(
     t.render({ items: [{ question: "Q", answer: "A" }] }) as React.ReactElement,
   );
@@ -93,7 +93,7 @@ group("#2 — FAQ gebruikt sectionRhythm");
 group("#2 — Footer gebruikt sectionRhythm * 0.5");
 {
   const config = buildSpikePuckConfig(makeCtx(TOKENS_LINFI));
-  const t = (config.components as Record<string, { render: (p: unknown) => unknown }>).Footer;
+  const t = (config.components as unknown as Record<string, { render: (p: unknown) => unknown }>).Footer;
   const html = renderToStaticMarkup(
     t.render({
       companyName: "LINFI",
@@ -110,7 +110,7 @@ group("#2 — Footer gebruikt sectionRhythm * 0.5");
 group("#2 — RichText gebruikt sectionRhythm * 0.6");
 {
   const config = buildSpikePuckConfig(makeCtx(TOKENS_LINFI));
-  const t = (config.components as Record<string, { render: (p: unknown) => unknown }>).RichText;
+  const t = (config.components as unknown as Record<string, { render: (p: unknown) => unknown }>).RichText;
   const html = renderToStaticMarkup(
     t.render({ content: "Hello world" }) as React.ReactElement,
   );
@@ -133,7 +133,7 @@ group("#2 — COMMERCIAL workspace (compactere padding)");
     },
   };
   const config = buildSpikePuckConfig(makeCtx(tokens));
-  const faq = (config.components as Record<string, { render: (p: unknown) => unknown }>).FAQ;
+  const faq = (config.components as unknown as Record<string, { render: (p: unknown) => unknown }>).FAQ;
   const html = renderToStaticMarkup(
     faq.render({ items: [{ question: "Q", answer: "A" }] }) as React.ReactElement,
   );

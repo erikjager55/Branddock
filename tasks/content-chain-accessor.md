@@ -5,12 +5,12 @@ fase: launch
 priority: now
 effort: 5-8 dagen (3 fasen)
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-07-17
-completed:
+completed: 2026-08-18
 related-adr: docs/adr/2026-07-17-deliverable-content-accessor.md
 related-spec: -
-worktree: branddock-content-chain-accessor
+worktree: - (opgeruimd na de merge)
 ---
 
 # Probleem
@@ -121,8 +121,8 @@ tegen het main-schema: *No difference detected* — comment-only, dus **geen Neo
 
 | # | pad:regel | leest | wat er misgaat |
 |---|---|---|---|
-| 22 | `lib/agents/registry/seo-watchdog-scan.ts:171` | B (rauw) | Iris parseert `settings.structuredVariant` rechtstreeks; de accessor levert de variant via `kind: 'structured'` |
-| 23 | `lib/content/deliverable-content.ts` (publieke API + MCP) | A | `get_deliverable_content` en `GET /api/v1/deliverable` geven voor keten-B-types een lege componentenlijst — de bug, maar dan extern zichtbaar |
+| 22 | `lib/agents/registry/seo-watchdog-scan.ts:171` | B (rauw) | ✅ **gefixt 2026-08-18** — Iris leest via de accessor; zod-validatie blijft op `content.variant`, `eslint-disable` weg |
+| 23 | `lib/content/deliverable-content.ts` (publieke API + MCP) | A | ✅ **gefixt 2026-08-18** — `text` + `contentState` + `variantOptionCount` erbij (additief); `components` ongewijzigd |
 
 # Fase 2 — de 9 gebruiker-zichtbare kruisingen (eigen PR)
 
@@ -131,14 +131,141 @@ Elk met een echte verificatie, niet alleen tsc.
 | # | pad:regel | leest | wat de gebruiker ziet bij een pillar-page |
 |---|---|---|---|
 | 1 | `studio/[deliverableId]/publish-to-channel/route.ts:122` | A | ✅ **gefixt 2026-08-16** — `buildChannelPayload` leest nu beide ketens; guard blijft, `structured-unchosen` blokkeert nog steeds |
-| 2 | `content-library/route.ts:208-211,230,246` | C | rood stoplicht + **"No content generated"** op een volle, gepubliceerde pagina; voedt `deriveTrafficLight` + de readiness-filter → verkeerde bucket. `wordCount` is `null` (dood veld) |
-| 3 | `lib/claw/tools/read-tools.ts:861-865` | A + C | Brand Assistant: *"deze pagina heeft nog geen content"*, `hasContent: false` — repurpose/samenvat-vragen falen. Dezelfde file heeft op `:985` wél een gate voor `read_landing_page_content` |
+| 2 | `content-library/route.ts:208-211,230,246` | C | ✅ **gefixt 2026-08-17** — productkeuze gemaakt (zie hieronder). Stoplicht amber i.p.v. rood, hint noemt de handeling, `wordCount` klopt voor keten B/C |
+| 3 | `lib/claw/tools/read-tools.ts:861-865` | A + C | ✅ **gefixt 2026-08-17** — productkeuze gemaakt (zie hieronder). Assistent leest nu alle drie de ketens; bij een ongekozen variant meldt hij de keuze i.p.v. "geen content" |
 | 4 | `features/campaigns/lib/export-zip.ts:40,64` | C | ✅ **gefixt 2026-08-16** — las `json.generatedText` terwijl de route `{deliverable:{…}}` teruggeeft, dus ALTIJD leeg voor élk type. Nu één batch-POST naar de canvas-export-route (server-side, alle drie de ketens) i.p.v. een fetch-loop |
 | 5 | `studio/[deliverableId]/auto-iterate/trigger/route.ts:84-140` | A | ✅ **gefixt 2026-08-16** — blobText valt terug op de accessor; de gate ziet nu de echte woordentelling |
 | 6 | `studio/[deliverableId]/strict-rewrite/apply/route.ts:84-107` | A | ✅ **melding gefixt 2026-08-16** — keten-B krijgt nu een eerlijke uitleg i.p.v. "geen componenten". Écht herschrijven vereist de schrijf-kant van keten B = out of scope |
 | 7 | `studio/[deliverableId]/auto-iterate/apply/route.ts:79-101` | A | ✅ **melding gefixt 2026-08-16** — idem #6 |
 | 8 | `canvas/accordion/Step4Timeline.tsx:100` | A | ✅ **gemigreerd 2026-08-16** — eigen cast + try/catch vervangen door de accessor |
 | 9 | `campaigns/[id]/canvas/export/route.ts:37-66` | A | ✅ **gemigreerd + BEREIKBAAR gemaakt 2026-08-16** — `buildDeliverableBody` delegeert nu aan de accessor, en de ZIP-export roept deze route aan. Niet verwijderd: hij bleek precies de server-side deur die #4 nodig had |
+
+## ✅ Fase 2 — de twee productkeuzes, opgeleverd 2026-08-17
+
+`structured-unchosen` (content gegenereerd, variant nog niet gekozen) dwong per
+consument een keuze af. Beide zijn gemaakt op één principe: **de gebruiker heeft
+werk staan, dus lieg niet dat het leeg is — maar gok ook niet welke versie hij
+bedoelde.**
+
+**#2 Content Library — voortgang, geen leegte.**
+
+- Het stoplicht gaat **amber ("In progress")**, niet rood ("Not started"). Er is
+  gegenereerd; alleen de keuze ontbreekt.
+- De hint noemt de eerstvolgende handeling: *"2 versions — choose one"* in plaats
+  van *"No content generated"*. Enkelvoud krijgt *"1 version — choose it"*.
+- Nieuw filter-token `variant-unchosen` (Wat ontbreekt → "Version not chosen yet"
+  / "Nog geen versie gekozen"), zodat de wachtrij in één klik te vinden is.
+- **`hasContent` blijft `false`.** Dat veld schakelt in de UI de QuickPublishMenu
+  vrij en de publish-guard (#412) weigert een deliverable zónder variantkeuze
+  alsnog. Op `true` zetten zou een actie aanbieden die gegarandeerd afketst. Het
+  stoplicht krijgt daarom een eigen signaal (`contentState`) i.p.v. een opgerekte
+  `hasContent`.
+
+**#3 Brand Assistant — eerlijk over de staat, geen ongekozen versie prijsgeven.**
+
+- Bij `structured-unchosen` geeft de tool **geen** varianttekst terug, maar
+  `pendingVariantChoice: true` + `variantOptionCount` + een instructie: meld de
+  keuze en verwijs naar Canvas. Eén van de opties teruggeven zou de assistent
+  laten samenvatten of hergebruiken uit een versie die de gebruiker nog kan
+  weggooien — dat lekt door naar afgeleide content.
+- De echte bug eronder is óók weg: de tool las alleen keten A + C en meldde dus
+  "nog geen content" op een volle pillar-page. Nu leest hij alle drie de ketens.
+- Bijvangst: het `isSelected: true`-filter op de component-query is verdwenen. Een
+  variantgroep zónder expliciete selectie leverde nul componenten op terwijl
+  variant 0 gewoon de levende tekst is; de accessor doet die selectie zelf.
+
+**Twee dingen die de inventaris niet voorzag:**
+
+1. **De route-helpers waren onsmokebaar.** `deriveReadiness` en `hintTokens`
+   stonden ín het route-bestand, en een App-Router-route mag geen extra symbolen
+   exporteren. Ze zijn verhuisd naar `src/lib/content/library-readiness.ts`, nu
+   getest in plaats van nagebouwd in een smoke.
+2. **De oude regel was óók fout voor keten A.** De smoke tegen echte rijen laat
+   zien dat een LinkedIn-post mét 30+ gevulde componenten evengoed
+   *"No content generated"* kreeg — de fout was dus breder dan de 11 keten-B-types.
+
+**Bewijs** (`scripts/smoke-tests/content-library-readiness.ts`, **39/39**): 25 pure
+assertions + 14 tegen **echte rijen** in de lokale DB, door de ECHTE route-query en
+de ECHTE Claw-tool. Per rij drukt de smoke oud naast nieuw af:
+
+```
+ongekozen varianten (landing-page)  oud: "No content generated"  → nieuw: "2 versions — choose one"
+gekozen variant     (landing-page)  oud: hasContent=false        → nieuw: hasContent=true
+componenten         (linkedin-post) oud: hasContent=false        → nieuw: hasContent=true
+echt leeg           (landing-page)  oud: "No content generated"  → nieuw: ongewijzigd
+```
+
+`tsc` 0 · `lint` 0 errors · fase-1-smoke 52/52 nog groen. Geen schema-wijziging,
+dus geen Neon-push.
+
+**Nog open in fase 2**: #22 (`seo-watchdog-scan.ts`, Iris leest de variant rauw,
+draagt nog een `eslint-disable` met TODO) én #23 (de publieke reader), die in deze
+opsomming ontbrak. Beide afgerond in de ronde hieronder.
+
+## ✅ Fase 2 — restscope #22 + #23, opgeleverd 2026-08-18
+
+**#23 — de publieke reader gaf een volle pagina als leeg item uit.**
+`src/lib/content/deliverable-content.ts` mapte uitsluitend `components`, dus de
+MCP-tool `get_deliverable_content` en `GET /api/v1/deliverable` leverden voor de 11
+keten-B-types een lege lijst. Dat is dezelfde bug als #2/#3, maar op de enige plek
+waar een klant of externe agent 'm ziet. Additief opgelost — het oppervlak zit nog
+achter `PUBLIC_API_ENABLED`, dus er is geen externe consument, maar `components`
+blijft ongewijzigd zodat er ook nooit één breekt:
+
+- `text` — de platte tekst uit welke keten dan ook; `null` bij leeg.
+- `contentState` — `ready` / `awaiting-choice` / `empty`. Zonder dit onderscheid
+  leest een externe agent "geen tekst" als "leeg item" en genereert hij eroverheen.
+- `variantOptionCount` — hoeveel versies op een keuze wachten.
+- Bij `awaiting-choice` gaat er **geen** tekst mee, gelijk aan de keuze bij #3: een
+  versie die de gebruiker nog kan weggooien lekt niet naar afgeleide content. De
+  tool-beschrijving en de route-header zeggen dat nu ook.
+
+**#22 — Iris leest via de accessor.** De rauwe
+`longFormGeoVariantSchema.safeParse(settings.structuredVariant)` is vervangen door
+`resolveDeliverableContent()` + dezelfde zod-validatie op `content.variant`; de
+`eslint-disable` is weg. Iris scoort alleen long-form GEO, dus de schema-check
+blijft — de accessor garandeert een page-variant, niet dít schema. Bijeffect: een
+half-complete opgeslagen variant komt nu als `empty` binnen (skip) in plaats van als
+een object dat pas verderop omvalt.
+
+**Vier bevindingen uit de fresh-eyes-review van PR #288, in dezelfde ronde gefixt:**
+
+1. **De tekstcomponent-regel stond op drie plekken** — de Prisma-`where` in
+   `content-library/route.ts`, `NON_TEXT_COMPONENT_TYPES` in de accessor, en een
+   kópie in de smoke. Ze waren gelijk, maar de smoke kon de drift per definitie niet
+   vangen omdat hij de where-clause nabouwde. Nu één geëxporteerde
+   `TEXT_COMPONENT_WHERE`, gebruikt door route én smoke.
+2. **De docstring van `resolveDeliverableContentSignal` claimde te veel**
+   ("uit elkaar lopen kan niet"). De *precedentie* wordt inderdaad niet herhaald,
+   maar de *variantselectie* wél: de telling weet niet welke groep wat koos, dus
+   staat álle tekst in niet-levende varianten, dan zegt het signaal `ready` waar de
+   volledige accessor `empty` geeft. Benoemd i.p.v. weggeschreven.
+3. **`hasContent` was tóch `true` bij `awaiting-choice` zodra er beeld/video op de
+   rij stond** — precies de afketsende QuickPublishMenu die keuze #2 wilde
+   vermijden. Nu `hasVisuals && !isAwaitingChoice`.
+4. **De readiness-hints gingen langs i18next heen.** De route bouwde Engelse zinnen
+   die de UI rauw rendert, terwijl dezelfde begrippen in
+   `campaigns-content-library` wél vertaald staan: een Nederlandse gebruiker zag
+   *"No content generated"* op de kaart en *"Geen content gegenereerd"* in het
+   filter. Erger was de terugweg — het serverfilter leidde zijn tokens áf uit die
+   Engelse tekst (`lower.includes('choose')`), dus één herformulering of vertaling
+   had het filter stil kapotgemaakt. De API stuurt nu `readinessSignals` (tokens),
+   `formatReadinessHint()` maakt er de zin van, en Engels blijft de bron via
+   `defaultValue` — dat is niet alleen een vangnet: namespaces laden lazy, dus vóór
+   die load ís de defaultValue wat er op het scherm staat.
+
+**Bewijs**: `content-library-readiness` **59/59** (was 39/39; +12 voor de publieke
+reader en de beeld/keuze-combinatie, +8 voor de i18n-laag), fase-1-smoke `deliverable-content-accessor`
+**52/52** ongewijzigd, en de échte Iris-laag via
+`SKIP_AI=1 scripts/dev/agent-seo-watchdog-smoke.ts` → **15/15** (geseede GEO-pagina's:
+1 vervallen geflagd, 1 gezond, 1 corrupt geskipt). `tsc` 0 · `lint` 0.
+
+⚠️ Eén assertie van de nieuwe smoke moest ik bijstellen omdat de werkelijkheid
+anders was: de keten-B-rij in de lokale DB heeft **zowel 5 componenten als een
+gekozen variant** (4.185 tekens). "Keten B heeft geen componenten" klopt dus niet als
+regel — het is de flip-situatie uit §*De flip*, en juist daar bewijst de precedentie
+zich: wie alleen `components` las kreeg een ánder (verouderd) antwoord. De check test
+nu dát, in plaats van een lege lijst.
 
 # Fase 3 — de 12 stille kruisingen (eigen PR)
 
@@ -217,6 +344,34 @@ flow.** tsc-groen bewijst hier per definitie niets — beide takken compileren.
   (Content Library-stoplicht) en #3 (Brand Assistant-antwoord).
 - **De accessor kan zelf de volgende single point of failure worden.** Mitigatie: hij is puur,
   volledig gesmoked, en de externe randen houden hun eigen vangnet (#412).
+
+# Restant na 2026-08-18 — alle 23 kruisingen zijn behandeld
+
+> ⚠️ **Nog te verplaatsen naar `tasks/done/`.** Bewust niet gedaan op 18-08: twee open
+> sessie-afronding-PR's (#300, #304) schrijven op dat moment aan `START_HERE.md` en
+> verwijzen naar dit pad. Meenemen in de eerstvolgende done-sweep, zodra die geland zijn.
+
+Er staat geen kruising meer open; deze taak is **done** (2026-08-18, PR #298).
+Wat resteert zijn drie **beslissingen**, geen onafgemaakt werk. Ze hebben een eigen
+task-file gekregen — [`content-chain-followups`](content-chain-followups.md) — zodat
+ze niet in een losse-eindjes-sectie verdwijnen (les 2026-08-16). Hieronder blijven ze
+staan als context bij de kruisingen waar ze uit voortkomen.
+
+- **#12 dode code opruimen.** `buildCascadingComponentContext` en zijn enige
+  aanroeper `compileComponentFeedback` hebben samen nul aanroepers. Niet gefixt maar
+  ook niet verwijderd — dat is een opruim-besluit, geen ketenfix.
+- **#6/#7 schrijf-kant van keten B.** Strict-rewrite en auto-iterate géven nu een
+  eerlijke uitleg in plaats van "geen componenten", maar kunnen een keten-B-pagina
+  nog steeds niet écht herschrijven. Dat vraagt de schrijf-kant, expliciet out of
+  scope van deze leeslaag.
+- **#19 repurpose neemt geen bron-content mee.** Het `derive`-pad strip nu de
+  keten-B-velden (anders kreeg een afgeleide post de tekst van de bronpagina), maar
+  het geeft de afgeleide deliverable ook géén bron-content. Dat is een
+  feature-beslissing, geen bug.
+
+De ESLint-guard blijft staan en er zit geen `eslint-disable` met een
+`TODO(content-chain-accessor)` meer in de codebase — dat is de meetbare vorm van
+"deze taak is af".
 
 # Out of scope
 

@@ -20,6 +20,7 @@ import { buildLandingPageTemplateFromStructured } from "../../src/features/campa
 import { buildSpikePuckConfig } from "../../src/features/campaigns/components/canvas/medium/puck-config";
 import type { LandingPageVariantContent } from "../../src/lib/landing-pages/variant-schema";
 import type { CanvasContextStack } from "../../src/lib/ai/canvas-context";
+import type { SectionRegistryMeta } from '../../src/features/campaigns/components/canvas/medium/section-editor-model';
 
 let pass = 0;
 let fail = 0;
@@ -102,51 +103,50 @@ group("Puck-config — nieuwe fields aanwezig");
 {
   const config = buildSpikePuckConfig(ctx);
 
-  const heroFields = (config.components.BrandHero as { fields: Record<string, unknown> }).fields;
+  // `SectionLibraryConfig` is bewust minimaal-structureel; de rijke
+  // veld-metadata leest iedereen via `SectionRegistryMeta` — dezelfde deur die
+  // SectionEditor gebruikt. Eén cast per config i.p.v. een ad-hoc vorm per veld.
+  const meta = config.components as unknown as SectionRegistryMeta;
+
+  const heroFields = meta.BrandHero?.fields ?? {};
   assert("BrandHero.fields.heroVisualUrl gedefinieerd", "heroVisualUrl" in heroFields);
 
-  const ctaFields = (config.components.BrandCTA as { fields: Record<string, unknown> }).fields;
+  const ctaFields = meta.BrandCTA?.fields ?? {};
   assert("BrandCTA.fields.riskReducer gedefinieerd", "riskReducer" in ctaFields);
 
-  type FeatureGridConfig = {
-    fields: { features: { arrayFields: Record<string, unknown> } };
-  };
-  const featureGridArrayFields = (config.components.FeatureGrid as FeatureGridConfig).fields
-    .features.arrayFields;
+  const featureGridArrayFields =
+    meta.FeatureGrid?.fields?.features?.arrayFields ?? {};
   assert("FeatureGrid features.icon gedefinieerd", "icon" in featureGridArrayFields);
 
-  type PricingTableConfig = {
-    fields: { tiers: { arrayFields: Record<string, unknown> } };
-  };
-  const pricingArrayFields = (config.components.PricingTable as PricingTableConfig).fields
-    .tiers.arrayFields;
+  const pricingArrayFields = meta.PricingTable?.fields?.tiers?.arrayFields ?? {};
   assert("PricingTable tiers.highlighted gedefinieerd", "highlighted" in pricingArrayFields);
 }
 
 group("Default props zijn backward-compat (optional defaults)");
 {
   const config = buildSpikePuckConfig(ctx);
-  const heroDefaults = (config.components.BrandHero as { defaultProps: Record<string, unknown> })
-    .defaultProps;
+  const meta = config.components as unknown as SectionRegistryMeta;
+  const heroDefaults = meta.BrandHero?.defaultProps ?? {};
   assert("BrandHero.defaultProps heeft heroVisualUrl=''", heroDefaults.heroVisualUrl === "");
 
-  const ctaDefaults = (config.components.BrandCTA as { defaultProps: Record<string, unknown> })
-    .defaultProps;
+  const ctaDefaults = meta.BrandCTA?.defaultProps ?? {};
   assert("BrandCTA.defaultProps heeft riskReducer=''", ctaDefaults.riskReducer === "");
 
-  type FeatureGridDefaults = {
-    defaultProps: { features: Array<{ icon?: string }> };
-  };
-  const featureGridDefaults = (config.components.FeatureGrid as FeatureGridDefaults).defaultProps;
+  // `defaultProps` is bewust `Record<string, unknown>` in het registry-contract
+  // — de itemvorm hoort bij dit ene component, dus die narrowing staat hier en
+  // niet in het gedeelde type.
+  const featureGridDefaults = (meta.FeatureGrid?.defaultProps?.features ??
+    []) as Array<{ icon?: string }>;
   assert(
     "FeatureGrid defaults.features[0].icon defined",
-    typeof featureGridDefaults.features[0].icon === "string",
+    typeof featureGridDefaults[0].icon === "string",
   );
 
-  type PricingDefaults = {
-    defaultProps: { tiers: Array<{ highlighted?: boolean }> };
+  const pricingDefaults = {
+    tiers: (meta.PricingTable?.defaultProps?.tiers ?? []) as Array<{
+      highlighted?: boolean;
+    }>,
   };
-  const pricingDefaults = (config.components.PricingTable as PricingDefaults).defaultProps;
   assert(
     "PricingTable defaults.tiers[0].highlighted defined",
     typeof pricingDefaults.tiers[0].highlighted === "boolean",

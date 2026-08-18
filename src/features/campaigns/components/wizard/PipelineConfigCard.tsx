@@ -28,7 +28,7 @@ import {
  * becomes "Custom" but the UI stays put.
  */
 export function PipelineConfigCard() {
-  const { t } = useTranslation("campaigns-wizard");
+  const { t } = useTranslation(["campaigns-wizard", "campaigns-pipeline"]);
   const wizardMode = useCampaignWizardStore((s) => s.wizardMode);
   const pipelineConfig = useCampaignWizardStore((s) => s.pipelineConfig);
   const setStrategyDepth = useCampaignWizardStore((s) => s.setStrategyDepth);
