@@ -5,7 +5,7 @@ fase: post-launch
 priority: now
 effort: guard + ADR + migratie uitgevoerd 18-08; rest is visuele verificatie
 owner: claude-code
-status: in-progress
+status: review
 created: 2026-08-18
 completed: -
 related-adr: docs/adr/2026-08-18-tailwind-bronpijplijn.md
@@ -144,14 +144,32 @@ Fase 2 (uitgevoerd 18-08):
 - [x] `npx tsc --noEmit` 0 errors · `npm run lint` 0 errors (965 pre-existing warnings)
 
 Nog open:
-- [ ] **Visuele ronde vóór de merge** — de guard bewijst dekking, niet uiterlijk. Focusring
-      merkgroen op een invoerveld, `bg-primary-50`-vlakken zichtbaar getint, en een blik op
-      de shadcn-achtige componenten (dialog/popover/tooltip) nu de animaties uit
-      `tw-animate-css` komen
-- [ ] **Rebase op main ná PR #318** — die appendt aan `src/index.css`; mijn versie vervangt het
-      bestand, dus het conflict wordt in mijn voordeel opgelost. Hun `design-tokens.ts`- en
-      `FilterBar.tsx`-wijzigingen blijven ongemoeid en zijn nog steeds nodig
-- [ ] `gotchas.md`-entry over het bevroren-output-mechanisme, in een **eigen** doc-PR
+- [x] **Visuele ronde gedaan** (Playwright, lokale prod-build vs. live productie, zelfde
+      routes `/` en `/marketing`):
+      - **Focusring op een invoerveld gemeten in de browser**: oud `rgb(31, 41, 55)`
+        (`#1f2937` = `--foreground`, de `currentcolor`-terugval), nieuw
+        `oklab(0.771417 -0.138875 0.00867277)` = **`#1fd1b2`**, exact de merkkleur.
+      - **Selector-aanwezigheid in de geladen CSS**: nieuw 2841/2895 selectors met
+        `bg-primary-50`, `bg-primary-100`, `focus:ring-primary-500`, `bg-emerald-500`,
+        `hover:text-gray-600` en `text-primary-700` allemaal aanwezig; oud mist alle zes.
+        `z-20` en `grid-cols-12` zitten in béíde — dat waren de handmatige reparaties, wat
+        het beeld intern consistent maakt.
+      - **Rendering**: `/marketing` rendert volledig in beide (mozaïek, gradiënten,
+        typografie, nav, knoppen). De verschillen die je ziet zijn marketing-copy van
+        recentere commits, geen opmaakverlies.
+      - ⚠️ Meetfout onderweg, het vermelden waard: de eerste versie van de check telde 203
+        i.p.v. 2841 selectors en meldde vals ✗. Oorzaak: Tailwind 4 wikkelt álle output in
+        `@layer`, dus een lus over `sheet.cssRules` ziet `CSSLayerBlockRule`-containers zonder
+        `selectorText`. Recursief afdalen was nodig.
+      - Niet gedekt: de shadcn-achtige componenten (dialog/popover/tooltip) zitten achter
+        login en zijn dus niet in het klikpad meegenomen. Hun animaties komen nu uit
+        `tw-animate-css`; de klassen zijn aantoonbaar aanwezig, het gedrag niet visueel getoetst.
+- [x] **Gerebased op `091b7c3a`** en gepusht als PR #323 — CI groen (`check` 7m51s,
+      `e2e` 3m3s), `MERGEABLE CLEAN`. Merge-volgorde met #318 maakt niet meer uit; hun
+      CSS-append is overbodig geworden (`from-red-500` en `h-48` worden nu gegenereerd),
+      hun `design-tokens.ts`- en `FilterBar.tsx`-wijzigingen blijven nodig
+- [x] `gotchas.md`-entries in een eigen doc-PR (#324), gemaakt via de Git Data API zonder
+      worktree — plus een tweede entry over de 46 task-files die PR #286 en passant herschreef
 
 # Bestanden die ik aanraak
 
