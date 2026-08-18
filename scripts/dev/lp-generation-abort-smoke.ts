@@ -15,6 +15,7 @@ import {
   beginGeneration,
   cancelScheduledAbort,
   endGeneration,
+  hasActiveGeneration,
   scheduleAbort,
 } from '../../src/features/campaigns/lib/generation-abort-registry';
 
@@ -49,28 +50,44 @@ async function main(): Promise<void> {
   abortGeneration('deliv-c');
   check('afmelden van een oude run laat de actieve staan', c2.signal.aborted);
 
-  // 4. Stapwissel-simulatie: het generatieblok unmount, de Canvas blijft.
-  //    De registry hoort niets te doen — dit is precies de regressie die de
-  //    eerste opzet introduceerde.
+  // 4. De auto-trigger-guard. Dit is de vraag die het generatieblok bij elke
+  //    mount stelt; stond hij in component-state, dan vuurde een stapwissel-en-
+  //    terug een tweede betaalde generatie en brak die de eerste af.
   const d1 = beginGeneration('deliv-d');
-  // (geen scheduleAbort: alleen CanvasPage plant er een, niet het blok)
-  await wait(300);
-  check('stapwissel in de accordion breekt de generatie NIET af', !d1.signal.aborted);
+  check('tijdens een run meldt de registry "er loopt iets"', hasActiveGeneration('deliv-d'));
+  // Stapwissel: het blok unmount, maar plant géén abort (alleen CanvasPage doet
+  // dat). De run moet blijven leven én zichtbaar blijven voor de auto-trigger.
+  await wait(20);
+  check('stapwissel breekt de generatie NIET af', !d1.signal.aborted);
+  check('en de auto-trigger ziet dat er nog iets loopt (koopt niets bij)',
+    hasActiveGeneration('deliv-d'));
+  abortGeneration('deliv-d');
+  check('na afbreken meldt de registry niets lopends meer', !hasActiveGeneration('deliv-d'));
 
-  // 5. StrictMode-simulatie: cleanup plant een abort, de directe re-mount
-  //    trekt 'm in. De generatie moet overleven.
+  // 5. StrictMode: cleanup plant een abort, de directe re-mount trekt 'm in.
   const e1 = beginGeneration('deliv-e');
   scheduleAbort('deliv-e');
   cancelScheduledAbort('deliv-e');
-  await wait(300);
+  await wait(20);
   check('StrictMode cleanup→setup laat de generatie leven', !e1.signal.aborted);
 
-  // 6. Echt weglopen: cleanup zonder re-mount → na de gracieperiode afgebroken.
+  // 6. Echt weglopen: geplande abort, geen re-mount → afgebroken.
+  //    De abort moet UITGESTELD zijn (anders overleeft StrictMode het niet) maar
+  //    wél op de eerstvolgende tik vallen (anders doodt hij een echte terugkeer).
   const f1 = beginGeneration('deliv-f');
   scheduleAbort('deliv-f');
-  check('vlak na weglopen loopt hij nog (gracieperiode)', !f1.signal.aborted);
-  await wait(400);
-  check('na de gracieperiode is de generatie afgebroken', f1.signal.aborted);
+  check('de abort is uitgesteld, niet synchroon', !f1.signal.aborted);
+  await wait(20);
+  check('op de eerstvolgende tik is de generatie afgebroken', f1.signal.aborted);
+
+  // 7. Identiteit: is er ná het plannen een níeuwe run gestart, dan mag de oude
+  //    tik die niet meenemen.
+  const g1 = beginGeneration('deliv-g');
+  scheduleAbort('deliv-g');
+  const g2 = beginGeneration('deliv-g');
+  await wait(20);
+  check('oude geplande abort raakt g1 (die is al vervangen)', g1.signal.aborted);
+  check('maar laat de nieuwe run met rust', !g2.signal.aborted);
 
   const total = passed + failures.length;
   console.log(`\n${failures.length === 0 ? '✅' : '❌'} ${passed}/${total} checks geslaagd`);

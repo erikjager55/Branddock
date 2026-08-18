@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect, useRef, useContext, createContext } from 'react';
-import { beginGeneration, endGeneration } from '@/features/campaigns/lib/generation-abort-registry';
+import React, { useState, useMemo, useCallback, useEffect, useRef, useContext, createContext, useSyncExternalStore } from 'react';
+import { beginGeneration, endGeneration, hasActiveGeneration, subscribeToGenerations } from '@/features/campaigns/lib/generation-abort-registry';
 import { useTranslation } from 'react-i18next';
 import {
   Loader2, Sparkles, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon, Pencil,
@@ -285,7 +285,24 @@ export function LandingPageGenerateBlock({
     iterations: number;
     changes: CopyFieldChange[];
   } | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [ownRunActive, setIsGenerating] = useState(false);
+
+  /**
+   * Loopt er een generatie voor dit deliverable, volgens de registry?
+   *
+   * Geabonneerd i.p.v. één keer bij mount gelezen: de accordion mount dit blok
+   * bij elke stapwissel opnieuw, en de `setIsGenerating(false)` van een lopende
+   * run landt op de instance die die run startte — mogelijk al ge-unmount. Las
+   * deze instance de registry alleen bij mount, dan bleef ze na een mislukte run
+   * eeuwig in de spinner staan, zonder foutmelding en zonder retry, en kocht elke
+   * volgende stapwissel een nieuwe generatie.
+   */
+  const registryRunActive = useSyncExternalStore(
+    subscribeToGenerations,
+    () => hasActiveGeneration(deliverableId),
+    () => false,
+  );
+  const isGenerating = ownRunActive || registryRunActive;
   const [isGeneratingVisual, setIsGeneratingVisual] = useState(false);
   const [isChoosing, setIsChoosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -570,6 +587,10 @@ export function LandingPageGenerateBlock({
    */
   const runIdRef = useRef(0);
 
+  /** Of de auto-trigger voor deze mount al gevuurd heeft. Staat bewust bóven
+   *  `handleGenerate`, dat 'm in zijn opruimpad reset. */
+  const autoTriggeredRef = useRef(false);
+
   const handleGenerate = useCallback(async (countArg: number = 2) => {
     // Guard: bare onClick={handleGenerate} zou een MouseEvent doorgeven → coerce.
     const count = typeof countArg === 'number' && countArg >= 1 && countArg <= 4 ? countArg : 2;
@@ -585,6 +606,9 @@ export function LandingPageGenerateBlock({
     const abortController = beginGeneration(deliverableId);
     const myRun = ++runIdRef.current;
     setIsGenerating(true);
+    // NB: `beginGeneration` staat bewust vlak vóór de try; alles wat kan gooien
+    // zit erbinnen, zodat de registry-entry altijd via de `finally` wordt
+    // afgemeld en `hasActiveGeneration` niet blijvend true blijft staan.
     setError(null);
     setErrorUnavailable(false);
     resetFidelityScore();
@@ -719,7 +743,6 @@ export function LandingPageGenerateBlock({
   ]);
 
   // Auto-trigger op mount
-  const autoTriggeredRef = useRef(false);
   useEffect(() => {
     if (
       !variantOptions
@@ -728,11 +751,19 @@ export function LandingPageGenerateBlock({
       && !briefIncomplete
       && !error
       && !autoTriggeredRef.current
+      // Loopt er al een generatie voor dit deliverable? Die vraag moet uit de
+      // registry komen, niet uit component-state: de accordion rendert één stap,
+      // dus een stapwissel-en-terug mount dit blok met verse `isGenerating` en
+      // `autoTriggeredRef`, terwijl `variantOptions` pas bij `all_complete`
+      // gevuld wordt. Zonder deze check vuurde de auto-trigger een nieuwe run,
+      // brak `beginGeneration` de lopende betaalde run af, en betaalde je twee
+      // keer voor één resultaat.
+      && !hasActiveGeneration(deliverableId)
     ) {
       autoTriggeredRef.current = true;
       void handleGenerate();
     }
-  }, [variantOptions, chosenVariant, isGenerating, briefIncomplete, error, handleGenerate]);
+  }, [variantOptions, chosenVariant, isGenerating, briefIncomplete, error, handleGenerate, deliverableId]);
 
   /**
    * Genereert een hero-visual en RETURNT de eerste URL (of null) — geen persist/
