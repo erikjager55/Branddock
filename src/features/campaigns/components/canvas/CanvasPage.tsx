@@ -103,7 +103,7 @@ async function applyInheritance(
 }
 
 export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPageProps) {
-  const { t } = useTranslation('campaigns-canvas-page');
+  const { t } = useTranslation(['campaigns-canvas-page', 'ai-errors']);
 
   // Een lopende variantgeneratie hoort bij dít deliverable en overleeft bewust
   // een stapwissel in de accordion (die unmount het generatieblok). Pas hier,
@@ -143,6 +143,7 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
       if (!offlineToastShownRef.current) {
         offlineToastShownRef.current = true;
         notifyAiError(
+          t,
           {
             errorType: globalErrorType ?? undefined,
             unavailable: true,

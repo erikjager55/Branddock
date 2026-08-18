@@ -22,7 +22,7 @@ interface PhotographyBriefPanelProps {
 }
 
 export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelProps) {
-  const { t } = useTranslation('campaigns-canvas');
+  const { t } = useTranslation(['campaigns-canvas', 'ai-errors']);
   const [markdown, setMarkdown] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +43,7 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
     } catch (err) {
       const e = interpretAiError(err);
       setError(e.message || t('photoBrief.generationFailed'));
-      if (e.unavailable) notifyAiError(err, { retry: handleGenerate });
+      if (e.unavailable) notifyAiError(t, err, { retry: handleGenerate });
     } finally {
       setBusy(false);
     }

@@ -37,7 +37,7 @@ export function BulkGenerateModal({
   deliverables,
   onCreated,
 }: BulkGenerateModalProps) {
-  const { t } = useTranslation('campaigns-content-library');
+  const { t } = useTranslation(['campaigns-content-library', 'ai-errors']);
   const bulkCreate = useBulkCreateDeliverables(campaignId);
 
   const [contentType, setContentType] = useState<string>('');
@@ -102,7 +102,7 @@ export function BulkGenerateModal({
     } catch (err) {
       const e = interpretAiError(err);
       setError(e.message || t('bulk.somethingWrong'));
-      if (e.unavailable) notifyAiError(err);
+      if (e.unavailable) notifyAiError(t, err);
     }
   };
 

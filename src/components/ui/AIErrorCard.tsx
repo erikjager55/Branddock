@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface AIErrorCardProps {
@@ -9,6 +10,8 @@ interface AIErrorCardProps {
 }
 
 export function AIErrorCard({ message, onRetry, isRetrying }: AIErrorCardProps) {
+  const { t } = useTranslation('ai-errors');
+
   return (
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 my-2">
       <div className="flex items-start gap-3">
@@ -24,10 +27,10 @@ export function AIErrorCard({ message, onRetry, isRetrying }: AIErrorCardProps) 
               {isRetrying ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  Please wait, retrying...
+                  {t('retrying')}
                 </>
               ) : (
-                'Retry'
+                t('retry')
               )}
             </button>
           )}

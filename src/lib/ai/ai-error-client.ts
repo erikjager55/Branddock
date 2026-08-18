@@ -12,6 +12,7 @@
 // =============================================================
 
 import { toast } from 'sonner';
+import type { TFunction } from 'i18next';
 
 import {
   type AIError,
@@ -132,16 +133,17 @@ export async function errorFromResponse(res: Response, fallback = 'Request faile
   );
 }
 
-// ─── User-facing copy (NL) ─────────────────────────────────
-
-export const MODEL_UNAVAILABLE_COPY = {
-  inlineTitle: 'The AI model is currently unavailable',
-  inlineBody:
-    'Generating is not possible right now. This is on the AI provider, not your input. Please try again shortly.',
-  toastTitle: 'AI model unavailable',
-  toastDescription: 'Generating is not possible right now — please try again shortly.',
-  retryLabel: 'Try again',
-} as const;
+// ─── User-facing copy ──────────────────────────────────────
+//
+// De teksten leven in de `ai-errors`-namespace (nl + en), niet hier. Tot
+// 2026-08-18 stonden ze hardcoded in het Engels in dit bestand terwijl de
+// rest van de UI Nederlands is — de kop zei zelfs "(NL)".
+//
+// Vertalen gebeurt via een doorgegeven `TFunction`, hetzelfde patroon als
+// `translateApiError` in src/lib/api/api-error.ts: lib-code kan geen hook
+// gebruiken, dus de aanroeper (component of hook) geeft `t` mee. Bewust een
+// verplicht eerste argument en niet een optionele veld in `opts`: zo wijst de
+// compiler elke aanroepplek aan in plaats van stil op Engels terug te vallen.
 
 export interface UnavailableMessage {
   title: string;
@@ -150,27 +152,17 @@ export interface UnavailableMessage {
 }
 
 /** Per-type copy for an unavailable error (auth/rate-limit get their own wording). */
-export function getUnavailableMessage(error: NormalizedAiError): UnavailableMessage {
-  switch (error.errorType) {
-    case 'authentication':
-      return {
-        title: 'AI model not configured',
-        body: 'There is a problem with the AI configuration. Please contact your administrator.',
-        toastDescription: 'AI configuration problem — please contact your administrator.',
-      };
-    case 'rate_limit':
-      return {
-        title: 'Too many requests',
-        body: 'Too many requests were sent. Please wait a moment and try again.',
-        toastDescription: 'Please wait a moment and try again.',
-      };
-    default:
-      return {
-        title: MODEL_UNAVAILABLE_COPY.inlineTitle,
-        body: MODEL_UNAVAILABLE_COPY.inlineBody,
-        toastDescription: MODEL_UNAVAILABLE_COPY.toastDescription,
-      };
-  }
+export function getUnavailableMessage(t: TFunction, error: NormalizedAiError): UnavailableMessage {
+  const variant =
+    error.errorType === 'authentication' || error.errorType === 'rate_limit'
+      ? error.errorType
+      : 'default';
+  const key = `unavailable.${variant}`;
+  return {
+    title: t(`${key}.title`, { ns: 'ai-errors' }),
+    body: t(`${key}.body`, { ns: 'ai-errors' }),
+    toastDescription: t(`${key}.toastDescription`, { ns: 'ai-errors' }),
+  };
 }
 
 // ─── notifyAiError ─────────────────────────────────────────
@@ -183,26 +175,25 @@ export function getUnavailableMessage(error: NormalizedAiError): UnavailableMess
  * - Aborts → never toast.
  */
 export function notifyAiError(
+  t: TFunction,
   input: unknown,
   opts?: { retry?: () => void; suppressToast?: boolean },
 ): NormalizedAiError {
   const error = interpretAiError(input);
   if (opts?.suppressToast || isAbortError(input)) return error;
 
+  const retryLabel = t('retry', { ns: 'ai-errors' });
+
   if (error.unavailable) {
-    const msg = getUnavailableMessage(error);
+    const msg = getUnavailableMessage(t, error);
     toast.error(msg.title, {
       description: msg.toastDescription,
       action:
-        error.retryable && opts?.retry
-          ? { label: MODEL_UNAVAILABLE_COPY.retryLabel, onClick: opts.retry }
-          : undefined,
+        error.retryable && opts?.retry ? { label: retryLabel, onClick: opts.retry } : undefined,
     });
   } else {
-    toast.error(error.message || 'Er ging iets mis. Probeer het opnieuw.', {
-      action: opts?.retry
-        ? { label: MODEL_UNAVAILABLE_COPY.retryLabel, onClick: opts.retry }
-        : undefined,
+    toast.error(error.message || t('genericError', { ns: 'ai-errors' }), {
+      action: opts?.retry ? { label: retryLabel, onClick: opts.retry } : undefined,
     });
   }
   return error;

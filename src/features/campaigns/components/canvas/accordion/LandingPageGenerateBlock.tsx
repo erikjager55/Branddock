@@ -226,7 +226,7 @@ export function LandingPageGenerateBlock({
   deliverableId,
   onAdvance,
 }: LandingPageGenerateBlockProps) {
-  const { t } = useTranslation('campaigns-canvas-accordion');
+  const { t } = useTranslation(['campaigns-canvas-accordion', 'ai-errors']);
   const setStructuredVariant = useCanvasStore((s) => s.setStructuredVariant);
   const setStructuredVariantOptions = useCanvasStore((s) => s.setStructuredVariantOptions);
   const setContextStack = useCanvasStore((s) => s.setContextStack);
@@ -715,7 +715,7 @@ export function LandingPageGenerateBlock({
       setError(e.message || t('lp.errors.generationFailed'));
       setErrorUnavailable(e.unavailable);
       setErrorType(e.errorType);
-      if (e.unavailable) notifyAiError(err, { retry: () => { void handleGenerate(countArg); } });
+      if (e.unavailable) notifyAiError(t, err, { retry: () => { void handleGenerate(countArg); } });
     } finally {
       endGeneration(deliverableId, abortController);
       // Alleen opruimen als er geen nieuwere run is gestart. Dit gebeurt óók na
@@ -1163,7 +1163,7 @@ export function LandingPageGenerateBlock({
     } catch (err) {
       const e = interpretAiError(err);
       setVisualError(e.message || t('lp.errors.visualGenerationFailed'));
-      if (e.unavailable) notifyAiError(err);
+      if (e.unavailable) notifyAiError(t, err);
     } finally {
       setIsGeneratingVisual(false);
     }
@@ -1251,7 +1251,7 @@ export function LandingPageGenerateBlock({
     } catch (err) {
       const e = interpretAiError(err);
       setAutoIterateError(e.message || t('lp.errors.improvementFailed'));
-      if (e.unavailable) notifyAiError(err);
+      if (e.unavailable) notifyAiError(t, err);
     } finally {
       setIsAutoIterating(false);
     }
