@@ -110,8 +110,12 @@ fi
 # `git` en glipt het commando ongezien langs elke verb-regex hieronder.
 CMD_NORM=$(normalize_git_cmd "$COMMAND")
 
+# De lijst dekt EFFECTEN, niet alleen de meest voor de hand liggende werkwoorden.
+# `pull` stond er tot 18-08 niet op terwijl het een merge uitvoert en HEAD verzet —
+# precies de klasse waar deze guard voor bestaat (memory `guard-hooks-gaps`, gat 1b).
+# Idem `revert`/`am`/`apply`/`restore`: allemaal muteren ze HEAD, index of werkboom.
 is_mutating=false
-if printf '%s' "$CMD_NORM" | grep -qE 'git[[:space:]]+(checkout|switch|reset|rebase|cherry-pick|stash|merge)([[:space:]]|$)' \
+if printf '%s' "$CMD_NORM" | grep -qE 'git[[:space:]]+(checkout|switch|reset|rebase|cherry-pick|stash|merge|pull|revert|am|apply|restore)([[:space:]]|$)' \
    || printf '%s' "$CMD_NORM" | grep -qE 'git[[:space:]]+branch[[:space:]]+-(f|D|m|M)' \
    || printf '%s' "$CMD_NORM" | grep -qE 'git[[:space:]]+worktree[[:space:]]+(remove|move|prune)([[:space:]]|$)'; then
   is_mutating=true

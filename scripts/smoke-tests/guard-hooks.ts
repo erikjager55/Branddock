@@ -188,6 +188,27 @@ function buildCases(wt1: string, wt2: string): Case[] {
       expectStderr: 'reset --hard',
     },
     {
+      // `pull` voert een merge uit en verzet HEAD, maar stond niet op de verb-lijst.
+      // Vastgesteld op 18-08 (memory `guard-hooks-gaps`, gat 1b): een pull liep gewoon
+      // door terwijl een co-sessie de lock hield.
+      name: '14. git pull onder een co-sessie → blokkeren (verb ontbrak)',
+      hook: 'session-guard.sh',
+      command: 'git pull --ff-only origin main',
+      cwd: wt1,
+      locks: { [wt1]: OTHER_SID },
+      expectCode: 2,
+      expectStderr: 'GEBLOKKEERD',
+    },
+    {
+      name: '15. git revert onder een co-sessie → blokkeren (verzet HEAD)',
+      hook: 'session-guard.sh',
+      command: 'git revert --no-edit abc1234',
+      cwd: wt1,
+      locks: { [wt1]: OTHER_SID },
+      expectCode: 2,
+      expectStderr: 'GEBLOKKEERD',
+    },
+    {
       name: '12. onbepaalbaar doel (variabele) + co-sessie → doorlaten (fail-open)',
       hook: 'session-guard.sh',
       command: 'cd "$SOME_DIR" && git checkout main',
