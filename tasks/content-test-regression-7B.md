@@ -5,13 +5,55 @@ fase: pre-launch
 priority: later
 effort: ~3 dagen
 owner: claude-code
-status: open
+status: blocked
 created: 2026-05-12
 completed: -
 related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md §2 Layer 3 + §4 #7.B
 worktree: -
 ---
+
+> **Hermeting 2026-08-18 — GEBLOKKEERD op verkeer, niet op code.** De data-gate uit de
+> triage van 14-07 is een maand later nog steeds dicht, en scherper dan toen gemeten. Op
+> `branddock-prod` (`neondb`):
+>
+> | bron | stand |
+> |---|---|
+> | `LearningEvent eventType='content.rejected'` | **komt niet voor** — 0 rijen, het eventtype bestaat niet in de tabel |
+> | `LearningEvent eventType='content.edited'` | **komt niet voor** — 0 rijen |
+> | `editDistance > 0.20`, alle eventtypes | **0** |
+> | `content.approved` | **3**, laatste op 2026-07-16 |
+> | `BrandReviewFinding` | 67 MEDIUM · 28 LOW · 3 HIGH · **0 CRITICAL** |
+>
+> De hele `LearningEvent`-tabel is 644 rijen, waarvan **639 `ai.call_*`-telemetrie**. Alle
+> content-feedback samen is 4 rijen, en de nieuwste is een maand oud.
+>
+> **De emissie is niet stuk — dat is nagetrokken.** `content.rejected` wordt geëmitteerd vanuit
+> `api/studio/[deliverableId]/approval/route.ts:153`, en die route wordt wel degelijk door de
+> lévende Canvas aangeroepen (`Step4Timeline.tsx:638`, `canvas.api.ts:247`) — de Studio-cleanup
+> van juni heeft hem niet meegenomen. `content.edited` heeft twee correct gegatete paden:
+> componentbewerkingen en, **sinds 18-08**, inline Puck-edits (content-chain-accessor,
+> kruising #18). Dat tweede pad heeft dus nog vrijwel geen tijd gehad.
+>
+> **Conclusie**: er wordt niets afgekeurd omdat er nauwelijks iets ter goedkeuring langskomt —
+> drie approvals in zes weken. Dit is geen bouwtaak die wacht op een datum maar op volume.
+>
+> **Heropen-trigger (meetbaar, geen datum)**: minstens **25** rijen met
+> `eventType IN ('content.rejected','content.edited')` én `editDistance > 0.20` binnen een
+> rollend venster van 30 dagen. Onder die drempel levert de pipeline een corpus dat kleiner is
+> dan de ruis. Controleer met:
+>
+> ```sql
+> SELECT COUNT(*) FROM "LearningEvent"
+> WHERE "eventType" IN ('content.rejected','content.edited')
+>   AND "editDistance" > 0.20
+>   AND "createdAt" > now() - interval '30 days';
+> ```
+>
+> Les die hier voor de derde keer op één dag opduikt: **de tekst van een taak beschrijft niet
+> de toestand.** Deze taak vraagt ~3 dagen werk voor een corpus dat vandaag leeg zou zijn.
+> Eerst meten, dan prioriteren. Gemeten door `branddock-app-f8`, onafhankelijk nagerekend en
+> uitgediept door deze sessie.
 
 > **Triage 2026-07-14 (doc-keeper-audit)**: (1) **Data-gate dicht** — prod heeft op
 > 2026-07-14 0× `content.rejected` en 0× `content.edited` (2× approved); start pas na
