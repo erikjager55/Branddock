@@ -94,7 +94,8 @@
     "derive-rule-constraints": "tsx scripts/derive-rule-constraints.ts",
     "structure-styleguide-rules": "tsx scripts/structure-styleguide-rules.ts",
     "sync-voiceguide-brand-rules": "tsx scripts/sync-voiceguide-brand-rules.ts",
-    "verify-spike-rules-dts": "tsx scripts/verify-spike-rules-dts.ts"
+    "verify-spike-rules-dts": "tsx scripts/verify-spike-rules-dts.ts",
+    "smoke:guard-hooks": "tsx scripts/smoke-tests/guard-hooks.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
