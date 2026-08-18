@@ -5,12 +5,12 @@ fase: post-launch
 priority: later
 effort: 1-2 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-06-27
-completed: -
-related-adr: -
+completed: 2026-08-18
+related-adr: docs/adr/2026-08-18-csp-enforce-nonce-en-hashes.md
 related-spec: docs/audits/2026-06-26-security-audit.md
-worktree: branddock-security-residual-hardening
+worktree: branddock-security-csp-enforce
 ---
 
 # Probleem
@@ -39,7 +39,7 @@ Cluster van losse, grotendeels chirurgische edits — zelfde patronen als #348 (
 **MINORs (finalize-review #348)**
 - [x] **CSP-bron consolideren** — CSP + security-headers-waarden staan nu in één bron `src/lib/security/security-headers.ts` (`buildSecurityHeaders(isProd)`), geïmporteerd door zowel `src/proxy.ts` als `next.config.ts`. Meteen de gevonden drift gedicht: Permissions-Policy `interest-cohort` en HSTS max-age (was 31536000 vs 63072000) zijn nu identiek.
 - [x] **Nonce-CSP stap 1+2 (Report-Only) — gedaan 2026-07-17 (tweede pass)**: (a) CSP-emissie geconsolideerd naar alléén de middleware (`next.config.ts` → `buildStaticSecurityHeaders`, zonder CSP — een tweede statische policy zou de nonce ondermijnen; overige headers blijven daar als vangnet); (b) per-request nonce in `src/proxy.ts` + `Content-Security-Policy-Report-Only: script-src 'nonce-…' 'strict-dynamic'` (bewust zónder unsafe-inline/unsafe-eval — dát is de meting) + `Reporting-Endpoints`, op álle return-takken (rewrite/429/cache) via `applySecurityHeaders()`; (c) collector `POST /api/security/csp-report` (beide rapport-formaten, rate-limited per IP, altijd 204, gestructureerde warn-log, geen DB); (d) bijvangst-fix: **`https://eu.i.posthog.com` toegevoegd aan `connect-src`** — de POSTHOG-key staat op prod maar de eigen CSP blokkeerde alle ingest-calls. Bewust nog GEEN nonce-propagatie via de request-headers (Next-stamping): dat kan pagina's naar dynamic rendering forceren — hoort bij de enforce-flip. Bewijs prod-build: exact 1 enforce + 1 Report-Only-header, nonce uniek per request, collector logt + 204.
-- [ ] **Nonce-CSP stap 3 (enforce-flip)** — _follow-up, gated op Report-Only-data van prod_: na een periode rapporten analyseren (eval-gebruikers, niet-strict-dynamic loaders, statisch-geprerenderde inline-scripts), dan request-header-nonce-propagatie (meet de dynamic-rendering-impact!) + enforce-`script-src 'nonce-…' 'strict-dynamic'`.
+- [x] **Nonce-CSP stap 3 (enforce-flip)** — **gedaan 2026-08-18** (ADR `2026-08-18-csp-enforce-nonce-en-hashes`). `script-src` is nu overal `'nonce-…' 'strict-dynamic'`; `'unsafe-inline'`/`'unsafe-eval'` zijn weg. De landingspagina-scope (`/p/…`, ook via host-rewrite) draagt daarnaast twee SHA-256-hashes voor het bevroren artifact-script. ⚠️ De gate "gated op prod-Report-Only-data" bleek niet uitvoerbaar zoals bedoeld — zie §Enforce-flip hieronder.
 - [x] **Dubbele workspace-resolutie** — `claw/confirm/route.ts` gebruikt nu de `workspaceId` uit `requireWorkspaceRole`; de losse `resolveWorkspaceId()` is weg (sessie-call blijft, alleen voor de `userId`).
 - [x] **RBAC smoke-coverage** — **gedaan 2026-07-17 (tweede pass)**: `e2e/tests/workspace/rbac-403.spec.ts` (5/5 groen) bewijst runtime met échte auth-cookies: viewer→403 op export/claw-confirm/beide L4-PUTs, member→403 op export én member→200 op de L4-boundary, admin→403 op owner-invite (M1) + admin→201 op member-invite, owner-sanity 200, unauth 401. Daarvoor geseed: admin- (`david@branddock.com`) + viewer-user (`nina@branddock.com`) in `prisma/seed.ts` (additief) + `TEST_USERS` + `viewerPage`-fixture is nu een échte viewer. **NB de open vraag is beantwoord**: `GET /api/workspace/export` gebruikt WÉL `requireWorkspaceRole()` (owner/admin) — de "resolveWorkspaceId zonder role-check"-aanname hierboven was achterhaald; export-by-viewer én -by-member is geblokkeerd. ⚠️ Ontwerpkeuze: bewust één test (= één login) per rol — de auth-brute-force-limiter (`src/proxy.ts`, 10 sign-ins/min/IP) wordt door de hele e2e-suite vanaf localhost gedeeld; per-assert logins blazen dat budget op. Dat is ook waarom `permissions.spec.ts` mid-suite rood staat (7 fails, **pre-existing** — identieke faalset op ongewijzigde seed geverifieerd; zie gotchas.md 2026-07-17).
 
@@ -130,9 +130,64 @@ Ronde 2 (2 verse reviewers op de gemergde staat): **0 CRITICAL**, 3 unieke WARNI
 - **W: XFF-hoek collector** → globale rate-limit-bucket toegevoegd (zie boven).
 - **W (expliciet geaccepteerd): `parsed.data as unknown as XxxBody`-casts (7 routes)** — de schema's zijn bewust wíjder dan de interfaces (strategicIntent/useCase als capped string i.p.v. enum-union; elaborate-velden optional) omdat de routes vóór de sweep niets valideerden: `satisfies z.ZodType<XxxBody>` afdwingen = contracten aanscherpen = gedragswijziging. Rationale gedocumenteerd in `strategy-request-schemas.ts`; aanscherpen kan als eigen mini-task zodra de wizard-callers erop gecontroleerd zijn.
 
+# Enforce-flip (2026-08-18) — verificatie
+
+**De opgegeven gate kon niet leveren.** "Gated op prod-Report-Only-data" ging uit van
+bruikbare rapporten. Die zijn er niet: de nonce werd nergens gestempeld (bewuste keuze
+van de meetfase), dus élk script op élke pagina violeerde en de rapporten zijn vrijwel
+volledig bekende ruis. Daarbij persisteert de collector niet (`console.warn`) en bewaart
+Vercel runtime-logs dagen, geen maand. De beslissing is daarom genomen op een **lokale
+meting tegen een echte productiebuild** (`next build` + `next start`, identieke headers
+als prod — geverifieerd tegen `branddock.app`).
+
+**Wat de meting opleverde** (zes routes, browser-`securitypolicyviolation`):
+- **Nul eval-violations** → `'unsafe-eval'` kon weg.
+- **Alle externe scripts same-origin**; `js.stripe.com` wordt nergens als script geladen.
+- **`application/ld+json` valt niet onder `script-src`** (33 inline scripts op `/marketing`,
+  32 violations) → JSON-LD heeft geen nonce en geen hash nodig.
+- **Er valt geen static/ISR te beschermen**: élke pagina-route is `ƒ (Dynamic)`; alleen
+  twee icon-PNG's zijn statisch. Oorzaak: `await cookies()` in de root layout
+  (`src/app/layout.tsx:26`, UI-locale) zet de hele app op dynamic rendering, waardoor
+  `generateStaticParams` en `revalidate = 604800` feitelijk inert zijn. **Eigen bevinding,
+  buiten scope — verdient een eigen taak.**
+
+**Waarom niet "hashes voor al het publieke terrein"** (het oorspronkelijke plan): Next zet
+per pagina tientallen inline scripts neer die de RSC-payload dragen (32 op `/marketing`).
+Die inhoud ís de pagina-inhoud en is onhashbaar; een hashes-only publieke policy zou de
+hydratie van élke publieke pagina blokkeren. Publiek krijgt dus dezelfde nonce; de hashes
+dekken uitsluitend het bevroren artifact.
+
+**Bewijs**
+- `npm run test:csp` — **10/10** (nieuwe suite, `e2e/playwright.csp.config.ts` +
+  `e2e/tests/security/csp-enforce.spec.ts`). Eigen config want de hoofdsuite draait
+  `npm run dev`, waar de CSP prod-only uit staat.
+- **Het bevroren artifact positief bewezen**, niet alleen "geen violation": een gemint
+  artifact (25.616 bytes, script zónder nonce) geserveerd onder enforce liet de
+  view-beacon vuren — `PageEvent` ging van 3 naar 4. "Geen violation" alleen zou ook
+  kunnen betekenen dat het script nooit draaide.
+- **Mutatietest**: dezelfde pagina met de `sha256`-bronnen uit de header gestript geeft
+  exact 1 violation (`script-src-elem|inline`), mét hashes 0. De hashes zijn dus dragend.
+- **Route-tabel vóór en ná identiek** (2 static / 30 dynamic) — nonce-propagatie kostte
+  geen enkele route zijn rendermodus.
+- Ingelogde app-shell + drie zware secties: 0 violations. `smoke:security-residual`
+  **37/37** (was 31). `tsc` 0 errors · lint 0 errors op de geraakte files.
+
+**Meegenomen**: `eu-assets.i.posthog.com` staat nu in `connect-src`. posthog-js haalt bij
+init een remote config van die host; hij stond in geen enkele directive. Op prod is dat
+vandaag **latent** (geen `NEXT_PUBLIC_POSTHOG_KEY` gezet, dus posthog-js initialiseert
+niet), lokaal mét key blokkeert de eigen CSP zowel het config-script als de config-fetch.
+
+**Risico dat blijft staan**: wie `buildPageRuntimeScriptBody` wijzigt, maakt élk reeds
+gepubliceerd artifact ongeldig — die dragen de oude bytes, en dat faalt **stil** (de
+pagina rendert, alleen de beacon en form-enhancement niet). De smoke dwingt af dat de
+hash-lijst meebeweegt; hij kan niet afdwingen dat de oude hash blijft staan. Vandaag nul
+risico: de snippets zijn sinds #251 niet gewijzigd.
+
 # Resterend na deze pass
 
-1. **Nonce-CSP enforce-flip** — gated op prod-Report-Only-data (zie MINOR-checklist). Bij die flip ook `eu-assets.i.posthog.com` overwegen (posthog-js lazy-features; reviewer-MINOR). Dit is het enige inhoudelijke rest-item; daarna kan de task definitief dicht.
+Niets inhoudelijks — de task kan dicht. Twee dingen zijn bewust elders belegd: de
+dynamic-rendering-bevinding hierboven (eigen taak waard) en de in-memory-limiter → Redis
+(L7, al als out-of-scope genoteerd).
 
 # Notes
 

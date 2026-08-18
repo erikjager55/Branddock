@@ -1,37 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decideHostRoute } from '@/lib/landing-pages/host-router';
 import {
-  buildSecurityHeaders,
-  buildReportOnlyCsp,
-  REPORTING_ENDPOINTS_HEADER,
+  buildRequestSecurityHeaders,
+  type CspScope,
 } from '@/lib/security/security-headers';
 
 // ─── Security headers applied to ALL responses ───────────
-// Waarden komen uit de gedeelde bron (security-headers.ts). Sinds de
-// nonce-stap (audit-rest 2026-07-17) is de middleware de ENIGE laag die CSP
-// zendt — next.config.ts levert alleen nog de CSP-loze statische headers.
+// Waarden komen uit de gedeelde bron (security-headers.ts). De middleware is
+// de ENIGE laag die CSP zendt — next.config.ts levert alleen nog de CSP-loze
+// statische headers, want een tweede statische policy zou de nonce
+// ondermijnen (de browser enforce't de intersectie).
 const isProduction = process.env.NODE_ENV === 'production';
 
-const SECURITY_HEADERS = buildSecurityHeaders(isProduction);
+/**
+ * Bepaalt de CSP-scope voor dit request.
+ *
+ * MOET op het pad ná host-rewrite draaien: `decideHostRoute` zet
+ * `<workspace>.branddock.app/<slug>` om naar `/p/<workspace>/<slug>`. Een
+ * check op de rauwe pathname geeft custom-domein-landingspagina's de
+ * app-scope, en dan blokkeert de CSP precies het bevroren artifact-script dat
+ * de hashes moesten dekken.
+ *
+ * Default is bewust `app` (de striktere kant): een nieuwe publieke route die
+ * hier vergeten wordt verliest hooguit een inline-script dat ze nu niet heeft,
+ * terwijl de omgekeerde default stil bescherming zou weggeven.
+ */
+function resolveCspScope(effectivePath: string): CspScope {
+  return effectivePath.startsWith('/p/') ? 'landing-page' : 'app';
+}
 
 /**
- * Zet de volledige header-set op een response, inclusief (prod-only) de
- * Report-Only nonce-CSP. Elke return-tak van proxy() MOET hierdoor lopen,
- * anders bestaan er responses zonder policy.
- *
- * Bewust nog géén nonce-propagatie via de request-headers (de officiële
- * Next-stamping-route): een CSP-request-header met nonce kan pagina's naar
- * dynamic rendering forceren — dat hoort bij de enforce-flip-follow-up, niet
- * bij deze meet-fase. Report-Only blokkeert niets; Next-inline-scripts zonder
- * nonce verschijnen als bekende ruis in de rapporten.
+ * Zet de volledige header-set op een response. Elke return-tak van proxy()
+ * MOET hierdoor lopen, anders bestaan er responses zonder policy.
  */
-function applySecurityHeaders(headers: Headers, nonce: string): void {
-  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+function applySecurityHeaders(headers: Headers, csp: Record<string, string>): void {
+  for (const [key, value] of Object.entries(csp)) {
     headers.set(key, value);
-  }
-  if (isProduction) {
-    headers.set('Content-Security-Policy-Report-Only', buildReportOnlyCsp(nonce));
-    headers.set('Reporting-Endpoints', REPORTING_ENDPOINTS_HEADER);
   }
 }
 
@@ -128,8 +132,29 @@ export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const host = request.headers.get('host') ?? '';
 
-  // Per-request nonce voor de Report-Only-CSP (prod-only gebruikt).
+  // Per-request nonce. De scope wordt pas ná de host-rewrite vastgesteld
+  // (zie resolveCspScope), dus de headers worden per return-tak gebouwd.
   const nonce = btoa(crypto.randomUUID());
+
+  /**
+   * Bouwt de header-set voor een gegeven effectief pad, en propageert de
+   * nonce naar Next via de REQUEST-headers. Next leest de nonce uit de
+   * `Content-Security-Policy`-request-header en stempelt hem op zijn eigen
+   * script-tags; zonder die propagatie blijft élk Next-script ongenonced en
+   * blokkeert de enforce-policy de hele pagina.
+   */
+  const headersFor = (effectivePath: string) => {
+    const csp = buildRequestSecurityHeaders(isProduction, {
+      scope: resolveCspScope(effectivePath),
+      nonce,
+    });
+    const requestHeaders = new Headers(request.headers);
+    if (isProduction) {
+      requestHeaders.set('x-nonce', nonce);
+      requestHeaders.set('Content-Security-Policy', csp['Content-Security-Policy']);
+    }
+    return { csp, requestHeaders };
+  };
 
   // Legacy publieke vorm `/p/<slug>?workspace=<ws>` → 308 naar de canonieke
   // pad-param-route `/p/<ws>/<slug>` (P0 ISR-fix). Dit MOET hier in de proxy:
@@ -148,7 +173,8 @@ export function proxy(request: NextRequest) {
       redirectUrl.pathname = `/p/${encodeURIComponent(workspace)}/${legacyPublicMatch[1]}`;
       redirectUrl.searchParams.delete('workspace');
       const redirectResponse = NextResponse.redirect(redirectUrl, 308);
-      applySecurityHeaders(redirectResponse.headers, nonce);
+      // Redirect rendert geen HTML — alleen response-headers, geen propagatie.
+      applySecurityHeaders(redirectResponse.headers, headersFor(redirectUrl.pathname).csp);
       return redirectResponse;
     }
   }
@@ -162,16 +188,21 @@ export function proxy(request: NextRequest) {
     const [rewritePath, rewriteSearch] = routeDecision.rewriteTo.split('?');
     rewriteUrl.pathname = rewritePath;
     rewriteUrl.search = rewriteSearch ? `?${rewriteSearch}` : '';
-    const rewriteResponse = NextResponse.rewrite(rewriteUrl);
-    applySecurityHeaders(rewriteResponse.headers, nonce);
+    // Scope op het REWRITE-doel: een custom host serveert /p/<ws>/<slug>.
+    const { csp, requestHeaders } = headersFor(rewritePath);
+    const rewriteResponse = NextResponse.rewrite(rewriteUrl, {
+      request: { headers: requestHeaders },
+    });
+    applySecurityHeaders(rewriteResponse.headers, csp);
     return rewriteResponse;
   }
 
   // Start with a next() response so we can add headers
-  const response = NextResponse.next();
+  const { csp, requestHeaders } = headersFor(pathname);
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
 
   // Apply security headers to all responses
-  applySecurityHeaders(response.headers, nonce);
+  applySecurityHeaders(response.headers, csp);
 
   // Auth route rate limiting (brute-force protection)
   if (pathname.startsWith('/api/auth/') && request.method === 'POST') {
@@ -184,7 +215,7 @@ export function proxy(request: NextRequest) {
         { error: 'Too many requests. Please try again later.' },
         { status: 429, headers: { 'Retry-After': '60' } },
       );
-      applySecurityHeaders(limited.headers, nonce);
+      applySecurityHeaders(limited.headers, csp);
       return limited;
     }
   }
