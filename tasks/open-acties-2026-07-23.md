@@ -48,6 +48,16 @@ taken-spiegel daarvan + de twee nieuwe items uit deze sessie.
       `SELECT indexname FROM pg_indexes WHERE tablename IN ('PageEvent','FormSubmission') AND indexname LIKE '%createdAt_idx';`
       **Geen haast**: de retentie-cron (02:00) werkt zonder deze indexen functioneel
       prima, alleen als volledige tabelscan. Wél doen vóór `PageEvent` serieus groeit.
+- [ ] **Eén kapot logo op prod** (gevonden 2026-08-18 met `scripts/dev/storage-url-audit.ts`).
+      `StyleguideLogo.fileUrl` bevat één `/uploads/…`-pad uit 28-05 — een lokaal pad, en
+      serverless heeft geen persistente schijf, dus dat logo laadt op prod niet. Eén rij,
+      cosmetisch, maar écht stuk. Vinden:
+      ```sql
+      SELECT s."workspaceId", l.id, l."fileUrl"
+      FROM "StyleguideLogo" l JOIN "BrandStyleguide" s ON s.id = l."styleguideId"
+      WHERE l."fileUrl" LIKE '/uploads/%';
+      ```
+      Fix = het logo opnieuw uploaden in Brandstyle. Geen code-wijziging.
 - [ ] **Barneveld-logo** uploaden — `~/Downloads/logo_barneveld.svg` in Brandstyle
 - [ ] **"+12"-proof point** nog in prod-HQ-workspace — in-app aanpassen (Brand Promise → proof points) of her-import
 - [ ] **Marketing-site restjes** — copy-review, quote/testimonial, 3 ontbrekende feature-screenshots

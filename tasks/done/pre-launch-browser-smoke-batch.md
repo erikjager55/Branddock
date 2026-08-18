@@ -43,14 +43,14 @@ Eén batch van 4 browser-smokes, achter elkaar uitvoerbaar in ~1-2u op een gewar
       [`deferred-browser-smokes-unblocked`](../deferred-browser-smokes-unblocked.md): de
       gevraagde `aspectRatio: '1:1'` werd genegeerd (output 1632×640) en de compositie werd een
       naast-elkaar-collage i.p.v. de gevraagde voor-/achtergrond.
-- [~] **Visual Brief Trained-Style** — **de faalklasse is afgedekt, de flow zelf niet.** Het
-      scenario dat op 21-07 omviel (een asset waarvan de opgeslagen URL écht verlopen is) bestaat
-      alleen op prod: de lokale DB heeft 561 `/uploads/`-paden en 72 duurzame `pub-…r2.dev`-URL's
-      en géén enkele signed URL. In plaats van dat scenario na te doen met verse data — wat niets
-      bewijst — is het reproduceerbaar gemaakt: `npm run smoke:storage-url-expiry` ondertekent een
-      écht R2-object met 1s TTL, laat die verlopen en meet dat de rauwe URL 403't en de
-      geresolvede 200't (byte-identiek). Wat resteert is een visuele beoordeling van de
-      trained-style-output op prod — Erik. Zie
+- [x] **Visual Brief Trained-Style** — **gesloten met reden 2026-08-18.** Het scenario dat op
+      21-07 omviel (een asset met een écht verlopen opgeslagen URL) bestaat op productie niet
+      meer: een read-only audit over alle 16 storage-URL-kolommen gaf **0 SIGNED en 0 ENDPOINT**.
+      De oudste `MediaAsset` op prod dateert van 05-07 (Vercel-livegang, `R2_PUBLIC_URL` stond er
+      vanaf dag één) en `ReferenceImage` begint op 21-07 — de getroffen referenties zijn ná de fix
+      opnieuw geüpload. Er is dus geen onderwerp voor een visuele test. De faalklasse zélf is
+      deterministisch afgedekt via `npm run smoke:storage-url-expiry` (verlopen signed URL:
+      rauw 403 / geresolved 200 / byte-identiek). Zie
       [`deferred-browser-smokes-unblocked`](../deferred-browser-smokes-unblocked.md).
 - [x] **Locale-picker UI** — getest 2026-05-12 (eerder vandaag tijdens implementatie): dropdown wisselt, "Currently active" pill refresht na Save, auto-detected zichtbaar
 - [→] **Serverless job-queue deploy-smoke** (→ user-taak #7, vereist prod-sessie) (Fase 5 uit [`serverless-hardening-jobs`](done/serverless-hardening-jobs.md), hierheen verplaatst 2026-07-12): start elke gemigreerde pipeline op de deploy (brandstyle url/pdf, alignment-scan, trend-research, website-scanner, brandvoice, DAM auto-tag, bug-report/chat-feedback) → job enqueued → cron verwerkt → progress + resultaat verschijnen cross-instance.

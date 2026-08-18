@@ -5,9 +5,9 @@ fase: post-launch
 priority: next
 effort: 2-4 uur
 owner: claude-code + user (visuele beoordeling)
-status: review
+status: done
 created: 2026-08-16
-completed: 2026-08-18 (op één prod-beoordeling na)
+completed: 2026-08-18
 related-adr: -
 related-spec: -
 worktree: branddock-deferred-browser-smokes
@@ -54,8 +54,9 @@ on-brand uit?) is mensenwerk en hoort bij Erik.
 
 - [x] Visual Brief **Compose** gedraaid met een echte, publieke R2-URL — beeld komt terug en
       volgt de referentie
-- [~] Visual Brief **Trained-Style** — de faalklasse is deterministisch afgedekt met een écht
-      verlopen signed URL; de visuele beoordeling op prod resteert (Erik — zie §Voor Erik)
+- [x] Visual Brief **Trained-Style** — de faalklasse is deterministisch afgedekt met een écht
+      verlopen signed URL, en de prod-audit toont **0 getroffen rijen**: er ís geen asset om de
+      visuele test op te doen. Gesloten met reden, zie §Prod-uitkomst.
 - [x] Typography-tab browser-smoke — 12/12 op het type-scale-pad **en** 5/5 op echte
       font-stacks (D2 afgedekt, 2026-08-18); **geen** echte before/after-screenshots, zie hieronder
 - [x] Per smoke vastgelegd: geslaagd/gefaald, wat er te zien was, en bij falen de oorzaak
@@ -135,7 +136,48 @@ dus Type Scale en In Context renderen niet. Dat is geen defect. De smoke slaat d
 over met een expliciete melding in plaats van te falen, en dekt daarmee beide datavormen:
 merken mét een scale (weight-consistentie) en merken mét echte fonts (D2).
 
-## Voor Erik — de twee prod-stappen
+## Prod-uitkomst (2026-08-18) — de klasse bestaat daar niet
+
+`scripts/dev/storage-url-audit.ts` is door Erik tegen Neon-productie gedraaid.
+**0 SIGNED en 0 ENDPOINT over álle 16 URL-kolommen.** Alles is PUBLIC, LEEG of EXTERN.
+
+**Daarmee is de compose-/refine-fix van PR #296 preventief, niet herstellend** — hij repareert
+geen bestaande kapotte data. Dat is geen reden om hem terug te draaien: de ongeguarde routes
+wáren echt ongeguard, en de eerstvolgende rij met een signed URL zou ze omver duwen.
+
+**En het sluit criterium 2.** De visuele trained-style-beoordeling had een asset met een
+verlopen URL nodig; die bestaat op prod niet. De test is niet overgeslagen maar *onuitvoerbaar
+bij gebrek aan onderwerp* — en dat is zelf het antwoord.
+
+Waarom het schoon is, is uit de datums af te lezen: de oudste `MediaAsset` op prod is
+**2026-07-05** — de dag van de Vercel-livegang — en `R2_PUBLIC_URL` stond daar vanaf het begin.
+`ReferenceImage` begint op **2026-07-21**, exact de dag van het trainer-incident: de getroffen
+referenties zijn ná de fix opnieuw geüpload en dragen dus duurzame URL's. De rijen die de gotcha
+van 21-07 beschrijft, bestaan simpelweg niet meer.
+
+### Twee bijvangsten uit de audit
+
+1. ⚠️ **`StyleguideLogo.fileUrl` heeft één `LOCAL`-rij op PRODUCTIE** (`/uploads/…`, 2026-05-28).
+   Een lokaal pad is op serverless onbereikbaar — geen persistente schijf — dus dat logo is op
+   prod stuk. Eén rij, cosmetisch, maar wél echt kapot. Vinden met:
+   ```sql
+   SELECT s."workspaceId", l.id, l."fileUrl"
+   FROM "StyleguideLogo" l JOIN "BrandStyleguide" s ON s.id = l."styleguideId"
+   WHERE l."fileUrl" LIKE '/uploads/%';
+   ```
+   Oplossing is een her-upload van dat ene logo; geen code-wijziging.
+2. **`StyleguideFont.fileUrl` is 44× LEEG** — er staat op prod géén enkel fontbestand. Elke
+   merkfont rendert dus via het metric-substituut (Inter). Dat verklaart waarom de
+   Typography-tab overal "Previewing with Inter" toont en is consistent met lokaal; het is de
+   bedoelde D4-fallback, geen defect. Wel het weten waard vóór een klantdemo.
+
+### Terzijde — een waarschuwing die langskwam
+
+`pg` waarschuwt dat `sslmode=require` nu als `verify-full` wordt behandeld en in pg v9 /
+pg-connection-string v3 naar libpq-semantiek gaat (zwakker). Raakt de app-`DATABASE_URL` net zo
+goed als dit script. Geen actie nu; wel iets om mee te nemen bij de volgende pg-major.
+
+## Voor Erik — hoe de prod-check gedraaid is
 
 ### 1. Eerst meten of het überhaupt speelt (2 minuten)
 
@@ -174,15 +216,14 @@ variant — vertrouw je ogen, niet het uitblijven van een foutmelding.
 
 ## Wat NIET is gedaan — en waarom
 
-- **Trained-Style is niet door de échte route gedraaid.** Die vereist een prod-asset met een
-  verlopen URL; lokaal bestaat dat niet en prod-DB-toegang is er niet. De klasse is in plaats
-  daarvan reproduceerbaar gemaakt (zie boven), en de meet-stap die bepaalt óf dit op prod speelt
-  is nu een script — zie §Voor Erik. Dit is het énige resterende punt van deze taak.
+- **Trained-Style is niet door de échte route gedraaid** — en hoeft dat ook niet: de prod-audit
+  vond nul getroffen rijen, dus er is geen onderwerp voor die test. De faalklasse zelf is
+  deterministisch afgedekt met een gefabriceerde verlopen URL.
 - **Geen echte before/after-screenshots** bij Typography — de fix staat al maanden op `main`.
   De computed-style-assertie is sterker bewijs: die faalt bij een regressie, een screenshot niet.
 - **De twee aspect-observaties zijn niet gefixt** — modelgedrag/productvraag, buiten deze taak.
-- **De reikwijdte op prod is nog niet gemeten** — `scripts/dev/storage-url-audit.ts` levert dat
-  antwoord, maar hij moet tegen de Neon-URL draaien en die heb ik bewust niet.
+- **Het losse kapotte logo op prod is niet gefixt** (zie §Prod-uitkomst) — dat is een
+  data-herstel-actie voor Erik, geen code.
 
 ## Val waar ik zelf in liep (nu geborgd)
 
