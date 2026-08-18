@@ -26,6 +26,7 @@ import { prisma } from "@/lib/prisma";
 import { withAiRateLimit } from "@/lib/ai/middleware";
 import { composeFromImages, ComposeInvalidImageError, ComposePolicyBlockedError } from "@/lib/ai/gemini-client";
 import { fetchBrandStyleAnchors } from "@/lib/ai/brand-style-anchors";
+import { resolveStorageUrl } from "@/lib/storage/resolve-storage-url";
 import { getStorageProvider } from "@/lib/storage";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
@@ -155,7 +156,11 @@ export async function POST(
     // dekt de minimum-eis én geeft een brand-style-signaal als bijproduct.
     const anchors = await fetchBrandStyleAnchors(workspaceId);
     const anchorUrls = anchors.slice(0, 3).map((a) => a.fileUrl);
-    const composeInputs = [component.imageUrl, ...anchorUrls];
+    // fetchBrandStyleAnchors already resolves its own URLs; the component's
+    // own stored imageUrl did not go through the same normalisation and can be
+    // an expired signed R2 endpoint (gotcha 2026-07-21).
+    const originalUrl = await resolveStorageUrl(component.imageUrl);
+    const composeInputs = [originalUrl, ...anchorUrls];
 
     if (composeInputs.length < 2) {
       return NextResponse.json(
