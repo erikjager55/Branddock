@@ -37,6 +37,33 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 484. Elke nieuwe bezoeker kreeg `lang="en"` op een Nederlandse pagina — en statisch renderen bleek geen vrije keuze
+
+`static-rendering-regressie` begon als prestatietaak: sinds de CSP-enforce-flip was zichtbaar dat **élke pagina-route `ƒ (Dynamic)`** is, waardoor `generateStaticParams` op drie marketing-routes en `revalidate = 604800` op de klant-landingspagina's al maanden niets opleverden. De meting bevestigde de diagnose en bracht twee dingen boven water die de taak niet kende.
+
+**De winst is groter dan gedacht.** Met de cookie-read uit de root layout gaat de route-tabel van **2 naar 26** statische pagina-routes; de vijf die dynamisch blijven zijn dat terecht. **`/p/<workspace>/<slug>` heeft een tweede, onafhankelijke oorzaak**: een dynamisch segment zónder `generateStaticParams` krijgt in Next 16 geen ISR-pad, ook niet mét `revalidate`. Met een lege `generateStaticParams` werd de route `● (SSG)` en cachete hij écht (MISS → HIT, `s-maxage=604800`). De P0-ISR-fix die `?workspace=` ooit naar een padparameter verhuisde is dus door twee losse oorzaken geneutraliseerd gebleven.
+
+⚠️ **Maar statisch renderen is niet vrij te schakelen, en dát is de kern.** `script-src` is nonce-based met `'strict-dynamic'`, per request gezet door de proxy. Een gecachete respons verdraagt dat principieel niet: de statische build serveert dezelfde 38 script-tags met **0** nonce-attributen (prod stempelt er 38), en een gecachete `/p` draagt de nonce van het eerste request terwijl de header een verse zendt. **Bewijs**: `npm run test:csp` tegen de statische build → **6 van de 10 falen**. De ADR-aanname dat de CSP zo ontworpen is dat statische rendering terug kan komen geldt alleen voor de twee hash-toegestane artifact-snippets, niet voor Next' eigen bootstrapscripts.
+
+⚠️ **En de urgentie klopte niet.** Op prod gemeten: **4 `PageEvent`-rijen in totaal**, 1 gepubliceerde landingspagina. De prestatiewinst is vandaag vrijwel nul — dezelfde correctie als bij de retentie-indexen van 18-08.
+
+**Wat wél mis was, ongeacht verkeer**: de root layout zette `<html lang>` uit de UI-cookie, terwijl **geen enkele publieke route `useTranslation` gebruikt** (marketing 0, brand.md 0, `/p` 0 — allemaal hardgecodeerd Nederlands). Geverifieerd op productie: `branddock.app/marketing/pricing` gaf zonder cookie `lang="en"`, mét `branddock-ui-locale=nl` gaf dezelfde pagina `lang="nl"`. `linfi.branddock.app/pillar-page` gaf `lang="en"` terwijl `LandingPage.locale = 'nl-NL'`. De hele acquisitie-funnel — bezoekers hebben per definitie nog geen cookie — kreeg een Nederlandse pagina met een Engels taalattribuut, en de app betaalde volledige dynamische rendering om dat foute antwoord te berekenen.
+
+**De fix scheidt drie begrippen die door elkaar liepen**: documenttaal (`<html lang>`), UI-taal (de cookie) en contenttaal (`LandingPage.locale`). `document-locale.ts` leidt de documenttaal af uit het effectieve pad — `x-pathname`, door de proxy gezet ná de host-rewrite. De rendermodus blijft bewust dynamisch; de drie `generateStaticParams` en de `revalidate` blijven staan mét de gemeten reden waarom ze vandaag niets doen.
+
+⚠️ **Vijf reviewrondes vonden elk een gat dat de vorige had gemist, en ze hadden allemaal dezelfde vorm: het faalscenario zat niet in de meting.** (1) `I18nProvider` zette `lang` ná hydratie terug; mijn meting meldde "6/6 correct" met uitsluitend verse page loads. (2) De fix daarvóór brak de apex-homepage — de client beoordeelde het browserpad `/` terwijl `decideHostRoute` dat naar `/marketing` rewrite't; onzichtbaar lokaal, want localhost is geen apex-host. (3) De gate toetste de losse helpers, niet de bedrading: verwissel workspace en slug en élke klantpagina viel stil terug, terwijl 52/52 groen bleef. (4) Een adversariële reviewer verwijderde één regel uit de proxy en draaide daarmee de complete server-fix terug terwijl **alle** gates groen bleven — inclusief de browsercheck, die `OK lang="nl"` meldde tegen HTML die `lang="en"` zei, omdat de client de DOM ná hydratie repareert. Daarom leest de browser-smoke nu ook de rauwe serverrespons. (5) De bewijstabel bleek gemeten tegen een base van 15 commits terug, met #323 ertussen dat de build-laag omgooit.
+
+**Bewijs** (gemeten ná rebase op `c95d7eee`): `tsc` 0 · `eslint` 0 · `npm run test:csp` **15/15** · `npm run smoke:document-lang` **61/61**, meedraaiend in de CI-`check`-job · `npm run smoke:document-lang-browser` **16/16** in twee fases · route-tabel identiek aan de baseline. **Vijf mutatiekalibraties**, elk met een vooraf bekende faalverwachting: client-sync uit → 3/4 navigaties · kale `startsWith` → 3/61 · publieke-route-tak gesloopt → 4/61 · lookup-argumenten verwisseld → 2/61 · `x-pathname` uit de proxy → 4/16.
+
+⚠️ **Ook de nieuwe guard moest zelf gecorrigeerd worden**: hij telde `<script type="application/ld+json">` mee als uitvoerbaar script en keurde daarmee een correcte build af (46 tags, 45 nonces). JSON-LD is data, geen code.
+
+**Niet gedekt**: `/p/<workspace>/<slug>` staat nog niet in de browser-violation-sweep — dat vraagt een fixture van vier entiteiten, want de e2e-seed bevat geen landingspagina. En `/invite/accept` is dezelfde klasse (Nederlandse content, taal uit `?lang=`), bewust open gelaten omdat de precedentie daar een eigen beslissing vraagt.
+
+- Task: [tasks/done/static-rendering-regressie.md](../tasks/done/static-rendering-regressie.md) · restwerk: [tasks/document-lang-followups.md](../tasks/document-lang-followups.md)
+- ADR: `-` (geen architectuurwijziging — de bestaande rendermodus is bewust behouden)
+- Spec: `-`
+- Commit: PR #335
+
 ### 483. index.css was gecompileerde output die als bron in git stond — 358 kleurklassen renderden stil niets
 
 De enige stylesheet van de app was 10.555 regels gecompileerde Tailwind-output, zónder `@import "tailwindcss"` en zónder `@theme`. `@tailwindcss/postcss` had daardoor niets te genereren en liet het bestand passeren: er kwam **nooit iets bij**. Elke utility die na het compileermoment in de code kwam bestond simpelweg niet — stil, zonder build-fout. Gemeten: **846 kleur-utilities in gebruik, 366 zonder definitie**, waarvan 358 levend over 1.303 bestand-voorkomens en 21 kleurfamilies. `bg-primary-50` in 33 bestanden, `bg-emerald-500` in 30 (de EmptyState-knopbug die als "opgelost" in het geheugen stond en gewoon nog leefde), `hover:text-gray-600` in 70.
