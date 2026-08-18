@@ -78,3 +78,13 @@ campaign-generator-outcome.json
 campaign-stall-step-*.png
 e2e/content-sweep-results.json
 e2e/playwright-report-content-sweep/
+
+# Claude Design-sync (/design-sync). Gestagede converter-scripts + hun node_modules,
+# gegenereerde bundel-output en machine-state. De duurzame set onder .design-sync/
+# (config.json, NOTES.md, conventions.md, previews/, overrides/) wordt WÉL getrackt:
+# die bevat de correcties die een volgende sync niet opnieuw hoeft af te leiden.
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
