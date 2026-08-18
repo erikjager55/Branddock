@@ -1,3 +1,14 @@
+/* ⚠️ DIT BESTAND IS DOOD — het wordt nergens geïmporteerd.
+ *
+ * De enige stylesheet die de app laadt is src/index.css (src/app/layout.tsx:3).
+ * Wijzigingen hier hebben GEEN enkel effect. Ontwerp-tokens horen in het
+ * @theme-blok van src/index.css.
+ *
+ * Vastgesteld 2026-08-18, ADR 2026-08-18-tailwind-bronpijplijn.
+ * Bewust bewaard i.p.v. verwijderd; weggooien mag zodra iemand bevestigt dat de
+ * inhoud nergens meer als referentie dient.
+ */
+
 /**
  * 🎨 Design System - Consistent Look & Feel
  * ==========================================
