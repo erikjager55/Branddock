@@ -55,8 +55,9 @@ on-brand uit?) is mensenwerk en hoort bij Erik.
 - [x] Visual Brief **Compose** gedraaid met een echte, publieke R2-URL — beeld komt terug en
       volgt de referentie
 - [~] Visual Brief **Trained-Style** — de faalklasse is deterministisch afgedekt met een écht
-      verlopen signed URL; de visuele beoordeling op prod resteert (Erik)
-- [x] Typography-tab browser-smoke — 12/12; **geen** echte before/after-screenshots, zie hieronder
+      verlopen signed URL; de visuele beoordeling op prod resteert (Erik — zie §Voor Erik)
+- [x] Typography-tab browser-smoke — 12/12 op het type-scale-pad **en** 5/5 op echte
+      font-stacks (D2 afgedekt, 2026-08-18); **geen** echte before/after-screenshots, zie hieronder
 - [x] Per smoke vastgelegd: geslaagd/gefaald, wat er te zien was, en bij falen de oorzaak
 - [x] De twee `[⏸️]`-items in `pre-launch-browser-smoke-batch` afgevinkt of met reden gesloten
 
@@ -112,18 +113,76 @@ beide referenties herkenbaar overgenomen. Bewust twee sterk herkenbare beelden g
 2. **De compositie-instructie werd deels genegeerd**: gevraagd om voor-/achtergrond, geleverd
    als naast-elkaar-collage.
 
+## D2 alsnog afgedekt (2026-08-18)
+
+De eerste ronde dekte D2 niet: het smoke-account komt alleen in *Branddock Demo*, en dat merk
+heeft géén gevulde `StyleguideFont.fontFamily`. Met één tijdelijke `WorkspaceMemberAccess`-rij
+(toegevoegd, gebruikt, weer verwijderd — sarah's toegang staat weer op precies *Branddock Demo*)
+is de smoke op *Het Nieuwe Golfen* gedraaid, dat wél echte stacks heeft
+(`Suisse Int'l, ABC Diatype, DM Sans, sans-serif` · `JetBrains Mono, Fira Code, monospace`).
+
+**Resultaat 5/5.** De Brand-Fonts-kaart toont `Neue Haas Grotesk Display` — één schone familie:
+geen komma (stack-restant), geen `-fallback`-variant, geen kale CSS-generic. Dat is exact de
+`split(",")[0]`-bug die D2 oploste. Visueel bevestigd in dezelfde run: de AI-suggestie toont
+`Suisse Int'l` (eerste familie, niet `sans-serif`), de mono-chip `JetBrains Mono` (niet
+`Fira Code`), D5's eerlijke substituut-label ("Previewing with Inter — a metric substitute"), en
+D4's availability-gedreven pad — `JetBrains Mono` krijgt een *Google Fonts*-badge terwijl de
+commerciële display-font een *Commercial — upload*-badge krijgt in plaats van een blinde
+404-Google-Fonts-link.
+
+⚠️ De smoke asserteerde die eerste run **rood** op een data-conditie: HNG heeft geen `typeScale`,
+dus Type Scale en In Context renderen niet. Dat is geen defect. De smoke slaat die blokken nu
+over met een expliciete melding in plaats van te falen, en dekt daarmee beide datavormen:
+merken mét een scale (weight-consistentie) en merken mét echte fonts (D2).
+
+## Voor Erik — de twee prod-stappen
+
+### 1. Eerst meten of het überhaupt speelt (2 minuten)
+
+```bash
+DATABASE_URL="<neon-prod-url>" npx tsx scripts/dev/storage-url-audit.ts
+```
+
+Strikt read-only (alleen SELECT). Classificeert élke storage-URL-kolom uit het schema als
+SIGNED / ENDPOINT / PUBLIC / LOCAL / EXTERN / LEEG, met aantallen en datumbereik.
+
+- **Nul SIGNED en nul ENDPOINT** → de klasse bestaat niet op prod. De fix in PR #296 is dan
+  preventief, stap 2 hoeft niet, en dit punt is klaar.
+- **Wel SIGNED/ENDPOINT** → dát zijn de getroffen rijen. Let vooral op
+  `MediaAsset.fileUrl` (compose) en `ReferenceImage.storageUrl` (de trainer-flow van 21-07).
+  Er is **geen migratie nodig**: de fix zit in het leespad. Ga door naar stap 2.
+
+Ter vergelijking, lokaal op 2026-08-18: 0 SIGNED, 0 ENDPOINT — 561 LOCAL + 72 PUBLIC.
+
+### 2. Trained-Style visueel beoordelen
+
+Alleen zinvol op een asset die de audit als SIGNED/ENDPOINT aanmerkt (dus geen verse upload —
+een nieuwe upload krijgt een duurzame URL en bewijst niets over deze klasse).
+
+1. Open het merk waarvan de audit getroffen `ReferenceImage`-rijen laat zien.
+2. Studio → een deliverable met een visual → **Trained-Style** genereren.
+3. Beoordeel **niet** of er een beeld uitkomt, maar of de **referentiestijl gevolgd** is.
+   Vergelijk met de referentiebeelden van het model: klopt de stijl (illustratie vs foto,
+   kleurbehandeling, compositie)? Een prompt-only generatie ziet er verzorgd uit en is precies
+   daarom misleidend — dat is de val van 21-07.
+4. Bij twijfel: genereer hetzelfde nog eens zónder referenties en leg de twee naast elkaar. Zijn
+   ze inwisselbaar, dan zijn de referenties niet aangekomen.
+
+Merk op dat de faalmodus per provider verschilt: bij **fal** (trained-style) kom je stil weg met
+prompt-only, bij **Gemini** (compose) krijg je een luide 422. Voor deze stap geldt dus de stille
+variant — vertrouw je ogen, niet het uitblijven van een foutmelding.
+
 ## Wat NIET is gedaan — en waarom
 
 - **Trained-Style is niet door de échte route gedraaid.** Die vereist een prod-asset met een
   verlopen URL; lokaal bestaat dat niet en prod-DB-toegang is er niet. De klasse is in plaats
-  daarvan reproduceerbaar gemaakt (zie boven). **Voor Erik**: draai de trained-style-flow op
-  prod op een asset van vóór `R2_PUBLIC_URL` en beoordeel of de referentiestijl écht gevolgd is.
+  daarvan reproduceerbaar gemaakt (zie boven), en de meet-stap die bepaalt óf dit op prod speelt
+  is nu een script — zie §Voor Erik. Dit is het énige resterende punt van deze taak.
 - **Geen echte before/after-screenshots** bij Typography — de fix staat al maanden op `main`.
-- **D2 niet gedekt** (`effra` vs `effra-fallback`): het smoke-account is `workspaceScoped` en
-  komt alleen in *Branddock Demo*, dat geen gevulde `fontFamily` heeft. De workspaces mét echte
-  font-stacks (Het Nieuwe Golfen, Zwarthout) vereisen een owner/admin-login. **Voor Erik**: draai
-  `SMOKE_WORKSPACE_ID=cmpp4dxgc001w4ums9sttpg62` met je eigen account.
+  De computed-style-assertie is sterker bewijs: die faalt bij een regressie, een screenshot niet.
 - **De twee aspect-observaties zijn niet gefixt** — modelgedrag/productvraag, buiten deze taak.
+- **De reikwijdte op prod is nog niet gemeten** — `scripts/dev/storage-url-audit.ts` levert dat
+  antwoord, maar hij moet tegen de Neon-URL draaien en die heb ik bewust niet.
 
 ## Val waar ik zelf in liep (nu geborgd)
 

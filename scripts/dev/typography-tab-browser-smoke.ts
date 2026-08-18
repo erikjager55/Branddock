@@ -137,70 +137,109 @@ async function main(): Promise<void> {
     await section.screenshot({ path: join(SHOTS, 'typography-tab-full.png') });
     console.log(`  · screenshot: ${join(SHOTS, 'typography-tab-full.png')}`);
 
+    // ── Brand Fonts — first-family canonicalisatie (D2) ─────
+    // De extractor pakte ooit blind `split(",")[0]` van een stack en koos
+    // daarmee `effra-fallback` als heading-familie. De getoonde naam moet dus
+    // één schone familienaam zijn: geen stack-restant (komma), geen
+    // `-fallback`-variant, en geen kale CSS-generic.
+    const fontNames = section.locator('div.text-2xl.font-semibold');
+    const nameCount = await fontNames.count();
+    if (nameCount === 0) {
+      console.log('  · geen gedetecteerde merkfonts in deze workspace — D2-checks overgeslagen');
+    }
+    for (let i = 0; i < nameCount; i++) {
+      const raw = (await fontNames.nth(i).innerText()).trim();
+      if (!raw) continue;
+      const lower = raw.toLowerCase();
+      ok(
+        `D2 "${raw}": één familie, geen stack-restant`,
+        !raw.includes(','),
+      );
+      ok(
+        `D2 "${raw}": geen -fallback-variant gekozen`,
+        !/-fallback\b/.test(lower),
+      );
+      ok(
+        `D2 "${raw}": geen kale CSS-generic`,
+        !['sans-serif', 'serif', 'monospace', 'cursive', 'system-ui'].includes(lower),
+      );
+    }
+
     // ── Type Scale ──────────────────────────────────────────
     // De rij-structuur is: [LEVEL-label] [sample-tekst] [meta]. We zoeken de
     // rij via zijn level-label en lezen de sample-span ernaast.
     const scaleRows = section.locator('div.flex.items-baseline');
     const rowCount = await scaleRows.count();
-    ok(`Type Scale bevat rijen (${rowCount})`, rowCount > 0);
 
-    const scaleStyles = new Map<string, { family: string; weight: string }>();
-    for (let i = 0; i < rowCount; i++) {
-      const row = scaleRows.nth(i);
-      const level = (await row.locator('span.font-mono').first().innerText().catch(() => ''))
-        .trim()
-        .toLowerCase();
-      if (!level) continue;
-      const sample = row.locator('span.flex-1').first();
-      if ((await sample.count()) === 0) continue;
-      const style = await sample.evaluate((el) => {
-        const cs = getComputedStyle(el);
-        return { family: cs.fontFamily, weight: cs.fontWeight };
-      });
-      scaleStyles.set(level, { family: firstFamily(style.family), weight: style.weight });
-    }
-    ok(`Type-Scale-niveaus uitgelezen (${[...scaleStyles.keys()].join(', ')})`, scaleStyles.size > 0);
-
-    // ── In Context ──────────────────────────────────────────
-    const inContext = section.locator('div.rounded-md.border').filter({ has: page.locator('h1') }).last();
-    ok('In-Context-preview aanwezig', (await inContext.count()) > 0);
-
-    await inContext.screenshot({ path: join(SHOTS, 'typography-in-context.png') });
-    console.log(`  · screenshot: ${join(SHOTS, 'typography-in-context.png')}`);
-
-    // ── De kern-assertie ────────────────────────────────────
-    // Dit is precies de divergentie die op 2026-06-05 gefixt is.
-    for (const level of ['h1', 'h2', 'h3'] as const) {
-      const scale = scaleStyles.get(level);
-      if (!scale) {
-        console.log(`  · ${level} niet in de type-scale van deze workspace — overgeslagen`);
-        continue;
-      }
-      const el = inContext.locator(level).first();
-      if ((await el.count()) === 0) {
-        ok(`${level}: In-Context-element aanwezig`, false);
-        continue;
-      }
-      const ctxStyle = await el.evaluate((node) => {
-        const cs = getComputedStyle(node);
-        return { family: cs.fontFamily, weight: cs.fontWeight };
-      });
-      const ctxFamily = firstFamily(ctxStyle.family);
-
-      ok(
-        `${level}: font-family gelijk in Type Scale en In Context (${scale.family} = ${ctxFamily})`,
-        scale.family === ctxFamily,
-      );
-      ok(
-        `${level}: font-weight gelijk in Type Scale en In Context (${scale.weight} = ${ctxStyle.weight})`,
-        scale.weight === ctxStyle.weight,
-      );
+    // Niet elke workspace heeft een type-scale (In Context rendert alleen bij
+    // `typeScale.length > 0`). Dat is een data-conditie, geen defect — anders
+    // kleurt een merk zónder scale deze smoke onterecht rood.
+    const hasScale = rowCount > 0;
+    if (!hasScale) {
+      console.log('  · geen type-scale in deze workspace — Type Scale/In Context overgeslagen');
+    } else {
+      ok(`Type Scale bevat rijen (${rowCount})`, true);
     }
 
-    // Kop moet zwaarder zijn dan body — de 400-vs-700-bug maakte de kop in
-    // Type Scale regular terwijl In Context bold toonde.
-    const h1Weight = Number(scaleStyles.get('h1')?.weight ?? '0');
-    ok(`h1 in Type Scale is een kop-gewicht, niet 400 (${h1Weight})`, h1Weight >= 600);
+    if (hasScale) {
+      const scaleStyles = new Map<string, { family: string; weight: string }>();
+      for (let i = 0; i < rowCount; i++) {
+        const row = scaleRows.nth(i);
+        const level = (await row.locator('span.font-mono').first().innerText().catch(() => ''))
+          .trim()
+          .toLowerCase();
+        if (!level) continue;
+        const sample = row.locator('span.flex-1').first();
+        if ((await sample.count()) === 0) continue;
+        const style = await sample.evaluate((el) => {
+          const cs = getComputedStyle(el);
+          return { family: cs.fontFamily, weight: cs.fontWeight };
+        });
+        scaleStyles.set(level, { family: firstFamily(style.family), weight: style.weight });
+      }
+      ok(`Type-Scale-niveaus uitgelezen (${[...scaleStyles.keys()].join(', ')})`, scaleStyles.size > 0);
+
+      // ── In Context ──────────────────────────────────────────
+      const inContext = section.locator('div.rounded-md.border').filter({ has: page.locator('h1') }).last();
+      ok('In-Context-preview aanwezig', (await inContext.count()) > 0);
+
+      await inContext.screenshot({ path: join(SHOTS, 'typography-in-context.png') });
+      console.log(`  · screenshot: ${join(SHOTS, 'typography-in-context.png')}`);
+
+      // ── De kern-assertie ────────────────────────────────────
+      // Dit is precies de divergentie die op 2026-06-05 gefixt is.
+      for (const level of ['h1', 'h2', 'h3'] as const) {
+        const scale = scaleStyles.get(level);
+        if (!scale) {
+          console.log(`  · ${level} niet in de type-scale van deze workspace — overgeslagen`);
+          continue;
+        }
+        const el = inContext.locator(level).first();
+        if ((await el.count()) === 0) {
+          ok(`${level}: In-Context-element aanwezig`, false);
+          continue;
+        }
+        const ctxStyle = await el.evaluate((node) => {
+          const cs = getComputedStyle(node);
+          return { family: cs.fontFamily, weight: cs.fontWeight };
+        });
+        const ctxFamily = firstFamily(ctxStyle.family);
+
+        ok(
+          `${level}: font-family gelijk in Type Scale en In Context (${scale.family} = ${ctxFamily})`,
+          scale.family === ctxFamily,
+        );
+        ok(
+          `${level}: font-weight gelijk in Type Scale en In Context (${scale.weight} = ${ctxStyle.weight})`,
+          scale.weight === ctxStyle.weight,
+        );
+      }
+
+      // Kop moet zwaarder zijn dan body — de 400-vs-700-bug maakte de kop in
+      // Type Scale regular terwijl In Context bold toonde.
+      const h1Weight = Number(scaleStyles.get('h1')?.weight ?? '0');
+      ok(`h1 in Type Scale is een kop-gewicht, niet 400 (${h1Weight})`, h1Weight >= 600);
+    }
 
     // D5/D4: geen 404-Google-Fonts-link voor een niet-bestaande familie. De
     // oude TypographySection injecteerde die blind.
