@@ -1,9 +1,9 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> **Laatst bijgewerkt: 2026-08-18** (retentie-plafond live, CSP op enforce, SSE-abort
-> gedeeltelijk — zie hieronder. Twee sessies liepen elkaar in de weg; dat is de
-> belangrijkste les van de dag).
+> **Laatst bijgewerkt: 2026-08-18, tweede helft** (retentie-plafond live, CSP op enforce,
+> SSE-abort gedeeltelijk, de twee Neon-indexen aangemaakt en prod drift-vrij bevonden —
+> zie hieronder. Twee sessies liepen elkaar in de weg; dat is de belangrijkste les van de dag).
 
 ---
 
@@ -35,8 +35,21 @@ PageEvents (13mnd), FormSubmissions (26mnd, lead-PII) en oude `compiledHtml`-art
 plus een `DELETE`-route voor een individueel AVG-wisverzoek. Drie reviewrondes haalden er
 onder meer uit: een afkapdatum die op maandeinden tot 3 dagen te veel wiste, een pruner die
 alles voorbij 4.000 pagina's stil oversloeg, en een `viewer` die lead-PII kon wissen.
-⚠️ **Actie voor jou**: twee `createdAt`-indexen op Neon aanmaken — staat in
-`open-acties-2026-07-23.md` §B mét de SQL. `CREATE INDEX CONCURRENTLY`, níet `prisma db push`.
+✅ **De twee `createdAt`-indexen staan er** (#311): aangemaakt op `branddock-prod`/`production`
+via de Neon-MCP, beide `indisvalid = true`. `CREATE INDEX CONCURRENTLY` werkt over die route
+gewoon — de transactie-valkuil van de Neon SQL-editor speelt er niet.
+⚠️ **Maar de urgentie klopte niet.** Gemeten vóór het aanmaken: `PageEvent` **4 rijen**
+(oudste 14-08), `FormSubmission` **0** — samen 96 kB. De "volledige tabelscan" die dit item
+naar Nu haalde las vier rijen. Terecht gedaan, maar om schema-drift te dichten, niet voor
+prestaties. **Meet vóór je prioriteert**; de tekst van een taak beschrijft niet de toestand.
+
+**Claude kan weer bij de prod-DB — via de Neon-MCP** (connector `claude.ai Neon`; één project,
+één branch, dus geen verwarringsrisico). Meteen ingezet voor een volledige drift-check prod
+tegen `schema.prisma`: 182 tabellen, 284 foreign keys, 115 enums → **geen drift**. Drie
+signalen bleken onschuldig, en de enige echte afwijking zat lókaal. Die leverde de gotcha op:
+`prisma migrate diff` gaf een lege migratie terwijl de DB wél afweek — Prisma kent geen
+nullable list, dus de diff-engine kán dat verschil niet uitdrukken. Het commando waar iedereen
+naar grijpt om drift te checken geeft daar dus vals groen.
 
 **CSP staat op enforce** (#294, changelog 476) en de metadata-bug op gepubliceerde pagina's
 is weg (#477). Beide uit een parallelle sessie.
@@ -142,38 +155,36 @@ nu 71-98 met uitleg. Mails herschreven naar Nederlands, één CTA per stuk.
 **1. 💳 TOPUP aanzetten.** Nog steeds het enige met directe omzet-impact, en er is geen
 technisch werk meer — alleen `NEXT_PUBLIC_TOPUP_ENABLED=true` en één betaal-smoke.
 
-**2. 🗄️ Twee indexen op Neon.** Vijf minuten werk, en het enige losse eindje van het
-retentiewerk dat gisteren live ging. De cron van 02:00 draait nu als volledige tabelscan.
-SQL staat in `open-acties-2026-07-23.md` §B — `CREATE INDEX CONCURRENTLY`, buiten een
-transactie, níet via `prisma db push` (die neemt prod-drift mee en locked `PageEvent`).
+**2. 📣 [`brand-md-open-standaard`](tasks/brand-md-open-standaard.md) — jouw strategie-akkoord.**
+Naar voren gehaald op een meting, niet op een gevoel: de funnel is technisch compleet en
+leverde in vier dagen **4 page-events en 0 leads** op. Dat is geen infra-probleem meer maar
+een distributie-probleem, en het enige wat de volgende stap tegenhoudt is jouw akkoord op de
+omarm-strategie plus de outreach naar de maintainer. De upstream-PR's liggen als tekstpakket
+klaar.
 
-**3. 🧩 [`content-chain-accessor`](tasks/content-chain-accessor.md) — de laatste twee
-kruisingen.** Fase 1 en 3 zijn af, fase 2 op #2 en #3 na. Die twee vragen géén techniek maar
-een productkeuze van jou: wat toont het Content Library-stoplicht, en wat zegt de Brand
-Assistant, bij `structured-unchosen`? Zie Open beslissingen #1. Zodra je kiest is het een
-halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
+**3. 🧹 [`lp-review-followups`](tasks/lp-review-followups.md) — de vier robuustheid-items.**
+Het enige blok in de Nu-lijst dat concreet, onbelemmerd en zonder jouw input te doen is. De
+moeite waard om mee te beginnen: het versmallen van het `buildSpikePuckConfig`-registry-type
+haalt de 8GB-heapbump uit `ci.yml` weg die er nu als workaround staat.
 
 ---
 
 ## Open beslissingen (blokkeren werk)
 
-1. **Content-accessor `structured-unchosen`** — twee productkeuzes, geen techniek:
-   het Content Library-stoplicht toont rood + "No content generated" op een vólle pagina,
-   en de Brand Assistant zegt onterecht "deze pagina heeft nog geen content".
-2. **`guard-hooks-hardening`** — raakt je veiligheidsnet, vraagt expliciet akkoord.
+1. **`guard-hooks-hardening`** — raakt je veiligheidsnet, vraagt expliciet akkoord.
    Kernvraag: móet `gh pr merge` blokkeren bij een co-sessie, of volstaat waarschuwen?
    ⚠️ **18-08 gaf hier nieuwe munitie voor**: twee sessies bouwden onafhankelijk dezelfde
    fix in hetzelfde bestand (#295 vs. mijn werk), en een merge op een verouderde API-head
    liet een al gevonden regressie live staan. De guard beschermt HEAD/branch-mutaties, maar
    niet tegen dít patroon.
-3. **Resterende SSE-abort-wijzigingen** — de atomaire settings-merge, deel-resultaten bewaren
+2. **Resterende SSE-abort-wijzigingen** — de atomaire settings-merge, deel-resultaten bewaren
    vanaf 2 varianten, en de `cancel()`-detector staan klaar op `claude/sse-abort-disconnect`
    (`4a8f12b`). Ze vervangen de transactionele fresh-read die #295 net mergede; die versmalt
    het read-modify-write-venster maar sluit het niet (READ COMMITTED neemt geen row-lock).
    Er ligt een comment op #295; keuze is of ik doorpak of dat die sessie het zelf oppakt.
-4. **brand.md-strategie** — akkoord op de omarm-strategie + outreach naar de maintainer;
+3. **brand.md-strategie** — akkoord op de omarm-strategie + outreach naar de maintainer;
    de upstream-PR's liggen als tekstpakket klaar.
-5. **Meertaligheid brand.md-funnel** — de pagina's en mails zijn nu Nederlands. De wens was
+4. **Meertaligheid brand.md-funnel** — de pagina's en mails zijn nu Nederlands. De wens was
    breder: site meertalig, mails volgen de gekozen taal. Vereist een locale-kolom op
    `GeneratedBrandProfile` (schemawijziging → Neon-push) en template-lookup per taal.
    Het fundament ligt er: `renderLayout` kent al een `locale`.
@@ -186,11 +197,11 @@ halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
 | Taak | Staat |
 |---|---|
 | [`brand-md-open-standaard`](tasks/brand-md-open-standaard.md) | in-progress — funnel live; rest is upstream-PR's + jouw strategie-akkoord |
-| [`content-chain-accessor`](tasks/content-chain-accessor.md) | in-progress — fase 1 ✅ + fase 3 ✅; alleen kruisingen #2/#3 open (jouw productkeuze) |
+| [`content-chain-followups`](tasks/content-chain-followups.md) | open — `content-chain-accessor` is ✅ **done** (alle 23 kruisingen). Wat rest zijn drie *keuzes*, geen bugs: dode code, de schrijf-kant, repurpose |
 | [`lp-image-routes`](tasks/lp-image-routes.md) | review — wacht op één prod-smoke door jou |
 | [`seo-pipeline-speedup`](tasks/seo-pipeline-speedup.md) | open — fase 4a deed 12→7,5 min |
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
-| [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst. ⚠️ §B bevat nu twee dingen die op jou wachten: de retentie-indexen op Neon (`CREATE INDEX CONCURRENTLY`, níet `prisma db push`) en `NEXT_PUBLIC_POSTHOG_KEY` op prod |
+| [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst. ⚠️ §B: de retentie-indexen zijn ✅ af (#311); wat resteert is `NEXT_PUBLIC_POSTHOG_KEY` op prod |
 | [`lp-review-followups`](tasks/lp-review-followups.md) | open — retentie-items ✅ af (#286). SSE-abort ✅ grotendeels (#287/#303); **rest ligt klaar op `claude/sse-abort-disconnect` (`4a8f12b`)** en wacht op afstemming met #295. Vier robuustheid-items nog open |
 | [`kpi-fase0`](tasks/kpi-fase0.md) | in-progress — meetfundament €100k-plan (funnel/activatie/noordster/Gate-1 als developer-tab); worktree `branddock-kpi-fase0` |
 | [`marketing-homepage-v2`](tasks/marketing-homepage-v2.md) | in-progress — homepage-herbouw + nav/footer NL-first; worktree `branddock-marketing-homepage-v2` |
