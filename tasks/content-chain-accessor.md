@@ -5,12 +5,12 @@ fase: launch
 priority: now
 effort: 5-8 dagen (3 fasen)
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-07-17
-completed:
+completed: 2026-08-18
 related-adr: docs/adr/2026-07-17-deliverable-content-accessor.md
 related-spec: -
-worktree: branddock-content-chain-accessor
+worktree: - (opgeruimd na de merge)
 ---
 
 # Probleem
@@ -347,9 +347,15 @@ flow.** tsc-groen bewijst hier per definitie niets — beide takken compileren.
 
 # Restant na 2026-08-18 — alle 23 kruisingen zijn behandeld
 
-Er staat geen kruising meer open. Wat resteert zijn drie **beslissingen**, geen
-onafgemaakt werk; ze staan hier zodat ze niet in een losse-eindjes-sectie verdwijnen
-(les 2026-08-16).
+> ⚠️ **Nog te verplaatsen naar `tasks/done/`.** Bewust niet gedaan op 18-08: twee open
+> sessie-afronding-PR's (#300, #304) schrijven op dat moment aan `START_HERE.md` en
+> verwijzen naar dit pad. Meenemen in de eerstvolgende done-sweep, zodra die geland zijn.
+
+Er staat geen kruising meer open; deze taak is **done** (2026-08-18, PR #298).
+Wat resteert zijn drie **beslissingen**, geen onafgemaakt werk. Ze hebben een eigen
+task-file gekregen — [`content-chain-followups`](content-chain-followups.md) — zodat
+ze niet in een losse-eindjes-sectie verdwijnen (les 2026-08-16). Hieronder blijven ze
+staan als context bij de kruisingen waar ze uit voortkomen.
 
 - **#12 dode code opruimen.** `buildCascadingComponentContext` en zijn enige
   aanroeper `compileComponentFeedback` hebben samen nul aanroepers. Niet gefixt maar
