@@ -10,7 +10,7 @@ created: 2026-07-14
 completed: -
 related-adr: docs/adr/2026-05-22-landing-page-builder-architectuur.md
 related-spec: tasks/done/web-page-builder-canvas-step-mvp.md (triage 2026-07-14)
-worktree: -
+worktree: branddock-wpb-rest  # geclaimd door sessie 41832dfd, 2026-08-18
 ---
 
 # Probleem

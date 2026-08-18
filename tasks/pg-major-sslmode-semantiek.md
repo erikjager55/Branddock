@@ -10,7 +10,7 @@ created: 2026-08-18
 completed:
 related-adr: -
 related-spec: -
-worktree: -
+worktree: branddock-pg-sslmode  # geclaimd door sessie 41832dfd, 2026-08-18
 ---
 
 # Probleem

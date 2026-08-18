@@ -10,7 +10,7 @@ created: 2026-08-18
 completed:
 related-adr: docs/adr/2026-06-05-typography-font-canonicalization.md
 related-spec: -
-worktree: -
+worktree: branddock-brand-fonts  # geclaimd door sessie 41832dfd, 2026-08-18
 ---
 
 # Probleem
