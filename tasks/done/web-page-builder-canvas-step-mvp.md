@@ -92,7 +92,7 @@ Feature-branch `branddock-feat-web-page-builder-canvas` heeft 8 commits, niet-ge
 > marketing-pricing-dogfood ✅ obsoleet (hand-coded geland via #384, conform de eigen
 > task-note); F-VAL-HTML-calibratie-doc de facto ingehaald door de echte judge-
 > uitbreidingen (#270/#316/#336). Wat nog echt open is verhuisde naar
-> `tasks/web-page-builder-acceptance-rest.md` (post-launch): render-route bundle-split,
+> `tasks/done/web-page-builder-acceptance-rest.md` (post-launch): render-route bundle-split,
 > dual-render-perf-meting, en het klaarliggende Puck-bug-report
 > (`docs/audits/puck-external-field-typing-issue.md` — indienen is een 15-min actie,
 > extern onder Eriks GitHub-identiteit). De browser-smoke-LP-matrix staat als

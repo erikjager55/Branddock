@@ -14,7 +14,7 @@
 | `seo-variant-b-differentiatie` | `src/lib/ai/seo-pipeline*.ts`, `scripts/fidelity/**` |
 | `pg-major-sslmode-semantiek` | `.env.example`, `src/lib/prisma.ts`, `docs/playbooks/**` |
 | `golden-set-blogpost-quality` | `promptfoo/**`, `.promptfoo-results/**`, prompt-templates blog |
-| `web-page-builder-acceptance-rest` | `next.config.ts` (bundle-split), `e2e/` perf-meting |
+| ~~`web-page-builder-acceptance-rest`~~ ✅ | geen code geraakt — twee restpunten waren achterhaald, één geskipt op meting |
 
 **Niet van mij, afgestemd**: `build-heap-investigation`, `i18n-namespace-locality` en
 `document-lang-followups` liggen bij sessie `branddock-static-rendering-regressie`
@@ -136,8 +136,8 @@ waargenomen geval**:
 Elke afgeronde stap is een PR met zijn eigen bewijs. Deze regel wordt bijgewerkt zodra er iets
 landt; de PR-titels zijn het logboek.
 
-- [ ] P1 `brand-fonts-ontbreken-op-prod`
-- [ ] P2 `seo-variant-b-differentiatie`
-- [ ] P3 `pg-major-sslmode-semantiek`
-- [ ] P4 `golden-set-blogpost-quality`
-- [ ] P5 `web-page-builder-acceptance-rest`
+- [x] P1 `brand-fonts-ontbreken-op-prod` — #342 (spoor B; spoor A wacht op licenties)
+- [x] P2 `seo-variant-b-differentiatie` — #345 (ijkpunt 65,5%; stap 3 is Eriks keuze)
+- [x] P3 `pg-major-sslmode-semantiek` — #348 (waarschuwt; hard falen achter een vlag)
+- [x] P4 `golden-set-blogpost-quality` — #350 (meta-description-defect weg; 2 besluiten open)
+- [x] P5 `web-page-builder-acceptance-rest` — alle drie restpunten gesloten, taak op done

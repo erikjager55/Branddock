@@ -290,7 +290,7 @@ per-request nonce; plus dezelfde `lang`-bug op `/oauth/*`, `/reset-password` en
 `agent-vera-triggers` ·
 `content-test-regression-7B` · `geo-seo-followup-later` · `i18n-ai-translation-pipeline` ·
 `power-user-shortcuts` · `publishgate-second-opinion` · `validate-brand-domain-component-fit` ·
-`video-chain-explainer-showcase` · `web-page-builder-acceptance-rest` ·
+`video-chain-explainer-showcase` ·
 `mcp-external-data-enrichment-research` ·
 [`lp-turnstile-form-endpoint`](tasks/lp-turnstile-form-endpoint.md) (⚠️ **blocked op een
 trigger, niet op werk**: afgesplitst uit `lp-review-followups` bij het afronden daarvan.
