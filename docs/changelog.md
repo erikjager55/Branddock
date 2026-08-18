@@ -37,7 +37,7 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
-### 477. De settings-blob heeft één schrijfdeur — en de vorige "fix" sloot de race niet
+### 482. De settings-blob heeft één schrijfdeur — en de vorige "fix" sloot de race niet
 
 `Deliverable.settings` is één JSON-blob waar tien codepaden in schrijven, allemaal als read-modify-write: lees de hele blob, spreid er sleutels overheen, schrijf 'm terug. Landt er tussen de read en de write een andere schrijver, dan verdwijnt diens werk. De autosave van de Puck-editor is de frequentste tegenpartij; bij `generate-structured-variant` was het venster **minutenlang** (de hele SSE-generatie), bij de SEO-pijplijn en de fidelity-scoring net zo goed.
 
@@ -54,6 +54,109 @@ Bijvangst: het stale snapshot is uit `generate-structured-variant` verdwenen in 
 **Bewijs**: `SMOKE_DB=1 npm run smoke:settings-write` → **8/8** tegen een echte Postgres. De belangrijkste check is de mutatietest: dezelfde race draait óók met een kale `findUnique`, en dáár moet een sleutel verdwijnen — anders meet de smoke niets. Plus `smoke:hero-clobber-guard` 29/29 ongewijzigd (die dekt de omgezette `patchHeroVisualUrl`), `tsc` 0 errors, `lint` 0 errors.
 
 - Task: [tasks/lp-review-followups.md](../tasks/lp-review-followups.md)
+
+### 481. Variant B van de SEO-pipeline kreeg vijf minuten research nooit te zien
+
+De SEO-pipeline besteedt vijf van zijn acht stappen aan research — keywords, concurrenten, SERP-gaps, E-E-A-T, de outline met meta-tags en interne links — en levert daarna twee varianten op. Variant B kreeg die research nooit. Zijn generator las de doorlopend groeiende `accumulatedContext` met een `.slice(-20000)` erop, onder de kop *"SEO RESEARCH CONTEXT (preserve all SEO elements from this research)"*. Die context groeit door élke stap achteraan aan te plakken, dus een tail-slice houdt per definitie de laatste stappen over: de prose. De prose-staart alleen al (stap 6 first draft + stap 7 editorial, mediaan-som **29.953 tekens** over 31 gemeten runs) is groter dan het venster van 20.000, waardoor de slice altijd middenin stap 6 of 7 begon en stap 5 nooit bereikte. Over **31 herspeelde echte runs kreeg 31/31 nul van de vijf researchstappen** door. Wat er wél in stond was het artikel — dat één sectie hoger al als `## ORIGINAL PAGE (Variant A)` in dezelfde prompt zat, afgekapt midden in een zin.
+
+De helft van wat de pipeline oplevert werd dus geschreven zonder de research waar hij vijf minuten aan besteedt, terwijl de prompt het tegendeel beweerde. Variant B wordt als `DeliverableComponent` met `variantIndex: 1` weggeschreven en is gewoon selecteerbaar. Fase 4a (13-07) keek er langs: die noteerde als bewuste input-delta dat variant B "de accumulatedContext zonder het stap-8-checklist-JSON" ziet — een redenering over welk blok erbíj komt, terwijl de slice er al alles vóór stap 6 uit gooide.
+
+**De fix is structureel**: stoppen met een gegroeide blob slicen, en selecteren op stapnummer. `renderStepBlock()` is nu de énige bron van het blokformaat — gebruikt door zowel de accumulatie in `runSeoPipeline` als de selectie. Variant B krijgt `RESEARCH_STEPS` (1-5); stap 8 krijgt via `STEP_CONTEXT_OVERRIDES` alles behalve de achterhaalde stap-6-draft, want die stap is checklist-only en zag tot nu toe twee versies van hetzelfde artikel terwijl zijn eigen prompt zegt *"step 7 already delivered the final prose"*. Stappen 1-7 blijven byte-identiek — door drie reviewers onafhankelijk nagerekend. Bijvangst: het opschuiven van het leesmoment sluit een latente read-after-await in `runCompetitorAnalysisStep`.
+
+⚠️ **Het levert géén kwaliteitswinst op, en dat is de uitkomst.** Gepaarde F-VAL-A/B op herspeelde echte runs (n=8, 4 merken, judge cross-family): **gemiddelde Δ −0,1, spreiding −1 tot +1**, vijf van de acht cases bewegen niet. De fix staat op correctheidsgronden: de prompt levert wat hij belooft, stap 8 ziet één versie, en vers pad en resume-pad geven identieke input. De stap-8-wijziging is apart gemeten nadat drie reviewers terecht opmerkten dat daar alleen de omvang van bekend was terwijl die stap persistent wegschrijft: **4/4 cases geen enkele overtreding in beide armen**, titleTag-lengtes identiek, `h1` identiek in 3 van de 4 — en die ene afwijking viel uit in het voordeel van de nieuwe versie (sentence case waar de oude arm Title Case gaf, wat de huisregel schendt).
+
+⚠️ **Vijf reviewrondes vonden nul bugs in de productiecode en ruim twintig fouten in de metingen en claims eromheen** — dat is het leerzame deel, en de drie zwaarste zijn dezelfde soort fout als de bug die onderzocht werd. (1) De survivor-teller matchte op de substring `## Step N:`, en artikelen bevatten zélf koppen als `## Step 1: selecting FSC® Accoya`; ik publiceerde 28/29 waar het 31/31 is. (2) De blok-parser liet het laatste blok doorlopen tot het einde van de prompt, waardoor stap 7 er 6.615-9.694 tekens brand-voice-directive en stap-8-instructies bij kreeg — vervuiling die via de tail-slice **uitsluitend in de OUD-arm** landde en een als "gepaard" gepresenteerde A/B scheeftrok (eerste ronde +0,50; schoon gemeten −0,1). (3) `loadCases` sloeg 2 van de 31 runs stil over terwijl twee ándere skip-redenen wél geteld werden; op het volledige archief schoof de mediaan van stap 7 met 6,4%. Plus een Brand-Context-bereik dat in geen enkele workspace voorkwam en een reproduce-commando dat niet werkte.
+
+**Twee smokes, met een expliciete taakverdeling.** `smoke:seo-context` (41 checks, DB- en key-loos) dekt de pure functies. Dat bleek niet genoeg: een adversariële review kreeg **11 van 21 mutaties in `seo-pipeline.ts` langs zowel `tsc` als alle 41 checks**, waaronder een rechtstreekse revert van de fix en het slopen van het resume-pad. `smoke:seo-wiring` (31 checks) sluit dat gat door de échte `runSeoPipeline` te draaien met een onderschepte `globalThis.fetch` — negen AI-calls afgevangen, nul echte calls, en asserties op de prompts die de pipeline daadwerkelijk opbouwt. Module-mocking kan hier niet (esbuild geeft niet-configureerbare getters) en de pipeline gebruikt `messages.stream()`, dus de stub spreekt SSE. Van de zes ontsnapte mutaties worden er nu vijf gevangen; de zesde bleek een onjuiste review-bevinding — de `.sort()` in de wave-lus ís het vangnet dat de volgorde deterministisch houdt.
+
+**Bijvangst met eigen taak**: variant B blijkt geen variant. Woord-overlap met variant A is 90,5-98,3% in béide armen, tegen een geijkte 65,0% voor twee volledig verschillende artikelen van hetzelfde merk en 18,8% tussen merken. Zie `tasks/seo-variant-b-differentiatie.md`.
+
+Daarmee is `seo-pipeline-speedup` afgerond: snelheid stopte bewust op 7,5 min (Fase 4b NO-GO, gemeten 14-07), en Fase 3 landde niet als kostenoptimalisatie maar als bugfix.
+
+- Task: [tasks/done/seo-pipeline-speedup.md](../tasks/done/seo-pipeline-speedup.md)
+- ADR: `-`
+- Spec: `-`
+- Commit: `640932f1`
+
+### 480. De twee veiligheidshooks bewaakten het verkeerde en hinderden het goede
+
+Sluit [`guard-hooks-hardening`](../tasks/guard-hooks-hardening.md) af (#313 + #314). De taak stond sinds 17-07 open met de aantekening "niet uitvoeren zonder expliciet akkoord" — dat akkoord kwam er nadat **alle drie de gaten op één dag opnieuw geraakt werden**. Het scherpst was de combinatie: de guard blokkeerde élke lokale git-mutatie terwijl twee merges naar productie er ongehinderd langs gingen.
+
+**Eriks drie keuzes**: `gh pr merge` waarschuwt (blokkeert niet — twee sessies die elk hun eigen PR mergen is legitiem); `check-dangerous-bash` wordt operatie-bewust; een onbepaalbaar doel wordt doorgelaten.
+
+**Nieuwe gedeelde helper** `.claude/hooks/lib/guard-lib.sh`. Beide hooks stelden dezelfde vraag — *welke worktree raakt dit commando?* — en beantwoordden 'm allebei verkeerd: ze leidden 'm af uit de cwd van het hook-proces. Nu uit het commando zelf (`cd`, `git -C`), met het JSON-veld `cwd` als terugval en fail-open bij twijfel. Daarmee wordt werk in worktree X niet meer geblokkeerd door een sessie in Y — én wordt een commando dat vanuit X ín Y mutéért nu wél geblokkeerd, wat eerder ongemerkt doorging.
+
+**`check-dangerous-bash` heeft drie lagen** in plaats van twee: CRITICAL (altijd), BRANCH-AWARE (force-push en `reset --hard` alleen blokkeren richting main/master) en WARNING. Force-push met lease op een eigen feature-branch mag dus weer.
+
+⚠️ **Twee gaten kwamen er tijdens het bouwen bij, allebei van dezelfde soort — de guard keek naar hoe een commando geschreven was, niet naar wat het doet.** Dezelfde destructieve operatie met een ander argument glipte erlangs. En `git -C <pad> <verb>` passeerde **béide hooks al sinds hun ontstaan**, omdat elke detectie het werkwoord dírect achter `git` verwachtte; de smoke viel daar bij de eerste run over. Bijvangst: `worktree` stond kaal op de mutatielijst, dus `git worktree list` — puur lezen — telde als HEAD-mutatie.
+
+⚠️ **De beloofde escape was onimplementeerbaar, niet alleen ongeïmplementeerd.** Een PreToolUse-hook kent alleen `allow` en `deny` — er is geen `ask`, dus een hook kan principieel niet om bevestiging vragen. En een escape-zin ín het commando wordt door Claude getypt in plaats van door de gebruiker: een self-service bypass. De melding zegt nu wat er wél geldt.
+
+**Bewijs**: `npm run smoke:guard-hooks` → **13/13** tegen echte git-repo's en echte lockfiles met verse heartbeat, plus drie mutatietests (blokkeer-tak eruit → rij 1+4 vallen; beschermde branches leeg → rij 8+13; CRITICAL-lijst leeg → rij 11). `tsc` 0 errors, `eslint` schoon, `bash -n` groen. Na de merge opnieuw gedraaid vanuit de main-worktree, tegen de geïnstalleerde hooks.
+
+⚠️ **Niet gedekt**: een tweede échte Claude-sessie. De smoke toetst de hook-logica, niet de integratie met de harness — en of de merge-waarschuwing Erik daadwerkelijk bereikt is daarmee niet bewezen (stderr bij exit 0 is niet gegarandeerd zichtbaar; daarom óók een `systemMessage`). Staat als restwerk in de task-file. Gat 1 blijft bewust een waarschuwing: twee sessies kunnen nog steeds tegelijk naar productie mergen.
+
+- Task: [tasks/guard-hooks-hardening.md](../tasks/guard-hooks-hardening.md)
+- ADR: -
+- Spec: -
+- PR's: #313 (hooks + smoke), #314 (gotcha)
+
+### 479. De content-keten is dicht — de publieke API gaf een volle pillar-page als leeg item uit, en zes i18n-namespaces renderden nooit
+
+Sluit [`content-chain-accessor`](../tasks/content-chain-accessor.md) af: alle 23 kruisingen lopen nu via `resolveDeliverableContent()`, en er staat geen `TODO(content-chain-accessor)`-disable meer in de codebase. Dat laatste is de meetbare vorm van "af".
+
+**#23 was de zichtbaarste die nog openstond.** `src/lib/content/deliverable-content.ts` — gedeeld door de MCP-tool `get_deliverable_content` en `GET /api/v1/deliverable` — mapte uitsluitend `components`, en die zijn voor de 11 keten-B-types structureel leeg. Een pillar-page van 4.185 tekens kwam er dus als leeg item uit, op de enige plek waar een klant of externe agent de bug raakt. Additief opgelost: `text` (platte tekst uit welke keten dan ook), `contentState` (`ready`/`awaiting-choice`/`empty`) en `variantOptionCount` erbij, `components` ongewijzigd. Bij `awaiting-choice` gaat er géén tekst mee — gelijk aan de productkeuze bij #3: een versie die de gebruiker nog kan weggooien lekt niet door naar afgeleide content. De PR-tekst van #288 meldde "nog open: alleen #22"; #23 stond er ook nog en werd niet genoemd.
+
+**#22**: Iris (`seo-watchdog-scan`) leest via de accessor in plaats van een rauwe `safeParse`; de zod-validatie blijft, want de accessor garandeert een page-variant en niet dít schema.
+
+**Vier bevindingen uit een fresh-eyes-review van #288**, meegenomen omdat ze dezelfde bestanden raken. De belangrijkste: het readiness-filter leidde zijn tokens **af uit Engelse zinnen** met `lower.includes('choose')` — één herformulering of vertaling had het stil kapotgemaakt. De API stuurt nu tokens (`readinessSignals`), één formatter maakt er de zin van, en Engels blijft de bron via `defaultValue`. Verder: de tekstcomponent-regel stond op drie plekken (nu één `TEXT_COMPONENT_WHERE`), een docstring claimde een garantie die de variantselectie niet waarmaakt, en `hasContent` was tóch `true` bij een openstaande variantkeuze zodra er beeld op de rij stond — precies de publish-knop die gegarandeerd afketst.
+
+⚠️ **Nagekomen vondst: zes namespaces met complete NL-vertalingen renderden nooit.** Namespaces laden lazy; `brand-dna`, `campaigns-cards`, `campaigns-content-types`, `campaigns-setup`, `claw-content-registry` en `campaigns-pipeline` werden nergens via `useTranslation` geladen. 84 aanroepen die voor een Nederlandse gebruiker allemaal Engels bleven — merk-DNA-secties, status-pills, kwaliteitslabels, content-type-labels, wizard-stappen, knowledge-library-filters. Niets kon dit zien: de fallback is `defaultValue`, en die ís de Engelse brontekst. Geen foutmelding, geen lege string, geen zichtbare sleutel. 37 `useTranslation`-calls in 21 bestanden aangesloten, met de bestaande namespace vooraan zodat kale sleutels hun default houden. Geborgd met `npm run smoke:i18n-namespaces` — statisch, CI-baar, en aantoonbaar discriminerend.
+
+**Bewijs**: `content-library-readiness` 59/59 (was 39/39), waarvan 8 nieuwe checks die de hint door een échte i18next-instantie in `en` en `nl` renderen, inclusief de `_one`/`_other`-vorm en de koude start. `deliverable-content-accessor` 52/52 ongewijzigd. De échte Iris-laag via `SKIP_AI=1 agent-seo-watchdog-smoke` 15/15. `tsc` 0, `lint` 0 errors. Geen schema-wijziging, dus geen Neon-push.
+
+⚠️ **Twee dingen die deze ronde kostten**, beide vastgelegd in `gotchas.md`. (1) Drie controles kwamen leeg terug terwijl de controle zélf stuk was — een probe op een niet-bestaande sleutel, een discriminatietest waarvan de string-vervanging niet matchte door quote-stijl, en een `git merge-file`-conflictcheck die nul conflicten meldde voor het énige bestand dat wél botst. Twee daarvan zouden een echte bevinding hebben begraven. (2) De bovenkant van `gotchas.md` is met parallelle sessies een gedeelde schrijfplek: één entry in een code-PR kostte een volledige herbouw van #291 (→ #298), en een uur later opnieuw een conflict — terwijl `package.json` beide keren vanzelf mergde.
+
+Twee vervolgtaken vastgelegd: [`content-chain-followups`](../tasks/content-chain-followups.md) (dode code, de schrijf-kant van keten B, repurpose zonder bron-content) en [`i18n-namespace-locality`](../tasks/i18n-namespace-locality.md) (namespaces die alleen werken zolang een ánder scherm ze al laadde).
+
+- PR's: #298, #307, #308
+- Task: [tasks/content-chain-accessor.md](../tasks/content-chain-accessor.md) → **done**
+
+### 478. De tabwissel kocht alsnog een tweede generatie — en waarom hij in main stond
+
+Vervolg op #475, en tegelijk een les over mergen. Die entry meldde de tabwissel-regressie als opgelost: de AbortController verhuisde naar een registry per deliverable, zodat een stapwissel in de Canvas een lopende run niet meer afbrak. Dat klopte voor de *controller*, maar niet voor de **beslissing om te genereren**. `isGenerating` en `autoTriggeredRef` zijn component-lokaal, en `structuredVariantOptions` wordt pas bij `all_complete` naar de store geschreven — dus een verse instance na een stapwissel zag "niets aan de hand", de auto-trigger vuurde, `beginGeneration` brak de lopende betaalde run af en kocht een nieuwe. Twee betalen, één krijgen, bij een gewone klik op een eerdere stap.
+
+Nu vraagt de auto-trigger aan de registry of er al iets loopt (`hasActiveGeneration`), en abonneert het blok zich via `useSyncExternalStore` in plaats van die registry één keer bij mount te lezen — zonder abonnement bleef een instance die tijdens een *mislukte* run mountte eeuwig in de spinner staan, en kocht elke volgende stapwissel opnieuw. De gracieperiode ging van 250ms naar één macrotask: StrictMode's cleanup en setup zitten in dezelfde effect-flush, dus meer uitstel kocht niets terwijl 250ms wél een venster gaf waarin een échte terugkeer een betaalde run doodde.
+
+⚠️ **Waarom dit apart moest** is het onthouden waard. De fix zat al in de branch, maar de merge van #287 squashte een **verouderde branch-head**: de GitHub-API bleef die tonen terwijl de branch vijf commits verder was. De staleness was opgemerkt en er is toch gemerged — dat had het stoppunt moeten zijn. Gevolg: vijf commits landden niet, en een al gevonden regressie stond live tot deze PR. Regel voor de volgende keer: **verifieer de head-SHA met `git ls-remote` vóór een merge**, en controleer ná de merge of de wijziging écht in `main` zit in plaats van af te gaan op `merged: true`.
+
+Bewust nog niet in main: de atomaire settings-merge, deel-resultaten bewaren vanaf 2 varianten, en de `cancel()`-detector. Die raken `generate-structured-variant/route.ts`, waar #295 uit een parallelle sessie zojuist eigen werk in zette — waaronder onafhankelijk exact dezelfde transactionele fresh-read. Afstemming loopt via een comment op #295; de wijzigingen staan klaar op `claude/sse-abort-disconnect`.
+
+Smoke 13/13, `tsc` 0, `lint` 0 errors (965 warnings = baseline van main).
+
+- Task: [tasks/lp-review-followups.md](../tasks/lp-review-followups.md)
+
+### 477. Gepubliceerde landingspagina's hadden géén `<title>` en geen meta-description — een metadata-sleutel met waarde `undefined` wist de geërfde titel
+
+Opgevallen tijdens de CSP-verificatie op prod: `linfi.branddock.app/pillar-page` had **geen enkel `<title>`-element**. Niet de verkeerde titel — helemaal geen. Terwijl `/reset-password`, dat geen eigen metadata heeft, netjes `<title>Branddock</title>` uit de root layout erft. Een klant-pillarpagina, gebouwd om gevonden te worden, was dus naamloos in elk zoekresultaat, elke browsertab en elke gedeelde link.
+
+**Oorzaak.** `seoChecklistToMetadata` bouwde altijd een objectliteral met álle sleutels: `{ title, description, alternates, robots, openGraph }`. Next merge't route-metadata over de layout-defaults op **sleutel**-niveau, dus een aanwezige `title`-sleutel met waarde `undefined` *wist* de geërfde titel in plaats van hem te laten staan. De fail-soft-afslag die dat had moeten voorkomen (`niets bruikbaars → {}`) haalde het nooit: de route geeft altijd een `fallbackCanonical` mee, dus `canonical` is altijd gevuld en de early-return vuurde bij geen enkele pagina. Elke pagina zonder `settings.seoChecklist` kwam dus met een lege titel-sleutel binnen.
+
+**Waarom niemand het zag.** De smoke dekte dit geval af in plaats van het te vangen: `assert('null + fallback → geen title', noChecklistFb.title === undefined)`. Die uitdrukking is waar bij *zowel* "sleutel afwezig" als "sleutel aanwezig met waarde undefined" — precies het onderscheid dat telt. De test is nu omgezet naar `!('title' in result)`.
+
+**Wie het raakt.** `settings.seoChecklist` wordt uitsluitend door de SEO-pipeline geschreven (`src/lib/ai/seo-pipeline.ts`). Elke pagina uit de gewone webpage-builder heeft er geen, en had dus geen titel. Dezelfde leemte maakte dat `llms.txt` de kale slug als linktekst toonde — `- [pillar-page](…)` in plaats van een leesbare naam.
+
+**De fallback, en waarom niet de voor de hand liggende.** Eerst `Deliverable.title` geprobeerd; dat bleek in de praktijk het content-type-label te bevatten ("Landing Page", "Blog Post"), dus dat zou letterlijk `<title>Landing Page</title>` in Google zetten — slechter dan de generieke layout-default. De echte kop van de pagina staat in `puckData`: de hero-`headline`, de H1 die de bezoeker ziet. Nieuwe pure helper `resolvePageTitleFromPuckData` leest die (hero-`headline` vóór sectie-`heading`, want dat laatste is H2-niveau), normaliseert witruimte en kapt op woordgrens af bij 120 tekens. Beide consumenten gebruiken hem nu, dus `<title>` en `llms.txt` kunnen niet meer uit elkaar lopen.
+
+**Bewijs, end-to-end en niet alleen in de unit-test.** Tegen een echte productiebuild: pagina zónder checklist gaf vóór de fix niets en nu `<title>Horeca textielbeheer: waarom zelf doen je meer kost dan je denkt</title>` plus een meta-description; pagina mét checklist houdt onveranderd zijn pipeline-titel (`Horecatextiel Randstad | Vlekkeloos geregeld | Napking`), dus geen regressie; en de controleroute `/reset-password` erft nog steeds "Branddock", wat bewijst dat de inheritance zelf niet gesloopt is. `llms.txt` toont nu beide echte titels in plaats van slugs. Smokes: `page-derived-meta` 25/25 (nieuw) en `page-seo-metadata` 35/35. `tsc` 0 errors.
+
+**Dezelfde leemte, tweede helft: de meta-description.** Ook die kwam alleen uit de checklist, dus pagina's uit de webpage-builder hadden er geen. De bron ligt naast de titel: de hero-`sub` is de opzettelijk geschreven samenvatting onder de H1 ("De verborgen prijs van eigen linnengoed-beheer in de Randstad, en wat restaurants terugwinnen door uit te besteden"). Zonder `sub` valt hij terug op de eerste lopende tekst uit een `content`/`body`-veld, afgekapt op 155 tekens op woordgrens. Die RichText-velden bevatten **markdown** (10 van de 11 in de dataset dragen `**` of `##`), dus er zit een strip-stap voor: koppen, quotes, bullets, links, vet/cursief, code en horizontale lijnen eruit — de tekst blijft.
+
+⚠️ Twee bugs in mijn eigen eerste versie van die strip-stap, met één oorzaak, en het onthouden waard: de helper normaliseerde witruimte **vóór** het strippen. Alle regel-gebonden regels (koppen, quotes, bullets) zijn `^`-geankerd met de `m`-vlag, dus zodra de newlines platgeslagen zijn is er nog één regel en wordt alleen het eerste bullet geraakt — `- a\n- b` werd `eerste punt - tweede punt`. En een getrimde `'## '` matcht de kop-regel niet meer, want de verplichte spatie erna was al weg, dus `'##'` bleef staan als "beschrijving". Beide gevangen doordat de smoke op échte markdown-vormen test in plaats van op een geïdealiseerd voorbeeld.
+
+⚠️ **Wat dit níet oplost**: pagina's zonder hero-`sub` én zonder lopende tekst (bijvoorbeeld puur een formulier of prijstabel) houden geen description. Dat is bewust: liever geen description dan een verzonnen samenvatting.
+
+- Task: - (bugfix, gevonden tijdens de CSP-verificatie van #476)
 
 ### 476. CSP enforce-flip — nonce + strict-dynamic, met hashes voor de bevroren landingspagina's
 
@@ -78,7 +181,7 @@ Meegenomen: **`eu-assets.i.posthog.com`** staat nu in `connect-src`. posthog-js 
 
 De SSE-variantgenerator luisterde niet naar `request.signal`: liep een bezoeker weg, dan genereerde de server rustig door tot `maxDuration` (480s) — alle resterende varianten plus hun rewrite- en iterate-stappen, betaald voor niemand. Beide helften waren nodig, en dat is het niet-evidente deel: in deze SPA unmount de component bij wegnavigeren, maar de browser verbreekt de fetch dan **niet** vanzelf. Zonder een client-`AbortController` ging het server-signaal dus nooit af, hoeveel guards je server-side ook zet.
 
-Client: één `AbortController` per **deliverable**, in een module-scope registry — bewust niet in het generatieblok. ⚠️ Dat wás de eerste opzet, en een 2-reviewer-ronde liet zien dat het een kostenregressie was: `HorizontalAccordion` rendert maar één stap tegelijk, dus een gewone tabwissel unmount het blok. Abort, betaalde varianten weg, en bij terugkomst kocht de auto-trigger ze meteen opnieuw — voor de meest voorkomende onderbreking dus **duurder dan niet aborteren**. Nu breekt alleen het verlaten van de Canvas af, met 250ms gracieperiode zodat React StrictMode's cleanup→setup in dev niet elke Canvas-opening een generatie kost. Server: guards vóór de volgende slot, de recovery-retry, de rewrite, tussen rewrite en iterate, en de persist. En omdat `anthropicClient.createChatCompletion` `abortSignal` al ondersteunde, is het signaal doorgezet tot in `generateLandingPageVariant`.
+Client: één `AbortController` per **deliverable**, in een module-scope registry — bewust niet in het generatieblok. ⚠️ Dat wás de eerste opzet, en een 2-reviewer-ronde liet zien dat het een kostenregressie was: `HorizontalAccordion` rendert maar één stap tegelijk, dus een gewone tabwissel unmount het blok. Abort, betaalde varianten weg, en bij terugkomst kocht de auto-trigger ze meteen opnieuw — voor de meest voorkomende onderbreking dus **duurder dan niet aborteren**. Nu breekt alleen het verlaten van de Canvas af, met een uitgestelde abort zodat React StrictMode's cleanup→setup in dev niet elke Canvas-opening een generatie kost. ⚠️ Deze entry beschreef bij het mergen 250ms; dat is per #478 nul geworden, en de auto-trigger-helft van de tabwissel-regressie zat toen nog niet in main — zie #478. Server: guards vóór de volgende slot, de recovery-retry, de rewrite, tussen rewrite en iterate, en de persist. En omdat `anthropicClient.createChatCompletion` `abortSignal` al ondersteunde, is het signaal doorgezet tot in `generateLandingPageVariant`.
 
 Twee dingen die aandacht vroegen. **De recovery-retry werkte tegen ons**: een geaborteerde HTTP-call gooit, en de bestaande foutafvang antwoordde daarop met een nieuwe generatie op recovery-temperatuur — dus juist bij weglopen kocht je een extra call. Nu breekt de loop af in plaats van te retryen. En **een abort vóór de server-response zette `fallbackToJson`**, waarna het JSON-pad álles opnieuw genereerde: dubbele kosten in precies het scenario dat goedkoper moest worden.
 

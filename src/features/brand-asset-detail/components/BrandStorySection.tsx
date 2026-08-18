@@ -170,7 +170,7 @@ function StringListEditor({
   placeholder: string;
   disabled?: boolean;
 }) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   return (
     <div className="space-y-2">
       {items.map((item, i) => (
@@ -233,7 +233,7 @@ const CARDS: CardConfig[] = [
 
 /** Brand Story canvas with 7 sections based on StoryBrand/Hero's Journey/ABT frameworks. */
 export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySectionProps) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   const [draft, setDraft] = useState<BrandStoryFrameworkData>(() => normalize(data));
   const [expandedCard, setExpandedCard] = useState<number | null>(1);
   const [showFrameworkInfo, setShowFrameworkInfo] = useState(false);

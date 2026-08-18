@@ -8,9 +8,16 @@
 // variant-info) gesorteerd op order, plus de recentste F-VAL-score
 // (ContentFidelityScore via de laatste ContentVersion-keten). Read-only en
 // gratis — inhoud kennen van je eigen items kost niets.
+//
+// `components` alléén was niet genoeg: voor de 11 keten-B-types (PUCK-webpages
+// + long-form GEO) is die lijst STRUCTUREEL leeg, dus een externe agent kreeg
+// een volle pillar-page als leeg item terug. Daarom gaat de tekst er ook als
+// `text` uit, via de accessor die alle drie de ketens kent
+// (tasks/content-chain-accessor.md #23).
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
+import { resolveDeliverableContent } from '@/lib/content/resolve-deliverable-content';
 
 export interface DeliverableContentComponent {
   id: string;
@@ -39,6 +46,21 @@ export interface DeliverableContent {
   fidelityScore: number | null;
   fidelityThresholdMet: boolean | null;
   components: DeliverableContentComponent[];
+  /**
+   * De platte tekst van het item, ongeacht in welke keten die woont — voor de 11
+   * keten-B-types (PUCK-webpages + long-form GEO) staat die NIET in `components`.
+   * `null` bij een leeg item én bij `awaiting-choice`: een nog niet gekozen versie
+   * geven we niet uit, want de gebruiker kan hem nog weggooien.
+   */
+  text: string | null;
+  /**
+   * `ready` — er is tekst · `awaiting-choice` — versies gegenereerd, gebruiker koos
+   * er nog geen · `empty` — niets gegenereerd. Zonder dit onderscheid leest een
+   * externe agent "geen tekst" als "leeg item" en genereert hij eroverheen.
+   */
+  contentState: 'ready' | 'awaiting-choice' | 'empty';
+  /** Aantal versies dat op een keuze wacht; 0 buiten `awaiting-choice`. */
+  variantOptionCount: number;
 }
 
 export type DeliverableContentResult =
@@ -62,6 +84,10 @@ export async function getDeliverableContent(
       contentType: true,
       status: true,
       approvalStatus: true,
+      // Keten B en C: zonder deze twee velden ziet de accessor alleen componenten,
+      // en die zijn voor de 11 keten-B-types structureel leeg.
+      settings: true,
+      generatedText: true,
       components: {
         orderBy: [{ order: 'asc' }, { groupIndex: 'asc' }, { variantIndex: 'asc' }],
         select: {
@@ -84,6 +110,12 @@ export async function getDeliverableContent(
   if (!deliverable) {
     return { ok: false, code: 'NOT_FOUND', error: 'Deliverable not found in this workspace' };
   }
+
+  // Alle drie de content-ketens via één deur (tasks/content-chain-accessor.md #23).
+  // Voorheen gaf deze reader alleen `components` terug, en die zijn voor de 11
+  // keten-B-types structureel leeg — de MCP-tool en GET /api/v1/deliverable
+  // meldden dus een lege pillar-page aan externe agents.
+  const resolved = resolveDeliverableContent(deliverable);
 
   const fidelity = await prisma.contentFidelityScore.findFirst({
     where: { contentVersion: { deliverableId: deliverable.id }, workspaceId },
@@ -116,6 +148,14 @@ export async function getDeliverableContent(
         variantGroup: component.variantGroup,
         variantIndex: component.variantIndex,
       })),
+      text: resolved.kind === 'components' || resolved.kind === 'structured' ? resolved.text : null,
+      contentState:
+        resolved.kind === 'structured-unchosen'
+          ? 'awaiting-choice'
+          : resolved.kind === 'empty'
+            ? 'empty'
+            : 'ready',
+      variantOptionCount: resolved.kind === 'structured-unchosen' ? resolved.optionCount : 0,
     },
   };
 }

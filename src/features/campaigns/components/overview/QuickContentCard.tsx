@@ -16,7 +16,7 @@ interface QuickContentCardProps {
 }
 
 export function QuickContentCard({ campaign, onClick, onDelete }: QuickContentCardProps) {
-  const { t } = useTranslation("campaigns-overview");
+  const { t } = useTranslation(["campaigns-overview", "claw-content-registry"]);
   const contentType = campaign.contentType ? getContentTypeById(campaign.contentType) : null;
   const ContentIcon = contentType?.icon;
 

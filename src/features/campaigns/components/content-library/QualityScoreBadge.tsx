@@ -21,7 +21,7 @@ export function QualityScoreBadge({
   score,
   size = "sm",
 }: QualityScoreBadgeProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'campaigns-cards']);
   if (score === null) {
     return (
       <span className="inline-flex items-center text-xs text-gray-400">

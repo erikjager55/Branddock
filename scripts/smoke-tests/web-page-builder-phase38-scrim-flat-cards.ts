@@ -52,13 +52,13 @@ function ctx(archetype: BrandArchetype | null, layoutStyle: LayoutStyle): Canvas
 
 function renderHero(c: CanvasContextStack, heroVisualUrl: string): string {
   const cfg = buildSpikePuckConfig(c);
-  const comp = (cfg.components as Record<string, { render: (p: unknown) => unknown }>).BrandHero;
+  const comp = (cfg.components as unknown as Record<string, { render: (p: unknown) => unknown }>).BrandHero;
   return renderToStaticMarkup(comp.render({ headline: "x", sub: "y", ctaLabel: "z", heroVisualUrl }) as React.ReactElement);
 }
 
 function renderFeatures(c: CanvasContextStack): string {
   const cfg = buildSpikePuckConfig(c);
-  const comp = (cfg.components as Record<string, { render: (p: unknown) => unknown }>).FeatureGrid;
+  const comp = (cfg.components as unknown as Record<string, { render: (p: unknown) => unknown }>).FeatureGrid;
   return renderToStaticMarkup(comp.render({ columns: "3", features: [{ title: "A", description: "a", icon: "zap" }] }) as React.ReactElement);
 }
 

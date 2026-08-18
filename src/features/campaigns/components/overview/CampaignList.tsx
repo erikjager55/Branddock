@@ -26,7 +26,7 @@ export function CampaignList({
   onArchive,
   onDelete,
 }: CampaignListProps) {
-  const { t } = useTranslation("campaigns-overview");
+  const { t } = useTranslation(["campaigns-overview", "campaigns-cards"]);
   const { formatDate } = useFormat();
   const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);

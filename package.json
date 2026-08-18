@@ -28,6 +28,7 @@
     "smoke:claw-security": "tsx scripts/smoke-tests/claw-security-hardening.ts",
     "smoke:security-residual": "tsx scripts/smoke-tests/security-residual.ts",
     "smoke:lp-retention": "node --env-file-if-exists=.env.local node_modules/.bin/tsx scripts/dev/lp-retention-smoke.ts",
+    "smoke:i18n-namespaces": "tsx scripts/smoke-tests/i18n-namespace-reachability.ts",
     "smoke:lp-generation-abort": "tsx scripts/dev/lp-generation-abort-smoke.ts",
     "smoke:mcp-toolset": "node --env-file-if-exists=.env.local node_modules/.bin/tsx scripts/smoke-tests/mcp-connector-toolset.ts",
     "eval:brandstyle-golden": "tsx scripts/eval/brandstyle-golden-set/run.ts",
@@ -37,6 +38,9 @@
     "smoke:conversion-tweaks": "tsx scripts/smoke-tests/conversion-tweaks.ts",
     "smoke:longform-tweaks": "tsx scripts/smoke-tests/longform-tweaks.ts",
     "smoke:structured-tweaks": "tsx scripts/smoke-tests/structured-tweaks.ts",
+    "fidelity:variant-b": "node --env-file-if-exists=.env.local node_modules/.bin/tsx scripts/fidelity/variant-b-research-ab.ts",
+    "smoke:seo-wiring": "node --env-file-if-exists=.env.local node_modules/.bin/tsx scripts/smoke-tests/seo-pipeline-wiring.ts",
+    "smoke:seo-context": "tsx scripts/smoke-tests/seo-context-selection.ts",
     "smoke:prompt-contracts": "tsx scripts/smoke-tests/prompt-contracts.ts",
     "smoke:knowledge-context": "tsx scripts/smoke-tests/knowledge-context.ts",
     "smoke:deep-research": "node --env-file-if-exists=.env node_modules/.bin/tsx scripts/smoke-tests/deep-research.ts",
@@ -66,6 +70,7 @@
     "smoke:feature-visual-gate": "tsx scripts/smoke-tests/feature-visual-gate.ts",
     "smoke:judge-image-prep": "tsx scripts/smoke-tests/judge-image-prep.ts",
     "smoke:page-seo-metadata": "tsx scripts/smoke-tests/page-seo-metadata.ts",
+    "smoke:page-derived-meta": "tsx scripts/smoke-tests/page-derived-meta.ts",
     "smoke:geo-discovery": "tsx scripts/smoke-tests/geo-discovery.ts",
     "smoke:geo-optimization-goals": "tsx scripts/smoke-tests/geo-optimization-goals.ts",
     "smoke:geo-longform-schema": "tsx scripts/smoke-tests/geo-longform-schema.ts",
@@ -93,6 +98,7 @@
     "structure-styleguide-rules": "tsx scripts/structure-styleguide-rules.ts",
     "sync-voiceguide-brand-rules": "tsx scripts/sync-voiceguide-brand-rules.ts",
     "verify-spike-rules-dts": "tsx scripts/verify-spike-rules-dts.ts",
+    "smoke:guard-hooks": "tsx scripts/smoke-tests/guard-hooks.ts",
     "smoke:settings-write": "node --env-file-if-exists=.env.local node_modules/.bin/tsx scripts/smoke-tests/deliverable-settings-write.ts"
   },
   "dependencies": {

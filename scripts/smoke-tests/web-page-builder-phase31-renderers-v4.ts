@@ -78,7 +78,7 @@ group("D — BrandCTA gebruikt tokens.button scraped paddings");
   };
 
   const config = buildSpikePuckConfig(makeCtx(tokens));
-  const cta = (config.components as Record<string, { render: (p: unknown) => unknown }>).BrandCTA;
+  const cta = (config.components as unknown as Record<string, { render: (p: unknown) => unknown }>).BrandCTA;
   const html = renderToStaticMarkup(
     cta.render({ label: "Plan een afspraak", href: "#", personaId: "", riskReducer: "" }) as React.ReactElement,
   );
@@ -125,7 +125,7 @@ group("D — FeatureGrid gebruikt tokens.elevation border-only");
   };
 
   const config = buildSpikePuckConfig(makeCtx(tokens));
-  const fg = (config.components as Record<string, { render: (p: unknown) => unknown }>).FeatureGrid;
+  const fg = (config.components as unknown as Record<string, { render: (p: unknown) => unknown }>).FeatureGrid;
   const html = renderToStaticMarkup(
     fg.render({
       columns: "3",
@@ -181,7 +181,7 @@ group("D — FeatureGrid PLAYFUL: strong-shadow");
   };
 
   const config = buildSpikePuckConfig(makeCtx(tokens));
-  const fg = (config.components as Record<string, { render: (p: unknown) => unknown }>).FeatureGrid;
+  const fg = (config.components as unknown as Record<string, { render: (p: unknown) => unknown }>).FeatureGrid;
   const html = renderToStaticMarkup(
     fg.render({
       columns: "3",
@@ -199,7 +199,7 @@ group("D — FeatureGrid PLAYFUL: strong-shadow");
 group("D — backward-compat: DEFAULT_BRAND_TOKENS renders zonder crash");
 {
   const config = buildSpikePuckConfig(makeCtx(DEFAULT_BRAND_TOKENS));
-  const cta = (config.components as Record<string, { render: (p: unknown) => unknown }>).BrandCTA;
+  const cta = (config.components as unknown as Record<string, { render: (p: unknown) => unknown }>).BrandCTA;
   const html = renderToStaticMarkup(
     cta.render({ label: "Test", href: "#", personaId: "", riskReducer: "" }) as React.ReactElement,
   );
