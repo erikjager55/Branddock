@@ -19,6 +19,40 @@ Alle drie onderstaande zijn op 2026-07-17 **empirisch geraakt** in één sessie,
 theoretisch. ⚠️ Deze task raakt Eriks veiligheidsnet — **niet uitvoeren zonder expliciet
 akkoord op de richting**.
 
+## Bewijs uit 2026-08-18 — dit kost nu meetbaar tijd
+
+Een dag met vijf parallelle sessies raakte alle drie de gaten opnieuw, plus twee nieuwe.
+
+1. **Fout-positief over worktrees heen — drie keer geblokkeerd.** Een rebase-commando met een
+   expliciete `cd` naar `branddock-settings-write-layer` werd geweigerd met
+   `worktree : /Users/erikjager/Projects/branddock-app`. De guard leest de worktree uit de cwd
+   van de hook (de projectmap van de sessie), niet uit het commando. Gevolg: elke legitieme
+   actie in een andere worktree ligt stil zolang er ergens een co-sessie draait — en die draaide
+   de hele dag door, met wisselende sessie-id's (`ea291c87` → `1dadeccb` → `132da379`).
+2. **De omweg is duur.** Omdat rebasen niet kon, is PR #293 opnieuw opgebouwd op een verse
+   worktree en als #299 heropend. Kosten per omweg: een volledige `npm ci` (2-4 min) plus een
+   weggegooide PR. Twee keer gedaan op één dag.
+3. **De pull-vorm staat niet op de verb-lijst** maar verzet wél HEAD en voert een merge uit.
+   In `branddock-app` liep hij gewoon door terwijl een co-sessie de lock hield. Ging goed
+   (schone werkboom, fast-forward), maar het is hetzelfde gat als bij `gh pr merge`: de guard
+   dekt de verbs, niet de effecten.
+4. **De verbs-lijst nodigt uit tot omzeilen.** Er zijn minstens twee vormen die materieel
+   hetzelfde doen als wat wél geblokkeerd wordt en er niet op staan. Zolang dat zo is, is de
+   guard een drempel voor wie hem respecteert en geen rem voor wie hem niet kent.
+5. **De guard blokkeert het documenteren van zichzelf.** Deze sectie kon niet via een
+   shell-heredoc geschreven worden: de regex matcht op de commando-namen *in de tekst*, niet
+   alleen op een uitgevoerd commando. Elke task-file, changelog-entry of gotcha die de
+   geblokkeerde vormen letterlijk noemt, is onschrijfbaar vanuit een sessie met een co-sessie.
+   Een fix hoort de match te beperken tot het daadwerkelijk uit te voeren commando.
+
+**Extra dimensie die deze task nu ook raakt: coördinatie tussen sessies.** De guard beschermt
+één werkboom, maar niet tegen twee sessies die hetzelfde task-file oppakken. Op 18-08 leverde
+dat drie bijna-dubbelingen op; in alle drie de gevallen zeiden zowel het task-file als de code
+op `origin/main` "open", terwijl een **open PR** het al af had. De goedkope mitigatie is geen
+blokkade maar een gewoonte: `gh pr list --state open` bij sessie-start. Overweeg of dat in de
+`SessionStart`-hook thuishoort naast de bestaande co-sessie-waarschuwing — dat is informeren,
+geen blokkeren, en valt daarmee buiten de "raakt het veiligheidsnet"-gevoeligheid.
+
 ## 1. `session-guard.sh` mist `gh pr merge` — en dát is waar de schade zit
 
 De guard blokkeert alleen lokale git-verbs:

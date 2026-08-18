@@ -237,7 +237,7 @@ AI-content; het upload-pad bestaat al, er is nooit iets geüpload) ·
 [`pg-major-sslmode-semantiek`](tasks/pg-major-sslmode-semantiek.md) (pg v9 maakt van onze
 `sslmode=require` stil een zwakkere modus — nu vastleggen i.p.v. bij de upgrade ontdekken) ·
 `workspaces-online-migratie` (4 workspaces resteren, jouw keuze) ·
-[`deferred-browser-smokes-unblocked`](tasks/deferred-browser-smokes-unblocked.md)
+[`deferred-browser-smokes-unblocked`](tasks/done/deferred-browser-smokes-unblocked.md) ✅ **done**
 (3 smokes wachtten op een blocker die sinds 05-07 weg is) ·
 [`golden-set-blogpost-quality`](tasks/golden-set-blogpost-quality.md) (⚠️ de golden-set-gate is
 per 16-08 gesplitst — `evaluate` kleurt je PR's niet meer rood; wat resteert is de inhoudelijke
