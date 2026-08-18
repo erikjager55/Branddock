@@ -136,8 +136,13 @@ function renderBrandHero(tokens: BrandTokens, props: { headline: string; sub: st
   } as unknown as CanvasContextStack;
   const config = buildSpikePuckConfig(ctx);
   const heroComponent = config.components.BrandHero;
-  // E3: sinds de eigen registry-inferentie is render direct callable.
-  const element = heroComponent.render({ ...props, heroVisualUrl: props.heroVisualUrl ?? '' });
+  // `render` heeft een `never`-parameter (elke registratie heeft zijn eigen
+  // props-type); de aanroeper cast — zelfde afspraak als de render-loop in
+  // page-render.tsx.
+  const element = heroComponent.render({
+    ...props,
+    heroVisualUrl: props.heroVisualUrl ?? '',
+  } as never);
   return renderToStaticMarkup(element);
 }
 

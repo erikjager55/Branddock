@@ -74,7 +74,7 @@ group('Component-config fields ongewijzigd (drag-drop sidebar)');
   };
 
   for (const [componentName, expected] of Object.entries(expectedFields)) {
-    const comp = (config.components as Record<string, { fields: Record<string, unknown> }>)[componentName];
+    const comp = (config.components as unknown as Record<string, { fields: Record<string, unknown> }>)[componentName];
     assert(`${componentName} component defined`, comp !== undefined);
     if (!comp) continue;
     const actualFields = Object.keys(comp.fields);
@@ -99,7 +99,7 @@ group('defaultProps shapes ongewijzigd');
   };
 
   for (const [componentName, expected] of Object.entries(expectedDefaults)) {
-    const comp = (config.components as Record<string, { defaultProps: Record<string, unknown> }>)[componentName];
+    const comp = (config.components as unknown as Record<string, { defaultProps: Record<string, unknown> }>)[componentName];
     if (!comp) continue;
     for (const [prop, expectedType] of Object.entries(expected)) {
       const value = comp.defaultProps[prop];
@@ -119,7 +119,7 @@ group('Render-functions resilient — edge cases');
   // Render elk component met DEFAULT props — moet niet crashen
   const tryRender = (name: string, props: Record<string, unknown>) => {
     try {
-      const comp = (config.components as Record<string, { render: (p: unknown) => unknown; defaultProps: Record<string, unknown> }>)[name];
+      const comp = (config.components as unknown as Record<string, { render: (p: unknown) => unknown; defaultProps: Record<string, unknown> }>)[name];
       const element = comp.render({ ...comp.defaultProps, ...props });
       const html = renderToStaticMarkup(element as React.ReactElement);
       return html.length > 50;  // some non-empty output
@@ -148,7 +148,7 @@ group('Puck-data-tree shape compatibel met auto-iterate + lock-toggle');
   // valid React-element produceert (geen errors zou data-iteration breken).
   const config = buildSpikePuckConfig(makeCtx(TOKENS_MINIMAL));
   for (const name of ['BrandHero', 'BrandCTA', 'FeatureGrid', 'Testimonial', 'PricingTable', 'FAQ', 'Footer', 'RichText']) {
-    const comp = (config.components as Record<string, { render: (p: unknown) => unknown; defaultProps: Record<string, unknown> }>)[name];
+    const comp = (config.components as unknown as Record<string, { render: (p: unknown) => unknown; defaultProps: Record<string, unknown> }>)[name];
     try {
       const el = comp.render(comp.defaultProps);
       assert(`${name} produces React-element`, el !== null && el !== undefined && typeof el === 'object');
@@ -171,7 +171,7 @@ group('Render-output bij verschillende layoutStyles geen errors');
     let allRender = true;
     for (const name of ['BrandHero', 'BrandCTA', 'FeatureGrid', 'Testimonial', 'PricingTable', 'FAQ', 'Footer', 'RichText']) {
       try {
-        const comp = (config.components as Record<string, { render: (p: unknown) => unknown; defaultProps: Record<string, unknown> }>)[name];
+        const comp = (config.components as unknown as Record<string, { render: (p: unknown) => unknown; defaultProps: Record<string, unknown> }>)[name];
         const el = comp.render(comp.defaultProps);
         renderToStaticMarkup(el as React.ReactElement);
       } catch {

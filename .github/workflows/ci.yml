@@ -48,10 +48,18 @@ jobs:
           DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
           BETTER_AUTH_SECRET: "ci-build-secret-not-real"
           BETTER_AUTH_URL: "http://localhost:3000"
-          # Next's build-TS-fase overschrijdt Node's default ~4GB-heap sinds de
-          # webpage-builder-rework (inference over de 22-component-registry na
-          # de Puck-exit). Runner heeft 16GB.
-          NODE_OPTIONS: "--max-old-space-size=8192"
+          # Heap-bump BEWUST WEG (2026-08-18). De aanleiding was inference over
+          # de 22-component-registry na de Puck-exit; `buildSpikePuckConfig`
+          # heeft nu een benoemd retourtype (`SectionLibraryConfig`), dus de
+          # anonieme structurele inferentie is er niet meer.
+          #
+          # Dit is tegelijk het EXPERIMENT: lokaal is de fout niet te
+          # reproduceren (macOS schaalt de heap mee met het RAM, zie de comment
+          # bij de tsc-stap), en een A/B met en zonder annotatie gaf hier zowel
+          # in `tsc --extendedDiagnostics` als in een 4GB-build exact hetzelfde
+          # resultaat. Alleen de runner kan de vraag beantwoorden. Valt deze stap
+          # om, zet de bump dan terug — dan is de annotatie wél netter maar niet
+          # de oorzaak, en hoort dat in tasks/lp-review-followups.md.
 
   e2e:
     runs-on: ubuntu-latest

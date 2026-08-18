@@ -105,7 +105,7 @@ function makeStack(provenance?: TokenProvenance): CanvasContextStack {
 
 function renderFeatures(stack: CanvasContextStack): string {
   const cfg = buildSpikePuckConfig(stack);
-  const comp = (cfg.components as Record<string, { render: (p: unknown) => unknown }>).FeatureGrid;
+  const comp = (cfg.components as unknown as Record<string, { render: (p: unknown) => unknown }>).FeatureGrid;
   return renderToStaticMarkup(
     comp.render({ columns: '3', features: [{ title: 'A', description: 'a', icon: 'zap' }] }) as React.ReactElement,
   );
