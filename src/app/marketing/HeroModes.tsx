@@ -9,7 +9,7 @@ import BookDemoButton from './BookDemoButton';
 import Mosaic, { MOSAIC_PRODUCT } from './Mosaic';
 // UX-04: statische import → Next genereert een blur-placeholder, zodat het
 // hero-paneel nooit seconden leeg-wit staat terwijl de grote PNG laadt.
-import contentCanvasShot from '../../../public/marketing/features/content-canvas.png';
+import agentsShot from '../../../public/marketing/features/agents.png';
 
 // Hero met modus-switch (Postiz-patroon, besluit Erik 2026-07-19): één toggle
 // die het hele hero-verhaal wisselt tussen "in het platform" (het AI-team in
@@ -24,38 +24,33 @@ export default function HeroModes() {
 
   return (
     <section className="mkt-hero relative">
-      <div className="mkt-hero__ink">
-        <div className="max-w-lg">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm mb-5">
-            <span style={{ color: 'var(--brand-lime)' }}>●</span> Jouw AI-marketingteam
-          </div>
-
-          {/* UX-19: micro-label + grotere hit-area — de toggle is het
-              signatuur-element en mag niet gemist worden. */}
-          <div className="mb-6">
-            <p className="text-xs font-medium mb-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
-              Waar werk je?
-            </p>
-            <div
-              role="group"
-              aria-label="Kies hoe je met Branddock werkt"
-              className="inline-flex items-center rounded-full border border-white/25 bg-white/10 p-1 backdrop-blur-sm"
-            >
-              <ModeButton
-                active={mode === 'platform'}
-                onClick={() => setMode('platform')}
-                label="In het platform"
-              />
-              <ModeButton
-                active={mode === 'agent'}
-                onClick={() => setMode('agent')}
-                label="In je AI-agent"
-              />
-            </div>
-          </div>
-
-          {mode === 'platform' ? <PlatformInk /> : <AgentInk />}
+      {/* UX-19 → herzien: de toggle is het signatuur-element en staat nu als
+          eigen rij bovenaan, gecentreerd over de volle breedte. In de
+          tekstkolom concurreerde hij met de H1 en werd hij gemist. */}
+      <div className="mkt-hero__switch">
+        <p className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.72)' }}>
+          Waar werk je?
+        </p>
+        <div
+          role="group"
+          aria-label="Kies hoe je met Branddock werkt"
+          className="mkt-hero__switch-track"
+        >
+          <ModeButton
+            active={mode === 'platform'}
+            onClick={() => setMode('platform')}
+            label="In het platform"
+          />
+          <ModeButton
+            active={mode === 'agent'}
+            onClick={() => setMode('agent')}
+            label="In je AI-agent"
+          />
         </div>
+      </div>
+
+      <div className="mkt-hero__ink">
+        <div className="max-w-lg">{mode === 'platform' ? <PlatformInk /> : <AgentInk />}</div>
       </div>
 
       <div className="mkt-hero__mosaic">
@@ -75,8 +70,8 @@ export default function HeroModes() {
           </div>
           {mode === 'platform' ? (
             <Image
-              src={contentCanvasShot}
-              alt="Branddock Content Canvas — on-brand content genereren met een merk-fideliteitsscore"
+              src={agentsShot}
+              alt="Het Branddock-agentteam — negen AI-agents met eigen rollen, van onderzoek tot merkbewaking"
               placeholder="blur"
               sizes="(max-width: 768px) 100vw, 46vw"
               className="w-full h-auto"
@@ -117,8 +112,8 @@ function ModeButton({ active, onClick, label }: { active: boolean; onClick: () =
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${
-        active ? 'bg-white' : 'text-white hover:bg-white/10'
+      className={`rounded-full px-6 py-2.5 text-sm transition-all ${
+        active ? 'bg-white font-semibold shadow-md' : 'text-white font-medium hover:bg-white/10'
       }`}
       style={active ? { color: 'var(--brand-slate)' } : undefined}
     >
@@ -134,9 +129,9 @@ function PlatformInk() {
         Een AI-marketingteam dat je merk écht kent.
       </h1>
       <p className="text-xl mb-8" style={{ color: 'rgba(255,255,255,0.9)' }}>
-        Negen AI-agents doen het werk — onderzoek, strategie, content, merkbewaking — op jouw
-        merk-DNA, en elke uiting krijgt een meetbare merk-check (F-VAL). Werkt in Branddock, in
-        Claude en ChatGPT, en overal waar je schrijft. Jij keurt goed.
+        AI-agents doen het werk: onderzoek, strategie, content, merkbewaking. Alles op jouw
+        merk-DNA. Iedere uiting wordt gescoord of het bij je merk past en resoneert bij je
+        doelgroep(en).
       </p>
       <div className="flex flex-wrap gap-3">
         <Link
@@ -160,8 +155,8 @@ function AgentInk() {
       </h1>
       <p className="text-xl mb-8" style={{ color: 'rgba(255,255,255,0.9)' }}>
         Koppel Branddock als connector en je agent kent je merk: volledige merkcontext, on-brand
-        genereren en een meetbare merk-check (F-VAL) op elke uiting — vanuit de AI waar je al in
-        werkt. Jij keurt goed.
+        genereren en een meetbare merk-check (F-VAL). Direct in de applicatie waar jij al in
+        werkt.
       </p>
       <div className="flex flex-wrap gap-3">
         <Link
@@ -179,8 +174,7 @@ function AgentInk() {
         </Link>
       </div>
       <p className="mt-5 text-sm" style={{ color: 'rgba(255,255,255,0.75)' }}>
-        Werkt met: Claude · ChatGPT · n8n · elke MCP-client —{' '}
-        <code className="rounded bg-white/15 px-1.5 py-0.5 text-xs font-mono">branddock.app/mcp</code>
+        Werkt met: Claude, ChatGPT, n8n en elke MCP-client
       </p>
     </>
   );
