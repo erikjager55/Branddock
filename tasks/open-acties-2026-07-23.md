@@ -109,7 +109,16 @@ taken-spiegel daarvan + de twee nieuwe items uit deze sessie.
 - [ ] **Ada-drempel-kalibratie** + **Vera go/no-go** — vielen samen rond 28-07, staan nog open
 
 ## E. Nieuw uit deze sessie
-- [ ] **Drie lokale branches opruimen** — `feat/security-csp-enforce`, `docs/csp-followups` en
+- [x] **Branch-opruiming** — ✅ 2026-08-18: **22 achterhaalde takken van origin verwijderd**,
+      elk geverifieerd met twee checks: hoort er een gemergde PR bij, én is er ná die merge
+      niets meer op gezet (`headRefOid` bij merge vs. de huidige head). Dat tweede is de
+      check die telt — `claude/sse-abort-disconnect` had er vijf bovenop staan, en zonder
+      die toets was dat stil weggegooid. ⚠️ **Bewust blijven staan**:
+      `claude/brandclaw-definition-9pw0g6` (10 commits, nooit een PR — dashboard-herontwerp
+      plus een roadmap-sanering) en `claude/branddock-login-5fqfog` (1 commit, seed-fix voor
+      het demo-wachtwoord). Beide dragen werk dat nergens anders staat; jouw keuze wat ermee
+      gebeurt.
+- [ ] ~~Drie lokale branches opruimen~~ — `feat/security-csp-enforce`, `docs/csp-followups` en
       `feat/lp-title-metadata` staan nog lokaal. Alle drie zijn squash-gemerged (#294/#297/#301)
       en read-only geverifieerd identiek aan `origin/main` (0 regels diff), maar
       `scripts/dev/worktree.sh --done` laat ze staan omdat git een squash-merge nooit als

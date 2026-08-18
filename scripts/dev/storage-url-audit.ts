@@ -1,7 +1,7 @@
 /**
  * Storage-URL-audit — welke rijen dragen een URL die niet (meer) bereikbaar is?
  *
- * Hoort bij `tasks/deferred-browser-smokes-unblocked.md` en de gotcha van
+ * Hoort bij `tasks/done/deferred-browser-smokes-unblocked.md` en de gotcha van
  * 2026-07-21. Beantwoordt precies één vraag die van buiten productie niet te
  * zien is: **bestaan er rijen met een verlopen/niet-publieke R2-URL, en zo ja
  * hoeveel en hoe oud?** Daar hangt de urgentie van de compose-/trainer-fix aan.
