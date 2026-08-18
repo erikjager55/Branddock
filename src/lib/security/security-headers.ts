@@ -9,40 +9,101 @@
 // module haalt hem structureel weg: beide lagen importeren dezelfde
 // constanten.
 //
-// De full CSP bevat bewust `'unsafe-inline'`/`'unsafe-eval'` in script-src
-// (Next.js-runtime vereist ze); een nonce-based script-src is een grotere
-// follow-up (bewust buiten scope, zie task-file).
+// Sinds de enforce-flip (2026-08-18) is `script-src` nonce-based met
+// `'strict-dynamic'`; `'unsafe-inline'`/`'unsafe-eval'` zijn weg. De meting
+// die dat onderbouwde staat in ADR 2026-08-18: over zes routes vuurde géén
+// enkele eval-violation, en alle externe scripts zijn same-origin.
 // =============================================================
 
-/** Full Content-Security-Policy — alleen in productie toegepast (dev: geen
- * CSP zodat Next HMR/eval blijft werken; X-Frame-Options: DENY dekt daar de
- * clickjacking-case). */
-export const CONTENT_SECURITY_POLICY = [
+/**
+ * Gedeelde CSP-directives — alles behalve `script-src`, dat per scope wordt
+ * samengesteld (zie `buildContentSecurityPolicy`).
+ */
+const SHARED_CSP_DIRECTIVES = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
   // p.typekit.net: use.typekit.net/<kit>.css laadt hier zelf een tweede
   // stylesheet met de @font-face-regels vandaan. Zonder deze allow blijft
   // Halyard blokkeren en valt de site stil terug op Hanken Grotesk —
   // onopgemerkt tot productie-screenshot-verificatie (2026-07-16).
-  // NB: de rsms.me-allow (Inter-import van Pucks CSS; incident 2026-07-16)
-  // is met de Puck-exit (E3, ADR 2026-08-07) verwijderd — puck.css laadt
-  // nergens meer.
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.typekit.net https://p.typekit.net",
   "font-src 'self' data: https://fonts.gstatic.com https://use.typekit.net https://p.typekit.net",
   // Permissive img-src: user-supplied URLs + AI-provider-previews landen in <img>
   "img-src 'self' data: blob: https:",
   // Externe AI-calls lopen server-side; de browser praat alleen met eigen API,
-  // Stripe en PostHog (posthog-js is npm-gebundeld → geen script-src-allow
-  // nodig, maar de ingest-calls gaan naar eu.i.posthog.com; zonder deze allow
-  // blokkeerde de eigen CSP alle analytics zodra NEXT_PUBLIC_POSTHOG_KEY staat).
-  "connect-src 'self' https://api.stripe.com https://eu.i.posthog.com",
+  // Stripe en PostHog. Twee PostHog-hosts: `eu.i.posthog.com` voor ingest en
+  // `eu-assets.i.posthog.com` voor de remote-config die posthog-js bij init
+  // ophaalt. Die tweede ontbrak; zolang NEXT_PUBLIC_POSTHOG_KEY niet op prod
+  // staat bleef dat latent, maar lokaal mét key blokkeert de eigen CSP zowel
+  // het config-script als de config-fetch (gemeten 2026-08-18).
+  "connect-src 'self' https://api.stripe.com https://eu.i.posthog.com https://eu-assets.i.posthog.com",
   "frame-src 'self' https://js.stripe.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
   "upgrade-insecure-requests",
-].join('; ');
+];
+
+/**
+ * Scope bepaalt uitsluitend of de landingspagina-hashes meedoen.
+ *
+ * `landing-page` = de publieke `/p/<workspace>/<slug>`-route (ook wanneer die
+ * via een custom host wordt gerewrite). Die pagina serveert een **bevroren**
+ * artifact: `compilePageArtifact` bakt `<script>…</script>` ín het opgeslagen
+ * `compiledHtml`, gemint op publish-moment. Een per-request nonce bereikt die
+ * bytes nooit — vandaar hashes.
+ */
+export type CspScope = 'app' | 'landing-page';
+
+/**
+ * SHA-256-hashes van de twee varianten die `buildPageRuntimeScriptBody`
+ * (`src/lib/landing-pages/static-compile.ts`) kan opleveren: alleen de
+ * view-beacon, en de view-beacon + form-enhancement.
+ *
+ * Bewust hier als constante en niet berekend: deze module draait in de
+ * edge-middleware, waar `node:crypto` ontbreekt en `crypto.subtle` async is —
+ * een hash per request zou de middleware async maken voor een waarde die per
+ * build vaststaat. De drift-bewaking zit in `smoke:security-residual`: die
+ * hercomputeert beide hashes uit de echte snippets en faalt zodra iemand het
+ * script aanpast zonder deze lijst bij te werken.
+ *
+ * ⚠️ Wie het snippet wijzigt, maakt élk reeds gepubliceerd artifact
+ * ongeldig — die dragen de OUDE bytes. Voeg bij zo'n wijziging de nieuwe hash
+ * toe en laat de oude staan, of hermint de artifacts. De snippets zijn sinds
+ * hun introductie (#251) niet gewijzigd, dus deze lijst dekt vandaag alles.
+ */
+export const LANDING_PAGE_SCRIPT_HASHES = [
+  // buildPageRuntimeScriptBody({ withForms: false }) — 523 bytes
+  "'sha256-tYBFfouyi4I8kwc0xd65GH3RzPdFPmUGL+umwhUqqDU='",
+  // buildPageRuntimeScriptBody({ withForms: true }) — 1404 bytes
+  "'sha256-/WgBxJZg2hd9vDwYrpZCtrV7NFWsPTSUyqyW0936fFA='",
+] as const;
+
+/**
+ * De volledige enforce-CSP voor één request.
+ *
+ * `script-src` is nonce-based met `'strict-dynamic'`. Dat laatste maakt
+ * host-allowlists, `'self'` en `'unsafe-inline'` betekenisloos voor scripts —
+ * vertrouwen propageert alleen nog via de nonce naar wat een vertrouwd script
+ * zelf inlaadt. Nonce- én hash-bronnen blijven wél gelden; daarop rust de
+ * landingspagina-tak.
+ */
+export function buildContentSecurityPolicy(opts: { scope: CspScope; nonce: string }): string {
+  const scriptSrc = [
+    `'nonce-${opts.nonce}'`,
+    "'strict-dynamic'",
+    ...(opts.scope === 'landing-page' ? LANDING_PAGE_SCRIPT_HASHES : []),
+  ].join(' ');
+
+  return [
+    `script-src ${scriptSrc}`,
+    ...SHARED_CSP_DIRECTIVES,
+    // Enforce mét rapportage: de collector blijft data leveren, nu over
+    // violations die daadwerkelijk geblokkeerd zijn.
+    `report-uri ${CSP_REPORT_ENDPOINT}`,
+    'report-to csp-endpoint',
+  ].join('; ');
+}
 
 /** HSTS — prod-only; 2 jaar + preload (was 1 jaar in proxy.ts vóór consolidatie). */
 export const STRICT_TRANSPORT_SECURITY = 'max-age=63072000; includeSubDomains; preload';
@@ -63,15 +124,19 @@ const BASE_SECURITY_HEADERS: Record<string, string> = {
 };
 
 /**
- * De volledige set security-headers voor een omgeving (inclusief CSP).
- * Prod voegt CSP + HSTS toe; dev blijft bij base-headers + minimale CSP.
- * Sinds de nonce-stap (audit-rest 2026-07-17) is dit exclusief de bron voor
- * de edge-middleware (`src/proxy.ts`) — de statische `next.config.ts`-laag
- * gebruikt `buildStaticSecurityHeaders` (zónder CSP), omdat een tweede
- * statische CSP de per-request nonce zou ondermijnen (browser enforce't de
- * intersectie van beide policies).
+ * De volledige set security-headers voor één request, inclusief CSP.
+ *
+ * Prod voegt HSTS + de per-request nonce-CSP toe; dev blijft bij de
+ * base-headers + minimale CSP (geen script-src, anders sneuvelt HMR/eval).
+ * Dit is exclusief de bron voor de edge-middleware (`src/proxy.ts`) — de
+ * statische `next.config.ts`-laag gebruikt `buildStaticSecurityHeaders`
+ * (zónder CSP), omdat een tweede statische policy de nonce zou ondermijnen
+ * (de browser enforce't de intersectie van beide policies).
  */
-export function buildSecurityHeaders(isProduction: boolean): Record<string, string> {
+export function buildRequestSecurityHeaders(
+  isProduction: boolean,
+  opts: { scope: CspScope; nonce: string },
+): Record<string, string> {
   if (!isProduction) {
     return {
       ...BASE_SECURITY_HEADERS,
@@ -81,7 +146,8 @@ export function buildSecurityHeaders(isProduction: boolean): Record<string, stri
   return {
     ...BASE_SECURITY_HEADERS,
     'Strict-Transport-Security': STRICT_TRANSPORT_SECURITY,
-    'Content-Security-Policy': CONTENT_SECURITY_POLICY,
+    'Content-Security-Policy': buildContentSecurityPolicy(opts),
+    'Reporting-Endpoints': REPORTING_ENDPOINTS_HEADER,
   };
 }
 
@@ -102,26 +168,12 @@ export function buildStaticSecurityHeaders(isProduction: boolean): Record<string
 }
 
 /**
- * Report-Only nonce-CSP (stap 2 van de nonce-migratie, audit-rest 2026-07-17).
- *
- * Draait NAAST de enforce-policy en blokkeert niets: hij meet wat er zou
- * breken zodra script-src naar `'nonce-…' 'strict-dynamic'` gaat (Next-inline
- * bootstrap zonder nonce op statisch geprerenderde pagina's, eval-gebruikers,
- * niet-strict-dynamic loaders). Bewust zónder 'unsafe-eval': juist die
- * violations zijn de data voor de enforce-beslissing. De enforce-flip zelf is
- * een aparte follow-up, gated op prod-Report-Only-data.
+ * Collector-route voor CSP-violations. De enforce-policy houdt `report-uri`
+ * aan: ook ná de flip blijft er zicht op wat er geblokkeerd wordt — een
+ * enforce zonder rapportage faalt stil, precies de klasse fout die deze
+ * migratie moest voorkomen.
  */
 export const CSP_REPORT_ENDPOINT = '/api/security/csp-report';
-
-export function buildReportOnlyCsp(nonce: string): string {
-  return [
-    `script-src 'nonce-${nonce}' 'strict-dynamic'`,
-    "object-src 'none'",
-    "base-uri 'self'",
-    `report-uri ${CSP_REPORT_ENDPOINT}`,
-    'report-to csp-endpoint',
-  ].join('; ');
-}
 
 /** Reporting-Endpoints-header die `report-to csp-endpoint` laat werken (Chrome). */
 export const REPORTING_ENDPOINTS_HEADER = `csp-endpoint="${CSP_REPORT_ENDPOINT}"`;
