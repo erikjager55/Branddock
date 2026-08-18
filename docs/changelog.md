@@ -37,6 +37,22 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 475. Weglopen tijdens een generatie kost geen tokens meer
+
+De SSE-variantgenerator luisterde niet naar `request.signal`: liep een bezoeker weg, dan genereerde de server rustig door tot `maxDuration` (480s) — alle resterende varianten plus hun rewrite- en iterate-stappen, betaald voor niemand. Beide helften waren nodig, en dat is het niet-evidente deel: in deze SPA unmount de component bij wegnavigeren, maar de browser verbreekt de fetch dan **niet** vanzelf. Zonder een client-`AbortController` ging het server-signaal dus nooit af, hoeveel guards je server-side ook zet.
+
+Client: één `AbortController` per **deliverable**, in een module-scope registry — bewust niet in het generatieblok. ⚠️ Dat wás de eerste opzet, en een 2-reviewer-ronde liet zien dat het een kostenregressie was: `HorizontalAccordion` rendert maar één stap tegelijk, dus een gewone tabwissel unmount het blok. Abort, betaalde varianten weg, en bij terugkomst kocht de auto-trigger ze meteen opnieuw — voor de meest voorkomende onderbreking dus **duurder dan niet aborteren**. Nu breekt alleen het verlaten van de Canvas af, met 250ms gracieperiode zodat React StrictMode's cleanup→setup in dev niet elke Canvas-opening een generatie kost. Server: guards vóór de volgende slot, de recovery-retry, de rewrite, tussen rewrite en iterate, en de persist. En omdat `anthropicClient.createChatCompletion` `abortSignal` al ondersteunde, is het signaal doorgezet tot in `generateLandingPageVariant`.
+
+Twee dingen die aandacht vroegen. **De recovery-retry werkte tegen ons**: een geaborteerde HTTP-call gooit, en de bestaande foutafvang antwoordde daarop met een nieuwe generatie op recovery-temperatuur — dus juist bij weglopen kocht je een extra call. Nu breekt de loop af in plaats van te retryen. En **een abort vóór de server-response zette `fallbackToJson`**, waarna het JSON-pad álles opnieuw genereerde: dubbele kosten in precies het scenario dat goedkoper moest worden.
+
+⚠️ **Bij abort wordt niets gepersisteerd** (bewuste keuze van Erik). De settings-snapshot in `persistVariantOptions` is dan minuten oud en de gebruiker kijkt niet, dus een overschreven autosave zou pas veel later opvallen — het read-modify-write-venster in dezelfde task-file staat nog open. Prijs: al betaalde varianten gaan verloren. Kosten van een gedraaide generatie worden wél geboekt (`trackVariantGeneration` staat vóór de skip-guard); een halverwege afgebroken call is niet te boeken en die input-tokens vallen dus buiten de meting.
+
+⚠️ **Wat deze fix níet dekt** — een 2-reviewer-ronde haalde drie overschattingen uit de eerste versie van deze entry. (1) De guard-dekking stopte bij de slot-grens: `applyStrictTellRewrite` en `applySilentIterate` krijgen de signal níet, en er stond geen check tússen die twee — inmiddels toegevoegd, maar de calls erbinnen (rewrite + twee judge-rescores) blijven onafbreekbaar en zijn dus alleen op de grens te skippen. (2) De lopende Anthropic-call is **niet-streamend**, dus het afbreken van de socket scheelt latency, niet noodzakelijk geld; de echte besparing zit in calls die nooit starten. (3) Het voorbereidende werk vóór de stream — archetype-classificatie, creative angles, Exa/S2-statistieken — draait vóórdat de `Response` bestaat en is dus helemaal niet te aborteren. Het JSON-fallback-pad is ongedekt gebleven.
+
+⚠️ **Niet end-to-end geverifieerd**: `tsc` 0, `lint` 0 errors (964 warnings, ongewijzigd), maar er is geen AI-key in de dev-container en een echte proef kost een echte generatie. De handmatige check staat in de task-file.
+
+- Task: [tasks/lp-review-followups.md](../tasks/lp-review-followups.md)
+
 ### 474. Landing-page-data heeft een plafond — drie onbegrensde tabellen + een AVG-wisroutine
 
 Drie retentie-punten uit de webpage-builder-review van 13-08 stonden bewust geparkeerd als "geen launch-blocker, wel afmaken vóór volume-groei". Ze zijn 16-08 naar Nu gehaald omdat ze als enige met de dag duurder worden, en nu gebouwd: **`PageEvent`** groeide onbegrensd via een publiek endpoint dat 60 events/min/IP toestaat terwijl het dashboard maar 30 dagen leest; **`FormSubmission`** bevatte lead-PII zonder enige wisroutine — workspace-delete cascadeerde wel, maar er was geen manier om één submissie te wissen, precies wat AVG art. 17 en een verwerkersafspraak eisen; **`PagePublish.compiledHtml`** bewaarde sinds ADR 2026-08-12 elk volledig HTML-artifact append-only.

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect, useRef, useContext, createContext } from 'react';
+import { beginGeneration, endGeneration } from '@/features/campaigns/lib/generation-abort-registry';
 import { useTranslation } from 'react-i18next';
 import {
   Loader2, Sparkles, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon, Pencil,
@@ -560,6 +561,15 @@ export function LandingPageGenerateBlock({
     });
   }, []);
 
+  /**
+   * Volgnummer van de lopende generatie. Bepaalt of een afgeronde run zijn
+   * UI-state nog mag opruimen: is er inmiddels een nieuwere gestart, dan niet.
+   * Bewust een teller en geen controller-identiteit — de controller leeft nu in
+   * de registry en kan van buitenaf afgebroken worden, en dan moet deze
+   * component alsnog netjes uit "aan het genereren" komen.
+   */
+  const runIdRef = useRef(0);
+
   const handleGenerate = useCallback(async (countArg: number = 2) => {
     // Guard: bare onClick={handleGenerate} zou een MouseEvent doorgeven → coerce.
     const count = typeof countArg === 'number' && countArg >= 1 && countArg <= 4 ? countArg : 2;
@@ -568,6 +578,12 @@ export function LandingPageGenerateBlock({
       setErrorUnavailable(false);
       return;
     }
+    // De controller hoort bij het deliverable, niet bij deze component: de
+    // accordion unmount dit blok bij elke stapwissel en dat mag een lopende
+    // generatie niet afbreken. De registry breekt een vorige run voor hetzelfde
+    // deliverable wél af — anders draaien er twee en betaal je beide.
+    const abortController = beginGeneration(deliverableId);
+    const myRun = ++runIdRef.current;
     setIsGenerating(true);
     setError(null);
     setErrorUnavailable(false);
@@ -596,6 +612,7 @@ export function LandingPageGenerateBlock({
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
             body: requestBody,
+            signal: abortController.signal,
           },
         );
         serverResponded = true;
@@ -637,6 +654,11 @@ export function LandingPageGenerateBlock({
           applyGenerationResponse((await streamRes.json()) as GenerationResponsePayload);
         }
       } catch (streamErr) {
+        // Wij hebben zelf geaborteerd (unmount of nieuwe generatie): géén
+        // fallback. Zonder deze guard leest een abort vóór de server-response
+        // als transport-falen en genereert het JSON-pad álles opnieuw — dubbele
+        // kosten in precies het scenario dat we goedkoper wilden maken.
+        if (abortController.signal.aborted) return;
         if (serverResponded) throw streamErr;
         console.warn(
           '[LandingPageGenerateBlock] SSE-transport faalde vóór server-response — fallback naar JSON-pad',
@@ -653,6 +675,7 @@ export function LandingPageGenerateBlock({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: requestBody,
+            signal: abortController.signal,
           },
         );
         if (!res.ok) {
@@ -661,14 +684,27 @@ export function LandingPageGenerateBlock({
         applyGenerationResponse((await res.json()) as GenerationResponsePayload);
       }
     } catch (err) {
+      // Een abort is geen fout: de gebruiker navigeerde weg of startte een
+      // nieuwe generatie. Geen foutmelding, geen retry-toast.
+      if (abortController.signal.aborted) return;
       const e = interpretAiError(err);
       setError(e.message || t('lp.errors.generationFailed'));
       setErrorUnavailable(e.unavailable);
       setErrorType(e.errorType);
       if (e.unavailable) notifyAiError(err, { retry: () => { void handleGenerate(countArg); } });
     } finally {
-      setIsGenerating(false);
-      setStreamProgress(null);
+      endGeneration(deliverableId, abortController);
+      // Alleen opruimen als er geen nieuwere run is gestart. Dit gebeurt óók na
+      // een abort van buitenaf — zonder dat bleef `isGenerating` op true hangen
+      // en zag de gebruiker een spinner die nooit meer wegging (StrictMode
+      // dubbel-effect deed precies dat).
+      if (runIdRef.current === myRun) {
+        setIsGenerating(false);
+        setStreamProgress(null);
+        // Van buitenaf afgebroken (Canvas verlaten, of StrictMode in dev): de
+        // auto-trigger mag straks opnieuw aanslaan.
+        if (abortController.signal.aborted) autoTriggeredRef.current = false;
+      }
     }
   }, [
     applyGenerationResponse,
