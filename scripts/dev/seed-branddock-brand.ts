@@ -1,7 +1,6 @@
 // Seed: het volledige merk-DNA van Branddock zélf (dogfood-workspace).
 // Bouwt lokaal de workspace "Branddock HQ" (org demo-org-branddock-001)
-// volledig op — 11 van de 12 canonieke brand-assets (content + frameworkData;
-// References & Anti-References kwam er op 2026-08-15 bij en zit hier nog niet in),
+// volledig op — alle 12 canonieke brand-assets (content + frameworkData),
 // brand voice, brandstyle (brandbook v3), 3 persona's, 3 producten,
 // 3 concurrenten, launch-strategie met OKR's. Daarna migreren naar prod:
 //   npx tsx scripts/migrate-brand-dna/export.ts "Branddock HQ" <bundle.json>
@@ -44,7 +43,7 @@ async function main() {
   });
   console.log(`workspace ${workspace.id} (${WS_NAME}, nl)`);
 
-  // ── 1. De 11 canonieke brand-assets (van de 12 — zie kop) ─────────────
+  // ── 1. De canonieke brand-assets ──────────────────────────────────────
   for (const asset of CANONICAL_BRAND_ASSETS) {
     await prisma.brandAsset.create({
       data: {
@@ -245,6 +244,39 @@ async function main() {
     valueTension:
       "Het AI-tempo van de markt versus de zorgvuldigheid van merkbewaking: wij kiezen bewust voor bewezen stappen, ook als de markt sneller roept.",
   });
+
+  // References & Anti-References — de 12e canonieke asset (2026-08-15). Wordt
+  // bewust nooit door een scan gevuld: het is een menselijke strategische keuze.
+  // De brand.md-emitter leest hiervan de `summary`, die uit `content` komt.
+  await fd(
+    "references-anti-references",
+    {
+      references: [
+        {
+          brand: "Stripe",
+          borrow: "Documentatie als product — alles wat je moet weten staat er, precies en zonder marketingmist.",
+          doNotCopy: "De developer-eerst-toon; ons publiek is marketeers.",
+        },
+        {
+          brand: "Linear",
+          borrow: "Productdiscipline: elke release doet één ding goed en wordt eerlijk opgeschreven.",
+          doNotCopy: "De bewuste schaarste aan uitleg — wij moeten juist uitleggen.",
+        },
+        {
+          brand: "Frontify",
+          borrow: "Merkconsistentie serieus nemen als bedrijfswaarde, niet als opmaakregel.",
+          doNotCopy: "Documenteren wat al bestaat; wij ontwikkelen de strategie zelf.",
+        },
+      ],
+      antiReferences: [
+        "AI-tools die autonomie claimen die ze niet kunnen bewijzen ('zet je marketing op autopilot'). Bij ons keurt de mens goed.",
+        "Cijfers zonder meting. Elke claim die we noemen is herleidbaar tot een echte meting, ook als die tegenvalt.",
+        "Merkcontext als upsell per tier. Merk-DNA en de merk-check horen op elk plan.",
+        "Verzonnen klant-quotes en logo-muren als bewijs.",
+      ],
+    },
+    "Waar we van lenen: Stripe (documentatie als product, zonder de developer-eerst-toon), Linear (productdiscipline en eerlijke release-notes, zonder de schaarste aan uitleg) en Frontify (merkconsistentie als bedrijfswaarde, zonder het documentatie-denken). Waar we bewust tegenin gaan: autopilot-beloftes die niemand kan bewijzen, cijfers zonder meting, merkcontext die per tier wordt afgeknepen, en verzonnen klant-quotes als bewijs.",
+  );
 
   await fd("social-relevancy", {
     impactStatement:
