@@ -380,6 +380,32 @@ interface GenerationResponsePayload {
  * variant kiest via PATCH /api/studio/[id]. Retourneert het response-payload
  * dat beide modi 1-op-1 naar de client sturen (JSON-body resp. all_complete).
  */
+/**
+ * Vroege uitstap wanneer de client al weg is, vóór de generatie begint.
+ *
+ * Het voorwerk van deze route is duur: een archetype-classificatie, een
+ * Gemini-call voor de creative angles en — bij long-form GEO — Exa- en
+ * S2-onderzoek. Dat draait allemaal vóórdat er een `Response` bestaat.
+ *
+ * Het task-file noteerde dit lang als "niet abortbaar, want het draait vóór de
+ * Response". Die redenering klopt niet: `request.signal` hangt aan het
+ * inkomende verzoek, niet aan het antwoord. Gemeten met een kale probe-route
+ * (Next 16, node-runtime): een client die na 2s wegloopt zet `signal.aborted`
+ * op 2005ms, ruim vóór enige Response. Controle-arm: blijft de client hangen,
+ * dan gaat de signal in 10s niet af.
+ *
+ * Status 499 is nginx-conventie voor "client closed request" — er is geen
+ * standaard, en er is ook niemand meer om hem te lezen. Het gaat om het stoppen
+ * en om een logregel die verklaart waarom er geen generatie kwam.
+ */
+function clientGoneBeforeGeneration(stage: string): NextResponse {
+  console.warn(
+    "[generate-structured-variant] client disconnected tijdens voorwerk (%s) — generatie niet gestart",
+    stage,
+  );
+  return NextResponse.json({ error: "client_disconnected", stage }, { status: 499 });
+}
+
 async function persistVariantOptions(args: {
   deliverableId: string;
   workspaceId: string;
@@ -571,6 +597,7 @@ export async function POST(
   // V2-1 lazy classification — wanneer archetype nog null is, classify nu zodat
   // tone-hints + brand-render-rules vanaf deze generation actief zijn. Bij
   // failure: archetype blijft null, generator valt terug op layoutStyle-only.
+  if (request.signal.aborted) return clientGoneBeforeGeneration("archetype");
   const archetypeResult = await ensureBrandArchetype(
     workspaceId,
     ctx.brandTokens.archetype ?? null,
@@ -591,6 +618,7 @@ export async function POST(
   // P3b — dynamische creative-angles (Gemini Flash, best-effort): geven de twee
   // variants brand-/context-specifieke tegenpool-invalshoeken + leesbare labels.
   // null bij failure → de batch valt terug op de generieke problem/benefit-axis.
+  if (request.signal.aborted) return clientGoneBeforeGeneration("creative-angles");
   const angles = await generateCreativeAngles(ctx, deliverable.contentType, count);
 
   // Audit 2026-06-10 — locale volgde hardcoded 'nl-NL'; nu dezelfde precedentie
@@ -629,6 +657,9 @@ export async function POST(
   // current sources. Fail-soft + key-gated: no keys / no items → empty block →
   // additionalContextText is byte-identical to before (golden-set safety).
   const isLongFormGeo = LONG_FORM_SEO_TYPES.has(deliverable.contentType);
+  // Laatste halte vóór de generatie: bij long-form GEO hangt hier het
+  // Exa/S2-onderzoek aan, de duurste stap van het hele voorwerk.
+  if (request.signal.aborted) return clientGoneBeforeGeneration("research-context");
   const [baseContextText, researchCandidates] = await Promise.all([
     (async (): Promise<string | undefined> => {
       if (!ctx.additionalContextItems?.length) return undefined;
