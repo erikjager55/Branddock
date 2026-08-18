@@ -126,14 +126,35 @@ mediaan — flappen is dan wiskunde, geen pech. Volgorde: eerst de twee
 rubric-defecten repareren, dan opnieuw meten, en pas dán een drempel kiezen.
 Doe je het andersom, dan kalibreer je opnieuw op de rand.
 
-**Nog te doen** (kost live-LLM-runs, ~55k tokens per run — bewust niet
-autonoom gestart): judge-variantie meten op de borderline-cases
-(`scripts/smoke-tests/position-swap-judge.ts`), en het formele v2-besluit.
+**Nog te doen**, in volgorde:
+
+1. **Twee productbesluiten van Erik** (staan als eerste twee acceptatiecriteria) —
+   die bepalen of de vage-brief- en LINFI-case een prompt- of een rubric-fix
+   krijgen. Zonder deze twee is elke reparatie een gok.
+2. **De meta-description-case** kan wél meteen: dat is geen productvraag maar een
+   rubric die iets eist wat de prompt nooit bestelt. Eén regel, en de case gaat van
+   3,5 naar ≥4,0.
+3. **Judge-variantie meten** op de borderline-cases
+   (`scripts/smoke-tests/position-swap-judge.ts`) — kost live-LLM-runs, ~55k tokens
+   per run, bewust niet autonoom gestart.
+4. **Het v2-besluit** (orchestrator-wrapped prompts). De thought-leadership-case is
+   er het argument voor: die eist onderbouwing met data terwijl de eval geen enkele
+   bron meegeeft, terwijl productie wél merk- en kennis-context injecteert.
 
 # Acceptatiecriteria
 
 - [x] Per falende case vastgelegd wélke assert zakt (artefact-analyse over ≥2 nachten) — 2026-08-18
 - [x] Per case een verdict: prompt-probleem / rubric-probleem / terechte afkeuring — 2026-08-18
+- [ ] **Productbesluit A — aannames in de tekst?** Hóórt gepubliceerde copy zijn
+      aannames te benoemen bij een vage brief, of hoort dat in een begeleidend veld?
+      De rubric eist het nu ín het artikel; de prompt kent al een verwante regel
+      ("signaleer het conflict" bij off-brand briefs). Zonder dit besluit is niet te
+      bepalen of de vage-brief-case een prompt-fout of een rubric-fout is. ⏳ Erik
+- [ ] **Productbesluit B — keyword letterlijk in de H1?** Ook als de zin daardoor
+      krom wordt? De LINFI-case toetst `contains 'handgemaakte vloeren'` op het hele
+      artikel, met zoekterm `handgemaakte vloeren maatwerk`. Ja → de assert hoort op
+      de H1-regel te toetsen (strenger én eerlijker). Nee → het moet een flexibele
+      regex worden. ⏳ Erik
 - [ ] Judge-variantie gemeten voor de borderline-cases
 - [ ] Besluit over de 70%-drempel onderbouwd met data i.p.v. op de rand gekalibreerd
 - [ ] Expliciet besluit over de v2 (orchestrator-wrapped prompts) — doen of bewust niet

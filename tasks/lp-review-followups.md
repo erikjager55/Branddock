@@ -71,8 +71,10 @@ vijf nieuwste compiles faalden verloor élk artifact) en dat verweesde submissie
 wél leesbaar maar niet wisbaar waren. Details in changelog #474.
 
 ## Robuustheid (geen waargenomen impact, wel echt)
-- [~] **Registry-type versmallen (`buildSpikePuckConfig`)** — annotatie
-      toegepast 2026-08-18, effect ONBEWEZEN (zie hieronder). Origineel: sinds E3 het
+- [→] **Registry-type / build-heap** — verplaatst naar een eigen taak:
+      [`build-heap-investigation`](build-heap-investigation.md). De annotatie is
+      toegepast (#295) en de hypothese is gemeten weerlegd (#302); wat overblijft is
+      een geheugenonderzoek, geen typing-klus. Origineel: sinds E3 het
       return-type laten inferen (de minimale annotatie brak 149 consumer-
       regels die veld-metadata lezen) instantieert elke consumer een enorm
       anoniem structureel type. Gevolg: de TS-fase van `next build` ging in
@@ -136,17 +138,6 @@ wél leesbaar maar niet wisbaar waren. Details in changelog #474.
         server-log naar `client disconnected`. Verwacht: die regel verschijnt, er
         volgen géén verdere `variant_started`, en `structuredVariantOptions` in
         `settings` is onveranderd.
-- [ ] **`persistVariantOptions` read-modify-write-venster**: settings-
-      snapshot van vóór een minutenlange SSE-generatie kan een concurrent
-      autosave clobberen. Patroon bestond pre-branch; venster is nu langer.
-      Fix-voorbeeld staat in `publish/route.ts` (transactionele fresh-read).
-- [ ] **Id-loze secties**: PageRender synthetiseert `<type>-<index>`-ids maar
-      de kernel matcht alleen echte `props.id` → move/remove/panel zijn dan
-      no-ops met misleidende melding. Alle producers zetten ids (gemitigeerd);
-      structurele fix: load-time id-backfill of `sectionContentIndex`-
-      resolutie in de kernel hergebruiken.
-- [ ] **`addSection` met onbekend `afterSectionId`** appendt stil onderaan —
-      expliciete `not-found` overwegen (raakt de synthetisch-id-casus).
 
 - [x] **`persistVariantOptions` read-modify-write-venster** — ✅ 2026-08-18.
       De write loopt nu in één interactieve transactie op een VERSE lees-actie;
