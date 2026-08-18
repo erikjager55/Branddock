@@ -40,7 +40,7 @@ export function ContentCardGrid({
   onDuplicate,
   duplicatingIds,
 }: ContentCardGridProps) {
-  const { t } = useTranslation("campaigns-content-library");
+  const { t } = useTranslation(["campaigns-content-library", "campaigns-cards", "campaigns-content-types"]);
   const { formatDate } = useFormat();
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; campaignId: string; title: string } | null>(null);
 

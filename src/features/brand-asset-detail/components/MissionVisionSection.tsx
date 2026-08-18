@@ -63,7 +63,7 @@ function normalize(raw: MissionVisionFrameworkData | null): MissionVisionFramewo
 
 /** Mission & Vision canvas with 5 sections based on Collins & Porras / Drucker. */
 export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisionSectionProps) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   const [draft, setDraft] = useState<MissionVisionFrameworkData>(() => normalize(data));
   const [showMissionExamples, setShowMissionExamples] = useState(false);
   const [showVisionExamples, setShowVisionExamples] = useState(false);
@@ -476,7 +476,7 @@ interface StringListEditorProps {
 }
 
 function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeholder, emptyText }: StringListEditorProps) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   if (!isEditing) {
     if (items.length === 0) {
       return <p className="text-sm italic text-gray-400">{emptyText}</p>;

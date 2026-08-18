@@ -142,7 +142,7 @@ function getAuthenticityAvg(scores: AuthenticityScore): number {
 // ─── Component ──────────────────────────────────────────────
 
 export function TransformativeGoalsSection({ data, isEditing, onUpdate }: TransformativeGoalsSectionProps) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   const [draft, setDraft] = useState<TransformativeGoalsFrameworkData>(() => normalize(data));
   const [expandedGoal, setExpandedGoal] = useState<number | null>(0);
 
@@ -581,7 +581,7 @@ function GoalCard({
   goal, index, isEditing, isExpanded, onToggleExpand, onFieldChange,
   onRemove, canRemove, onMilestoneAdd, onMilestoneUpdate, onMilestoneRemove, onSdgToggle,
 }: GoalCardProps) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   const domain = getImpactDomainConfig(goal.impactDomain);
   const DomainIcon = domain.icon;
   const horizon = TIMEFRAME_OPTIONS.find((opt) => opt.value === goal.timeframeHorizon);
@@ -955,7 +955,7 @@ interface StringListEditorProps {
 }
 
 function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeholder, emptyText }: StringListEditorProps) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   if (!isEditing) {
     if (items.filter(Boolean).length === 0) {
       return <p className="text-sm italic text-gray-400">{emptyText}</p>;

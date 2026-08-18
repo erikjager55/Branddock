@@ -15,7 +15,7 @@ import { getQuickActions } from '@/lib/claw/quick-actions';
 import type { ClawMessage, ClawQuickAction } from '@/lib/claw/claw.types';
 
 export function ChatArea() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'claw-content-registry']);
   const {
     messages, streamingText, isStreaming, setInputText, pendingMutation,
     bugReportForm, featureRequestForm, feedbackForm, quickContentForm, activityStatus,

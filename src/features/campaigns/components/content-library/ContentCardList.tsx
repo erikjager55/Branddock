@@ -89,7 +89,7 @@ export function ContentCardList({
   onDuplicate,
   duplicatingIds,
 }: ContentCardListProps) {
-  const { t } = useTranslation("campaigns-content-library");
+  const { t } = useTranslation(["campaigns-content-library", "campaigns-cards", "campaigns-content-types"]);
   const { formatDate } = useFormat();
   const sort = useContentLibraryStore((s) => s.sort);
   const setSort = useContentLibraryStore((s) => s.setSort);
