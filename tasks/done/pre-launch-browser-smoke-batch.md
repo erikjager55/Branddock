@@ -33,8 +33,25 @@ Eén batch van 4 browser-smokes, achter elkaar uitvoerbaar in ~1-2u op een gewar
 > draait met `R2_PUBLIC_URL`. Ze zijn nooit alsnog gedraaid. Opgepakt in
 > [`deferred-browser-smokes-unblocked`](../deferred-browser-smokes-unblocked.md).
 
-- [⏸️] **Visual Brief Compose** — **deferred to post-vercel-deployment** (2026-05-12): localhost storage URLs (`/uploads/media/...`) zijn niet publiek bereikbaar voor FAL/Gemini compose-pipeline. Smoke vereist Vercel Blob / S3 / Cloudinary publieke URLs (Track C `vercel-deployment` levert die). Bovendien: pipeline-migratie naar Gemini Image (nano-banana) gepland in sprint #5 (`compose-pipeline-gemini-migration`) — smoke runt dáárna met betere quality dan huidige FAL Flux Pro Kontext.
-- [⏸️] **Visual Brief Trained-Style** — **deferred to post-vercel-deployment** (2026-05-12): zelfde storage blocker als Compose. FAL trained-LoRA model heeft publieke source-URLs nodig.
+- [x] **Visual Brief Compose** — **gedraaid 2026-08-18** met twee échte publieke R2-URL's
+      (`pub-…r2.dev`, beide HTTP 200 `image/jpeg`). Gemini `gemini-2.5-flash-image` gaf in 9,1s
+      een beeld van 2,4 MB terug wáárin beide referenties herkenbaar zijn overgenomen (de
+      gehandschoende handen met kiemplant én de gestreepte museumgevel met gele
+      DISCOVERY-MUSEUM-banieren). Bewust met twee sterk herkenbare referenties getest, juist
+      omdat "er komt een beeld uit" niets bewijst — een prompt-only generatie was hier direct
+      zichtbaar geweest. ⚠️ Twee observaties, zie
+      [`deferred-browser-smokes-unblocked`](../deferred-browser-smokes-unblocked.md): de
+      gevraagde `aspectRatio: '1:1'` werd genegeerd (output 1632×640) en de compositie werd een
+      naast-elkaar-collage i.p.v. de gevraagde voor-/achtergrond.
+- [x] **Visual Brief Trained-Style** — **gesloten met reden 2026-08-18.** Het scenario dat op
+      21-07 omviel (een asset met een écht verlopen opgeslagen URL) bestaat op productie niet
+      meer: een read-only audit over alle 16 storage-URL-kolommen gaf **0 SIGNED en 0 ENDPOINT**.
+      De oudste `MediaAsset` op prod dateert van 05-07 (Vercel-livegang, `R2_PUBLIC_URL` stond er
+      vanaf dag één) en `ReferenceImage` begint op 21-07 — de getroffen referenties zijn ná de fix
+      opnieuw geüpload. Er is dus geen onderwerp voor een visuele test. De faalklasse zélf is
+      deterministisch afgedekt via `npm run smoke:storage-url-expiry` (verlopen signed URL:
+      rauw 403 / geresolved 200 / byte-identiek). Zie
+      [`deferred-browser-smokes-unblocked`](../deferred-browser-smokes-unblocked.md).
 - [x] **Locale-picker UI** — getest 2026-05-12 (eerder vandaag tijdens implementatie): dropdown wisselt, "Currently active" pill refresht na Save, auto-detected zichtbaar
 - [→] **Serverless job-queue deploy-smoke** (→ user-taak #7, vereist prod-sessie) (Fase 5 uit [`serverless-hardening-jobs`](done/serverless-hardening-jobs.md), hierheen verplaatst 2026-07-12): start elke gemigreerde pipeline op de deploy (brandstyle url/pdf, alignment-scan, trend-research, website-scanner, brandvoice, DAM auto-tag, bug-report/chat-feedback) → job enqueued → cron verwerkt → progress + resultaat verschijnen cross-instance.
 - [→] **SEO-pipeline deploy-smoke + meting** (→ user-taak #7) (uit [`serverless-seo-decompose`](done/serverless-seo-decompose.md) + [`seo-pipeline-speedup`](seo-pipeline-speedup.md), hierheen verplaatst 2026-07-12): genereer een long-form SEO-deliverable op de deploy → `seo_queued` → polling-progress door alle 8 stappen → 2 varianten persisted zonder timeout. Lees `SeoGenerationJob.state.timings` (of Vercel-logs): bevestig ~5-7 min totaal en waar de resttijd zit, en vergelijk de F-VAL-score + handmatige lezing met de ~19K-tekens-baseline. **Deze meting is de go/no-go-gate voor speedup Fase 3/4.**

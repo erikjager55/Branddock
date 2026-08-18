@@ -34,6 +34,7 @@ import {
 } from '@/lib/ai/gemini-client';
 import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer';
 import { getStorageProvider } from '@/lib/storage';
+import { resolveStorageUrls } from '@/lib/storage/resolve-storage-url';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { ingestUploadsToLibrary } from '@/lib/media/ingest-uploads-to-library';
@@ -198,9 +199,15 @@ export async function POST(request: Request, { params }: RouteParams) {
       where: { id: { in: referenceIds }, workspaceId, isArchived: false },
       select: { id: true, fileUrl: true, mediaType: true },
     });
-    const referenceUrls = assets
-      .filter((a) => a.mediaType === 'IMAGE' && typeof a.fileUrl === 'string' && a.fileUrl.length > 0)
-      .map((a) => a.fileUrl);
+    // Stored URLs may be *expired* signed R2 endpoints (rows written before
+    // R2_PUBLIC_URL existed on prod). composeFromImages downloads each URL
+    // server-side, so a stale one 403s and fails the whole compose — resolve
+    // to a currently-reachable form first (gotcha 2026-07-21).
+    const referenceUrls = await resolveStorageUrls(
+      assets
+        .filter((a) => a.mediaType === 'IMAGE' && typeof a.fileUrl === 'string' && a.fileUrl.length > 0)
+        .map((a) => a.fileUrl),
+    );
     if (referenceUrls.length < 2) {
       return NextResponse.json(
         { error: 'Could not resolve at least 2 reference images. Some assets may be archived or non-image.' },
