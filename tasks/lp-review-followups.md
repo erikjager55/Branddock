@@ -206,20 +206,33 @@ comment bij de tsc-stap in `ci.yml` zegt het zelf: *"Lokaal viel dat niet op —
 macOS schaalt de heap mee met het beschikbare RAM, de runner niet."* Alleen de
 runner kan dit beantwoorden.
 
-**Het experiment is niet gedraaid — de bump staat terug.** De opzet was: bump uit,
-runner laat oordelen. Er kwam geen Actions-run, en mijn eerste verklaring daarvoor
-("een PR die `.github/workflows/**` aanraakt krijgt geen run") **was fout**. De
-echte oorzaak: de PR stond op `CONFLICTING` doordat #287 ondertussen op main
-landde, en GitHub schedulet geen `pull_request`-run zolang er geen merge-ref te
-berekenen valt. Na de rebase liep CI gewoon.
+**Het experiment is gedraaid (#302, 2026-08-18) en de hypothese is WEERLEGD.**
+Met de annotatie uit #295 erin en de heap-bump eraf viel de build-stap alsnog om,
+in exact dezelfde fase als in augustus:
 
-Waarom het experiment dan alsnog niet in deze PR zit: het is een losse vraag met
-een eigen risico (een rode build op werk dat verder bewezen is), en de drie andere
-items hoeven daar niet op te wachten. Wie het wil weten: haal `NODE_OPTIONS` van
-de build-stap in een aparte PR of rechtstreeks op main, en kijk of de stap valt.
-Kost één CI-run en beantwoordt de vraag definitief.
+```
+Running TypeScript ...
+Mark-Compact 4028.2 (4130.1) -> 4013.4 (4130.9) MB
+FATAL ERROR: Ineffective mark-compacts near heap limit
+```
 
-De bump op de losse `tsc`-stap is sowieso een andere zaak (brandstyle-stack
+De anonieme structurele inferentie over de 22-component-registry was dus **niet
+de oorzaak** — of in elk geval niet de enige. Dat is de winst van deze run: de
+bewering "type-versmalling is de echte oplossing" stond sinds 13-08 als feit in
+`ci.yml` zonder dat iemand haar had getoetst, en is nu vervangen door de meting.
+
+De bump staat terug (met het bewijs erbij in de comment). **Wat de annotatie wél
+opleverde blijft staan** — de registry heeft nu een benoemd contract in plaats van
+een geïnfereerd type dat iedere consument opnieuw instantieert, en de smokes lezen
+via datzelfde contract.
+
+**Volgende stap voor wie dit oppakt**: eerst méten waar het geheugen heen gaat
+(`tsc --generateTrace` op de build-tsconfig, of `--extendedDiagnostics` per
+project-subset), niet opnieuw een type versmallen op gevoel. Let op dat lokaal
+meten misleidt: macOS schaalt de heap mee met het RAM, dus een 4GB-build slaagt
+hier ook zónder fix.
+
+De bump op de losse `tsc`-stap is een andere zaak (brandstyle-stack
 #255-#259) en blijft staan.
 
 ## Bewuste niet-fixes (gedocumenteerd, geen actie)
