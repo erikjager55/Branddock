@@ -201,12 +201,12 @@ haalt de 8GB-heapbump uit `ci.yml` weg die er nu als workaround staat.
 |---|---|
 | [`brand-md-open-standaard`](tasks/brand-md-open-standaard.md) | in-progress — funnel live; rest is upstream-PR's + jouw strategie-akkoord |
 | [`content-chain-followups`](tasks/content-chain-followups.md) | open — `content-chain-accessor` is ✅ **done** (alle 23 kruisingen). Wat rest zijn drie *keuzes*, geen bugs: dode code, de schrijf-kant, repurpose |
-| [`lp-image-routes`](tasks/lp-image-routes.md) | review — wacht op één prod-smoke door jou |
+| [`lp-image-routes`](tasks/done/lp-image-routes.md) | review — wacht op één prod-smoke door jou |
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
 | [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst. ⚠️ §B: de retentie-indexen zijn ✅ af (#311); wat resteert is `NEXT_PUBLIC_POSTHOG_KEY` op prod |
 | [`lp-review-followups`](tasks/lp-review-followups.md) | open — retentie-items ✅ af (#286). SSE-abort ✅ grotendeels (#287/#303); **rest ligt klaar op `claude/sse-abort-disconnect` (`4a8f12b`)** en wacht op afstemming met #295. Vier robuustheid-items nog open |
-| [`kpi-fase0`](tasks/kpi-fase0.md) | in-progress — meetfundament €100k-plan (funnel/activatie/noordster/Gate-1 als developer-tab); worktree `branddock-kpi-fase0` |
-| [`marketing-homepage-v2`](tasks/marketing-homepage-v2.md) | in-progress — homepage-herbouw + nav/footer NL-first; worktree `branddock-marketing-homepage-v2` |
+| [`kpi-fase0`](tasks/kpi-fase0.md) | ⚠️ **staat op in-progress, maar er is geen branch en geen worktree** — niet lokaal, niet op origin (geverifieerd 18-08). Ofwel nooit begonnen, ofwel een worktree opgeruimd zonder push. Uitzoeken vóór je er iets aan ophangt |
+| [`marketing-homepage-v2`](tasks/marketing-homepage-v2.md) | ⚠️ **idem: in-progress zonder branch of worktree** (geverifieerd 18-08). Zelfde vraag als hierboven |
 
 ### Volgende
 [`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) (⚠️ **44 van 44**
@@ -243,7 +243,7 @@ op marketing en `revalidate` op de klant-landingspagina's leveren al maanden nie
   (70,5) en `twitter-thread` (71). Signaal, geen conclusie: Napking's styleguide staat op
   `published = false`, dus de stijl-pijler mist context. Sluit dat eerst uit.
 - ~~Campagnewizard voorbij stap 3 ongetest~~ → **eigen taak sinds 16-08**:
-  [`campagne-wizard-e2e-restscope`](tasks/campagne-wizard-e2e-restscope.md). Inclusief de
+  [`campagne-wizard-e2e-restscope`](tasks/done/campagne-wizard-e2e-restscope.md). Inclusief de
   vraag of de 80-drempel klopt — een rijk ingevulde briefing haalde 68.
 - **`rule-structurer` en `brief-week-theme-prompt`** zijn dezelfde soort STRUCTURED-calls
   als de variant-generator en dus theoretisch kwetsbaar voor thinking-uitputting. Daar

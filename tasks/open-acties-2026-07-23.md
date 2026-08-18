@@ -109,6 +109,17 @@ taken-spiegel daarvan + de twee nieuwe items uit deze sessie.
 - [ ] **Ada-drempel-kalibratie** + **Vera go/no-go** — vielen samen rond 28-07, staan nog open
 
 ## E. Nieuw uit deze sessie
+- [ ] **Drie lokale branches opruimen** — `feat/security-csp-enforce`, `docs/csp-followups` en
+      `feat/lp-title-metadata` staan nog lokaal. Alle drie zijn squash-gemerged (#294/#297/#301)
+      en read-only geverifieerd identiek aan `origin/main` (0 regels diff), maar
+      `scripts/dev/worktree.sh --done` laat ze staan omdat git een squash-merge nooit als
+      "merged" herkent — de commits zijn geen ancestor. Force-delete ze zodra er geen co-sessie
+      meer in de main-worktree draait.
+- [ ] **`content-chain-accessor.md` staat op `done` maar nog in `tasks/`** — bewust niet
+      verplaatst op 18-08: het bestand wordt vanuit **14 plekken** aangehaald, waaronder
+      `eslint.config.mjs`, twee smoke-tests en acht bronbestanden. Verplaatsen is daarmee geen
+      opruimwerk maar een refactor die met parallelle sessies botst. `security-residual-hardening`
+      en `guard-hooks-hardening` (1 en 0 code-verwijzingen) zijn wél verplaatst.
 - [ ] **"Connected apps"-paneel verifiëren** — Settings → API & Connectors op prod: koppelingen zichtbaar + "Revoke" werkt (OAuth-intrek ging vandaag live, PR #250)
 - [ ] **Emailit event-parser** — `data.object`-veldnamen bevestigen zodra een echte bounce/complaint-delivery binnenkomt, dan hardharden
 - [x] **Offline workspaces → prod** — ✅ 8 gemigreerd + geverifieerd op prod 2026-07-23 (Linfi, DTS Ede, Zwarthout, Napking, Goed-Bouw, PartnerSelect, Het Nieuwe Golfen, WRA Juristen; commit #453). Rest (Eriks keuze, later): People Masterminds, QonnecQt.ai, Lookaal, Wassink Groep. ⚠️ Erik: prod-DB-wachtwoord roteren (URL stond even lokaal). Linfi mist 18 cosmetische styleguide-previews.

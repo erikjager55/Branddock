@@ -10,7 +10,7 @@ superseded-by: -
 # Context
 
 De nonce-CSP staat sinds 2026-07-17 in **Report-Only** op productie (stap 1+2 van de
-migratie, `tasks/security-residual-hardening.md`). De enforce-flip stond genoteerd als
+migratie, `tasks/done/security-residual-hardening.md`). De enforce-flip stond genoteerd als
 "gated op prod-Report-Only-data": eerst een periode rapporten verzamelen, dan flippen.
 
 Bij het oppakken bleek die opzet niet te kunnen leveren wat ervan verwacht werd.
