@@ -379,29 +379,47 @@ async function persistVariantOptions(args: {
     );
   });
 
-  await prisma.deliverable.update({
-    where: { id: args.deliverableId },
-    data: {
-      settings: {
-        ...args.existingSettings,
-        structuredVariantOptions: variants,
-        structuredVariantLabels: variantLabels,
-        structuredGenerationMeta: {
-          generatedAt: new Date().toISOString(),
-          count,
-          requestedCount: count,
-          deliveredCount: variants.length,
-          inputTokens: totalInputTokens + (archetypeResult.inputTokens ?? 0),
-          outputTokens: totalOutputTokens + (archetypeResult.outputTokens ?? 0),
-          archetypeClassified: archetypeResult.classified,
-          archetype: archetypeResult.archetype,
-          archetypeConfidence: archetypeResult.confidence ?? null,
-          layoutStyleInferred: layoutResult.inferred,
-          layoutStyle: layoutResult.layoutStyle,
-          layoutStyleConfidence: layoutResult.confidence ?? null,
+  // Read-modify-write in één interactieve transactie, op een VERSE lees-actie.
+  // `args.existingSettings` is de snapshot van vóór de generatie, en die duurt
+  // minuten: een autosave van puckData of een hero-URL die ondertussen binnenkwam
+  // zou bij een merge op die snapshot stil worden teruggedraaid. De gebruiker
+  // ziet dat niet gebeuren — hij kijkt naar de variant-kaarten — en merkt het pas
+  // veel later, wanneer zijn edit "vanzelf" verdwenen blijkt. Zelfde patroon als
+  // de GEO-haak in `landing-pages/publish/route.ts`.
+  await prisma.$transaction(async (tx) => {
+    const fresh = await tx.deliverable.findUnique({
+      where: { id: args.deliverableId },
+      select: { settings: true },
+    });
+    const freshSettings =
+      fresh?.settings && typeof fresh.settings === 'object' && !Array.isArray(fresh.settings)
+        ? (fresh.settings as Record<string, unknown>)
+        : args.existingSettings;
+
+    await tx.deliverable.update({
+      where: { id: args.deliverableId },
+      data: {
+        settings: {
+            ...freshSettings,
+            structuredVariantOptions: variants,
+          structuredVariantLabels: variantLabels,
+          structuredGenerationMeta: {
+            generatedAt: new Date().toISOString(),
+            count,
+            requestedCount: count,
+            deliveredCount: variants.length,
+            inputTokens: totalInputTokens + (archetypeResult.inputTokens ?? 0),
+            outputTokens: totalOutputTokens + (archetypeResult.outputTokens ?? 0),
+            archetypeClassified: archetypeResult.classified,
+            archetype: archetypeResult.archetype,
+            archetypeConfidence: archetypeResult.confidence ?? null,
+            layoutStyleInferred: layoutResult.inferred,
+            layoutStyle: layoutResult.layoutStyle,
+            layoutStyleConfidence: layoutResult.confidence ?? null,
+          },
         },
       },
-    },
+    });
   });
 
   // Cache-invalidatie per CLAUDE.md API conventies (verplicht na mutatie)

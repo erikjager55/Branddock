@@ -6,6 +6,7 @@
 // hogere 'use client'-boundary; interactieve fields (PuckImageField)
 // declareren hun eigen boundary.
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
+import type { SectionLibraryConfig } from '@/lib/landing-pages/section-config';
 import ReactMarkdown from 'react-markdown';
 import {
   extractBrandTokensFromContext,
@@ -526,7 +527,7 @@ export function buildSpikePuckConfig(
      *  zodat de editor-preview nooit echte submissions maakt. */
     workspaceId?: string | null;
   },
-) {
+): SectionLibraryConfig<SpikePuckProps> {
   const stickyNav = opts?.stickyNav ?? true;
   const tokens: BrandTokens = ctx?.brandTokens ?? extractBrandTokensFromContext(ctx?.brand);
   const personas = ctx?.personas ?? [];

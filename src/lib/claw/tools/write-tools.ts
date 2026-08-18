@@ -2020,6 +2020,8 @@ function structureReasonMessage(reason: string, opIndex: number, operations: Str
       return `Operation ${opIndex + 1} refused: section "${target}" was not found — call read_landing_page_content for the current section ids.`;
     case 'unknown-type':
       return `Operation ${opIndex + 1} refused: "${target}" is not a known section type.`;
+    case 'after-section-not-found':
+      return `Operation ${opIndex + 1} refused: the anchor section "${op?.afterSectionId ?? '?'}" was not found, so the new section would have landed at the end instead of where you asked — call read_landing_page_content for the current section ids, or omit afterSectionId to append deliberately.`;
     case 'out-of-bounds':
       return `Operation ${opIndex + 1} refused: "${target}" is already at that edge of the page.`;
     default:
