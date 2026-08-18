@@ -892,12 +892,15 @@ function streamSequentialGeneration(args: {
 
         await Promise.allSettled(trackingPromises);
 
-        // Weggelopen client: niets persisten. De settings-snapshot in
-        // `persistVariantOptions` is dan minuten oud en de gebruiker kijkt niet,
-        // dus een overschreven autosave zou pas veel later opvallen (het
-        // read-modify-write-venster staat nog open — zie lp-review-followups).
-        // Bewuste keuze: de al betaalde varianten gaan verloren, de database
-        // blijft ongemoeid.
+        // Weggelopen client: niets persisten. Bewuste productkeuze — de al
+        // betaalde varianten gaan verloren, de database blijft ongemoeid.
+        //
+        // De oorspronkelijke motivering noemde óók het read-modify-write-venster
+        // (een minuten-oude snapshot die een autosave zou overschrijven). Dat
+        // venster is inmiddels dicht: `persistVariantOptions` leest vers binnen
+        // een transactie. Persisteren ná een abort zou dus niet langer gevaarlijk
+        // zijn — het gebeurt niet omdat het niet gewenst is, niet omdat het niet
+        // kan.
         if (args.signal.aborted) {
           // `trackingPromises.length`, niet `results.length`: de slot waarin de
           // abort werd opgemerkt is wél gegenereerd en geboekt, maar nooit in
