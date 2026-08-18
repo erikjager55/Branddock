@@ -84,6 +84,70 @@ deze branch.
 - Losse tsc-fout in `.next/dev/types/validator.ts` (gegenereerd, 15-08) verwijst naar een
   verwijderde route. Pre-existing, los van deze sync.
 
+## Uitbreiding naar shared/ + de levende ui/-bestanden (2026-08-18)
+
+Scope ging van 12 naar **35 componenten**. Drie metingen bepaalden die scope, en ze
+weerlegden alle drie een aanname:
+
+**1. `src/components/ui/` is grotendeels dood.** 36 van de 40 bestanden hebben nul
+importeurs — `dialog`, `select`, `tabs`, `form`, `label`, `checkbox`, alles. Een
+opgetuigde shadcn-laag die de app nooit in gebruik nam. Alleen `AIErrorCard`, `InfoBox`,
+`ModelUnavailableNotice` en `popover` leven. Niet gesynct: de design-agent zou anders
+bouwen met componenten die het product niet gebruikt.
+⚠️ Meet dit met een filter op **directe kinderen** van `ui/`; `ui/layout/` is wél levend
+en mag niet worden meegeteld als "dode importeur". Mijn eerste meting deed dat fout.
+
+**2. Acht naambotsingen, empirisch beslecht.** `Button`, `Badge`, `Card`, `Input`,
+`Select`, `Skeleton`, `EmptyState` bestaan in `ui/` én `shared/`. `window.BranddockDS` is
+plat, dus er kan er maar één winnen. De code wijst het aan: `Button` wordt **110×** uit
+`shared/` geïmporteerd en **0×** uit `ui/`. `shared/` wint dus; `PageHeader` is de
+uitzondering (15× de `ui/layout`-variant, 0× die uit `shared/`).
+
+**3. Eén ongebruikt component blies de bundel op.** `shared/StatsCard` doet
+`import * as LucideIcons` voor icoon-op-naam-lookup en trok daarmee de HELE
+iconenbibliotheek mee: **155 KB -> 1727 KB**. Niet gesynct (en nergens in de app
+gebruikt). ⚠️ Nog 6 andere app-bestanden doen dezelfde wildcard-import; die zitten wél
+in de app-bundel. Kandidaat voor een eigen taak.
+
+### Wat er nog meer nodig bleek
+
+- **Eigen entry-barrel** (`.design-sync/entry.ts`). Nooit `@/components/shared`
+  importeren: die barrel re-exporteert `OptimizedImage` -> `next/image` en dan crasht de
+  bundel op `process is not defined`. Elk component uit zijn eigen bestand.
+- **i18n-provider** (`.design-sync/preview-provider.tsx`). Acht `shared/`-componenten
+  gebruiken `useTranslation`; zonder context toont de kaart letterlijk
+  `comingSoon.defaultTitle`. Bewust NIET via `createI18n`: die hangt een
+  `resourcesToBackend` met dynamische `import()` op, waardoor esbuild elk locale-bestand
+  van elke taal meeneemt (538 -> 1874 KB). Nu statisch, alleen `common`, `shared` en
+  `settings-billing` — de enige namespaces die de gesyncte componenten aanspreken.
+- **`dtsPropsFor` voor alle 35.** Zonder build vindt de extractor niets, ook niet bij de
+  17 `shared/`-componenten die hun Props wél exporteren. De contracten zijn mechanisch uit
+  de bron gelezen en de verwezen types uitgeschreven.
+
+### Bewust uitgesloten
+
+| Component | Reden |
+|---|---|
+| `OptimizedImage` | `next/image` werkt niet buiten een Next-runtime |
+| `WorkspaceSwitchGuard` | vereist workspace-context; geen ontwerp-element |
+| `ItemKnowledgeSources`, `KnowledgeContextSelectorModal` | importeren de app-barrel (zie hierboven); bovendien de eerste ongebruikt |
+| `StatsCard` / `StatsCardGrid` | iconen-wildcard, zie punt 3 |
+| 36 shadcn-bestanden in `ui/` | nul importeurs |
+
+`CreditCostHint` is wél gesynct maar heeft **geen preview**: het component geeft `null`
+terug tenzij `NEXT_PUBLIC_CREDITS_ENABLED === 'true'`. Het houdt zijn contract en kaart
+(floor card); een lege render forceren is misleidender.
+⚠️ `cfg.overrides.<Naam>.skip` verwacht een **lijst met story-namen**, geen boolean — een
+boolean laat de build crashen op `not iterable`. En alle stories skippen levert alsnog een
+lege root: de floor card komt er pas als er géén geschreven preview is.
+
+### Observatie voor de app (niet gefixt)
+
+`AIErrorCard` en `ModelUnavailableNotice` tonen **Engelse** teksten ("Try again",
+"The AI model is currently unavailable") terwijl de rest van de UI Nederlands is. Die
+strings komen uit `getUnavailableMessage` in `src/lib/ai/ai-error-client.ts` en lopen niet
+via i18n.
+
 ## Re-sync risico's
 
 - **`dtsPropsFor` is een handgeschreven kopie van de bron.** Wijzigt een prop, dan klopt
@@ -92,4 +156,8 @@ deze branch.
   `src/components/ui/layout/index.ts` staat, dan mist hij zonder foutmelding.
 - **De FilterBar-importfix staat los in de working tree** (bewuste keuze van Erik,
   2026-08-18) — niet gecommit. Raakt die verloren, dan breekt de bundel opnieuw.
-- **Scope is nu 12 van 78.** `ui/` (40) en `shared/` (26) zijn nog niet gesynct.
+- **Scope is nu 35 componenten.** Bewust niet 78: zie de scope-metingen hierboven.
+- **De entry is een handgeschreven barrel.** Komt er een component bij in `shared/` of
+  `ui/layout/`, dan mist die zonder foutmelding tot iemand `entry.ts` bijwerkt.
+- **De i18n-provider noemt drie namespaces met de hand.** Gaat een gesynct component een
+  vierde namespace gebruiken, dan toont die kaart weer rauwe sleutels.
