@@ -14,6 +14,7 @@ import {
   Inbox,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { formatReadinessHint } from "@/features/campaigns/lib/readiness-hint";
 import {
   stripTime,
   dateKey,
@@ -589,7 +590,7 @@ export function ContentLibraryCalendarView({
                     isPublishReady={item.isPublishReady}
                     hasContent={item.hasContent}
                     isAwaitingChoice={item.contentState === "awaiting-choice"}
-                    readinessHint={item.readinessHint}
+                    readinessHint={formatReadinessHint(t, item.readinessSignals)}
                     isDraggable
                     onClick={() =>
                       onOpenItem && onOpenItem(item.id, item.campaignId)
@@ -716,7 +717,7 @@ export function ContentLibraryCalendarView({
                           isPublishReady={p.item.isPublishReady}
                           hasContent={p.item.hasContent}
                           isAwaitingChoice={p.item.contentState === "awaiting-choice"}
-                          readinessHint={p.item.readinessHint}
+                          readinessHint={formatReadinessHint(t, p.item.readinessSignals)}
                           isDraggable
                           currentDateValue={dateValue}
                           onClick={() =>

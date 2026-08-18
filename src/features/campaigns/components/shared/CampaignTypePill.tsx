@@ -18,7 +18,7 @@ interface CampaignTypePillProps {
 }
 
 export function CampaignTypePill({ type, confidence, size = "sm" }: CampaignTypePillProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'campaigns-cards']);
   const config = getCampaignDisplayConfig(type, confidence);
   const displayType = classifyCampaign(type, confidence);
   const Icon = config.icon;

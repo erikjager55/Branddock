@@ -605,8 +605,12 @@ function registerDeliverableContentTool(server: McpServer, ctx: PublicMcpContext
       title: 'Get deliverable content',
       description:
         'De volledige inhoud van een content-item: titel, content-type, status, recentste ' +
-        'F-VAL-score en alle componenten (tekst, image-URL, video-URL, variant-/selectie-info) ' +
-        'gesorteerd op volgorde. Gebruik het deliverableId uit generate_on_brand of de content-library. Gratis.',
+        'F-VAL-score, de platte tekst (`text`) en alle componenten (tekst, image-URL, video-URL, ' +
+        'variant-/selectie-info) gesorteerd op volgorde. Werkt voor élk content-type, ook web-pages ' +
+        'en long-form GEO-paginas waarvan de tekst niet in `components` staat — lees daarvoor `text`. ' +
+        'Bij contentState "awaiting-choice" zijn er wel versies gegenereerd maar heeft de gebruiker er ' +
+        'nog geen gekozen: meld dat en verwijs naar Canvas, vat geen ongekozen versie samen. ' +
+        'Gebruik het deliverableId uit generate_on_brand of de content-library. Gratis.',
       inputSchema: {
         id: z.string().min(1).describe('Het deliverable-id'),
         ...brandParam,

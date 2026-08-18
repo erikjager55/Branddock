@@ -52,7 +52,7 @@ type Step =
  * modal de run-staat netjes weggooit.
  */
 export function DeepResearchTab({ onClose }: DeepResearchTabProps) {
-  const { t } = useTranslation('knowledge-library');
+  const { t } = useTranslation(['knowledge-library', 'claw-content-registry']);
   const research = useDeepResearch();
   const createResource = useCreateResource();
 
@@ -267,7 +267,7 @@ interface TopicStepProps {
 }
 
 function TopicStep({ topic, onTopicChange, onStart, isLoading, error }: TopicStepProps) {
-  const { t } = useTranslation('knowledge-library');
+  const { t } = useTranslation(['knowledge-library', 'claw-content-registry']);
   return (
     <div className="flex flex-col items-center py-6 px-2">
       <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
@@ -317,7 +317,7 @@ interface ClarifyStepProps {
 }
 
 function ClarifyStep({ questions, answers, onAnswer, onRun }: ClarifyStepProps) {
-  const { t } = useTranslation('knowledge-library');
+  const { t } = useTranslation(['knowledge-library', 'claw-content-registry']);
   const allAnswered = questions.every((q) => (answers[q.id] ?? '').trim().length > 0);
   return (
     <div className="space-y-4 py-2">
@@ -361,7 +361,7 @@ interface RunningStepProps {
 }
 
 function RunningStep({ progress, warnings, onCancel }: RunningStepProps) {
-  const { t } = useTranslation('knowledge-library');
+  const { t } = useTranslation(['knowledge-library', 'claw-content-registry']);
   const activeIndex = progress.findIndex((p) => !p.done);
   return (
     <div className="space-y-4 py-2" data-testid="research-progress">
@@ -423,7 +423,7 @@ interface ReportStepProps {
 }
 
 function ReportStep({ report, draft, onDraftChange, onSave, isSaving, saveError }: ReportStepProps) {
-  const { t } = useTranslation('knowledge-library');
+  const { t } = useTranslation(['knowledge-library', 'claw-content-registry']);
   return (
     <div className="space-y-4 py-2">
       <article
@@ -461,7 +461,7 @@ function ReportFields({
   draft: ReportDraft;
   onChange: (draft: ReportDraft) => void;
 }) {
-  const { t } = useTranslation('knowledge-library');
+  const { t } = useTranslation(['knowledge-library', 'claw-content-registry']);
   return (
     <div className="space-y-3">
       <div>
