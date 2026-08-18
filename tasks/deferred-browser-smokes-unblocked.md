@@ -5,12 +5,12 @@ fase: post-launch
 priority: next
 effort: 2-4 uur
 owner: claude-code + user (visuele beoordeling)
-status: open
+status: review
 created: 2026-08-16
-completed:
+completed: 2026-08-18 (op één prod-beoordeling na)
 related-adr: -
 related-spec: -
-worktree: -
+worktree: branddock-deferred-browser-smokes
 ---
 
 # Probleem
@@ -52,13 +52,87 @@ on-brand uit?) is mensenwerk en hoort bij Erik.
 
 # Acceptatiecriteria
 
-- [ ] Visual Brief **Compose** gedraaid met een echte, publieke R2-URL — beeld komt terug en
+- [x] Visual Brief **Compose** gedraaid met een echte, publieke R2-URL — beeld komt terug en
       volgt de referentie
-- [ ] Visual Brief **Trained-Style** gedraaid — idem, mét een asset waarvan de opgeslagen URL
-      écht oud is (dat is het scenario dat 21-07 omviel)
-- [ ] Typography-tab browser-smoke + before/after-screenshots
-- [ ] Per smoke vastgelegd: geslaagd/gefaald, wat er te zien was, en bij falen de oorzaak
-- [ ] De twee `[⏸️]`-items in `pre-launch-browser-smoke-batch` afgevinkt of met reden gesloten
+- [~] Visual Brief **Trained-Style** — de faalklasse is deterministisch afgedekt met een écht
+      verlopen signed URL; de visuele beoordeling op prod resteert (Erik)
+- [x] Typography-tab browser-smoke — 12/12; **geen** echte before/after-screenshots, zie hieronder
+- [x] Per smoke vastgelegd: geslaagd/gefaald, wat er te zien was, en bij falen de oorzaak
+- [x] De twee `[⏸️]`-items in `pre-launch-browser-smoke-batch` afgevinkt of met reden gesloten
+
+# Uitkomst (2026-08-18)
+
+## De sweep vond twee ongeguarde routes — dít was de echte opbrengst
+
+De gotcha van 21-07 schrijft een **call-site-sweep** voor bij deze klasse ("één gefixte route
+bewijst niets over de andere"). Die sweep vond twee producenten die een uit de DB gelezen
+storage-URL rauw aan een externe fetcher gaven:
+
+| Route | Wat er rauw doorging |
+|---|---|
+| `generate-visual-compose/route.ts:203` | `MediaAsset.fileUrl` → `composeFromImages` |
+| `refine-visual/route.ts:158` | `component.imageUrl` → `composeFromImages` (de anchors ernaast wérden geresolved) |
+
+Beide gaan nu door `resolveStorageUrl(s)`, net als `generate-visual-trained`.
+
+⚠️ **De faalmodus is anders dan in 2026-07-21 en dat is belangrijk voor de inschatting.** Daar
+dropte fal `image_urls` stil en kwam er een beeld uit zónder stijl. Hier downloadt Gemini de
+URL's server-side (`fetchImageAsInlineData`), dus een verlopen URL geeft `!res.ok` →
+`ComposeInvalidImageError` → 422. Compose was voor oude prod-assets dus **luid stuk met een
+verwarrende melding** ("Reference image fetch returned 403"), niet stil verkeerd.
+
+⚠️ **Reikwijdte op prod is niet vastgesteld.** Of er prod-rijen mét verlopen signed URL's
+bestaan is van hieruit niet te zien (geen prod-DB-toegang). Lokaal bestaan ze niet: 561
+`/uploads/`-paden + 72 duurzame `pub-…r2.dev`-URL's, nul signed. Nieuwe uploads krijgen sinds
+`R2_PUBLIC_URL` een duurzame URL, dus dit raakt alleen oudere rijen.
+
+## Bewijs
+
+**`npm run smoke:storage-url-expiry` — 21/21.** Drie delen: normalisatie-contracten (puur),
+call-site-dekking, en een échte R2-round-trip die een object met 1s TTL ondertekent en laat
+verlopen: **rauw 403, geresolved 200, byte-identiek**. Geen mock — de echte faalconditie,
+zonder prod-toegang.
+
+**Op tanden getest, niet alleen groen.** De call-site-check draait ook tegen de óngefixte bron
+in de main-worktree en faalt daar op beide routes — hij zou de bug dus gevangen hebben.
+
+**Typography-tab browser-smoke — 12/12.** `getComputedStyle` bewijst dat Type Scale en In
+Context h1/h2/h3 met dezelfde familie én weight renderen (700/600/600).
+
+**Compose — echte Gemini-call op twee publieke R2-URL's.** 9,1s, 2,4 MB, en in de output zijn
+beide referenties herkenbaar overgenomen. Bewust twee sterk herkenbare beelden gekozen, omdat
+"er komt een beeld uit" per de risico-notitie hieronder niets bewijst.
+
+## Twee observaties uit de Compose-run (geen blocker, niet gefixt)
+
+1. **`aspectRatio` is advies, geen instelling.** Gemini Image kent geen native aspect-parameter;
+   `composeFromImages` plakt er een zin aan de prompt (`ASPECT_INSTRUCTION_SUFFIX`). Met
+   `'1:1'` gevraagd kwam **1632×640** terug. De route berekent die aspect uit het medium en
+   geeft 'm door — de gebruiker kiest dus een verhouding en krijgt iets anders.
+2. **De compositie-instructie werd deels genegeerd**: gevraagd om voor-/achtergrond, geleverd
+   als naast-elkaar-collage.
+
+## Wat NIET is gedaan — en waarom
+
+- **Trained-Style is niet door de échte route gedraaid.** Die vereist een prod-asset met een
+  verlopen URL; lokaal bestaat dat niet en prod-DB-toegang is er niet. De klasse is in plaats
+  daarvan reproduceerbaar gemaakt (zie boven). **Voor Erik**: draai de trained-style-flow op
+  prod op een asset van vóór `R2_PUBLIC_URL` en beoordeel of de referentiestijl écht gevolgd is.
+- **Geen echte before/after-screenshots** bij Typography — de fix staat al maanden op `main`.
+- **D2 niet gedekt** (`effra` vs `effra-fallback`): het smoke-account is `workspaceScoped` en
+  komt alleen in *Branddock Demo*, dat geen gevulde `fontFamily` heeft. De workspaces mét echte
+  font-stacks (Het Nieuwe Golfen, Zwarthout) vereisen een owner/admin-login. **Voor Erik**: draai
+  `SMOKE_WORKSPACE_ID=cmpp4dxgc001w4ums9sttpg62` met je eigen account.
+- **De twee aspect-observaties zijn niet gefixt** — modelgedrag/productvraag, buiten deze taak.
+
+## Val waar ik zelf in liep (nu geborgd)
+
+De eerste twee Typography-runs claimden *Zwarthout* en *Het Nieuwe Golfen* maar draaiden
+**beide** op *Branddock Demo* — pixel-identieke screenshots verrieden het. Oorzaak is géén bug:
+`getExplicitWorkspace` doet een volledige ACL-check en valt bij een niet-toegestane id stil
+terug op de eerste toegankelijke workspace (de IDOR-fix van 2026-07-22, die hier dus aantoonbaar
+wérkt). De smoke heeft nu een harde workspace-identiteitsassertie die dit luid afbreekt;
+mutatietest bevestigd.
 
 # Smoke test plan
 

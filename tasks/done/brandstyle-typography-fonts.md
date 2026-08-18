@@ -33,7 +33,21 @@ worktree: branddock-feat-brandstyle-typography
 > **2026-08-16**: deze handmatige restjes zijn nooit gedraaid. Meegenomen in
 > [`deferred-browser-smokes-unblocked`](../deferred-browser-smokes-unblocked.md).
 - [ ] `npx tsx scripts/rescrape-linfi.ts` als positieve fidelity-cross-check (optioneel; phase45-font-loading dekt het GOOGLE_FONTS-pad al).
-- [ ] Browser-smoke Typography-tab (checklist F4 stap 13) + before/after-screenshots.
+- [x] Browser-smoke Typography-tab (checklist F4 stap 13) — **gedraaid 2026-08-18**,
+      `npx tsx scripts/dev/typography-tab-browser-smoke.ts`, 12/12 groen op workspace
+      *Branddock Demo*. De kern-assertie meet `getComputedStyle` in een echte browser en
+      bewijst wat een pure smoke niet kan: Type Scale en In Context renderen h1/h2/h3 met
+      dezelfde familie **én** dezelfde weight (h1 700=700, h2 600=600, h3 600=600) — precies
+      de 400-vs-700-divergentie die op 2026-06-05 gefixt is.
+      ⚠️ **Geen echte before/after-screenshots**: de fix zit al maanden op `main`, dus een
+      "before" zou een revert van gemergde commits vereisen. De computed-style-assertie is
+      sterker bewijs dan een screenshotpaar — die faalt bij een regressie, een screenshot niet.
+      Wél vastgelegde screenshots van de huidige staat (`typography-tab-full.png`,
+      `typography-in-context.png`).
+      ⚠️ **Dekkingsgrens**: Branddock Demo heeft géén gevulde `StyleguideFont.fontFamily`, dus
+      dit dekt het lege-scrape-pad (wat de weight-bug betreft het juiste scenario) maar **niet**
+      D2 — de `effra` vs `effra-fallback`-canonicalisatie uit een font-stack. Zie
+      [`deferred-browser-smokes-unblocked`](../deferred-browser-smokes-unblocked.md).
 - [ ] `task-finalize` (2-subagent review + changelog + commit) — user-getriggerd.
 
 # Probleem
