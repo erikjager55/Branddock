@@ -17,8 +17,9 @@
  *   EXTERN    andere http(s)-host (Pexels, Unsplash, …) — niet van ons.
  *   LEEG      null of lege string.
  *
- * ⚠ STRIKT READ-ONLY. Alleen SELECT-statements; er wordt niets geschreven,
- * gewist of gemigreerd. Veilig om tegen productie te draaien.
+ * ⚠ STRIKT READ-ONLY, en dat wordt afgedwongen: élke query loopt door
+ * `readOnlyQuery()`, die alles wat niet met SELECT begint (of een schrijf-keyword
+ * bevat) laat gooien vóórdat de database het ziet. Veilig tegen productie.
  *
  * Run tegen productie (Neon):
  *   DATABASE_URL="postgresql://…neon…" npx tsx scripts/dev/storage-url-audit.ts
@@ -57,6 +58,27 @@ const TARGETS: Array<{ table: string; column: string; note?: string }> = [
 
 type Row = { klasse: string; aantal: bigint; oudste: Date | null; nieuwste: Date | null };
 
+/**
+ * Read-only-guard. Dit script wordt bewust op PRODUCTIE gericht, en dan is
+ * "ik heb de code gelezen" een zwakkere garantie dan een controle die het
+ * afdwingt. Elke query loopt hierdoorheen; alles wat niet met SELECT begint
+ * gooit vóórdat de database het ziet.
+ */
+async function readOnlyQuery<T>(
+  prisma: PrismaClient,
+  sql: string,
+  ...params: unknown[]
+): Promise<T[]> {
+  const normalised = sql.trim().replace(/^\s+/gm, ' ').trimStart();
+  if (!/^SELECT\b/i.test(normalised)) {
+    throw new Error(`Read-only-guard blokkeerde een niet-SELECT-query: ${normalised.slice(0, 80)}`);
+  }
+  if (/\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|GRANT|REVOKE)\b/i.test(normalised)) {
+    throw new Error('Read-only-guard blokkeerde een query met een schrijf-keyword.');
+  }
+  return prisma.$queryRawUnsafe<T[]>(sql, ...params);
+}
+
 function buildSql(table: string, column: string, hasCreatedAt: boolean): string {
   const tijd = hasCreatedAt
     ? 'MIN("createdAt") AS oudste, MAX("createdAt") AS nieuwste'
@@ -83,7 +105,8 @@ function buildSql(table: string, column: string, hasCreatedAt: boolean): string 
 }
 
 async function hasColumn(prisma: PrismaClient, table: string, column: string): Promise<boolean> {
-  const rows = await prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+  const rows = await readOnlyQuery<{ n: bigint }>(
+    prisma,
     `SELECT COUNT(*) AS n FROM information_schema.columns WHERE table_name = $1 AND column_name = $2`,
     table,
     column,
@@ -126,7 +149,7 @@ async function main(): Promise<void> {
       const withCreated = await hasColumn(prisma, table, 'createdAt');
       let rows: Row[];
       try {
-        rows = await prisma.$queryRawUnsafe<Row[]>(buildSql(table, column, withCreated));
+        rows = await readOnlyQuery<Row>(prisma, buildSql(table, column, withCreated));
       } catch (err) {
         console.log(`  ⚠  ${table}.${column} — query faalde: ${(err as Error).message}`);
         continue;
