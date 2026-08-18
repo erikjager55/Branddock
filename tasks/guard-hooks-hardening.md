@@ -103,6 +103,13 @@ doel uit `cd` / `git -C`, anders het JSON-veld `cwd`; onbepaalbaar → leeg → 
   elke verb-regex eiste het werkwoord dírect achter `git`. De smoke viel er meteen over
   (rij 4). Opgelost met `normalize_git_cmd`; rij 13 is de regressietest.
 
+**Nagekomen (zelfde dag, aparte PR): de verb-lijst dekte werkwoorden, geen effecten.**
+`git pull` stond er niet op terwijl het een merge uitvoert en HEAD verzet — vastgesteld in
+memory `guard-hooks-gaps` (gat 1b), maar níet in deze task-file, waardoor het bij het
+plannen gemist werd. Toegevoegd: `pull`, `revert`, `am`, `apply`, `restore`. Smoke-rijen 14
+en 15. **Les voor de volgende keer: lees bij het plannen niet alleen het task-file maar ook
+de memory die eraan hangt** — daar stond het gat al beschreven.
+
 **Een escape implementeren bleek principieel onmogelijk.** Een PreToolUse-hook kent alleen
 `allow` en `deny` — er is geen `ask`, dus een hook kán niet om bevestiging vragen. En een
 escape-zin ín het commando wordt door Claude getypt, niet door Erik; dat is geen
