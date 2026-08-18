@@ -4,10 +4,10 @@ title: De complete iconenbibliotheek staat in de productiebundel — 5740 iconen
 fase: post-launch
 priority: next
 effort: gebouwd in PR #334 — deze file dient nog als meting en verantwoording
-owner: branddock-app-f8 (PR #334)
-status: in-progress
+owner: branddock-app-f8 (PR #334, gemerged)
+status: done
 created: 2026-08-18
-completed: -
+completed: 2026-08-18
 related-adr: -
 related-spec: -
 worktree: -
@@ -15,12 +15,26 @@ worktree: -
 
 # Probleem
 
-> ⚠️ **AL GEBOUWD — niet aan beginnen.** De fix ligt af in **PR #334**
+> ✅ **AFGEROND.** De fix is gemerged in **PR #334** (`a4a12097`, 2026-08-18 20:30)
 > (`feat/ui-observaties`, sessie `branddock-app-f8`), gebouwd vóórdat deze task-file
 > bestond. Die bevat `src/lib/icons/icon-registry.ts` met `resolveIcon(name, fallback)`,
-> alle acht wildcard-bestanden omgezet (geverifieerd: **0** `import * as … from
-> 'lucide-react'` op die branch) en `npm run smoke:icon-registry` mét mutatietest.
-> Deze file blijft staan voor de meting en de verantwoording; op `done` zodra #334 merget.
+> alle acht wildcard-bestanden omgezet en `npm run smoke:icon-registry` mét mutatietest.
+> **Nagemeten op `origin/main` na de merge**: `src/lib/icons/icon-registry.ts` (6.375 bytes)
+> en `scripts/smoke-tests/icon-registry.ts` (2.422 bytes) staan er, en het aantal bestanden
+> met `import * as … from 'lucide-react'` in `src/` is **0**.
+> Deze file blijft staan voor de meting en de verantwoording.
+>
+> ✅ **Na-meting gedaan op productie** (deploy `a4a12097`, zelfde methode als de voor-meting):
+>
+> | | vóór | ná |
+> |---|---|---|
+> | Alle acht ongebruikte proef-iconen | aanwezig | **weg** |
+> | Dragende chunk | 548 kB | **verdwenen** (grootste is nu 463 kB) |
+> | Totale JS die de app laadt | 3.024 kB | **2.460 kB** |
+>
+> **564 kB minder, 18,6% van alle JavaScript.** Dat is meer dan de schatting naar rato
+> (~526 kB) omdat iconen niet allemaal even groot zijn — de geschrapte set zat aan de
+> zware kant.
 
 
 **Acht** bestanden doen `import * as LucideIcons from 'lucide-react'` en zoeken het icoon
