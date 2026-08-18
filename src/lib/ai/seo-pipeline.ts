@@ -37,6 +37,13 @@ import {
 } from './seo-pipeline.types';
 import type { PersonaContext, BriefContext, ProductContext } from './canvas-context';
 import { runGeoPolish, shouldApplyGeoPolish } from './geo-polish';
+import type { ResearchContext, SeoStepContextInput } from './seo-pipeline-utils';
+import {
+  buildVariantBResearchContext,
+  buildVariantBUserPrompt,
+  renderStepBlock,
+  resolveStepContext,
+} from './seo-pipeline-utils';
 
 // ─── Context Formatters (reuse canvas-orchestrator patterns) ─
 
@@ -125,10 +132,24 @@ export async function* runSeoPipeline(
   // Stap 8 zit niet in de waves (Fase 4a): hij is checklist-only en de
   // variant-B/GEO-staart hangt uitsluitend aan stap 7 — stap 8 draait daarom
   // in het concurrent-slot ná de waves, verborgen achter de staart.
+  // N.b. de Fase-4a-notitie over "variant B ziet de accumulatedContext zonder het
+  // stap-8-checklist-blok" is vervallen: variant B leest de accumulatedContext
+  // helemaal niet meer, maar selecteert stap 1-5 uit `state.outputs`.
   const WAVES: readonly (readonly number[])[] = [[1], [2, 3], [4], [5], [6], [7]];
   const QUALITY_STEPS = new Set<number>([6, 7]);
   const timings: { step: number; ms: number }[] = state.timings ? [...state.timings] : [];
   const stepTracking = { workspaceId, deliverableId };
+
+  // Bundelt de per-run vaste contextvelden met de per-stap opgeloste accumulatie.
+  const stepContext = (accumulatedOutputs: string): SeoStepContextInput => ({
+    accumulatedOutputs,
+    brandContext,
+    personaContext,
+    productContext,
+    briefContext,
+    voiceDirective,
+    contentType,
+  });
 
   const labelOf = (step: number): string =>
     SEO_STEP_DEFINITIONS.find((d) => d.step === step)?.label ?? `Step ${step}`;
@@ -143,14 +164,15 @@ export async function* runSeoPipeline(
   ): Promise<{ step: number; name: SeoStepName; rawText: string; ms: number }> => {
     const def = SEO_STEP_DEFINITIONS.find((d) => d.step === step)!;
     const model = QUALITY_STEPS.has(step) ? textModel : researchModel;
+    const accumulated = resolveStepContext(step, state.outputs, state.accumulatedContext);
     const t0 = Date.now();
     let rawText: string;
     if (step === 3) {
-      rawText = await runCompetitorAnalysisStep(seoInput, state, brandContext, personaContext, productContext, briefContext, voiceDirective, contentType, model, stepTracking);
+      rawText = await runCompetitorAnalysisStep(seoInput, stepContext(accumulated), model, stepTracking);
     } else if (step === 6) {
-      rawText = await runDraftStep(step, seoInput, state, brandContext, personaContext, productContext, briefContext, voiceDirective, contentType, model, stepTracking);
+      rawText = await runDraftStep(step, seoInput, stepContext(accumulated), model, stepTracking);
     } else {
-      rawText = await runStructuredStep(step, seoInput, state, brandContext, personaContext, productContext, briefContext, voiceDirective, contentType, model, stepTracking);
+      rawText = await runStructuredStep(step, seoInput, stepContext(accumulated), model, stepTracking);
     }
     return { step, name: def.name, rawText, ms: Date.now() - t0 };
   };
@@ -177,7 +199,7 @@ export async function* runSeoPipeline(
       );
       for (const r of results) {
         state.outputs.push({ step: r.step, name: r.name, rawText: r.rawText });
-        state.accumulatedContext += `\n\n## Step ${r.step}: ${labelOf(r.step)}\n${r.rawText}\n---`;
+        state.accumulatedContext += renderStepBlock(r.step, r.rawText);
         timings.push({ step: r.step, ms: r.ms });
         console.log(
           `[seo-pipeline] step ${r.step} (${r.name}) ${r.ms}ms via ${QUALITY_STEPS.has(r.step) ? 'premium' : 'research'} model`,
@@ -214,8 +236,9 @@ export async function* runSeoPipeline(
   // Stap 8 is checklist-only (ronde 2) en de staart hangt uitsluitend aan de
   // stap-7-output — de oude volgorde (eerst stap 8, dán de staart) was pure
   // dependency-graph-verspilling (~42-130s). Bewuste input-delta: variant B
-  // ziet de accumulatedContext nu ZONDER het stap-8-checklist-JSON-blok —
-  // mechanische output over variant A, ruis geen signaal (task-file 4a).
+  // las de accumulatedContext ZONDER het stap-8-checklist-JSON-blok. Achterhaald:
+  // sinds de contextselectie krijgt variant B uitsluitend de researchstappen 1-5,
+  // dus het checklist-blok is sowieso niet meer in beeld.
 
   const stripFences = (s: string): string =>
     s.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
@@ -256,18 +279,24 @@ export async function* runSeoPipeline(
     voiceDirective,
     tracking: { workspaceId, deliverableId },
   };
-  // N.b. resume-nuance: op het resume-pad (stap 8 al in state) bevat de
-  // gecheckpointe accumulatedContext het checklist-blok wél — variant B
-  // krijgt daar dus de pre-4a-input. Acceptabel: resume is het zeldzame pad.
+  // De oude resume-nuance is vervallen: variant B leest niet meer uit de
+  // doorlopend groeiende accumulatedContext maar selecteert de researchstappen
+  // uit `state.outputs`. Vers pad en resume-pad leveren daardoor exact dezelfde
+  // input, ongeacht of stap 8 al in de state zit.
   const tailStartedAt = Date.now();
   const tailPromise: Promise<{ a: string; b: string; ms: number }> = (async () => {
-    const variantBPromise = generateAlternativeVariant(
-      finalContent,
-      state.accumulatedContext,
+    const variantBPromise = generateAlternativeVariant({
+      originalContent: finalContent,
+      researchContext: buildVariantBResearchContext(state.outputs),
       voiceDirective,
-      researchModel,
-      { workspaceId, deliverableId },
-    ).catch(() => finalContent);
+      textModel: researchModel,
+      stepTracking: { workspaceId, deliverableId },
+    }).catch((err) => {
+      // Zonder log is het resultaat stil twee identieke varianten — niet te
+      // onderscheiden van "het model koos toevallig hetzelfde".
+      console.warn('[seo-pipeline] variant B faalde, val terug op een kopie van variant A:', err instanceof Error ? err.message : err);
+      return finalContent;
+    });
     if (!applyGeo) {
       return { a: finalContent, b: await variantBPromise, ms: Date.now() - tailStartedAt };
     }
@@ -297,7 +326,7 @@ export async function* runSeoPipeline(
     try {
       const r = await step8Promise;
       state.outputs.push({ step: r.step, name: r.name, rawText: r.rawText });
-      state.accumulatedContext += `\n\n## Step ${r.step}: ${labelOf(r.step)}\n${r.rawText}\n---`;
+      state.accumulatedContext += renderStepBlock(r.step, r.rawText);
       timings.push({ step: r.step, ms: r.ms });
       console.log(`[seo-pipeline] step ${r.step} (${r.name}) ${r.ms}ms via research model`);
       yield {
@@ -526,31 +555,21 @@ function extractDraft(result: unknown): string {
   throw new Error('AI draft response is missing the "draft" field');
 }
 
-async function runStructuredStep(
+/**
+ * Geëxporteerd naast module-intern gebruik zodat
+ * `scripts/fidelity/variant-b-research-ab.ts step8` de échte stap kan meten met
+ * een gevarieerde context, in plaats van de promptopbouw te kopiëren.
+ */
+export async function runStructuredStep(
   step: number,
   seoInput: SeoInput,
-  state: SeoPipelineState,
-  brandContext: string,
-  personaContext: string,
-  productContext: string,
-  briefContext: string,
-  voiceDirective: string,
-  contentType: string,
+  ctx: SeoStepContextInput,
   textModel: ResolvedModel,
   stepTracking?: { workspaceId: string; deliverableId: string },
 ): Promise<string> {
-  const ctx = {
-    brandContext,
-    personaContext,
-    productContext,
-    briefContext,
-    seoInput,
-    voiceDirective,
-    contentType,
-    accumulatedOutputs: state.accumulatedContext,
-  };
+  const promptCtx = { ...ctx, seoInput };
 
-  const { systemPrompt, userPrompt } = buildSeoStepPrompt(step, ctx);
+  const { systemPrompt, userPrompt } = buildSeoStepPrompt(step, promptCtx);
   const budget = STEP_BUDGETS[step];
   const maxTokens = budget?.maxTokens; // undefined → caller default (16K)
   const timeoutMs = budget?.timeoutMs ?? 120_000;
@@ -578,30 +597,15 @@ async function runStructuredStep(
 async function runDraftStep(
   step: number,
   seoInput: SeoInput,
-  state: SeoPipelineState,
-  brandContext: string,
-  personaContext: string,
-  productContext: string,
-  briefContext: string,
-  voiceDirective: string,
-  contentType: string,
+  ctx: SeoStepContextInput,
   textModel: ResolvedModel,
   stepTracking?: { workspaceId: string; deliverableId: string },
 ): Promise<string> {
   // Step 6 produces a markdown draft wrapped in a `{ "draft": "..." }`
   // JSON envelope, so the structured-completion JSON contract holds.
-  const ctx = {
-    brandContext,
-    personaContext,
-    productContext,
-    briefContext,
-    seoInput,
-    voiceDirective,
-    contentType,
-    accumulatedOutputs: state.accumulatedContext,
-  };
+  const promptCtx = { ...ctx, seoInput };
 
-  const { systemPrompt, userPrompt } = buildSeoStepPrompt(step, ctx);
+  const { systemPrompt, userPrompt } = buildSeoStepPrompt(step, promptCtx);
   const budget = STEP_BUDGETS[step];
 
   const result = await createStructuredCompletion<{ draft: string }>(
@@ -626,13 +630,7 @@ async function runDraftStep(
 
 async function runCompetitorAnalysisStep(
   seoInput: SeoInput,
-  state: SeoPipelineState,
-  brandContext: string,
-  personaContext: string,
-  productContext: string,
-  briefContext: string,
-  voiceDirective: string,
-  contentType: string,
+  ctx: SeoStepContextInput,
   textModel: ResolvedModel,
   stepTracking?: { workspaceId: string; deliverableId: string },
 ): Promise<string> {
@@ -648,18 +646,9 @@ async function runCompetitorAnalysisStep(
   }
 
   // Phase 2: Structured analysis of the results
-  const ctx = {
-    brandContext,
-    personaContext,
-    productContext,
-    briefContext,
-    seoInput,
-    voiceDirective,
-    contentType,
-    accumulatedOutputs: state.accumulatedContext,
-  };
+  const promptCtx = { ...ctx, seoInput };
 
-  const { systemPrompt, userPrompt } = buildSeoStepPrompt(3, ctx, searchResults);
+  const { systemPrompt, userPrompt } = buildSeoStepPrompt(3, promptCtx, searchResults);
 
   const result = await createStructuredCompletion(
     textModel.provider,
@@ -683,13 +672,30 @@ async function runCompetitorAnalysisStep(
 
 // ─── Variant B Generator ─────────────────────────────────────
 
-async function generateAlternativeVariant(
-  originalContent: string,
-  accumulatedResearch: string,
-  voiceDirective: string,
-  textModel: ResolvedModel,
-  stepTracking?: { workspaceId: string; deliverableId: string },
-): Promise<string> {
+/**
+ * Variant B: dezelfde SEO-fundering, een ander creatief aangrijpingspunt.
+ *
+ * `researchContext` bevat uitsluitend de researchstappen (1-5) — bewust NIET de
+ * prose-stappen: het artikel zit hieronder al als `## ORIGINAL PAGE`. Vóór deze
+ * wijziging kwam hier de volledige accumulatedContext binnen met een
+ * `.slice(-20000)` erop, en die tail-slice viel altijd binnen de prose-staart
+ * (stap 6 + 7 samen mediaan 29.953 tekens): variant B kreeg het artikel een
+ * tweede keer, afgekapt midden in een zin, en geen enkele van de vijf
+ * researchstappen waar de prompt om vraagt.
+ *
+ * Geëxporteerd (niet module-privé) zodat `scripts/fidelity/variant-b-research-ab.ts`
+ * de échte generator meet in plaats van een kopie van de promptopbouw.
+ */
+export async function generateAlternativeVariant(input: {
+  /** Het definitieve artikel uit stap 7 — variant A. */
+  originalContent: string;
+  /** Uitsluitend de researchstappen (1-5); zie `buildVariantBResearchContext`. */
+  researchContext: ResearchContext;
+  voiceDirective: string;
+  textModel: ResolvedModel;
+  stepTracking?: { workspaceId: string; deliverableId: string };
+}): Promise<string> {
+  const { originalContent, researchContext, voiceDirective, textModel, stepTracking } = input;
   const systemPrompt = `You are a Senior Conversion Copywriter creating an alternative version of an SEO-optimized page.
 
 Your task: Rewrite the provided page content with a DIFFERENT creative angle while preserving:
@@ -717,13 +723,7 @@ Preserve the official capitalization of every brand, product and company name (e
 Do NOT generate a table of contents with anchor links. Do NOT use --- horizontal rules.
 ${voiceDirective}`;
 
-  const userPrompt = `## ORIGINAL PAGE (Variant A)
-${originalContent}
-
-## SEO RESEARCH CONTEXT (preserve all SEO elements from this research)
-${accumulatedResearch.slice(-20000)}
-
-Write the complete alternative version (Variant B). Different creative angle, same SEO foundation. Return the full markdown page in the "draft" field.`;
+  const userPrompt = buildVariantBUserPrompt({ originalContent, researchContext });
 
   const result = await createStructuredCompletion<{ draft: string }>(
     textModel.provider,
