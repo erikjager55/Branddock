@@ -71,7 +71,8 @@ vijf nieuwste compiles faalden verloor élk artifact) en dat verweesde submissie
 wél leesbaar maar niet wisbaar waren. Details in changelog #474.
 
 ## Robuustheid (geen waargenomen impact, wel echt)
-- [ ] **Registry-type versmallen (`buildSpikePuckConfig`)**: sinds E3 het
+- [~] **Registry-type versmallen (`buildSpikePuckConfig`)** — annotatie
+      toegepast 2026-08-18, effect ONBEWEZEN (zie hieronder). Origineel: sinds E3 het
       return-type laten inferen (de minimale annotatie brak 149 consumer-
       regels die veld-metadata lezen) instantieert elke consumer een enorm
       anoniem structureel type. Gevolg: de TS-fase van `next build` ging in
@@ -146,6 +147,80 @@ wél leesbaar maar niet wisbaar waren. Details in changelog #474.
       resolutie in de kernel hergebruiken.
 - [ ] **`addSection` met onbekend `afterSectionId`** appendt stil onderaan —
       expliciete `not-found` overwegen (raakt de synthetisch-id-casus).
+
+- [x] **`persistVariantOptions` read-modify-write-venster** — ✅ 2026-08-18.
+      De write loopt nu in één interactieve transactie op een VERSE lees-actie;
+      de minuten-oude snapshot wordt alleen nog als terugval gebruikt wanneer de
+      rij verdwenen is. Zelfde patroon als de GEO-haak in `publish/route.ts`.
+- [x] **Id-loze secties** — ✅ 2026-08-18. `sectionContentIndex` is naar de
+      kernel verhuisd (`section-edit-tools`) en is nu de énige id-resolutie in
+      het edit-pad; `preview-edit-matching` re-exporteert hem. Geen load-time
+      backfill: dat schrijft naar opgeslagen data om een leesprobleem op te
+      lossen. De terugval blijft streng — een sectie mét eigen id is nooit via
+      een synthetisch id te raken, want een edit op de verkéérde sectie is erger
+      dan een geweigerde edit.
+- [x] **`addSection` met onbekend `afterSectionId`** — ✅ 2026-08-18. Geeft nu
+      `after-section-not-found` i.p.v. stil onderaan te appenden, mét uitleg in
+      de Claw-melding. Géén anker meegeven blijft gewoon appenden; dat is een
+      expliciete keuze van de caller. Samen met de vorige fix is dit méér dan
+      een melding: een sectie toevoegen ná een id-loze sectie belandde altijd
+      onderaan en meldde succes.
+
+## ✅ Robuustheid — drie van vier af, 2026-08-18
+
+Drie items zijn gefixt en gesmoked; het vierde is toegepast maar niet te
+bewijzen. De SSE-disconnect zit in [#287](https://github.com/erikjager55/Branddock/pull/287)
+(andere sessie) en is hier bewust niet aangeraakt.
+
+**Wat de eerste twee samen oplossen is groter dan hun beschrijving.** Ze werden
+opgeschreven als "misleidende melding", maar het gedrag was erger: een sectie
+toevoegen ná een id-loze sectie belandde onderaan en meldde succes. Met de
+kernel-resolutie landt hij waar je aanwijst; met de strengere `addSection`
+krijgt een écht verdwenen anker een weigering in plaats van een stille verhuizing.
+
+**Bewijs**: `scripts/smoke-tests/section-edit-synthetic-ids.ts` → **23/23**,
+inclusief de strengheidsgarantie (een sectie mét eigen id is niet synthetisch
+bereikbaar) en het behoud van de verplichte-sectie-guard. De vier aangeraakte
+webpage-builder-smokes blijven groen (21/21, 68/68, 20/20). `tsc` 0 · `lint` 0.
+
+### ⚠️ Item 1 — annotatie toegepast, effect niet aangetoond
+
+`buildSpikePuckConfig` heeft nu een benoemd retourtype. Niet een nieuw type:
+`SectionLibraryConfig<SpikePuckProps>` bestond al sinds E3 en is daar zelfs
+gedocumenteerd als *"de registry-shape zoals `buildSpikePuckConfig` hem
+teruggeeft"* — de builder was er alleen nooit mee geannoteerd. De 149
+consumer-regels uit de oorspronkelijke beschrijving zijn er niet meer: het
+props-paneel leest sinds E3 via `SectionRegistryMeta`, dus er brak nog maar één
+klasse casts in smoke-tests (18 stuks, nu via `unknown` of via de lees-deur).
+
+**Maar het claimde probleem reproduceert hier niet.** Twee metingen:
+
+| Meting | Zonder annotatie | Met annotatie |
+|---|---|---|
+| `tsc --noEmit --extendedDiagnostics` (koud) | 9.059.620 instantiaties · 3,98 GB | 9.059.610 instantiaties · 3,99 GB |
+| `next build` met `--max-old-space-size=4096` | **slaagt** | **slaagt** |
+
+Tien instantiaties verschil, en de build die zonder annotatie zou moeten
+omvallen doet dat niet. Dat is geen tegenspraak met de bevinding van 13-08 — de
+comment bij de tsc-stap in `ci.yml` zegt het zelf: *"Lokaal viel dat niet op —
+macOS schaalt de heap mee met het beschikbare RAM, de runner niet."* Alleen de
+runner kan dit beantwoorden.
+
+**Het experiment is niet gedraaid — de bump staat terug.** De opzet was: bump uit,
+runner laat oordelen. Er kwam geen Actions-run, en mijn eerste verklaring daarvoor
+("een PR die `.github/workflows/**` aanraakt krijgt geen run") **was fout**. De
+echte oorzaak: de PR stond op `CONFLICTING` doordat #287 ondertussen op main
+landde, en GitHub schedulet geen `pull_request`-run zolang er geen merge-ref te
+berekenen valt. Na de rebase liep CI gewoon.
+
+Waarom het experiment dan alsnog niet in deze PR zit: het is een losse vraag met
+een eigen risico (een rode build op werk dat verder bewezen is), en de drie andere
+items hoeven daar niet op te wachten. Wie het wil weten: haal `NODE_OPTIONS` van
+de build-stap in een aparte PR of rechtstreeks op main, en kijk of de stap valt.
+Kost één CI-run en beantwoordt de vraag definitief.
+
+De bump op de losse `tsc`-stap is sowieso een andere zaak (brandstyle-stack
+#255-#259) en blijft staan.
 
 ## Bewuste niet-fixes (gedocumenteerd, geen actie)
 - **`cta_click`-events**: uit het publieke `/api/t`-enum gehaald (spoofbaar);

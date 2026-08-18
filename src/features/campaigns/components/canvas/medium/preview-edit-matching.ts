@@ -10,6 +10,7 @@
  * van identieke teksten binnen één sectie is aangeklikt).
  */
 import { collectEditableTextFields } from '@/lib/landing-pages/puck-text-fields';
+import { sectionContentIndex } from '@/lib/landing-pages/section-edit-tools';
 
 /** Resultaat van een geslaagde match: pad + huidige waarde uit de tree. */
 export interface EditableTextMatch {
@@ -25,28 +26,12 @@ interface TreeLike {
 }
 
 /**
- * Zoek de content-index van een sectie-id. Volgt PageRender's id-logica:
- * primair `props.id`; met fallback op het synthetische `<type>-<index>`-id
- * dat PageRender genereert voor secties zonder bruikbaar props.id.
- * Retourneert -1 wanneer het id niet (eenduidig) te herleiden is.
+ * Re-export: de id-resolutie woont in de kernel (`section-edit-tools`), zodat
+ * de preview-laag en de edit-operaties per constructie dezelfde sectie
+ * aanwijzen. Stond hier eerder als eigen kopie — dat was precies de tweede
+ * waarheid die de kernel-module wil voorkomen.
  */
-export function sectionContentIndex(tree: unknown, sectionId: string): number {
-  const content = (tree as TreeLike | null | undefined)?.content;
-  if (!Array.isArray(content) || !sectionId) return -1;
-  const byId = content.findIndex(
-    (item) => item !== null && typeof item === 'object' && item.props?.id === sectionId,
-  );
-  if (byId >= 0) return byId;
-  const synthetic = sectionId.match(/^(.+)-(\d+)$/);
-  if (!synthetic) return -1;
-  const idx = Number(synthetic[2]);
-  const item = content[idx];
-  if (!item || typeof item !== 'object' || item.type !== synthetic[1]) return -1;
-  // Alleen geldig wanneer PageRender voor deze sectie daadwerkelijk op het
-  // synthetische id terugviel (props.id ontbreekt of is geen bruikbare string).
-  const ownId = item.props?.id;
-  return typeof ownId === 'string' && ownId.length > 0 ? -1 : idx;
-}
+export { sectionContentIndex };
 
 /**
  * Match de geklikte tekst op de bewerkbare tekstvelden van één sectie.
