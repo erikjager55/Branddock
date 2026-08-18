@@ -206,12 +206,22 @@ comment bij de tsc-stap in `ci.yml` zegt het zelf: *"Lokaal viel dat niet op —
 macOS schaalt de heap mee met het beschikbare RAM, de runner niet."* Alleen de
 runner kan dit beantwoorden.
 
-**Daarom staat de heap-bump op de build-stap in deze PR uit.** Dat is het
-experiment, niet een aanname. Blijft CI groen, dan is het item af en kan het
-vinkje gezet worden. Valt de build om, dan zet je de bump terug: de annotatie is
-dan wél nettere typing maar niet de oorzaak, en het item blijft open met één
-weerlegde hypothese erbij. De bump op de losse `tsc`-stap blijft staan — die had
-een andere aanleiding (de brandstyle-stack #255-#259).
+**Het experiment kon niet gedraaid worden — en dat is zelf een bevinding.**
+De opzet was: heap-bump op de build-stap uitzetten en de runner laten oordelen.
+Maar een PR die `.github/workflows/**` aanraakt krijgt in deze repo géén
+Actions-run: nul runs op de head-SHA, terwijl Actions acht minuten eerder nog
+gewoon draaide voor een andere branch, de YAML geldig is (`js-yaml`-parse OK,
+`build-env` houdt exact de drie bedoelde keys over), Actions repo-breed aan staat
+(`allowed_actions: all`), er niets op `action_required` wacht, en close/reopen
+— de bekende hik uit deze repo — niets veranderde.
+
+De bump staat daarom terug en dit item blijft open. Wie het alsnog wil weten:
+zet `NODE_OPTIONS` op de build-stap uit in een commit **rechtstreeks op main**
+(push-events hebben dit probleem niet), of laat iemand met workflow-rechten het
+op een eigen branch draaien. Kost één CI-run en beantwoordt de vraag definitief.
+
+De bump op de losse `tsc`-stap is sowieso een andere zaak (brandstyle-stack
+#255-#259) en blijft staan.
 
 ## Bewuste niet-fixes (gedocumenteerd, geen actie)
 - **`cta_click`-events**: uit het publieke `/api/t`-enum gehaald (spoofbaar);
