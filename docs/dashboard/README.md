@@ -46,15 +46,9 @@ Elke taak klapt uit naar detail (toelichting, rust-reden, open vragen) met twee 
 4. **Vrijdagretro**: volledige verificatie — script draaien, doc-sync-afwijkingen wegwerken, klassen herzien, verlopen gates expliciet herzien.
 5. **Klasse-verschuivingen zijn besluiten**: C→A/B (of andersom) alleen met reden in de commit-message.
 
-## Roadmap-verbeterplan (kritiek-pad stap 5 — uit te voeren bij sanering)
+## Roadmap-sanering — ✅ uitgevoerd 2026-08-10
 
-Onderzoeksconclusie 2026-08-10: `roadmap.md` is een logboek geworden (3000-woorden-header, NOW vol ✅-regels, aanbevelingen van een maand oud). Sanering:
-
-1. **Header-log → `docs/changelog.md`** (daar hoort historie); roadmap-header wordt 3 regels (peildatum + fase + link naar dashboard).
-2. **NOW-sectie vervangen** door één verwijzing naar dit dashboard — geen dubbele prioritering meer.
-3. **Roadmap wordt initiatieven-index**: per initiatief (Agents, Meertaligheid, Brandclaw, …) een korte sectie met status, gates en links naar tasks/ADR's — detail en historie, geen dagelijkse sturing.
-4. **Klasse + moat-toets** (uit visie §5) opnemen in het prioriteringskader naast RICE.
-5. **`open-acties-*.md`-bestanden afschaffen** — wacht-op-Erik-punten leven voortaan als vragen/besluiten in `stuurdata.json` (blok E van het dashboard).
+`roadmap.md` is herschreven tot **initiatieven-index** (status, gates en verwijzingen per initiatief; prioriteringskader = dashboard-banen + moat-toets + RICE). De oude roadmap incl. volledige log staat in `docs/archive/old-lists/roadmap-pre-sanering-2026-08-10.md`. De 13 done-taken zijn naar `tasks/done/` verplaatst en `open-acties-2026-07-23.md` is afgeschaft — de nog-open punten leven als besluiten in `stuurdata.json`. Regel voortaan: wacht-op-Erik-punten gaan direct in `stuurdata.json`, nooit meer in losse open-acties-bestanden.
 
 ## Verhouding tot de andere documenten
 
@@ -62,7 +56,7 @@ Onderzoeksconclusie 2026-08-10: `roadmap.md` is een logboek geworden (3000-woord
 |---|---|
 | **Dit dashboard** | Leidend: wat doen we nu, in welke volgorde, wat is bevroren |
 | `stuurdata.json` | De redactie-laag achter het dashboard (enige hand-bewerkte deel) |
-| `roadmap.md` | Detail + historie per initiatief (sanering: zie hierboven) |
+| `roadmap.md` | Initiatieven-index: status, gates en verwijzingen per initiatief (gesaneerd 2026-08-10) |
 | `START_HERE.md` | Sessie-entrypoint — verwijst naar dit dashboard |
 | `tasks/<id>.md` | Uitvoeringsdetail per taak — bron van de feiten |
 | `docs/specs/brandclaw-vision.md` | Het waarom-eindbeeld boven blok D |

@@ -3,68 +3,232 @@
   "fase": "launch",
   "artifactUrl": "https://claude.ai/code/artifact/10805dd2-ff12-4fe0-8f07-5b7f24e9e576",
   "liveStand": [
-    { "k": "App (Vercel)", "v": "Live", "tone": "ok" },
-    { "k": "Stripe billing", "v": "Live", "tone": "ok" },
-    { "k": "Credits", "v": "Pilotmodus — top-up dicht", "tone": "warn" },
-    { "k": "Pilot Better Brands", "v": "Live", "tone": "ok" },
-    { "k": "Agents", "v": "10 live (+ Bo's weekloop)", "tone": "ok" },
-    { "k": "Prod-workspaces", "v": "8 gemigreerd (#453)", "tone": "ok" },
-    { "k": "i18n", "v": "en ↔ nl", "tone": "ok" },
-    { "k": "Omzet", "v": "€0 — wacht op TOPUP", "tone": "warn" }
+    {
+      "k": "App (Vercel)",
+      "v": "Live",
+      "tone": "ok"
+    },
+    {
+      "k": "Stripe billing",
+      "v": "Live",
+      "tone": "ok"
+    },
+    {
+      "k": "Credits",
+      "v": "Pilotmodus — top-up dicht",
+      "tone": "warn"
+    },
+    {
+      "k": "Pilot Better Brands",
+      "v": "Live",
+      "tone": "ok"
+    },
+    {
+      "k": "Agents",
+      "v": "10 live (+ Bo's weekloop)",
+      "tone": "ok"
+    },
+    {
+      "k": "Prod-workspaces",
+      "v": "8 gemigreerd (#453)",
+      "tone": "ok"
+    },
+    {
+      "k": "i18n",
+      "v": "en ↔ nl",
+      "tone": "ok"
+    },
+    {
+      "k": "Omzet",
+      "v": "€0 — wacht op TOPUP",
+      "tone": "warn"
+    }
   ],
   "kritiekPad": [
-    { "t": "TOPUP aanzetten + één echte betaal-smoke", "d": "Technisch klaar; puur jouw schakelmoment. Het enige item met directe omzet-impact.", "pill": "wacht op Erik", "pillType": "erik" },
-    { "t": "Pilot-adoptie tot een getal maken", "d": "Doel: ≥3 workspaces met wekelijks ≥3 geaccepteerde agent-runs. Wekelijkse cadans, reject-redenen noteren. De 8 gemigreerde workspaces zijn het cohort.", "pill": "menswerk + cadans", "pillType": "erik" },
-    { "t": "Onboarding-test met 3 externe gebruikers", "d": "Laatste validatie vóór werven; testers moeten nog geworven worden.", "pill": "wacht op Erik", "pillType": "erik" },
-    { "t": "Leerlus dichtmaken (BC-1.5)", "d": "Dismiss-redenen + events, systeem-geschreven outcome-memories, memory-injectie, generieke caps. Klein bouwwerk, geen autonomie-risico.", "pill": "bouw — voorstel", "pillType": "open" },
-    { "t": "Roadmap saneren + bewijs-poort repareren", "d": "Roadmap is een logboek geworden; NOW herschrijven naar de echte fase. Plus golden-set-gate-decouple: een poort die 4/5 nachten rood staat wordt genegeerd.", "pill": "½ dag", "pillType": "open" }
+    {
+      "t": "TOPUP aanzetten + één echte betaal-smoke",
+      "d": "Technisch klaar; puur jouw schakelmoment. Het enige item met directe omzet-impact.",
+      "pill": "wacht op Erik",
+      "pillType": "erik"
+    },
+    {
+      "t": "Pilot-adoptie tot een getal maken",
+      "d": "Doel: ≥3 workspaces met wekelijks ≥3 geaccepteerde agent-runs. Wekelijkse cadans, reject-redenen noteren. De 8 gemigreerde workspaces zijn het cohort.",
+      "pill": "menswerk + cadans",
+      "pillType": "erik"
+    },
+    {
+      "t": "Onboarding-test met 3 externe gebruikers",
+      "d": "Laatste validatie vóór werven; testers moeten nog geworven worden.",
+      "pill": "wacht op Erik",
+      "pillType": "erik"
+    },
+    {
+      "t": "Leerlus dichtmaken (BC-1.5)",
+      "d": "Dismiss-redenen + events, systeem-geschreven outcome-memories, memory-injectie, generieke caps. Klein bouwwerk, geen autonomie-risico.",
+      "pill": "bouw — voorstel",
+      "pillType": "open"
+    },
+    {
+      "t": "Bewijs-poort repareren (golden-sets-nightly)",
+      "d": "Roadmap-sanering is afgerond (2026-08-10: initiatieven-index, log naar archief, 14 taken opgeruimd). Rest van deze stap: de altijd-rode golden-set-gate loskoppelen of fixen, zodat bewijs weer telt.",
+      "pill": "0,5-1 dag",
+      "pillType": "open"
+    }
   ],
   "klassen": {
-    "A": { "naam": "Nu cruciaal — gewoon afbouwen", "why": "de brug waar de moats overheen moeten" },
-    "B": { "naam": "Moat-werk — ondervertegenwoordigd", "why": "versterkt merk-graph, bewijs of leerlus" },
-    "C": { "naam": "Bevroren / gegate — dicht tot adoptie beweegt", "why": "meer oppervlak verdunt het schaarse signaal" }
+    "A": {
+      "naam": "Nu cruciaal — gewoon afbouwen",
+      "why": "de brug waar de moats overheen moeten"
+    },
+    "B": {
+      "naam": "Moat-werk — ondervertegenwoordigd",
+      "why": "versterkt merk-graph, bewijs of leerlus"
+    },
+    "C": {
+      "naam": "Bevroren / gegate — dicht tot adoptie beweegt",
+      "why": "meer oppervlak verdunt het schaarse signaal"
+    }
   },
   "taken": {
-    "billing-entitlements-fase1": { "klasse": "A", "oms": "Backend-entitlements echt afdwingen (drie plan-systemen verenigen)" },
-    "billing-ux-fase2": { "klasse": "A", "oms": "Billing-UX richting betaling-aan" },
-    "billing-ui-fase3": { "klasse": "A", "oms": "Billing-UI richting betaling-aan" },
-    "billing-pricing-fase4": { "klasse": "A", "oms": "Pricing-afronding richting betaling-aan" },
-    "marketing-homepage-v2": { "klasse": "A", "oms": "Marketing-site vernieuwing — conversie-driver voor launch" },
-    "marketing-composition-v2": { "klasse": "A", "oms": "Marketing-compositie v2" },
-    "marketing-composition-h4": { "klasse": "A", "oms": "Marketing-compositie H4" },
-    "onboarding-flow-test": { "klasse": "A", "oms": "Flow-validatie met 3 externe testers (= kritiek-pad stap 3)", "vragen": ["Wie zijn de 3 testers en wanneer plannen we ze in?"] },
-    "content-chain-accessor": { "klasse": "A", "oms": "Content-keten structureel leeg voor 11 web-page/long-form-types; 21 kruisingen. Fase 1 veilig; fase 2 wacht op 2 productbesluiten.", "vragen": ["Wat toont het Content Library-stoplicht bij een gegenereerde-maar-ongekozen pagina? (nu: rood + 'No content generated' — dat liegt)", "Wat antwoordt de Brand Assistant over zo'n pagina? (nu: 'nog geen content' — ook onwaar)"] },
-    "workspaces-online-migratie": { "klasse": "A", "oms": "Rijk gevulde lokale workspaces naar prod — 8 gemigreerd (#453)", "statusOverride": "deels done", "pillType": "deels" },
-    "golden-set-gate-decouple": { "klasse": "A", "oms": "Altijd-rode nightly-gate loskoppelen zodat bewijs weer telt (ook moat-werk)", "vragen": ["Ontkoppelen van het LP-pad, fixen van de flakey gate, of allebei?"] },
-    "security-residual-hardening": { "klasse": "A", "oms": "Rest-scope security-audit (CSP-enforce-flip, L4/L6/L9, Zod-sweep) — HIGH-items al gemerged" },
-    "guard-hooks-hardening": { "klasse": "A", "oms": "Session-guard-gaten (o.a. gelijktijdige merges) — raakt jouw veiligheidsnet", "vragen": ["Moet 'gh pr merge' geblokkeerd worden bij een co-sessie, of volstaat waarschuwen?"] },
-    "workspace-scoped-invites": { "klasse": "A", "oms": "Invite/ACL-nasleep uit de fail-open-arc" },
-    "org-limit-override-ui": { "klasse": "A", "oms": "Admin-tooling: limiet-overrides per organisatie" },
-    "credit-admin-owner-lookup": { "klasse": "A", "oms": "Credit Admin: owner-lookup" },
-    "trainer-refs-ombouw": { "klasse": "A", "oms": "Trainer-referenties ombouwen" },
-    "web-page-builder-acceptance-rest": { "klasse": "A", "oms": "Acceptance-staart web-page-builder (README, F-VAL HTML-calibratie, dual-render perf)" },
-    "kpi-fase0": { "klasse": "A", "oms": "Meetfundament €100k-plan: funnel, activatie-event, noordster-MRR, Gate-1 (tevens leerlus-voer)" },
-    "open-acties-2026-07-23": { "klasse": "A", "oms": "Handoff-tracker open acties (peildatum 23-07) — spiegel van wacht-op-Erik-punten", "statusOverride": "tracker", "pillType": "gate" },
-    "content-test-regression-7B": { "klasse": "B", "oms": "Layer-3 zelflerende regressie op echte reject/edit-events", "gate": "data-gated — 0 events; start na 1-2 weken pilot-traffic" },
-    "mcp-external-data-enrichment-research": { "klasse": "B", "oms": "Externe MCP-bronnen inlezen — eerste stap richting Signaalweb" },
-    "i18n-ai-translation-pipeline": { "klasse": "C", "oms": "AI-vertaal-engine voor onderhoud + de/es/fr (en/nl is geseed)", "gate": "post-launch" },
-    "agent-vera-triggers": { "klasse": "C", "oms": "Event-getriggerde brand-review", "gate": "Fase 0: 0 IN_REVIEW-events in 8 weken — go/no-go bij Erik", "vragen": ["Go of no-go op de review-trigger nu Fase 0 geen voer laat zien?"] },
-    "agents-brandclaw-convergentie": { "klasse": "C", "oms": "Fase 3-epic: Strategy Analyst naar catalogus, 3 NodeTypes, autonomie-schuif, budget-alerts", "gate": "go/no-go op 3 pilot-datapunten (adoptie, kosten, no-autonomy-herziening)" },
-    "brand-mention-monitor": { "klasse": "C", "oms": "10e agent: merkvermeldingen-waakhond op Exa", "gate": "Fase-0-gated — Exa-dekking NL-MKB onbewezen" },
-    "research-stack-trend-radar": { "klasse": "C", "oms": "Exa + S2 als bronlagen in de trend-radar", "gate": "bevroren tot adoptie-getal beweegt" },
-    "research-stack-marco-web-signals": { "klasse": "C", "oms": "Extern web-/nieuwsbeeld per concurrent (Exa) voor Marco", "gate": "bevroren tot adoptie-getal beweegt" },
-    "research-stack-geo-research-backed": { "klasse": "C", "oms": "Research-backed citeableStats in GEO-long-form", "gate": "bevroren; raakt generatie-route — A/B-datapunt verplicht" },
-    "publishgate-second-opinion": { "klasse": "C", "oms": "Δ-4 PublishGate 2nd-opinion", "gate": "evidence-gated — geen pilot-bewijs dat F-VAL gaten heeft" },
-    "power-user-shortcuts": { "klasse": "C", "oms": "Rest: recent-prompts-dropdown + BA-banner", "gate": "beslis na pilot-feedback" },
-    "video-chain-explainer-showcase": { "klasse": "C", "oms": "Multi-modal explainer-video-chain", "gate": "gated op categorie-re-enable (Video&Audio hidden)" },
-    "validate-brand-domain-component-fit": { "klasse": "C", "oms": "Meting vóór bouw van merk-specifieke web-componenten", "gate": "pas zinvol met pilot-data" },
-    "seo-pipeline-speedup": { "klasse": "C", "oms": "SEO-pipeline versnellen Fase 3/4", "gate": "meting-gated — deploy-meting beslist" },
-    "geo-seo-followup-later": { "klasse": "C", "oms": "GEO/SEO opvolg-bucket (entity-reinforcement, restschema, nightly staleness)", "gate": "post-launch bucket — per sub-item afsplitsen" },
-    "multi-market-transcreation-enterprise": { "klasse": "C", "oms": "Multi-markt transcreatie (enterprise)", "gate": "blocked — go/no-go-gated epic" }
+    "marketing-homepage-v2": {
+      "klasse": "A",
+      "oms": "Marketing-site vernieuwing — conversie-driver voor launch"
+    },
+    "onboarding-flow-test": {
+      "klasse": "A",
+      "oms": "Flow-validatie met 3 externe testers (= kritiek-pad stap 3)",
+      "vragen": [
+        "Wie zijn de 3 testers en wanneer plannen we ze in?"
+      ]
+    },
+    "content-chain-accessor": {
+      "klasse": "A",
+      "oms": "Content-keten structureel leeg voor 11 web-page/long-form-types; 21 kruisingen. Fase 1 veilig; fase 2 wacht op 2 productbesluiten.",
+      "vragen": [
+        "Wat toont het Content Library-stoplicht bij een gegenereerde-maar-ongekozen pagina? (nu: rood + 'No content generated' — dat liegt)",
+        "Wat antwoordt de Brand Assistant over zo'n pagina? (nu: 'nog geen content' — ook onwaar)"
+      ]
+    },
+    "workspaces-online-migratie": {
+      "klasse": "A",
+      "oms": "Rijk gevulde lokale workspaces naar prod — 8 gemigreerd (#453)",
+      "statusOverride": "deels done",
+      "pillType": "deels"
+    },
+    "golden-set-gate-decouple": {
+      "klasse": "A",
+      "oms": "Altijd-rode nightly-gate loskoppelen zodat bewijs weer telt (ook moat-werk)",
+      "vragen": [
+        "Ontkoppelen van het LP-pad, fixen van de flakey gate, of allebei?"
+      ]
+    },
+    "security-residual-hardening": {
+      "klasse": "A",
+      "oms": "Rest-scope security-audit (CSP-enforce-flip, L4/L6/L9, Zod-sweep) — HIGH-items al gemerged"
+    },
+    "guard-hooks-hardening": {
+      "klasse": "A",
+      "oms": "Session-guard-gaten (o.a. gelijktijdige merges) — raakt jouw veiligheidsnet",
+      "vragen": [
+        "Moet 'gh pr merge' geblokkeerd worden bij een co-sessie, of volstaat waarschuwen?"
+      ]
+    },
+    "web-page-builder-acceptance-rest": {
+      "klasse": "A",
+      "oms": "Acceptance-staart web-page-builder (README, F-VAL HTML-calibratie, dual-render perf)"
+    },
+    "kpi-fase0": {
+      "klasse": "A",
+      "oms": "Meetfundament €100k-plan: funnel, activatie-event, noordster-MRR, Gate-1 (tevens leerlus-voer)"
+    },
+    "content-test-regression-7B": {
+      "klasse": "B",
+      "oms": "Layer-3 zelflerende regressie op echte reject/edit-events",
+      "gate": "data-gated — 0 events; start na 1-2 weken pilot-traffic"
+    },
+    "mcp-external-data-enrichment-research": {
+      "klasse": "B",
+      "oms": "Externe MCP-bronnen inlezen — eerste stap richting Signaalweb"
+    },
+    "i18n-ai-translation-pipeline": {
+      "klasse": "C",
+      "oms": "AI-vertaal-engine voor onderhoud + de/es/fr (en/nl is geseed)",
+      "gate": "post-launch"
+    },
+    "agent-vera-triggers": {
+      "klasse": "C",
+      "oms": "Event-getriggerde brand-review",
+      "gate": "Fase 0: 0 IN_REVIEW-events in 8 weken — go/no-go bij Erik",
+      "vragen": [
+        "Go of no-go op de review-trigger nu Fase 0 geen voer laat zien?"
+      ]
+    },
+    "agents-brandclaw-convergentie": {
+      "klasse": "C",
+      "oms": "Fase 3-epic: Strategy Analyst naar catalogus, 3 NodeTypes, autonomie-schuif, budget-alerts",
+      "gate": "go/no-go op 3 pilot-datapunten (adoptie, kosten, no-autonomy-herziening)"
+    },
+    "brand-mention-monitor": {
+      "klasse": "C",
+      "oms": "10e agent: merkvermeldingen-waakhond op Exa",
+      "gate": "Fase-0-gated — Exa-dekking NL-MKB onbewezen"
+    },
+    "publishgate-second-opinion": {
+      "klasse": "C",
+      "oms": "Δ-4 PublishGate 2nd-opinion",
+      "gate": "evidence-gated — geen pilot-bewijs dat F-VAL gaten heeft"
+    },
+    "power-user-shortcuts": {
+      "klasse": "C",
+      "oms": "Rest: recent-prompts-dropdown + BA-banner",
+      "gate": "beslis na pilot-feedback"
+    },
+    "video-chain-explainer-showcase": {
+      "klasse": "C",
+      "oms": "Multi-modal explainer-video-chain",
+      "gate": "gated op categorie-re-enable (Video&Audio hidden)"
+    },
+    "validate-brand-domain-component-fit": {
+      "klasse": "C",
+      "oms": "Meting vóór bouw van merk-specifieke web-componenten",
+      "gate": "pas zinvol met pilot-data"
+    },
+    "seo-pipeline-speedup": {
+      "klasse": "C",
+      "oms": "SEO-pipeline versnellen Fase 3/4",
+      "gate": "meting-gated — deploy-meting beslist"
+    },
+    "geo-seo-followup-later": {
+      "klasse": "C",
+      "oms": "GEO/SEO opvolg-bucket (entity-reinforcement, restschema, nightly staleness)",
+      "gate": "post-launch bucket — per sub-item afsplitsen"
+    },
+    "multi-market-transcreation-enterprise": {
+      "klasse": "C",
+      "oms": "Multi-markt transcreatie (enterprise)",
+      "gate": "blocked — go/no-go-gated epic"
+    }
   },
   "virtueleTaken": [
-    { "id": "leerlus-dicht-bc15", "klasse": "B", "titel": "Leerlus dichtmaken (BC-1.5)", "oms": "Feedback-ledger + outcome-memories + memory-injectie + caps — staat nog nergens als taak; voorstel uit visie §. Kritiek-pad stap 4.", "status": "aan te maken", "pillType": "open", "bron": "docs/specs/brandclaw-vision.md" },
-    { "id": "ontwerp-agenda", "klasse": "B", "titel": "Ontwerp-agenda 1–7 (visie §10)", "oms": "Zeven functionele ontwerpen (Signaalweb-spec, Interpretatie-methodologie, …) — per onderdeel eerst denken, dan bouwen. Documenten 1-2 zijn voorwaarde voor stadium 1-2.", "status": "wacht op go", "pillType": "erik", "bron": "docs/specs/brandclaw-vision.md" }
+    {
+      "id": "leerlus-dicht-bc15",
+      "klasse": "B",
+      "titel": "Leerlus dichtmaken (BC-1.5)",
+      "oms": "Feedback-ledger + outcome-memories + memory-injectie + caps — staat nog nergens als taak; voorstel uit visie §. Kritiek-pad stap 4.",
+      "status": "aan te maken",
+      "pillType": "open",
+      "bron": "docs/specs/brandclaw-vision.md"
+    },
+    {
+      "id": "ontwerp-agenda",
+      "klasse": "B",
+      "titel": "Ontwerp-agenda 1–7 (visie §10)",
+      "oms": "Zeven functionele ontwerpen (Signaalweb-spec, Interpretatie-methodologie, …) — per onderdeel eerst denken, dan bouwen. Documenten 1-2 zijn voorwaarde voor stadium 1-2.",
+      "status": "wacht op go",
+      "pillType": "erik",
+      "bron": "docs/specs/brandclaw-vision.md"
+    }
   ],
   "besluiten": {
     "direct": [
@@ -72,7 +236,11 @@
       "Content-accessor fase 2 — 2 productkeuzes (Library-stoplicht + Claw-antwoord bij ongekozen variant)",
       "Guard-hooks — akkoord op wijziging veiligheidsnet",
       "Vera go/no-go + Ada-kalibratie + CSP-flip — gebundelde afhechting (stond gepland ±28 jul)",
-      "Go ontwerp-agenda — start Signaalweb-spec + Interpretatie-methodologie"
+      "Go ontwerp-agenda — start Signaalweb-spec + Interpretatie-methodologie",
+      "Klein prod-nawerk — Barneveld-logo, '+12'-proof point, marketing-site-restjes, besluit over 'Branddock branddoc v3.pdf'",
+      "Connector-pilot — testers compen (Credit Admin) + Connected-apps-paneel op prod verifiëren",
+      "repair-defaults op prod draaien (locale-ankers + Better Brands contentLanguage) — agent-werk op jouw go",
+      "Browser-smoke LP-matrix — visueel door jou of functioneel door Claude?"
     ],
     "strategisch": [
       "Ambitieniveau per workspace (stadium-plafond per klant)",
