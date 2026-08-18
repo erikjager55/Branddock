@@ -37,6 +37,28 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 477. Gepubliceerde landingspagina's hadden géén `<title>` en geen meta-description — een metadata-sleutel met waarde `undefined` wist de geërfde titel
+
+Opgevallen tijdens de CSP-verificatie op prod: `linfi.branddock.app/pillar-page` had **geen enkel `<title>`-element**. Niet de verkeerde titel — helemaal geen. Terwijl `/reset-password`, dat geen eigen metadata heeft, netjes `<title>Branddock</title>` uit de root layout erft. Een klant-pillarpagina, gebouwd om gevonden te worden, was dus naamloos in elk zoekresultaat, elke browsertab en elke gedeelde link.
+
+**Oorzaak.** `seoChecklistToMetadata` bouwde altijd een objectliteral met álle sleutels: `{ title, description, alternates, robots, openGraph }`. Next merge't route-metadata over de layout-defaults op **sleutel**-niveau, dus een aanwezige `title`-sleutel met waarde `undefined` *wist* de geërfde titel in plaats van hem te laten staan. De fail-soft-afslag die dat had moeten voorkomen (`niets bruikbaars → {}`) haalde het nooit: de route geeft altijd een `fallbackCanonical` mee, dus `canonical` is altijd gevuld en de early-return vuurde bij geen enkele pagina. Elke pagina zonder `settings.seoChecklist` kwam dus met een lege titel-sleutel binnen.
+
+**Waarom niemand het zag.** De smoke dekte dit geval af in plaats van het te vangen: `assert('null + fallback → geen title', noChecklistFb.title === undefined)`. Die uitdrukking is waar bij *zowel* "sleutel afwezig" als "sleutel aanwezig met waarde undefined" — precies het onderscheid dat telt. De test is nu omgezet naar `!('title' in result)`.
+
+**Wie het raakt.** `settings.seoChecklist` wordt uitsluitend door de SEO-pipeline geschreven (`src/lib/ai/seo-pipeline.ts`). Elke pagina uit de gewone webpage-builder heeft er geen, en had dus geen titel. Dezelfde leemte maakte dat `llms.txt` de kale slug als linktekst toonde — `- [pillar-page](…)` in plaats van een leesbare naam.
+
+**De fallback, en waarom niet de voor de hand liggende.** Eerst `Deliverable.title` geprobeerd; dat bleek in de praktijk het content-type-label te bevatten ("Landing Page", "Blog Post"), dus dat zou letterlijk `<title>Landing Page</title>` in Google zetten — slechter dan de generieke layout-default. De echte kop van de pagina staat in `puckData`: de hero-`headline`, de H1 die de bezoeker ziet. Nieuwe pure helper `resolvePageTitleFromPuckData` leest die (hero-`headline` vóór sectie-`heading`, want dat laatste is H2-niveau), normaliseert witruimte en kapt op woordgrens af bij 120 tekens. Beide consumenten gebruiken hem nu, dus `<title>` en `llms.txt` kunnen niet meer uit elkaar lopen.
+
+**Bewijs, end-to-end en niet alleen in de unit-test.** Tegen een echte productiebuild: pagina zónder checklist gaf vóór de fix niets en nu `<title>Horeca textielbeheer: waarom zelf doen je meer kost dan je denkt</title>` plus een meta-description; pagina mét checklist houdt onveranderd zijn pipeline-titel (`Horecatextiel Randstad | Vlekkeloos geregeld | Napking`), dus geen regressie; en de controleroute `/reset-password` erft nog steeds "Branddock", wat bewijst dat de inheritance zelf niet gesloopt is. `llms.txt` toont nu beide echte titels in plaats van slugs. Smokes: `page-derived-meta` 25/25 (nieuw) en `page-seo-metadata` 35/35. `tsc` 0 errors.
+
+**Dezelfde leemte, tweede helft: de meta-description.** Ook die kwam alleen uit de checklist, dus pagina's uit de webpage-builder hadden er geen. De bron ligt naast de titel: de hero-`sub` is de opzettelijk geschreven samenvatting onder de H1 ("De verborgen prijs van eigen linnengoed-beheer in de Randstad, en wat restaurants terugwinnen door uit te besteden"). Zonder `sub` valt hij terug op de eerste lopende tekst uit een `content`/`body`-veld, afgekapt op 155 tekens op woordgrens. Die RichText-velden bevatten **markdown** (10 van de 11 in de dataset dragen `**` of `##`), dus er zit een strip-stap voor: koppen, quotes, bullets, links, vet/cursief, code en horizontale lijnen eruit — de tekst blijft.
+
+⚠️ Twee bugs in mijn eigen eerste versie van die strip-stap, met één oorzaak, en het onthouden waard: de helper normaliseerde witruimte **vóór** het strippen. Alle regel-gebonden regels (koppen, quotes, bullets) zijn `^`-geankerd met de `m`-vlag, dus zodra de newlines platgeslagen zijn is er nog één regel en wordt alleen het eerste bullet geraakt — `- a\n- b` werd `eerste punt - tweede punt`. En een getrimde `'## '` matcht de kop-regel niet meer, want de verplichte spatie erna was al weg, dus `'##'` bleef staan als "beschrijving". Beide gevangen doordat de smoke op échte markdown-vormen test in plaats van op een geïdealiseerd voorbeeld.
+
+⚠️ **Wat dit níet oplost**: pagina's zonder hero-`sub` én zonder lopende tekst (bijvoorbeeld puur een formulier of prijstabel) houden geen description. Dat is bewust: liever geen description dan een verzonnen samenvatting.
+
+- Task: - (bugfix, gevonden tijdens de CSP-verificatie van #476)
+
 ### 476. CSP enforce-flip — nonce + strict-dynamic, met hashes voor de bevroren landingspagina's
 
 De nonce-CSP stond sinds 17-07 in Report-Only op prod met als afspraak "een periode rapporten verzamelen, dan flippen". Die gate bleek niet uitvoerbaar zoals bedoeld: de nonce werd nergens op een script gestempeld — bewuste keuze van de meetfase — dus violeerde **élk** script op élke pagina en zijn de rapporten vrijwel volledig bekende ruis. Daarbij persisteert de collector niet (alleen `console.warn`) en bewaart Vercel runtime-logs dagen, geen maand; de opgeslagen CLI-token was bovendien verlopen. De beslissing is daarom genomen op een lokale meting tegen een échte productiebuild, met dezelfde headers als prod.

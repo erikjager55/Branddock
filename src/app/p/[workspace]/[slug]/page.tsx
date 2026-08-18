@@ -11,6 +11,10 @@ import { buildPageJsonLdForDeliverable, serializeJsonLdForHtml } from '@/lib/lan
 import { buildPageRuntimeScriptBody } from '@/lib/landing-pages/static-compile';
 import type { SeoChecklist } from '@/lib/ai/seo-pipeline.types';
 import { seoChecklistToMetadata } from '@/lib/landing-pages/page-metadata';
+import {
+  resolvePageTitleFromPuckData,
+  resolvePageDescriptionFromPuckData,
+} from '@/lib/landing-pages/page-derived-meta';
 
 type SpikeData = Data<SpikePuckProps>;
 
@@ -35,7 +39,9 @@ export const revalidate = 604800; // 7 dagen fallback; on-demand revalidate is p
 const APP_APEX = process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'branddock.app';
 
 /**
- * Resolved een GEPUBLICEERDE page-type tot zijn (mogelijk afwezige) SEO-checklist.
+ * Resolved een GEPUBLICEERDE page-type tot zijn (mogelijk afwezige) SEO-checklist
+ * plus een uit de pagina-boom afgeleide titel en beschrijving (fallbacks voor
+ * <title> en meta-description).
  * Returnt `null` als de pagina niet bestaat/niet gepubliceerd is; `{ checklist: null }`
  * als de pagina wél gepubliceerd is maar geen `settings.seoChecklist` heeft (dan
  * geldt nog steeds de canonical-fallback). Gememoïseerd per request.
@@ -44,7 +50,11 @@ const loadPublishedPageSeo = cache(
   async (
     workspaceSlug: string,
     slug: string,
-  ): Promise<{ checklist: Partial<SeoChecklist> | null } | null> => {
+  ): Promise<{
+    checklist: Partial<SeoChecklist> | null;
+    derivedTitle: string | undefined;
+    derivedDescription: string | undefined;
+  } | null> => {
     const workspace = await prisma.workspace.findUnique({
       where: { slug: workspaceSlug },
       select: { id: true },
@@ -53,7 +63,7 @@ const loadPublishedPageSeo = cache(
 
     const page = await prisma.landingPage.findFirst({
       where: { workspaceId: workspace.id, slug },
-      select: { status: true, deliverableId: true },
+      select: { status: true, deliverableId: true, puckData: true },
     });
     if (!page || page.status !== 'PUBLISHED') return null;
 
@@ -68,7 +78,11 @@ const loadPublishedPageSeo = cache(
         : {};
     const raw = settings.seoChecklist;
     const checklist = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Partial<SeoChecklist>) : null;
-    return { checklist };
+    return {
+      checklist,
+      derivedTitle: resolvePageTitleFromPuckData(page.puckData),
+      derivedDescription: resolvePageDescriptionFromPuckData(page.puckData),
+    };
   },
 );
 
@@ -85,7 +99,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!result) return {};
 
   const fallbackCanonical = `https://${workspace}.${APP_APEX}/${slug}`;
-  return seoChecklistToMetadata(result.checklist, { fallbackCanonical });
+  return seoChecklistToMetadata(result.checklist, {
+    fallbackCanonical,
+    // `settings.seoChecklist` bestaat alleen voor pagina's uit de SEO-pipeline;
+    // die uit de gewone webpage-builder krijgen zo tóch hun eigen hero-kop als
+    // titel in plaats van de generieke layout-default.
+    fallbackTitle: result.derivedTitle,
+    fallbackDescription: result.derivedDescription,
+  });
 }
 
 export default async function PublishedPage({ params }: Props) {
