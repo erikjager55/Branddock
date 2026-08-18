@@ -17,12 +17,42 @@ import type { UiLocale } from './config';
 export const DUTCH_PUBLIC_PREFIXES = ['/marketing', '/brandmd'] as const;
 
 /**
+ * Publieke routes die in het ENGELS geschreven zijn en geen i18n-runtime
+ * gebruiken: de OAuth-schermen en het wachtwoord-herstelscherm. Zonder deze
+ * lijst volgen ze de UI-cookie, en krijgt een gebruiker met een Nederlandse
+ * voorkeur `lang="nl"` op Engelse tekst — het spiegelbeeld van de bug die deze
+ * module oploste. Gemeten 2026-08-18: 0 `useTranslation`-aanroepen, en de
+ * zichtbare strings zijn "Password updated", "Authorize access", "Sign in".
+ */
+export const ENGLISH_PUBLIC_PREFIXES = ['/oauth', '/reset-password'] as const;
+
+/** Taal van die Engelstalige publieke schermen. */
+export const ENGLISH_PUBLIC_LANG = 'en';
+
+/**
+ * De uitnodigingspagina is TWEETALIG en haalt haar taal uit `?lang` — bewust
+ * niet uit i18next of de cookie: de ontvanger heeft nog geen account, en de
+ * cookie van een toevallig ingelogde ándere gebruiker zou juist de verkeerde
+ * taal geven (zie de header van `src/app/invite/accept/page.tsx`). `<html lang>`
+ * moet dus dezelfde bron volgen als de tekst eronder.
+ */
+export const BILINGUAL_QUERY_ROUTES = ['/invite/accept'] as const;
+
+/**
  * Request-header waarmee `src/proxy.ts` het EFFECTIEVE pad (ná host-rewrite)
  * doorgeeft aan de root layout. Eén constante voor beide kanten: als losse
  * string-literals zou hernoemen aan één kant stil `lang="en"` opleveren op de
  * hele publieke funnel, zonder dat één gate rood wordt (gemeten in review).
  */
 export const PATHNAME_HEADER = 'x-pathname';
+
+/**
+ * Request-header met de EFFECTIEVE query-string. Alleen nodig voor de
+ * tweetalige uitnodigingsroute, die haar taal uit `?lang` haalt; een layout
+ * kan `searchParams` niet lezen, dus de proxy geeft hem door. Net als
+ * `PATHNAME_HEADER` onvoorwaardelijk gezet, dus niet spoofbaar.
+ */
+export const SEARCH_HEADER = 'x-search';
 
 /** Taal waarin de publieke, hardgecodeerde pagina's geschreven zijn. */
 export const PUBLIC_CONTENT_LANG = 'nl';
@@ -33,6 +63,27 @@ export const PUBLIC_CONTENT_LANG = 'nl';
  */
 export function matchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+/** True als het pad een van de hardgecodeerd ENGELSE publieke routes is. */
+export function isEnglishPublicRoute(pathname: string): boolean {
+  return ENGLISH_PUBLIC_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
+}
+
+/** True als het pad de tweetalige route is die haar taal uit `?lang` haalt. */
+export function isBilingualQueryRoute(pathname: string): boolean {
+  return BILINGUAL_QUERY_ROUTES.some((route) => matchesPrefix(pathname, route));
+}
+
+/**
+ * Leest `?lang` zoals `invite/accept` dat doet: alleen 'nl' telt, al het
+ * andere valt terug op 'en'. Bewust identiek aan de pagina zelf — lopen die
+ * twee uiteen, dan beschrijft het attribuut een andere taal dan de tekst.
+ */
+export function langFromSearch(search: string | null | undefined): string {
+  if (!search) return ENGLISH_PUBLIC_LANG;
+  const value = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search).get('lang');
+  return value === 'nl' ? 'nl' : ENGLISH_PUBLIC_LANG;
 }
 
 /** True als het pad een van de hardgecodeerd Nederlandse publieke routes is. */
@@ -83,10 +134,16 @@ export type ClientLangDecision =
  * server en zet de taal terug naar Engels — precies de bug die deze module
  * moet voorkomen. Server en client delen daarom één routingfunctie.
  */
-export function resolveClientLangDecision(host: string, pathname: string): ClientLangDecision {
+export function resolveClientLangDecision(
+  host: string,
+  pathname: string,
+  search?: string | null,
+): ClientLangDecision {
   const effective = decideHostRoute(host, pathname).rewriteTo ?? pathname;
   if (matchPublishedPagePath(effective)) return { kind: 'leave' };
+  if (isBilingualQueryRoute(effective)) return { kind: 'fixed', lang: langFromSearch(search) };
   if (isDutchPublicRoute(effective)) return { kind: 'fixed', lang: PUBLIC_CONTENT_LANG };
+  if (isEnglishPublicRoute(effective)) return { kind: 'fixed', lang: ENGLISH_PUBLIC_LANG };
   return { kind: 'ui' };
 }
 
@@ -98,19 +155,27 @@ export function resolveClientLangDecision(host: string, pathname: string): Clien
  * deze splitsing kon je een hele tak uit de resolver slopen terwijl de smoke groen
  * bleef — de gate toetste alleen de losse helpers.
  *
+ * De volgorde is de precedentie, en die is bewust:
+ *   klantpagina (DB) > tweetalige route (?lang) > NL-publiek > EN-publiek > UI-taal
+ *
  * @param pathname Effectief pad (ná host-rewrite), uit `x-pathname`.
  * @param uiLocale De uit de cookie afgeleide UI-taal.
  * @param landingLocale `LandingPage.locale` als het pad een klantpagina is; anders
  *   `null`. Een onbruikbare waarde valt terug op de publieke contenttaal.
+ * @param search Effectieve query-string, uit `x-search`. Alleen gebruikt door de
+ *   tweetalige route.
  */
 export function decideDocumentLang(
   pathname: string,
   uiLocale: UiLocale,
   landingLocale: string | null,
+  search?: string | null,
 ): string {
   if (matchPublishedPagePath(pathname)) {
     return isUsableLang(landingLocale) ? landingLocale : PUBLIC_CONTENT_LANG;
   }
+  if (isBilingualQueryRoute(pathname)) return langFromSearch(search);
   if (isDutchPublicRoute(pathname)) return PUBLIC_CONTENT_LANG;
+  if (isEnglishPublicRoute(pathname)) return ENGLISH_PUBLIC_LANG;
   return uiLocale;
 }

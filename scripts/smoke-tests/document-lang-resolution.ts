@@ -28,6 +28,9 @@ import {
   matchesPrefix,
   resolveClientLangDecision,
   decideDocumentLang,
+  isEnglishPublicRoute,
+  isBilingualQueryRoute,
+  langFromSearch,
 } from '../../src/lib/ui-i18n/document-locale.shared';
 import { resolveDocumentLocale } from '../../src/lib/ui-i18n/document-locale';
 
@@ -168,22 +171,22 @@ async function runWiringChecks(): Promise<void> {
     return workspaceSlug === 'napking' && slug === 'pillar-page' ? 'nl-NL' : null;
   };
 
-  const wired = await resolveDocumentLocale('/p/napking/pillar-page', 'en', stubLoader);
+  const wired = await resolveDocumentLocale('/p/napking/pillar-page', 'en', null, stubLoader);
   check('bedrading: lookup krijgt (workspace, slug) in die volgorde', calls[0], ['napking', 'pillar-page']);
   check('bedrading: DB-locale wint van de cookie', wired.lang, 'nl-NL');
   check('bedrading: uiLocale blijft de cookie volgen', wired.uiLocale, 'en');
 
-  const missing = await resolveDocumentLocale('/p/onbekend/pagina', 'en', stubLoader);
+  const missing = await resolveDocumentLocale('/p/onbekend/pagina', 'en', null, stubLoader);
   check('bedrading: onbekende pagina valt terug op nl', missing.lang, 'nl');
 
   calls.length = 0;
-  const marketing = await resolveDocumentLocale('/marketing/pricing', 'en', stubLoader);
+  const marketing = await resolveDocumentLocale('/marketing/pricing', 'en', null, stubLoader);
   check('bedrading: marketing raakt de lookup niet aan', calls.length, 0);
   check('bedrading: marketing is nl', marketing.lang, 'nl');
 
-  const app = await resolveDocumentLocale('/', 'nl', stubLoader);
+  const app = await resolveDocumentLocale('/', 'nl', null, stubLoader);
   check('bedrading: app-route volgt de cookie', app.lang, 'nl');
-  check('bedrading: leeg pad valt terug op de UI-taal', (await resolveDocumentLocale('', 'en', stubLoader)).lang, 'en');
+  check('bedrading: leeg pad valt terug op de UI-taal', (await resolveDocumentLocale('', 'en', null, stubLoader)).lang, 'en');
 
   // ── Randgeval dat de host-routing vóór prefix-matching afdwingt ──────────
   // Een workspace-host met slug `marketing` is een KLANTPAGINA, geen NL-site.
@@ -192,6 +195,45 @@ async function runWiringChecks(): Promise<void> {
     kind: 'leave',
   });
 }
+
+// ── Engelstalige publieke routes ─────────────────────────────────────────
+// Het spiegelbeeld van de oorspronkelijke bug: NL-voorkeur op Engelse tekst.
+check('oauth/login is EN', isEnglishPublicRoute('/oauth/login'), true);
+check('oauth/consent is EN', isEnglishPublicRoute('/oauth/consent'), true);
+check('reset-password is EN', isEnglishPublicRoute('/reset-password'), true);
+check('oauth-root is EN', isEnglishPublicRoute('/oauth'), true);
+check('segmentgrens: oauthx is GEEN EN-route', isEnglishPublicRoute('/oauthx'), false);
+check('marketing is geen EN-route', isEnglishPublicRoute('/marketing'), false);
+check('EN wint van de NL-voorkeur', decideDocumentLang('/oauth/login', 'nl', null), 'en');
+check('EN wint ook bij EN-voorkeur', decideDocumentLang('/reset-password', 'en', null), 'en');
+check('EN-route negeert landingLocale', decideDocumentLang('/oauth/consent', 'nl', 'de-DE'), 'en');
+
+// ── Tweetalige uitnodigingsroute: taal uit ?lang ─────────────────────────
+// Identiek aan wat de pagina zelf doet: alleen 'nl' telt, de rest is 'en'.
+check('invite is de tweetalige route', isBilingualQueryRoute('/invite/accept'), true);
+check('invite-root is dat niet', isBilingualQueryRoute('/invite'), false);
+check('?lang=nl -> nl', langFromSearch('?lang=nl'), 'nl');
+check('?lang=en -> en', langFromSearch('?lang=en'), 'en');
+check('?lang ontbreekt -> en', langFromSearch('?token=abc'), 'en');
+check('lege query -> en', langFromSearch(''), 'en');
+check('null -> en', langFromSearch(null), 'en');
+check('onzin-waarde -> en', langFromSearch('?lang=de'), 'en');
+check('zonder vraagteken werkt ook', langFromSearch('lang=nl'), 'nl');
+check('invite volgt ?lang, niet de cookie', decideDocumentLang('/invite/accept', 'en', null, '?lang=nl'), 'nl');
+check('invite met NL-cookie maar EN-link', decideDocumentLang('/invite/accept', 'nl', null, '?lang=en'), 'en');
+check('invite zonder ?lang valt terug op en', decideDocumentLang('/invite/accept', 'nl', null, ''), 'en');
+check('invite met token ervoor', decideDocumentLang('/invite/accept', 'en', null, '?token=x&lang=nl'), 'nl');
+
+// ── Precedentie tussen de nieuwe regels ──────────────────────────────────
+check('klantpagina wint nog steeds van alles', decideDocumentLang('/p/ws/slug', 'en', 'nl-NL', '?lang=en'), 'nl-NL');
+check('NL-publiek negeert ?lang', decideDocumentLang('/marketing', 'en', null, '?lang=en'), 'nl');
+check('app-route negeert ?lang', decideDocumentLang('/settings/x', 'nl', null, '?lang=en'), 'nl');
+
+// ── Client-beslissing kent dezelfde regels ───────────────────────────────
+check('client: oauth is fixed en', resolveClientLangDecision('app.branddock.app', '/oauth/login'), { kind: 'fixed', lang: 'en' });
+check('client: reset-password is fixed en', resolveClientLangDecision('localhost:3000', '/reset-password'), { kind: 'fixed', lang: 'en' });
+check('client: invite volgt de query', resolveClientLangDecision('app.branddock.app', '/invite/accept', '?lang=nl'), { kind: 'fixed', lang: 'nl' });
+check('client: invite zonder query is en', resolveClientLangDecision('app.branddock.app', '/invite/accept'), { kind: 'fixed', lang: 'en' });
 
 // ── Constanten waarop beide kanten leunen ────────────────────────────────
 check('publieke contenttaal is nl', PUBLIC_CONTENT_LANG, 'nl');
