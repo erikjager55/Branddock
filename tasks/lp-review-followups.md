@@ -107,12 +107,10 @@ wél leesbaar maar niet wisbaar waren. Details in changelog #474.
         anders blijft er een spinner hangen die nooit meer weggaat.
       - Server: `request.signal` doorgegeven; guards vóór volgende slot,
         recovery-retry, rewrite, tussen rewrite en iterate, en persist.
-        ⚠️ **Dekking is niet volledig**: `applyStrictTellRewrite` en
-        `applySilentIterate` krijgen de signal niet, dus de calls daarbinnen
-        (rewrite + twee judge-rescores) zijn alleen op de grens te skippen, niet
-        af te breken. Het voorbereidende werk vóór de stream (archetype, angles,
-        Exa/S2-stats) draait vóórdat de `Response` bestaat en is niet abortbaar.
-        Het JSON-fallback-pad checkt de signal helemaal niet.
+        ⚠️ ~~**Dekking is niet volledig**~~ — **grotendeels gedicht 2026-08-18**,
+        zie §Dekkingsgaten hieronder. Restant: het voorbereidende werk vóór de
+        stream (archetype, angles, Exa/S2-stats) draait vóórdat de `Response`
+        bestaat en is nog steeds niet abortbaar.
       - Signal doorgezet tot in `generateLandingPageVariant` →
         `anthropicClient.createChatCompletion` (dat ondersteunde `abortSignal` al),
         dus de lopende call van 30-90s wordt afgebroken. ⚠️ Die call is
@@ -241,6 +239,57 @@ hier ook zónder fix.
 De bump op de losse `tsc`-stap is een andere zaak (brandstyle-stack
 #255-#259) en blijft staan.
 
+## ✅ Dekkingsgaten SSE-abort — gedicht 2026-08-18
+
+De drie gaten die het SSE-item zelf noteerde zijn dicht. Alle drie hadden dezelfde
+vorm: een betaalde call die doorliep nadat de client al weg was.
+
+- **`applyStrictTellRewrite`** — guard bovenaan plus `abortSignal` doorgegeven aan
+  de Anthropic-call. De ongewijzigde variant is een geldige uitkomst: STRICT is
+  een verbetering, geen voorwaarde.
+- **`applySilentIterate`** — drie guards, want dit zijn drie betaalde calls
+  (judge-score → rewrite → rescore), niet één. De guard vóór de rescore laat
+  bewust de originele variant staan: zonder rescore weet keep-if-better niet of
+  de rewrite beter is, dus faalt hij veilig.
+- **JSON-fallback-pad** — checkte de signal helemaal niet. `abortSignal` gaat nu
+  mee in `generateLandingPageVariantBatch` (die gaf 'm niet door, terwijl
+  `generateLandingPageVariant` het al ondersteunde), en de optionele
+  post-processing wordt overgeslagen bij een afgebroken run.
+  ⚠️ **Bewust wél persisteren op dit pad**: de batch is all-or-nothing, dus een
+  voltooide batch is volledig én betaald. Weggooien zou de gebruiker bij
+  terugkomst dezelfde varianten opnieuw laten kopen. Dat is een andere afweging
+  dan bij het streaming-pad, waar een deel-resultaat wél onvolledig kan zijn.
+
+**Wat dit bewijst — en wat niet.** `abortSignal` is een **verplicht** veld op
+`VariantPostProcessArgs`, dus geen enkel toekomstig codepad kán 'm vergeten; dat
+is een compile-time-garantie, geen afspraak. Mutatietest: het veld uit `postArgs`
+halen geeft `error TS2741: Property 'abortSignal' is missing … but required in
+type 'VariantPostProcessArgs'` op de juiste regel. De runtime-guards zelf zijn
+early-returns zonder automatische dekking — ze zijn niet los te testen zonder de
+route-interne functies te exporteren, en een test tegen een nagebouwde kopie zou
+niets bewijzen. `npm run smoke:lp-generation-abort` 13/13 (regressie op de
+client-registry), `tsc` 0, `lint` 0.
+
+**Beslissing van Erik, 2026-08-18** — de keuze van 17-08 om bij een abort níets te
+persisteren is **herzien**: er wordt bewaard **vanaf 2 varianten**. De grond onder
+de oude keuze was het openstaande read-modify-write-venster, en dat is gesloten met
+de rijlock uit #299. Onder de twee is bewaren duurder dan weggooien (1 + 2 = 3
+calls tegen 2), vanaf twee heeft de gebruiker een echte vergelijking. **Nog niet
+gebouwd**: de implementatie ligt op `claude/sse-abort-disconnect` (`4a8f12b`,
+`MIN_PERSISTABLE_PARTIAL`) en hoort bij de consolidatie van die tak — zie de
+notitie hieronder.
+
+**Openstaand uit die tak** — hij bevat óók `merge-deliverable-settings.ts`, een
+tweede oplossing voor dezelfde race als `update-deliverable-settings.ts` (#299):
+`jsonb ||` tegenover `SELECT … FOR UPDATE`, met woordelijk dezelfde diagnose in de
+header. Let op: #299 verwierp expliciet `jsonb_set` omdat "de call-sites hele
+objecten mergen" — maar `jsonb ||` mergt juist wél hele objecten, dus die
+afwijzingsgrond raakt deze variant niet. Advies bij de consolidatie: één deur
+houden (de gemergde helper, 11 call-sites) en de guard van de tak erop porten via
+`mutate → null`. Van de acht bestanden op die tak zijn er **vijf al inhoudelijk
+identiek aan main** ondanks niet-voorouder-commits — squash-merge-effect; de tak
+is in werkelijkheid drie bestanden groot.
+
 ## Bewuste niet-fixes (gedocumenteerd, geen actie)
 - **`cta_click`-events**: uit het publieke `/api/t`-enum gehaald (spoofbaar);
   pas terugbrengen mét signed payload wanneer click-metingen gewenst zijn.
@@ -253,8 +302,11 @@ De bump op de losse `tsc`-stap is een andere zaak (brandstyle-stack
 
 - [x] Retentie-items gebouwd of expliciet her-geprioriteerd vóór de eerste
       workspace met >10k events/maand — gebouwd 2026-08-17 (ADR + cron + smoke 47/47)
-- [ ] Robuustheid-items opgepakt in een reguliere hardening-sessie — **nog open**,
-      de zes items hierboven zijn níet van deze ronde
+- [~] Robuustheid-items opgepakt in een reguliere hardening-sessie — **grotendeels**:
+      de SSE-dekkingsgaten zijn gedicht (18-08, §Dekkingsgaten). Nog open: Turnstile
+      (bewust gegate op waargenomen spam-druk), het niet-abortbare voorwerk vóór de
+      stream, en `MIN_PERSISTABLE_PARTIAL` uit de tak-consolidatie. Het registry-type
+      is verhuisd naar [`build-heap-investigation`](build-heap-investigation.md)
 
 # Out of scope
 
