@@ -79,7 +79,16 @@ const fb = 'https://acme.branddock.app/crm';
 const noChecklistFb = seoChecklistToMetadata(null, { fallbackCanonical: fb });
 assert('null + fallback → canonical gezet', (noChecklistFb.alternates?.canonical as string) === fb);
 assert('null + fallback → robots gezet (indexeerbaar)', noChecklistFb.robots !== undefined);
-assert('null + fallback → geen title', noChecklistFb.title === undefined);
+// ⚠️ Deze assert luidde `noChecklistFb.title === undefined` en was daarmee waar
+// bij zowel "sleutel afwezig" als "sleutel aanwezig met waarde undefined" —
+// precies het verschil dat telt. Next wist een geërfde layout-titel zodra de
+// sleutel áánwezig is, dus de bug (publieke pagina zonder <title>) paste onder
+// de oude assert. Test nu op sleutel-afwezigheid.
+assert('null + fallback → GEEN title-sleutel (erft layout-default)', !('title' in noChecklistFb));
+assert(
+  'null + fallback → geen description-sleutel',
+  !('description' in noChecklistFb),
+);
 assert(
   'expliciete canonicalTag wint van fallback',
   (seoChecklistToMetadata({ canonicalTag: 'https://expliciet' }, { fallbackCanonical: fb }).alternates
@@ -91,9 +100,26 @@ assert(
 );
 assert('geen checklist, geen fallback → {}', Object.keys(seoChecklistToMetadata(null)).length === 0);
 
+console.log('\n── titel-fallback (deliverable-titel) ──');
+const fbTitle = seoChecklistToMetadata(null, {
+  fallbackCanonical: fb,
+  fallbackTitle: 'Vloerluik op maat',
+});
+assert('geen checklist → fallbackTitle wordt de title', fbTitle.title === 'Vloerluik op maat');
+assert('fallbackTitle vult ook og.title', fbTitle.openGraph?.title === 'Vloerluik op maat');
+assert(
+  'checklist-titel wint van fallbackTitle',
+  seoChecklistToMetadata({ titleTag: 'Uit de pipeline' }, { fallbackTitle: 'Deliverable' }).title ===
+    'Uit de pipeline',
+);
+assert(
+  'lege fallbackTitle levert geen title-sleutel',
+  !('title' in seoChecklistToMetadata(null, { fallbackCanonical: fb, fallbackTitle: '   ' })),
+);
+
 console.log('\n── alleen og-velden (geen title) ──');
 const ogOnly = seoChecklistToMetadata({ ogTitle: 'Sociale titel' });
-assert('title undefined', ogOnly.title === undefined);
+assert('geen title-sleutel', !('title' in ogOnly));
 assert('openGraph wel gevuld', ogOnly.openGraph?.title === 'Sociale titel');
 // Hygiëne: geen undefined-velden in het openGraph-object (review-bevinding 2026-06-17)
 assert('og heeft geen description-key', !('description' in (ogOnly.openGraph ?? {})));

@@ -66,6 +66,7 @@
     "smoke:feature-visual-gate": "tsx scripts/smoke-tests/feature-visual-gate.ts",
     "smoke:judge-image-prep": "tsx scripts/smoke-tests/judge-image-prep.ts",
     "smoke:page-seo-metadata": "tsx scripts/smoke-tests/page-seo-metadata.ts",
+    "smoke:page-title": "tsx scripts/smoke-tests/page-title.ts",
     "smoke:geo-discovery": "tsx scripts/smoke-tests/geo-discovery.ts",
     "smoke:geo-optimization-goals": "tsx scripts/smoke-tests/geo-optimization-goals.ts",
     "smoke:geo-longform-schema": "tsx scripts/smoke-tests/geo-longform-schema.ts",
