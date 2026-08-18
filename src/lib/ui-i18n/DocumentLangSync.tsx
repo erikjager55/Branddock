@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { resolveClientLangDecision } from './document-locale.shared';
 
@@ -23,11 +23,19 @@ import { resolveClientLangDecision } from './document-locale.shared';
 export function DocumentLangSync() {
   const { i18n } = useTranslation();
   const pathname = usePathname();
+  // Alleen als dependency: de waarde komt uit `window.location.search`, zodat
+  // client en server letterlijk dezelfde string lezen. `useSearchParams` zorgt
+  // er wél voor dat het effect opnieuw draait als de query wijzigt.
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     // `window.location.host` staat bewust niet in de deps: de host kan niet
     // wijzigen zonder volledige page load, en dan mount deze component opnieuw.
-    const decision = resolveClientLangDecision(window.location.host, pathname);
+    const decision = resolveClientLangDecision(
+      window.location.host,
+      pathname,
+      window.location.search,
+    );
 
     // Klantpagina: de taal komt uit de database en is hier niet af te leiden.
     if (decision.kind === 'leave') return;
@@ -46,7 +54,7 @@ export function DocumentLangSync() {
     return () => {
       i18n.off('languageChanged', onChange);
     };
-  }, [pathname, i18n]);
+  }, [pathname, searchParams, i18n]);
 
   return null;
 }

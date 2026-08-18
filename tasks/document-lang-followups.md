@@ -10,7 +10,7 @@ created: 2026-08-18
 completed: -
 related-adr: docs/adr/2026-08-18-csp-enforce-nonce-en-hashes.md
 related-spec: -
-worktree: -
+worktree: branddock-static-rendering-regressie
 ---
 
 # Waarom dit bestand bestaat
@@ -49,13 +49,16 @@ Volledige onderbouwing en metingen: `tasks/done/static-rendering-regressie.md`.
 
 ## B. Dezelfde bug, andere routes
 
-- [ ] **`/oauth/login`, `/oauth/consent`, `/reset-password`** — hardgecodeerd Engels,
-      volgen nog de cookie. Een bezoeker met `branddock-ui-locale=nl` krijgt daar
-      `<html lang="nl">` op Engelse tekst. Het spiegelbeeld van de gefixte bug; geen
-      SEO-impact (niet geïndexeerd), wel dezelfde onwaarheid.
-- [ ] **`/invite/accept`** — Nederlandse content, taal uit `?lang=`. Niet meegenomen
-      omdat de juiste waarde daar uit de query komt en niet uit een prefix; dat vraagt
-      een beslissing over precedentie.
+- [x] **`/oauth/login`, `/oauth/consent`, `/reset-password`** — ✅ **af 2026-08-18**.
+      Gemeten vóór de fix: 0 `useTranslation`-aanroepen, zichtbare strings "Password
+      updated", "Authorize access", "Sign in" — dus feitelijk Engels, terwijl het
+      attribuut de cookie volgde. Nu `ENGLISH_PUBLIC_PREFIXES`.
+- [x] **`/invite/accept`** — ✅ **af 2026-08-18**. De precedentievraag is beantwoord door
+      de pagina zelf te lezen: die haalt de taal bewust uit `?lang` en níét uit de cookie,
+      omdat de ontvanger nog geen account heeft en de cookie van een toevallig ingelogde
+      ándere gebruiker juist de verkeerde taal geeft. `<html lang>` volgt nu dezelfde bron.
+      Vereiste één nieuwe request-header (`x-search`), omdat een layout `searchParams`
+      niet kan lezen.
 - [ ] **`/p`-404's hebben helemaal géén `lang`-attribuut.** Er is nergens een
       `not-found.tsx`, dus Next' foutdocument vervangt de root layout. Pre-existing.
 

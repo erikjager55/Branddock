@@ -5,7 +5,7 @@ import { QueryProvider } from '@/providers/query-provider';
 import { PostHogProvider } from '@/components/analytics/PostHogProvider';
 import { I18nProvider } from '@/lib/ui-i18n/I18nProvider';
 import { UI_LOCALE_COOKIE } from '@/lib/ui-i18n/config';
-import { PATHNAME_HEADER } from '@/lib/ui-i18n/document-locale.shared';
+import { PATHNAME_HEADER, SEARCH_HEADER } from '@/lib/ui-i18n/document-locale.shared';
 import { resolveDocumentLocale } from '@/lib/ui-i18n/document-locale';
 import { Toaster } from 'sonner';
 import { validateEnv } from '@/lib/env-validation';
@@ -47,6 +47,7 @@ export default async function RootLayout({
   const { lang, uiLocale } = await resolveDocumentLocale(
     effectivePath ?? '',
     cookieStore.get(UI_LOCALE_COOKIE)?.value,
+    headerList.get(SEARCH_HEADER),
   );
 
   return (

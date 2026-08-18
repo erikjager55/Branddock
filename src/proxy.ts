@@ -4,7 +4,7 @@ import {
   buildRequestSecurityHeaders,
   type CspScope,
 } from '@/lib/security/security-headers';
-import { PATHNAME_HEADER } from '@/lib/ui-i18n/document-locale.shared';
+import { PATHNAME_HEADER, SEARCH_HEADER } from '@/lib/ui-i18n/document-locale.shared';
 
 // ─── Security headers applied to ALL responses ───────────
 // Waarden komen uit de gedeelde bron (security-headers.ts). De middleware is
@@ -155,6 +155,9 @@ export function proxy(request: NextRequest) {
     // overschrijft een door de client meegestuurde `x-pathname`, die anders
     // de taal van een willekeurige pagina zou kunnen bepalen.
     requestHeaders.set(PATHNAME_HEADER, effectivePath);
+    // De query erbij: `/invite/accept` haalt zijn taal uit `?lang`, en een
+    // layout kan `searchParams` niet lezen. Ook onvoorwaardelijk gezet.
+    requestHeaders.set(SEARCH_HEADER, request.nextUrl.search);
     if (isProduction) {
       requestHeaders.set('x-nonce', nonce);
       requestHeaders.set('Content-Security-Policy', csp['Content-Security-Policy']);

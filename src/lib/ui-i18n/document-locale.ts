@@ -114,11 +114,14 @@ export interface DocumentLocale {
  *   kent ze niet, dus die vallen terug op de UI-taal. Zodra DomainMapping live
  *   gaat moet die host door dezelfde resolutie.
  * @param cookieValue Rauwe waarde van de `branddock-ui-locale`-cookie.
+ * @param search Effectieve query-string uit `x-search`; alleen de tweetalige
+ *   uitnodigingsroute gebruikt hem.
  * @param loadLocale Alleen voor tests; standaard de echte DB-lookup.
  */
 export async function resolveDocumentLocale(
   pathname: string,
   cookieValue: string | null | undefined,
+  search?: string | null,
   loadLocale: LandingLocaleLoader = loadLandingPageLocale,
 ): Promise<DocumentLocale> {
   const uiLocale = resolveUiLocale(cookieValue);
@@ -130,5 +133,5 @@ export async function resolveDocumentLocale(
     ? await loadLocale(publishedPage.workspace, publishedPage.slug)
     : null;
 
-  return { lang: decideDocumentLang(pathname, uiLocale, landingLocale), uiLocale };
+  return { lang: decideDocumentLang(pathname, uiLocale, landingLocale, search), uiLocale };
 }

@@ -54,6 +54,13 @@ const scenarios: Scenario[] = [
   { label: 'laad /brandmd (cookie en)', path: '/brandmd', cookie: 'en', expect: 'nl', why: 'brand.md-funnel is NL' },
   { label: 'laad / (geen cookie)', path: '/', cookie: null, expect: 'en', why: 'app-route volgt de cookie (default en)' },
   { label: 'laad / (cookie nl)', path: '/', cookie: 'nl', expect: 'nl', why: 'app-route volgt de cookie' },
+  // Het spiegelbeeld: Engelse schermen mogen geen NL-attribuut krijgen.
+  { label: 'laad /oauth/login (cookie nl)', path: '/oauth/login', cookie: 'nl', expect: 'en', why: 'OAuth-scherm is Engels, cookie mag niet winnen' },
+  { label: 'laad /reset-password (cookie nl)', path: '/reset-password', cookie: 'nl', expect: 'en', why: 'herstelscherm is Engels' },
+  // Tweetalig: de taal komt uit de mail-link, niet uit de cookie.
+  { label: 'laad /invite/accept?lang=nl (cookie en)', path: '/invite/accept?lang=nl', cookie: 'en', expect: 'nl', why: 'uitnodiging volgt ?lang' },
+  { label: 'laad /invite/accept?lang=en (cookie nl)', path: '/invite/accept?lang=en', cookie: 'nl', expect: 'en', why: 'idem, andersom' },
+  { label: 'laad /invite/accept (geen ?lang, cookie nl)', path: '/invite/accept', cookie: 'nl', expect: 'en', why: 'zonder ?lang is de default en' },
   // De vier hieronder vingen de regressie van reviewronde 1.
   { label: 'nav /marketing/pricing -> /', path: '/marketing/pricing', navigateTo: '/', cookie: 'en', expect: 'en', why: 'terug naar de UI-taal bij een client-side navigatie' },
   { label: 'nav /marketing/pricing -> / (cookie nl)', path: '/marketing/pricing', navigateTo: '/', cookie: 'nl', expect: 'nl', why: 'idem, met NL-voorkeur' },
