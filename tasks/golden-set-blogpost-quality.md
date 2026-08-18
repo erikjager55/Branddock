@@ -10,7 +10,7 @@ created: 2026-08-16
 completed:
 related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md
-worktree: -
+worktree: branddock-golden-set  # geclaimd door sessie 41832dfd, 2026-08-18
 ---
 
 # Probleem
