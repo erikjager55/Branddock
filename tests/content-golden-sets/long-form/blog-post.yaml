@@ -108,7 +108,12 @@ tests:
           4. Relevance: addresseert brief (objective + keyMessage + cta)
 
           Plus blog-specifieke checks:
-          5. SEO: keyword in H1 + meta-descriptie + body (zonder stuffing)
+          # 2026-08-18: 'meta-descriptie' hier weggehaald. Het prompt-format
+          # hierboven bestelt H1 / H2 / conclusie / FAQ / CTA — geen meta.
+          # Productie doet dat evenmin: prompt-templates/long-form.ts geeft
+          # blog-post 'H1 title, H2 sections, conclusion, and CTA'. De rubric
+          # eiste dus iets wat noch de eval noch productie ooit oplevert.
+          5. SEO: keyword in H1 + body (zonder stuffing)
           6. FAQ-sectie aanwezig (3 Q&A's)
           7. Concrete CTA aan eind
 
@@ -251,7 +256,10 @@ tests:
           - Primary keyword in H1 + intro
           - Geen keyword-stuffing (max 1-2% density)
           - Natural reading flow ondanks SEO-focus
-          - Meta-description ≤ 155 chars met value-prop
+          # 2026-08-18 verwijderd — zie de toelichting bij de algemene rubric.
+          # Deze case zakte beide gemeten nachten op UITSLUITEND dit punt
+          # (3,5 van 4,0), terwijl keyword-plaatsing, dichtheid en leesbaarheid
+          # expliciet goed werden bevonden. Onhaalbaar per constructie.
           Score 1-5. Pass: >= 4.0
 
   # ─── 2 Adversarial edge-cases (history-prone failures) ────────
