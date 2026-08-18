@@ -17,7 +17,8 @@ import {
 } from 'lucide-react';
 import { useFormat } from '@/lib/ui-i18n/format';
 import { CardLockIndicator } from '@/components/lock';
-import * as LucideIcons from 'lucide-react';
+import { FileText } from 'lucide-react';
+import { resolveIcon } from '@/lib/icons/icon-registry';
 import { Card } from '@/components/shared/Card';
 import { cn } from '@/components/ui/utils';
 import type { BrandAssetWithMeta, AssetCategory } from '@/types/brand-asset';
@@ -70,7 +71,7 @@ const VALIDATION_METHODS = [
 // ─── Helpers ────────────────────────────────────────────────
 
 function getIcon(iconName: string): React.ComponentType<{ className?: string }> {
-  return (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[iconName] || LucideIcons.FileText;
+  return resolveIcon(iconName, FileText);
 }
 
 // ─── Props ──────────────────────────────────────────────────

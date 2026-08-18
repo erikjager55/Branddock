@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import * as LucideIcons from "lucide-react";
+import { FileText } from "lucide-react";
+import { resolveIcon } from "@/lib/icons/icon-registry";
 import { Pencil, Save, X, HelpCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/shared";
@@ -36,7 +37,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 function getIcon(iconName: string): React.ComponentType<{ className?: string }> {
-  return (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[iconName] || LucideIcons.FileText;
+  return resolveIcon(iconName, FileText);
 }
 
 interface AssetDetailHeaderProps {

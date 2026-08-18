@@ -101,7 +101,8 @@
     "verify-spike-rules-dts": "tsx scripts/verify-spike-rules-dts.ts",
     "smoke:guard-hooks": "tsx scripts/smoke-tests/guard-hooks.ts",
     "smoke:settings-write": "node --env-file-if-exists=.env.local node_modules/.bin/tsx scripts/smoke-tests/deliverable-settings-write.ts",
-    "smoke:css-utilities": "tsx scripts/smoke-tests/css-utilities.ts"
+    "smoke:css-utilities": "tsx scripts/smoke-tests/css-utilities.ts",
+    "smoke:icon-registry": "tsx scripts/smoke-tests/icon-registry.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

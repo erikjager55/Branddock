@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronRight, Home } from 'lucide-react';
 import { BreadcrumbItem } from '../types/workflow';
-import * as LucideIcons from 'lucide-react';
+import { ICONS } from '@/lib/icons/icon-registry';
 
 interface BreadcrumbNavigationProps {
   items: BreadcrumbItem[];
@@ -42,7 +42,7 @@ export function BreadcrumbNavigation({ items, onNavigate, showHome = true }: Bre
       {/* Breadcrumb items */}
       {visibleItems.map((item, index) => {
         const isLast = index === visibleItems.length - 1;
-        const Icon = item.icon ? (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[item.icon] : null;
+        const Icon = item.icon ? (ICONS[item.icon] ?? null) : null;
 
         return (
           <React.Fragment key={item.id}>
