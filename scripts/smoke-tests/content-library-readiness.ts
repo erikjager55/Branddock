@@ -21,7 +21,10 @@ import {
   readinessHintTokens,
   resolveLibraryContentSignal,
 } from '../../src/lib/content/library-readiness';
-import { resolveDeliverableContentSignal } from '../../src/lib/content/resolve-deliverable-content';
+import {
+  resolveDeliverableContentSignal,
+  TEXT_COMPONENT_WHERE,
+} from '../../src/lib/content/resolve-deliverable-content';
 
 let pass = 0;
 let fail = 0;
@@ -73,6 +76,25 @@ console.log('\n1. De vier staten door de lijst-accessor');
     0,
   );
   check('enkelvoud krijgt eigen formulering', single.contentHint === '1 version — choose it');
+
+  // Beeld op de rij mag de keuze-staat niet overrulen: de publish-guard weigert
+  // een ongekozen variant, dus `hasContent: true` zou een menu tonen dat afketst.
+  const unchosenMetBeeld = resolveLibraryContentSignal(
+    {
+      settings: { structuredVariantOptions: [validVariant('A'), validVariant('B')] },
+      generatedImageUrls: ['https://example.test/hero.png'],
+    },
+    0,
+  );
+  check(
+    'ongekozen + beeld telt NIET als publiceerbaar',
+    unchosenMetBeeld.hasContent === false && unchosenMetBeeld.isAwaitingChoice,
+  );
+  const beeldZonderKeuze = resolveLibraryContentSignal(
+    { generatedImageUrls: ['https://example.test/hero.png'] },
+    0,
+  );
+  check('beeld zónder openstaande keuze telt wél', beeldZonderKeuze.hasContent === true);
 
   const chosen = resolveLibraryContentSignal({ settings: { structuredVariant: validVariant() } }, 0);
   check('gekozen variant → ready', chosen.contentState === 'ready' && chosen.hasContent);
@@ -224,11 +246,9 @@ async function runDbChecks(): Promise<void> {
       where: { id: row.id },
       include: {
         components: {
-          where: {
-            generatedContent: { not: null },
-            NOT: { generatedContent: '' },
-            componentType: { notIn: ['image', 'video'] },
-          },
+          // Dezelfde constante als de route — een kopie hier zou de drift die
+          // deze smoke moet vangen juist onzichtbaar maken.
+          where: TEXT_COMPONENT_WHERE,
           select: { id: true },
           take: 1,
         },
@@ -279,6 +299,45 @@ async function runDbChecks(): Promise<void> {
     } else {
       check(`${label}: assistent ziet de content`, result.hasContent === true, JSON.stringify(result).slice(0, 160));
       check(`${label}: content is niet leeg`, (result.content ?? '').trim().length > 0);
+    }
+  }
+
+  console.log('\n8. Dezelfde rijen door de PUBLIEKE reader — MCP + /api/v1/deliverable (kruising #23)');
+  const { getDeliverableContent } = await import('../../src/lib/content/deliverable-content');
+
+  for (const [label, row] of Object.entries(found)) {
+    const result = await getDeliverableContent(row.workspaceId, row.id);
+    if (!result.ok) {
+      check(`${label}: publieke reader vindt de rij`, false, result.code);
+      continue;
+    }
+    const d = result.deliverable;
+
+    if (label === 'awaiting-choice') {
+      check('publiek/ongekozen: contentState = awaiting-choice', d.contentState === 'awaiting-choice');
+      check('publiek/ongekozen: geen ongekozen versie prijsgegeven', d.text === null);
+      check('publiek/ongekozen: noemt het aantal versies', d.variantOptionCount > 0);
+    } else if (label === 'empty') {
+      check('publiek/leeg: contentState = empty', d.contentState === 'empty');
+      check('publiek/leeg: geen tekst', d.text === null);
+    } else {
+      check(`publiek/${label}: contentState = ready`, d.contentState === 'ready', d.contentState);
+      check(`publiek/${label}: tekst is niet leeg`, (d.text ?? '').trim().length > 0);
+      // Dít is de bug van #23: wie alleen `components` las kreeg een ánder
+      // antwoord dan de waarheid — leeg bij een pure keten-B-pagina, en de
+      // verouderde pre-flip-tekst bij een pagina die ná een GEO-flip zowel
+      // componenten als een gekozen variant heeft.
+      if (label.includes('keten B')) {
+        const alleenComponenten = d.components
+          .map((c) => (c.text ?? '').trim())
+          .filter((t) => t.length > 0)
+          .join('\n\n');
+        check(
+          'publiek/keten B: alleen `components` lezen geeft een ánder antwoord',
+          alleenComponenten !== (d.text ?? ''),
+          `components=${d.components.length} (${alleenComponenten.length} tekens), text=${(d.text ?? '').length} tekens`,
+        );
+      }
     }
   }
 

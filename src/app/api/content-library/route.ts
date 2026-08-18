@@ -6,6 +6,7 @@ import {
   readinessHintTokens,
   resolveLibraryContentSignal,
 } from "@/lib/content/library-readiness";
+import { TEXT_COMPONENT_WHERE } from "@/lib/content/resolve-deliverable-content";
 
 // Content type → category mapping
 const TYPE_CATEGORY_MAP: Record<string, string> = {
@@ -167,11 +168,7 @@ export async function GET(request: NextRequest) {
         // `resolveDeliverableContentSignal` heeft alleen de telling nodig.
         // image/video dragen hun PROMPT in `generatedContent`, geen tekst.
         components: {
-          where: {
-            generatedContent: { not: null },
-            NOT: { generatedContent: "" },
-            componentType: { notIn: ["image", "video"] },
-          },
+          where: TEXT_COMPONENT_WHERE,
           select: { id: true },
           take: 1,
         },

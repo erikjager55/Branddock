@@ -55,7 +55,11 @@ export function resolveLibraryContentSignal(
     deliverable.generatedVideoUrl != null;
 
   const isAwaitingChoice = signal.state === 'awaiting-choice';
-  const hasContent = signal.state === 'ready' || hasVisuals;
+  // Beeld/video op de rij telt als publiceerbare content — behalve zolang er een
+  // variantkeuze open staat. De publish-guard leest de accessor, ziet
+  // `structured-unchosen` en weigert; `hasContent: true` zou dan een
+  // QuickPublishMenu tonen die gegarandeerd afketst.
+  const hasContent = signal.state === 'ready' || (hasVisuals && !isAwaitingChoice);
 
   // Voortgang, geen leegte: er ís gegenereerd, alleen de keuze ontbreekt. De
   // hint noemt daarom de eerstvolgende handeling in plaats van een gemis.
