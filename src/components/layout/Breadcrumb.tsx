@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import * as LucideIcons from 'lucide-react';
+import { ChevronRight, FileText, Home, type LucideIcon } from 'lucide-react';
+import { resolveIcon } from '@/lib/icons/icon-registry';
 import { BREADCRUMB, LAYOUT, PAGE_ICONS, cn } from '@/lib/constants/design-tokens';
 
 // ─── Types ────────────────────────────────────────────────
@@ -21,12 +22,8 @@ interface BreadcrumbProps {
 
 // ─── Icon Helper ──────────────────────────────────────────
 
-function getLucideIcon(name: string): LucideIcons.LucideIcon {
-  const icon = (LucideIcons as Record<string, unknown>)[name];
-  if (icon && typeof icon === 'function') {
-    return icon as LucideIcons.LucideIcon;
-  }
-  return LucideIcons.FileText;
+function getLucideIcon(name: string): LucideIcon {
+  return resolveIcon(name, FileText);
 }
 
 // ─── Component ────────────────────────────────────────────
@@ -37,7 +34,7 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
       <nav className={BREADCRUMB.container} aria-label="Breadcrumb">
         {/* Home icon — always links to dashboard */}
         <Link href="/" className={BREADCRUMB.item.link}>
-          <LucideIcons.Home className={BREADCRUMB.item.icon} />
+          <Home className={BREADCRUMB.item.icon} />
         </Link>
 
         {items.map((item, index) => {
@@ -48,7 +45,7 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
           return (
             <span key={index} className={BREADCRUMB.item.base}>
               {/* Separator */}
-              <LucideIcons.ChevronRight className={BREADCRUMB.separator} />
+              <ChevronRight className={BREADCRUMB.separator} />
 
               {/* Icon (if moduleKey provided) */}
               {Icon && (

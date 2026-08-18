@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import Image from 'next/image';
 import { Button } from './ui/button';
-import * as LucideIcons from 'lucide-react';
+import { Circle } from 'lucide-react';
+import { resolveIcon } from '@/lib/icons/icon-registry';
 import {
   PanelLeftOpen,
   PanelLeftClose,
@@ -26,7 +27,7 @@ interface EnhancedSidebarSimpleProps {
 }
 
 function getIcon(iconName: string): React.ComponentType<{ className?: string }> {
-  return (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[iconName] || LucideIcons.Circle;
+  return resolveIcon(iconName, Circle);
 }
 
 export function EnhancedSidebarSimple({

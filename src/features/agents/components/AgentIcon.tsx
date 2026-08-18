@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import * as LucideIcons from 'lucide-react';
+import { Bot } from 'lucide-react';
+import { resolveIcon } from '@/lib/icons/icon-registry';
 
 /**
  * Resolve the persona's Lucide icon-name string (registry data) to a
@@ -9,8 +10,7 @@ import * as LucideIcons from 'lucide-react';
  * as agent-appropriate fallback.
  */
 export function resolveAgentIcon(iconName: string): React.ComponentType<{ className?: string }> {
-  const icons = LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
-  return icons[iconName] || LucideIcons.Bot;
+  return resolveIcon(iconName, Bot);
 }
 
 /** Gradient icon-tile for an agent persona (module-gradient style). */

@@ -61,7 +61,7 @@ export function usePersonaChat(
   personaId: string,
   isOpen: boolean,
 ): UsePersonaChatReturn {
-  const { t } = useTranslation('personas');
+  const { t } = useTranslation(['personas', 'ai-errors']);
   // ─── Session state ────────────────────────────────────────
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -217,7 +217,7 @@ export function usePersonaChat(
             setError(e.message || 'Failed to send message');
             setErrorUnavailable(e.unavailable);
             setErrorType(e.errorType);
-            if (e.unavailable) notifyAiError(errInput);
+            if (e.unavailable) notifyAiError(t, errInput);
             setMessages((prev) => prev.filter((m) => m.id !== streamingId));
           },
         });
@@ -226,7 +226,7 @@ export function usePersonaChat(
         setError(e.message || 'Failed to send message');
         setErrorUnavailable(e.unavailable);
         setErrorType(e.errorType);
-        if (e.unavailable) notifyAiError(err);
+        if (e.unavailable) notifyAiError(t, err);
         setMessages((prev) => prev.filter((m) => m.id !== streamingId));
       } finally {
         setIsStreaming(false);
@@ -301,7 +301,7 @@ export function usePersonaChat(
         await generateInsightMutation.mutateAsync(messageId);
         toast.success(t('chat.insightSavedToast'));
       } catch (err) {
-        notifyAiError(err);
+        notifyAiError(t, err);
       } finally {
         setGeneratingInsightForMessageId(null);
       }

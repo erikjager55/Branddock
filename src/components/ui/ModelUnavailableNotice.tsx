@@ -3,6 +3,7 @@
 import { RefreshCw, WifiOff } from 'lucide-react';
 
 import { type AIErrorType } from '@/lib/ai/error-handler';
+import { useTranslation } from 'react-i18next';
 import { getUnavailableMessage } from '@/lib/ai/ai-error-client';
 
 interface ModelUnavailableNoticeProps {
@@ -26,7 +27,8 @@ export function ModelUnavailableNotice({
   onRetry,
   isRetrying,
 }: ModelUnavailableNoticeProps) {
-  const { title, body } = getUnavailableMessage({
+  const { t } = useTranslation('ai-errors');
+  const { title, body } = getUnavailableMessage(t, {
     unavailable: true,
     errorType,
     message: '',
@@ -50,10 +52,10 @@ export function ModelUnavailableNotice({
               {isRetrying ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  Retrying…
+                  {t('retrying')}
                 </>
               ) : (
-                'Try again'
+                t('retry')
               )}
             </button>
           )}

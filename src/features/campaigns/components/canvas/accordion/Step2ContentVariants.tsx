@@ -80,7 +80,7 @@ interface Step2ContentVariantsProps {
  * variant (A or B) rather than mixing individual components.
  */
 export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentVariantsProps) {
-  const { t } = useTranslation('campaigns-canvas-accordion');
+  const { t } = useTranslation(['campaigns-canvas-accordion', 'ai-errors']);
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const selections = useCanvasStore((s) => s.selections);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
@@ -188,7 +188,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
       } catch (err) {
         const e = interpretAiError(err);
         setVisualGenerationStatus('error', e.message || t('step2.visual.failedToGenerate'));
-        if (e.unavailable) notifyAiError(err);
+        if (e.unavailable) notifyAiError(t, err);
       }
     },
     [

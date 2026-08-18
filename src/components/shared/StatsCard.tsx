@@ -1,4 +1,5 @@
-import * as LucideIcons from 'lucide-react';
+import { BarChart3, type LucideIcon } from 'lucide-react';
+import { resolveIcon } from '@/lib/icons/icon-registry';
 import { STATS_CARD, cn } from '@/lib/constants/design-tokens';
 
 // ─── Types ────────────────────────────────────────────────
@@ -29,12 +30,8 @@ interface StatsCardGridProps {
 
 // ─── Icon Helper ──────────────────────────────────────────
 
-function getLucideIcon(name: string): LucideIcons.LucideIcon {
-  const icon = (LucideIcons as Record<string, unknown>)[name];
-  if (icon && typeof icon === 'function') {
-    return icon as LucideIcons.LucideIcon;
-  }
-  return LucideIcons.BarChart3;
+function getLucideIcon(name: string): LucideIcon {
+  return resolveIcon(name, BarChart3);
 }
 
 // ─── Grid Container ───────────────────────────────────────

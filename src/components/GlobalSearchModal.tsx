@@ -12,7 +12,8 @@ import {
   Package,
   TrendingUp,
 } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { Circle } from 'lucide-react';
+import { resolveIcon } from '@/lib/icons/icon-registry';
 import { useSearch, useQuickActions } from '../hooks/use-search';
 import { useShellStore } from '../stores/useShellStore';
 import { CardLockIndicator } from './lock';
@@ -266,7 +267,7 @@ export function GlobalSearchModal({ isOpen, onClose, onNavigate, onAction }: Glo
                         .slice(0, sectionIdx)
                         .reduce((acc, s) => acc + s.items.length, 0) + itemIdx;
                       const isSelected = globalIndex === selectedIndex;
-                      const Icon = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[item.icon] || LucideIcons.Circle;
+                      const Icon = resolveIcon(item.icon, Circle);
 
                       return (
                         <button
