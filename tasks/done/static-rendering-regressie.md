@@ -313,12 +313,20 @@ niet 3 — verouderd sinds de bedradingschecks van ronde 3, zelf nagemeten.
 
 ## Bewijs
 
+> Alle regels hieronder zijn (her)gemeten ná de rebase op `origin/main` @ `c95d7eee`
+> (15 commits, waaronder #323 dat `src/index.css` van bevroren artefact naar echte
+> Tailwind-bron omzette en dus de build-laag raakt). Een reviewer wees er terecht op
+> dat de eerdere cijfers tegen `d360caad` waren gemeten — een base die de merge-target
+> niet meer was. Het enige conflict zat in `ci.yml`; beide CI-steps zijn behouden.
+
+
 | Gate | Uitkomst |
 |---|---|
 | `npx tsc --noEmit` | 0 errors |
 | `npx eslint <gewijzigde bestanden>` | 0 errors — ⚠️ dekt de e2e-spec NIET; `e2e/` valt in een eslint-ignore-pattern |
 | `npm run test:csp` | **15/15** (was 10/10; 5 nieuwe nonce-integriteitchecks) |
 | `npm run smoke:document-lang` | **61/61** — deterministisch, draait mee in de CI-`check`-job |
+| `npm run smoke:css-utilities -- --strict` | groen — de gate die met #323 meekwam, niet gebroken |
 | `next build` route-tabel | **identiek aan baseline** (2 statische routes: de twee icon-PNG's), zoals bedoeld |
 | `npm run smoke:document-lang-browser` | **16/16** — 6 server-HTML- + 10 post-hydratiechecks. ⚠️ Alleen mét `LP_PATH` gezet; zonder is het 14 en wordt de DB-tak overgeslagen |
 
