@@ -107,10 +107,8 @@ wél leesbaar maar niet wisbaar waren. Details in changelog #474.
         anders blijft er een spinner hangen die nooit meer weggaat.
       - Server: `request.signal` doorgegeven; guards vóór volgende slot,
         recovery-retry, rewrite, tussen rewrite en iterate, en persist.
-        ⚠️ ~~**Dekking is niet volledig**~~ — **grotendeels gedicht 2026-08-18**,
-        zie §Dekkingsgaten hieronder. Restant: het voorbereidende werk vóór de
-        stream (archetype, angles, Exa/S2-stats) draait vóórdat de `Response`
-        bestaat en is nog steeds niet abortbaar.
+        ⚠️ ~~**Dekking is niet volledig**~~ — **gedicht 2026-08-18**, zie
+        §Dekkingsgaten en §Voorwerk hieronder.
       - Signal doorgezet tot in `generateLandingPageVariant` →
         `anthropicClient.createChatCompletion` (dat ondersteunde `abortSignal` al),
         dus de lopende call van 30-90s wordt afgebroken. ⚠️ Die call is
@@ -313,6 +311,40 @@ sneuvelen — doet hij dat niet, dan meet de scène niets en faalt de smoke.
 ⚠️ **De tak `claude/sse-abort-disconnect` is hiermee volledig achterhaald** en kan
 weg. Niet zelf verwijderd: hij is niet van deze sessie.
 
+## ✅ Voorwerk vóór de stream — 2026-08-18, en de oude claim was onjuist
+
+Dit item stond genoteerd als **niet oplosbaar**: *"het voorbereidende werk draait
+vóórdat de `Response` bestaat en is niet abortbaar."* Die redenering klopt niet.
+`request.signal` hangt aan het **inkomende verzoek**, niet aan het antwoord — er is
+geen reden waarom hij op een Response zou wachten.
+
+**Gemeten in plaats van aangenomen.** Een kale probe-route (Next 16, node-runtime,
+`next dev`) die in een lus `request.signal.aborted` logt, beide armen gedraaid:
+
+| Scenario | Uitkomst |
+|---|---|
+| client blijft hangen (controle) | `signal NOOIT afgegaan in 10035ms` |
+| client loopt na 2s weg | `signal.aborted=true na 2005ms, vóór enige Response` |
+
+De controle-arm is het punt: zonder die eerste regel zou "hij vuurt" ook kunnen
+betekenen dat de probe altijd `true` meldt. Terzijde, de eerste opzet gaf een 404
+omdat de map `_probe-abort` heette — een `_`-prefix maakt er in Next een privémap
+van die niet gerouteerd wordt. Een probe die niets vindt is eerst een verdenking
+tegen de probe.
+
+**Gebouwd**: drie guards op de grenzen van het voorwerk, vóór respectievelijk de
+archetype-classificatie, de Gemini-call voor de creative angles, en — bij long-form
+GEO — het Exa/S2-onderzoek. Dat laatste is de duurste stap van het hele voorwerk.
+Antwoord is `499` (nginx-conventie voor "client closed request"); er is geen
+standaard, en er is ook niemand meer om het te lezen. Het gaat om het stoppen en om
+een logregel die verklaart waarom er geen generatie kwam.
+
+⚠️ **Wat dit niet bewijst**: de meting is lokaal, op de node-runtime. Op Vercel
+(serverless/Fluid) kan het anders liggen. Dat is geen risico — vuurt de signal daar
+niet, dan zijn de guards inert en gedraagt de route zich als voorheen. Wil je het
+zeker weten, herhaal de probe tegen een preview-deployment; hij is in twee minuten
+nagebouwd met de tabel hierboven als ijkpunt.
+
 ## Bewuste niet-fixes (gedocumenteerd, geen actie)
 - **`cta_click`-events**: uit het publieke `/api/t`-enum gehaald (spoofbaar);
   pas terugbrengen mét signed payload wanneer click-metingen gewenst zijn.
@@ -326,9 +358,10 @@ weg. Niet zelf verwijderd: hij is niet van deze sessie.
 - [x] Retentie-items gebouwd of expliciet her-geprioriteerd vóór de eerste
       workspace met >10k events/maand — gebouwd 2026-08-17 (ADR + cron + smoke 47/47)
 - [~] Robuustheid-items opgepakt in een reguliere hardening-sessie — **grotendeels**:
-      de SSE-dekkingsgaten zijn gedicht (18-08, §Dekkingsgaten). Nog open: Turnstile
-      (bewust gegate op waargenomen spam-druk) en het niet-abortbare voorwerk vóór de
-      stream. De tak-consolidatie is afgerond. Het registry-type
+      de SSE-dekkingsgaten zijn gedicht (18-08, §Dekkingsgaten). Nog open: alleen Turnstile,
+      en dat is een bewuste gate op waargenomen spam-druk — geen restwerk. Het
+      voorwerk vóór de stream is per 18-08 wél afbreekbaar (§Voorwerk); de
+      tak-consolidatie is afgerond. Het registry-type
       is verhuisd naar [`build-heap-investigation`](build-heap-investigation.md)
 
 # Out of scope
