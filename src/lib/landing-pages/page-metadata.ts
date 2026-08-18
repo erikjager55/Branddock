@@ -26,6 +26,21 @@ export interface SeoMetadataOptions {
    * tegen duplicate-content.
    */
   fallbackCanonical?: string;
+  /**
+   * Titel wanneer de checklist er geen heeft. `settings.seoChecklist` wordt
+   * alleen door de SEO-pipeline geschreven (`src/lib/ai/seo-pipeline.ts`), dus
+   * een pagina uit de gewone webpage-builder heeft er nooit één. Zonder deze
+   * fallback erft zo'n pagina de generieke root-layout-titel ("Branddock") —
+   * bruikbaar, maar waardeloos voor een klant-pagina die voor zoekverkeer
+   * bestaat. In de praktijk de titel van de bron-deliverable.
+   */
+  fallbackTitle?: string;
+  /**
+   * Meta-description wanneer de checklist er geen heeft. Zelfde reden als
+   * `fallbackTitle`: zonder checklist had de pagina er helemaal geen. In de
+   * praktijk de hero-`sub` uit de pagina-boom.
+   */
+  fallbackDescription?: string;
 }
 
 /**
@@ -38,8 +53,8 @@ export function seoChecklistToMetadata(
   checklist: Partial<SeoChecklist> | null | undefined,
   opts: SeoMetadataOptions = {},
 ): Metadata {
-  const title = nonEmpty(checklist?.titleTag);
-  const description = nonEmpty(checklist?.metaDescription);
+  const title = nonEmpty(checklist?.titleTag) ?? nonEmpty(opts.fallbackTitle);
+  const description = nonEmpty(checklist?.metaDescription) ?? nonEmpty(opts.fallbackDescription);
   const canonical = nonEmpty(checklist?.canonicalTag) ?? nonEmpty(opts.fallbackCanonical);
   const ogTitle = nonEmpty(checklist?.ogTitle) ?? title;
   const ogDescription = nonEmpty(checklist?.ogDescription) ?? description;
@@ -59,11 +74,19 @@ export function seoChecklistToMetadata(
         }
       : undefined;
 
+  // Alleen GEDEFINIEERDE sleutels teruggeven. Next merge't route-metadata over
+  // de layout-defaults heen op sleutel-niveau: een aanwezige `title`-sleutel met
+  // waarde `undefined` WIST de geërfde titel in plaats van hem te laten staan.
+  // Omdat `fallbackCanonical` altijd meegegeven wordt, haalde de early-return
+  // hierboven het nooit en kreeg élke pagina zonder checklist `title: undefined`
+  // → een publieke pagina zonder <title>. Gemeten op prod 2026-08-18:
+  // linfi.branddock.app/pillar-page had er geen, terwijl /reset-password (zonder
+  // eigen generateMetadata) netjes "Branddock" erfde.
   return {
-    title,
-    description,
-    alternates: canonical ? { canonical } : undefined,
+    ...(title ? { title } : {}),
+    ...(description ? { description } : {}),
+    ...(canonical ? { alternates: { canonical } } : {}),
     robots: { index: true, follow: true },
-    openGraph,
+    ...(openGraph ? { openGraph } : {}),
   };
 }

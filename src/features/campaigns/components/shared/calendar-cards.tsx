@@ -230,7 +230,7 @@ export function InlineRenameField({
   className?: string;
   onRename: (newTitle: string) => void;
 }) {
-  const { t } = useTranslation('campaigns-core');
+  const { t } = useTranslation(['campaigns-core', 'campaigns-cards', 'campaigns-content-types']);
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
 
@@ -326,7 +326,7 @@ export function CalendarCard({
   isSelected,
   onToggleSelected,
 }: CalendarCardProps) {
-  const { t } = useTranslation('campaigns-core');
+  const { t } = useTranslation(['campaigns-core', 'campaigns-cards', 'campaigns-content-types']);
   const phaseConfig = getPhaseConfig(phase);
   const { light, label: lightLabel, key: lightKey, overdue: lightOverdue } = deriveTrafficLight(
     isPublishReady,

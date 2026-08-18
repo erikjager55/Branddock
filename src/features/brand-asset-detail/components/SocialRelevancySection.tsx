@@ -96,7 +96,7 @@ function ScoreBar({ score, onChange, isEditing, color }: {
   isEditing: boolean;
   color: string;
 }) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   const colorMap: Record<string, { active: string; hover: string }> = {
     emerald: { active: 'bg-emerald-500', hover: 'hover:bg-emerald-200' },
     rose: { active: 'bg-rose-500', hover: 'hover:bg-rose-200' },
@@ -162,7 +162,7 @@ function PillarScoreSummary({ score, maxScore, color }: {
 // ─── Grand Total Display ────────────────────────────────────
 
 function GrandTotalBar({ data }: { data: SocialRelevancyFrameworkData }) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   const scores = PILLAR_CONFIGS.map(p => ({
     key: p.key,
     label: p.label,
@@ -235,7 +235,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
   placeholder: string;
   emptyText: string;
 }) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   if (!isEditing) {
     if (items.filter(Boolean).length === 0) {
       return <p className="text-sm italic text-gray-400">{emptyText}</p>;
@@ -284,7 +284,7 @@ function TagInput({ tags, isEditing, onAdd, onRemove, placeholder }: {
   onRemove: (index: number) => void;
   placeholder: string;
 }) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   const [input, setInput] = useState('');
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -370,7 +370,7 @@ function CardHeader({ icon: Icon, color, title, subtitle, summary, isExpanded, o
 
 /** Social Relevancy canvas with 6 cards based on Triple Bottom Line / B Corp / Brand Activism. */
 export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRelevancySectionProps) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   const [draft, setDraft] = useState<SocialRelevancyFrameworkData>(() => normalize(data));
   const [expandedCard, setExpandedCard] = useState<number | null>(1);
   const [showReference, setShowReference] = useState(false);

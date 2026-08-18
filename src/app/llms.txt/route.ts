@@ -5,6 +5,7 @@
  */
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { resolvePageTitleFromPuckData } from "@/lib/landing-pages/page-derived-meta";
 import { workspaceSlugFromHost } from "@/lib/landing-pages/host-router";
 import { buildLlmsTxt, requestOrigin, type LlmsEntry } from "@/lib/landing-pages/sitemap-host";
 
@@ -37,9 +38,17 @@ export async function GET(): Promise<Response> {
         // Eén JOIN-query: titel uit de gekoppelde deliverable-settings (geen N+1).
         const pages = await prisma.landingPage.findMany({
           where: { workspaceId: workspace.id, status: "PUBLISHED" },
-          select: { slug: true, deliverable: { select: { settings: true } } },
+          // `puckData` meelezen kost bandbreedte, maar deze route is 1 uur
+          // gecacht en een workspace heeft een handvol gepubliceerde pagina's.
+          select: { slug: true, puckData: true, deliverable: { select: { settings: true } } },
         });
-        entries = pages.map((p) => ({ slug: p.slug, title: titleFromSettings(p.deliverable?.settings) }));
+        // Titel-fallback op de hero-kop van de pagina zelf: `seoChecklist` wordt
+        // alleen door de SEO-pipeline geschreven, dus een pagina uit de gewone
+        // webpage-builder viel hier terug op de kale slug ("pillar-page").
+        entries = pages.map((p) => ({
+          slug: p.slug,
+          title: titleFromSettings(p.deliverable?.settings) ?? resolvePageTitleFromPuckData(p.puckData),
+        }));
       }
     } catch (error) {
       console.error("[GET /llms.txt]", error);

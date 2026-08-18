@@ -23,9 +23,14 @@ const controllers = new Map<string, AbortController>();
  */
 const pendingAborts = new Map<string, ReturnType<typeof setTimeout>>();
 
-/** Ruim genoeg voor StrictMode's synchrone cleanup→setup, kort genoeg om na
- *  echt weglopen niet nodeloos door te genereren. */
-const ABORT_GRACE_MS = 250;
+/**
+ * Nul, bewust. StrictMode's cleanup en setup draaien in dezelfde
+ * passive-effect-flush, dus één macrotask uitstel is genoeg om de her-mount de
+ * abort te laten intrekken. Een langere grace koopt daar niets extra's mee en
+ * creëert juist een venster waarin een échte terugkeer (die duurt altijd langer
+ * dan een paar honderd ms) een betaalde run alsnog doodt.
+ */
+const ABORT_GRACE_MS = 0;
 
 /**
  * Start een generatie voor dit deliverable en geef de bijbehorende controller.
@@ -33,9 +38,15 @@ const ABORT_GRACE_MS = 250;
  * anders draaien er twee en betaal je beide.
  */
 export function beginGeneration(deliverableId: string): AbortController {
+  // Een geplande abort van een vórige mount mag deze verse run niet killen.
+  // Samen met de identiteitscheck in de timer is dit bewust dubbel: elk van
+  // beide dekt het geval alleen af, en ze maskeren elkaars afwezigheid — een
+  // mutatietest op één van de twee blijft daardoor groen.
+  cancelScheduledAbort(deliverableId);
   controllers.get(deliverableId)?.abort();
   const controller = new AbortController();
   controllers.set(deliverableId, controller);
+  notify();
   return controller;
 }
 
@@ -46,7 +57,24 @@ export function beginGeneration(deliverableId: string): AbortController {
 export function endGeneration(deliverableId: string, controller: AbortController): void {
   if (controllers.get(deliverableId) === controller) {
     controllers.delete(deliverableId);
+    notify();
   }
+}
+
+/**
+ * Loopt er een generatie voor dit deliverable?
+ *
+ * Deze vraag hoort hier en niet in component-state. `HorizontalAccordion`
+ * rendert maar één stap, dus een stapwissel-en-terug mount het generatieblok
+ * opnieuw met verse `isGenerating`/`autoTriggeredRef`. Keek de auto-trigger
+ * alleen daarnaar, dan vuurde die een nieuwe generatie, brak `beginGeneration`
+ * de lopende betaalde run af, en betaalde je twee keer voor één resultaat.
+ */
+export function hasActiveGeneration(deliverableId: string): boolean {
+  // Alleen aanwezigheid: elk pad dat aborteert verwijdert de entry ook
+  // (`abortGeneration` wist 'm, `beginGeneration` vervangt 'm), dus een
+  // afgebroken-maar-nog-aanwezige controller bestaat niet.
+  return controllers.has(deliverableId);
 }
 
 /** Breek de lopende generatie voor dit deliverable direct af. */
@@ -55,6 +83,7 @@ export function abortGeneration(deliverableId: string): void {
   if (!controller) return;
   controller.abort();
   controllers.delete(deliverableId);
+  notify();
 }
 
 /**
@@ -63,10 +92,14 @@ export function abortGeneration(deliverableId: string): void {
  */
 export function scheduleAbort(deliverableId: string): void {
   cancelScheduledAbort(deliverableId);
+  const scheduledFor = controllers.get(deliverableId);
   pendingAborts.set(
     deliverableId,
     setTimeout(() => {
       pendingAborts.delete(deliverableId);
+      // Identiteitscheck: is er inmiddels een níeuwe generatie gestart, dan
+      // hoort deze tik daar niet meer bij en laat hij 'm met rust.
+      if (controllers.get(deliverableId) !== scheduledFor) return;
       abortGeneration(deliverableId);
     }, ABORT_GRACE_MS),
   );
@@ -78,4 +111,27 @@ export function cancelScheduledAbort(deliverableId: string): void {
   if (timer === undefined) return;
   clearTimeout(timer);
   pendingAborts.delete(deliverableId);
+}
+
+// ─── Abonnement (voor useSyncExternalStore) ──────────────────────────────
+
+const listeners = new Set<() => void>();
+
+function notify(): void {
+  listeners.forEach((l) => l());
+}
+
+/**
+ * Abonneer op wijzigingen in "loopt er een generatie".
+ *
+ * Nodig omdat het generatieblok bij elke accordion-stapwissel opnieuw mount:
+ * las het de registry alleen bij mount, dan bleef een instance die tijdens een
+ * run mountte voor altijd in "genererend" hangen als die run op een fout
+ * eindigde — de `setIsGenerating(false)` van de run landt namelijk op de oude,
+ * al ge-unmounte instance. Spinner zonder uitweg, en elke volgende stapwissel
+ * kocht een nieuwe generatie.
+ */
+export function subscribeToGenerations(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
 }

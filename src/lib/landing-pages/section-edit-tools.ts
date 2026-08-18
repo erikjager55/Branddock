@@ -50,10 +50,47 @@ function cloneTree(data: EditableTree): EditableTree {
   return structuredClone(data);
 }
 
-function indexOfSection(data: EditableTree, sectionId: string): number {
-  return data.content.findIndex(
-    (item) => item && typeof item === 'object' && (item.props?.id === sectionId),
+/**
+ * Content-index van een sectie-id — de énige id-resolutie in het edit-pad.
+ *
+ * Volgt PageRender's id-logica: primair `props.id`, met terugval op het
+ * synthetische `<type>-<index>`-id dat PageRender genereert voor secties
+ * zónder bruikbaar `props.id`. Zonder die terugval matchte de kernel zo'n
+ * sectie niet en werden move/remove/duplicate/set-props stille no-ops met een
+ * misleidende melding — de klik kwam immers wél ergens vandaan.
+ *
+ * De terugval is bewust streng: het id moet naar een sectie van hetzelfde type
+ * op die index wijzen, én die sectie moet echt géén eigen id hebben. Anders is
+ * `BrandHero-2` van een pagina waar sectie 2 wél een id heeft een toevallige
+ * treffer op een andere sectie — een edit op de verkeerde plek is erger dan
+ * een geweigerde edit.
+ *
+ * Stond eerder alleen in `preview-edit-matching.ts` (features-laag); die
+ * importeert hem nu hiervandaan, zodat preview en kernel per constructie
+ * dezelfde secties aanwijzen.
+ */
+export function sectionContentIndex(tree: unknown, sectionId: string): number {
+  // Bewust `unknown`: hier komt zowel getypte `PageData<T>` als rauwe DB-JSON
+  // binnen, en die eerste mist de index-signature van `EditableTree`.
+  const content = (tree as { content?: Array<{ type?: string; props?: Record<string, unknown> } | null> } | null | undefined)
+    ?.content;
+  if (!Array.isArray(content) || !sectionId) return -1;
+  const byId = content.findIndex(
+    (item) => item !== null && typeof item === 'object' && item.props?.id === sectionId,
   );
+  if (byId >= 0) return byId;
+
+  const synthetic = sectionId.match(/^(.+)-(\d+)$/);
+  if (!synthetic) return -1;
+  const idx = Number(synthetic[2]);
+  const item = content[idx];
+  if (!item || typeof item !== 'object' || item.type !== synthetic[1]) return -1;
+  const ownId = item.props?.id;
+  return typeof ownId === 'string' && ownId.length > 0 ? -1 : idx;
+}
+
+function indexOfSection(data: EditableTree, sectionId: string): number {
+  return sectionContentIndex(data, sectionId);
 }
 
 function sectionLabel(item: { type: string } | undefined): string {
@@ -237,7 +274,13 @@ export function addSection(
   let insertAt = next.content.length;
   if (params.afterSectionId) {
     const idx = indexOfSection(next, params.afterSectionId);
-    if (idx >= 0) insertAt = idx + 1;
+    // Wél een anker meegegeven maar niet te vinden: dat is een vergissing, geen
+    // "dan maar onderaan". Stil appenden zette de sectie op een andere plek dan
+    // de gebruiker aanwees, en meldde succes — de melding klopte dan letterlijk
+    // (er is een sectie toegevoegd) en inhoudelijk niet. Géén anker meegeven
+    // blijft gewoon appenden; dat is een expliciete keuze van de caller.
+    if (idx < 0) return { ok: false, reason: 'after-section-not-found' };
+    insertAt = idx + 1;
   }
   next.content.splice(insertAt, 0, item);
   return { ok: true, data: next };

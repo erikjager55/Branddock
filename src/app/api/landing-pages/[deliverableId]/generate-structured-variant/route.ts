@@ -379,29 +379,47 @@ async function persistVariantOptions(args: {
     );
   });
 
-  await prisma.deliverable.update({
-    where: { id: args.deliverableId },
-    data: {
-      settings: {
-        ...args.existingSettings,
-        structuredVariantOptions: variants,
-        structuredVariantLabels: variantLabels,
-        structuredGenerationMeta: {
-          generatedAt: new Date().toISOString(),
-          count,
-          requestedCount: count,
-          deliveredCount: variants.length,
-          inputTokens: totalInputTokens + (archetypeResult.inputTokens ?? 0),
-          outputTokens: totalOutputTokens + (archetypeResult.outputTokens ?? 0),
-          archetypeClassified: archetypeResult.classified,
-          archetype: archetypeResult.archetype,
-          archetypeConfidence: archetypeResult.confidence ?? null,
-          layoutStyleInferred: layoutResult.inferred,
-          layoutStyle: layoutResult.layoutStyle,
-          layoutStyleConfidence: layoutResult.confidence ?? null,
+  // Read-modify-write in één interactieve transactie, op een VERSE lees-actie.
+  // `args.existingSettings` is de snapshot van vóór de generatie, en die duurt
+  // minuten: een autosave van puckData of een hero-URL die ondertussen binnenkwam
+  // zou bij een merge op die snapshot stil worden teruggedraaid. De gebruiker
+  // ziet dat niet gebeuren — hij kijkt naar de variant-kaarten — en merkt het pas
+  // veel later, wanneer zijn edit "vanzelf" verdwenen blijkt. Zelfde patroon als
+  // de GEO-haak in `landing-pages/publish/route.ts`.
+  await prisma.$transaction(async (tx) => {
+    const fresh = await tx.deliverable.findUnique({
+      where: { id: args.deliverableId },
+      select: { settings: true },
+    });
+    const freshSettings =
+      fresh?.settings && typeof fresh.settings === 'object' && !Array.isArray(fresh.settings)
+        ? (fresh.settings as Record<string, unknown>)
+        : args.existingSettings;
+
+    await tx.deliverable.update({
+      where: { id: args.deliverableId },
+      data: {
+        settings: {
+            ...freshSettings,
+            structuredVariantOptions: variants,
+          structuredVariantLabels: variantLabels,
+          structuredGenerationMeta: {
+            generatedAt: new Date().toISOString(),
+            count,
+            requestedCount: count,
+            deliveredCount: variants.length,
+            inputTokens: totalInputTokens + (archetypeResult.inputTokens ?? 0),
+            outputTokens: totalOutputTokens + (archetypeResult.outputTokens ?? 0),
+            archetypeClassified: archetypeResult.classified,
+            archetype: archetypeResult.archetype,
+            archetypeConfidence: archetypeResult.confidence ?? null,
+            layoutStyleInferred: layoutResult.inferred,
+            layoutStyle: layoutResult.layoutStyle,
+            layoutStyleConfidence: layoutResult.confidence ?? null,
+          },
         },
       },
-    },
+    });
   });
 
   // Cache-invalidatie per CLAUDE.md API conventies (verplicht na mutatie)
@@ -874,12 +892,15 @@ function streamSequentialGeneration(args: {
 
         await Promise.allSettled(trackingPromises);
 
-        // Weggelopen client: niets persisten. De settings-snapshot in
-        // `persistVariantOptions` is dan minuten oud en de gebruiker kijkt niet,
-        // dus een overschreven autosave zou pas veel later opvallen (het
-        // read-modify-write-venster staat nog open — zie lp-review-followups).
-        // Bewuste keuze: de al betaalde varianten gaan verloren, de database
-        // blijft ongemoeid.
+        // Weggelopen client: niets persisten. Bewuste productkeuze — de al
+        // betaalde varianten gaan verloren, de database blijft ongemoeid.
+        //
+        // De oorspronkelijke motivering noemde óók het read-modify-write-venster
+        // (een minuten-oude snapshot die een autosave zou overschrijven). Dat
+        // venster is inmiddels dicht: `persistVariantOptions` leest vers binnen
+        // een transactie. Persisteren ná een abort zou dus niet langer gevaarlijk
+        // zijn — het gebeurt niet omdat het niet gewenst is, niet omdat het niet
+        // kan.
         if (args.signal.aborted) {
           // `trackingPromises.length`, niet `results.length`: de slot waarin de
           // abort werd opgemerkt is wél gegenereerd en geboekt, maar nooit in

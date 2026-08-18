@@ -115,7 +115,7 @@ function getIcon(iconName: string): LucideIcon {
 // ─── Component ────────────────────────────────────────────
 
 export function DeliverablesStep() {
-  const { t } = useTranslation("campaigns-wizard");
+  const { t } = useTranslation(["campaigns-wizard", "campaigns-content-types"]);
   const selectedDeliverables = useCampaignWizardStore(
     (s) => s.selectedDeliverables,
   );

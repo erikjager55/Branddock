@@ -1,3 +1,7 @@
+import type { ReadinessSignal } from "@/lib/content/library-readiness";
+
+export type { ReadinessSignal };
+
 export interface ContentLibraryItem {
   id: string;
   title: string;
@@ -27,8 +31,10 @@ export interface ContentLibraryItem {
    *  koos er nog geen. Telt als voortgang voor het stoplicht (amber i.p.v.
    *  rood), maar niet als publiceerbare content. */
   contentState: "ready" | "awaiting-choice" | "empty";
-  /** Human-readable hint about what's missing (null when publish-ready) */
-  readinessHint: string | null;
+  /** Wat er nog mist, als tokens — leeg wanneer het item publicatie-klaar is.
+   *  Bewust géén kant-en-klare zin: die was Engels en ging langs i18next heen.
+   *  Vertaal met `formatReadinessHint()`. */
+  readinessSignals: ReadinessSignal[];
   /** Journey phase (e.g. "awareness", "consideration", "conversion") */
   phase: string | null;
 }

@@ -68,7 +68,7 @@ function render(
   name: ComponentKey,
   props: Record<string, unknown>,
 ): string {
-  const def = (config.components as Record<string, { render: (p: never) => unknown }>)[name];
+  const def = (config.components as unknown as Record<string, { render: (p: never) => unknown }>)[name];
   if (!def) throw new Error(`component ${name} niet in config`);
   return renderToStaticMarkup(createElement(() => def.render(props as never) as never));
 }

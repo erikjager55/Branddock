@@ -5,7 +5,7 @@ fase: post-launch
 priority: now
 effort: 1 dag
 owner: claude-code (remote sessie)
-status: review
+status: done
 created: 2026-08-14
 related-spec: docs/specs/2026-08-07-webpage-builder-verbeterplan.md (opvolging)
 worktree: remote-sessie (claude/puck-editor-improvement-y9ep4x, herstart vanaf main)
@@ -50,7 +50,10 @@ minimaal aantal afbeeldingen getoond". Onderzoek wees uit:
 - [x] Styleguide → Imagery: merkbeelden bekijken/toevoegen/verwijderen (BrandImagesPanel, upload via /api/media)
 - [x] Bestaande gepubliceerde pagina's renderen ongewijzigd (imageUrl optioneel, default leeg)
 - [x] `npx tsc --noEmit` 0 errors, eslint clean op geraakte files
-- [ ] Smoke op prod (Erik): nieuwe pillar-page genereren → sectie-beelden; merkbeeld uploaden → volgende generatie gebruikt hem
+- [x] Smoke op prod (Erik) ✅ 2026-08-14 — mondeling bevestigd in de livegang-sessie
+      ("ok, het werkt"): sectie-beelden verschenen na content-regeneratie en het
+      merkbeelden-paneel werkte. NB: PR #253 hield deze taak op review omdat die
+      bevestiging daar niet bekend was; hierbij gecorrigeerd.
 
 # Smoke-test
 
