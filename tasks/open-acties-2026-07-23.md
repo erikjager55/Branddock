@@ -48,6 +48,11 @@ taken-spiegel daarvan + de twee nieuwe items uit deze sessie.
       `SELECT indexname FROM pg_indexes WHERE tablename IN ('PageEvent','FormSubmission') AND indexname LIKE '%createdAt_idx';`
       **Geen haast**: de retentie-cron (02:00) werkt zonder deze indexen functioneel
       prima, alleen als volledige tabelscan. Wél doen vóór `PageEvent` serieus groeit.
+- [ ] **`NEXT_PUBLIC_POSTHOG_KEY` op prod zetten** — er staat vandaag géén key op productie,
+      dus posthog-js initialiseert daar niet en je hebt **geen product-analytics**. De
+      CSP-kant is per 18-08 gedicht (`eu.i.posthog.com` én `eu-assets.i.posthog.com` staan
+      in `connect-src`, changelog #476), dus zodra je de key zet werkt het meteen. Zonder
+      die fix zou de eigen CSP de remote-config-call stil hebben geblokkeerd.
 - [ ] **Barneveld-logo** uploaden — `~/Downloads/logo_barneveld.svg` in Brandstyle
 - [ ] **"+12"-proof point** nog in prod-HQ-workspace — in-app aanpassen (Brand Promise → proof points) of her-import
 - [ ] **Marketing-site restjes** — copy-review, quote/testimonial, 3 ontbrekende feature-screenshots
@@ -59,7 +64,12 @@ taken-spiegel daarvan + de twee nieuwe items uit deze sessie.
 - [ ] **`guard-hooks-hardening`** — raakt veiligheidsnet, expliciet akkoord nodig. Zie `tasks/guard-hooks-hardening.md`
 
 ## D. Gebundelde sessie ~28 juli
-- [ ] **CSP-enforce-flip** (`[csp-report]`-logs analyseren → enforce) + **Ada-drempel-kalibratie** + **Vera go/no-go** — vallen samen rond 28-07. Zie [[security-residual-state]] + `tasks/security-residual-hardening.md`
+- [x] ~~**CSP-enforce-flip**~~ — ✅ **gedaan 2026-08-18** (PR #294, changelog #476). De
+      `[csp-report]`-route bleek niet begaanbaar: de meetfase stempelde geen nonce, dus
+      violeerde élk script en zijn de rapporten ruis; beslissing genomen op een lokale
+      meting tegen een echte productiebuild. ⚠️ De Vercel-CLI-token is verlopen — een
+      `vercel login` is nodig als je ooit prod-logs wilt ophalen.
+- [ ] **Ada-drempel-kalibratie** + **Vera go/no-go** — vielen samen rond 28-07, staan nog open
 
 ## E. Nieuw uit deze sessie
 - [ ] **"Connected apps"-paneel verifiëren** — Settings → API & Connectors op prod: koppelingen zichtbaar + "Revoke" werkt (OAuth-intrek ging vandaag live, PR #250)

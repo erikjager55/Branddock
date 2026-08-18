@@ -165,14 +165,17 @@ halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
 [`golden-set-blogpost-quality`](tasks/golden-set-blogpost-quality.md) (⚠️ de golden-set-gate is
 per 16-08 gesplitst — `evaluate` kleurt je PR's niet meer rood; wat resteert is de inhoudelijke
 vraag waarom 4-5 cases stabiel zakken) ·
-[`guard-hooks-hardening`](tasks/guard-hooks-hardening.md)
+[`guard-hooks-hardening`](tasks/guard-hooks-hardening.md) ·
+[`static-rendering-regressie`](tasks/static-rendering-regressie.md) (⚠️ nieuw 18-08: élke
+pagina-route rendert dynamic door één `await cookies()` in de root layout — `generateStaticParams`
+op marketing en `revalidate` op de klant-landingspagina's leveren al maanden niets op)
 
 > ~~`headless-content-service` (P3.0a) · `brand-assistant-quick-create` (P3.0b)~~ — **beide bleken
 > al gebouwd en gemerged** (changelog #413, PR's #185/#187/#188/#190/#192/#196). Er stond nog een
 > stale kopie in `tasks/` naast de afgevinkte in `tasks/done/`; de duplicaten zijn 17-08 verwijderd.
 
 ### Later
-`agent-vera-triggers` · `security-residual-hardening` (rest: CSP-enforce-flip) ·
+`agent-vera-triggers` ·
 `content-test-regression-7B` · `geo-seo-followup-later` · `i18n-ai-translation-pipeline` ·
 `power-user-shortcuts` · `publishgate-second-opinion` · `validate-brand-domain-component-fit` ·
 `video-chain-explainer-showcase` · `web-page-builder-acceptance-rest` ·
