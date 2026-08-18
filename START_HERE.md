@@ -1,7 +1,7 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> **Laatst bijgewerkt: 2026-08-18, tweede helft** (retentie-plafond live, CSP op enforce,
+> **Laatst bijgewerkt: 2026-08-18, derde helft** (retentie-plafond live, CSP op enforce,
 > SSE-abort gedeeltelijk, de twee Neon-indexen aangemaakt en prod drift-vrij bevonden —
 > zie hieronder. Twee sessies liepen elkaar in de weg; dat is de belangrijkste les van de dag).
 
@@ -29,6 +29,35 @@ plus één echte betaal-smoke.
 ---
 
 ## Wat er landde (2026-08-18)
+
+**Elke bezoeker kreeg `lang="en"` op een Nederlandse pagina** (PR #335, changelog #484).
+`static-rendering-regressie` begon als prestatietaak en eindigde als correctheidsfix. De
+root layout leidde `<html lang>` af uit de UI-taalcookie, terwijl **geen enkele publieke
+route `useTranslation` gebruikt** — marketing, brand.md en de klantpagina's zijn
+hardgecodeerd Nederlands. Elke bezoeker zónder cookie, dus per definitie iedereen die
+binnenkomt, kreeg daardoor een Engels taalattribuut. Geverifieerd op prod:
+`branddock.app/marketing/pricing` gaf `lang="en"`, `linfi.branddock.app/pillar-page`
+ook — terwijl daar `LandingPage.locale = 'nl-NL'` staat.
+
+⚠️ **Statisch renderen blijkt niet vrij te schakelen, en dát is de blijvende uitkomst.**
+De cookie-read was maar de helft: sinds de enforce-flip is `script-src` nonce-based met
+`'strict-dynamic'`, en een gecachete respons draagt een verouderde nonce. Gemeten:
+statisch bouwen laat **6 van de 10 CSP-tests falen**. De rendermodus blijft dus bewust
+dynamisch; de inerte `generateStaticParams` en `revalidate` blijven staan mét die gemeten
+reden erbij. Heropenen vraagt een CSP-scope zonder per-request nonce (2-4 dagen).
+
+⚠️ **En de urgentie klopte niet**: 4 `PageEvent`-rijen op prod, 1 gepubliceerde
+landingspagina. De prestatiewinst is vandaag nul. Tweede keer in twee dagen dat een
+taaktekst een groter probleem beschreef dan de meting terugvond (zie de retentie-indexen).
+
+**De les zit in de verificatie, niet in de fix** (gotcha 18-08). Vijf reviewrondes vonden
+elk een gat dat de vorige had gemist, telkens met dezelfde vorm: het faalscenario zat niet
+in de meting. Verse page loads misten client-navigatie; localhost miste de apex-rewrite;
+en een adversariële reviewer verwijderde één regel uit de proxy waarmee de complete
+server-fix verviel terwijl **alle** gates groen bleven — inclusief de browsercheck, die
+`OK lang="nl"` meldde tegen HTML die `lang="en"` zei, omdat de client de DOM ná hydratie
+repareert. De smoke leest nu ook de rauwe serverrespons.
+
 
 **Landing-page-data heeft een plafond** (#286, changelog 474). Eén dagelijkse cron ruimt
 PageEvents (13mnd), FormSubmissions (26mnd, lead-PII) en oude `compiledHtml`-artifacts op,
@@ -188,21 +217,27 @@ een distributie-probleem, en het enige wat de volgende stap tegenhoudt is jouw a
 omarm-strategie plus de outreach naar de maintainer. De upstream-PR's liggen als tekstpakket
 klaar.
 
-**3. 🧹 [`static-rendering-regressie`](tasks/static-rendering-regressie.md) — élke route rendert dynamic.**
-Het enige blok in de Nu/Volgende-lijst dat concreet, onbelemmerd en zonder jouw input te doen
-is, nu `lp-review-followups` ✅ af is. Eén `await cookies()` in de root layout zet de hele app
-op dynamic rendering, waardoor `generateStaticParams` op marketing en `revalidate` op de
-klant-landingspagina's al maanden niets opleveren.
+**3. 🔤 [`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) — 44 van 44
+merkfonts hebben geen bestand.** Gemeten, niet vermoed: de storage-URL-audit tegen Neon-prod
+(18-08) vond `StyleguideFont.fileUrl` **44 van de 44 keer leeg**. Alles rendert in Inter —
+ook PDF-exports en AI-content. Geen bug: het upload-pad bestaat volledig, er is nooit iets
+geüpload. We verkopen merkconsistentie, en een klant die zijn eigen styleguide opent en
+overal Inter ziet staan onder "Neue Haas Grotesk Display" ziet het product zijn belofte niet
+waarmaken.
 
-> ⚠️ De vorige tekst hier beloofde dat het versmallen van het `buildSpikePuckConfig`-type de
-> 8GB-heapbump uit `ci.yml` zou halen. Dat experiment is gedraaid (#302) en de **hypothese is
-> weerlegd** — met de annotatie erin en de bump eraf viel de build alsnog om. Het item leeft
-> verder als [`build-heap-investigation`](tasks/build-heap-investigation.md), en de volgende
-> stap daar is méten waar het geheugen heen gaat, niet opnieuw een type versmallen.
+> Twee sporen: **B (de code)** kan ik zelfstandig doen, **A (de bestanden)** heeft jou nodig —
+> per merk een `.woff2` plus de licentie-afweging, ~15 min per merk. Dit is dus geen
+> "los-het-op-terwijl-je-weg-bent"-item zoals de vorige bewoner van deze plek.
 
 ---
 
 ## Open beslissingen (blokkeren werk)
+
+0. **`test:csp` en `smoke:document-lang-browser` draaien in géén enkele workflow.** Ze zijn
+   de enige automatische bescherming onder de bewuste keuze "dynamisch renderen blijft
+   dynamisch", maar vragen een build + test-DB in CI. Kostenafweging, dus jouw besluit.
+   Staat in [`document-lang-followups`](tasks/document-lang-followups.md).
+
 
 1. **Resterende SSE-abort-wijzigingen** — de atomaire settings-merge, deel-resultaten bewaren
    vanaf 2 varianten, en de `cancel()`-detector staan klaar op `claude/sse-abort-disconnect`
@@ -242,9 +277,10 @@ AI-content; het upload-pad bestaat al, er is nooit iets geüpload) ·
 [`golden-set-blogpost-quality`](tasks/golden-set-blogpost-quality.md) (⚠️ de golden-set-gate is
 per 16-08 gesplitst — `evaluate` kleurt je PR's niet meer rood; wat resteert is de inhoudelijke
 vraag waarom 4-5 cases stabiel zakken) ·
-[`static-rendering-regressie`](tasks/static-rendering-regressie.md) (⚠️ nieuw 18-08: élke
-pagina-route rendert dynamic door één `await cookies()` in de root layout — `generateStaticParams`
-op marketing en `revalidate` op de klant-landingspagina's leveren al maanden niets op)
+[`document-lang-followups`](tasks/document-lang-followups.md) (restwerk uit
+`static-rendering-regressie`: statisch renderen heropenen vraagt eerst een CSP-scope zonder
+per-request nonce; plus dezelfde `lang`-bug op `/oauth/*`, `/reset-password` en
+`/invite/accept`)
 
 > ~~`headless-content-service` (P3.0a) · `brand-assistant-quick-create` (P3.0b)~~ — **beide bleken
 > al gebouwd en gemerged** (changelog #413, PR's #185/#187/#188/#190/#192/#196). Er stond nog een
