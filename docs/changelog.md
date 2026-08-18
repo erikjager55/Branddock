@@ -37,6 +37,29 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 480. De twee veiligheidshooks bewaakten het verkeerde en hinderden het goede
+
+Sluit [`guard-hooks-hardening`](../tasks/guard-hooks-hardening.md) af (#313 + #314). De taak stond sinds 17-07 open met de aantekening "niet uitvoeren zonder expliciet akkoord" — dat akkoord kwam er nadat **alle drie de gaten op één dag opnieuw geraakt werden**. Het scherpst was de combinatie: de guard blokkeerde élke lokale git-mutatie terwijl twee merges naar productie er ongehinderd langs gingen.
+
+**Eriks drie keuzes**: `gh pr merge` waarschuwt (blokkeert niet — twee sessies die elk hun eigen PR mergen is legitiem); `check-dangerous-bash` wordt operatie-bewust; een onbepaalbaar doel wordt doorgelaten.
+
+**Nieuwe gedeelde helper** `.claude/hooks/lib/guard-lib.sh`. Beide hooks stelden dezelfde vraag — *welke worktree raakt dit commando?* — en beantwoordden 'm allebei verkeerd: ze leidden 'm af uit de cwd van het hook-proces. Nu uit het commando zelf (`cd`, `git -C`), met het JSON-veld `cwd` als terugval en fail-open bij twijfel. Daarmee wordt werk in worktree X niet meer geblokkeerd door een sessie in Y — én wordt een commando dat vanuit X ín Y mutéért nu wél geblokkeerd, wat eerder ongemerkt doorging.
+
+**`check-dangerous-bash` heeft drie lagen** in plaats van twee: CRITICAL (altijd), BRANCH-AWARE (force-push en `reset --hard` alleen blokkeren richting main/master) en WARNING. Force-push met lease op een eigen feature-branch mag dus weer.
+
+⚠️ **Twee gaten kwamen er tijdens het bouwen bij, allebei van dezelfde soort — de guard keek naar hoe een commando geschreven was, niet naar wat het doet.** Dezelfde destructieve operatie met een ander argument glipte erlangs. En `git -C <pad> <verb>` passeerde **béide hooks al sinds hun ontstaan**, omdat elke detectie het werkwoord dírect achter `git` verwachtte; de smoke viel daar bij de eerste run over. Bijvangst: `worktree` stond kaal op de mutatielijst, dus `git worktree list` — puur lezen — telde als HEAD-mutatie.
+
+⚠️ **De beloofde escape was onimplementeerbaar, niet alleen ongeïmplementeerd.** Een PreToolUse-hook kent alleen `allow` en `deny` — er is geen `ask`, dus een hook kan principieel niet om bevestiging vragen. En een escape-zin ín het commando wordt door Claude getypt in plaats van door de gebruiker: een self-service bypass. De melding zegt nu wat er wél geldt.
+
+**Bewijs**: `npm run smoke:guard-hooks` → **13/13** tegen echte git-repo's en echte lockfiles met verse heartbeat, plus drie mutatietests (blokkeer-tak eruit → rij 1+4 vallen; beschermde branches leeg → rij 8+13; CRITICAL-lijst leeg → rij 11). `tsc` 0 errors, `eslint` schoon, `bash -n` groen. Na de merge opnieuw gedraaid vanuit de main-worktree, tegen de geïnstalleerde hooks.
+
+⚠️ **Niet gedekt**: een tweede échte Claude-sessie. De smoke toetst de hook-logica, niet de integratie met de harness — en of de merge-waarschuwing Erik daadwerkelijk bereikt is daarmee niet bewezen (stderr bij exit 0 is niet gegarandeerd zichtbaar; daarom óók een `systemMessage`). Staat als restwerk in de task-file. Gat 1 blijft bewust een waarschuwing: twee sessies kunnen nog steeds tegelijk naar productie mergen.
+
+- Task: [tasks/guard-hooks-hardening.md](../tasks/guard-hooks-hardening.md)
+- ADR: -
+- Spec: -
+- PR's: #313 (hooks + smoke), #314 (gotcha)
+
 ### 479. De content-keten is dicht — de publieke API gaf een volle pillar-page als leeg item uit, en zes i18n-namespaces renderden nooit
 
 Sluit [`content-chain-accessor`](../tasks/content-chain-accessor.md) af: alle 23 kruisingen lopen nu via `resolveDeliverableContent()`, en er staat geen `TODO(content-chain-accessor)`-disable meer in de codebase. Dat laatste is de meetbare vorm van "af".

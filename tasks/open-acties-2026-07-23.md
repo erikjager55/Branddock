@@ -88,7 +88,7 @@ taken-spiegel daarvan + de twee nieuwe items uit deze sessie.
 ## C. Agent-werk dat op Eriks go wacht
 - [ ] **Content-accessor fase 2** — 2 productbeslissingen: (a) Content Library-stoplicht liegt (rood op volle pagina); (b) Brand Assistant zegt onterecht "nog geen content". Zie `tasks/content-chain-accessor.md`
 - [ ] **`repair-defaults` op prod** — zet locale-ankers + BB `contentLanguage` en→nl (user-visible; draai bij uitleg-moment)
-- [ ] **`guard-hooks-hardening`** — raakt veiligheidsnet, expliciet akkoord nodig. Zie `tasks/guard-hooks-hardening.md`
+- [x] **`guard-hooks-hardening`** — ✅ **AF 18-08** (#313 + #314). Drie keuzes gemaakt: `gh pr merge` waarschuwt, `check-dangerous-bash` werd operatie-bewust, onbepaalbaar doel wordt doorgelaten. Twee extra gaten gevonden tijdens het bouwen.
 
 ## D. Gebundelde sessie ~28 juli
 - [x] ~~**CSP-enforce-flip**~~ — ✅ **gedaan 2026-08-18** (PR #294, changelog #476). De
