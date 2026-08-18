@@ -24,7 +24,7 @@ export interface BrandContextBlock {
    * fallback/detail bestaan tot alle consumers via het manifest lezen.
    */
   brandManifest?: string;
-  // Brand strategy assets (from 11 canonical brand assets)
+  // Brand strategy assets (from the canonical brand assets)
   brandPurpose?: string;
   goldenCircle?: string;
   brandEssence?: string;

@@ -34,7 +34,7 @@ const STEPS: Step[] = [
     body:
       'Brand voice, brandstyle, persona’s, producten en concurrenten, het complete merk in één workspace, klaar om overal in te zetten.',
     highlights: [
-      '11 canonieke merk-assets met frameworks',
+      '12 canonieke merk-assets met frameworks',
       'Brand voice en stijl uit je eigen materiaal',
       'Persona’s, producten en concurrenten erbij',
     ],

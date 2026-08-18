@@ -41,6 +41,7 @@ import {
   requireWriteAccess,
 } from '@/lib/api/public/brand-resolver';
 import { importBrandData, type BrandImportPayload } from '@/lib/api/public/brand-import';
+import { CANONICAL_BRAND_ASSETS } from '@/lib/constants/canonical-brand-assets';
 
 /**
  * Auth-context van de aanroepende request: default-merk + via welk auth-pad
@@ -733,9 +734,14 @@ const importSchema = z.object({
         content: longText.optional().describe('Optionele vrije-tekst aanvulling'),
       }),
     )
-    .max(11)
+    // Was een hardgecodeerde 11; met de 12e asset (References & Anti-References,
+    // 2026-08-15) weigerde een volledige merk-import stil op validatie. Aan de
+    // constante gekoppeld zodat de grens meegroeit met de lijst.
+    .max(CANONICAL_BRAND_ASSETS.length)
     .optional()
-    .describe('De 11 canonieke brand assets (deel 1 van het werkbestand)'),
+    .describe(
+      `De ${CANONICAL_BRAND_ASSETS.length} canonieke brand assets (deel 1 van het werkbestand)`,
+    ),
   voiceguide: z
     .object({
       voiceDescription: longText.optional(),

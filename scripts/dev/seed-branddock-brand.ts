@@ -1,6 +1,7 @@
 // Seed: het volledige merk-DNA van Branddock zélf (dogfood-workspace).
 // Bouwt lokaal de workspace "Branddock HQ" (org demo-org-branddock-001)
-// volledig op — 11 canonieke brand-assets (content + frameworkData),
+// volledig op — 11 van de 12 canonieke brand-assets (content + frameworkData;
+// References & Anti-References kwam er op 2026-08-15 bij en zit hier nog niet in),
 // brand voice, brandstyle (brandbook v3), 3 persona's, 3 producten,
 // 3 concurrenten, launch-strategie met OKR's. Daarna migreren naar prod:
 //   npx tsx scripts/migrate-brand-dna/export.ts "Branddock HQ" <bundle.json>
@@ -43,7 +44,7 @@ async function main() {
   });
   console.log(`workspace ${workspace.id} (${WS_NAME}, nl)`);
 
-  // ── 1. De 11 canonieke brand-assets ───────────────────────────────────
+  // ── 1. De 11 canonieke brand-assets (van de 12 — zie kop) ─────────────
   for (const asset of CANONICAL_BRAND_ASSETS) {
     await prisma.brandAsset.create({
       data: {
@@ -109,7 +110,7 @@ async function main() {
     discriminator:
       "Alleen Branddock combineert een volledig merk-DNA-fundament met een meetbare merk-check op elke uiting — waar die uiting ook ontstaat: in het platform, in Claude of ChatGPT, of in een eigen workflow.",
     proofPoints: [
-      "11 canonieke merk-assets als fundament onder elke generatie",
+      "12 canonieke merk-assets als fundament onder elke generatie",
       "F-VAL-merkscore (0-100) op elke uiting, met concrete bevindingen",
       "9 AI-agents met rollen — signaleren, adviseren, voorstellen; de mens keurt goed",
       "MCP-connector: je merk werkt in Claude, ChatGPT en n8n (branddock.app/mcp)",
@@ -653,7 +654,7 @@ async function main() {
       name: "Branddock Platform",
       slug: "branddock-platform",
       description:
-        "Het AI-marketingteamplatform: één workspace met het volledige merk-DNA (11 canonieke assets, brand voice, brandstyle, persona's, producten, concurrenten) als fundament onder onderzoek, campagnestrategie, content-, beeld- en videogeneratie — met de F-VAL-merk-check op elke uiting en 9 AI-agents die voorstellen terwijl jij goedkeurt.",
+        "Het AI-marketingteamplatform: één workspace met het volledige merk-DNA (12 canonieke assets, brand voice, brandstyle, persona's, producten, concurrenten) als fundament onder onderzoek, campagnestrategie, content-, beeld- en videogeneratie — met de F-VAL-merk-check op elke uiting en 9 AI-agents die voorstellen terwijl jij goedkeurt.",
       category: "SaaS-platform",
       categoryIcon: "LayoutDashboard",
       pricingModel: "Maandabonnement met output-credits",
@@ -662,7 +663,7 @@ async function main() {
       source: "MANUAL",
       status: "ANALYZED",
       features: [
-        "11 canonieke merk-assets met frameworks en validatie",
+        "12 canonieke merk-assets met frameworks en validatie",
         "F-VAL-merkscore (stijl 35% / beoordeling 45% / regels 20%) op elke uiting",
         "9 AI-agents: onderzoek, strategie, content, merkbewaking, rapportage, loop",
         "Content Canvas, campagne-wizard, beeld/video, landingspagina's",

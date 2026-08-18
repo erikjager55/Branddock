@@ -2,7 +2,7 @@
 // Studio Context Builder
 //
 // Aggregates all relevant context for content generation:
-//  - Brand context (11 canonical assets + brandstyle + competitors)
+//  - Brand context (canonical assets + brandstyle + competitors)
 //  - Persona context (selected personas)
 //  - Campaign strategy context (theme, messaging, brief)
 //  - Deliverable brief (from blueprint asset plan)
