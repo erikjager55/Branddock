@@ -43,71 +43,39 @@ in Claude Design niet echt renderen. Waarschijnlijk uitsluiten via
 `lib/bundle.mjs` forken is **geen** optie — dat bestand is in de converter gemarkeerd
 als app-contractlaag die niet bewerkt hoort te worden.
 
-## Purge-val in previews (Tailwind 4)
+## De CSS-pijplijn (stand na PR #323, 2026-08-18)
 
-`src/index.css` is gecompileerde, gecommitte output. Van de 20 `MODULE_GRADIENTS` zijn er
-**4 niet volledig aanwezig** in die CSS — dit raakt de échte app, niet alleen de previews:
+Tot 18-08 was `src/index.css` een **bevroren artefact** van 10.555 regels zonder
+`@import "tailwindcss"` en zonder `@theme`. `@tailwindcss/postcss` genereerde er dus
+niets en liet het bestand passeren: elke utility die na het compileermoment in de code
+kwam bestond simpelweg niet — stil, zonder build-fout. Dat is wat deze sync aan het licht
+bracht (vier module-gradienten en `h-48`), en wat in PR #323 tot de wortel is aangepakt:
+`index.css` is nu 320 regels **bron** met een echte `@theme inline`-ramp.
 
-| module | ontbreekt |
-|---|---|
-| `competitors` | `from-red-500` én `to-rose-600` (geen gradient) |
-| `settings` | `from-gray-500` én `to-gray-600` (geen gradient) |
-| `trend-radar` | `from-primary-500` (bestaat niet als klasse; alleen `to-` werkt) |
-| `ai-trainer` | `from-cyan-500` (alleen `to-` werkt) |
+⚠️ **Gevolg voor de sync, en het is fataal als je het mist.** `cfg.cssEntry` wordt
+onveranderd naar het Design System-project gekopieerd; een browser krijgt dat bestand
+rechtstreeks. Een bronbestand met `@import "tailwindcss"` kan de browser niet oplossen,
+en dan rendert **elke preview en elk gebouwd ontwerp ongestyled** — zonder foutmelding.
 
-Previews gebruiken daarom bewust modules met een wérkende gradient. Een kaart hoort het
-component op zijn best te tonen, niet per ongeluk een app-bug te documenteren.
+Daarom draait `.design-sync/compile-css.mjs` vóór elke build:
 
-⚠️ **Controleer klassenaanwezigheid mét escaping.** Tailwind schrijft arbitraire waarden
-geëscaped weg (`.from-\[\#1FD1B2\]`), dus een kale tekstvergelijking op `from-[#1FD1B2]`
-geeft valse "ontbreekt"-treffers. Strip eerst de backslashes uit de CSS. Een eerste,
-niet-ontsnapte check meldde 10 kapotte gradiënten; de echte uitkomst is 4.
+```
+node .design-sync/compile-css.mjs        # src/index.css -> .design-sync/.cache/compiled.css
+```
 
-### Tweede purge-vondst: `GradientBanner height="lg"` rendert nul hoog
+`cfg.cssEntry` wijst naar die output. De stap is correct in beide werelden: zonder
+`@import "tailwindcss"` laat de plugin de inhoud passeren (output == input), ermee
+compileert hij echt (gemeten: 320 regels in, 11.344 uit).
 
-`HEIGHT_MAP.lg` is `h-48`, en **`h-48` staat niet in `src/index.css`** (`h-24` en `h-32`
-wel). De `lg`-variant heeft daardoor geen hoogte — in de preview én in de app. De
-preview-cel voor `lg` is daarom vervangen; een kaart hoort geen kapotte variant te tonen.
+**Wat #323 hier oploste**: de vijf gradient-klassen en `h-48` die deze branch eerst met de
+hand in een `@layer utilities`-blok zette, worden nu automatisch gegenereerd. Dat blok is
+bij de rebase op `9d0fcbb7` dan ook vervallen. ⚠️ Tailwind 4 negeert door de gebruiker
+geschreven `@layer utilities` sowieso — het werkte alleen zolang het bestand bevroren was
+en de plugin er niets mee deed. `@layer components` blijft wel overeind.
 
-⚠️ Zolang dit niet gedicht is, is `height="lg"` onbruikbaar terwijl het contract hem
-wel aanbiedt.
-
-### Purge-fixes doorgevoerd (branch `feat/design-sync-layout`, 2026-08-18)
-
-`src/index.css` heeft een gemarkeerd blok gekregen met de zes utilities die alleen via
-`design-tokens.ts` worden samengesteld en die Tailwind daarom wegsnoeide: `h-48`,
-`from-red-500`, `to-rose-600`, `from-gray-500`, `to-gray-600`, `from-cyan-500`.
-Daarnaast is `MODULE_GRADIENTS['trend-radar'].from` van `from-primary-500` (bestaat niet)
-naar `from-teal-500` gezet.
-
-Geverifieerd na de fix: module-gradienten **20/20 volledig** (was 16/20), en
-`GradientBanner height="lg"` rendert visueel aantoonbaar hoger dan `md` en `sm`.
-
-⚠️ **De geuploade bundel is gebouwd op main VOOR deze fix.** De `lg`-cel is daarom
-bewust uit `previews/GradientBanner.tsx` gelaten. Zodra deze branch gemerged is, hoort een
-re-sync die cel terug te zetten — dan klopt hij wel.
-
-### ⚠️ Groter, NIET gefixt: er is geen `primary`-kleurschaal
-
-Tijdens de fix bleek dat de app **26 verschillende `primary-<cijfer>`-utilityklassen**
-gebruikt die geen van alle bestaan. Dit is geen purge maar een ontbrekende configuratie:
-er is geen `tailwind.config.*` (Tailwind 4 CSS-first) en `src/index.css` definieert geen
-enkele `--color-primary-<n>`. Alleen het kale token werkt: `bg-primary`, `text-primary`,
-`border-primary`, `ring-primary`, `from-primary`, `to-primary`, `text-primary-foreground`.
-
-Meest gebruikt van de inerte klassen: `text-primary-700` (46 bestanden), `bg-primary-50`
-(39), `ring-primary-500` (27), `bg-primary-100` (16), `border-primary-400` (15),
-`border-primary-200` (14), `ring-primary-400` (14), `text-primary-500` (13).
-
-Bewust niet aangeraakt: dit vraagt een ontwerpbesluit (een echte tint/shade-ramp vanaf
-`#1FD1B2` definieren, of ~100 bestanden omschrijven naar het kale token). Beslissing ligt
-bij Erik.
-
-### Wat GEEN bug bleek
-
-`StatGrid columns={4}` rendert in de kaart als 2×2. Dat is correct responsief gedrag:
-`cols4` = `grid-cols-1 md:grid-cols-2 lg:grid-cols-4`, en de reviewkaart is smaller dan
-de `lg`-breakpoint. Niet achterna jagen.
+**Wat er wél blijft**: `MODULE_GRADIENTS['trend-radar'].from` stond op `from-primary-500`,
+een klasse die nooit heeft bestaan. Dat is een tokenfout, geen CSS-fout, en die fix zit in
+deze branch.
 
 ## Overig
 
