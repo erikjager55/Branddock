@@ -47,6 +47,10 @@ jobs:
       # renderden stil niets. ADR 2026-08-18-tailwind-bronpijplijn.
       - run: npm run smoke:css-utilities -- --strict
 
+      # Deterministisch, key-loos en ~2s: bewaakt de regels achter `<html lang>`,
+      # die server en client delen. Zie tasks/done/static-rendering-regressie.md.
+      - run: npm run smoke:document-lang
+
       - run: npm run build
         env:
           # These env vars must match the required fields in src/lib/env-validation.ts

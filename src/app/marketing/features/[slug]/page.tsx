@@ -134,6 +134,10 @@ const FEATURE_FAMILY: Record<string, SplitHeaderFamily> = {
   campaigns: 'product',
 };
 
+// Heeft vandaag GEEN effect (élke route rendert dynamisch) en bepaalt NIET
+// welke slugs geldig zijn — de pagina 404't zelf. Blijft staan voor wanneer
+// statische rendering terugkan. Waarom dat nu niet kan: zie
+// tasks/static-rendering-regressie.md §5.
 export function generateStaticParams() {
   return Object.keys(FEATURES).map((slug) => ({ slug }));
 }

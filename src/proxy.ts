@@ -4,6 +4,7 @@ import {
   buildRequestSecurityHeaders,
   type CspScope,
 } from '@/lib/security/security-headers';
+import { PATHNAME_HEADER } from '@/lib/ui-i18n/document-locale.shared';
 
 // ─── Security headers applied to ALL responses ───────────
 // Waarden komen uit de gedeelde bron (security-headers.ts). De middleware is
@@ -149,6 +150,11 @@ export function proxy(request: NextRequest) {
       nonce,
     });
     const requestHeaders = new Headers(request.headers);
+    // Het EFFECTIEVE pad (ná host-rewrite) voor de root layout, die er de
+    // documenttaal uit afleidt. Onvoorwaardelijk `set`, óók in dev: het
+    // overschrijft een door de client meegestuurde `x-pathname`, die anders
+    // de taal van een willekeurige pagina zou kunnen bepalen.
+    requestHeaders.set(PATHNAME_HEADER, effectivePath);
     if (isProduction) {
       requestHeaders.set('x-nonce', nonce);
       requestHeaders.set('Content-Security-Policy', csp['Content-Security-Policy']);
@@ -234,6 +240,11 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Match all routes except static assets
+  // Match all routes except static assets.
+  // ⚠️ Versmal dit NIET zonder `src/lib/ui-i18n/document-locale.ts` te lezen: de
+  // root layout leidt `<html lang>` af uit de `x-pathname` die hierboven gezet
+  // wordt. Valt een route buiten de matcher, dan krijgt hij stil de UI-taal —
+  // op de Nederlandse marketing- en brand.md-pagina's dus `lang="en"`, zonder
+  // dat één gate rood wordt.
   matcher: '/((?!_next/static|_next/image|favicon.ico).*)',
 };

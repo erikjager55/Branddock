@@ -25,15 +25,31 @@ type SpikeData = Data<SpikePuckProps>;
  * ISR-fix (P0, verbeterplan v3): workspace als PAD-parameter i.p.v.
  * `?workspace=` — `searchParams` is een Dynamic API die de route naar
  * dynamische rendering schakelde, waardoor `revalidate` geen effect had en
- * élke publieke view de volledige DB+render-keten draaide. Met alleen
- * `params` is de route statisch cachebaar; publishes doen on-demand
- * `revalidatePath('/p/<ws>/<slug>')` en de fallback-TTL is bewust lang
- * (7 dagen — webhook-miss-verzekering, geen refresh-mechanisme).
+ * élke publieke view de volledige DB+render-keten draaide. Publishes doen
+ * on-demand `revalidatePath('/p/<ws>/<slug>')` en de fallback-TTL is bewust
+ * lang (7 dagen — webhook-miss-verzekering, geen refresh-mechanisme).
+ *
+ * ⚠️ Die ISR-fix heeft zijn doel NIET bereikt: de route rendert nog steeds
+ * per request en `revalidatePath` heeft daardoor niets om te verversen.
+ * Het wegnemen van `searchParams` was nodig maar niet voldoende — zie de
+ * gemeten oorzaken bij `revalidate` hieronder.
  */
 interface Props {
   params: Promise<{ workspace: string; slug: string }>;
 }
 
+// ⚠️ Deze waarde heeft vandaag GEEN effect — gemeten 2026-08-18, twee oorzaken
+// die los van elkaar staan:
+//   1. De root layout leest per request `x-pathname` + de UI-cookie, waardoor
+//      élke route dynamisch rendert.
+//   2. Een dynamisch segment zónder `generateStaticParams` krijgt in Next 16
+//      sowieso geen ISR-pad, ook niet mét `revalidate`. Met een lege
+//      `generateStaticParams` werd deze route wél `● (SSG)` en cachete hij
+//      (MISS → HIT, `s-maxage=604800`).
+// Beide zijn oplosbaar, maar caching botst met de nonce-based enforce-CSP:
+// een bewaarde respons draagt een oude nonce, en `'strict-dynamic'` blokkeert
+// dan élk script. Bewijs + de weg terug: tasks/static-rendering-regressie.md.
+// De waarde blijft staan als de bedoelde TTL zodra dat is opgelost.
 export const revalidate = 604800; // 7 dagen fallback; on-demand revalidate is primair
 
 const APP_APEX = process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'branddock.app';
