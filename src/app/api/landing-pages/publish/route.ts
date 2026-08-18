@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { updateDeliverableSettings } from '@/lib/content/update-deliverable-settings';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { publishLandingPage, isValidSlug } from '@/lib/landing-pages/publish-page';
@@ -230,27 +231,18 @@ export async function POST(request: NextRequest) {
         // contentbron) en herberekent bij elke (re)publish. Na een latere
         // Puck/Claw-edit van `puckData` kan de score nog de pre-edit-content
         // beschrijven; volledige puckData-flatten-scoring is bewust uitgesteld
-        // (geo-seo-followup-later). De read-modify-write op `settings` loopt in
-        // één interactieve transactie zodat een gelijktijdige autosave
-        // (puckData/hero) de geoOptimizationAnalysis niet kan clobberen — de
-        // read-modify-write-race op `settings` is daarmee geëlimineerd. (De
-        // #337 status-sync hierboven raakt aparte kolommen, geen overlap.)
-        await prisma.$transaction(async (tx) => {
-          const fresh = await tx.deliverable.findUnique({
-            where: { id: deliverable.id },
-            select: { settings: true },
-          });
-          const freshSettings =
-            fresh?.settings && typeof fresh.settings === 'object' && !Array.isArray(fresh.settings)
-              ? (fresh.settings as Record<string, unknown>)
-              : {};
-          await tx.deliverable.update({
-            where: { id: deliverable.id },
-            data: {
-              settings: JSON.parse(JSON.stringify({ ...freshSettings, geoOptimizationAnalysis: analysis })),
-            },
-          });
-        });
+        // (geo-seo-followup-later). De read-modify-write loopt via de gedeelde
+        // helper: verse read onder `SELECT … FOR UPDATE`, zodat een
+        // gelijktijdige autosave (puckData/hero) de geoOptimizationAnalysis niet
+        // kan clobberen. Hier stond eerder een kale interactieve transactie met
+        // de claim dat de race daarmee geëlimineerd was — dat klopte niet: onder
+        // READ COMMITTED neemt een SELECT geen lock, dus beide schrijvers lazen
+        // de oude blob en de laatste won alsnog. (De #337 status-sync hierboven
+        // raakt aparte kolommen, geen overlap.)
+        await updateDeliverableSettings(deliverable.id, (current) => ({
+          ...current,
+          geoOptimizationAnalysis: analysis,
+        }));
       }
     } catch (err) {
       console.warn('[landing-pages/publish] GEO-analyse-haak faalde (genegeerd):', err instanceof Error ? err.message : err);

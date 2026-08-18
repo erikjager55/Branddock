@@ -143,10 +143,21 @@ wél leesbaar maar niet wisbaar waren. Details in changelog #474.
         volgen géén verdere `variant_started`, en `structuredVariantOptions` in
         `settings` is onveranderd.
 
-- [x] **`persistVariantOptions` read-modify-write-venster** — ✅ 2026-08-18.
-      De write loopt nu in één interactieve transactie op een VERSE lees-actie;
-      de minuten-oude snapshot wordt alleen nog als terugval gebruikt wanneer de
-      rij verdwenen is. Zelfde patroon als de GEO-haak in `publish/route.ts`.
+- [x] **`persistVariantOptions` read-modify-write-venster** — ✅ 2026-08-18,
+      changelog #482. Bleek de hele settings-schrijflaag te zijn: **tien**
+      schrijvers met dezelfde vorm, niet één. Alle tien lopen nu via
+      `updateDeliverableSettings()` (`src/lib/content/update-deliverable-settings.ts`),
+      die de rij leest onder `SELECT … FOR UPDATE`.
+      ⚠️ Het fix-voorbeeld waar dit item naar verwees (`publish/route.ts`) sloot
+      de race **niet**: een kale transactie neemt onder READ COMMITTED geen lock,
+      dus beide schrijvers lazen de oude blob en de laatste won alsnog.
+      Bewust niet omgezet: de versie-restore in `content-version.ts` (vervangt de
+      blob per definitie — geen read-modify-write) en `scripts/regenerate-linfi-puckdata.ts`
+      (eenmalig onderhoudsscript, geen gelijktijdigheid).
+      Rest-beperking: `regenerate-puck-data` merget nog met de `puckData` van vóór
+      de regeneratie — de lock beschermt de ándere sleutels, niet dezelfde.
+      Bewijs: `SMOKE_DB=1 npm run smoke:settings-write` 8/8 incl. mutatietest
+      (zonder lock móet er een sleutel sneuvelen), `smoke:hero-clobber-guard` 29/29.
 - [x] **Id-loze secties** — ✅ 2026-08-18. `sectionContentIndex` is naar de
       kernel verhuisd (`section-edit-tools`) en is nu de énige id-resolutie in
       het edit-pad; `preview-edit-matching` re-exporteert hem. Geen load-time

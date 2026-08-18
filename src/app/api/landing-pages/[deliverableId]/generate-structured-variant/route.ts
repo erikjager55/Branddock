@@ -46,6 +46,7 @@ import {
 } from "@/lib/landing-pages/pattern-choice";
 import { trackAICallStart, trackAICallComplete } from "@/lib/learning-loop/call-tracker";
 import { isPuckRenderable } from "@/lib/landing-pages/webpage-types";
+import { updateDeliverableSettings } from "@/lib/content/update-deliverable-settings";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 
@@ -353,7 +354,6 @@ async function persistVariantOptions(args: {
   deliverableId: string;
   workspaceId: string;
   contentType: string;
-  existingSettings: Record<string, unknown>;
   results: GenerationResult[];
   count: number;
   archetypeResult: Awaited<ReturnType<typeof ensureBrandArchetype>>;
@@ -379,48 +379,27 @@ async function persistVariantOptions(args: {
     );
   });
 
-  // Read-modify-write in één interactieve transactie, op een VERSE lees-actie.
-  // `args.existingSettings` is de snapshot van vóór de generatie, en die duurt
-  // minuten: een autosave van puckData of een hero-URL die ondertussen binnenkwam
-  // zou bij een merge op die snapshot stil worden teruggedraaid. De gebruiker
-  // ziet dat niet gebeuren — hij kijkt naar de variant-kaarten — en merkt het pas
-  // veel later, wanneer zijn edit "vanzelf" verdwenen blijkt. Zelfde patroon als
-  // de GEO-haak in `landing-pages/publish/route.ts`.
-  await prisma.$transaction(async (tx) => {
-    const fresh = await tx.deliverable.findUnique({
-      where: { id: args.deliverableId },
-      select: { settings: true },
-    });
-    const freshSettings =
-      fresh?.settings && typeof fresh.settings === 'object' && !Array.isArray(fresh.settings)
-        ? (fresh.settings as Record<string, unknown>)
-        : args.existingSettings;
-
-    await tx.deliverable.update({
-      where: { id: args.deliverableId },
-      data: {
-        settings: {
-            ...freshSettings,
-            structuredVariantOptions: variants,
-          structuredVariantLabels: variantLabels,
-          structuredGenerationMeta: {
-            generatedAt: new Date().toISOString(),
-            count,
-            requestedCount: count,
-            deliveredCount: variants.length,
-            inputTokens: totalInputTokens + (archetypeResult.inputTokens ?? 0),
-            outputTokens: totalOutputTokens + (archetypeResult.outputTokens ?? 0),
-            archetypeClassified: archetypeResult.classified,
-            archetype: archetypeResult.archetype,
-            archetypeConfidence: archetypeResult.confidence ?? null,
-            layoutStyleInferred: layoutResult.inferred,
-            layoutStyle: layoutResult.layoutStyle,
-            layoutStyleConfidence: layoutResult.confidence ?? null,
-          },
-        },
-      },
-    });
-  });
+  // Verse settings onder rijlock: de snapshot van vóór deze generatie is
+  // inmiddels minuten oud en zou een autosave uit dat venster wissen.
+  await updateDeliverableSettings(args.deliverableId, (current) => ({
+    ...current,
+    structuredVariantOptions: variants,
+    structuredVariantLabels: variantLabels,
+    structuredGenerationMeta: {
+      generatedAt: new Date().toISOString(),
+      count,
+      requestedCount: count,
+      deliveredCount: variants.length,
+      inputTokens: totalInputTokens + (archetypeResult.inputTokens ?? 0),
+      outputTokens: totalOutputTokens + (archetypeResult.outputTokens ?? 0),
+      archetypeClassified: archetypeResult.classified,
+      archetype: archetypeResult.archetype,
+      archetypeConfidence: archetypeResult.confidence ?? null,
+      layoutStyleInferred: layoutResult.inferred,
+      layoutStyle: layoutResult.layoutStyle,
+      layoutStyleConfidence: layoutResult.confidence ?? null,
+    },
+  }));
 
   // Cache-invalidatie per CLAUDE.md API conventies (verplicht na mutatie)
   invalidateCache(cacheKeys.prefixes.studio(args.workspaceId));
@@ -656,11 +635,6 @@ export async function POST(
     });
   }
 
-  const existingSettings =
-    deliverable.settings && typeof deliverable.settings === "object" && !Array.isArray(deliverable.settings)
-      ? (deliverable.settings as Record<string, unknown>)
-      : {};
-
   const postArgs: VariantPostProcessArgs = {
     deliverableId,
     workspaceId,
@@ -690,7 +664,6 @@ export async function POST(
           deliverableId,
           workspaceId,
           contentType: deliverable.contentType,
-          existingSettings,
           results,
           count,
           archetypeResult,
@@ -732,7 +705,6 @@ export async function POST(
     deliverableId,
     workspaceId,
     contentType: deliverable.contentType,
-    existingSettings,
     results,
     count,
     archetypeResult,

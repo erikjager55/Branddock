@@ -11,6 +11,7 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
+import { updateDeliverableSettings } from '@/lib/content/update-deliverable-settings';
 import { anthropicClient } from '@/lib/ai/anthropic-client';
 import { buildClaudePrompt, parseSimpleHeuristic } from '@/lib/landing-pages/generate-page-prompt';
 import { resolveTemplateBuilder } from '@/features/campaigns/components/canvas/medium/puck-templates';
@@ -153,13 +154,13 @@ export async function generateWebPage(input: GenerateWebPageInput): Promise<Gene
     input.prompt,
   );
 
-  // Persist — spread over bestaande settings (patroon regenerate-puck-data).
-  const existing = await prisma.deliverable.findUnique({ where: { id: deliverableId }, select: { settings: true } });
-  const settings = (existing?.settings ?? {}) as Record<string, unknown>;
-  await prisma.deliverable.update({
-    where: { id: deliverableId },
-    data: { settings: { ...settings, puckData, puckRegeneratedAt: new Date().toISOString() } },
-  });
+  // Persist — verse read onder rijlock (patroon regenerate-puck-data). De
+  // generatie hierboven duurt lang genoeg voor een gelijktijdige autosave.
+  await updateDeliverableSettings(deliverableId, (current) => ({
+    ...current,
+    puckData,
+    puckRegeneratedAt: new Date().toISOString(),
+  }));
   invalidateCache(cacheKeys.prefixes.studio(input.workspaceId));
   invalidateCache(cacheKeys.prefixes.campaigns(input.workspaceId));
 

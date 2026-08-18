@@ -15,6 +15,7 @@
 
 import { createHash } from 'crypto';
 import { prisma } from '@/lib/prisma';
+import { updateDeliverableSettings } from '@/lib/content/update-deliverable-settings';
 import {
   computeFidelityScore,
   type FidelityCompositeResult,
@@ -322,12 +323,6 @@ async function persistFidelityScore(
   result: FidelityCompositeResult,
 ): Promise<void> {
   try {
-    const existing = await prisma.deliverable.findUnique({
-      where: { id: deliverableId },
-      select: { settings: true },
-    });
-    const currentSettings = (existing?.settings as Record<string, unknown> | null) ?? {};
-
     const fidelityScoreSnapshot = {
       compositeScore: result.compositeScore,
       thresholdMet: result.thresholdMet,
@@ -355,12 +350,12 @@ async function persistFidelityScore(
       scoredAt: new Date().toISOString(),
     };
 
-    await prisma.deliverable.update({
-      where: { id: deliverableId },
-      data: {
-        settings: { ...currentSettings, fidelityScore: fidelityScoreSnapshot },
-      },
-    });
+    // Verse read onder rijlock: tussen `currentSettings` en dit punt zit de
+    // hele scoring, ruim genoeg voor een autosave om ertussen te landen.
+    await updateDeliverableSettings(deliverableId, (current) => ({
+      ...current,
+      fidelityScore: fidelityScoreSnapshot,
+    }));
   } catch (err) {
     console.warn('[fidelity-runner] Persistence failed:', (err as Error).message);
   }
@@ -547,12 +542,6 @@ async function persistStrictRewrite(
   result: StrictModeResult,
 ): Promise<void> {
   try {
-    const existing = await prisma.deliverable.findUnique({
-      where: { id: deliverableId },
-      select: { settings: true },
-    });
-    const currentSettings = (existing?.settings as Record<string, unknown> | null) ?? {};
-
     const strictRewriteSnapshot = {
       text: rewriteText,
       decisionReason: result.decisionReason,
@@ -570,12 +559,12 @@ async function persistStrictRewrite(
       rewrittenAt: new Date().toISOString(),
     };
 
-    await prisma.deliverable.update({
-      where: { id: deliverableId },
-      data: {
-        settings: { ...currentSettings, strictRewrite: strictRewriteSnapshot },
-      },
-    });
+    // Verse read onder rijlock: tussen `currentSettings` en dit punt zit de
+    // hele scoring, ruim genoeg voor een autosave om ertussen te landen.
+    await updateDeliverableSettings(deliverableId, (current) => ({
+      ...current,
+      strictRewrite: strictRewriteSnapshot,
+    }));
   } catch (err) {
     console.warn('[fidelity-runner] STRICT persist failed:', (err as Error).message);
   }

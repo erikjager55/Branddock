@@ -37,6 +37,24 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 482. De settings-blob heeft één schrijfdeur — en de vorige "fix" sloot de race niet
+
+`Deliverable.settings` is één JSON-blob waar tien codepaden in schrijven, allemaal als read-modify-write: lees de hele blob, spreid er sleutels overheen, schrijf 'm terug. Landt er tussen de read en de write een andere schrijver, dan verdwijnt diens werk. De autosave van de Puck-editor is de frequentste tegenpartij; bij `generate-structured-variant` was het venster **minutenlang** (de hele SSE-generatie), bij de SEO-pijplijn en de fidelity-scoring net zo goed.
+
+⚠️ **De bestaande "fix" waar het task-file naar wees, werkte niet.** `publish/route.ts` zette read + write in één `prisma.$transaction` en noteerde dat de race daarmee "geëlimineerd" was. Onder de Postgres-default READ COMMITTED neemt een kale `SELECT` echter geen lock: beide transacties lezen de oude blob, de tweede `UPDATE` wacht netjes op de eerste — en overschrijft die dan alsnog met een payload die op de verouderde read is gebouwd. Een transactie zónder lock verplaatst het venster, hij sluit het niet. Dat patroon was inmiddels op twee plekken gekopieerd.
+
+Cure: één gedeelde `updateDeliverableSettings()` die de rij leest onder `SELECT … FOR UPDATE` en in dezelfde transactie terugschrijft. Gekozen boven `jsonb_set` (de call-sites mergen hele objecten, geen losse paden) en boven serializable+retry (dat vraagt een retry-lus per call-site). De SEO-pijplijn zit al ín een transactie en kon de helper dus niet gebruiken — geneste interactieve transacties bestaan niet in Prisma — en kreeg daarom `lockDeliverableSettings(tx, id)`, dezelfde lock als los primitief.
+
+**De scope groeide tijdens het werk.** Het plan telde zeven schrijvers, gevonden met een grep over `src/app/api`. Een sweep over de hele `src` vond er tien: `canvas-orchestrator` (2×), `seo-pipeline`, `fidelity-runner` (2×) en `headless-webpage` stonden er ook, met precies dezelfde vorm. Bewust níet omgezet: de versie-restore in `content-version.ts` (die vervángt de blob per definitie, geen read-modify-write) en een eenmalig onderhoudsscript.
+
+Bijvangst: het stale snapshot is uit `generate-structured-variant` verdwenen in plaats van gerepareerd — `existingSettings` werd door twee call-sites heen doorgegeven en is nu weg, dus er valt niets meer per ongeluk op terug te vallen. Idem twee dode reads in `fidelity-runner`.
+
+⚠️ **Wat dit niet oplost**: `regenerate-puck-data` rekent zijn merge nog steeds met de `puckData` van vóór de regeneratie. De lock beschermt de sleutels die die route níet schrijft; een autosave op diezelfde sleutel wordt nog altijd overschreven. Dat is inherent aan regenereren, en de client vraagt er expliciet bevestiging voor.
+
+**Bewijs**: `SMOKE_DB=1 npm run smoke:settings-write` → **8/8** tegen een echte Postgres. De belangrijkste check is de mutatietest: dezelfde race draait óók met een kale `findUnique`, en dáár moet een sleutel verdwijnen — anders meet de smoke niets. Plus `smoke:hero-clobber-guard` 29/29 ongewijzigd (die dekt de omgezette `patchHeroVisualUrl`), `tsc` 0 errors, `lint` 0 errors.
+
+- Task: [tasks/lp-review-followups.md](../tasks/lp-review-followups.md)
+
 ### 481. Variant B van de SEO-pipeline kreeg vijf minuten research nooit te zien
 
 De SEO-pipeline besteedt vijf van zijn acht stappen aan research — keywords, concurrenten, SERP-gaps, E-E-A-T, de outline met meta-tags en interne links — en levert daarna twee varianten op. Variant B kreeg die research nooit. Zijn generator las de doorlopend groeiende `accumulatedContext` met een `.slice(-20000)` erop, onder de kop *"SEO RESEARCH CONTEXT (preserve all SEO elements from this research)"*. Die context groeit door élke stap achteraan aan te plakken, dus een tail-slice houdt per definitie de laatste stappen over: de prose. De prose-staart alleen al (stap 6 first draft + stap 7 editorial, mediaan-som **29.953 tekens** over 31 gemeten runs) is groter dan het venster van 20.000, waardoor de slice altijd middenin stap 6 of 7 begon en stap 5 nooit bereikte. Over **31 herspeelde echte runs kreeg 31/31 nul van de vijf researchstappen** door. Wat er wél in stond was het artikel — dat één sectie hoger al als `## ORIGINAL PAGE (Variant A)` in dezelfde prompt zat, afgekapt midden in een zin.

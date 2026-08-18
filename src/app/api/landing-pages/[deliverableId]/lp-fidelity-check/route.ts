@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { updateDeliverableSettings } from "@/lib/content/update-deliverable-settings";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
 import { judgeLpFidelity, type LpFidelityResult } from "@/lib/landing-pages/lp-fidelity-judge";
 import { judgeVisualBrandFit } from "@/lib/landing-pages/visual-brand-fit-judge";
@@ -177,19 +178,16 @@ export async function POST(
     };
   }
 
-  // Persist resultaat in deliverable.settings voor later inspecteren / UI
-  await prisma.deliverable.update({
-    where: { id: deliverableId },
-    data: {
-      settings: {
-        ...settings,
-        lpFidelity: {
-          ...result,
-          scoredAt: new Date().toISOString(),
-        },
-      },
+  // Persist resultaat in deliverable.settings voor later inspecteren / UI.
+  // Verse read onder rijlock: tussen de read bovenaan en dit punt zit een
+  // AI-call, ruim genoeg voor een autosave om ertussen te landen.
+  await updateDeliverableSettings(deliverableId, (current) => ({
+    ...current,
+    lpFidelity: {
+      ...result,
+      scoredAt: new Date().toISOString(),
     },
-  });
+  }));
 
   return NextResponse.json(result);
 }
