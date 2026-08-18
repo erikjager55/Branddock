@@ -66,7 +66,7 @@ Technisch klaar (bouw #380-#386 ✅, smokes ✅). Playbook: `stripe-go-live.md` 
 
 | Item | Eigenaar | Bron |
 |---|---|---|
-| CSP Report-Only → enforce (`[csp-report]`-logs analyseren) | Erik levert logs, agent flipt | `tasks/security-residual-hardening.md` |
+| ~~CSP Report-Only → enforce~~ ✅ **gedaan 18-08** (#294) — niet via prod-logs maar via een lokale meting tegen een echte productiebuild; die logs bleken onbruikbaar | afgerond | `tasks/done/security-residual-hardening.md` |
 | `repair-defaults` op prod (BB `contentLanguage` en→nl) | agent, bij uitleg-moment | open-acties §C |
 | Onboarding-test met 3 externe testers | Erik | `tasks/onboarding-flow-test.md` |
 | `golden-set-gate-decouple` (nightly 4/5 rood → gate genegeerd) | agent, zonder eigenaar | `tasks/golden-set-gate-decouple.md` |
