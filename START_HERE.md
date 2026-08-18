@@ -159,6 +159,11 @@ halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
 | [`marketing-homepage-v2`](tasks/marketing-homepage-v2.md) | in-progress — homepage-herbouw + nav/footer NL-first; worktree `branddock-marketing-homepage-v2` |
 
 ### Volgende
+[`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) (⚠️ **44 van 44**
+merkfonts op prod hebben géén bestand — alles rendert in Inter, ook in PDF-exports en
+AI-content; het upload-pad bestaat al, er is nooit iets geüpload) ·
+[`pg-major-sslmode-semantiek`](tasks/pg-major-sslmode-semantiek.md) (pg v9 maakt van onze
+`sslmode=require` stil een zwakkere modus — nu vastleggen i.p.v. bij de upgrade ontdekken) ·
 `workspaces-online-migratie` (4 workspaces resteren, jouw keuze) ·
 [`deferred-browser-smokes-unblocked`](tasks/deferred-browser-smokes-unblocked.md)
 (3 smokes wachtten op een blocker die sinds 05-07 weg is) ·

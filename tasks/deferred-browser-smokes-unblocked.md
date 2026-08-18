@@ -167,15 +167,17 @@ van 21-07 beschrijft, bestaan simpelweg niet meer.
    ```
    Oplossing is een her-upload van dat ene logo; geen code-wijziging.
 2. **`StyleguideFont.fileUrl` is 44× LEEG** — er staat op prod géén enkel fontbestand. Elke
-   merkfont rendert dus via het metric-substituut (Inter). Dat verklaart waarom de
-   Typography-tab overal "Previewing with Inter" toont en is consistent met lokaal; het is de
-   bedoelde D4-fallback, geen defect. Wel het weten waard vóór een klantdemo.
+   merkfont rendert dus via het metric-substituut (Inter), óók in PDF-exports en AI-gegenereerde
+   content. De bedoelde D4-fallback, geen defect — maar wel zichtbaar in strijd met de
+   merkconsistentie die we verkopen. Eigen taak sinds 18-08:
+   [`brand-fonts-ontbreken-op-prod`](brand-fonts-ontbreken-op-prod.md).
 
 ### Terzijde — een waarschuwing die langskwam
 
 `pg` waarschuwt dat `sslmode=require` nu als `verify-full` wordt behandeld en in pg v9 /
 pg-connection-string v3 naar libpq-semantiek gaat (zwakker). Raakt de app-`DATABASE_URL` net zo
-goed als dit script. Geen actie nu; wel iets om mee te nemen bij de volgende pg-major.
+goed als dit script. Eigen taak sinds 18-08:
+[`pg-major-sslmode-semantiek`](pg-major-sslmode-semantiek.md).
 
 ## Voor Erik — hoe de prod-check gedraaid is
 
