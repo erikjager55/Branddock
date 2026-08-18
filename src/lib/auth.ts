@@ -99,7 +99,7 @@ async function provisionNewUser(userId: string, userName: string) {
       resolveInitialLocale(null, workspace.contentLanguage),
     );
 
-    // Create 11 canonical brand assets with active research methods
+    // Create the canonical brand assets with active research methods
     for (const asset of CANONICAL_BRAND_ASSETS) {
       await tx.brandAsset.create({
         data: {

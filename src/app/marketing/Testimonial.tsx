@@ -15,11 +15,11 @@ const QUOTES: Record<'home' | 'pricing' | 'marketingteams' | 'bureaus', Quote | 
 };
 
 const FALLBACK: Record<keyof typeof QUOTES, string> = {
-  home: 'Gebouwd en getest met pilotmerken uit het Nederlandse MKB en de bureauwereld — elke uiting die zij maken krijgt dezelfde merk-check die jij hier ziet.',
+  home: 'Gebouwd en getest met pilotmerken uit het Nederlandse MKB en de bureauwereld. Elke uiting die zij maken krijgt dezelfde merk-check die jij hier ziet.',
   pricing:
-    'De pilotmerken draaien op deze plannen — zelfde prijzen, zelfde gratis merk-check, geen aparte afspraken.',
+    'De pilotmerken draaien op deze plannen: zelfde prijzen, zelfde gratis merk-check, geen aparte afspraken.',
   marketingteams:
-    'Gebouwd en getest met marketingteams uit het Nederlandse MKB — hun rework-frustratie was het startpunt van de merk-check.',
+    'Gebouwd en getest met marketingteams uit het Nederlandse MKB. Hun rework-frustratie was het startpunt van de merk-check.',
   bureaus:
     'Gebouwd en getest met de bureauwereld als eerste gebruiker: Branddock is ontstaan in de praktijk van een merkbureau.',
 };

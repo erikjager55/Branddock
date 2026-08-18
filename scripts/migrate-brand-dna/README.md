@@ -20,7 +20,7 @@ integraties/OAuth-tokens en billing.
 ### Stap 0 — Owner meldt zich aan op productie
 Laat de pilot-stakeholder zich normaal registreren op de live app. De auto-provisioning
 (`provisionNewUser`, `src/lib/auth.ts`) maakt automatisch een organization + workspace +
-owner-membership + 11 lege canonical brand assets. Onthoud het **owner-e-mailadres**.
+owner-membership + 12 lege canonical brand assets. Onthoud het **owner-e-mailadres**.
 
 ### Stap 1 — Exporteer lokaal (bron = lokale DB)
 ```bash

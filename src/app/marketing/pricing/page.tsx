@@ -60,7 +60,7 @@ const TIER_COPY: TierCopy[] = [
       'Gratis setup-scan: van website naar merk-DNA in minuten',
       'Volledig merk-DNA + Brand Voice',
       'AI-content over 25+ contenttypes',
-      'Merk-check (F-VAL) op elke output — gratis',
+      'Merk-check (F-VAL) op elke output, gratis',
       'E-mailsupport',
     ],
     ctaLabel: 'Gratis proberen',
@@ -118,7 +118,7 @@ const FREE_LAYER = [
   {
     action: 'brand-context',
     label: 'Merkcontext',
-    sub: 'Je volledige merk-DNA gaat gratis mee in elke generatie — hoe rijk je merk ook is.',
+    sub: 'Je volledige merk-DNA gaat gratis mee in elke generatie, hoe rijk je merk ook is.',
   },
   {
     action: 'f-val',
@@ -156,23 +156,23 @@ const PAID_ACTIONS = (Object.keys(CREDIT_COSTS) as CreditAction[]).map((action) 
 const FAQ_ITEMS = [
   {
     q: 'Krijg ik een proefperiode?',
-    a: `${TRIAL_DAYS} dagen gratis met ${nl.format(TRIAL_CREDITS)} credits — geen creditcard. Na de proef blijft je merkdata veilig en zichtbaar; je kiest pas een plan als je wilt blijven genereren.`,
+    a: `${TRIAL_DAYS} dagen gratis met ${nl.format(TRIAL_CREDITS)} credits en zonder creditcard. Na de proef blijft je merkdata veilig en zichtbaar; je kiest pas een plan als je wilt blijven genereren.`,
   },
   {
-    q: 'Ik heb geen marketingteam of merkdocumenten — werkt Branddock dan?',
-    a: 'Ja. De gratis setup-scan bouwt je merk-DNA vanaf je website, en een brand voice maak je uit 3 voorbeeldteksten in \u00b15 minuten. Starter is precies hiervoor bedoeld: de agents zijn dan je eerste marketingcollega\u2019s — zij stellen voor, jij keurt goed.',
+    q: 'Ik heb geen marketingteam of merkdocumenten. Werkt Branddock dan?',
+    a: 'Ja. De gratis setup-scan bouwt je merk-DNA vanaf je website, en een brand voice maak je uit 3 voorbeeldteksten in \u00b15 minuten. Starter is precies hiervoor bedoeld: de agents zijn dan je eerste marketingcollega\u2019s: zij stellen voor, jij keurt goed.',
   },
   {
     q: 'In welke talen werkt Branddock?',
-    a: 'Je stelt de contenttaal per workspace in — Nederlands, Engels, Duits, Frans, Spaans, Portugees of Italiaans. Generatie én de merk-check werken in die taal.',
+    a: 'Je stelt de contenttaal per workspace in: Nederlands, Engels, Duits, Frans, Spaans, Portugees of Italiaans. Generatie én de merk-check werken in die taal.',
   },
   {
     q: 'Hoe werken credits?',
-    a: `Credits tellen alleen wat we voor je genereren (output): een kort stuk ≈ ${CREDIT_COSTS.short}, longform ≈ ${CREDIT_COSTS['long-form']}, een afbeelding ${CREDIT_COSTS.image}, een videoclip ${CREDIT_COSTS['video-clip']}. Ter indicatie: met Starter (${nl.format(PLAN_CONFIGS.STARTER.monthlyCredits)} credits) maak je ${creditExampleLine(PLAN_CONFIGS.STARTER.monthlyCredits)}. Je merkcontext en elke merk-check (F-VAL) zijn altijd gratis — dat is juist het punt van Branddock.`,
+    a: `Credits tellen alleen wat we voor je genereren (output): een kort stuk ≈ ${CREDIT_COSTS.short}, longform ≈ ${CREDIT_COSTS['long-form']}, een afbeelding ${CREDIT_COSTS.image}, een videoclip ${CREDIT_COSTS['video-clip']}. Ter indicatie: met Starter (${nl.format(PLAN_CONFIGS.STARTER.monthlyCredits)} credits) maak je ${creditExampleLine(PLAN_CONFIGS.STARTER.monthlyCredits)}. Je merkcontext en elke merk-check (F-VAL) zijn altijd gratis. Dat is juist het punt van Branddock.`,
   },
   {
     q: 'Wat als mijn credits op zijn?',
-    a: 'Top up op verzoek voor €0,10 per credit (packs vanaf 500 credits, volumekortingen tot 20%) — of zet auto-top-up aan met je eigen bestedingslimiet. Nooit een verrassingsfactuur.',
+    a: 'Top up op verzoek voor €0,10 per credit (packs vanaf 500 credits, volumekortingen tot 20%), of zet auto-top-up aan met je eigen bestedingslimiet. Nooit een verrassingsfactuur.',
   },
   {
     q: 'Kan ik tussen tiers wisselen?',
@@ -220,7 +220,7 @@ export default function PricingPage() {
         {/* UX-09: na-trial-werking expliciet bij de cards (feitelijk: geen
             creditcard → trial loopt automatisch af, data blijft zichtbaar). */}
         <p className="mt-4 text-center text-sm text-gray-500">
-          De trial loopt automatisch af — geen creditcard, dus geen verrassing. Je merkdata blijft
+          De trial loopt automatisch af, zonder creditcard en dus zonder verrassing. Je merkdata blijft
           veilig en zichtbaar; je kiest pas een plan als je wilt blijven genereren.
         </p>
 
@@ -255,7 +255,7 @@ export default function PricingPage() {
               Wij rekenen niets voor het kennen en bewaken van je merk
             </h2>
             <p className="text-gray-600">
-              Credits meten alleen output. Alles wat je merk vastlegt, voedt en bewaakt is gratis —
+              Credits meten alleen output. Alles wat je merk vastlegt, voedt en bewaakt is gratis:
               op elk plan, hoe intensief je het ook gebruikt.
             </p>
           </div>
@@ -291,7 +291,7 @@ export default function PricingPage() {
                 ))}
               </ul>
               <p className="text-xs text-gray-500 mt-4">
-                Indicatieve schatting vooraf — de werkelijke afboeking meet alleen de daadwerkelijk
+                Indicatieve schatting vooraf. De werkelijke afboeking meet alleen de daadwerkelijk
                 gegenereerde output.
               </p>
             </div>

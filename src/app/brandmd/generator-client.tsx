@@ -60,7 +60,7 @@ const PROGRESS_LINES = [
   'Zoeken naar je over-ons- en dienstenpagina\'s…',
   'Je kleursysteem uitlezen…',
   'Luisteren naar je tone-of-voice…',
-  'Nagaan wat we niet kunnen bevestigen — dat markeren we eerlijk',
+  'Nagaan wat we niet kunnen bevestigen, en dat eerlijk markeren',
   'Je brand.md bouwen…',
 ];
 
@@ -196,7 +196,7 @@ export function GeneratorClient() {
           </p>
           <h1 className="mt-4">Geef elke AI-agent het geheugen van je merk.</h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-gray-600">
-            Plak je URL. Je krijgt je brand.md — het open bestand dat ChatGPT, Claude, Cursor en
+            Plak je URL. Je krijgt je brand.md: het open bestand dat ChatGPT, Claude, Cursor en
             elke andere AI-tool on-brand houdt.
           </p>
         </div>
@@ -261,7 +261,7 @@ export function GeneratorClient() {
                 <h2>Hoe AI-klaar is {result.domain}?</h2>
                 <p className="mx-auto mt-2 max-w-lg text-sm text-gray-600">
                   Deze score laat zien hoe goed AI-tools als ChatGPT en Claude jouw merk kunnen
-                  spelen — op basis van wat je website alleen al prijsgeeft.
+                  spelen, op basis van wat je website alleen al prijsgeeft.
                 </p>
                 <p className="mt-5 text-6xl font-bold" style={{ color: ACCENT_INK }}>
                   {result.score}
@@ -288,7 +288,7 @@ export function GeneratorClient() {
 
               <p className="mt-5 text-xs text-gray-500">
                 Gescand: {result.scannedPaths.join(', ')} · {result.validatedSections} van{' '}
-                {result.totalSections} secties konden we bevestigen op basis van je site alleen —
+                {result.totalSections} secties konden we bevestigen op basis van je site alleen;
                 de openstaande velden zijn de reden dat de score nog niet hoger is.
               </p>
 

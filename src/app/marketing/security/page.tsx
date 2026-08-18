@@ -36,7 +36,7 @@ const PRACTICES = [
   {
     Icon: Eye,
     title: 'Je merk-DNA blijft van jou',
-    body: 'Je merkdata wordt gebruikt om jóúw content te genereren — niet om modellen van derden te trainen. AI-verzoeken lopen server-side; je browser praat nooit rechtstreeks met AI-providers.',
+    body: 'Je merkdata wordt gebruikt om jóúw content te genereren, niet om modellen van derden te trainen. AI-verzoeken lopen server-side; je browser praat nooit rechtstreeks met AI-providers.',
   },
   {
     Icon: FileCheck,
@@ -72,7 +72,7 @@ export default function SecurityPage() {
         <h1 className="text-gray-900 mb-4">Jouw merkdata, serieus genomen</h1>
         <p className="text-xl text-gray-600">
           Branddock draait op EU-infrastructuur, versleutelt wat gevoelig is en is transparant over
-          welke diensten we gebruiken — en waarvoor.
+          welke diensten we gebruiken, en waarvoor.
         </p>
       </div>
 
@@ -103,7 +103,7 @@ export default function SecurityPage() {
           verdwijnt de bijbehorende merkdata uit de actieve database.
         </li>
         <li>
-          Een verwerkersovereenkomst (DPA) is beschikbaar voor zakelijke klanten — neem contact op
+          Een verwerkersovereenkomst (DPA) is beschikbaar voor zakelijke klanten; neem contact op
           via{' '}
           <a href="mailto:hello@branddock.com" className="underline hover:text-gray-900">
             hello@branddock.com
@@ -115,7 +115,7 @@ export default function SecurityPage() {
           <a href="mailto:hello@branddock.com" className="underline hover:text-gray-900">
             hello@branddock.com
           </a>{' '}
-          — we reageren binnen 1 werkdag.
+          en we reageren binnen 1 werkdag.
         </li>
       </ul>
 

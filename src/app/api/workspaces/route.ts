@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
     // under a paid org.
     const inheritedTier = await getOrgPlanTier(activeOrgId);
 
-    // Create workspace + 11 canonical brand assets + research methods atomically
+    // Create workspace + the canonical brand assets + research methods atomically
     const workspace = await prisma.$transaction(async (tx) => {
       const ws = await tx.workspace.create({
         data: {
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
       // 3 van de 4 prod-workspaces zonder anker stonden. Eén helper, alle creatiepaden.
       await ensureBrandWithDefaultProfile(tx, ws.id, localeForLanguage(contentLanguage));
 
-      // Create 11 canonical brand assets with active research methods
+      // Create the canonical brand assets with active research methods
       for (const asset of CANONICAL_BRAND_ASSETS) {
         await tx.brandAsset.create({
           data: {

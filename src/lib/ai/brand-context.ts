@@ -6,7 +6,7 @@
 // repeated DB reads within the same session.
 //
 // Models aggregated:
-//  - BrandAsset (all 11 canonical assets with content + framework data)
+//  - BrandAsset (all canonical assets with content + framework data)
 //  - Persona (primary target audience description)
 //  - Product (products overview)
 //  - DetectedTrend (competitive landscape summary, activated trends only)

@@ -30,7 +30,7 @@ const TOOL_GROUPS: {
   {
     Icon: BookOpenCheck,
     title: 'Je merk kennen',
-    note: 'Gratis — kost nooit credits',
+    note: 'Gratis, kost nooit credits',
     tools: [
       'get_brand_context',
       'list_brands',
@@ -44,7 +44,7 @@ const TOOL_GROUPS: {
   {
     Icon: ShieldCheck,
     title: 'Bewaken & volgen',
-    note: 'Gratis — kost nooit credits',
+    note: 'Gratis, kost nooit credits',
     tools: ['score_against_brand', 'get_strategy_status', 'get_seo_status'],
   },
   {
@@ -72,7 +72,7 @@ const PLATFORMS: { title: string; steps: string[] }[] = [
       // Het menu heet sinds 2026 "Customize"; oudere versies tonen "Instellingen".
       'Customize (of Instellingen) → Connectors → connector toevoegen',
       'Plak de connector-URL en bevestig',
-      'Log in met je Branddock-account — je merk reist mee',
+      'Log in met je Branddock-account, je merk reist mee',
     ],
   },
   {
@@ -82,7 +82,7 @@ const PLATFORMS: { title: string; steps: string[] }[] = [
       // Beveiliging en inloggen. Daarom benoemd, niet als vast pad opgeschreven.
       'Zet Developer mode aan in Instellingen',
       'Connectors → toevoegen → plak dezelfde connector-URL',
-      'Log in met je Branddock-account — klaar',
+      'Log in met je Branddock-account en je bent klaar',
     ],
   },
   {
@@ -110,7 +110,7 @@ export default function GuardrailsPage() {
         family="proof"
         eyebrow="Voor AI-agents"
         title="Elke agent kan content maken. Geen enkele weet of het on-brand is."
-        lead="Branddock is de merklaag onder je agent-stack: context erin, validatie eroverheen, en een meetbaar F-VAL-cijfer op alles wat eruit komt — welk model of platform je ook gebruikt."
+        lead="Branddock is de merklaag onder je agent-stack: context erin, validatie eroverheen, en een meetbaar F-VAL-cijfer op alles wat eruit komt, welk model of platform je ook gebruikt."
         className="mb-12"
       />
 
@@ -125,12 +125,12 @@ export default function GuardrailsPage() {
         <p>
           Agents schrijven tegenwoordig moeiteloos posts, mails en artikelen. Maar je merk zit niet
           in het model: het zit in hoofden, in een pdf die niemand opent, in het gevoel van die ene
-          collega die alles herschrijft. Dus krijg je vloeiende, generieke output — en blijft de
+          collega die alles herschrijft. Dus krijg je vloeiende, generieke output, en blijft de
           vraag “klinkt dit als ons?” een onderbuikgesprek.
         </p>
         <p>
-          Branddock beantwoordt die vraag met een getal. Je merk-DNA — voice, persona’s, producten,
-          concurrenten, do’s &amp; don’ts — wordt de context van je agent, en elke uiting krijgt een
+          Branddock beantwoordt die vraag met een getal. Je merk-DNA (voice, persona’s, producten,
+          concurrenten, do’s &amp; don’ts) wordt de context van je agent, en elke uiting krijgt een
           F-VAL-score van 0 tot 100 met concrete bevindingen. Jij keurt goed voordat iets live
           gaat.
         </p>
@@ -139,21 +139,21 @@ export default function GuardrailsPage() {
       {/* De merklaag */}
       <h2 className="text-gray-900 mb-2">De merklaag: context erin, validatie eroverheen</h2>
       <p className="text-gray-600 mb-8 max-w-2xl">
-        Twee dingen maken een agent merkvast — en allebei zijn ze gratis. Pas als je iets laat
+        Twee dingen maken een agent merkvast, en allebei zijn ze gratis. Pas als je iets laat
         máken, kosten dat credits.
       </p>
       <div className="grid md:grid-cols-2 gap-4 mb-14">
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h3 className="text-base font-semibold text-gray-900 mb-1">Context erin</h3>
           <p className="text-sm text-gray-600 leading-relaxed">
-            Eén tool-call en je agent heeft je complete merkcontext als systemcontext — dezelfde
+            Eén tool-call en je agent heeft je complete merkcontext als systemcontext: dezelfde
             gelaagde context-stack die Branddock zelf in elke AI-call injecteert.
           </p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h3 className="text-base font-semibold text-gray-900 mb-1">Validatie eroverheen</h3>
           <p className="text-sm text-gray-600 leading-relaxed">
-            Laat elke tekst — van welke bron dan ook — scoren met F-VAL: composietscore 0–100,
+            Laat elke tekst, van welke bron dan ook, scoren met F-VAL: composietscore 0–100,
             drempel-check en concrete bevindingen per categorie. Vóór publicatie, niet erna.
           </p>
         </div>
@@ -187,7 +187,7 @@ export default function GuardrailsPage() {
       </div>
 
       {/* Koppelen — per platform (V2-09) */}
-      <h2 className="text-gray-900 mb-2">Zo koppel je — per platform</h2>
+      <h2 className="text-gray-900 mb-2">Zo koppel je per platform</h2>
       <p className="text-gray-600 mb-8 max-w-2xl">
         Zelfde connector-URL, drie routes. Voor overal waar je schrijft is er daarnaast de
         browser-extensie (beta).
@@ -210,14 +210,14 @@ export default function GuardrailsPage() {
       {/* V2-09: scopes expliciet — dít is het merkverhaal. */}
       <p className="text-sm text-gray-600 mb-14 max-w-2xl rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
         <strong className="text-gray-800">Wat mag je agent na toestemming?</strong> Je merk lezen
-        en teksten scoren — gratis. Genereren kost credits en landt altijd in je
+        en teksten scoren is gratis. Genereren kost credits en landt altijd in je
         Branddock-library. Publiceren doet de agent nooit zelf: jij keurt goed.
       </p>
 
       {/* Eerste prompts (V2-09) */}
       <h2 className="text-gray-900 mb-2">Eerste prompts om te proberen</h2>
       <p className="text-gray-600 mb-6 max-w-2xl">
-        Direct na het koppelen — zo merk je in één minuut wat de merklaag doet.
+        Direct na het koppelen: zo merk je in één minuut wat de merklaag doet.
       </p>
       <div className="space-y-3 mb-14 max-w-2xl">
         {EXAMPLE_PROMPTS.map((prompt) => (
@@ -231,7 +231,7 @@ export default function GuardrailsPage() {
       </div>
 
       {/* Bescheiden pilot-proof */}
-      <h2 className="text-gray-900 mb-2">Wat het oplevert — eerlijk gemeten</h2>
+      <h2 className="text-gray-900 mb-2">Wat het oplevert, eerlijk gemeten</h2>
       <div className="grid md:grid-cols-2 gap-4 mb-4 max-w-2xl">
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <div className="text-4xl font-bold mkt-accent tabular-nums">+7</div>
@@ -242,7 +242,7 @@ export default function GuardrailsPage() {
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <div className="text-4xl font-bold mkt-accent tabular-nums">+9,5</div>
           <div className="text-sm text-gray-600 mt-2">
-            punten op de nieuwsbrief — het type waar merkstem het zwaarst weegt
+            punten op de nieuwsbrief, het type waar merkstem het zwaarst weegt
           </div>
         </div>
       </div>
@@ -260,15 +260,15 @@ export default function GuardrailsPage() {
         <h2 className="text-gray-900 mb-2">Voor developers: API, webhooks &amp; n8n</h2>
         <p className="text-gray-600 mb-6 max-w-2xl">
           Dezelfde merklaag, machine-to-machine. Authenticatie via merk-vergrendelde API-keys
-          (aanmaken in Settings → API &amp; Connectors; de key zie je één keer — behandel 'm als
+          (aanmaken in Settings → API &amp; Connectors; de key zie je één keer, behandel 'm als
           een wachtwoord en trek 'm in bij twijfel) of OAuth voor agents. Lezen en scoren is
-          gratis; genereren kost dezelfde credits als in het platform — en die vallen altijd op
+          gratis; genereren kost dezelfde credits als in het platform, en die vallen altijd op
           de workspace van de key, dus de merkeigenaar betaalt z'n eigen verbruik. Voor bureaus:
           één key per klant-workspace houdt elke klant netjes op z'n eigen creditpot.
         </p>
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <h3 className="text-base font-semibold text-gray-900 mb-2">REST — merkcontext ophalen</h3>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">REST: merkcontext ophalen</h3>
             <pre className="rounded-lg bg-gray-50 border border-gray-200 p-3 text-xs font-mono text-gray-700 overflow-x-auto">
               {`curl https://branddock.app/api/v1/brand-context \\
   -H "Authorization: Bearer bd_live_..."`}
@@ -276,12 +276,12 @@ export default function GuardrailsPage() {
             <p className="text-sm text-gray-600 mt-3">
               Naast context: <code className="text-xs">/score</code>,{' '}
               <code className="text-xs">/generate</code>, SEO-, webpagina-, beeld- en
-              video-endpoints — dezelfde merkfuncties als de MCP-connector (17 tools; met een
+              video-endpoints, dezelfde merkfuncties als de MCP-connector (17 tools; met een
               API-key komt daar het inladen van merkdata bij).
             </p>
           </div>
           <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <h3 className="text-base font-semibold text-gray-900 mb-2">Webhooks — met HMAC-verificatie</h3>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">Webhooks met HMAC-verificatie</h3>
             <pre className="rounded-lg bg-gray-50 border border-gray-200 p-3 text-xs font-mono text-gray-700 overflow-x-auto">
               {`x-branddock-event: deliverable.generated
 x-branddock-signature: sha256=...

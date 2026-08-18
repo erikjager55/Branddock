@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/marketing/platform' },
   title: 'Platform',
   description:
-    'Eén merk-platform: merk-DNA, onderzoek, content, campagnes, beeld en AI-agents — met een merk-check op elke output.',
+    'Eén merk-platform: merk-DNA, onderzoek, content, campagnes, beeld en AI-agents, met een merk-check op elke output.',
 };
 
 interface Module {
@@ -53,9 +53,9 @@ interface Group {
 const GROUPS: Group[] = [
   {
     key: 'fundament',
-    shot: { img: '/marketing/features/brand-voice.png', alt: 'Branddock — brand voice vastleggen' },
+    shot: { img: '/marketing/features/brand-voice.png', alt: 'Branddock: brand voice vastleggen' },
     label: 'Stap 1',
-    title: 'Fundament — leg je merk vast',
+    title: 'Fundament: leg je merk vast',
     intro: 'Het complete merk in één workspace. Dit fundament gaat in élke generatie mee.',
     grad: 'var(--g-brand)',
     modules: [
@@ -68,7 +68,7 @@ const GROUPS: Group[] = [
       {
         Icon: Palette,
         title: 'Brand voice & stijl',
-        desc: 'De merkstem en visuele stijl, uit jouw materiaal — herbruikbaar in elke output.',
+        desc: 'De merkstem en visuele stijl, uit jouw materiaal, herbruikbaar in elke output.',
         href: '/marketing/features/brand-voice',
       },
       {
@@ -80,9 +80,9 @@ const GROUPS: Group[] = [
   },
   {
     key: 'onderzoek',
-    shot: { img: '/marketing/features/trend-radar.png', alt: 'Branddock — Trend Radar' },
+    shot: { img: '/marketing/features/trend-radar.png', alt: 'Branddock: Trend Radar' },
     label: 'Stap 2',
-    title: 'Onderzoek — ken je markt',
+    title: 'Onderzoek: ken je markt',
     intro: 'Persona’s, concurrenten en trends: je merk-DNA staat niet op giswerk.',
     grad: 'var(--g-cool)',
     modules: [
@@ -100,17 +100,17 @@ const GROUPS: Group[] = [
       {
         Icon: Radar,
         title: 'Trend Radar',
-        desc: 'Een trendscan die kansen en signalen in je markt oppikt — met bronnen.',
+        desc: 'Een trendscan die kansen en signalen in je markt oppikt, met bronnen.',
         href: '/marketing/features/trend-radar',
       },
     ],
   },
   {
     key: 'genereren',
-    shot: { img: '/marketing/features/content-canvas.png', alt: 'Branddock — Content Canvas' },
+    shot: { img: '/marketing/features/content-canvas.png', alt: 'Branddock: Content Canvas' },
     label: 'Stap 3',
-    title: 'Genereren — maak on-brand',
-    intro: 'Content, campagnes, beeld en landingspagina’s — allemaal in jouw merk-DNA.',
+    title: 'Genereren: maak on-brand',
+    intro: 'Content, campagnes, beeld en landingspagina’s, allemaal in jouw merk-DNA.',
     grad: 'var(--g-warm)',
     modules: [
       {
@@ -139,9 +139,9 @@ const GROUPS: Group[] = [
   },
   {
     key: 'bewaken',
-    shot: { img: '/marketing/features/agents.png', alt: 'Branddock — AI-agents' },
+    shot: { img: '/marketing/features/agents.png', alt: 'Branddock: AI-agents' },
     label: 'Stap 4',
-    title: 'Bewaken — houd het op merk',
+    title: 'Bewaken: houd het op merk',
     intro: 'Agents doen het werk, de merk-check bewaakt dat alles on-brand blijft.',
     grad: 'var(--g-fresh)',
     modules: [

@@ -37,7 +37,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     title: '3. Proefperiode & abonnementen',
     body: (
       <ul className="list-disc pl-5 space-y-1.5">
-        <li>Nieuwe accounts krijgen 28 dagen gratis toegang met een starttegoed aan credits — zonder betaalgegevens.</li>
+        <li>Nieuwe accounts krijgen 28 dagen gratis toegang met een starttegoed aan credits, zonder betaalgegevens.</li>
         <li>Daarna kies je een maandabonnement (Starter, Growth of Agency). Prijzen staan op de <Link className="underline" href="/marketing/pricing">prijzenpagina</Link> en zijn exclusief btw.</li>
         <li>Abonnementen zijn maandelijks opzegbaar; upgraden of downgraden kan altijd, naar rato verrekend.</li>
         <li>Credits meten alleen gegenereerde output. Extra credits (top-ups) verlopen niet zolang je abonnement actief is.</li>
@@ -59,7 +59,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     body: (
       <ul className="list-disc pl-5 space-y-1.5">
         <li>Jij blijft eigenaar van de merkdata die je invoert én van de content die je met Branddock genereert.</li>
-        <li>Wij gebruiken je workspace-inhoud alleen om de dienst aan jou te leveren — niet om AI-modellen van derden te trainen.</li>
+        <li>Wij gebruiken je workspace-inhoud alleen om de dienst aan jou te leveren, niet om AI-modellen van derden te trainen.</li>
         <li>Jij bent verantwoordelijk voor de rechtmatigheid van het materiaal dat je uploadt en voor het gebruik van gegenereerde content (inclusief controle op juistheid en claims).</li>
       </ul>
     ),

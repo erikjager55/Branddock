@@ -42,9 +42,9 @@ const SOLUTIONS: Record<string, SolutionSpec> = {
     title: 'Voor in-house marketingteams',
     tagline: 'Schaal je content zonder je merk te verwateren.',
     intro:
-      'Jij bent verantwoordelijk voor volume én merk. Branddock geeft je één platform dat je merk kent en het hele werk doet — van onderzoek tot content, campagnes en beeld — zodat je sneller publiceert zonder de eindeloze rework.',
+      'Jij bent verantwoordelijk voor volume én merk. Branddock geeft je één platform dat je merk kent en het hele werk doet (van onderzoek tot content, campagnes en beeld) zodat je sneller publiceert zonder de eindeloze rework.',
     screenshotPath: '/marketing/features/brand-alignment.png',
-    screenshotAlt: 'Branddock merk-check — een meetbare on-brand-score per generatie',
+    screenshotAlt: 'Branddock merk-check: een meetbare on-brand-score per generatie',
     pains: [
       'AI-output klinkt generiek en moet je telkens “humaniseren”',
       'Merkrichtlijnen leven in een PDF die niemand opent',
@@ -52,7 +52,7 @@ const SOLUTIONS: Record<string, SolutionSpec> = {
       'Merkconsistentie bewijzen aan je stakeholders is giswerk',
     ],
     gains: [
-      'Eén merk-DNA dat in elke generatie meegaat — per constructie on-brand',
+      'Eén merk-DNA dat in elke generatie meegaat, per constructie on-brand',
       'Content, campagnes en beeld uit één plek, over alle kanalen',
       'Een merk-check die consistentie meetbaar maakt (+7 punten on-brand)',
       '9 agents die onderzoek, content en bewaking uit handen nemen',
@@ -60,7 +60,7 @@ const SOLUTIONS: Record<string, SolutionSpec> = {
     sections: [
       {
         title: 'Samenwerken & goedkeuren',
-        body: 'Vier rollen — owner, admin, member en viewer. Teamleden met schrijfrechten maken en keuren goed; viewers kijken mee zonder te genereren. Agent-voorstellen landen in één inbox en niets gaat live zonder goedkeuring van een teamlid: het vier-ogen-principe zit in het product, niet in een werkafspraak.',
+        body: 'Vier rollen: owner, admin, member en viewer. Teamleden met schrijfrechten maken en keuren goed; viewers kijken mee zonder te genereren. Agent-voorstellen landen in één inbox en niets gaat live zonder goedkeuring van een teamlid: het vier-ogen-principe zit in het product, niet in een werkafspraak.',
       },
       {
         title: 'Van content naar kanaal',
@@ -75,7 +75,7 @@ const SOLUTIONS: Record<string, SolutionSpec> = {
     title: 'Voor bureaus & merk-consultants',
     tagline: 'Eén merk-DNA-workspace per klant.',
     intro:
-      'Elke klant heeft een eigen merk. Met Branddock beheer je meerdere klantmerken naast elkaar — elk met een eigen merk-DNA — en lever je aantoonbaar on-brand werk, sneller en met marge.',
+      'Elke klant heeft een eigen merk. Met Branddock beheer je meerdere klantmerken naast elkaar (elk met een eigen merk-DNA) en lever je aantoonbaar on-brand werk, sneller en met marge.',
     pains: [
       'Elk klantmerk opnieuw aanleren kost tijd',
       'Junior-output dwaalt af van de merkstem',
@@ -86,27 +86,27 @@ const SOLUTIONS: Record<string, SolutionSpec> = {
       'Een aparte merk-DNA-workspace per klantmerk',
       'Multi-workspace-beheer voor je hele portfolio',
       'Een merk-check als objectief on-brand-bewijs richting de klant',
-      'Snellere levering met minder rework — beter voor je marge',
+      'Snellere levering met minder rework, beter voor je marge',
     ],
     screenshotPath: '/marketing/solutions/bureaus-workspaces.png',
-    screenshotAlt: 'Branddock workspace-switcher — meerdere klantmerken naast elkaar beheren',
+    screenshotAlt: 'Branddock workspace-switcher: meerdere klantmerken naast elkaar beheren',
     screenshotInset: true,
     sections: [
       {
         title: 'De rekensom per klantmerk',
-        body: `Agency: \u20ac${agency.monthlyPriceEur} per maand voor ${agency.workspaces} workspaces \u2248 \u20ac${perBrand} per klantmerk — inclusief merk-check, agents en de connector. Bekijk de volledige prijzen op de pricing-pagina.`,
+        body: `Agency: \u20ac${agency.monthlyPriceEur} per maand voor ${agency.workspaces} workspaces \u2248 \u20ac${perBrand} per klantmerk, inclusief merk-check, agents en de connector. Bekijk de volledige prijzen op de pricing-pagina.`,
       },
       {
         title: 'Het weekrapport als leverbaar',
-        body: 'Remi, de reporting-analist, schrijft een klant-klaar wekelijks merkrapport — productie, merkscores, campagnestand en marktsignalen. Doorleverbaar aan je klant, op schema.',
+        body: 'Remi, de reporting-analist, schrijft een klant-klaar wekelijks merkrapport: productie, merkscores, campagnestand en marktsignalen. Doorleverbaar aan je klant, op schema.',
       },
       {
         title: 'Bestaand merk? Zo migreer je',
-        body: 'Bestaande huisstijlgids of website? De gratis setup-scan (website-scan + brandstyle-analyse) zet \u2019m om naar een merk-DNA-workspace — geen overtypen.',
+        body: 'Bestaande huisstijlgids of website? De gratis setup-scan (website-scan + brandstyle-analyse) zet \u2019m om naar een merk-DNA-workspace, geen overtypen.',
       },
       {
         title: 'Jij bepaalt wat de klant-login mag',
-        body: 'Nodig je klant uit als viewer (meekijken en rapporten inzien, zonder te genereren) of als member (meewerken en goedkeuren). Genereren — en dus credits verbruiken — kan alleen met de rechten die jij toekent.',
+        body: 'Nodig je klant uit als viewer (meekijken en rapporten inzien, zonder te genereren) of als member (meewerken en goedkeuren). Genereren (en dus credits verbruiken) kan alleen met de rechten die jij toekent.',
       },
     ],
     demoCta: true,
@@ -161,7 +161,7 @@ export default async function SolutionPage({
             {/* eslint-disable-next-line @next/next/no-img-element -- statische marketing-asset, geen next/image-optimalisatie nodig */}
             <img
               src={solution.screenshotPath}
-              alt={solution.screenshotAlt ?? `${solution.title} — productschermafbeelding`}
+              alt={solution.screenshotAlt ?? `${solution.title}: productschermafbeelding`}
               className="w-full max-w-xs h-auto rounded-lg border border-gray-200 shadow-sm"
             />
           </div>
@@ -170,7 +170,7 @@ export default async function SolutionPage({
             {/* eslint-disable-next-line @next/next/no-img-element -- statische marketing-asset, geen next/image-optimalisatie nodig */}
             <img
               src={solution.screenshotPath}
-              alt={solution.screenshotAlt ?? `${solution.title} — productschermafbeelding`}
+              alt={solution.screenshotAlt ?? `${solution.title}: productschermafbeelding`}
               className="w-full h-auto"
             />
           </div>
@@ -180,10 +180,14 @@ export default async function SolutionPage({
       <div className="grid md:grid-cols-2 gap-8 mb-12">
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-6">
           <h2 className="text-gray-900 text-lg font-semibold mb-4">Herkenbaar?</h2>
-          <ul className="space-y-3">
+          <ul className="flex flex-col gap-3">
             {solution.pains.map((p) => (
               <li key={p} className="flex items-start gap-3 text-sm text-gray-600">
-                <span className="text-gray-500 mt-0.5 shrink-0">—</span>
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-primary shrink-0"
+                  style={{ marginTop: '0.5rem' }}
+                  aria-hidden
+                />
                 <span>{p}</span>
               </li>
             ))}

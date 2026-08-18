@@ -55,7 +55,7 @@ async function main() {
   });
   console.log(`workspace ${workspace.id} (${WS_NAME}, nl)`);
 
-  // ── 1. De 11 canonieke brand-assets (4 gevuld, 7 DRAFT) ───────────────
+  // ── 1. De canonieke brand-assets (4 gevuld, de rest DRAFT) ────────────
   for (const asset of CANONICAL_BRAND_ASSETS) {
     const filled = FILLED_SLUGS.has(asset.slug);
     await prisma.brandAsset.create({

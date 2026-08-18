@@ -38,18 +38,18 @@ const COMPARISONS: Record<string, CompareSpec> = {
     title: 'Branddock vs. AI-schrijftools zoals Jasper',
     metaTitle: 'Branddock vs. AI-schrijftools zoals Jasper',
     metaDescription:
-      'Eerlijke vergelijking: wanneer een AI-copytool met brand-voice-features past, en wanneer je merk-DNA als fundament nodig hebt — met een meetbare merk-check (F-VAL) op elke uiting.',
-    lead: 'Jasper is een bekende AI-copytool voor marketingteams. Dit is een eerlijke vergelijking met die categorie — AI-schrijftools met brand-voice-features — en wanneer je welke kiest.',
+      'Eerlijke vergelijking: wanneer een AI-copytool met brand-voice-features past, en wanneer je merk-DNA als fundament nodig hebt, met een meetbare merk-check (F-VAL) op elke uiting.',
+    lead: 'Jasper is een bekende AI-copytool voor marketingteams. Dit is een eerlijke vergelijking met die categorie (AI-schrijftools met brand-voice-features) en wanneer je welke kiest.',
     intro: [
-      'AI-schrijftools zijn gebouwd om veel copy te produceren: templates, workflows en een brand-voice-instelling die je teksten een herkenbare toon geeft. Voor teams die dagelijks grote volumes tekst draaien is dat een volwassen categorie — en soms precies wat je nodig hebt.',
-      'Branddock begint aan de andere kant: niet bij de tekst, maar bij het merk. Je merk-DNA — voice, persona’s, producten, concurrenten, do’s & don’ts — is het fundament onder elke generatie, en elke uiting krijgt een meetbare merk-check (F-VAL, 0–100) met concrete bevindingen. Jij keurt goed voordat iets live gaat.',
+      'AI-schrijftools zijn gebouwd om veel copy te produceren: templates, workflows en een brand-voice-instelling die je teksten een herkenbare toon geeft. Voor teams die dagelijks grote volumes tekst draaien is dat een volwassen categorie, en soms precies wat je nodig hebt.',
+      'Branddock begint aan de andere kant: niet bij de tekst, maar bij het merk. Je merk-DNA (voice, persona’s, producten, concurrenten, do’s & don’ts) is het fundament onder elke generatie, en elke uiting krijgt een meetbare merk-check (F-VAL, 0–100) met concrete bevindingen. Jij keurt goed voordat iets live gaat.',
     ],
     them: {
       title: 'Wanneer een AI-schrijftool past',
       points: [
         'Je draait hoog-volume copy en zoekt vooral productiesnelheid en templates',
         'Je content-team leeft al in zo’n suite, met ingesleten workflows',
-        'Een consistente toon is voldoende — je hebt geen meetbare merk-check per uiting nodig',
+        'Een consistente toon is voldoende en je hebt geen meetbare merk-check per uiting nodig',
       ],
     },
     us: {
@@ -57,7 +57,7 @@ const COMPARISONS: Record<string, CompareSpec> = {
       points: [
         'Je wilt je merk als fundament: merk-DNA als context van elke generatie, niet een toon-instelling per document',
         'Je wilt bewijs in plaats van onderbuik: een F-VAL-score met concrete bevindingen op elke uiting',
-        'Je wilt AI-agents die ook onderzoeken, adviseren en bewaken — niet alleen schrijven',
+        'Je wilt AI-agents die ook onderzoeken, adviseren en bewaken, niet alleen schrijven',
         'Je werkt al in Claude of ChatGPT en wilt je merklaag dáár koppelen',
       ],
     },
@@ -68,11 +68,11 @@ const COMPARISONS: Record<string, CompareSpec> = {
     differences: [
       {
         title: 'Merk-DNA als fundament, niet als feature',
-        body: 'Je complete merk — voice, persona’s, producten, concurrenten — is de context van elke AI-call. Geen instelling die je per document aanzet, maar de laag waar alles op draait.',
+        body: 'Je complete merk (voice, persona’s, producten, concurrenten) is de context van elke AI-call. Geen instelling die je per document aanzet, maar de laag waar alles op draait.',
       },
       {
         title: 'Meetbare validatie in plaats van toon',
-        body: 'Elke uiting krijgt een F-VAL-score van 0–100 met bevindingen per categorie. Jij keurt goed vóór publicatie — het merkgesprek wordt een getal in plaats van een gevoel.',
+        body: 'Elke uiting krijgt een F-VAL-score van 0–100 met bevindingen per categorie. Jij keurt goed vóór publicatie. Het merkgesprek wordt een getal in plaats van een gevoel.',
       },
       {
         title: 'Credits alleen voor output',
@@ -89,17 +89,17 @@ const COMPARISONS: Record<string, CompareSpec> = {
     title: 'Branddock vs. losse ChatGPT',
     metaTitle: 'Branddock vs. losse ChatGPT',
     metaDescription:
-      'Eerlijke vergelijking: wanneer losse ChatGPT volstaat, en wanneer je een merklaag nodig hebt — merkcontext die er altijd al in zit, een meetbare merk-check (F-VAL), en een connector waarmee Branddock juist ín ChatGPT en Claude werkt.',
-    lead: 'ChatGPT is de bekendste AI-chat-assistent. De eerlijke samenvatting: voor incidenteel gebruik volstaat losse chat prima — en Branddock werkt juist ín ChatGPT en Claude, dus het is geen óf-óf.',
+      'Eerlijke vergelijking: wanneer losse ChatGPT volstaat, en wanneer je een merklaag nodig hebt: merkcontext die er altijd al in zit, een meetbare merk-check (F-VAL), en een connector waarmee Branddock juist ín ChatGPT en Claude werkt.',
+    lead: 'ChatGPT is de bekendste AI-chat-assistent. De eerlijke samenvatting: voor incidenteel gebruik volstaat losse chat prima, en Branddock werkt juist ín ChatGPT en Claude, dus het is geen óf-óf.',
     intro: [
       'Een chat-assistent is snel, flexibel en overal: even een mail herschrijven, een idee aftasten, een eerste opzet. Maak je af en toe content en hoeft niemand te bewaken of het on-brand is, dan heb je aan losse chat genoeg.',
-      'Het gaat schuren zodra meer mensen — of agents — namens hetzelfde merk schrijven. Dan plak je elke keer opnieuw context in de prompt, klinkt elke collega nét anders, en blijft “klinkt dit als ons?” een onderbuikgesprek. Branddock maakt van je merk een vaste laag: context die er altijd al in zit, en een merk-check (F-VAL) die het antwoord in een getal geeft. Jij keurt goed voordat iets live gaat.',
+      'Het gaat schuren zodra meer mensen (of agents) namens hetzelfde merk schrijven. Dan plak je elke keer opnieuw context in de prompt, klinkt elke collega nét anders, en blijft “klinkt dit als ons?” een onderbuikgesprek. Branddock maakt van je merk een vaste laag: context die er altijd al in zit, en een merk-check (F-VAL) die het antwoord in een getal geeft. Jij keurt goed voordat iets live gaat.',
     ],
     them: {
       title: 'Wanneer losse ChatGPT volstaat',
       points: [
         'Je maakt incidenteel content en er schrijft maar één iemand namens het merk',
-        'Je brainstormt, schetst of herschrijft — zonder dat er merkbewaking nodig is',
+        'Je brainstormt, schetst of herschrijft zonder dat er merkbewaking nodig is',
         'Consistentie over teamleden en kanalen heen is (nog) geen probleem',
       ],
     },
@@ -107,7 +107,7 @@ const COMPARISONS: Record<string, CompareSpec> = {
       title: 'Wanneer Branddock past',
       points: [
         'Meerdere mensen of agents schrijven namens één merk en moeten hetzelfde klinken',
-        'Je wilt merkcontext die er altijd al in zit — niet elke keer opnieuw plakken',
+        'Je wilt merkcontext die er altijd al in zit, niet elke keer opnieuw plakken',
         'Je wilt een meetbare merk-check (F-VAL) vóór publicatie, niet erna',
         'Jij wilt goedkeuren wat live gaat, met bevindingen in plaats van onderbuik',
       ],
@@ -119,7 +119,7 @@ const COMPARISONS: Record<string, CompareSpec> = {
     differences: [
       {
         title: 'Context die je niet hoeft te plakken',
-        body: 'Je merk-DNA — voice, persona’s, producten, concurrenten — is de vaste context van elke generatie. Geen prompt-archeologie, geen “welke versie van de tone-of-voice was dit?”.',
+        body: 'Je merk-DNA (voice, persona’s, producten, concurrenten) is de vaste context van elke generatie. Geen prompt-archeologie, geen “welke versie van de tone-of-voice was dit?”.',
       },
       {
         title: 'Een merk-check met een getal',
@@ -131,7 +131,7 @@ const COMPARISONS: Record<string, CompareSpec> = {
       },
       {
         title: 'Eén merklaag voor je hele stack',
-        body: 'Dezelfde merkcontext en dezelfde merk-check in Branddock, in ChatGPT en in Claude — via één connector. Je chat wordt beter, niet overbodig.',
+        body: 'Dezelfde merkcontext en dezelfde merk-check in Branddock, in ChatGPT en in Claude, via één connector. Je chat wordt beter, niet overbodig.',
       },
     ],
   },
@@ -140,11 +140,11 @@ const COMPARISONS: Record<string, CompareSpec> = {
     title: 'Branddock vs. social-schedulers (Buffer, Postiz e.d.)',
     metaTitle: 'Branddock vs. social-schedulers (Buffer, Postiz e.d.)',
     metaDescription:
-      'Eerlijke vergelijking: schedulers plannen en publiceren uitstekend — Branddock is de laag ervóór: strategie, on-brand generatie en een meetbare merk-check (F-VAL), door te zetten naar de scheduler die je al gebruikt.',
-    lead: 'Buffer en Postiz zijn bekende tools om social posts in te plannen en te publiceren. De eerlijke samenvatting: dat doen schedulers uitstekend — Branddock is de laag ervóór, geen vervanging.',
+      'Eerlijke vergelijking: schedulers plannen en publiceren uitstekend. Branddock is de laag ervóór: strategie, on-brand generatie en een meetbare merk-check (F-VAL), door te zetten naar de scheduler die je al gebruikt.',
+    lead: 'Buffer en Postiz zijn bekende tools om social posts in te plannen en te publiceren. De eerlijke samenvatting: dat doen schedulers uitstekend. Branddock is de laag ervóór, geen vervanging.',
     intro: [
-      'Een social-scheduler regelt de logistiek van social: kalender, wachtrijen, publiceren op meerdere kanalen tegelijk. Wie serieus social doet, heeft zoiets nodig — en dat verandert met Branddock niet.',
-      'Waar een scheduler ophoudt, begint de vraag wát je post en of het klopt met je merk. Dáár zit Branddock: van strategie naar on-brand generatie naar een meetbare merk-check (F-VAL) — en het goedgekeurde resultaat zet je door naar de scheduler die je al gebruikt. Jij keurt goed voordat iets de kalender in gaat.',
+      'Een social-scheduler regelt de logistiek van social: kalender, wachtrijen, publiceren op meerdere kanalen tegelijk. Wie serieus social doet, heeft zoiets nodig, en dat verandert met Branddock niet.',
+      'Waar een scheduler ophoudt, begint de vraag wát je post en of het klopt met je merk. Dáár zit Branddock: van strategie naar on-brand generatie naar een meetbare merk-check (F-VAL), en het goedgekeurde resultaat zet je door naar de scheduler die je al gebruikt. Jij keurt goed voordat iets de kalender in gaat.',
     ],
     them: {
       title: 'Waar een scheduler sterk in is',
@@ -159,13 +159,13 @@ const COMPARISONS: Record<string, CompareSpec> = {
       points: [
         'Strategie → generatie → validatie, vóór er iets in de kalender staat',
         'Elke post gemaakt op je merk-DNA, met een F-VAL-score en concrete bevindingen',
-        'AI-agents die contentvoorstellen doen — jij keurt goed, niets gaat vanzelf live',
+        'AI-agents die contentvoorstellen doen: jij keurt goed, niets gaat vanzelf live',
         'Het goedgekeurde resultaat zet je door naar je scheduler',
       ],
     },
     honestNote: {
-      title: 'Niet vervangen — aanvullen',
-      body: 'Houd je scheduler: die doet de logistiek. Branddock levert aan de voorkant de strategie, de on-brand content en het bewijs dat het klopt — zodat wat er in je kalender staat, ook echt als jouw merk klinkt.',
+      title: 'Niet vervangen, maar aanvullen',
+      body: 'Houd je scheduler: die doet de logistiek. Branddock levert aan de voorkant de strategie, de on-brand content en het bewijs dat het klopt, zodat wat er in je kalender staat ook echt als jouw merk klinkt.',
     },
     differences: [
       {
@@ -174,15 +174,15 @@ const COMPARISONS: Record<string, CompareSpec> = {
       },
       {
         title: 'Elke post uit je merk-DNA',
-        body: 'Voice, persona’s, producten en concurrenten zijn de context van elke generatie — social copy die de juiste snaar raakt, niet generieke vulling voor een leeg slot.',
+        body: 'Voice, persona’s, producten en concurrenten zijn de context van elke generatie: social copy die de juiste snaar raakt, niet generieke vulling voor een leeg slot.',
       },
       {
         title: 'Bewijs vóór publicatie',
-        body: 'Elke uiting krijgt een F-VAL-score van 0–100 met bevindingen. Jij keurt goed voordat iets richting je kalender gaat — bewaking aan de voorkant, niet achteraf.',
+        body: 'Elke uiting krijgt een F-VAL-score van 0–100 met bevindingen. Jij keurt goed voordat iets richting je kalender gaat: bewaking aan de voorkant, niet achteraf.',
       },
       {
         title: 'Credits alleen voor output',
-        body: 'Context ophalen en valideren is gratis. Credits betaal je alleen voor wat je laat máken — de planning en publicatie blijven waar ze al goed geregeld zijn.',
+        body: 'Context ophalen en valideren is gratis. Credits betaal je alleen voor wat je laat máken. De planning en publicatie blijven waar ze al goed geregeld zijn.',
       },
     ],
   },
@@ -239,7 +239,7 @@ export default async function ComparePage({
       {/* 2-koloms: wanneer zij / wanneer Branddock */}
       <h2 className="text-gray-900 mb-2">Wanneer kies je wat?</h2>
       <p className="text-gray-600 mb-8 max-w-2xl">
-        Beide kanten hebben een eerlijk antwoord — dit is geen lijstje om de ander af te vallen.
+        Beide kanten hebben een eerlijk antwoord. Dit is geen lijstje om de ander af te vallen.
       </p>
       <div className="grid md:grid-cols-2 gap-4 mb-8">
         <div className="rounded-xl border border-gray-200 bg-white p-6">
@@ -308,7 +308,7 @@ export default async function ComparePage({
           href="/marketing/voor-ai-agents"
           className="inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
         >
-          Koppel je agent — gratis lezen &amp; valideren
+          Koppel je agent: gratis lezen &amp; valideren
         </Link>
         <TrialNote />
       </div>

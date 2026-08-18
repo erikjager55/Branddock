@@ -34,7 +34,7 @@ const STEPS: Step[] = [
     body:
       'Brand voice, brandstyle, persona’s, producten en concurrenten, het complete merk in één workspace, klaar om overal in te zetten.',
     highlights: [
-      '11 canonieke merk-assets met frameworks',
+      '12 canonieke merk-assets met frameworks',
       'Brand voice en stijl uit je eigen materiaal',
       'Persona’s, producten en concurrenten erbij',
     ],
@@ -46,7 +46,7 @@ const STEPS: Step[] = [
     label: 'Genereren',
     title: 'Genereer on-brand',
     body:
-      'Content, campagnes en beeld — allemaal in jouw merk-DNA. Van blogpost tot LinkedIn-ad tot e-mailflow, in de stem van je merk.',
+      'Content, campagnes en beeld, allemaal in jouw merk-DNA. Van blogpost tot LinkedIn-ad tot e-mailflow, in de stem van je merk.',
     highlights: [
       '25+ contenttypes',
       'Campagnes van strategie tot planning en deliverables',
@@ -217,7 +217,7 @@ function StepArt({ art }: { art: Art }) {
             style={{ left: '75%', width: '2px' }}
           />
         </div>
-        <p className="text-xs text-gray-600 mt-3">On-brand — geen herschrijfronde nodig.</p>
+        <p className="text-xs text-gray-600 mt-3">On-brand, geen herschrijfronde nodig.</p>
       </div>
     );
   }

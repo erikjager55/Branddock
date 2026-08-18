@@ -9,13 +9,13 @@ import { GeneratorClient } from './generator-client';
 // op de funnel.
 
 export const metadata: Metadata = {
-  title: 'brand.md-generator — geef elke AI-agent het geheugen van je merk | Branddock',
+  title: 'brand.md-generator: geef elke AI-agent het geheugen van je merk | Branddock',
   description:
     'Plak je URL en krijg je brand.md: het open bestandsformaat dat ChatGPT, Claude, Cursor en elke AI-tool on-brand houdt. Gratis, zonder account.',
   openGraph: {
     title: 'Maak van elke website een brand.md',
     description:
-      'Gratis generator voor de open standaard voor merkidentiteit. Strategie, stem, kleuren, typografie en doelgroep — in één bestand dat elke AI-tool kan lezen.',
+      'Gratis generator voor de open standaard voor merkidentiteit. Strategie, stem, kleuren, typografie en doelgroep, in één bestand dat elke AI-tool kan lezen.',
   },
 };
 

@@ -4,7 +4,7 @@
  * Surgically removes all demo/seed data while preserving:
  * - Erik's user account + session (stays logged in)
  * - Organization "Branddock Agency" + workspace "Branddock Demo"
- * - 11 canonical brand assets (reset to DRAFT, empty content/framework)
+ * - 12 canonical brand assets (reset to DRAFT, empty content/framework)
  * - ExplorationConfig records (AI configuration)
  * - MediumEnrichment records with workspaceId: null (system defaults)
  *
