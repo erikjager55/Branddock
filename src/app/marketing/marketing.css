@@ -263,7 +263,7 @@
   /* V2-01: de tekstkolom lijnt uit met de max-w-6xl-container (72rem + 1.5rem
      gutter) van nav en secties — de hero bleef full-bleed, maar de inkt hing
      op brede schermen tegen de viewportrand. max() houdt 3rem als vloer. */
-  padding: 2.5rem 3rem 3.5rem max(3rem, calc((100vw - 72rem) / 2 + 1.5rem));
+  padding: 3.5rem 3rem 4.5rem max(3rem, calc((100vw - 72rem) / 2 + 1.5rem));
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -278,7 +278,9 @@
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  padding: 2.75rem 1.5rem 0;
+  /* Onderruimte: zonder deze marge plakt de schakelaar tegen het productbeeld
+     in de rechterkolom, dat direct onder deze rij begint. */
+  padding: 2.75rem 1.5rem 2.25rem;
 }
 
 .mkt-hero__switch-track {
@@ -312,23 +314,32 @@
      de drie blokken deelden de linkerhelft. Spannen over beide kolommen geeft
      ze de volle breedte en dus bredere kolommen. */
   grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
   border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+/* De drie blokken lijnen uit met dezelfde 72rem-container als nav en secties,
+   en delen die breedte in gelijke derden. Eerder hing de rij op de volle
+   viewport met een afwijkende inspring op het eerste blok, waardoor de
+   kolommen ongelijk oogden. */
+.mkt-hero__meta-inner {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .mkt-hero__meta-item {
-  padding: 1.1rem 2rem;
+  padding: 1.1rem 1.5rem;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mkt-hero__meta-item:first-child {
+  padding-left: 0;
 }
 
 .mkt-hero__meta-item:last-child {
   border-right: 0;
-}
-
-/* V2-01: eerste meta-item lijnt mee met de container (zelfde max()-regel). */
-.mkt-hero__meta-item:first-child {
-  padding-left: max(2rem, calc((100vw - 72rem) / 2 + 1.5rem));
 }
 
 .mkt-hero__meta-item b {
@@ -350,7 +361,7 @@
 
 @media (max-width: 768px) {
   .mkt-hero,
-  .mkt-hero__meta {
+  .mkt-hero__meta-inner {
     grid-template-columns: 1fr;
   }
   .mkt-hero__switch {

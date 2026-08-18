@@ -19,7 +19,6 @@ import {
   ArrowRight,
   Building2,
   ChevronDown,
-  Cpu,
   Workflow,
 } from 'lucide-react';
 import { appHref } from './app-url';
@@ -38,7 +37,6 @@ export default function MarketingHomePage() {
       <HeroModes />
       <HowSection />
       <PlatformBreadth />
-      <ValuePillars />
       <ForWho />
       <PricingTeaser />
       <FAQ />
@@ -81,7 +79,7 @@ const MODULES: { Icon: typeof Dna; title: string; desc: string; href?: string }[
   { Icon: Megaphone, title: 'Campagne-strategie', desc: 'Van strategie-blueprint tot concrete deliverables.', href: '/marketing/features/campaigns' },
   { Icon: Images, title: 'Beeld', desc: 'On-brand visual, direct in het platform.' },
   { Icon: LayoutTemplate, title: 'Landingspagina’s', desc: 'Publiceren op je eigen subdomein.' },
-  { Icon: Bot, title: '9 AI-agents', desc: 'Collega’s met rollen — ze stellen voor, jij keurt goed.', href: '/marketing/features/agents' },
+  { Icon: Bot, title: '9 AI-agents', desc: 'Collega’s met rollen: ze stellen voor, jij keurt goed.', href: '/marketing/features/agents' },
   { Icon: BadgeCheck, title: 'Merk-check', desc: 'F-VAL-score bewaakt dat elke output op merk blijft.', href: '/marketing/features/brand-alignment' },
   { Icon: Languages, title: 'Meertalig', desc: 'Multi-markt content voor internationale merken.' },
 ];
@@ -143,82 +141,6 @@ function PlatformBreadth() {
   );
 }
 
-function ValuePillars() {
-  const pillars: { Icon: typeof Dna; title: string; body: string }[] = [
-    {
-      Icon: Cpu,
-      title: 'Een team, geen tool',
-      body: 'Negen agents met eigen rollen — onderzoek, strategie, content, merkbewaking, rapportage. Ze signaleren, adviseren en leveren concepten in je inbox.',
-    },
-    {
-      Icon: Dna,
-      title: 'Draait op jouw merk-DNA',
-      body: 'Brand voice, persona’s, producten, concurrenten en trends — elke collega werkt met dezelfde merkcontext, in Branddock én daarbuiten.',
-    },
-    {
-      Icon: BadgeCheck,
-      title: 'Bewijsbaar on-brand — jij keurt goed',
-      body: 'Elke uiting krijgt een F-VAL-merkscore — gemiddeld +7 punten on-brand versus vanilla-AI. Niets gaat live zonder jou.',
-    },
-  ];
-  return (
-    <section className="border-y border-gray-200 bg-gray-50">
-      <div className="max-w-6xl mx-auto px-6 py-16">
-        <div className="grid md:grid-cols-3 gap-8">
-          {pillars.map(({ Icon, title, body }) => (
-            <div key={title}>
-              <div className="mkt-chip w-11 h-11 mb-4">
-                <Icon className="w-5 h-5" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">{body}</p>
-            </div>
-          ))}
-        </div>
-        {/* V2-05: het team tastbaar — de 9 agents met naam en rol (echte
-            product-rollen), klik door naar de agents-pagina. */}
-        <Link
-          href="/marketing/features/agents"
-          className="mt-10 flex flex-wrap items-center gap-2.5 rounded-xl border border-gray-200 bg-white p-4 hover:border-gray-300 hover:shadow-md transition-all"
-        >
-          {AGENTS.map(([name, role]) => (
-            <span
-              key={name}
-              className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 pl-1 pr-3 py-1"
-            >
-              <span
-                className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white"
-                style={{ background: 'var(--brand-slate)' }}
-              >
-                {name[0]}
-              </span>
-              <span className="text-sm text-gray-800 font-medium">{name}</span>
-              <span className="text-xs text-gray-500">{role}</span>
-            </span>
-          ))}
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium mkt-accent ml-auto">
-            Ontmoet het team <ArrowRight className="w-4 h-4" />
-          </span>
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-// V2-05: namen + rollen zoals ze in het product bestaan — ze stellen voor,
-// jij keurt goed.
-const AGENTS: [string, string][] = [
-  ['Nova', 'Research-analist'],
-  ['Stella', 'Strateeg'],
-  ['Milo', 'Content-creator'],
-  ['Vera', 'Brand Guardian'],
-  ['Dana', 'Data-analist'],
-  ['Marco', 'Markt-analist'],
-  ['Remi', 'Reporting-analist'],
-  ['Iris', 'SEO/GEO-watchdog'],
-  ['Ada', 'Ads-watchdog'],
-];
-
 // TODO(Erik): vijfde voor-wie-kaart voor founders/kleine merken? (V2-08.4 — besluit)
 const FOR_WHO: {
   Icon: typeof Dna;
@@ -242,7 +164,7 @@ const FOR_WHO: {
     Icon: Building2,
     eyebrow: 'Bureaus',
     title: 'Eén merk-DNA-workspace per klant',
-    body: 'Beheer meerdere klantmerken naast elkaar, elk met een eigen merk-DNA — en lever aantoonbaar on-brand werk. Klanten kijken mee met een eigen login.',
+    body: 'Beheer meerdere klantmerken naast elkaar, elk met een eigen merk-DNA, en lever aantoonbaar on-brand werk. Klanten kijken mee met een eigen login.',
     href: '/marketing/solutions/bureaus',
     cta: 'Bekijk voor bureaus',
   },
@@ -258,7 +180,7 @@ const FOR_WHO: {
     Icon: Workflow,
     eyebrow: 'Automatiseerders',
     title: 'Bouw je merk in je eigen workflows',
-    body: 'Publieke API, webhooks met HMAC-signing en MCP voor n8n en andere tools — van generatie tot merk-check, machine-to-machine.',
+    body: 'Publieke API, webhooks met HMAC-signing en MCP voor n8n en andere tools: van generatie tot merk-check, machine-to-machine.',
     href: '/marketing/voor-ai-agents#api',
     cta: 'Bekijk de API & tools',
   },
@@ -274,7 +196,7 @@ function ForWho() {
           </div>
           <h2 className="text-gray-900 mb-3">Voor wie is Branddock?</h2>
           <p className="text-gray-600">
-            In het platform, vanuit je AI-agent of in je eigen workflows — iedereen werkt op
+            In het platform, vanuit je AI-agent of in je eigen workflows: iedereen werkt op
             hetzelfde merk-DNA.
           </p>
         </div>
@@ -339,7 +261,7 @@ function PricingTeaser() {
         <div className="text-sm font-semibold mkt-accent uppercase tracking-wide mb-3">Prijzen</div>
         <h2 className="text-gray-900 mb-3">Begin gratis. Betaal alleen voor wat je maakt.</h2>
         <p className="text-gray-600">
-          Credits meten alleen output — merk-context en de merk-check worden nooit gerekend. 28
+          Credits meten alleen output. Merk-context en de merk-check worden nooit gerekend. 28
           dagen gratis, geen creditcard.
         </p>
       </div>
@@ -388,11 +310,11 @@ function FAQ() {
   const qa = [
     {
       q: 'Hoe weet Branddock hoe mijn merk klinkt?',
-      a: 'Je legt je merk-DNA één keer vast — brand voice, stijl, persona’s, producten en concurrenten. Dat fundament wordt in elke generatie meegenomen.',
+      a: 'Je legt je merk-DNA één keer vast: brand voice, stijl, persona’s, producten en concurrenten. Dat fundament wordt in elke generatie meegenomen.',
     },
     {
       q: 'Is dit weer een losse AI-schrijftool?',
-      a: 'Nee. Branddock bundelt onderzoek, content, campagnes, beeld en publicatie in één platform, allemaal op hetzelfde merk-DNA — met een team van AI-agents dat voorstelt en jou laat goedkeuren.',
+      a: 'Nee. Branddock bundelt onderzoek, content, campagnes, beeld en publicatie in één platform, allemaal op hetzelfde merk-DNA, met een team van AI-agents dat voorstelt en jou laat goedkeuren.',
     },
     {
       q: 'Werkt Branddock ook in Claude of ChatGPT?',
@@ -403,16 +325,16 @@ function FAQ() {
       a: 'Je data staat in de EU en we werken AVG-proof. Je merk-DNA wordt niet gebruikt om modellen van derden te trainen.',
     },
     {
-      q: 'Ik heb geen marketingteam of merkdocumenten — werkt Branddock dan?',
-      a: 'Ja. De gratis setup-scan bouwt je merk-DNA vanaf je website, en een brand voice maak je uit 3 voorbeeldteksten in ±5 minuten. Starter is precies hiervoor bedoeld: de agents zijn dan je eerste marketingcollega\u2019s — zij stellen voor, jij keurt goed.',
+      q: 'Ik heb geen marketingteam of merkdocumenten. Werkt Branddock dan?',
+      a: 'Ja. De gratis setup-scan bouwt je merk-DNA vanaf je website, en een brand voice maak je uit 3 voorbeeldteksten in ±5 minuten. Starter is precies hiervoor bedoeld: de agents zijn dan je eerste marketingcollega\u2019s: zij stellen voor, jij keurt goed.',
     },
     {
       q: 'In welke talen werkt Branddock?',
-      a: 'Je stelt de contenttaal per workspace in — Nederlands, Engels, Duits, Frans, Spaans, Portugees of Italiaans. Generatie én de merk-check werken in die taal; meertalige merken kunnen per merkprofiel een taal voeren.',
+      a: 'Je stelt de contenttaal per workspace in: Nederlands, Engels, Duits, Frans, Spaans, Portugees of Italiaans. Generatie én de merk-check werken in die taal; meertalige merken kunnen per merkprofiel een taal voeren.',
     },
     {
       q: 'Kan ik gratis beginnen?',
-      a: 'Ja — 28 dagen gratis, zonder creditcard. Daarna betaal je alleen voor de output die je maakt.',
+      a: 'Ja, 28 dagen gratis en zonder creditcard. Daarna betaal je alleen voor de output die je maakt.',
     },
   ];
   return (
@@ -458,7 +380,7 @@ function FinalCTA() {
           Klaar om je marketingteam uit te breiden?
         </h2>
         <p className="mb-8 max-w-xl mx-auto" style={{ color: 'rgba(255,255,255,0.9)' }}>
-          Probeer Branddock 28 dagen gratis. Geen creditcard, geen verplichtingen — je agents staan
+          Probeer Branddock 28 dagen gratis. Geen creditcard, geen verplichtingen. Je agents staan
           direct voor je klaar.
         </p>
         <Link

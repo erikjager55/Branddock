@@ -71,7 +71,7 @@ export default function HeroModes() {
           {mode === 'platform' ? (
             <Image
               src={agentsShot}
-              alt="Het Branddock-agentteam — negen AI-agents met eigen rollen, van onderzoek tot merkbewaking"
+              alt="Het Branddock-agentteam: negen AI-agents met eigen rollen, van onderzoek tot merkbewaking"
               placeholder="blur"
               sizes="(max-width: 768px) 100vw, 46vw"
               className="w-full h-auto"
@@ -84,22 +84,24 @@ export default function HeroModes() {
       </div>
 
       <div className="mkt-hero__meta">
-        <div className="mkt-hero__meta-item">
-          <b>Modellen</b>
-          <span>Claude · GPT · Gemini</span>
-        </div>
-        <div className="mkt-hero__meta-item">
-          <b>Data</b>
-          {/* UX-05: de AVG-claim klikt door naar de onderbouwing. */}
-          <span>
-            <Link href="/marketing/security" className="hover:underline">
-              EU-hosting · AVG-proof
-            </Link>
-          </span>
-        </div>
-        <div className="mkt-hero__meta-item">
-          <b>Start</b>
-          <span>28 dagen gratis · geen creditcard</span>
+        <div className="mkt-hero__meta-inner">
+          <div className="mkt-hero__meta-item">
+            <b>Modellen</b>
+            <span>Claude · GPT · Gemini</span>
+          </div>
+          <div className="mkt-hero__meta-item">
+            <b>Data</b>
+            {/* UX-05: de AVG-claim klikt door naar de onderbouwing. */}
+            <span>
+              <Link href="/marketing/security" className="hover:underline">
+                EU-hosting · AVG-proof
+              </Link>
+            </span>
+          </div>
+          <div className="mkt-hero__meta-item">
+            <b>Start</b>
+            <span>28 dagen gratis · geen creditcard</span>
+          </div>
         </div>
       </div>
     </section>
@@ -190,7 +192,7 @@ function AgentChatMock() {
     <div className="bg-white p-5" style={{ minHeight: '20rem' }}>
       <div className="flex justify-end mb-4">
         <div className="max-w-xs rounded-xl px-4 py-2.5 text-sm text-white" style={{ background: 'var(--brand-slate)' }}>
-          Schrijf een LinkedIn-post over onze nieuwe dienst — voor persona Laura.
+          Schrijf een LinkedIn-post over onze nieuwe dienst, voor persona Laura.
         </div>
       </div>
       <div className="flex flex-wrap gap-2 mb-4">
@@ -199,7 +201,7 @@ function AgentChatMock() {
       </div>
       <div className="max-w-md rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
         <p className="text-sm text-gray-700 leading-relaxed mb-3">
-          Hier is je concept — geschreven in jullie merkstem, gericht op Laura, met de
+          Hier is je concept, geschreven in jullie merkstem, gericht op Laura, met de
           kernboodschap uit je merk-DNA. Zal ik hem in de bibliotheek zetten voor review?
         </p>
         <span
