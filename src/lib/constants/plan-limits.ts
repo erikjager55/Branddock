@@ -159,7 +159,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     seats: 5,
     platformFloorEur: PLATFORM_FLOOR_EUR,
     isLegacy: true,
-    features: ['Legacy vaste-prijs-tier — vervangen door Starter'],
+    features: ['Legacy vaste-prijs-tier, vervangen door Starter'],
   },
   STARTER: {
     tier: 'STARTER',

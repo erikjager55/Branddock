@@ -34,11 +34,11 @@ export function creditExampleCounts(credits: number): CreditExampleCounts {
 
 /**
  * Volledige "wat je hiervoor maakt"-regel voor tier-kaarten, bijv.
- * "±80 social posts, óf 5 long-form artikelen, óf 200 beelden — mix vrij".
+ * "±80 social posts, óf 5 long-form artikelen, óf 200 beelden (vrij te mixen)".
  */
 export function creditExampleLine(credits: number): string {
   const c = creditExampleCounts(credits);
-  return `±${nl.format(c.shortPosts)} social posts, óf ${nl.format(c.longFormArticles)} long-form artikelen, óf ${nl.format(c.images)} beelden — mix vrij`;
+  return `±${nl.format(c.shortPosts)} social posts, óf ${nl.format(c.longFormArticles)} long-form artikelen, óf ${nl.format(c.images)} beelden (vrij te mixen)`;
 }
 
 /**
