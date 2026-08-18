@@ -131,9 +131,24 @@ Doe je het andersom, dan kalibreer je opnieuw op de rand.
 1. **Twee productbesluiten van Erik** (staan als eerste twee acceptatiecriteria) —
    die bepalen of de vage-brief- en LINFI-case een prompt- of een rubric-fix
    krijgen. Zonder deze twee is elke reparatie een gok.
-2. **De meta-description-case** kan wél meteen: dat is geen productvraag maar een
-   rubric die iets eist wat de prompt nooit bestelt. Eén regel, en de case gaat van
-   3,5 naar ≥4,0.
+2. ~~**De meta-description-case**~~ — ✅ **gedaan 2026-08-18.** De eis is uit beide
+   rubrics (de algemene én die van de SEO-focus-case). Geverifieerd vóór het wijzigen:
+   het productie-format voor `blog-post` is
+   `'Format: Blog post with H1 title, H2 sections, conclusion, and CTA.'`
+   (`src/lib/studio/prompt-templates/long-form.ts`) — géén meta-description. De rubric
+   toetste dus iets wat noch de eval-prompt noch productie ooit oplevert; de rubric was
+   fout, niet de prompt.
+
+   ⚠️ **Bijvangst, en die versterkt het v2-argument**: productie kent voor `blog-post`
+   óók **geen FAQ-sectie**, terwijl de eval er expliciet één bestelt (`FAQ-sectie
+   (3 Q&A's)`) én erop toetst. Prompt en rubric zijn daar intern consistent, dus de
+   nightly ziet er niets van — maar de set meet daarmee een format dat gebruikers niet
+   krijgen. Dat is een tweede, onafhankelijke afwijking tussen eval en productie, en
+   ik heb 'm bewust laten staan: hem wegnemen is de v2-vraag, geen rubric-fix.
+
+   **Geborgd**: `npm run smoke:golden-set-drift` pint het productie-format vast. Wijzigt
+   dat, dan faalt de guard en kijkt iemand naar de eval — in plaats van dat de twee stil
+   uit elkaar lopen. Gekalibreerd met een mutatietest: een verschoven format geeft exit 1.
 3. **Judge-variantie meten** op de borderline-cases
    (`scripts/smoke-tests/position-swap-judge.ts`) — kost live-LLM-runs, ~55k tokens
    per run, bewust niet autonoom gestart.
