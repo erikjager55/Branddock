@@ -37,7 +37,7 @@ jobs:
           #
           # Runner heeft 16GB, dus 8GB is ruim en consistent met de build-stap.
           # Type-versmalling blijft de echte oplossing — follow-up in
-          # tasks/lp-review-followups.md.
+          # tasks/done/lp-review-followups.md.
           NODE_OPTIONS: "--max-old-space-size=8192"
 
       - run: npm run lint

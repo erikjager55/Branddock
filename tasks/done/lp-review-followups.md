@@ -5,9 +5,9 @@ fase: launch
 priority: next
 effort: verspreid, per item 0.5-2u
 owner: unassigned
-status: open
+status: done
 created: 2026-08-13
-completed: -
+completed: 2026-08-18
 related-adr: docs/adr/2026-08-07-puck-exit-sectie-editor.md
 related-spec: docs/specs/2026-08-07-webpage-builder-verbeterplan.md
 worktree: -
@@ -25,7 +25,7 @@ geen launch-blockers, wel afmaken vóór volume-groei.
 
 ## Retentie / groei (vóór serieus verkeer) — ✅ AF 2026-08-17
 
-Gebouwd volgens [ADR 2026-08-17](../docs/adr/2026-08-17-landing-page-data-retention.md).
+Gebouwd volgens [ADR 2026-08-17](../../docs/adr/2026-08-17-landing-page-data-retention.md).
 Eén dagelijkse cron `/api/cron/lp-retention` (02:00) doet alle drie de stappen,
 windows in `src/lib/landing-pages/retention-policy.ts`.
 
@@ -72,7 +72,7 @@ wél leesbaar maar niet wisbaar waren. Details in changelog #474.
 
 ## Robuustheid (geen waargenomen impact, wel echt)
 - [→] **Registry-type / build-heap** — verplaatst naar een eigen taak:
-      [`build-heap-investigation`](build-heap-investigation.md). De annotatie is
+      [`build-heap-investigation`](../build-heap-investigation.md). De annotatie is
       toegepast (#295) en de hypothese is gemeten weerlegd (#302); wat overblijft is
       een geheugenonderzoek, geen typing-klus. Origineel: sinds E3 het
       return-type laten inferen (de minimale annotatie brak 149 consumer-
@@ -83,10 +83,12 @@ wél leesbaar maar niet wisbaar waren. Details in changelog #474.
       rijke maar benoemde interface die álle door consumenten gelezen
       veld-metadata dekt, of het props-paneel-model loskoppelen van de
       registry-literal.
-- [ ] **Turnstile op het publieke form-endpoint** (`/api/f/[formId]`) — de
-      gedocumenteerde volgende trede bóven honeypot + timing + gelaagde
-      rate-limits (zit er al in). Pas bouwen bij waargenomen spam-druk;
-      bron: spec §Deploy-notities + `tasks/done/lp-forms-leads.md`.
+- [→] **Turnstile op het publieke form-endpoint** — afgesplitst 2026-08-18 naar
+      [`lp-turnstile-form-endpoint`](../lp-turnstile-form-endpoint.md). Het was
+      hier het laatste openstaande vakje, maar het is geen restwerk: het staat
+      bewust gegate op waargenomen spam-druk. Als apart bestand kan het een
+      expliciete trigger dragen ("bouw dit zodra …") in plaats van te vervagen
+      als open vinkje in een verder afgeronde taak.
 - [x] **SSE-generator + client-disconnect** — ✅ 2026-08-17. Beide helften waren
       nodig: in de SPA unmount de component bij wegnavigeren, maar de browser
       verbreekt de fetch dan niet vanzelf, dus zonder client-abort ging de
@@ -295,7 +297,7 @@ call-site-dekking en composeerbaarheid, niet op die redenering.
 **Wat er wél is overgenomen** — als gedrag, niet als code, want `route.ts` is sinds
 die tak flink veranderd (#299 + #322):
 - `MIN_PERSISTABLE_PARTIAL` en de krimp-guard staan nu in
-  [`src/lib/landing-pages/partial-variant-persist.ts`](../src/lib/landing-pages/partial-variant-persist.ts).
+  [`src/lib/landing-pages/partial-variant-persist.ts`](../../src/lib/landing-pages/partial-variant-persist.ts).
   Apart module omdat het een productregel codeert, en omdat het zo toetsbaar is
   zonder de route te booten.
 - De guard draait **binnen** de `mutate`-callback van de helper, dus op de verse
@@ -357,12 +359,12 @@ nagebouwd met de tabel hierboven als ijkpunt.
 
 - [x] Retentie-items gebouwd of expliciet her-geprioriteerd vóór de eerste
       workspace met >10k events/maand — gebouwd 2026-08-17 (ADR + cron + smoke 47/47)
-- [~] Robuustheid-items opgepakt in een reguliere hardening-sessie — **grotendeels**:
-      de SSE-dekkingsgaten zijn gedicht (18-08, §Dekkingsgaten). Nog open: alleen Turnstile,
-      en dat is een bewuste gate op waargenomen spam-druk — geen restwerk. Het
-      voorwerk vóór de stream is per 18-08 wél afbreekbaar (§Voorwerk); de
-      tak-consolidatie is afgerond. Het registry-type
-      is verhuisd naar [`build-heap-investigation`](build-heap-investigation.md)
+- [x] Robuustheid-items opgepakt in een reguliere hardening-sessie — **afgerond 18-08**:
+      de SSE-dekkingsgaten zijn gedicht (18-08, §Dekkingsgaten). de dekkingsgaten, het voorwerk vóór de
+      stream en de tak-consolidatie zijn alle drie gedicht. Turnstile is als
+      bewust gegate item afgesplitst naar
+      [`lp-turnstile-form-endpoint`](../lp-turnstile-form-endpoint.md). Het registry-type
+      is verhuisd naar [`build-heap-investigation`](../build-heap-investigation.md)
 
 # Out of scope
 

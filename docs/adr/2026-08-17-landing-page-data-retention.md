@@ -11,7 +11,7 @@ superseded-by: -
 
 De 2-reviewer-ronde over de webpage-builder (2026-08-13) liet drie retentie-punten
 bewust liggen als "geen launch-blocker, wel afmaken vóór volume-groei"
-(`tasks/lp-review-followups.md`). Ze zijn op 16-08 naar Nu gehaald omdat ze als
+(`tasks/done/lp-review-followups.md`). Ze zijn op 16-08 naar Nu gehaald omdat ze als
 enige items in die lijst met de dag duurder worden — het is schuld die zichzelf
 oplaadt zodra er verkeer op de gepubliceerde pagina's staat.
 

@@ -96,7 +96,7 @@ bij een voorgestelde fix, één CI-run met de bump eraf.
 
 # Notes
 
-Voorgeschiedenis staat in `tasks/lp-review-followups.md` (robuustheid-sectie): daar
+Voorgeschiedenis staat in `tasks/done/lp-review-followups.md` (robuustheid-sectie): daar
 begon dit als "registry-type versmallen" en daar staat ook wat de annotatie wél
 opleverde — een benoemd registry-contract in plaats van een geïnfereerd type dat
 elke consument opnieuw instantieert. Die winst blijft, los van de heap.

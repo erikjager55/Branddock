@@ -2,7 +2,7 @@
  * section-edit-synthetic-ids — bewijst dat de edit-kernel dezelfde secties
  * aanwijst als de preview, en dat een onvindbaar anker niet stil verhuist.
  *
- * Aanleiding (tasks/lp-review-followups.md, robuustheid):
+ * Aanleiding (tasks/done/lp-review-followups.md, robuustheid):
  *  - PageRender synthetiseert `<type>-<index>`-ids voor secties zonder
  *    `props.id`, maar de kernel matchte alleen echte id's. Move/remove/
  *    duplicate/set-props waren dan stille no-ops mét een melding die het

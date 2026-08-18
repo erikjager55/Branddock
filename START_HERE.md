@@ -188,10 +188,17 @@ een distributie-probleem, en het enige wat de volgende stap tegenhoudt is jouw a
 omarm-strategie plus de outreach naar de maintainer. De upstream-PR's liggen als tekstpakket
 klaar.
 
-**3. 🧹 [`lp-review-followups`](tasks/lp-review-followups.md) — de vier robuustheid-items.**
-Het enige blok in de Nu-lijst dat concreet, onbelemmerd en zonder jouw input te doen is. De
-moeite waard om mee te beginnen: het versmallen van het `buildSpikePuckConfig`-registry-type
-haalt de 8GB-heapbump uit `ci.yml` weg die er nu als workaround staat.
+**3. 🧹 [`static-rendering-regressie`](tasks/static-rendering-regressie.md) — élke route rendert dynamic.**
+Het enige blok in de Nu/Volgende-lijst dat concreet, onbelemmerd en zonder jouw input te doen
+is, nu `lp-review-followups` ✅ af is. Eén `await cookies()` in de root layout zet de hele app
+op dynamic rendering, waardoor `generateStaticParams` op marketing en `revalidate` op de
+klant-landingspagina's al maanden niets opleveren.
+
+> ⚠️ De vorige tekst hier beloofde dat het versmallen van het `buildSpikePuckConfig`-type de
+> 8GB-heapbump uit `ci.yml` zou halen. Dat experiment is gedraaid (#302) en de **hypothese is
+> weerlegd** — met de annotatie erin en de bump eraf viel de build alsnog om. Het item leeft
+> verder als [`build-heap-investigation`](tasks/build-heap-investigation.md), en de volgende
+> stap daar is méten waar het geheugen heen gaat, niet opnieuw een type versmallen.
 
 ---
 
@@ -221,7 +228,6 @@ haalt de 8GB-heapbump uit `ci.yml` weg die er nu als workaround staat.
 | [`lp-image-routes`](tasks/done/lp-image-routes.md) | review — wacht op één prod-smoke door jou |
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
 | [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst. ⚠️ §B: de retentie-indexen zijn ✅ af (#311); wat resteert is `NEXT_PUBLIC_POSTHOG_KEY` op prod |
-| [`lp-review-followups`](tasks/lp-review-followups.md) | open — retentie-items ✅ af (#286). SSE-abort ✅ grotendeels (#287/#303); **rest ligt klaar op `claude/sse-abort-disconnect` (`4a8f12b`)** en wacht op afstemming met #295. Vier robuustheid-items nog open |
 | [`marketing-site-verbeterslag`](tasks/marketing-site-verbeterslag.md) | in-progress — pagina-voor-pagina-doorloop van alle 26 marketing-URL's + verzamelbak voor website-brede wijzigingen |
 
 ### Volgende
@@ -249,7 +255,11 @@ op marketing en `revalidate` op de klant-landingspagina's leveren al maanden nie
 `content-test-regression-7B` · `geo-seo-followup-later` · `i18n-ai-translation-pipeline` ·
 `power-user-shortcuts` · `publishgate-second-opinion` · `validate-brand-domain-component-fit` ·
 `video-chain-explainer-showcase` · `web-page-builder-acceptance-rest` ·
-`mcp-external-data-enrichment-research`
+`mcp-external-data-enrichment-research` ·
+[`lp-turnstile-form-endpoint`](tasks/lp-turnstile-form-endpoint.md) (⚠️ **blocked op een
+trigger, niet op werk**: afgesplitst uit `lp-review-followups` bij het afronden daarvan.
+Bouwen zonder waargenomen spam-druk zet een CAPTCHA in het conversiepad van een funnel met
+nauwelijks verkeer. De taak draagt vier meetbare triggers plus de SQL om ze te toetsen)
 
 ---
 
