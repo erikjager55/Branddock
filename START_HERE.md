@@ -80,6 +80,23 @@ werkt zonder dat af te stemmen.
 
 ---
 
+**Twee taken op de Nu-lijst waren allang af — en de vraag "nooit begonnen of ongepusht?"
+had een derde antwoord: gemerged.** `marketing-homepage-v2` landde op 15-07 (PR #151), en de
+complete Out-of-scope-lijst Fase 2/3 volgde diezelfde avond in #152 en #153 — feature-,
+oplossingen- en juridische pagina's bestaan allemaal. `kpi-fase0` landde op 20-07 (PR #215,
+changelog #424); alle drie zijn acceptatiecriteria stuk voor stuk nagelopen: de 403-gate en
+responsvorm van `/api/admin/growth-metrics`, de Growth-tab bínnen het `isDeveloper`-blok met
+alle vier renderblokken, en groene CI (`check` 8m51s, `det-suite`, `e2e`) plus de in #424
+vastgelegde dev-smoke. Beide branches waren na de merge netjes opgeruimd — dáárom was er geen
+worktree.
+
+Oorzaak van de verkeerde status: beide files hadden géén frontmatter en kregen die op 17-08
+achteraf aangeplakt (#286) met een default `status: in-progress`; bij `marketing-homepage-v2`
+plus een `created` ná de merge van zijn eigen werk. **Achteraf aangeplakte frontmatter is een
+gok, geen registratie** — leid status en datum af uit `git log --diff-filter=A` van het bestand
+en uit de merge-status van de PR. De pagina-voor-pagina-doorloop van de marketing-site loopt
+verder als `marketing-site-verbeterslag`.
+
 ## Wat er landde (2026-08-17)
 
 **De campagnewizard is voor het eerst end-to-end getest** (#279-#284, changelog 473). De sweep
@@ -205,8 +222,7 @@ haalt de 8GB-heapbump uit `ci.yml` weg die er nu als workaround staat.
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
 | [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst. ⚠️ §B: de retentie-indexen zijn ✅ af (#311); wat resteert is `NEXT_PUBLIC_POSTHOG_KEY` op prod |
 | [`lp-review-followups`](tasks/lp-review-followups.md) | open — retentie-items ✅ af (#286). SSE-abort ✅ grotendeels (#287/#303); **rest ligt klaar op `claude/sse-abort-disconnect` (`4a8f12b`)** en wacht op afstemming met #295. Vier robuustheid-items nog open |
-| [`kpi-fase0`](tasks/kpi-fase0.md) | ⚠️ **staat op in-progress, maar er is geen branch en geen worktree** — niet lokaal, niet op origin (geverifieerd 18-08). Ofwel nooit begonnen, ofwel een worktree opgeruimd zonder push. Uitzoeken vóór je er iets aan ophangt |
-| [`marketing-homepage-v2`](tasks/marketing-homepage-v2.md) | ⚠️ **idem: in-progress zonder branch of worktree** (geverifieerd 18-08). Zelfde vraag als hierboven |
+| [`marketing-site-verbeterslag`](tasks/marketing-site-verbeterslag.md) | in-progress — pagina-voor-pagina-doorloop van alle 26 marketing-URL's + verzamelbak voor website-brede wijzigingen |
 
 ### Volgende
 [`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) (⚠️ **44 van 44**
