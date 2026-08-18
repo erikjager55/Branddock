@@ -1,0 +1,55 @@
+{
+  "projectId": "6fbe4595-e6ab-4fd3-b630-88e72ea164c8",
+  "shape": "package",
+  "pkg": "branddock-app",
+  "globalName": "BranddockDS",
+  "srcDir": "src",
+  "tsconfig": "./tsconfig.json",
+  "cssEntry": ".design-sync/.cache/compiled.css",
+  "componentSrcMap": {
+    "PageShell": "src/components/ui/layout/PageShell.tsx",
+    "PageHeader": "src/components/ui/layout/PageHeader.tsx",
+    "StatGrid": "src/components/ui/layout/StatGrid.tsx",
+    "SectionCard": "src/components/ui/layout/SectionCard.tsx",
+    "GradientBanner": "src/components/ui/layout/GradientBanner.tsx",
+    "DetailHeader": "src/components/ui/layout/DetailHeader.tsx",
+    "FavoriteButton": "src/components/ui/layout/FavoriteButton.tsx",
+    "FilterBar": "src/components/ui/layout/FilterBar.tsx",
+    "WizardStepper": "src/components/ui/layout/WizardStepper.tsx",
+    "SelectionCard": "src/components/ui/layout/SelectionCard.tsx",
+    "ContentSidebarLayout": "src/components/ui/layout/ContentSidebarLayout.tsx",
+    "IssueCard": "src/components/ui/layout/IssueCard.tsx"
+  },
+  "dtsPropsFor": {
+    "PageShell": "children: React.ReactNode;\n  /** Centreert de inhoud; 7xl is de standaardbreedte van een Branddock-pagina. */\n  maxWidth?: '3xl' | '5xl' | '7xl' | 'full';\n  className?: string;\n  /** Padding wordt automatisch toegepast. Zet op true voor custom layouts. */\n  noPadding?: boolean;",
+    "PageHeader": "/** Bepaalt icoon en gradient van de module. */\n  moduleKey: 'dashboard' | 'brand-foundation' | 'business-strategy' | 'brandstyle' | 'brandvoice' | 'personas' | 'products' | 'competitors' | 'trend-radar' | 'knowledge' | 'brand-alignment' | 'campaigns' | 'content-library' | 'research' | 'settings' | 'help' | 'media-library' | 'ai-trainer' | 'ai-studio' | 'agents';\n  title: string;\n  subtitle?: string;\n  /** Overschrijft het icoon dat moduleKey normaal kiest. */\n  icon?: React.ComponentType<{ className?: string }>;\n  /** Knoppen rechts in de header. */\n  actions?: React.ReactNode;\n  /** Extra inhoud onder de titelregel. */\n  children?: React.ReactNode;\n  /** Compacte variant: minder padding, kleinere titel. */\n  compact?: boolean;\n  className?: string;",
+    "WizardStepper": "steps: Array<{ id: string; label: string; description?: string }>;\n  /** Nul-geindexeerd; stappen ervoor tonen een vinkje. */\n  currentStep: number;\n  /** Alleen bezochte stappen zijn klikbaar. */\n  onStepClick?: (index: number) => void;\n  className?: string;",
+    "StatGrid": "children: React.ReactNode;\n  /** Standaard 4 kolommen. */\n  columns?: 2 | 3 | 4;\n  className?: string;",
+    "SectionCard": "icon?: React.ComponentType<{ className?: string }>;\n  title: string;\n  subtitle?: string;\n  /** Toont een gekleurde impact-badge rechtsboven. */\n  impactBadge?: 'high' | 'medium' | 'low';\n  /** Tailwind-gradientklassen voor de icoonhouder. */\n  iconGradient?: string;\n  actions?: React.ReactNode;\n  children: React.ReactNode;\n  className?: string;",
+    "SelectionCard": "icon?: React.ComponentType<{ className?: string }>;\n  title: string;\n  subtitle?: string;\n  selected?: boolean;\n  onSelect: () => void;\n  /** Extra badges of metadata onder de subtitel. */\n  badges?: React.ReactNode;\n  /** radio = enkelvoudige keuze, checkbox = meervoudig. */\n  selectionMode?: 'radio' | 'checkbox';\n  children?: React.ReactNode;\n  className?: string;\n  testId?: string;",
+    "ContentSidebarLayout": "children: React.ReactNode;\n  sidebar: React.ReactNode;\n  /** sm = 320px, md = 384px. */\n  sidebarWidth?: 'sm' | 'md';\n  className?: string;",
+    "DetailHeader": "onBack: () => void;\n  backLabel?: string;\n  title: string;\n  subtitle?: string;\n  /** Badge-elementen naast de titel. */\n  badges?: React.ReactNode;\n  /** Actieknoppen rechts. */\n  actions?: React.ReactNode;\n  /** Avatar- of icoonelement links. */\n  avatar?: React.ReactNode;",
+    "FilterBar": "searchValue: string;\n  onSearchChange: (value: string) => void;\n  searchPlaceholder?: string;\n  /** Filter-dropdowns als children. */\n  filters?: React.ReactNode;\n  viewMode?: 'grid' | 'list';\n  onViewModeChange?: (mode: 'grid' | 'list') => void;\n  /** Extra acties rechts. */\n  actions?: React.ReactNode;\n  className?: string;",
+    "IssueCard": "severity: 'critical' | 'warning' | 'suggestion';\n  title: string;\n  /** Bijv. \"Personas -> Tech-Savvy Millennial\". */\n  subtitle?: string;\n  description: string;\n  /** Tags die tonen waarmee dit conflicteert. */\n  conflictsWith?: string[];\n  /** AI-aanbeveling onderaan de kaart. */\n  recommendation?: string;\n  actions?: React.ReactNode;\n  className?: string;",
+    "GradientBanner": "/** Bepaalt de gradientkleuren van de banner. */\n  moduleKey: 'dashboard' | 'brand-foundation' | 'business-strategy' | 'brandstyle' | 'brandvoice' | 'personas' | 'products' | 'competitors' | 'trend-radar' | 'knowledge' | 'brand-alignment' | 'campaigns' | 'content-library' | 'research' | 'settings' | 'help' | 'media-library' | 'ai-trainer' | 'ai-studio' | 'agents';\n  /** Inhoud binnen het gradientvlak (avatar, titel). */\n  children?: React.ReactNode;\n  height?: 'sm' | 'md' | 'lg';\n  className?: string;",
+    "FavoriteButton": "isFavorite: boolean;\n  onToggle: () => void;\n  size?: 'sm' | 'md';\n  className?: string;"
+  },
+  "overrides": {
+    "PageHeader": {
+      "cardMode": "column"
+    },
+    "WizardStepper": {
+      "cardMode": "column"
+    },
+    "ContentSidebarLayout": {
+      "cardMode": "column"
+    },
+    "DetailHeader": {
+      "cardMode": "column"
+    },
+    "FilterBar": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}

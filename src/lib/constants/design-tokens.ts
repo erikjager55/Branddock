@@ -890,7 +890,7 @@ export const MODULE_GRADIENTS = {
   'personas':          { from: 'from-[#5252E3]', to: 'to-[#1FD1B2]',   icon: 'Users' },
   'products':          { from: 'from-orange-500',  to: 'to-amber-600',    icon: 'Package' },
   'competitors':       { from: 'from-red-500',     to: 'to-rose-600',     icon: 'Swords' },
-  'trend-radar':       { from: 'from-primary-500',    to: 'to-emerald-600',  icon: 'Radar' },
+  'trend-radar':       { from: 'from-teal-400',      to: 'to-emerald-600',  icon: 'Radar' },
   'knowledge':         { from: 'from-blue-500',    to: 'to-indigo-600',   icon: 'BookOpen' },
   'brand-alignment':   { from: 'from-[#1FD1B2]', to: 'to-emerald-500',  icon: 'GitCompare' },
   'campaigns':         { from: 'from-[#5252E3]', to: 'to-purple-600',   icon: 'Megaphone' },

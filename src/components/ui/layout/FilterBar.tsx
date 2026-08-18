@@ -2,7 +2,7 @@ import { type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { LayoutGrid, List } from 'lucide-react';
 import { FILTER_PATTERNS, ICON_SIZES, SPACING } from '@/lib/constants/design-tokens';
-import { SearchInput } from '@/components/shared';
+import { SearchInput } from '@/components/shared/SearchInput';
 
 export type ViewMode = 'grid' | 'list';
 
