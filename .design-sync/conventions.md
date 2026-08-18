@@ -1,7 +1,14 @@
 # Branddock Design System — hoe je hiermee bouwt
 
-Deze bibliotheek is de layout-laag van de Branddock-app: de primitives waaruit elke
-pagina is opgebouwd. Twaalf componenten, allemaal beschikbaar op `window.BranddockDS`.
+Dit is de UI-laag waarmee de Branddock-app zijn pagina's bouwt: 35 componenten, alle
+beschikbaar op `window.BranddockDS`. Twee lagen die je door elkaar gebruikt —
+**layout-primitives** (`PageShell`, `PageHeader`, `SectionCard`, `StatGrid`,
+`WizardStepper`, …) en **gedeelde bouwstenen** (`Button`, `Badge`, `Card`, `Input`,
+`Select`, `Modal`, `EmptyState`, `Skeleton`, …).
+
+⚠️ De app heeft daarnaast een `src/components/ui/`-map met shadcn-primitives. **Die is
+bewust niet gesynct**: 36 van de 40 bestanden hebben nul importeurs — opgetuigd, nooit
+in gebruik genomen. Bouw dus met wat hier staat, niet met een shadcn-`Button`.
 
 ## Geen provider nodig
 
@@ -56,8 +63,21 @@ Praktisch betekent dat:
 
 ## Iconen: Lucide, nooit emoji
 
-Componenten met een `icon`-prop (`PageHeader`, `SectionCard`, `SelectionCard`) verwachten
-een Lucide-icooncomponent. Emoji zijn in deze codebase expliciet verboden.
+Componenten met een `icon`-prop (`PageHeader`, `SectionCard`, `SelectionCard`, `Button`,
+`Input`, `EmptyState`, `StatCard`, `CrossLinkCard`) verwachten een Lucide-icooncomponent.
+Emoji zijn in deze codebase expliciet verboden.
+
+## Samengestelde componenten
+
+`Modal`, `Popover` en `Select` verwachten compositie. Kijk in hun `.prompt.md` voor de
+vorm — `Popover` bijvoorbeeld als `<Popover><PopoverTrigger asChild>…</PopoverTrigger>
+<PopoverContent>…</PopoverContent></Popover>`. De sub-onderdelen staan op
+`window.BranddockDS` maar hebben geen eigen kaart.
+
+## Tekst is Nederlands
+
+De app-UI is Nederlands. Schrijf labels, knoppen en meldingen in het Nederlands, tenzij
+je expliciet iets anders wordt gevraagd.
 
 ## Waar de waarheid staat
 
