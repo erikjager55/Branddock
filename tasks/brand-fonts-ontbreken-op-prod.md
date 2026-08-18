@@ -19,7 +19,29 @@ De storage-URL-audit tegen Neon-productie (2026-08-18, `scripts/dev/storage-url-
 laat zien dat `StyleguideFont.fileUrl` **44 van de 44 keer leeg is**. Er staat op productie
 dus géén enkel fontbestand.
 
-Gevolg: élke merkfont valt terug op het metric-substituut. In de Typography-tab staat overal
+> ⚠️ **Herzien 2026-08-18 (avond) — de impact hierboven is nagemeten en klopte niet.**
+> Een leeg `fileUrl` betekent níet dat er een substituut rendert. Google Fonts laden bij
+> Google en hebben nooit een bestand nodig. Gemeten op `branddock-prod`:
+>
+> | availability | aantal | rendert |
+> |---|---|---|
+> | `COMMERCIAL` | 18 | ❌ substituut |
+> | `ADOBE_FONTS` | 11 | ❌ substituut — **geen enkele workspace heeft een `adobeFontsKitId`** |
+> | `GOOGLE_FONTS` | 15 | ✅ de echte font |
+>
+> **29 van de 44**, niet 44 van de 44. Linfi (3 Google-fonts) heeft nul problemen.
+>
+> **En er ligt een veel goedkoper pad dan dit task-file aannam.** De elf Adobe-fonts hebben
+> geen licentie-upload nodig maar één kit-id per workspace: `better brands` (6 fonts),
+> `Branddock` (4) en `Napking` (1). Drie velden invullen repareert 11 van de 29. De echte
+> upload-vraag beperkt zich tot de 18 `COMMERCIAL`-fonts, en die zitten bij vijf merken —
+> DTS Ede (5), PartnerSelect (5), Zwarthout (3), Nobox (1), sulejman (1) — plus 3 in een
+> smoke-testworkspace die je kunt negeren.
+>
+> De les is de bekende: **de tekst van een taak beschrijft niet de toestand.** Dit item
+> leidde zijn impact af uit één kolom.
+
+Gevolg voor de 29: die vallen terug op het metric-substituut. In de Typography-tab staat overal
 *"Previewing with Inter — a metric substitute"*, en dat substituut werkt door in méér dan een
 preview: de tab zegt het zelf — *"needed for accurate previews, PDF exports, and AI-generated
 content"*.
@@ -52,7 +74,15 @@ het in de merk-gereedheid opduikt in plaats van onzichtbaar te blijven.
 - [ ] Per merk op prod vastgelegd: fontbestand geüpload, Adobe-kit gezet, of expliciet
       "bewust niet — licentie ontbreekt"
 - [ ] Minstens één merk toont in de Typography-tab de échte merkfont (geen substituut-melding)
-- [ ] Een gedetecteerde font zonder bestand telt mee in de merk-gereedheid/`dataQuality`
+- [x] Een gedetecteerde font zonder bestand telt mee in de merk-gereedheid/`dataQuality` —
+      ✅ 2026-08-18 (spoor B). `substitutedFontItems()` in
+      `src/features/brandstyle/utils/data-quality.ts` beslist op het **renderplan**
+      (`resolveFontRender`), niet op `fileUrl` — precies het onderscheid dat hierboven
+      misging. Spiegelt ook de extra tak van de Typography-tab, waar een font zónder
+      `availability` alsnog de echte Google Font laadt. Bewijs:
+      `npm run smoke:brand-font-substitutes` **13/13** inclusief mutatietest: de naïeve
+      `fileUrl`-telling geeft 44 waar de echte functie er 29 geeft — zouden die gelijk zijn,
+      dan meet de smoke niets.
 - [ ] Her-run van `scripts/dev/storage-url-audit.ts` op prod toont een niet-leeg
       `StyleguideFont.fileUrl`
 - [ ] `npx tsc --noEmit` 0 errors
