@@ -5,12 +5,12 @@ fase: launch
 priority: next
 effort: 2-4 uur
 owner: claude-code
-status: open
+status: done
 created: 2026-07-17
-completed:
+completed: 2026-08-18
 related-adr: -
 related-spec: -
-worktree: -
+worktree: branddock-guard-hooks-hardening
 ---
 
 # Probleem
@@ -74,13 +74,53 @@ Per gat een aparte keuze — dit is bewust géén "fix alles":
    is een belofte die niet bestaat. CLAUDE.md zegt: *"fix de hook, niet bypassen"* — dan moet
    er wel iets te fixen zijn.
 
+# Opgeleverd (2026-08-18)
+
+Aanleiding voor de uitvoering: **alle drie de gaten zijn op 18-08 opnieuw geraakt** in
+één sessie — een merge naar productie terwijl de guard élke lokale git-mutatie blokkeerde,
+een fout-positief op `git worktree add` én op een cherry-pick in een verse zijworktree, en
+de niet-bestaande escape bij het opruimen van lokale `main`.
+
+**Eriks beslissingen** (18-08, per gat gevraagd):
+
+1. `gh pr merge` → **waarschuwen, niet blokkeren**. Twee sessies die elk hun eigen PR
+   mergen is legitiem; de echte faalmodus in beide incidenten was een verouderde
+   branch-head, niet gelijktijdigheid. De melding wijst daarom naar `git ls-remote`.
+2. `check-dangerous-bash` → **operatie-bewust**. Drie lagen: CRITICAL (altijd blokkeren),
+   BRANCH-AWARE (alleen richting main/master), WARNING (melden, doorlaten).
+3. Onbepaalbaar doel → **doorlaten** (fail-open, conform het bestaande ontwerp).
+
+**Nieuwe helper** `.claude/hooks/lib/guard-lib.sh` — beide hooks stelden dezelfde vraag
+("welke worktree raakt dit commando?") en beantwoordden 'm verkeerd. Nu één implementatie:
+doel uit `cd` / `git -C`, anders het JSON-veld `cwd`; onbepaalbaar → leeg → doorlaten.
+
+**Twee vondsten die niet in de oorspronkelijke analyse stonden:**
+
+- **De blokkade was tekstueel, niet operationeel.** De ene schrijfwijze van een harde reset
+  werd geblokkeerd, dezelfde operatie met een SHA niet — exact even destructief. Nu kijkt
+  de check naar de uitgecheckte branch in plaats van naar de spelling van het argument.
+- **`git -C <pad> <verb>` glipte langs béide hooks**, ook in de versie van vóór 18-08:
+  elke verb-regex eiste het werkwoord dírect achter `git`. De smoke viel er meteen over
+  (rij 4). Opgelost met `normalize_git_cmd`; rij 13 is de regressietest.
+
+**Een escape implementeren bleek principieel onmogelijk.** Een PreToolUse-hook kent alleen
+`allow` en `deny` — er is geen `ask`, dus een hook kán niet om bevestiging vragen. En een
+escape-zin ín het commando wordt door Claude getypt, niet door Erik; dat is geen
+user-confirmation maar een self-service bypass. De melding zegt nu wat er wél geldt.
+
 # Acceptatiecriteria
 
-- [ ] Erik heeft expliciet akkoord gegeven op de richting per gat (dit is zijn veiligheidsnet)
-- [ ] Gat 2 weg: werk in worktree X wordt niet geblokkeerd door een sessie in worktree Y
-- [ ] Gat 3 weg: de melding klopt met het gedrag
-- [ ] Gat 1: bewuste beslissing genomen (afdekken / waarschuwen / accepteren), vastgelegd
-- [ ] Elke wijziging getest met een echte co-sessie-simulatie — niet alleen gelezen
+- [x] Erik heeft expliciet akkoord gegeven op de richting per gat (dit is zijn veiligheidsnet)
+- [x] Gat 2 weg: werk in worktree X wordt niet geblokkeerd door een sessie in worktree Y — smoke rij 3
+- [x] Gat 3 weg: de melding klopt met het gedrag
+- [x] Gat 1: bewuste beslissing genomen (waarschuwen) en vastgelegd — smoke rij 6
+- [~] Elke wijziging getest met een echte co-sessie-simulatie — **`npm run smoke:guard-hooks`
+      13/13 tegen echte git-repo's en echte lockfiles, plus drie mutatietests die elk de
+      juiste rijen laten omvallen.** Wat er NIET in zit: een tweede échte Claude-sessie.
+      De smoke dekt de logica van de hooks, niet de integratie met de harness — en
+      specifiek is **niet bewezen via welk kanaal de `gh pr merge`-waarschuwing bij Erik
+      aankomt** (stderr bij exit 0 is niet gegarandeerd zichtbaar; daarom óók een
+      `systemMessage`). Zie Restwerk hieronder.
 
 # Bestanden die ik aanraak
 
@@ -100,6 +140,16 @@ melding belooft).
 - **Een guard versoepelen is riskanter dan hem laten staan.** Elke wijziging moet strikter of
   gelijk zijn op het pad dat 2026-07-07 kapotmaakte. Gat 2 fixen mag geen gat 1 vergroten.
 - Fail-open bij onbekende targets is een bewuste keuze met een prijs; benoem 'm.
+
+# Restwerk
+
+- **Waarschuwingskanaal verifiëren.** Draai één keer met een échte tweede sessie een
+  `gh pr merge` en kijk of de waarschuwing zichtbaar is. Komt hij niet aan, dan is dit de
+  vierde variant van hetzelfde probleem — een guard wiens melding niemand bereikt. Kost
+  vijf minuten zodra er weer twee sessies openstaan.
+- **Gat 1 blijft bewust een waarschuwing.** Twee sessies kunnen dus nog steeds tegelijk
+  naar productie mergen. Dat is Eriks keuze van 18-08, geen omissie — niet opnieuw als
+  bug rapporteren.
 
 # Out of scope
 
