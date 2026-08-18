@@ -51,6 +51,15 @@ signalen bleken onschuldig, en de enige echte afwijking zat lókaal. Die leverde
 nullable list, dus de diff-engine kán dat verschil niet uitdrukken. Het commando waar iedereen
 naar grijpt om drift te checken geeft daar dus vals groen.
 
+**De twee veiligheidshooks kloppen weer** (#313 + #314, changelog 480). `guard-hooks-hardening`
+stond sinds 17-07 te wachten op jouw akkoord; dat kwam nadat alle drie de gaten vandaag opnieuw
+geraakt werden. De guard leidt de worktree nu af uit het commando in plaats van uit zijn eigen
+cwd, `check-dangerous-bash` beslist op de operatie in plaats van op de tekst, en `gh pr merge`
+waarschuwt. ⚠️ Twee gaten kwamen er tijdens het bouwen bij: `git -C <pad> <verb>` passeerde
+**béide hooks al sinds hun ontstaan**, en `git worktree list` telde als HEAD-mutatie. Bewijs:
+`npm run smoke:guard-hooks` 13/13 plus drie mutatietests. Niet bewezen: of de merge-waarschuwing
+je daadwerkelijk bereikt — dat vraagt een tweede échte sessie.
+
 **CSP staat op enforce** (#294, changelog 476) en de metadata-bug op gepubliceerde pagina's
 is weg (#477). Beide uit een parallelle sessie.
 
@@ -171,20 +180,14 @@ haalt de 8GB-heapbump uit `ci.yml` weg die er nu als workaround staat.
 
 ## Open beslissingen (blokkeren werk)
 
-1. **`guard-hooks-hardening`** — raakt je veiligheidsnet, vraagt expliciet akkoord.
-   Kernvraag: móet `gh pr merge` blokkeren bij een co-sessie, of volstaat waarschuwen?
-   ⚠️ **18-08 gaf hier nieuwe munitie voor**: twee sessies bouwden onafhankelijk dezelfde
-   fix in hetzelfde bestand (#295 vs. mijn werk), en een merge op een verouderde API-head
-   liet een al gevonden regressie live staan. De guard beschermt HEAD/branch-mutaties, maar
-   niet tegen dít patroon.
-2. **Resterende SSE-abort-wijzigingen** — de atomaire settings-merge, deel-resultaten bewaren
+1. **Resterende SSE-abort-wijzigingen** — de atomaire settings-merge, deel-resultaten bewaren
    vanaf 2 varianten, en de `cancel()`-detector staan klaar op `claude/sse-abort-disconnect`
    (`4a8f12b`). Ze vervangen de transactionele fresh-read die #295 net mergede; die versmalt
    het read-modify-write-venster maar sluit het niet (READ COMMITTED neemt geen row-lock).
    Er ligt een comment op #295; keuze is of ik doorpak of dat die sessie het zelf oppakt.
-3. **brand.md-strategie** — akkoord op de omarm-strategie + outreach naar de maintainer;
+2. **brand.md-strategie** — akkoord op de omarm-strategie + outreach naar de maintainer;
    de upstream-PR's liggen als tekstpakket klaar.
-4. **Meertaligheid brand.md-funnel** — de pagina's en mails zijn nu Nederlands. De wens was
+3. **Meertaligheid brand.md-funnel** — de pagina's en mails zijn nu Nederlands. De wens was
    breder: site meertalig, mails volgen de gekozen taal. Vereist een locale-kolom op
    `GeneratedBrandProfile` (schemawijziging → Neon-push) en template-lookup per taal.
    Het fundament ligt er: `renderLayout` kent al een `locale`.
@@ -213,7 +216,6 @@ haalt de 8GB-heapbump uit `ci.yml` weg die er nu als workaround staat.
 [`golden-set-blogpost-quality`](tasks/golden-set-blogpost-quality.md) (⚠️ de golden-set-gate is
 per 16-08 gesplitst — `evaluate` kleurt je PR's niet meer rood; wat resteert is de inhoudelijke
 vraag waarom 4-5 cases stabiel zakken) ·
-[`guard-hooks-hardening`](tasks/guard-hooks-hardening.md) ·
 [`static-rendering-regressie`](tasks/static-rendering-regressie.md) (⚠️ nieuw 18-08: élke
 pagina-route rendert dynamic door één `await cookies()` in de root layout — `generateStaticParams`
 op marketing en `revalidate` op de klant-landingspagina's leveren al maanden niets op)
