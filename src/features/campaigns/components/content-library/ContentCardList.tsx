@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { ExternalLink, Heart, CalendarDays, Trash2, Copy, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { formatReadinessHint } from "@/features/campaigns/lib/readiness-hint";
 import { useFormat } from "@/lib/ui-i18n/format";
 import { Badge } from "@/components/shared";
 import { deriveTrafficLight, TRAFFIC_LIGHT, getPhaseConfig, InlineRenameField } from "../shared/calendar-cards";
@@ -202,7 +203,7 @@ export function ContentCardList({
               <span
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
                 style={{ backgroundColor: `${tl.stripe}18`, color: tl.text }}
-                title={item.readinessHint ?? statusLabel}
+                title={formatReadinessHint(t, item.readinessSignals) ?? statusLabel}
               >
                 <span
                   className="w-1.5 h-1.5 rounded-full"

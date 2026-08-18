@@ -18,6 +18,28 @@ import {
   type DeliverableContentState,
 } from '@/lib/content/resolve-deliverable-content';
 
+/**
+ * Eén reden waarom een item nog niet publicatie-klaar is, als **token** —
+ * niet als zin.
+ *
+ * De route bouwde hier eerder Engelse zinnen die de UI rauw rendert, terwijl
+ * dezelfde begrippen in `campaigns-content-library` wél vertaald staan: een
+ * Nederlandse gebruiker zag "No content generated" op de kaart en "Geen content
+ * gegenereerd" in het filter. Erger was de terugweg — het serverfilter leidde
+ * zijn tokens af uit die Engelse tekst met `lower.includes('choose')`, dus één
+ * herformulering (of een vertaling) had het filter stil kapotgemaakt.
+ *
+ * Engels blijft de bron (`DEFAULT_UI_LOCALE = 'en'`): elke call-site geeft de
+ * Engelse tekst als `defaultValue` mee, zodat het scherm ook klopt wanneer de
+ * namespace nog niet geladen is.
+ */
+export type ReadinessSignal =
+  | { token: 'no-content' }
+  | { token: 'variant-unchosen'; count: number }
+  | { token: 'pipeline-incomplete' }
+  | { token: 'not-reviewed' }
+  | { token: 'status'; status: string };
+
 export interface LibraryContentSignal {
   contentState: DeliverableContentState;
   /**
@@ -34,7 +56,7 @@ export interface LibraryContentSignal {
   /** Alleen wanneer de telling gratis is (keten B/C); anders `null`. */
   wordCount: number | null;
   /** Het content-deel van de readiness-hint, of `null` als er niets mist. */
-  contentHint: string | null;
+  contentSignal: ReadinessSignal | null;
 }
 
 export function resolveLibraryContentSignal(
@@ -61,35 +83,34 @@ export function resolveLibraryContentSignal(
   // QuickPublishMenu tonen die gegarandeerd afketst.
   const hasContent = signal.state === 'ready' || (hasVisuals && !isAwaitingChoice);
 
-  // Voortgang, geen leegte: er ís gegenereerd, alleen de keuze ontbreekt. De
-  // hint noemt daarom de eerstvolgende handeling in plaats van een gemis.
-  const contentHint = isAwaitingChoice
-    ? signal.optionCount === 1
-      ? '1 version — choose it'
-      : `${signal.optionCount} versions — choose one`
+  // Voortgang, geen leegte: er ís gegenereerd, alleen de keuze ontbreekt. Het
+  // token noemt daarom de eerstvolgende handeling in plaats van een gemis; de
+  // UI maakt er de zin van, in de taal van de gebruiker.
+  const contentSignal: ReadinessSignal | null = isAwaitingChoice
+    ? { token: 'variant-unchosen', count: signal.optionCount }
     : hasContent
       ? null
-      : 'No content generated';
+      : { token: 'no-content' };
 
   return {
     contentState: signal.state,
     hasContent,
     isAwaitingChoice,
     wordCount: signal.wordCount,
-    contentHint,
+    contentSignal,
   };
 }
 
-/** Classify readiness hints into filter tokens. */
-export function readinessHintTokens(hint: string | null): string[] {
-  if (!hint) return [];
-  const tokens: string[] = [];
-  const lower = hint.toLowerCase();
-  if (lower.includes('no content')) tokens.push('no-content');
-  if (lower.includes('choose')) tokens.push('variant-unchosen');
-  if (lower.includes('not reviewed')) tokens.push('not-reviewed');
-  if (lower.includes('pipeline incomplete')) tokens.push('pipeline-incomplete');
-  return tokens;
+/**
+ * De filter-tokens van een item.
+ *
+ * Was een substring-match op de Engelse hint-tekst; nu leest hij de tokens die
+ * er al zijn. Dat scheelt niet alleen een vertaal-val — het scheelt de hele
+ * klasse: tekst en filter kunnen niet meer uit elkaar lopen omdat er nog maar
+ * één bron is.
+ */
+export function readinessSignalTokens(signals: ReadinessSignal[]): string[] {
+  return signals.map((s) => s.token);
 }
 
 /**

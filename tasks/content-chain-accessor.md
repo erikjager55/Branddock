@@ -228,7 +228,7 @@ blijft — de accessor garandeert een page-variant, niet dít schema. Bijeffect:
 half-complete opgeslagen variant komt nu als `empty` binnen (skip) in plaats van als
 een object dat pas verderop omvalt.
 
-**Drie bevindingen uit de fresh-eyes-review van PR #288, in dezelfde ronde gefixt:**
+**Vier bevindingen uit de fresh-eyes-review van PR #288, in dezelfde ronde gefixt:**
 
 1. **De tekstcomponent-regel stond op drie plekken** — de Prisma-`where` in
    `content-library/route.ts`, `NON_TEXT_COMPONENT_TYPES` in de accessor, en een
@@ -243,9 +243,19 @@ een object dat pas verderop omvalt.
 3. **`hasContent` was tóch `true` bij `awaiting-choice` zodra er beeld/video op de
    rij stond** — precies de afketsende QuickPublishMenu die keuze #2 wilde
    vermijden. Nu `hasVisuals && !isAwaitingChoice`.
+4. **De readiness-hints gingen langs i18next heen.** De route bouwde Engelse zinnen
+   die de UI rauw rendert, terwijl dezelfde begrippen in
+   `campaigns-content-library` wél vertaald staan: een Nederlandse gebruiker zag
+   *"No content generated"* op de kaart en *"Geen content gegenereerd"* in het
+   filter. Erger was de terugweg — het serverfilter leidde zijn tokens áf uit die
+   Engelse tekst (`lower.includes('choose')`), dus één herformulering of vertaling
+   had het filter stil kapotgemaakt. De API stuurt nu `readinessSignals` (tokens),
+   `formatReadinessHint()` maakt er de zin van, en Engels blijft de bron via
+   `defaultValue` — dat is niet alleen een vangnet: namespaces laden lazy, dus vóór
+   die load ís de defaultValue wat er op het scherm staat.
 
-**Bewijs**: `content-library-readiness` **51/51** (was 39/39; +12 voor de publieke
-reader en de beeld/keuze-combinatie), fase-1-smoke `deliverable-content-accessor`
+**Bewijs**: `content-library-readiness` **59/59** (was 39/39; +12 voor de publieke
+reader en de beeld/keuze-combinatie, +8 voor de i18n-laag), fase-1-smoke `deliverable-content-accessor`
 **52/52** ongewijzigd, en de échte Iris-laag via
 `SKIP_AI=1 scripts/dev/agent-seo-watchdog-smoke.ts` → **15/15** (geseede GEO-pagina's:
 1 vervallen geflagd, 1 gezond, 1 corrupt geskipt). `tsc` 0 · `lint` 0.

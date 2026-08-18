@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { ExternalLink, Heart, CalendarDays, Trash2, Copy } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { formatReadinessHint } from "@/features/campaigns/lib/readiness-hint";
 import { useFormat } from "@/lib/ui-i18n/format";
 import { Button } from "@/components/shared";
 import { deriveTrafficLight, TRAFFIC_LIGHT, getPhaseConfig, InlineRenameField } from "../shared/calendar-cards";
@@ -70,6 +71,7 @@ export function ContentCardGrid({
           ? `${statusBase} · ${t("campaigns-cards:overdue", { defaultValue: "overdue" })}`
           : statusBase;
         const tl = TRAFFIC_LIGHT[light];
+        const readinessHint = formatReadinessHint(t, item.readinessSignals);
 
         return (
           <div
@@ -189,9 +191,9 @@ export function ContentCardGrid({
                 </div>
 
                 {/* Readiness hint (red/amber only) */}
-                {item.readinessHint && light !== "green" && (
+                {readinessHint && light !== "green" && (
                   <p className="text-[11px] font-medium" style={{ color: tl.text }}>
-                    {item.readinessHint}
+                    {readinessHint}
                   </p>
                 )}
 

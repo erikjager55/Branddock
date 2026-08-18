@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { GanttChartSquare, EyeOff, Eye, CalendarClock, Search, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { formatReadinessHint } from "@/features/campaigns/lib/readiness-hint";
 import type { TFunction } from "i18next";
 import { useFormat } from "@/lib/ui-i18n/format";
 import {
@@ -899,7 +900,7 @@ export function ContentLibraryTimelineView({
                   isPublishReady={item.isPublishReady}
                   hasContent={item.hasContent}
                   isAwaitingChoice={item.contentState === "awaiting-choice"}
-                  readinessHint={item.readinessHint ?? null}
+                  readinessHint={formatReadinessHint(t, item.readinessSignals)}
                   phase={item.phase ?? null}
                   campaignType={item.campaignType}
                   isDraggable
@@ -1255,7 +1256,7 @@ export function ContentLibraryTimelineView({
                               isPublishReady={item.isPublishReady}
                               hasContent={item.hasContent}
                               isAwaitingChoice={item.contentState === "awaiting-choice"}
-                              readinessHint={item.readinessHint ?? null}
+                              readinessHint={formatReadinessHint(t, item.readinessSignals)}
                               phase={item.phase ?? null}
                               onClick={() => onOpenItem?.(item.id, item.campaignId)}
                               onDelete={
