@@ -3,9 +3,9 @@ id: lucide-icon-registry
 title: De complete iconenbibliotheek staat in de productiebundel — 5740 iconen voor 230 die we gebruiken
 fase: post-launch
 priority: next
-effort: 0,5-1 dag (mechanisch; de kunst zit in de dynamische namen)
-owner: unassigned
-status: open
+effort: gebouwd in PR #334 — deze file dient nog als meting en verantwoording
+owner: branddock-app-f8 (PR #334)
+status: in-progress
 created: 2026-08-18
 completed: -
 related-adr: -
@@ -15,7 +15,15 @@ worktree: -
 
 # Probleem
 
-Zeven bestanden doen `import * as LucideIcons from 'lucide-react'` en zoeken het icoon
+> ⚠️ **AL GEBOUWD — niet aan beginnen.** De fix ligt af in **PR #334**
+> (`feat/ui-observaties`, sessie `branddock-app-f8`), gebouwd vóórdat deze task-file
+> bestond. Die bevat `src/lib/icons/icon-registry.ts` met `resolveIcon(name, fallback)`,
+> alle acht wildcard-bestanden omgezet (geverifieerd: **0** `import * as … from
+> 'lucide-react'` op die branch) en `npm run smoke:icon-registry` mét mutatietest.
+> Deze file blijft staan voor de meting en de verantwoording; op `done` zodra #334 merget.
+
+
+**Acht** bestanden doen `import * as LucideIcons from 'lucide-react'` en zoeken het icoon
 daarna op met een **runtime string-lookup**:
 
 ```ts
@@ -41,6 +49,7 @@ opgehaald en doorzocht op iconen die de codebase aantoonbaar nergens noemt
 | `lucide-react`-exports daarin | **5740 van 5740 (100%)** |
 | Totale JS die de app laadt | 137 chunks, ~3.024 kB |
 | Iconen die de app écht gebruikt | **230 uniek** (214 statisch geïmporteerd + 78 via naam in constanten, ontdubbeld) |
+| Waarvan in een registry nodig | alleen de **runtime opgezochte** namen — statische `import { X }` snoeit al weg |
 | Aandeel | **4,0%** |
 
 Naar rato zou die chunk ~22 kB moeten zijn in plaats van 548. Dat is **ruim 17% van alle
@@ -51,7 +60,15 @@ die de inlogpagina laadt en vond de proef-iconen *niet* — daar zit de app-UI n
 na het volgen van de webpack-chunkverwijzingen (137 bestanden) kwam het echte beeld boven.
 Een negatieve uitkomst op de verkeerde chunks leest als "geen probleem".
 
-## De zeven bestanden
+## De acht bestanden
+
+⚠️ **Deze lijst stond eerst op zeven.** Mijn inventarisatie greppte alleen op enkele
+aanhalingstekens; `AssetDetailHeader.tsx` gebruikt dubbele en glipte erlangs. Sessie
+`branddock-app-f8` had bij hun eerste telling exact dezelfde blinde vlek. Zoek met
+`grep -rlE "import \\* as .* from ['\"]lucide-react['\"]"` — één quote-stijl is geen
+inventarisatie. Dat is dezelfde klasse fout als de chunk-meting hieronder: de check leek
+te werken en gaf een te gunstig antwoord.
+
 
 - `src/features/agents/components/AgentIcon.tsx`
 - `src/components/EnhancedSidebarSimple.tsx`
@@ -60,6 +77,7 @@ Een negatieve uitkomst op de verkeerde chunks leest als "geen probleem".
 - `src/components/brand-assets/BrandAssetCard.tsx`
 - `src/components/layout/Breadcrumb.tsx`
 - `src/components/shared/StatsCard.tsx`
+- `src/features/brand-asset-detail/components/AssetDetailHeader.tsx` — dubbele aanhalingstekens
 
 Gevonden als bijvangst van de Claude Design-sync (sessie `branddock-app-f8`): hun
 stand-alone design-system-bundel ging door één zo'n component van **155 kB naar 1727 kB**.
@@ -142,10 +160,11 @@ Dat tweede punt is belangrijker dan de kilobytes: de huidige code faalt namelijk
 - **Stille terugval naar `Bot`** als het register een naam mist. Dit bestaat vandaag al, maar
   wordt zichtbaarder zodra het register de enige bron is. Mitigatie: de smoke uit criterium 3,
   en in `development` een `console.warn` bij een misser.
-- **Namen uit de database.** Als een agent-persona of module-icoon uit de DB komt en niet uit
-  code-constanten, dekt een grep over `src/` de set niet volledig af. **Eerst controleren**
-  waar `iconName` vandaan komt vóór het register wordt vastgezet; zo nodig de set aanvullen
-  met een query over de bestaande rijen.
+- **Namen uit de database — bevestigd, niet langer hypothetisch.** `FocusArea.icon` en
+  `OauthApplication.icon` zijn `String?`-kolommen in `schema.prisma`. Op productie staan
+  daar `CalendarClock`, `FlaskConical` en `Plug`; twee daarvan ontbraken in de eerste
+  registry-set en zouden **stil naar de fallback zijn gedegradeerd**. #334 heeft ze
+  opgenomen. Wie de set ooit uitdunt: query eerst die twee kolommen op prod.
 - **De winst kan lager uitvallen dan 526 kB.** De schatting is naar rato van het aantal
   exports; iconen verschillen in grootte. Daarom is criterium "gemeten voor/na" en niet
   "verwacht resultaat".
