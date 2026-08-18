@@ -5,7 +5,7 @@
  */
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { resolvePageTitleFromPuckData } from "@/lib/landing-pages/page-title";
+import { resolvePageTitleFromPuckData } from "@/lib/landing-pages/page-derived-meta";
 import { workspaceSlugFromHost } from "@/lib/landing-pages/host-router";
 import { buildLlmsTxt, requestOrigin, type LlmsEntry } from "@/lib/landing-pages/sitemap-host";
 

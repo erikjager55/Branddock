@@ -35,6 +35,12 @@ export interface SeoMetadataOptions {
    * bestaat. In de praktijk de titel van de bron-deliverable.
    */
   fallbackTitle?: string;
+  /**
+   * Meta-description wanneer de checklist er geen heeft. Zelfde reden als
+   * `fallbackTitle`: zonder checklist had de pagina er helemaal geen. In de
+   * praktijk de hero-`sub` uit de pagina-boom.
+   */
+  fallbackDescription?: string;
 }
 
 /**
@@ -48,7 +54,7 @@ export function seoChecklistToMetadata(
   opts: SeoMetadataOptions = {},
 ): Metadata {
   const title = nonEmpty(checklist?.titleTag) ?? nonEmpty(opts.fallbackTitle);
-  const description = nonEmpty(checklist?.metaDescription);
+  const description = nonEmpty(checklist?.metaDescription) ?? nonEmpty(opts.fallbackDescription);
   const canonical = nonEmpty(checklist?.canonicalTag) ?? nonEmpty(opts.fallbackCanonical);
   const ogTitle = nonEmpty(checklist?.ogTitle) ?? title;
   const ogDescription = nonEmpty(checklist?.ogDescription) ?? description;

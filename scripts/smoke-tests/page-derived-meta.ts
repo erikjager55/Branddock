@@ -5,7 +5,10 @@
  * Achtergrond: een landingspagina zonder `settings.seoChecklist` had géén
  * <title> en in llms.txt alleen zijn slug. De hero-`headline` is de echte kop.
  */
-import { resolvePageTitleFromPuckData } from '@/lib/landing-pages/page-title';
+import {
+  resolvePageTitleFromPuckData,
+  resolvePageDescriptionFromPuckData,
+} from '@/lib/landing-pages/page-derived-meta';
 
 let pass = 0;
 let fail = 0;
@@ -78,5 +81,64 @@ const capped = resolvePageTitleFromPuckData({ content: [section('BrandHero', { h
 assert('lange kop wordt afgekapt', capped.length <= 121 && capped.endsWith('…'));
 assert('afkappen gebeurt op een woordgrens', !/\s…$/.test(capped) && !capped.includes('  '));
 
-console.log(`\npage-title: ${pass} passed, ${fail} failed`);
+console.log('\n── beschrijving: hero-sub wint ──');
+assert(
+  'hero-sub wordt de beschrijving',
+  resolvePageDescriptionFromPuckData({
+    content: [
+      section('BrandHero', { headline: 'Kop', sub: 'De verborgen prijs van eigen linnengoed-beheer.' }),
+      section('RichText', { content: 'Lange lopende tekst.' }),
+    ],
+  }) === 'De verborgen prijs van eigen linnengoed-beheer.',
+);
+assert(
+  'zonder sub valt hij terug op RichText-content',
+  resolvePageDescriptionFromPuckData({
+    content: [section('BrandHero', { headline: 'Kop' }), section('RichText', { content: 'Lopende tekst hier.' })],
+  }) === 'Lopende tekst hier.',
+);
+assert(
+  'een latere sub wint alsnog van eerdere body-tekst',
+  resolvePageDescriptionFromPuckData({
+    content: [section('RichText', { content: 'Body eerst.' }), section('BrandHero', { sub: 'Echte pitch.' })],
+  }) === 'Echte pitch.',
+);
+
+console.log('\n── beschrijving: markdown wordt gestript ──');
+assert(
+  'kop-marker en vet-markering verdwijnen, de TEKST blijft',
+  resolvePageDescriptionFromPuckData({
+    content: [section('RichText', { content: '## Kop\n**HACCP-reiniging** — wasproces volgens protocol.' })],
+  }) === 'Kop HACCP-reiniging — wasproces volgens protocol.',
+);
+assert(
+  'links worden linktekst',
+  resolvePageDescriptionFromPuckData({
+    content: [section('RichText', { content: 'Zie [onze werkwijze](https://x.nl/werkwijze) voor details.' })],
+  }) === 'Zie onze werkwijze voor details.',
+);
+assert(
+  'lijst-bullets en inline code verdwijnen',
+  resolvePageDescriptionFromPuckData({
+    content: [section('RichText', { content: '- eerste `punt`\n- tweede punt' })],
+  }) === 'eerste punt tweede punt',
+);
+
+console.log('\n── beschrijving: lengte + leegte ──');
+const longBody = 'Horeca textielbeheer uitbesteden bespaart restaurants gemiddeld acht uur per week. '.repeat(5);
+const desc = resolvePageDescriptionFromPuckData({ content: [section('BrandHero', { sub: longBody })] }) ?? '';
+assert('lange beschrijving wordt afgekapt', desc.length <= 156 && desc.endsWith('…'));
+assert('afkappen op woordgrens', !desc.includes('  '));
+assert(
+  'lege sub telt niet',
+  resolvePageDescriptionFromPuckData({ content: [section('BrandHero', { sub: '   ' })] }) === undefined,
+);
+assert(
+  'markdown die niets overlaat telt niet',
+  resolvePageDescriptionFromPuckData({ content: [section('RichText', { content: '## ' })] }) === undefined,
+);
+assert('geen content-array → undefined', resolvePageDescriptionFromPuckData({}) === undefined);
+assert('null → undefined', resolvePageDescriptionFromPuckData(null) === undefined);
+
+console.log(`\npage-derived-meta: ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);
