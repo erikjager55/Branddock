@@ -495,3 +495,19 @@ Bewezen via Playwright: `el.style.background = '<grad>, url(...)'; el.style.setP
 - Heb je toch een begin-tijdstip nodig: leid het af uit de *observaties* (de eerste meting waarin het ding voorkomt), niet uit de rij. Dat is sync-proof en vraagt geen kolom die de volgende sync ook weer wist.
 - Laat de data zichzelf corrigeren waar dat kan: ligt er een observatie vóór de `createdAt`, dan is die datum aantoonbaar een artefact en kun je 'm negeren zonder configuratie.
 **Prior art**: task `curation-loop-completion`, changelog #467; `effectiveStart()` in `src/lib/brandstyle/rule-violation-stats.ts`.
+
+## 2026-08-18: `merged: true` is geen bewijs dat je wijziging in main zit
+**What went wrong**: PR #287 werd gemerged via de GitHub-MCP-API. Die API bleef een verouderde head tonen (`729bc62`) terwijl de branch vijf commits verder stond; de squash-merge nam dus die oude toestand. De API antwoordde `merged: true` met een SHA, en die SHA was een echte, bestaande merge-commit — alleen zonder de laatste vijf commits. Gevolg: een kostenregressie die een reviewronde eerder al was gevonden en gefixt, stond alsnog live op productie tot een herstel-PR. De staleness wás opgemerkt (de check-runs stonden uren achter, `get_commits` toonde twee van de zeven commits) en er is toch gemerged, op de redenering dat `git ls-remote` en `get_commit` de commits wél zagen — dus "de push is geland" werd verward met "de PR-head is bijgewerkt".
+**Rule**:
+- Vergelijk vóór elke merge de PR-head-SHA met `git ls-remote origin <branch>`. Wijken ze af, dan is de API-toestand stale: **niet mergen**, wachten of via de web-UI werken.
+- Constateer je staleness ergens in het proces, dan is dat het stoppunt — niet iets om omheen te redeneren omdat een ánder endpoint wél klopt.
+- Controleer ná een merge inhoudelijk of de wijziging in `main` zit (`git show origin/main:<pad> | grep <marker>`), niet op `merged: true`. Een merge-commit kan bestaan én de verkeerde inhoud hebben.
+**Prior art**: PR #287 (stale merge), #303 (herstel), changelog #478.
+
+## 2026-08-18: twee sessies bouwden onafhankelijk dezelfde fix in hetzelfde bestand
+**What went wrong**: Terwijl deze sessie aan `lp-review-followups` §SSE-abort werkte, werkte een parallelle sessie in #295 aan hetzelfde task-bestand en dezelfde route. Beide bouwden — zonder van elkaar te weten — exact dezelfde transactionele fresh-read in `persistVariantOptions`, met dezelfde motivering en dezelfde verwijzing naar `publish/route.ts`. Beide erfden daarmee ook dezelfde tekortkoming: onder READ COMMITTED neemt een `findUnique` binnen `$transaction` geen row-lock, dus het read-modify-write-venster wordt versmald, niet gesloten. Het dubbele werk kwam pas aan het licht bij een cherry-pick-conflict ná de merge.
+**Rule**:
+- Een task-file is óók een claim. Pak geen item op uit een bestand waar een andere sessie aantoonbaar in werkt (check `git log --oneline -5 -- tasks/<id>.md`) zonder dat af te stemmen; de worktree-regel uit CLAUDE.md dekt de bestanden, niet de taak.
+- Loop je alsnog tegen dubbel werk aan: overschrijf de ander niet stil. Een comment op hun PR met de bevinding is goedkoper dan een merge-conflict en houdt de beslissing bij de eigenaar.
+- `$transaction` + `findUnique` + `update` is geen bescherming tegen een lost update. Wil je het venster écht sluiten: `SELECT … FOR UPDATE` (patroon in `src/lib/billing/credits/trial-expiry.ts`), `isolationLevel: 'Serializable'` met retry op `40001`, of server-side mergen met `settings = COALESCE(settings,'{}'::jsonb) || $patch::jsonb`.
+**Prior art**: #295 vs. `claude/sse-abort-disconnect`; changelog #478.
