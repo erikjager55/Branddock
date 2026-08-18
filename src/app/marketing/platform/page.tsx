@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/marketing/platform' },
   title: 'Platform',
   description:
-    'Eén merk-platform: merk-DNA, onderzoek, content, campagnes, beeld en AI-agents, met een merk-check op elke output.',
+    'Eén merkplatform: merk-DNA, onderzoek, content, campagnes, beeld en AI-agents, met een merk-check op elke output.',
 };
 
 interface Module {
@@ -127,8 +127,8 @@ const GROUPS: Group[] = [
       },
       {
         Icon: Images,
-        title: 'Beeld & video',
-        desc: 'On-brand visuals en video, direct in het platform.',
+        title: 'Beeld',
+        desc: 'On-brand visual, direct in het platform.',
       },
       {
         Icon: LayoutTemplate,
@@ -168,7 +168,7 @@ export default function PlatformPage() {
         id="platform-hero"
         family="product"
         eyebrow="Platform"
-        title="Eén merk-platform, van fundament tot bewaking"
+        title="Eén merkplatform, van fundament tot bewaking"
         lead="Alles draait op hetzelfde merk-DNA: leg je merk één keer vast, onderzoek je markt, genereer on-brand en laat agents het bewaken."
         className="mb-14"
       />

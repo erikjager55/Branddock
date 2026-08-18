@@ -16,10 +16,14 @@ export const metadata: Metadata = {
   alternates: { canonical: '/marketing/voor-ai-agents' },
   title: 'Brand guardrails voor AI-agents',
   description:
-    'Koppel Branddock aan Claude, ChatGPT of je eigen agent-stack: merkcontext en F-VAL-validatie als guardrails, met 17 tools via de MCP-connector. Lezen en valideren is gratis.',
+    'Koppel Branddock aan Claude, ChatGPT of je eigen agent-stack: merkcontext en F-VAL-validatie als guardrails, met 16 tools via de MCP-connector. Lezen en valideren is gratis.',
 };
 
-// De 17 MCP-tools, gegroepeerd op wat ze voor de agent doen. Namen zijn de
+// De MCP-tools die we naar buiten noemen, gegroepeerd op wat ze voor de agent
+// doen. generate_video is er tijdelijk uit (besluit Erik 2026-08-18): de tool
+// bestaat en werkt, maar video wordt voorlopig niet geadverteerd.
+// Ondervermelden is veilig, oververmelden niet — daarom staat het getal hier
+// op wat de lijst toont. Namen zijn de
 // echte tool-namen van de connector (branddock.app/mcp).
 const TOOL_GROUPS: {
   Icon: typeof ShieldCheck;
@@ -57,7 +61,6 @@ const TOOL_GROUPS: {
       'generate_image',
       'generate_long_form_seo',
       'generate_web_page',
-      'generate_video',
       'generate_campaign_strategy',
     ],
   },
@@ -159,8 +162,8 @@ export default function GuardrailsPage() {
         </div>
       </div>
 
-      {/* De 17 tools */}
-      <h2 className="text-gray-900 mb-2">17 tools via de MCP-connector</h2>
+      {/* De getoonde tools */}
+      <h2 className="text-gray-900 mb-2">16 tools via de MCP-connector</h2>
       <p className="text-gray-600 mb-8 max-w-2xl">
         Je agent krijgt de volledige Branddock-pipeline als gereedschap. Lezen en valideren is
         gratis; credits betaal je alleen voor wat je maakt.
@@ -275,8 +278,8 @@ export default function GuardrailsPage() {
             </pre>
             <p className="text-sm text-gray-600 mt-3">
               Naast context: <code className="text-xs">/score</code>,{' '}
-              <code className="text-xs">/generate</code>, SEO-, webpagina-, beeld- en
-              video-endpoints, dezelfde merkfuncties als de MCP-connector (17 tools; met een
+              <code className="text-xs">/generate</code>, SEO-, webpagina- en
+              beeld-endpoints, dezelfde merkfuncties als de MCP-connector (16 tools; met een
               API-key komt daar het inladen van merkdata bij).
             </p>
           </div>
