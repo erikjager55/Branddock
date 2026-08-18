@@ -6,7 +6,7 @@
 > closed met een typing-PR); `fetchList`/`mapProp` zijn `any`-getypeerd, dus de
 > `string | null`-collapse uit dit rapport bestaat niet meer. Restpunt is hooguit
 > een nette generic i.p.v. `any` — een voorkeur, geen blokkade. Actie verplaatst
-> naar `tasks/web-page-builder-acceptance-rest.md`: upgrade 0.21.2 → 0.22.x
+> naar `tasks/done/web-page-builder-acceptance-rest.md`: upgrade 0.21.2 → 0.22.x
 > overwegen (ontgrendelt `external`-velden voor bv. de persona-picker).
 > **Reporter**: Branddock dev team
 > **Found**: 2026-05-22 during spike-validation of Puck integration for our visual page builder
