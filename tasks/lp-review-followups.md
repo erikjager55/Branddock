@@ -206,19 +206,18 @@ comment bij de tsc-stap in `ci.yml` zegt het zelf: *"Lokaal viel dat niet op —
 macOS schaalt de heap mee met het beschikbare RAM, de runner niet."* Alleen de
 runner kan dit beantwoorden.
 
-**Het experiment kon niet gedraaid worden — en dat is zelf een bevinding.**
-De opzet was: heap-bump op de build-stap uitzetten en de runner laten oordelen.
-Maar een PR die `.github/workflows/**` aanraakt krijgt in deze repo géén
-Actions-run: nul runs op de head-SHA, terwijl Actions acht minuten eerder nog
-gewoon draaide voor een andere branch, de YAML geldig is (`js-yaml`-parse OK,
-`build-env` houdt exact de drie bedoelde keys over), Actions repo-breed aan staat
-(`allowed_actions: all`), er niets op `action_required` wacht, en close/reopen
-— de bekende hik uit deze repo — niets veranderde.
+**Het experiment is niet gedraaid — de bump staat terug.** De opzet was: bump uit,
+runner laat oordelen. Er kwam geen Actions-run, en mijn eerste verklaring daarvoor
+("een PR die `.github/workflows/**` aanraakt krijgt geen run") **was fout**. De
+echte oorzaak: de PR stond op `CONFLICTING` doordat #287 ondertussen op main
+landde, en GitHub schedulet geen `pull_request`-run zolang er geen merge-ref te
+berekenen valt. Na de rebase liep CI gewoon.
 
-De bump staat daarom terug en dit item blijft open. Wie het alsnog wil weten:
-zet `NODE_OPTIONS` op de build-stap uit in een commit **rechtstreeks op main**
-(push-events hebben dit probleem niet), of laat iemand met workflow-rechten het
-op een eigen branch draaien. Kost één CI-run en beantwoordt de vraag definitief.
+Waarom het experiment dan alsnog niet in deze PR zit: het is een losse vraag met
+een eigen risico (een rode build op werk dat verder bewezen is), en de drie andere
+items hoeven daar niet op te wachten. Wie het wil weten: haal `NODE_OPTIONS` van
+de build-stap in een aparte PR of rechtstreeks op main, en kijk of de stap valt.
+Kost één CI-run en beantwoordt de vraag definitief.
 
 De bump op de losse `tsc`-stap is sowieso een andere zaak (brandstyle-stack
 #255-#259) en blijft staan.
