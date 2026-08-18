@@ -101,6 +101,14 @@ gh api repos/<owner>/<repo>/contents/<pad> -X PUT --input payload.json   # met b
 Haal het bestand **opnieuw op vlak vóór je schrijft** — main beweegt snel, en de blob-sha in
 je payload moet de actuele zijn.
 
+⚠️ **Rebase zo'n branch niet met een force-update van de ref naar main.** Dat lijkt logisch
+(branch = main + jouw bestand) maar zet de PR eerst op **nul commits**, en GitHub sluit hem
+dan automatisch. Gebeurd op 2026-08-18 met #346. De branch en het bestand overleven het;
+alleen de PR is weg en je opent een nieuwe vanaf dezelfde branch. Wil je écht rebasen: maak
+een **nieuwe** branch vanaf de actuele main, schrijf het bestand daar, en sluit de oude PR.
+Voor een doc-PR van één nieuw bestand is achterlopen op main meestal onschadelijk — het
+conflicteert per definitie met niets.
+
 ## 6. Stop-condities
 
 - CI hangt >30 min → niet mergen, melden
