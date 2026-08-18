@@ -84,14 +84,34 @@ wél leesbaar maar niet wisbaar waren. Details in changelog #474.
       nodig: in de SPA unmount de component bij wegnavigeren, maar de browser
       verbreekt de fetch dan niet vanzelf, dus zonder client-abort ging de
       server-`signal` nooit af.
-      - Client: `AbortController` per generatie, geaborteerd op unmount én bij het
-        starten van een nieuwe generatie (anders draaien er twee en betaal je beide).
-      - Server: `request.signal` doorgegeven; guard vóór élke dure call — volgende
-        slot, recovery-retry, rewrite, iterate, persist.
+      - Client: `AbortController` per deliverable in een module-scope registry
+        (`src/features/campaigns/lib/generation-abort-registry.ts`), NIET in het
+        generatieblok. ⚠️ Dat was de eerste opzet en die was een kostenregressie:
+        `HorizontalAccordion` rendert maar één stap, dus een gewone tabwissel
+        unmount het blok → abort → betaalde varianten weg → en bij terugkomst
+        kocht de auto-trigger ze opnieuw. Duurder dán niet aborteren. Nu breekt
+        alleen het verlaten van de Canvas af (`CanvasPage`-unmount), met een
+        gracieperiode van 250ms zodat React StrictMode's cleanup→setup in dev
+        geen generatie per Canvas-opening weggooit.
+      - Een nieuwe generatie voor hetzelfde deliverable breekt de vorige af —
+        anders draaien er twee en betaal je beide.
+      - Run-teller i.p.v. controller-identiteit voor het opruimen van UI-state:
+        na een abort van buitenaf moet `isGenerating` alsnog terug naar false,
+        anders blijft er een spinner hangen die nooit meer weggaat.
+      - Server: `request.signal` doorgegeven; guards vóór volgende slot,
+        recovery-retry, rewrite, tussen rewrite en iterate, en persist.
+        ⚠️ **Dekking is niet volledig**: `applyStrictTellRewrite` en
+        `applySilentIterate` krijgen de signal niet, dus de calls daarbinnen
+        (rewrite + twee judge-rescores) zijn alleen op de grens te skippen, niet
+        af te breken. Het voorbereidende werk vóór de stream (archetype, angles,
+        Exa/S2-stats) draait vóórdat de `Response` bestaat en is niet abortbaar.
+        Het JSON-fallback-pad checkt de signal helemaal niet.
       - Signal doorgezet tot in `generateLandingPageVariant` →
         `anthropicClient.createChatCompletion` (dat ondersteunde `abortSignal` al),
-        dus óók de lopende call van 30-90s wordt afgebroken in plaats van alleen
-        gestopt tússen varianten.
+        dus de lopende call van 30-90s wordt afgebroken. ⚠️ Die call is
+        niet-streamend, dus dat scheelt latency — of het ook geld scheelt hangt af
+        van de billing bij abort en is niet bewezen. De harde besparing zit in
+        calls die nooit starten.
       - **Bij abort wordt niets gepersisteerd** (Erik-keuze 17-08): de
         settings-snapshot is dan minuten oud en de gebruiker kijkt niet, dus een
         overschreven autosave zou pas veel later opvallen — het venster hieronder
@@ -103,9 +123,13 @@ wél leesbaar maar niet wisbaar waren. Details in changelog #474.
       - ⚠️ Bijvangst-bug gevonden en gefixt: een abort vóór de server-response zette
         `fallbackToJson`, waarna het JSON-pad **alles opnieuw** genereerde — dubbele
         kosten in precies het scenario dat goedkoper moest worden.
-      - ⚠️ **Niet end-to-end geverifieerd**: `tsc` 0 en `lint` 0, en de guard-plaatsing
-        is regel voor regel nagelopen (elke dure call staat achter een guard), maar er
-        is géén AI-key in de dev-container en een echte proef kost een echte generatie.
+      - **Bewijs**: `npm run smoke:lp-generation-abort` **8/8** — dekt de laag die
+        zónder AI-key te verifiëren is (wie breekt wat af, overleeft een run een
+        stapwissel, StrictMode-simulatie, gracieperiode). Mutatietest: gracieperiode
+        weghalen laat 2 checks vallen.
+      - ⚠️ **De generatie-keten zelf is niet end-to-end geverifieerd**: `tsc` 0 en
+        `lint` 0, maar er is géén AI-key in de dev-container en een echte proef kost
+        een echte generatie.
         **Handmatige check voor Erik**: start een 4-variant-generatie op een webpage,
         navigeer na de eerste `variant_complete` weg uit de Canvas, en kijk in de
         server-log naar `client disconnected`. Verwacht: die regel verschijnt, er

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect, useRef, useContext, createContext } from 'react';
+import { beginGeneration, endGeneration } from '@/features/campaigns/lib/generation-abort-registry';
 import { useTranslation } from 'react-i18next';
 import {
   Loader2, Sparkles, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon, Pencil,
@@ -561,21 +562,13 @@ export function LandingPageGenerateBlock({
   }, []);
 
   /**
-   * AbortController van de lopende generatie-stream.
-   *
-   * Nodig omdat de server pas stopt als de HTTP-verbinding écht dichtgaat: in
-   * deze SPA unmount de component bij wegnavigeren, maar de browser verbreekt
-   * de fetch dan niet vanzelf. Zonder deze abort genereerde de server door tot
-   * `maxDuration` (480s) en betaalde je alle resterende varianten voor niemand.
+   * Volgnummer van de lopende generatie. Bepaalt of een afgeronde run zijn
+   * UI-state nog mag opruimen: is er inmiddels een nieuwere gestart, dan niet.
+   * Bewust een teller en geen controller-identiteit — de controller leeft nu in
+   * de registry en kan van buitenaf afgebroken worden, en dan moet deze
+   * component alsnog netjes uit "aan het genereren" komen.
    */
-  const generationAbortRef = useRef<AbortController | null>(null);
-  useEffect(
-    () => () => {
-      generationAbortRef.current?.abort();
-      generationAbortRef.current = null;
-    },
-    [],
-  );
+  const runIdRef = useRef(0);
 
   const handleGenerate = useCallback(async (countArg: number = 2) => {
     // Guard: bare onClick={handleGenerate} zou een MouseEvent doorgeven → coerce.
@@ -585,11 +578,12 @@ export function LandingPageGenerateBlock({
       setErrorUnavailable(false);
       return;
     }
-    // Een nog lopende generatie afbreken vóór we een nieuwe starten — anders
-    // draaien er twee en betaal je beide.
-    generationAbortRef.current?.abort();
-    const abortController = new AbortController();
-    generationAbortRef.current = abortController;
+    // De controller hoort bij het deliverable, niet bij deze component: de
+    // accordion unmount dit blok bij elke stapwissel en dat mag een lopende
+    // generatie niet afbreken. De registry breekt een vorige run voor hetzelfde
+    // deliverable wél af — anders draaien er twee en betaal je beide.
+    const abortController = beginGeneration(deliverableId);
+    const myRun = ++runIdRef.current;
     setIsGenerating(true);
     setError(null);
     setErrorUnavailable(false);
@@ -699,12 +693,17 @@ export function LandingPageGenerateBlock({
       setErrorType(e.errorType);
       if (e.unavailable) notifyAiError(err, { retry: () => { void handleGenerate(countArg); } });
     } finally {
-      // Alleen opruimen als dit nog ónze run is; een nieuwere generatie heeft de
-      // ref inmiddels overgenomen en mag niet op niet-genererend gezet worden.
-      if (generationAbortRef.current === abortController) {
-        generationAbortRef.current = null;
+      endGeneration(deliverableId, abortController);
+      // Alleen opruimen als er geen nieuwere run is gestart. Dit gebeurt óók na
+      // een abort van buitenaf — zonder dat bleef `isGenerating` op true hangen
+      // en zag de gebruiker een spinner die nooit meer wegging (StrictMode
+      // dubbel-effect deed precies dat).
+      if (runIdRef.current === myRun) {
         setIsGenerating(false);
         setStreamProgress(null);
+        // Van buitenaf afgebroken (Canvas verlaten, of StrictMode in dev): de
+        // auto-trigger mag straks opnieuw aanslaan.
+        if (abortController.signal.aborted) autoTriggeredRef.current = false;
       }
     }
   }, [

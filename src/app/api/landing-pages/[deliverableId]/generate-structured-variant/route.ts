@@ -850,6 +850,19 @@ function streamSequentialGeneration(args: {
           }
 
           r = await applyStrictTellRewrite(r, slot, args.postArgs);
+
+          // Tussencheck: de rewrite is zelf een niet-afbreekbare call van ~90s,
+          // dus een abort die tijdens die call aankomt zien we hier voor het
+          // eerst. Zonder deze check draaide `applySilentIterate` er meteen
+          // achteraan — een judge-call, een rewrite-call en een rescore, alle
+          // drie voor een client die er niet meer is.
+          if (args.signal.aborted) {
+            console.warn(
+              `[generate-structured-variant] client disconnected after rewrite of slot ${slot} — skipped iterate`,
+            );
+            break;
+          }
+
           r = await applySilentIterate(r, slot, args.postArgs);
           results.push(r);
           sendEvent("variant_complete", {
@@ -868,8 +881,12 @@ function streamSequentialGeneration(args: {
         // Bewuste keuze: de al betaalde varianten gaan verloren, de database
         // blijft ongemoeid.
         if (args.signal.aborted) {
+          // `trackingPromises.length`, niet `results.length`: de slot waarin de
+          // abort werd opgemerkt is wél gegenereerd en geboekt, maar nooit in
+          // `results` gepusht. Loggen op results zou minder weggegooid werk
+          // melden dan er betaald is.
           console.warn(
-            `[generate-structured-variant] client disconnected — discarded ${results.length} generated variant(s), nothing persisted`,
+            `[generate-structured-variant] client disconnected — paid for ${trackingPromises.length} generation(s), discarded all, nothing persisted`,
           );
           return;
         }
