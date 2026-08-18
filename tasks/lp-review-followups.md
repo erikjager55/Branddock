@@ -83,6 +83,10 @@ wél leesbaar maar niet wisbaar waren. Details in changelog #474.
       rijke maar benoemde interface die álle door consumenten gelezen
       veld-metadata dekt, of het props-paneel-model loskoppelen van de
       registry-literal.
+- [ ] **Turnstile op het publieke form-endpoint** (`/api/f/[formId]`) — de
+      gedocumenteerde volgende trede bóven honeypot + timing + gelaagde
+      rate-limits (zit er al in). Pas bouwen bij waargenomen spam-druk;
+      bron: spec §Deploy-notities + `tasks/done/lp-forms-leads.md`.
 - [x] **SSE-generator + client-disconnect** — ✅ 2026-08-17. Beide helften waren
       nodig: in de SPA unmount de component bij wegnavigeren, maar de browser
       verbreekt de fetch dan niet vanzelf, dus zonder client-abort ging de
