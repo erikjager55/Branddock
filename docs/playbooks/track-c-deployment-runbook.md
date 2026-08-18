@@ -6,6 +6,25 @@ Master-document voor pre-launch go-live. Code-side prep is grotendeels gedaan (z
 
 ---
 
+
+## DATABASE_URL — zet `sslmode=verify-full`, niet `require`
+
+Neon deelt connection strings uit met `sslmode=require`. Met de huidige `pg` (8.x) is dat
+gedrag identiek aan `verify-full`: certificaat én hostnaam worden gecontroleerd. Ná de major
+(`pg` v9 / `pg-connection-string` v3) krijgt dezelfde string libpq-semantiek — versleuteld,
+maar zónder die twee controles. Er breekt niets en er komt geen foutmelding; de garantie zakt
+stil.
+
+Zet daarom expliciet `sslmode=verify-full` in élke `DATABASE_URL`, ook op Vercel. Gemeten
+tegen `branddock-prod` (2026-08-18): `verify-full` verbindt in 189ms, `require` in 471ms — de
+strengste modus kost dus niets. Terzijde: `no-verify` verbindt óók gewoon, wat precies laat
+zien dat een werkende verbinding niets over de sterkte zegt.
+
+`validateEnv()` waarschuwt bij een verzwakkende of ontbrekende modus. Zodra de prod-URL om is,
+zet `DATABASE_SSL_STRICT=true` — dan wordt het fail-fast en kan een latere copy-paste uit het
+Neon-dashboard de verificatie niet stil uitzetten. Toetsen: `npm run smoke:db-ssl-mode`.
+
+
 ## Fase 1 — Database (Neon)
 
 1. Maak Neon account (https://neon.tech) + project "branddock-prod".

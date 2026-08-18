@@ -51,11 +51,17 @@ uitdeelt) niet ongemerkt de verificatie uitzet.
 
 - [ ] Prod-`DATABASE_URL` op Vercel gebruikt `sslmode=verify-full` (jij — Neon-dashboard geeft
       standaard `require`)
-- [ ] `.env.example` documenteert `sslmode=verify-full` mét de reden in één regel
-- [ ] Een startup-check faalt luid bij `NODE_ENV=production` met `sslmode=require|prefer|
-      verify-ca` of zonder `sslmode`
-- [ ] Verbinding met Neon werkt aantoonbaar met `verify-full` (Neon levert een geldig publiek
-      certificaat, dus dit hóórt te werken — maar bewijzen, niet aannemen)
+- [x] `.env.example` documenteert `sslmode=verify-full` mét de reden — ✅ 2026-08-18
+- [~] Een startup-check faalt luid bij `NODE_ENV=production` met `sslmode=require|prefer|
+      verify-ca` of zonder `sslmode` — ⚠️ **waarschuwt** standaard, faalt hard zodra
+      `DATABASE_SSL_STRICT=true`. Bewust zo: Neon deelt `require` uit, dus een throw
+      by default zou de eerstvolgende deploy laten omvallen vóórdat iemand de variabele
+      kán omzetten. Een beveiligingsnotitie mag geen productie-incident worden. Zet de
+      vlag zodra de prod-URL om is; dan kan het niet meer stil terugzakken.
+- [x] Verbinding met Neon werkt aantoonbaar met `verify-full` — ✅ gemeten 2026-08-18 tegen
+      `branddock-prod`: `verify-full` 189ms, `require` 471ms. ⚠️ Bijvangst: `no-verify`
+      verbindt óók gewoon. Een werkende verbinding zegt dus niets over de sterkte — precies
+      waarom de modus expliciet in de string hoort en niet aangenomen mag worden.
 - [ ] `npx tsc --noEmit` 0 errors
 - [ ] `npm run lint` 0 errors
 - [ ] Smoke-test uitgevoerd
