@@ -37,6 +37,27 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 479. De content-keten is dicht — de publieke API gaf een volle pillar-page als leeg item uit, en zes i18n-namespaces renderden nooit
+
+Sluit [`content-chain-accessor`](../tasks/content-chain-accessor.md) af: alle 23 kruisingen lopen nu via `resolveDeliverableContent()`, en er staat geen `TODO(content-chain-accessor)`-disable meer in de codebase. Dat laatste is de meetbare vorm van "af".
+
+**#23 was de zichtbaarste die nog openstond.** `src/lib/content/deliverable-content.ts` — gedeeld door de MCP-tool `get_deliverable_content` en `GET /api/v1/deliverable` — mapte uitsluitend `components`, en die zijn voor de 11 keten-B-types structureel leeg. Een pillar-page van 4.185 tekens kwam er dus als leeg item uit, op de enige plek waar een klant of externe agent de bug raakt. Additief opgelost: `text` (platte tekst uit welke keten dan ook), `contentState` (`ready`/`awaiting-choice`/`empty`) en `variantOptionCount` erbij, `components` ongewijzigd. Bij `awaiting-choice` gaat er géén tekst mee — gelijk aan de productkeuze bij #3: een versie die de gebruiker nog kan weggooien lekt niet door naar afgeleide content. De PR-tekst van #288 meldde "nog open: alleen #22"; #23 stond er ook nog en werd niet genoemd.
+
+**#22**: Iris (`seo-watchdog-scan`) leest via de accessor in plaats van een rauwe `safeParse`; de zod-validatie blijft, want de accessor garandeert een page-variant en niet dít schema.
+
+**Vier bevindingen uit een fresh-eyes-review van #288**, meegenomen omdat ze dezelfde bestanden raken. De belangrijkste: het readiness-filter leidde zijn tokens **af uit Engelse zinnen** met `lower.includes('choose')` — één herformulering of vertaling had het stil kapotgemaakt. De API stuurt nu tokens (`readinessSignals`), één formatter maakt er de zin van, en Engels blijft de bron via `defaultValue`. Verder: de tekstcomponent-regel stond op drie plekken (nu één `TEXT_COMPONENT_WHERE`), een docstring claimde een garantie die de variantselectie niet waarmaakt, en `hasContent` was tóch `true` bij een openstaande variantkeuze zodra er beeld op de rij stond — precies de publish-knop die gegarandeerd afketst.
+
+⚠️ **Nagekomen vondst: zes namespaces met complete NL-vertalingen renderden nooit.** Namespaces laden lazy; `brand-dna`, `campaigns-cards`, `campaigns-content-types`, `campaigns-setup`, `claw-content-registry` en `campaigns-pipeline` werden nergens via `useTranslation` geladen. 84 aanroepen die voor een Nederlandse gebruiker allemaal Engels bleven — merk-DNA-secties, status-pills, kwaliteitslabels, content-type-labels, wizard-stappen, knowledge-library-filters. Niets kon dit zien: de fallback is `defaultValue`, en die ís de Engelse brontekst. Geen foutmelding, geen lege string, geen zichtbare sleutel. 37 `useTranslation`-calls in 21 bestanden aangesloten, met de bestaande namespace vooraan zodat kale sleutels hun default houden. Geborgd met `npm run smoke:i18n-namespaces` — statisch, CI-baar, en aantoonbaar discriminerend.
+
+**Bewijs**: `content-library-readiness` 59/59 (was 39/39), waarvan 8 nieuwe checks die de hint door een échte i18next-instantie in `en` en `nl` renderen, inclusief de `_one`/`_other`-vorm en de koude start. `deliverable-content-accessor` 52/52 ongewijzigd. De échte Iris-laag via `SKIP_AI=1 agent-seo-watchdog-smoke` 15/15. `tsc` 0, `lint` 0 errors. Geen schema-wijziging, dus geen Neon-push.
+
+⚠️ **Twee dingen die deze ronde kostten**, beide vastgelegd in `gotchas.md`. (1) Drie controles kwamen leeg terug terwijl de controle zélf stuk was — een probe op een niet-bestaande sleutel, een discriminatietest waarvan de string-vervanging niet matchte door quote-stijl, en een `git merge-file`-conflictcheck die nul conflicten meldde voor het énige bestand dat wél botst. Twee daarvan zouden een echte bevinding hebben begraven. (2) De bovenkant van `gotchas.md` is met parallelle sessies een gedeelde schrijfplek: één entry in een code-PR kostte een volledige herbouw van #291 (→ #298), en een uur later opnieuw een conflict — terwijl `package.json` beide keren vanzelf mergde.
+
+Twee vervolgtaken vastgelegd: [`content-chain-followups`](../tasks/content-chain-followups.md) (dode code, de schrijf-kant van keten B, repurpose zonder bron-content) en [`i18n-namespace-locality`](../tasks/i18n-namespace-locality.md) (namespaces die alleen werken zolang een ánder scherm ze al laadde).
+
+- PR's: #298, #307, #308
+- Task: [tasks/content-chain-accessor.md](../tasks/content-chain-accessor.md) → **done**
+
 ### 478. De tabwissel kocht alsnog een tweede generatie — en waarom hij in main stond
 
 Vervolg op #475, en tegelijk een les over mergen. Die entry meldde de tabwissel-regressie als opgelost: de AbortController verhuisde naar een registry per deliverable, zodat een stapwissel in de Canvas een lopende run niet meer afbrak. Dat klopte voor de *controller*, maar niet voor de **beslissing om te genereren**. `isGenerating` en `autoTriggeredRef` zijn component-lokaal, en `structuredVariantOptions` wordt pas bij `all_complete` naar de store geschreven — dus een verse instance na een stapwissel zag "niets aan de hand", de auto-trigger vuurde, `beginGeneration` brak de lopende betaalde run af en kocht een nieuwe. Twee betalen, één krijgen, bij een gewone klik op een eerdere stap.
