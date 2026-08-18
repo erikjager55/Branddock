@@ -26,6 +26,7 @@ const ns = {
     },
     readinessHint: {
       'no-content': 'No content',
+      'variant-unchosen': 'Version not chosen',
       'not-reviewed': 'Not reviewed',
       'pipeline-incomplete': 'Pipeline incomplete',
     },
@@ -90,6 +91,7 @@ const ns = {
       any: 'Any',
       options: {
         'no-content': 'No content generated',
+        'variant-unchosen': 'Version not chosen yet',
         'not-reviewed': 'Not reviewed',
         'pipeline-incomplete': 'Pipeline incomplete',
       },

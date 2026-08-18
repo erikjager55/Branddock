@@ -19,10 +19,14 @@ export interface ContentLibraryItem {
   publishedAt: string | null;
   /** True when content is generated + approved — ready for publishing */
   isPublishReady: boolean;
-  /** True when any content has been generated (text / images / video).
-   *  Used to classify items without explicit IN_PROGRESS status as "in
-   *  progress" — matches the user mental model of active work. */
+  /** True when publishable content exists (text / images / video). Gates the
+   *  QuickPublishMenu, so a deliverable whose variant is still unchosen is
+   *  deliberately false here — publishing it would hit the publish-guard. */
   hasContent: boolean;
+  /** Content-keten-staat: `awaiting-choice` = versies gegenereerd, gebruiker
+   *  koos er nog geen. Telt als voortgang voor het stoplicht (amber i.p.v.
+   *  rood), maar niet als publiceerbare content. */
+  contentState: "ready" | "awaiting-choice" | "empty";
   /** Human-readable hint about what's missing (null when publish-ready) */
   readinessHint: string | null;
   /** Journey phase (e.g. "awareness", "consideration", "conversion") */

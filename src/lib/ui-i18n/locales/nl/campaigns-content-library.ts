@@ -26,6 +26,7 @@ const ns = {
     },
     readinessHint: {
       'no-content': 'Geen content',
+      'variant-unchosen': 'Versie niet gekozen',
       'not-reviewed': 'Niet beoordeeld',
       'pipeline-incomplete': 'Pijplijn onvolledig',
     },
@@ -90,6 +91,7 @@ const ns = {
       any: 'Alle',
       options: {
         'no-content': 'Geen content gegenereerd',
+        'variant-unchosen': 'Nog geen versie gekozen',
         'not-reviewed': 'Niet beoordeeld',
         'pipeline-incomplete': 'Pijplijn onvolledig',
       },

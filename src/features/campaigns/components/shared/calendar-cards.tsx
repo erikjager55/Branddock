@@ -64,6 +64,9 @@ export function deriveTrafficLight(
   workflowStatus?: string,
   state?: string,
   hasContent?: boolean,
+  /** Versies gegenereerd, gebruiker koos er nog geen. Wél voortgang: zonder dit
+   *  viel een pillar-page met twee wachtende varianten terug op "Not started". */
+  isAwaitingChoice?: boolean,
 ): {
   light: TrafficLight;
   label: string;
@@ -93,6 +96,7 @@ export function deriveTrafficLight(
   const isScheduled = state === "scheduled" || state === "overdue";
   const hasAnyProgress =
     hasContent === true ||
+    isAwaitingChoice === true ||
     isScheduled ||
     workflowStatus === "IN_PROGRESS" ||
     workflowStatus === "COMPLETED";
@@ -169,6 +173,8 @@ export interface CalendarCardProps {
   /** True when any content has been generated — drives the "has progress"
    *  classification alongside workflow status. */
   hasContent?: boolean;
+  /** Gegenereerde versies wachten op een keuze — telt óók als voortgang. */
+  isAwaitingChoice?: boolean;
   readinessHint?: string | null;
   onDelete?: () => void;
   onRename?: (newTitle: string) => void;
@@ -309,6 +315,7 @@ export function CalendarCard({
   onDatePick,
   isPublishReady,
   hasContent,
+  isAwaitingChoice,
   readinessHint,
   currentDateValue,
   onDelete,
@@ -326,6 +333,7 @@ export function CalendarCard({
     workflowStatus,
     state,
     hasContent,
+    isAwaitingChoice,
   );
   const statusBase = t(`campaigns-cards:contentStatus.${lightKey}`, { defaultValue: lightLabel });
   const statusLabel = lightOverdue

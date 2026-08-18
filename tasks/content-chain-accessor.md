@@ -131,14 +131,75 @@ Elk met een echte verificatie, niet alleen tsc.
 | # | pad:regel | leest | wat de gebruiker ziet bij een pillar-page |
 |---|---|---|---|
 | 1 | `studio/[deliverableId]/publish-to-channel/route.ts:122` | A | ✅ **gefixt 2026-08-16** — `buildChannelPayload` leest nu beide ketens; guard blijft, `structured-unchosen` blokkeert nog steeds |
-| 2 | `content-library/route.ts:208-211,230,246` | C | rood stoplicht + **"No content generated"** op een volle, gepubliceerde pagina; voedt `deriveTrafficLight` + de readiness-filter → verkeerde bucket. `wordCount` is `null` (dood veld) |
-| 3 | `lib/claw/tools/read-tools.ts:861-865` | A + C | Brand Assistant: *"deze pagina heeft nog geen content"*, `hasContent: false` — repurpose/samenvat-vragen falen. Dezelfde file heeft op `:985` wél een gate voor `read_landing_page_content` |
+| 2 | `content-library/route.ts:208-211,230,246` | C | ✅ **gefixt 2026-08-17** — productkeuze gemaakt (zie hieronder). Stoplicht amber i.p.v. rood, hint noemt de handeling, `wordCount` klopt voor keten B/C |
+| 3 | `lib/claw/tools/read-tools.ts:861-865` | A + C | ✅ **gefixt 2026-08-17** — productkeuze gemaakt (zie hieronder). Assistent leest nu alle drie de ketens; bij een ongekozen variant meldt hij de keuze i.p.v. "geen content" |
 | 4 | `features/campaigns/lib/export-zip.ts:40,64` | C | ✅ **gefixt 2026-08-16** — las `json.generatedText` terwijl de route `{deliverable:{…}}` teruggeeft, dus ALTIJD leeg voor élk type. Nu één batch-POST naar de canvas-export-route (server-side, alle drie de ketens) i.p.v. een fetch-loop |
 | 5 | `studio/[deliverableId]/auto-iterate/trigger/route.ts:84-140` | A | ✅ **gefixt 2026-08-16** — blobText valt terug op de accessor; de gate ziet nu de echte woordentelling |
 | 6 | `studio/[deliverableId]/strict-rewrite/apply/route.ts:84-107` | A | ✅ **melding gefixt 2026-08-16** — keten-B krijgt nu een eerlijke uitleg i.p.v. "geen componenten". Écht herschrijven vereist de schrijf-kant van keten B = out of scope |
 | 7 | `studio/[deliverableId]/auto-iterate/apply/route.ts:79-101` | A | ✅ **melding gefixt 2026-08-16** — idem #6 |
 | 8 | `canvas/accordion/Step4Timeline.tsx:100` | A | ✅ **gemigreerd 2026-08-16** — eigen cast + try/catch vervangen door de accessor |
 | 9 | `campaigns/[id]/canvas/export/route.ts:37-66` | A | ✅ **gemigreerd + BEREIKBAAR gemaakt 2026-08-16** — `buildDeliverableBody` delegeert nu aan de accessor, en de ZIP-export roept deze route aan. Niet verwijderd: hij bleek precies de server-side deur die #4 nodig had |
+
+## ✅ Fase 2 — de twee productkeuzes, opgeleverd 2026-08-17
+
+`structured-unchosen` (content gegenereerd, variant nog niet gekozen) dwong per
+consument een keuze af. Beide zijn gemaakt op één principe: **de gebruiker heeft
+werk staan, dus lieg niet dat het leeg is — maar gok ook niet welke versie hij
+bedoelde.**
+
+**#2 Content Library — voortgang, geen leegte.**
+
+- Het stoplicht gaat **amber ("In progress")**, niet rood ("Not started"). Er is
+  gegenereerd; alleen de keuze ontbreekt.
+- De hint noemt de eerstvolgende handeling: *"2 versions — choose one"* in plaats
+  van *"No content generated"*. Enkelvoud krijgt *"1 version — choose it"*.
+- Nieuw filter-token `variant-unchosen` (Wat ontbreekt → "Version not chosen yet"
+  / "Nog geen versie gekozen"), zodat de wachtrij in één klik te vinden is.
+- **`hasContent` blijft `false`.** Dat veld schakelt in de UI de QuickPublishMenu
+  vrij en de publish-guard (#412) weigert een deliverable zónder variantkeuze
+  alsnog. Op `true` zetten zou een actie aanbieden die gegarandeerd afketst. Het
+  stoplicht krijgt daarom een eigen signaal (`contentState`) i.p.v. een opgerekte
+  `hasContent`.
+
+**#3 Brand Assistant — eerlijk over de staat, geen ongekozen versie prijsgeven.**
+
+- Bij `structured-unchosen` geeft de tool **geen** varianttekst terug, maar
+  `pendingVariantChoice: true` + `variantOptionCount` + een instructie: meld de
+  keuze en verwijs naar Canvas. Eén van de opties teruggeven zou de assistent
+  laten samenvatten of hergebruiken uit een versie die de gebruiker nog kan
+  weggooien — dat lekt door naar afgeleide content.
+- De echte bug eronder is óók weg: de tool las alleen keten A + C en meldde dus
+  "nog geen content" op een volle pillar-page. Nu leest hij alle drie de ketens.
+- Bijvangst: het `isSelected: true`-filter op de component-query is verdwenen. Een
+  variantgroep zónder expliciete selectie leverde nul componenten op terwijl
+  variant 0 gewoon de levende tekst is; de accessor doet die selectie zelf.
+
+**Twee dingen die de inventaris niet voorzag:**
+
+1. **De route-helpers waren onsmokebaar.** `deriveReadiness` en `hintTokens`
+   stonden ín het route-bestand, en een App-Router-route mag geen extra symbolen
+   exporteren. Ze zijn verhuisd naar `src/lib/content/library-readiness.ts`, nu
+   getest in plaats van nagebouwd in een smoke.
+2. **De oude regel was óók fout voor keten A.** De smoke tegen echte rijen laat
+   zien dat een LinkedIn-post mét 30+ gevulde componenten evengoed
+   *"No content generated"* kreeg — de fout was dus breder dan de 11 keten-B-types.
+
+**Bewijs** (`scripts/smoke-tests/content-library-readiness.ts`, **39/39**): 25 pure
+assertions + 14 tegen **echte rijen** in de lokale DB, door de ECHTE route-query en
+de ECHTE Claw-tool. Per rij drukt de smoke oud naast nieuw af:
+
+```
+ongekozen varianten (landing-page)  oud: "No content generated"  → nieuw: "2 versions — choose one"
+gekozen variant     (landing-page)  oud: hasContent=false        → nieuw: hasContent=true
+componenten         (linkedin-post) oud: hasContent=false        → nieuw: hasContent=true
+echt leeg           (landing-page)  oud: "No content generated"  → nieuw: ongewijzigd
+```
+
+`tsc` 0 · `lint` 0 errors · fase-1-smoke 52/52 nog groen. Geen schema-wijziging,
+dus geen Neon-push.
+
+**Nog open in fase 2**: alleen #22 (`seo-watchdog-scan.ts`, Iris leest de variant
+rauw) draagt nog een `eslint-disable` met TODO.
 
 # Fase 3 — de 12 stille kruisingen (eigen PR)
 

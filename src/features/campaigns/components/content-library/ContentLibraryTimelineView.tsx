@@ -898,6 +898,7 @@ export function ContentLibraryTimelineView({
                   campaignName={item.campaignName}
                   isPublishReady={item.isPublishReady}
                   hasContent={item.hasContent}
+                  isAwaitingChoice={item.contentState === "awaiting-choice"}
                   readinessHint={item.readinessHint ?? null}
                   phase={item.phase ?? null}
                   campaignType={item.campaignType}
@@ -1253,6 +1254,7 @@ export function ContentLibraryTimelineView({
                               }
                               isPublishReady={item.isPublishReady}
                               hasContent={item.hasContent}
+                              isAwaitingChoice={item.contentState === "awaiting-choice"}
                               readinessHint={item.readinessHint ?? null}
                               phase={item.phase ?? null}
                               onClick={() => onOpenItem?.(item.id, item.campaignId)}
