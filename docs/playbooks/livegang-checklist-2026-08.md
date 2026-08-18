@@ -17,7 +17,7 @@ forms/analytics + publish-gate + generatieve patterns — zie
 **Pre-merge review-ronde ✅ 2026-08-13**: 2 parallelle code-reviewers over de volledige
 diff — 0 CRITICAL; alle 5 MAJORs + goedkope MINORs gefixt (spoofbare leads-KPI dicht,
 form-rate-limit gelaagd, ISR-revalidate op delete, sectie-AI dekt alle 22 types,
-publish-gate-precisie). Uitgestelde restpunten: `tasks/lp-review-followups.md`.
+publish-gate-precisie). Uitgestelde restpunten: `tasks/done/lp-review-followups.md`.
 
 **Volgorde is essentieel** (memory `neon-schema-push-on-deploy`):
 

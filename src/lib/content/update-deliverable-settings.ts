@@ -22,7 +22,7 @@
 // (de call-sites mergen hele objecten, geen losse paden) en boven
 // SERIALIZABLE + retry (dat vraagt een retry-lus per call-site).
 //
-// Zie `tasks/lp-review-followups.md` §Robuustheid en de BEKENDE BEPERKING in
+// Zie `tasks/done/lp-review-followups.md` §Robuustheid en de BEKENDE BEPERKING in
 // `src/lib/deliverable/patch-hero-visual.ts`, die deze laag al aanwees.
 // =============================================================
 
