@@ -1,3 +1,15 @@
+/* ⚠️ DIT BESTAND IS DOOD — het wordt nergens geïmporteerd.
+ *
+ * De enige stylesheet die de app laadt is src/index.css (src/app/layout.tsx:3).
+ * Wijzigingen hier hebben GEEN enkel effect. Het `--primary` hieronder wijkt
+ * bovendien af van de levende merkkleur (#1fd1b2) — pas die aan in
+ * src/index.css, niet hier.
+ *
+ * Vastgesteld 2026-08-18, ADR 2026-08-18-tailwind-bronpijplijn.
+ * Bewust bewaard i.p.v. verwijderd; weggooien mag zodra iemand bevestigt dat de
+ * inhoud nergens meer als referentie dient.
+ */
+
 @custom-variant dark (&:is(.dark *));
 
 /* Import design system */

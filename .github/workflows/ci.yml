@@ -42,6 +42,11 @@ jobs:
 
       - run: npm run lint
 
+      # Bewaakt dat elke kleur-utility die de code gebruikt ook echt gegenereerd
+      # wordt. src/index.css was tot 18-08 een bevroren artefact; 358 klassen
+      # renderden stil niets. ADR 2026-08-18-tailwind-bronpijplijn.
+      - run: npm run smoke:css-utilities -- --strict
+
       - run: npm run build
         env:
           # These env vars must match the required fields in src/lib/env-validation.ts
