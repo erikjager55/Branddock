@@ -6,7 +6,7 @@
 //
 // Dit mount i18next met dezelfde locale-bestanden die de app gebruikt, maar
 // STATISCH en alleen voor de namespaces die de gesyncte componenten aanspreken
-// (common, shared, settings-billing). Bewust NIET via `createI18n`: die hangt een
+// (common, shared, settings-billing, ai-errors). Bewust NIET via `createI18n`: die hangt een
 // `resourcesToBackend` met een dynamische `import()` op, waardoor esbuild elk
 // locale-bestand van elke taal in de bundel trekt — dat kostte 538 -> 1874 KB.
 //
@@ -19,6 +19,7 @@ import { I18nextProvider, initReactI18next } from 'react-i18next';
 import nlCommon from '@/lib/ui-i18n/locales/nl/common';
 import nlShared from '@/lib/ui-i18n/locales/nl/shared';
 import nlSettingsBilling from '@/lib/ui-i18n/locales/nl/settings-billing';
+import nlAiErrors from '@/lib/ui-i18n/locales/nl/ai-errors';
 
 function createPreviewI18n(): I18nInstance {
   const instance = i18next.createInstance();
@@ -26,12 +27,13 @@ function createPreviewI18n(): I18nInstance {
     lng: 'nl',
     fallbackLng: 'nl',
     defaultNS: 'common',
-    ns: ['common', 'shared', 'settings-billing'],
+    ns: ['common', 'shared', 'settings-billing', 'ai-errors'],
     resources: {
       nl: {
         common: nlCommon,
         shared: nlShared,
         'settings-billing': nlSettingsBilling,
+        'ai-errors': nlAiErrors,
       },
     },
     interpolation: { escapeValue: false },

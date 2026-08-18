@@ -159,5 +159,12 @@ via i18n.
 - **Scope is nu 35 componenten.** Bewust niet 78: zie de scope-metingen hierboven.
 - **De entry is een handgeschreven barrel.** Komt er een component bij in `shared/` of
   `ui/layout/`, dan mist die zonder foutmelding tot iemand `entry.ts` bijwerkt.
-- **De i18n-provider noemt drie namespaces met de hand.** Gaat een gesynct component een
-  vierde namespace gebruiken, dan toont die kaart weer rauwe sleutels.
+- **De i18n-provider noemt vier namespaces met de hand** (`common`, `shared`,
+  `settings-billing`, `ai-errors`). Gaat een gesynct component een vijfde gebruiken, dan
+  toont die kaart weer rauwe sleutels — zonder bouwfout, want de provider hoort bij de
+  sync-toolchain en niet bij de Next-build.
+  ⚠️ Dit is al één keer gebeurd: PR #334 verplaatste de AI-foutmeldingen naar een nieuwe
+  `ai-errors`-namespace, waarna `ModelUnavailableNotice` en `AIErrorCard` sleutels toonden
+  tot deze regel werd toegevoegd. Verplaatst iemand `locales/nl/{common,shared,
+  settings-billing,ai-errors}.ts`, dan breekt de statische import hier op dezelfde stille
+  manier.
