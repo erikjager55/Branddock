@@ -1,0 +1,214 @@
+/**
+ * document-lang-resolution — bewaakt de regels achter `<html lang>`.
+ *
+ * Waarom dit bestaat: op 2026-08-18 bleek dat élke bezoeker zonder UI-cookie
+ * `lang="en"` kreeg op een Nederlandse marketing- of brand.md-pagina, en dat
+ * een gepubliceerde klantpagina met `LandingPage.locale = 'nl-NL'` óók
+ * `lang="en"` gaf. Niets kon dat zien: de pagina werkt, de tekst klopt, alleen
+ * het taalattribuut liegt — tegen zoekmachines en schermlezers.
+ *
+ * De regels leven in `document-locale.shared.ts` en worden op TWEE plekken
+ * gebruikt: server-side in de root layout, en client-side in `DocumentLangSync`
+ * (die na een client-navigatie opnieuw beslist). Lopen die uit elkaar, dan is
+ * het attribuut ná één klik weer fout. Deze smoke pint de gedeelde regels vast.
+ *
+ * Bewust statisch: geen DB, geen browser, geen server — draait daarom in CI
+ * mee in de `check`-job (`.github/workflows/ci.yml`), als eigen step ná `npm run lint`.
+ *
+ * Draaien:
+ *   node node_modules/.bin/tsx scripts/smoke-tests/document-lang-resolution.ts
+ */
+
+import {
+  DUTCH_PUBLIC_PREFIXES,
+  PUBLIC_CONTENT_LANG,
+  isDutchPublicRoute,
+  isUsableLang,
+  matchPublishedPagePath,
+  matchesPrefix,
+  resolveClientLangDecision,
+  decideDocumentLang,
+} from '../../src/lib/ui-i18n/document-locale.shared';
+import { resolveDocumentLocale } from '../../src/lib/ui-i18n/document-locale';
+
+let passed = 0;
+const failures: string[] = [];
+
+function check(what: string, actual: unknown, expected: unknown): void {
+  const a = JSON.stringify(actual);
+  const e = JSON.stringify(expected);
+  if (a === e) {
+    passed++;
+  } else {
+    failures.push(`${what}\n    verwacht: ${e}\n    kreeg:    ${a}`);
+  }
+}
+
+// ── Publieke NL-routes: prefix moet op SEGMENTGRENS matchen ────────────────
+check('marketing-root is NL', isDutchPublicRoute('/marketing'), true);
+check('marketing-subpad is NL', isDutchPublicRoute('/marketing/pricing'), true);
+check('diep marketing-subpad is NL', isDutchPublicRoute('/marketing/features/campaigns'), true);
+check('brandmd is NL', isDutchPublicRoute('/brandmd'), true);
+check('brandmd-subpad is NL', isDutchPublicRoute('/brandmd/use'), true);
+// De reden dat `matchesPrefix` bestaat: een losse startsWith zou dit meepakken.
+check('marketingcampagne is GEEN publieke route', isDutchPublicRoute('/marketingcampagne'), false);
+check('brandmd-extern is GEEN publieke route', isDutchPublicRoute('/brandmd-extern'), false);
+check('app-root is geen NL-route', isDutchPublicRoute('/'), false);
+check('app-subpad is geen NL-route', isDutchPublicRoute('/settings/integrations'), false);
+check('leeg pad is geen NL-route', isDutchPublicRoute(''), false);
+check('matchesPrefix exact', matchesPrefix('/marketing', '/marketing'), true);
+check('matchesPrefix grens', matchesPrefix('/marketingx', '/marketing'), false);
+
+// ── Landingspagina-pad ────────────────────────────────────────────────────
+check('gepubliceerde pagina', matchPublishedPagePath('/p/napking/pillar-page'), {
+  workspace: 'napking',
+  slug: 'pillar-page',
+});
+check('trailing slash', matchPublishedPagePath('/p/napking/pillar-page/'), {
+  workspace: 'napking',
+  slug: 'pillar-page',
+});
+check('percent-encoding wordt gedecodeerd', matchPublishedPagePath('/p/acme%20bv/mijn%2Dpagina'), {
+  workspace: 'acme bv',
+  slug: 'mijn-pagina',
+});
+// `host-router.ts` codeert een diep pad in ÉÉN segment (a/b -> a%2Fb).
+check('diep pad in één segment', matchPublishedPagePath('/p/napking/map%2Fpagina'), {
+  workspace: 'napking',
+  slug: 'map/pagina',
+});
+check('te weinig segmenten', matchPublishedPagePath('/p/napking'), null);
+check('te veel segmenten', matchPublishedPagePath('/p/napking/map/pagina'), null);
+check('ander pad', matchPublishedPagePath('/marketing/pricing'), null);
+check('kapotte encoding valt terug', matchPublishedPagePath('/p/napking/%E0%A4%A'), null);
+
+// ── Taalwaarde-validatie: `<html lang="">` mag nooit ontstaan ─────────────
+check('nl is bruikbaar', isUsableLang('nl'), true);
+check('nl-NL is bruikbaar', isUsableLang('nl-NL'), true);
+check('en-GB is bruikbaar', isUsableLang('en-GB'), true);
+check('lege string is onbruikbaar', isUsableLang(''), false);
+check('null is onbruikbaar', isUsableLang(null), false);
+check('undefined is onbruikbaar', isUsableLang(undefined), false);
+check('spatie is onbruikbaar', isUsableLang('nl NL'), false);
+check('onzin is onbruikbaar', isUsableLang('!!'), false);
+
+// ── Client-side beslissing: MOET door de host-routing heen ───────────────
+// Dit is het gat dat de browsercheck lokaal niet kán vinden: localhost is geen
+// apex-host, dus daar is `/` een app-route. Op productie is `/` de Nederlandse
+// marketing-homepage (rewrite naar /marketing). Een client die alleen naar het
+// browserpad kijkt zet die pagina ná hydratie terug op Engels.
+check('apex-root is de NL marketing-homepage', resolveClientLangDecision('branddock.app', '/'), {
+  kind: 'fixed',
+  lang: 'nl',
+});
+check('www-apex idem', resolveClientLangDecision('www.branddock.app', '/'), {
+  kind: 'fixed',
+  lang: 'nl',
+});
+check('apex met poort idem', resolveClientLangDecision('branddock.app:443', '/'), {
+  kind: 'fixed',
+  lang: 'nl',
+});
+check('apex /marketing-subpad', resolveClientLangDecision('branddock.app', '/marketing/pricing'), {
+  kind: 'fixed',
+  lang: 'nl',
+});
+check('app-host root is een app-route', resolveClientLangDecision('app.branddock.app', '/'), {
+  kind: 'ui',
+});
+check('localhost root is een app-route', resolveClientLangDecision('localhost:3000', '/'), {
+  kind: 'ui',
+});
+check('app-host marketing is NL', resolveClientLangDecision('app.branddock.app', '/marketing'), {
+  kind: 'fixed',
+  lang: 'nl',
+});
+check('app-host brandmd is NL', resolveClientLangDecision('localhost:3000', '/brandmd/use'), {
+  kind: 'fixed',
+  lang: 'nl',
+});
+check('app-host settings is app-route', resolveClientLangDecision('localhost:3000', '/settings/x'), {
+  kind: 'ui',
+});
+// Workspace-host: `/<slug>` rewrite't naar /p/<ws>/<slug> — de taal staat in de
+// database, dus de client moet er vanaf blijven.
+check('workspace-host slug is een klantpagina', resolveClientLangDecision('linfi.branddock.app', '/pillar-page'), {
+  kind: 'leave',
+});
+check('workspace-host root is geen klantpagina', resolveClientLangDecision('linfi.branddock.app', '/'), {
+  kind: 'ui',
+});
+check('direct /p-pad is een klantpagina', resolveClientLangDecision('app.branddock.app', '/p/linfi/pillar-page'), {
+  kind: 'leave',
+});
+
+// ── Server-precedentie: klantpagina > publieke route > UI-taal ───────────
+// Zonder deze checks kon je een hele tak uit `resolveDocumentLocale` slopen en
+// bleef de gate groen — hij toetste alleen de losse helpers.
+check('klantpagina wint van de UI-taal', decideDocumentLang('/p/napking/x', 'en', 'nl-NL'), 'nl-NL');
+check('klantpagina wint óók van een NL-voorkeur', decideDocumentLang('/p/napking/x', 'nl', 'en-GB'), 'en-GB');
+check('klantpagina zonder bruikbare locale valt terug', decideDocumentLang('/p/napking/x', 'en', ''), 'nl');
+check('klantpagina zonder rij valt terug', decideDocumentLang('/p/napking/x', 'en', null), 'nl');
+check('marketing wint van de UI-taal', decideDocumentLang('/marketing/pricing', 'en', null), 'nl');
+check('brandmd wint van de UI-taal', decideDocumentLang('/brandmd', 'en', null), 'nl');
+check('app-route volgt de UI-taal (en)', decideDocumentLang('/', 'en', null), 'en');
+check('app-route volgt de UI-taal (nl)', decideDocumentLang('/settings/x', 'nl', null), 'nl');
+// Een landingLocale mag NOOIT lekken naar een niet-/p-pad.
+check('marketing negeert een meegegeven landingLocale', decideDocumentLang('/marketing', 'en', 'de-DE'), 'nl');
+check('app-route negeert een meegegeven landingLocale', decideDocumentLang('/', 'en', 'de-DE'), 'en');
+
+async function runWiringChecks(): Promise<void> {
+  // ── Bedrading: resolveDocumentLocale roept de lookup goed aan ────────────
+  // Zonder deze checks kon je in `document-locale.ts` de workspace en de slug
+  // verwisselen; élke klantpagina viel dan stil terug op de fallback-taal en de
+  // gate bleef groen. De lookup is daarom injecteerbaar.
+  const calls: Array<[string, string]> = [];
+  const stubLoader = async (workspaceSlug: string, slug: string) => {
+    calls.push([workspaceSlug, slug]);
+    return workspaceSlug === 'napking' && slug === 'pillar-page' ? 'nl-NL' : null;
+  };
+
+  const wired = await resolveDocumentLocale('/p/napking/pillar-page', 'en', stubLoader);
+  check('bedrading: lookup krijgt (workspace, slug) in die volgorde', calls[0], ['napking', 'pillar-page']);
+  check('bedrading: DB-locale wint van de cookie', wired.lang, 'nl-NL');
+  check('bedrading: uiLocale blijft de cookie volgen', wired.uiLocale, 'en');
+
+  const missing = await resolveDocumentLocale('/p/onbekend/pagina', 'en', stubLoader);
+  check('bedrading: onbekende pagina valt terug op nl', missing.lang, 'nl');
+
+  calls.length = 0;
+  const marketing = await resolveDocumentLocale('/marketing/pricing', 'en', stubLoader);
+  check('bedrading: marketing raakt de lookup niet aan', calls.length, 0);
+  check('bedrading: marketing is nl', marketing.lang, 'nl');
+
+  const app = await resolveDocumentLocale('/', 'nl', stubLoader);
+  check('bedrading: app-route volgt de cookie', app.lang, 'nl');
+  check('bedrading: leeg pad valt terug op de UI-taal', (await resolveDocumentLocale('', 'en', stubLoader)).lang, 'en');
+
+  // ── Randgeval dat de host-routing vóór prefix-matching afdwingt ──────────
+  // Een workspace-host met slug `marketing` is een KLANTPAGINA, geen NL-site.
+  // Wie `isDutchPublicRoute` vóór `decideHostRoute` zou zetten, breekt dit.
+  check('workspace-host /marketing is een klantpagina', resolveClientLangDecision('linfi.branddock.app', '/marketing'), {
+    kind: 'leave',
+  });
+}
+
+// ── Constanten waarop beide kanten leunen ────────────────────────────────
+check('publieke contenttaal is nl', PUBLIC_CONTENT_LANG, 'nl');
+check('twee NL-prefixen', [...DUTCH_PUBLIC_PREFIXES], ['/marketing', '/brandmd']);
+
+function report(): void {
+  if (failures.length > 0) {
+    console.error(
+      `\n✗ document-lang-resolution: ${failures.length} van ${passed + failures.length} checks faalden\n`,
+    );
+    for (const f of failures) console.error(`  - ${f}`);
+    process.exit(1);
+  }
+  console.log(`✓ document-lang-resolution: ${passed} checks groen`);
+}
+
+runWiringChecks().then(report, (err) => {
+  console.error('✗ document-lang-resolution: bedradingschecks gooiden een fout\n', err);
+  process.exit(1);
+});
