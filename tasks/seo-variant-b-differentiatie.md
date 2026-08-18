@@ -33,11 +33,32 @@ onderwerpen voor hetzelfde merk delen al 65% van hun vocabulaire. Dat variant B 
 plaatst hem dichter bij "hetzelfde artikel, licht geparafraseerd" dan bij een alternatief
 waar een gebruiker echt tussen kiest.
 
-⚠️ **De maat heeft een gat**: het ijkpunt meet "ander onderwerp, zelfde merk". Er zit géén
-ijkpunt in voor "zelfde onderwerp, andere invalshoek" — precies wat variant B hoort te zijn.
-Twee eerlijk verschillende invalshoeken op hetzelfde onderwerp zullen bóven de 65% liggen;
-hoeveel is onbekend. Lees 95% dus als richting (er valt weinig te kiezen), niet als
-afgemeten tekort. Het vaststellen van dát ijkpunt hoort bij stap 1 hieronder.
+~~⚠️ **De maat heeft een gat**~~ — **gedicht 2026-08-18**, en de verwachting klopte niet.
+
+Het ontbrekende ijkpunt hoefde niet gegenereerd te worden: de **landingspagina-keten produceert
+al** varianten met een expliciet benoemde creative angle ("Tijd & Gemak" tegenover "Fouten &
+Groei"). Twee varianten van dezelfde deliverable zijn per constructie hetzelfde onderwerp,
+hetzelfde merk, en twee bewust verschillende invalshoeken. Gemeten over 35 paren met dezelfde
+`overlapRatio` als de andere twee armen:
+
+| Vergelijking | overlap |
+|---|---:|
+| Twee artikelen van verschillende merken | 18,8% (n=320) |
+| Twee **verschillende** artikelen (ander onderwerp), zelfde merk | 65,0% (n=145) |
+| **Zelfde onderwerp, bewust ANDERE invalshoek** (LP-varianten) | **65,5% (n=35)** |
+| **Variant B vs variant A** | **90,5-98,3%** (n=16 armen) |
+
+Dit task-file voorspelde dat twee eerlijke invalshoeken *"bóven de 65% zullen liggen"*. Dat is
+niet zo: ze landen op **65,5%**, praktisch gelijk aan twee artikelen over totaal verschillende
+onderwerpen. Een keten die een benoemde invalshoek meegeeft produceert dus varianten die
+lexicaal net zo ver uit elkaar liggen als twee losse artikelen.
+
+"95% is te hoog" is daarmee **geen indruk meer maar een bevinding**: het gat is ~30 punten.
+
+⚠️ Wel een proxy over twee media heen — gestructureerde LP-content plat geslagen tegenover
+markdown-proza. Het beantwoordt *"hoeveel scheelt een benoemde invalshoek"*, niet *"welk
+percentage is goed voor markdown"*. Draai `npm run fidelity:variant-b -- calibrate` om het te
+herhalen.
 
 **Het is waarschijnlijk niet de context.** De hypothese lag voor de hand dat variant B te
 weinig te werken had: hij kreeg door een tail-slice-bug nul researchstappen mee (zie
@@ -63,10 +84,25 @@ Eerst meten, dan pas bouwen — de vraag is een productvraag, geen promptvraag.
    "95% is te hoog" een indruk, geen bevinding. Draai daarnaast `calibrate` en de A/B over
    álle 4 workspaces (de round-robin-spreiding is 18-08 gerepareerd) en over meerdere
    content-types, niet alleen `landing-page`.
-2. **Vergelijk met de LP-kant**: de webpage-builder heeft ditzelfde probleem al aangeraakt
-   (`scripts/smoke-tests/web-page-builder-phase64-variant-copy-diff.ts` en
-   `-phase65-variant-angle-prompt.ts`). Als daar een werkende angle-forcing zit, is die
-   waarschijnlijk overdraagbaar.
+2. ~~**Vergelijk met de LP-kant**~~ — **gedaan 2026-08-18. Ja, overdraagbaar, en het verschil
+   is klein en concreet.**
+
+   De LP-keten geeft **één benoemde invalshoek mét aanpak** mee:
+   `## Creative Angle: "Cijfers & verlies"` + `**Approach:** Open met % rejects en spoedkosten.`
+   Eén instructie, geen keuze. Valt terug op een generieke as (`problem-led`/`benefit-led`)
+   als er geen angle is.
+
+   De SEO-prompt (`generateAlternativeVariant`) doet twee dingen anders:
+   - **Hij geeft een menu in plaats van een opdracht.** *"Different hook/opening angle (e.g.,
+     question vs. statistic vs. story vs. bold claim)"* — vijf categorieën waaruit het model
+     zelf mag kiezen. De weg van de minste weerstand is dan dicht bij het origineel blijven.
+   - **Hij ankert expliciet op variant A**: *"Rewrite the provided page content"*. Herschrijven,
+     niet herdenken — precies de hypothese die dit task-file al noemde.
+
+   Overdracht zou dus zijn: `generateCreativeAngles` (bestaat al, Gemini Flash) ook voor de
+   markdown-pipeline draaien en één benoemde invalshoek in de systemprompt zetten, plus het
+   anker op `originalContent` verzwakken. Dat is een **prompt-wijziging in één functie**, geen
+   nieuwe machinerie.
 3. **Dan de keuze** (Erik): variant B echt onderscheidend maken, óf schrappen en de tijd/
    kosten teruggeven. Een derde optie is hem alleen genereren wanneer de gebruiker erom
    vraagt in plaats van standaard.
@@ -74,7 +110,7 @@ Eerst meten, dan pas bouwen — de vraag is een productvraag, geen promptvraag.
 # Acceptatiecriteria
 
 - [ ] Overlap-meting over ≥4 workspaces en ≥3 content-types, met het ijkpunt ernaast
-- [ ] Vastgesteld of de LP-angle-aanpak overdraagbaar is naar de markdown-pipeline
+- [x] Vastgesteld of de LP-angle-aanpak overdraagbaar is naar de markdown-pipeline — ✅ ja, zie stap 2
 - [ ] Expliciete keuze van Erik vastgelegd (onderscheidend maken / schrappen / on-demand)
 - [ ] Bij "onderscheidend maken": overlap aantoonbaar richting het 65%-ijkpunt, F-VAL niet lager
 - [ ] `npx tsc --noEmit` 0 errors

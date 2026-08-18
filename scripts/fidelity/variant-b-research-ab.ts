@@ -32,12 +32,14 @@
 // =============================================================
 
 import fs from 'node:fs';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
 import { runFidelityScoring } from '@/lib/brand-fidelity/fidelity-runner';
 import { generateAlternativeVariant, runStructuredStep } from '@/lib/ai/seo-pipeline';
 import type { ResearchContext } from '@/lib/ai/seo-pipeline-utils';
+import { flattenPageVariantToText } from '@/lib/landing-pages/flatten-variant';
 import {
   buildStepContext,
   renderStepBlock,
@@ -471,11 +473,55 @@ async function main() {
     console.log('IJKPUNT voor de overlap-maat:');
     console.log(`  twee artikelen van VERSCHILLENDE merken            : ${mean(crossBrand)}  (n=${crossBrand.length})`);
     console.log(`  twee VERSCHILLENDE artikelen (ander onderwerp), zelfde merk : ${mean(sameBrand)}  (n=${sameBrand.length})`);
+
+    // ── Derde ijkpunt: zelfde onderwerp, bewust ANDERE invalshoek ──────────
+    //
+    // Dit is de as die ontbrak, en hij hoefde niet gegenereerd te worden: de
+    // landingspagina-keten produceert al varianten met een expliciet BENOEMDE
+    // creative angle ("Tijd & Gemak" tegenover "Fouten & Groei"). Twee varianten
+    // van dezelfde deliverable zijn dus per constructie hetzelfde onderwerp,
+    // hetzelfde merk, en twee bewust verschillende invalshoeken.
+    //
+    // ⚠️ Het is een PROXY over twee media heen. LP-varianten zijn gestructureerde
+    // content die hier plat geslagen wordt; variant B van de SEO-pipeline is
+    // markdown-proza. Lees dit getal als "wat haalt een keten die WEL een
+    // benoemde invalshoek meegeeft", niet als een drempel die één op één op de
+    // markdown-pipeline geldt.
+    const lpRows = await prisma.deliverable.findMany({
+      where: { settings: { path: ['structuredVariantOptions'], not: Prisma.DbNull } },
+      select: { id: true, contentType: true, settings: true },
+    });
+    const angled: number[] = [];
+    for (const row of lpRows) {
+      const st = row.settings as Record<string, unknown> | null;
+      const variants = st?.structuredVariantOptions;
+      if (!Array.isArray(variants) || variants.length < 2) continue;
+      const texts = variants
+        .map((v) => {
+          try { return flattenPageVariantToText(v as Parameters<typeof flattenPageVariantToText>[0]); }
+          catch { return ''; }
+        })
+        .filter((t) => t.trim().length > 0);
+      for (let i = 0; i < texts.length; i++)
+        for (let j = i + 1; j < texts.length; j++) angled.push(overlapRatio(texts[i], texts[j]));
+    }
+
+    console.log(`  zelfde onderwerp, bewust ANDERE invalshoek (LP-varianten)    : ${mean(angled)}  (n=${angled.length})`);
     console.log('');
-    console.log('  ⚠️  Dit ijkpunt meet "ander onderwerp, zelfde merk". Er zit GEEN ijkpunt in');
-    console.log('      voor "zelfde onderwerp, andere invalshoek" — precies de vraag bij variant B.');
-    console.log('      Lees de bovengrens dus als richting, niet als drempel: hoe dichter bij 100%,');
-    console.log('      hoe minder er te kiezen valt tussen de twee varianten.');
+    console.log('  Lezing:');
+    if (angled.length > 0) {
+      const avg = angled.reduce((a, b) => a + b, 0) / angled.length;
+      console.log(`    Een keten die een BENOEMDE invalshoek meegeeft haalt ${(avg * 100).toFixed(1)}%.`);
+      console.log('    Variant B van de SEO-pipeline zit op 90,5-98,3%. Het verschil tussen die twee');
+      console.log('    is de ruimte die een expliciete invalshoek oplevert.');
+    } else {
+      console.log('    Geen LP-variantparen gevonden — draai dit tegen een database met gegenereerde');
+      console.log('    landingspagina-varianten, anders ontbreekt het derde ijkpunt.');
+    }
+    console.log('');
+    console.log('  ⚠️  Het derde ijkpunt is een PROXY over twee media heen (gestructureerde LP-content');
+    console.log('      tegenover markdown-proza). Het beantwoordt "hoeveel scheelt een benoemde');
+    console.log('      invalshoek", niet "welk percentage is goed voor markdown".');
     return;
   }
 
