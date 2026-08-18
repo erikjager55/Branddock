@@ -48,20 +48,24 @@ jobs:
           DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
           BETTER_AUTH_SECRET: "ci-build-secret-not-real"
           BETTER_AUTH_URL: "http://localhost:3000"
-          # Heap-bump WEG als experiment (2026-08-18). De aanleiding was inference
-          # over de 22-component-registry na de Puck-exit; sinds #295 heeft
-          # `buildSpikePuckConfig` een benoemd retourtype
-          # (`SectionLibraryConfig<SpikePuckProps>`), dus die anonieme
-          # structurele inferentie bestaat niet meer.
+          # Next's build-TS-fase overschrijdt Node's default ~4GB-heap sinds de
+          # webpage-builder-rework. De bump blijft nodig — GEMETEN, niet aangenomen.
           #
-          # Lokaal is de vraag niet te beantwoorden: macOS schaalt de heap mee met
-          # het RAM (zie de comment bij de tsc-stap), en een A/B gaf daar zowel in
-          # `tsc --extendedDiagnostics` (9.059.620 vs 9.059.610 instantiaties) als
-          # in een 4GB-build exact hetzelfde resultaat. Alleen de runner telt.
+          # Hypothese tot 18-08 (stond hier als "type-versmalling is de echte
+          # oplossing"): de anonieme structurele inferentie over de
+          # 22-component-registry. Die is met #295 weg — `buildSpikePuckConfig`
+          # heeft nu een benoemd retourtype. Experiment #302 haalde deze bump er
+          # daarna af en de stap viel alsnog om, in exact dezelfde fase:
           #
-          # Slaagt deze stap → annotatie was genoeg, item af in
-          # tasks/lp-review-followups.md. Valt hij om met een heap-fout → bump
-          # terug, en de annotatie is wél nettere typing maar niet de oorzaak.
+          #   Running TypeScript ...
+          #   Mark-Compact 4028.2 (4130.1) -> 4013.4 (4130.9) MB
+          #   FATAL ERROR: Ineffective mark-compacts near heap limit
+          #
+          # De registry-inferentie was dus NIET de oorzaak (of niet de enige).
+          # Wie het opnieuw wil proberen: eerst meten waar het geheugen heen gaat
+          # (`tsc --generateTrace`), niet opnieuw een type versmallen op gevoel.
+          # Runner heeft 16GB.
+          NODE_OPTIONS: "--max-old-space-size=8192"
 
   e2e:
     runs-on: ubuntu-latest
