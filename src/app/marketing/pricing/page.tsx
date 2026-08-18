@@ -148,7 +148,15 @@ const PAID_ACTION_LABELS: Record<CreditAction, string> = {
   'agent-deliverable': 'Agent-deliverable (uitgewerkt concept in je inbox)',
 };
 
-const PAID_ACTIONS = (Object.keys(CREDIT_COSTS) as CreditAction[]).map((action) => ({
+// video-clip staat tijdelijk niet in de tabel (besluit Erik 2026-08-18): video
+// wordt voorlopig niet geadverteerd. Het label blijft in PAID_ACTION_LABELS —
+// die is Record<CreditAction, …> en moet compleet blijven — en de kosten blijven
+// in de registry, dus terugzetten is één regel.
+const HIDDEN_ACTIONS: CreditAction[] = ['video-clip'];
+
+const PAID_ACTIONS = (Object.keys(CREDIT_COSTS) as CreditAction[])
+  .filter((action) => !HIDDEN_ACTIONS.includes(action))
+  .map((action) => ({
   label: PAID_ACTION_LABELS[action],
   credits: CREDIT_COSTS[action],
 }));
@@ -168,7 +176,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Hoe werken credits?',
-    a: `Credits tellen alleen wat we voor je genereren (output): een kort stuk ≈ ${CREDIT_COSTS.short}, longform ≈ ${CREDIT_COSTS['long-form']}, een afbeelding ${CREDIT_COSTS.image}, een videoclip ${CREDIT_COSTS['video-clip']}. Ter indicatie: met Starter (${nl.format(PLAN_CONFIGS.STARTER.monthlyCredits)} credits) maak je ${creditExampleLine(PLAN_CONFIGS.STARTER.monthlyCredits)}. Je merkcontext en elke merk-check (F-VAL) zijn altijd gratis. Dat is juist het punt van Branddock.`,
+    a: `Credits tellen alleen wat we voor je genereren (output): een kort stuk ≈ ${CREDIT_COSTS.short}, longform ≈ ${CREDIT_COSTS['long-form']} en een afbeelding ${CREDIT_COSTS.image}. Ter indicatie: met Starter (${nl.format(PLAN_CONFIGS.STARTER.monthlyCredits)} credits) maak je ${creditExampleLine(PLAN_CONFIGS.STARTER.monthlyCredits)}. Je merkcontext en elke merk-check (F-VAL) zijn altijd gratis. Dat is juist het punt van Branddock.`,
   },
   {
     q: 'Wat als mijn credits op zijn?',
