@@ -1162,7 +1162,7 @@ export async function generateLandingPageVariantBatch(
   params: LandingPageGenerationParams,
   count: 1 | 2 | 3 | 4 = 2,
   angles?: CreativeAngle[] | null,
-  batchOpts?: { model?: string },
+  batchOpts?: { model?: string; abortSignal?: AbortSignal },
 ): Promise<GenerationResult[]> {
   if (!Number.isInteger(count) || count < 1 || count > 4) {
     throw new Error(`generateLandingPageVariantBatch: count must be an integer 1-4, got ${count}`);
@@ -1176,7 +1176,11 @@ export async function generateLandingPageVariantBatch(
   // Fase 1: parallel attempt — elk slot met eigen angle/axis + temperature
   const initial = await Promise.allSettled(
     TEMPERATURES.map((temperature, i) =>
-      generateLandingPageVariant(slotParams(i), { temperature, model: batchOpts?.model }),
+      generateLandingPageVariant(slotParams(i), {
+        temperature,
+        model: batchOpts?.model,
+        ...(batchOpts?.abortSignal ? { abortSignal: batchOpts.abortSignal } : {}),
+      }),
     ),
   );
 
@@ -1205,7 +1209,11 @@ export async function generateLandingPageVariantBatch(
         );
         results[i] = await generateLandingPageVariant(
           slotParams(i),
-          { temperature: retryTemp, model: batchOpts?.model },
+          {
+            temperature: retryTemp,
+            model: batchOpts?.model,
+            ...(batchOpts?.abortSignal ? { abortSignal: batchOpts.abortSignal } : {}),
+          },
         );
       } catch (retryErr) {
         const msg = retryErr instanceof Error ? retryErr.message : String(retryErr);

@@ -136,6 +136,16 @@ interface VariantPostProcessArgs {
   /** C3 — server-side archetype (ensureBrandArchetype) voor de pattern-
    *  hervalidatie na tell-rewrite/silent-iterate (die parsen opnieuw). */
   archetype: string | null;
+  /**
+   * Gaat af zodra de client de verbinding verbreekt.
+   *
+   * De post-processing hieronder is optioneel én betaald: de STRICT
+   * tell-rewrite is één Anthropic-call, en silent-iterate is een judge-score
+   * + een rewrite + een rescore. Zonder deze signal draaiden die door nadat
+   * de gebruiker allang weg was — en niemand ziet het resultaat, want de
+   * response bestaat niet meer.
+   */
+  abortSignal: AbortSignal;
 }
 
 /**
@@ -202,6 +212,10 @@ async function applyStrictTellRewrite(
   a: VariantPostProcessArgs,
 ): Promise<GenerationResult> {
   if (a.humanVoiceMode !== "STRICT" || hasOwnVariantSchema(a.contentType)) return r;
+  // Weggelopen client: de rewrite is een volledige extra Anthropic-call en
+  // niemand leest het resultaat meer. De ongewijzigde variant is een geldige
+  // uitkomst — STRICT is een verbetering, geen voorwaarde.
+  if (a.abortSignal.aborted) return r;
   const rw = await runVariantTellRewriteIfNeeded(
     r.variant as LandingPageVariantContent,
     async ({ systemPrompt, userPrompt: rwPrompt }) => {
@@ -215,6 +229,7 @@ async function applyStrictTellRewrite(
           temperature: 0.5,
           maxTokens: Math.min(8000, Math.max(2000, Math.round((JSON.stringify(r.variant).length / 3) * 1.4))),
           timeoutMs: 90_000,
+          abortSignal: a.abortSignal,
           ...(a.generationModel ? { model: a.generationModel } : {}),
         },
       );
@@ -253,6 +268,11 @@ async function applySilentIterate(
   a: VariantPostProcessArgs,
 ): Promise<GenerationResult> {
   if (process.env.LP_SILENT_ITERATE !== "1" || hasOwnVariantSchema(a.contentType)) return r;
+  // Weggelopen client: hieronder volgen dríé betaalde calls (judge-score,
+  // rewrite, rescore). Silent-iterate is per definitie optioneel — hij draait
+  // alleen als de score onder de drempel zakt — dus overslaan kost niets
+  // behalve een verbetering die niemand meer te zien krijgt.
+  if (a.abortSignal.aborted) return r;
   try {
     const text = flattenPageVariantToText(r.variant);
     const wc = text.trim().split(/\s+/).filter(Boolean).length;
@@ -286,6 +306,8 @@ async function applySilentIterate(
       "",
       "Geef de verbeterde variant terug als volledige JSON.",
     ].filter(Boolean).join("\n");
+    // De score was de goedkoopste van de drie; hier begint het dure deel.
+    if (a.abortSignal.aborted) return r;
     const res = await anthropicClient.createChatCompletion(
       [
         { role: "system", content: VARIANT_REWRITE_SYSTEM_PROMPT },
@@ -296,12 +318,16 @@ async function applySilentIterate(
         temperature: 0.5,
         maxTokens: Math.min(8000, Math.max(2000, Math.round((JSON.stringify(r.variant).length / 3) * 1.4))),
         timeoutMs: 90_000,
+        abortSignal: a.abortSignal,
         ...(a.generationModel ? { model: a.generationModel } : {}),
       },
     );
     const parsedRw = parseVariantRewriteResponse(res.content);
     if (!parsedRw.success) return r;
     const afterText = flattenPageVariantToText(parsedRw.data);
+    // De rewrite is al betaald; zonder rescore weten we niet of hij beter is,
+    // dus houden we de originele variant aan (keep-if-better faalt veilig).
+    if (a.abortSignal.aborted) return r;
     const rescored = await runFidelityScoring({
       workspaceId: a.workspaceId,
       deliverableId: a.deliverableId,
@@ -644,6 +670,7 @@ export async function POST(
     generationModel,
     brandVocabulary,
     archetype: archetypeResult.archetype,
+    abortSignal: request.signal,
   };
 
   // B2 — SSE-modus-detectie: `?stream=1` (canoniek) of Accept-header.
@@ -680,7 +707,7 @@ export async function POST(
       generationParams,
       count,
       angles,
-      { model: generationModel },
+      { model: generationModel, abortSignal: request.signal },
     );
   } catch (err) {
     console.error("[generate-structured-variant] Batch failed", err);
@@ -694,12 +721,25 @@ export async function POST(
   await Promise.allSettled(
     results.map((r, slot) => trackVariantGeneration(r, slot, postArgs)),
   );
-  results = await Promise.all(
-    results.map((r, slot) => applyStrictTellRewrite(r, slot, postArgs)),
-  );
-  results = await Promise.all(
-    results.map((r, slot) => applySilentIterate(r, slot, postArgs)),
-  );
+  // Weggelopen client: de batch is af en betaald, dus die persisteren we
+  // hieronder gewoon — een volledige set weggooien zou de gebruiker bij
+  // terugkomst dezelfde varianten opnieuw laten kopen. Wat we wél overslaan
+  // is de optionele verfijning: die kost extra calls en verbetert iets dat
+  // in deze request niemand meer terugziet. De post-process-functies dragen
+  // dezelfde guard, dus dit is een snelkoppeling, geen tweede waarheid.
+  if (request.signal.aborted) {
+    console.warn(
+      "[generate-structured-variant] client disconnected — %d variant(s) gegenereerd en bewaard, post-processing overgeslagen",
+      results.length,
+    );
+  } else {
+    results = await Promise.all(
+      results.map((r, slot) => applyStrictTellRewrite(r, slot, postArgs)),
+    );
+    results = await Promise.all(
+      results.map((r, slot) => applySilentIterate(r, slot, postArgs)),
+    );
+  }
 
   const payload = await persistVariantOptions({
     deliverableId,
