@@ -141,3 +141,23 @@ landt; de PR-titels zijn het logboek.
 - [x] P3 `pg-major-sslmode-semantiek` — #348 (waarschuwt; hard falen achter een vlag)
 - [x] P4 `golden-set-blogpost-quality` — #350 (meta-description-defect weg; 2 besluiten open)
 - [x] P5 `web-page-builder-acceptance-rest` — alle drie restpunten gesloten, taak op done
+- [x] P6 `geo-seo-followup-later` — trigger-audit. Twee van de vier uitgestelde sub-items
+      bleken een gevuurde trigger te hebben. De deploy-smoke is gebouwd en draait
+      (`smoke:published-page-prod`, 12/12 tegen productie); `BreadcrumbList` is gemeld maar
+      niet gebouwd — die pagina's liggen bij een andere sessie.
+
+## Verlenging na P1-P5
+
+De vijf taken uit het oorspronkelijke plan zijn af. Wat er daarna vrij lag was schraal: van
+de resterende open taken is het meeste geclaimd door de andere drie sessies, wacht op een
+beslissing van Erik, of genereert AI-kosten (`lp-section-image-autogen`,
+`video-chain-explainer-showcase` — allebei ook productvragen).
+
+Daarom P6 als **audit in plaats van bouwwerk**: `geo-seo-followup-later` is een bucket van
+bewust uitgestelde items mét triggers, en vandaag bleek dat precies de klasse waar niemand
+op terugkomt. Dat leverde de scherpste vondst van de reeks op — zie hieronder.
+
+**Wat hierna nog vrij ligt, maar niet autonoom hoort**: `lp-section-image-autogen` (1-2d,
+AI-beeldgeneratie, expliciet kosten-gated), `video-chain-explainer-showcase` (~4d, video-
+chain), en de twee resterende geo-sub-items (externe entity-bronnen + live
+AI-crawler-citatiemeting) die allebei externe diensten aanroepen. Die wachten op Erik.
