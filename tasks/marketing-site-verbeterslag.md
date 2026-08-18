@@ -48,7 +48,7 @@ slug is losstaand. Bij die groepen scheiden we dus expliciet "template" van "con
 
 | # | Wijziging | Raakt | Status |
 |---|---|---|---|
-| — | _(nog leeg — wordt gevuld tijdens de doorloop)_ | | |
+| W1 | **Geen em-streepje (—) in Nederlandse copy.** Het is geen Nederlands leesteken. Per geval vervangen door wat de zin vraagt: dubbele punt bij een opsomming of toelichting, komma bij een bijstelling, punt waar het twee zinnen waren, haakjes bij een echte tussenzin, puntkomma bij twee samenhangende hoofdzinnen. Koppeltekens in samenstellingen (merk-DNA, AI-schrijftools, on-brand) blijven staan. | alle pagina's | ✅ **af 18-08** — 174 vervangingen in 18 bestanden (#325) + 3 in gedeelde constanten (#327). Live geverifieerd op 10 pagina's: 0 treffers |
 
 ## Observaties uit de inventarisatie (van Claude — nog geen besluit)
 
@@ -65,13 +65,32 @@ website-brede actie als hij ze als zodanig markeert.
   (`src/app/marketing/sitemap-pages.ts`). Google vindt ze alleen via de footerlink.
   Relevant omdat juist die funnel de leads moet opleveren.
 - **`/brandmd/claim/[token]` is Engels** ("Your brand is already here.") terwijl de
-  rest van de site NL-first is.
+  rest van de site NL-first is. ⚠️ Daarom zijn de 12 em-streepjes op die pagina en in
+  de Engelse helft van `generator-client.tsx` bewust blijven staan: in het Engels is
+  dat leesteken correcte typografie. Vertalen of bewust Engels houden is een besluit
+  dat nog openstaat.
 - **De hele site rendert dynamic.** Eén `await cookies()` in `src/app/layout.tsx:26`
   zet élke route op server-rendered; de `generateStaticParams` op features/solutions/
   vergelijk levert daardoor niets op. Eigen taak: `static-rendering-regressie`.
   Als we tóch overal doorheen gaan, is dit het moment om te beslissen.
 - **De 3 ontbrekende feature-screenshots** staan al sinds de website-rebuild open
   (`open-acties-2026-07-23` §B).
+
+## Open besluiten uit ronde 1 (18-08)
+
+- **Titel-scheider.** `%s — Branddock` is `%s | Branddock` geworden, gelijk aan wat de
+  brand.md-pagina's al deden. Dit raakt de `<title>` van élke marketingpagina en dus
+  wat Google toont. Viel strikt genomen buiten de em-streepje-regel (het is geen zin);
+  in één commando terug te draaien als Erik het anders wil.
+- **References & Anti-References-inhoud.** De 12e canonieke asset kreeg inhoud in
+  `seed-branddock-brand.ts` (#325): Stripe, Linear en Frontify als referenties, elk met
+  de trek die we bewust níét overnemen, plus vier anti-referenties. Door Claude
+  geschreven op basis van de gedocumenteerde positionering — dat is merkstrategie, geen
+  feit. Nalezen vóór het script draait.
+- **App-UI valt buiten deze taak.** De em-streepje-sweep dekte de website (marketing +
+  brand.md + de constanten die daarin renderen). In de app-componenten staan er nog
+  ruim 1.600 (deels comments). De i18n-locales zijn schoon. Aparte ronde als Erik dat
+  wil.
 
 ---
 
@@ -84,7 +103,7 @@ brand.md-URL's ontbreken er (zie observaties).
 
 | # | URL | Bestand | Omvang | Status |
 |---|---|---|---|---|
-| 1 | `/` | `src/app/marketing/page.tsx` | 560 r | ⬜ |
+| 1 | `/` | `src/app/marketing/page.tsx` | 560 r | ✅ **af 18-08** (#321, #325) |
 | 2 | `/marketing/platform` | `platform/page.tsx` | 266 r | ⬜ |
 | 3 | `/marketing/pricing` | `pricing/page.tsx` | 383 r | ⬜ |
 
