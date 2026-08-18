@@ -1,10 +1,9 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> **Laatst bijgewerkt: 2026-08-17** (na de campagnewizard-sessie: #279-#284 gemerged,
-> vijf productiebugs weg, wizard voor het eerst end-to-end getest. Daarna een
-> takenlijst-opruiming: 39 afgeronde task-files naar `tasks/done/`, `kpi-fase0` +
-> `marketing-homepage-v2` alsnog opgenomen, research-stack-bundel in `roadmap.md` afgesloten).
+> **Laatst bijgewerkt: 2026-08-18** (zes PR's gemerged, vijf open; de settings-schrijflaag
+> kreeg één deur mét rijlock. Zie "Wat er landde (2026-08-18)" — inclusief de coördinatieles
+> uit een dag met vijf parallelle sessies).
 
 ---
 
@@ -26,6 +25,43 @@ sporen dragen dat:
 **Wat er niét meer speelt:** het credit-model is compleet (bouw, Stripe-config,
 smokes). Het enige dat rest is jouw schakelmoment: `NEXT_PUBLIC_TOPUP_ENABLED=true`
 plus één echte betaal-smoke.
+
+---
+
+## Wat er landde (2026-08-18)
+
+**Zes PR's gemerged**: de retentie-cron + AVG-wisroutine (#286), de SSE-abort zodat weglopen
+tijdens een generatie geen tokens meer kost (#287), de laatste twee content-keten-kruisingen
+met hun productkeuzes (#288), de golden-set-analyse (#289) en de CSP-enforce-flip met zijn
+follow-ups (#294, #297).
+
+**De settings-schrijflaag heeft één deur gekregen** (#299, changelog #477). `Deliverable.settings`
+is één JSON-blob waar **tien** codepaden in schrijven, allemaal als read-modify-write. Bij
+`generate-structured-variant` is het venster tussen read en write minutenlang — de hele
+SSE-generatie — en een autosave die daarin landt werd stil teruggedraaid.
+
+⚠️ **Het belangrijkste is wat níet werkte.** Het fix-voorbeeld waar het task-file naar wees
+(`publish/route.ts`) zette read + write in één `prisma.$transaction` en noteerde dat de race
+daarmee "geëlimineerd" was. Dat klopt niet: onder de Postgres-default READ COMMITTED neemt een
+kale `SELECT` geen lock, dus beide schrijvers lezen de oude blob en de laatste wint alsnog. Dat
+patroon was inmiddels op twee plekken gekopieerd. De cure is `SELECT … FOR UPDATE` via één
+gedeelde helper, met een smoke die het bewijst: dezelfde race draait óók zonder lock, en dáár
+moet een sleutel sneuvelen — anders meet de smoke niets.
+
+De scope groeide onderweg twee keer: het plan telde zeven schrijvers uit een grep over
+`src/app/api`, een sweep over heel `src` vond er tien. Een half omgezette schrijflaag is
+gevaarlijker dan de oude, dus die zijn meegegaan.
+
+⚠️ **Vijf parallelle sessies kostten vandaag drie bijna-dubbelingen.** Drie keer stond werk als
+open in het task-file én was de code op `origin/main` onaangeraakt, terwijl het in een **open
+PR** van een andere sessie al af was. Eén keer werd het pas ontdekt doordat een commit-hash
+tussen twee reads verschoof. De regel die dit vangt: `gh pr list --state open` hoort bij de
+sessie-start, naast `origin/main` — het task-file loopt achter op de code, en de code op main
+loopt achter op de open PR's.
+
+De `session-guard` blokkeerde daarbij drie keer een legitieme actie in een ándere worktree
+(hij leidt de worktree af uit de sessie-cwd, niet uit het commando). Elke omweg was een volledige
+`npm ci`. Zie [`guard-hooks-hardening`](tasks/guard-hooks-hardening.md) — dat wacht op jouw akkoord.
 
 ---
 
@@ -113,27 +149,25 @@ nu 71-98 met uitleg. Mails herschreven naar Nederlands, één CTA per stuk.
 **1. 💳 TOPUP aanzetten.** Nog steeds het enige met directe omzet-impact, en er is geen
 technisch werk meer — alleen `NEXT_PUBLIC_TOPUP_ENABLED=true` en één betaal-smoke.
 
-**2. 🧹 [`lp-review-followups`](tasks/lp-review-followups.md) — de retentie-items.**
-Naar voren gehaald omdat ze als enige tijdgevoelig zijn en met de dag duurder worden:
-`PageEvent` groeit onbegrensd en `FormSubmission` bevat PII zonder wisroutine. Dat is
-geen feature-werk maar een schuld die zichzelf oplaadt.
+**2. 🔀 Merge-volgorde #295 → #299.** Twee open PR's raken dezelfde functie
+(`persistVariantOptions`). #295 doet 'm met een transactie zonder rijlock — dat versmalt het
+venster maar sluit de race niet (zie hierboven). Advies: **#295 eerst mergen** (zijn andere drie
+items overlappen niet), daarna #299 erbovenop; de overlap is dan één functie waarin de
+lock-variant wint. Staat als commentaar op beide PR's.
 
-**3. 🧩 [`content-chain-accessor`](tasks/content-chain-accessor.md) — de laatste twee
-kruisingen.** Fase 1 en 3 zijn af, fase 2 op #2 en #3 na. Die twee vragen géén techniek maar
-een productkeuze van jou: wat toont het Content Library-stoplicht, en wat zegt de Brand
-Assistant, bij `structured-unchosen`? Zie Open beslissingen #1. Zodra je kiest is het een
-halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
+**3. 🔒 [`guard-hooks-hardening`](tasks/guard-hooks-hardening.md).** Van "nette-te-hebben" naar
+"kost tijd": de guard blokkeerde vandaag drie legitieme acties in andere worktrees, en elke
+omweg was een volledige `npm ci`. Vraagt expliciet jouw akkoord, want het raakt je veiligheidsnet.
 
 ---
 
 ## Open beslissingen (blokkeren werk)
 
-1. **Content-accessor `structured-unchosen`** — twee productkeuzes, geen techniek:
-   het Content Library-stoplicht toont rood + "No content generated" op een vólle pagina,
-   en de Brand Assistant zegt onterecht "deze pagina heeft nog geen content".
-2. **`guard-hooks-hardening`** — raakt je veiligheidsnet, vraagt expliciet akkoord.
-   Kernvraag: móet `gh pr merge` blokkeren bij een co-sessie, of volstaat waarschuwen?
-   Deze sessie bewees dat de guard werkt maar eenrichting beschermt (zie gotchas 15-08).
+1. **Merge-volgorde #295 / #299** — beide raken `persistVariantOptions`. Zie Top 3 #2.
+2. **`guard-hooks-hardening`** — raakt je veiligheidsnet, vraagt expliciet akkoord. Drie
+   kernvragen, alle drie met bewijs uit 18-08: (a) móet `gh pr merge` blokkeren bij een
+   co-sessie, (b) `git pull` staat niet op de verb-lijst maar verzet wél HEAD, (c) de
+   worktree-detectie is fout-positief over worktrees heen.
 3. **brand.md-strategie** — akkoord op de omarm-strategie + outreach naar de maintainer;
    de upstream-PR's liggen als tekstpakket klaar.
 4. **Meertaligheid brand.md-funnel** — de pagina's en mails zijn nu Nederlands. De wens was
@@ -149,12 +183,12 @@ halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
 | Taak | Staat |
 |---|---|
 | [`brand-md-open-standaard`](tasks/brand-md-open-standaard.md) | in-progress — funnel live; rest is upstream-PR's + jouw strategie-akkoord |
-| [`content-chain-accessor`](tasks/content-chain-accessor.md) | in-progress — fase 1 ✅ + fase 3 ✅; alleen kruisingen #2/#3 open (jouw productkeuze) |
+| [`content-chain-accessor`](tasks/content-chain-accessor.md) | in-progress — fase 1 ✅ + 3 ✅; kruisingen #2/#3 ✅ gemerged (#288, keuzes gemaakt). Restscope in open PR #298 |
 | [`lp-image-routes`](tasks/lp-image-routes.md) | review — wacht op één prod-smoke door jou |
 | [`seo-pipeline-speedup`](tasks/seo-pipeline-speedup.md) | open — fase 4a deed 12→7,5 min |
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
 | [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst, deels achterhaald. ⚠️ Nieuw in §B: twee retentie-indexen op Neon (uit PR #286) — `CREATE INDEX CONCURRENTLY`, níet `prisma db push` |
-| [`lp-review-followups`](tasks/lp-review-followups.md) | open — ⚠️ naar Nu gehaald 16-08: de retentie-items zijn tijdgevoelig (`PageEvent` groeit onbegrensd, `FormSubmission` bevat PII zonder wisroutine) |
+| [`lp-review-followups`](tasks/lp-review-followups.md) | open — retentie ✅ (#286) en SSE-abort ✅ (#287). Van de rest zit het settings-race-item in open PR **#299** en de drie overige in open PR **#295**; niets meer vrij op te pakken zonder dubbel werk |
 | [`kpi-fase0`](tasks/kpi-fase0.md) | in-progress — meetfundament €100k-plan (funnel/activatie/noordster/Gate-1 als developer-tab); worktree `branddock-kpi-fase0` |
 | [`marketing-homepage-v2`](tasks/marketing-homepage-v2.md) | in-progress — homepage-herbouw + nav/footer NL-first; worktree `branddock-marketing-homepage-v2` |
 
@@ -185,6 +219,16 @@ op marketing en `revalidate` op de klant-landingspagina's leveren al maanden nie
 
 ## Losse eindjes uit deze sessie
 
+- **Drie worktrees mogen weg** zodra hun PR's rond zijn: `branddock-settings-write-layer`
+  (branch dood, PR #293 gesloten), `branddock-lp-robustness` (checkte per ongeluk de branch
+  van een ándere sessie uit) en `branddock-settings-write-v2` + `branddock-sessie-afronding`
+  ná merge. Opruimen: `scripts/dev/worktree.sh --done <id>`.
+- **`worktree.sh <id>` checkt een bestaande gelijknamige branch uit** in plaats van een verse
+  van `origin/main` te maken. Dat verraadde hier de dubbeling met PR #295 — nuttig, maar het
+  is geen gedocumenteerd gedrag en het verrast als je een schone basis verwacht.
+- **`regenerate-puck-data` blijft een bekende grens** na #299: de merge rekent met de
+  `puckData` van vóór de regeneratie, dus de rijlock beschermt de ándere sleutels, niet
+  dezelfde. Staat als noot in het task-file, geen open werk.
 - **F-VAL onder de drempel** bij `linkedin-post` (69), `linkedin-poll` (70), `search-ad`
   (70,5) en `twitter-thread` (71). Signaal, geen conclusie: Napking's styleguide staat op
   `published = false`, dus de stijl-pijler mist context. Sluit dat eerst uit.

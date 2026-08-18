@@ -31,6 +31,11 @@ taken-spiegel daarvan + de twee nieuwe items uit deze sessie.
 - [ ] **TOPUP-schakelmoment** — `NEXT_PUBLIC_TOPUP_ENABLED=true` (technisch klaar; alleen go/no-go-timing)
 - [ ] **Connector-pilot per tester** — (a) elke tester-org compen via Credit Admin (`setUnlimited`); (b) tester heeft betaald Claude/ChatGPT-plan nodig
 - [ ] **Browser-smoke LP-matrix** — eigenaarschap onduidelijk: Erik zelf (visueel) of Claude functioneel?
+- [ ] **Merge-volgorde #295 / #299** (nieuw 18-08) — beide PR's raken `persistVariantOptions`.
+      #295 gebruikt een transactie zónder rijlock: dat versmalt het venster maar sluit de race
+      niet (READ COMMITTED neemt op een kale SELECT geen lock). Advies: #295 eerst mergen — zijn
+      andere drie items overlappen niet — daarna #299 erbovenop, waar de lock-variant wint.
+      Toelichting staat als commentaar op beide PR's.
 
 ## B. Klein prod-nawerk (Erik, kan direct)
 - [ ] **Twee retentie-indexen op Neon** (uit PR #286, ADR `2026-08-17-landing-page-data-retention`).
@@ -59,7 +64,7 @@ taken-spiegel daarvan + de twee nieuwe items uit deze sessie.
 - [ ] **Besluit `docs/Branddock branddoc v3.pdf`** — untracked in main-worktree: committen/verplaatsen/weggooien?
 
 ## C. Agent-werk dat op Eriks go wacht
-- [ ] **Content-accessor fase 2** — 2 productbeslissingen: (a) Content Library-stoplicht liegt (rood op volle pagina); (b) Brand Assistant zegt onterecht "nog geen content". Zie `tasks/content-chain-accessor.md`
+- [x] **Content-accessor fase 2** — ✅ 18-08 gemerged (#288): stoplicht amber met "2 versions — choose one", Brand Assistant meldt `pendingVariantChoice` i.p.v. een ongekozen versie prijs te geven. Restscope loopt in open PR #298
 - [ ] **`repair-defaults` op prod** — zet locale-ankers + BB `contentLanguage` en→nl (user-visible; draai bij uitleg-moment)
 - [ ] **`guard-hooks-hardening`** — raakt veiligheidsnet, expliciet akkoord nodig. Zie `tasks/guard-hooks-hardening.md`
 
