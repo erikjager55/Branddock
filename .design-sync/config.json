@@ -5,7 +5,7 @@
   "globalName": "BranddockDS",
   "srcDir": "src",
   "tsconfig": "./tsconfig.json",
-  "cssEntry": "src/index.css",
+  "cssEntry": ".design-sync/.cache/compiled.css",
   "componentSrcMap": {
     "PageShell": "src/components/ui/layout/PageShell.tsx",
     "PageHeader": "src/components/ui/layout/PageHeader.tsx",
