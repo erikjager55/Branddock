@@ -20,9 +20,9 @@ const FEATURES: Record<string, FeatureSpec> = {
   'brand-voice': {
     slug: 'brand-voice',
     title: 'Brand Voice die écht klopt',
-    tagline: 'Bouw je brand voice uit voorbeeldteksten — geen generieke prompts.',
+    tagline: 'Bouw je brand voice uit voorbeeldteksten, geen generieke prompts.',
     description:
-      'Branddock leert je brand voice uit een voiceguide, voorbeeldteksten of allebei. Elke generatie wordt getoetst aan die basis — niet aan “klinkt het in het algemeen goed”.',
+      'Branddock leert je brand voice uit een voiceguide, voorbeeldteksten of allebei. Elke generatie wordt getoetst aan die basis, niet aan “klinkt het in het algemeen goed”.',
     bullets: [
       'Voiceguide-extractie uit 3 voorbeeldteksten in 5 minuten',
       'Voice-similariteitsscore per gegenereerde variant (W-1-full embedding)',
@@ -33,10 +33,10 @@ const FEATURES: Record<string, FeatureSpec> = {
   },
   'content-canvas': {
     slug: 'content-canvas',
-    title: 'Content Canvas — 25+ contenttypes',
-    tagline: 'Van blogpost tot landingspagina tot LinkedIn-ad — één canvas, alle formats.',
+    title: 'Content Canvas: 25+ contenttypes',
+    tagline: 'Van blogpost tot landingspagina tot LinkedIn-ad: één canvas, alle formats.',
     description:
-      'Briefing erin, on-brand content eruit, met automatische kwaliteitscontroles bij elke stap. Multivariate output, deterministische property-checks en een merk-check (F-VAL) op elke variant — plus volledige webpagina’s en SEO/GEO-longform met een visuele page-builder.',
+      'Briefing erin, on-brand content eruit, met automatische kwaliteitscontroles bij elke stap. Multivariate output, deterministische property-checks en een merk-check (F-VAL) op elke variant, plus volledige webpagina’s en SEO/GEO-longform met een visuele page-builder.',
     bullets: [
       '25+ contenttypes, van blog en social tot ads, landingspagina’s en SEO/GEO-longform',
       'Multivariate output: meerdere invalshoeken + 1 voorkeursvariant per generatie',
@@ -64,9 +64,9 @@ const FEATURES: Record<string, FeatureSpec> = {
   'agents': {
     slug: 'agents',
     title: 'AI-agents die je merk kennen',
-    tagline: 'Negen specialisten — van onderzoek en strategie tot wekelijkse rapporten en 24/7-watchdogs.',
+    tagline: 'Negen specialisten, van onderzoek en strategie tot wekelijkse rapporten en 24/7-watchdogs.',
     description:
-      'Branddock-agents doen echt werk bovenop je merk-DNA: marktonderzoek met bronnen, strategiefundamenten, contentvoorstellen, merk-checks en data-analyse. Elke agent stelt voor — jij keurt goed. Niets gaat live zonder jou.',
+      'Branddock-agents doen echt werk bovenop je merk-DNA: marktonderzoek met bronnen, strategiefundamenten, contentvoorstellen, merk-checks en data-analyse. Elke agent stelt voor, jij keurt goed. Niets gaat live zonder jou.',
     bullets: [
       'Research-analist: marktonderzoek met bronnen (web + peer-reviewed) in je kennisbibliotheek',
       'Strateeg & contentmaker: strategiefundamenten en contentvoorstellen via de merk-gevalideerde pipeline',
@@ -81,23 +81,23 @@ const FEATURES: Record<string, FeatureSpec> = {
   'personas': {
     slug: 'personas',
     title: 'Persona’s die je doelgroep echt raken',
-    tagline: 'Onderbouwde doelgroep-persona’s — en een chat om mee te sparren.',
+    tagline: 'Onderbouwde doelgroep-persona’s, en een chat om mee te sparren.',
     description:
       'Bouw persona’s op basis van onderzoek, niet onderbuik. Elke persona voedt je merk-DNA en je content: toon, pijnpunten en drijfveren kloppen. Spar direct met een persona in de persona-chat.',
     bullets: [
       'Persona’s uit onderzoek, gekoppeld aan je merk-DNA',
       'Persona-chat: test een boodschap direct tegen je doelgroep',
       'Pijnpunten, drijfveren en bezwaren per persona',
-      'In elke generatie meegewogen — content die de juiste snaar raakt',
+      'In elke generatie meegewogen: content die de juiste snaar raakt',
     ],
     screenshotPath: '/marketing/features/personas.png',
   },
   'trend-radar': {
     slug: 'trend-radar',
-    title: 'Trend Radar — kansen vóór je concurrent',
+    title: 'Trend Radar: kansen vóór je concurrent',
     tagline: 'Een trendscan die signalen in je markt oppikt.',
     description:
-      'Branddock scant je markt op opkomende thema’s, gesprekken en kansen — met bronnen. Van signaal naar contentkans, gekoppeld aan je merk-DNA en persona’s, zodat je meebeweegt zonder je merk te verliezen.',
+      'Branddock scant je markt op opkomende thema’s, gesprekken en kansen, met bronnen. Van signaal naar contentkans, gekoppeld aan je merk-DNA en persona’s, zodat je meebeweegt zonder je merk te verliezen.',
     bullets: [
       'Trendscan met bronnen (web + wetenschappelijk)',
       'Signalen vertaald naar concrete contentkansen',
@@ -108,10 +108,10 @@ const FEATURES: Record<string, FeatureSpec> = {
   },
   'campaigns': {
     slug: 'campaigns',
-    title: 'Campagnes — van strategie tot deliverables',
+    title: 'Campagnes: van strategie tot deliverables',
     tagline: 'Bouw een campagnestrategie en zet ’m om in concrete content.',
     description:
-      'De Campaign Strategy Builder maakt een strategisch blueprint — doel, boodschap, architectuur, kanalen en assets — en levert het warm over aan content-generatie. Alles op je merk-DNA, van strategie tot uitvoering.',
+      'De Campaign Strategy Builder maakt een strategisch blueprint (doel, boodschap, architectuur, kanalen en assets) en levert het warm over aan content-generatie. Alles op je merk-DNA, van strategie tot uitvoering.',
     bullets: [
       'Strategisch blueprint: doel, boodschap, architectuur, kanalen',
       'Warm handover naar content-generatie per asset',
@@ -178,7 +178,7 @@ export default async function FeaturePage({
           {/* eslint-disable-next-line @next/next/no-img-element -- statische marketing-asset, geen next/image-optimalisatie nodig */}
           <img
             src={feature.screenshotPath}
-            alt={`${feature.title} — productschermafbeelding`}
+            alt={`${feature.title}: productschermafbeelding`}
             className="w-full h-auto"
           />
         </div>

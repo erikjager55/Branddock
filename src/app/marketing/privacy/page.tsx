@@ -28,19 +28,19 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     body: (
       <ul className="list-disc pl-5 space-y-1.5">
         <li>
-          <strong>Accountgegevens</strong> — naam, e-mailadres, wachtwoord (gehasht) en, bij
+          <strong>Accountgegevens</strong>: naam, e-mailadres, wachtwoord (gehasht) en, bij
           social-login, je basisprofiel van die provider.
         </li>
         <li>
-          <strong>Workspace-inhoud</strong> — de merkdata en content die jij of je team in
+          <strong>Workspace-inhoud</strong>: de merkdata en content die jij of je team in
           Branddock zet (merk-DNA, persona’s, campagnes, gegenereerde output).
         </li>
         <li>
-          <strong>Betaalgegevens</strong> — facturatiegegevens en betaalstatus. Kaart- en
+          <strong>Betaalgegevens</strong>: facturatiegegevens en betaalstatus. Kaart- en
           rekeninggegevens worden uitsluitend door Stripe verwerkt; wij slaan ze niet op.
         </li>
         <li>
-          <strong>Gebruiksgegevens</strong> — productanalytics (PostHog) en foutmeldingen (Sentry)
+          <strong>Gebruiksgegevens</strong>: productanalytics (PostHog) en foutmeldingen (Sentry)
           om Branddock te verbeteren.
         </li>
       </ul>
@@ -51,7 +51,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     body: (
       <ul className="list-disc pl-5 space-y-1.5">
         <li>Het leveren van de dienst (uitvoering van de overeenkomst).</li>
-        <li>AI-generaties: jouw merkcontext gaat server-side mee in het verzoek aan de AI-provider — alleen wat nodig is voor die generatie, en niet om modellen van derden te trainen.</li>
+        <li>AI-generaties: jouw merkcontext gaat server-side mee in het verzoek aan de AI-provider: alleen wat nodig is voor die generatie, en niet om modellen van derden te trainen.</li>
         <li>Transactionele e-mail (accountverificatie, wachtwoord-reset, notificaties).</li>
         <li>Facturatie en wettelijke administratieplichten.</li>
         <li>Productverbetering op basis van geaggregeerd gebruik (gerechtvaardigd belang).</li>
@@ -63,7 +63,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     body: (
       <p>
         De applicatie draait op Vercel in de EU (Frankfurt); de database bij Neon in een EU-regio.
-        Een actuele lijst van sub-verwerkers — inclusief AI-providers — vind je op onze{' '}
+        Een actuele lijst van sub-verwerkers (inclusief AI-providers) vind je op onze{' '}
         <Link className="underline" href="/marketing/security">
           Security &amp; AVG-pagina
         </Link>

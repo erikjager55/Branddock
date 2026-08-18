@@ -16,14 +16,14 @@ export const metadata: Metadata = {
   // template: sub-pagina's zetten alleen hun eigen naam ('Prijzen' →
   // 'Prijzen — Branddock'); de homepage houdt de volledige default.
   title: {
-    default: 'Branddock — Een AI-marketingteam dat je merk écht kent',
-    template: '%s — Branddock',
+    default: 'Branddock | Een AI-marketingteam dat je merk écht kent',
+    template: '%s | Branddock',
   },
   description:
-    'Negen AI-agents onderzoeken, adviseren en maken op jouw merk-DNA — met een meetbare merk-check (F-VAL) op elke uiting. Werkt in Branddock, in Claude en ChatGPT.',
+    'Negen AI-agents onderzoeken, adviseren en maken op jouw merk-DNA, met een meetbare merk-check (F-VAL) op elke uiting. Werkt in Branddock, in Claude en ChatGPT.',
   icons: { icon: '/marketing/branddock-icon.svg' },
   openGraph: {
-    title: 'Branddock — Een AI-marketingteam dat je merk écht kent',
+    title: 'Branddock | Een AI-marketingteam dat je merk écht kent',
     description:
       'AI-agents op jouw merk-DNA, met een meetbare merk-check (F-VAL) op elke uiting. Werkt in Branddock, in Claude en ChatGPT.',
     type: 'website',
@@ -83,7 +83,7 @@ function MarketingJsonLd() {
                 '@type': 'Product',
                 name: 'Branddock',
                 description:
-                  'Een AI-marketingteam op jouw merk-DNA: onderzoek, content, campagnes en beeld — met een merk-check (F-VAL) op elke output.',
+                  'Een AI-marketingteam op jouw merk-DNA: onderzoek, content, campagnes en beeld, met een merk-check (F-VAL) op elke output.',
                 // Prijzen uit PLAN_CONFIGS — zelfde bron als de pricing-pagina,
                 // zodat de JSON-LD nooit meer kan driften (P4.2).
                 offers: (['STARTER', 'GROWTH', 'AGENCY'] as const).map((tier) => ({

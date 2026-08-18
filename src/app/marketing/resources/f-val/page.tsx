@@ -12,7 +12,7 @@ import TrialNote from '../../TrialNote';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/marketing/resources/f-val' },
-  title: 'F-VAL uitgelegd — de merk-fideliteitsscore',
+  title: 'F-VAL uitgelegd: de merk-fideliteitsscore',
   description:
     'F-VAL geeft elke AI-output een 0–100-score voor merk-fideliteit: stijl (35%), merk-judge (45%) en regels (20%). Onder de norm wordt automatisch herschreven.',
 };
@@ -22,13 +22,13 @@ const PILLARS = [
     Icon: Palette,
     weight: '35%',
     title: 'Stijl',
-    body: 'Hoe dicht zit de tekst bij jóúw merkstem? Gemeten tegen je brand voice — ritme, woordkeuze, toon — via embedding-vergelijking met je eigen materiaal.',
+    body: 'Hoe dicht zit de tekst bij jóúw merkstem? Gemeten tegen je brand voice (ritme, woordkeuze, toon) via embedding-vergelijking met je eigen materiaal.',
   },
   {
     Icon: Scale,
     weight: '45%',
     title: 'Merk-judge',
-    body: 'Een AI-beoordelaar toetst de inhoud aan je merk-DNA: klopt de boodschap met je positionering, waarden en do’s & don’ts? Geen black box — met bevindingen per categorie.',
+    body: 'Een AI-beoordelaar toetst de inhoud aan je merk-DNA: klopt de boodschap met je positionering, waarden en do’s & don’ts? Geen black box, met bevindingen per categorie.',
   },
   {
     Icon: ListChecks,
@@ -59,7 +59,7 @@ export default function FvalPage() {
         </p>
         <p>
           F-VAL (fidelity validation) beantwoordt die vraag met een getal. Elke generatie in
-          Branddock wordt automatisch beoordeeld tegen je merk-DNA — en je ziet niet alleen de
+          Branddock wordt automatisch beoordeeld tegen je merk-DNA, en je ziet niet alleen de
           score, maar ook waaróm: per pijler, met concrete bevindingen.
         </p>
       </div>
@@ -68,7 +68,7 @@ export default function FvalPage() {
       <h2 className="text-gray-900 mb-2">Drie pijlers, één score</h2>
       <p className="text-gray-600 mb-8 max-w-2xl">
         De score weegt drie onafhankelijke metingen. Zo kan een tekst die “goed klinkt” maar je
-        merkregels schendt nooit hoog scoren — en andersom.
+        merkregels schendt nooit hoog scoren, en andersom.
       </p>
       <div className="grid sm:grid-cols-3 gap-4 mb-14">
         {PILLARS.map(({ Icon, weight, title, body }) => (
@@ -102,7 +102,7 @@ export default function FvalPage() {
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h3 className="text-base font-semibold text-gray-900 mb-1">Boven de norm → klaar</h3>
           <p className="text-sm text-gray-600">
-            Scoort een output boven je drempel (per contenttype instelbaar — een blog mag anders
+            Scoort een output boven je drempel (per contenttype instelbaar; een blog mag anders
             klinken dan een LinkedIn-ad), dan is hij klaar voor gebruik.
           </p>
         </div>
@@ -111,7 +111,7 @@ export default function FvalPage() {
             Onder de norm → automatische herschrijving
           </h3>
           <p className="text-sm text-gray-600">
-            STRICT-mode herschrijft de output op basis van de concrete bevindingen — en meet
+            STRICT-mode herschrijft de output op basis van de concrete bevindingen, en meet
             opnieuw. Consistentie zonder handwerk.
           </p>
         </div>
@@ -119,14 +119,14 @@ export default function FvalPage() {
           <h3 className="text-base font-semibold text-gray-900 mb-1">Altijd inzichtelijk</h3>
           <p className="text-sm text-gray-600">
             Bevindingen zijn gecategoriseerd (stem, terminologie, claims, stijl, AI-clichés) met
-            prioriteit en suggestie. Je ziet precies waar het schuurt — en leert je merk er zelf
+            prioriteit en suggestie. Je ziet precies waar het schuurt, en leert je merk er zelf
             scherper van.
           </p>
         </div>
       </div>
 
       {/* De eerlijke cijfers */}
-      <h2 className="text-gray-900 mb-2">Wat het oplevert — eerlijk gemeten</h2>
+      <h2 className="text-gray-900 mb-2">Wat het oplevert, eerlijk gemeten</h2>
       <p className="text-gray-600 mb-6 max-w-2xl">
         In onze pilotmeting vergeleken we Branddock-output met vanilla-AI (zelfde briefing, zelfde
         scorer) per contenttype:
@@ -141,7 +141,7 @@ export default function FvalPage() {
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <div className="text-4xl font-bold mkt-accent tabular-nums">+9,5</div>
           <div className="text-sm text-gray-600 mt-2">
-            punten op de nieuwsbrief — het type waar merkstem het zwaarst weegt
+            punten op de nieuwsbrief, het type waar merkstem het zwaarst weegt
           </div>
         </div>
       </div>

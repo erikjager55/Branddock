@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/marketing/about' },
   title: 'Over ons',
   description:
-    'Waarom Branddock bestaat: AI-content die je merk echt vertegenwoordigt — gebouwd vanuit een gedegen merkstrategie-fundament.',
+    'Waarom Branddock bestaat: AI-content die je merk echt vertegenwoordigt, gebouwd vanuit een gedegen merkstrategie-fundament.',
 };
 
 export default function AboutPage() {
@@ -33,8 +33,8 @@ export default function AboutPage() {
           AI-tekst.
         </p>
         <p>
-          Branddock pakt het anders aan. We bouwen vanuit een gedegen merkstrategie-fundament — je
-          brand voice, doelgroep, brandstyle, do’s en don’ts — en toetsen elke output aan die basis.
+          Branddock pakt het anders aan. We bouwen vanuit een gedegen merkstrategie-fundament (je
+          brand voice, doelgroep, brandstyle, do’s en don’ts) en toetsen elke output aan die basis.
           Niet alleen “klinkt het goed?”, maar “past het bij dít specifieke merk?”.
         </p>
         <p>
@@ -45,7 +45,7 @@ export default function AboutPage() {
         <h2 className="text-gray-900 mt-12">Onze missie</h2>
         <p>
           Marketingteams 10 uur per week teruggeven die nu opgaan aan rapportage, content-editing en
-          briefings — zonder in te leveren op kwaliteit.
+          briefings, zonder in te leveren op kwaliteit.
         </p>
 
         <h2 className="text-gray-900 mt-12">Team</h2>

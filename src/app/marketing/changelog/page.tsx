@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/marketing/changelog' },
   title: 'Changelog',
   description:
-    'Wat er nieuw is in Branddock — nieuwe features, koppelingen en verbeteringen, in gewone taal.',
+    'Wat er nieuw is in Branddock: nieuwe features, koppelingen en verbeteringen, in gewone taal.',
 };
 
 interface ChangelogEntry {
@@ -29,19 +29,19 @@ const ENTRIES: ChangelogEntry[] = [
   {
     date: '18 juli 2026',
     title: 'Branddock in Claude en ChatGPT',
-    body: 'Koppel Branddock als connector via branddock.app/mcp: log in met je Branddock-account en je agent kent je merk. 17 tools voor merkcontext, F-VAL-validatie en on-brand generatie — gegenereerd werk landt gescoord in je library.',
+    body: 'Koppel Branddock als connector via branddock.app/mcp: log in met je Branddock-account en je agent kent je merk. 17 tools voor merkcontext, F-VAL-validatie en on-brand generatie. Gegenereerd werk landt gescoord in je library.',
     tag: 'Koppelingen',
   },
   {
     date: '18 juli 2026',
     title: 'Browser-extensie: Branddock Everywhere (beta)',
-    body: 'Herschrijf of beoordeel tekst in je merkstem, overal waar je schrijft — LinkedIn, e-mail, je CMS. Nu in beta; publicatie in de Web Store volgt.',
+    body: 'Herschrijf of beoordeel tekst in je merkstem, overal waar je schrijft: LinkedIn, e-mail, je CMS. Nu in beta; publicatie in de Web Store volgt.',
     tag: 'Koppelingen',
   },
   {
     date: '17 juli 2026',
     title: 'Brand Assistant maakt content-items direct aan',
-    body: 'Vraag de Brand Assistant om een content-item en hij zet het meteen voor je klaar — van idee naar concept zonder de chat te verlaten.',
+    body: 'Vraag de Brand Assistant om een content-item en hij zet het meteen voor je klaar: van idee naar concept zonder de chat te verlaten.',
     tag: 'Assistant',
   },
   {
@@ -53,13 +53,13 @@ const ENTRIES: ChangelogEntry[] = [
   {
     date: '17 juli 2026',
     title: 'Workspaces hernoemen',
-    body: 'Een merk of klant wisselt van naam? Hernoem de workspace gewoon — alles blijft staan.',
+    body: 'Een merk of klant wisselt van naam? Hernoem de workspace gewoon, alles blijft staan.',
     tag: 'Platform',
   },
   {
     date: '17 juli 2026',
     title: 'Facturering toont je echte cijfers',
-    body: 'Settings → Facturering laat exact je plan, credits en verbruik zien — uit dezelfde bron als de prijzenpagina, dus altijd kloppend.',
+    body: 'Settings → Facturering laat exact je plan, credits en verbruik zien, uit dezelfde bron als de prijzenpagina, dus altijd kloppend.',
     tag: 'Facturering',
   },
   {
@@ -84,7 +84,7 @@ export default function ChangelogPage() {
         family="product"
         eyebrow="Updates"
         title="Changelog"
-        lead="Wat er nieuw is in Branddock — in gewone taal, nieuwste eerst."
+        lead="Wat er nieuw is in Branddock, in gewone taal en nieuwste eerst."
         className="mb-12"
       />
 
