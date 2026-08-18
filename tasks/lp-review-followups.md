@@ -95,6 +95,10 @@ wél leesbaar maar niet wisbaar waren. Details in changelog #474.
       resolutie in de kernel hergebruiken.
 - [ ] **`addSection` met onbekend `afterSectionId`** appendt stil onderaan —
       expliciete `not-found` overwegen (raakt de synthetisch-id-casus).
+- [ ] **Turnstile op het publieke form-endpoint** (`/api/f/[formId]`) — de
+      gedocumenteerde volgende trede bóven honeypot + timing + gelaagde
+      rate-limits (zit er al in). Pas bouwen bij waargenomen spam-druk;
+      bron: spec §Deploy-notities + `tasks/done/lp-forms-leads.md`.
 
 ## Bewuste niet-fixes (gedocumenteerd, geen actie)
 - **`cta_click`-events**: uit het publieke `/api/t`-enum gehaald (spoofbaar);
