@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { judgeDatabaseSslMode } from "./db-ssl-mode";
 
 const envSchema = z.object({
   // Required — app will not start without these
@@ -117,6 +118,24 @@ export function validateEnv(): void {
       console.warn(
         `\u26a0\ufe0f PRODUCTION WARNING: Missing critical vars:\n${prodWarnings.map((w) => `  - ${w}`).join("\n")}`
       );
+    }
+  }
+
+  // sslmode-semantiek: waarschuwen nu, hard falen zodra de omgeving eraan voldoet.
+  //
+  // ⚠️ Bewust GEEN harde throw by default. Neon deelt connection strings uit met
+  // `sslmode=require`, dus een throw zou de eerstvolgende deploy laten omvallen
+  // vóórdat iemand de variabele heeft kunnen omzetten — een beveiligingsnotitie
+  // mag geen productie-incident worden. Zet `DATABASE_SSL_STRICT=true` zodra de
+  // prod-URL op verify-full staat; dan wordt dit wél fail-fast en kan het niet
+  // stilletjes terugzakken bij een volgende copy-paste uit het Neon-dashboard.
+  const sslVerdict = judgeDatabaseSslMode(process.env.DATABASE_URL, process.env.NODE_ENV === "production");
+  if (sslVerdict.level === "weakening" || sslVerdict.level === "missing") {
+    if (process.env.DATABASE_SSL_STRICT === "true") {
+      throw new Error(`DATABASE_SSL_STRICT=true en ${sslVerdict.message}`);
+    }
+    if (process.env.NODE_ENV === "production") {
+      console.warn(`\u26a0\ufe0f PRODUCTION WARNING: ${sslVerdict.message}`);
     }
   }
 
