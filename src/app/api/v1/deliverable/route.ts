@@ -3,8 +3,9 @@
 // van een content-item ("merken zijn taal"-batch).
 //
 // Workspace-gescoped via de API-key; retourneert titel/type/status,
-// recentste F-VAL-score en alle componenten (tekst, image-URL, video-URL,
-// variant-info) gesorteerd op volgorde — zelfde service als de MCP-tool
+// recentste F-VAL-score, de platte tekst (`text`, ook voor web-pages en
+// long-form GEO waar `components` structureel leeg is) en alle componenten
+// (tekst, image-URL, video-URL, variant-info) — zelfde service als de MCP-tool
 // get_deliverable_content. Zero-cost by design (eigen inhoud lezen is
 // gratis). Hele oppervlak achter PUBLIC_API_ENABLED (404 zolang dicht);
 // metadata-only usage-log.

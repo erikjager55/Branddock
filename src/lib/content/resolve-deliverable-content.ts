@@ -39,7 +39,22 @@ const HERO_VARIANT_GROUP = 'hero-image';
  * PROMPT, niet de content — die meenemen in een tekstprojectie zou beeldprompts
  * als artikeltekst laten doorgaan (en bv. in F-VAL-scoring belanden).
  */
-const NON_TEXT_COMPONENT_TYPES = new Set(['image', 'video']);
+export const NON_TEXT_COMPONENT_TYPES = new Set(['image', 'video']);
+
+/**
+ * Dezelfde regel als `NON_TEXT_COMPONENT_TYPES`, maar als Prisma-`where` — voor
+ * lijst-endpoints die alleen willen wéten of er een tekstcomponent is zonder de
+ * bodies op te halen.
+ *
+ * Bewust hier en niet in de route: de vraag "telt deze component als tekst?" op
+ * twee plekken laten staan is precies de drift die deze module opheft. Zet er
+ * ooit een type bij in de Set, dan schuift dit filter mee.
+ */
+export const TEXT_COMPONENT_WHERE = {
+  generatedContent: { not: null },
+  NOT: { generatedContent: '' },
+  componentType: { notIn: [...NON_TEXT_COMPONENT_TYPES] },
+};
 
 export interface DeliverableComponentLike {
   /** Optioneel: niet elke call-site heeft dit veld geselecteerd. Ontbreekt hij, dan
@@ -247,7 +262,14 @@ function countWords(text: string): number {
  *
  * De precedentie wordt hier bewust NIET herhaald: de telling gaat als
  * marker-component de echte accessor in, zodat "gekozen variant wint van
- * componenten" op precies één plek geschreven staat. Uit elkaar lopen kan niet.
+ * componenten" op precies één plek geschreven staat.
+ *
+ * ⚠️ Wat de telling wél benadert: `selectLiveComponents` kiest per variantGroep de
+ * geselecteerde component, en anders variant 0. Een telling weet niet welke groep
+ * wat koos, dus staat álle tekst in niet-levende varianten (geselecteerde component
+ * leeg, of geen variant 0 meer), dan zegt dit signaal `ready` terwijl de volledige
+ * accessor `empty` geeft. De telling zelf is gefilterd met `TEXT_COMPONENT_WHERE`,
+ * dus de tekst/niet-tekst-regel loopt niet uit elkaar — alleen de variantselectie.
  */
 export function resolveDeliverableContentSignal(
   d: Omit<DeliverableLike, 'components'> & {

@@ -15,7 +15,7 @@ interface ManualEntryTabProps {
 }
 
 export function ManualEntryTab({ onClose }: ManualEntryTabProps) {
-  const { t } = useTranslation('knowledge-library');
+  const { t } = useTranslation(['knowledge-library', 'claw-content-registry']);
   const store = useKnowledgeLibraryStore();
   const createResource = useCreateResource();
 

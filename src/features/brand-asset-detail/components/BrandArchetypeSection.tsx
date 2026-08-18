@@ -84,7 +84,7 @@ function hasAutoFillContent(d: BrandArchetypeFrameworkData): boolean {
 }
 
 export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchetypeSectionProps) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   const [draft, setDraft] = useState<BrandArchetypeFrameworkData>(() => normalize(data));
   const [showArchetypeInfo, setShowArchetypeInfo] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -607,7 +607,7 @@ interface ArchetypeGridSelectorProps {
 }
 
 function ArchetypeGridSelector({ selectedId, isEditing, onSelectArchetype }: ArchetypeGridSelectorProps) {
-  const { t } = useTranslation('brand-asset-detail');
+  const { t } = useTranslation(['brand-asset-detail', 'brand-dna']);
   return (
     <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
       {ARCHETYPES.map((arch) => {

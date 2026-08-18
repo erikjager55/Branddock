@@ -28,7 +28,7 @@ const STRATEGIC_INTENTS: {
 // ─── Component ────────────────────────────────────────────
 
 export function SetupStep() {
-  const { t } = useTranslation("campaigns-wizard");
+  const { t } = useTranslation(["campaigns-wizard", "campaigns-setup"]);
   const name = useCampaignWizardStore((s) => s.name);
   const setName = useCampaignWizardStore((s) => s.setName);
   const description = useCampaignWizardStore((s) => s.description);
@@ -356,7 +356,7 @@ function ContentTypeSelector({
   selectedTypeId: string | null;
   onSelect: (typeId: string) => void;
 }) {
-  const { t } = useTranslation("campaigns-wizard");
+  const { t } = useTranslation(["campaigns-wizard", "campaigns-setup"]);
   const [activeCategory, setActiveCategory] = useState<string>(DELIVERABLE_CATEGORIES[0]);
 
   const types = getDeliverablesByCategory(activeCategory);

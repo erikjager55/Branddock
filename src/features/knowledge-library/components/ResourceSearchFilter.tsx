@@ -8,7 +8,7 @@ import { RESOURCE_TYPE_ICONS, RESOURCE_CATEGORIES } from '../constants/library-c
 import type { ResourceType } from '../types/knowledge-library.types';
 
 export function ResourceSearchFilter() {
-  const { t } = useTranslation('knowledge-library');
+  const { t } = useTranslation(['knowledge-library', 'claw-content-registry']);
   const store = useKnowledgeLibraryStore();
 
   const typeOptions = Object.keys(RESOURCE_TYPE_ICONS).map((value) => ({

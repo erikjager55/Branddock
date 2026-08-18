@@ -18,10 +18,13 @@
 
 import {
   deriveReadinessBucket,
-  readinessHintTokens,
+  readinessSignalTokens,
   resolveLibraryContentSignal,
 } from '../../src/lib/content/library-readiness';
-import { resolveDeliverableContentSignal } from '../../src/lib/content/resolve-deliverable-content';
+import {
+  resolveDeliverableContentSignal,
+  TEXT_COMPONENT_WHERE,
+} from '../../src/lib/content/resolve-deliverable-content';
 
 let pass = 0;
 let fail = 0;
@@ -63,20 +66,44 @@ console.log('\n1. De vier staten door de lijst-accessor');
   check('unchosen → awaiting-choice', unchosen.contentState === 'awaiting-choice');
   check('unchosen telt NIET als publiceerbare content', unchosen.hasContent === false);
   check(
-    'unchosen-hint noemt de handeling, niet het gemis',
-    unchosen.contentHint === '2 versions — choose one',
-    unchosen.contentHint ?? 'null',
+    'unchosen-signaal noemt de handeling, niet het gemis',
+    unchosen.contentSignal?.token === 'variant-unchosen' &&
+      (unchosen.contentSignal as { count: number }).count === 2,
+    JSON.stringify(unchosen.contentSignal),
   );
 
   const single = resolveLibraryContentSignal(
     { settings: { structuredVariantOptions: [validVariant('A')] } },
     0,
   );
-  check('enkelvoud krijgt eigen formulering', single.contentHint === '1 version — choose it');
+  check(
+    'enkelvoud geeft count 1 (de UI kiest de enkelvoudsvorm)',
+    single.contentSignal?.token === 'variant-unchosen' &&
+      (single.contentSignal as { count: number }).count === 1,
+  );
+
+  // Beeld op de rij mag de keuze-staat niet overrulen: de publish-guard weigert
+  // een ongekozen variant, dus `hasContent: true` zou een menu tonen dat afketst.
+  const unchosenMetBeeld = resolveLibraryContentSignal(
+    {
+      settings: { structuredVariantOptions: [validVariant('A'), validVariant('B')] },
+      generatedImageUrls: ['https://example.test/hero.png'],
+    },
+    0,
+  );
+  check(
+    'ongekozen + beeld telt NIET als publiceerbaar',
+    unchosenMetBeeld.hasContent === false && unchosenMetBeeld.isAwaitingChoice,
+  );
+  const beeldZonderKeuze = resolveLibraryContentSignal(
+    { generatedImageUrls: ['https://example.test/hero.png'] },
+    0,
+  );
+  check('beeld zónder openstaande keuze telt wél', beeldZonderKeuze.hasContent === true);
 
   const chosen = resolveLibraryContentSignal({ settings: { structuredVariant: validVariant() } }, 0);
   check('gekozen variant → ready', chosen.contentState === 'ready' && chosen.hasContent);
-  check('gekozen variant heeft geen hint', chosen.contentHint === null);
+  check('gekozen variant heeft geen signaal', chosen.contentSignal === null);
   check('gekozen variant levert een woordentelling', (chosen.wordCount ?? 0) > 0);
 
   const components = resolveLibraryContentSignal({ settings: {} }, 3);
@@ -92,7 +119,7 @@ console.log('\n1. De vier staten door de lijst-accessor');
 
   const empty = resolveLibraryContentSignal({ settings: {} }, 0);
   check('leeg → empty', empty.contentState === 'empty' && !empty.hasContent);
-  check('leeg houdt de oude hint', empty.contentHint === 'No content generated');
+  check('leeg geeft het no-content-token', empty.contentSignal?.token === 'no-content');
 
   const visualsOnly = resolveLibraryContentSignal(
     { settings: {}, generatedImageUrls: ['https://cdn/a.jpg'] },
@@ -136,20 +163,28 @@ console.log('\n3. Het stoplicht — de eigenlijke bug van kruising #2');
   check('gepubliceerd blijft groen', gepubliceerd === 'green');
 }
 
-console.log('\n4. Het filter-token');
+console.log('\n4. Het filter-token — nu uit de bron, niet uit de tekst');
 {
   check(
-    'de nieuwe hint levert het variant-unchosen-token',
-    readinessHintTokens('2 versions — choose one').includes('variant-unchosen'),
+    'ongekozen varianten leveren het variant-unchosen-token',
+    readinessSignalTokens([{ token: 'variant-unchosen', count: 2 }]).includes('variant-unchosen'),
   );
   check(
     'en NIET het no-content-token',
-    !readinessHintTokens('2 versions — choose one').includes('no-content'),
+    !readinessSignalTokens([{ token: 'variant-unchosen', count: 2 }]).includes('no-content'),
   );
   check(
-    'de oude hint blijft no-content',
-    readinessHintTokens('No content generated · Not reviewed').join(',') ===
+    'meerdere signalen behouden hun volgorde',
+    readinessSignalTokens([{ token: 'no-content' }, { token: 'not-reviewed' }]).join(',') ===
       'no-content,not-reviewed',
+  );
+  // De oude implementatie leidde tokens af uit de Engelse zin met
+  // `lower.includes('choose')`. Deze case bewijst waarom dat brak: de
+  // Nederlandse formulering bevat het woord "choose" nergens.
+  check(
+    'een vertaalde formulering breekt het filter niet meer',
+    readinessSignalTokens([{ token: 'variant-unchosen', count: 2 }]).join(',') ===
+      'variant-unchosen',
   );
 }
 
@@ -161,6 +196,71 @@ console.log('\n5. De marker-component lekt niet naar buiten');
 }
 
 // ─── Deel 2: echte rijen, echte code-paden ──────────────────────────────────
+
+async function runI18nChecks(): Promise<void> {
+  console.log('\n6. De hint-tekst door de ECHTE i18n-laag');
+  const { default: i18next } = await import('i18next');
+  const { default: resourcesToBackend } = await import('i18next-resources-to-backend');
+  const { formatReadinessHint } = await import('../../src/features/campaigns/lib/readiness-hint');
+
+  async function tFor(locale: 'en' | 'nl', loadNs: boolean) {
+    const inst = i18next.createInstance();
+    await inst
+      .use(
+        resourcesToBackend(
+          (language: string, namespace: string) =>
+            import(`../../src/lib/ui-i18n/locales/${language}/${namespace}.ts`),
+        ),
+      )
+      .init({
+        lng: locale,
+        fallbackLng: 'en',
+        ns: loadNs ? ['campaigns-content-library'] : ['common'],
+        defaultNS: loadNs ? 'campaigns-content-library' : 'common',
+      });
+    if (loadNs) await inst.loadNamespaces(['campaigns-content-library']);
+    return inst.t.bind(inst);
+  }
+
+  const signalen = [
+    { token: 'variant-unchosen' as const, count: 2 },
+    { token: 'not-reviewed' as const },
+  ];
+
+  const en = formatReadinessHint(await tFor('en', true), signalen);
+  check('EN: de bronformulering blijft ongewijzigd', en === '2 versions — choose one · Not reviewed', String(en));
+
+  const nl = formatReadinessHint(await tFor('nl', true), signalen);
+  check('NL: de kaart spreekt Nederlands', nl === '2 versies — kies er een · Niet beoordeeld', String(nl));
+
+  const enkelvoudNl = formatReadinessHint(await tFor('nl', true), [{ token: 'variant-unchosen', count: 1 }]);
+  check('NL: enkelvoud pakt de _one-vorm', enkelvoudNl === '1 versie — kies deze', String(enkelvoudNl));
+
+  // De namespaces laden lazy. Vóór die load is de defaultValue letterlijk wat
+  // er op het scherm staat — dus die moet de Engelse bron zijn, niet de sleutel.
+  const koud = formatReadinessHint(await tFor('nl', false), signalen);
+  check(
+    'zonder geladen namespace valt hij terug op Engels, niet op de sleutel',
+    koud === '2 versions — choose one · Not reviewed',
+    String(koud),
+  );
+
+  const statusOnbekend = formatReadinessHint(await tFor('nl', true), [
+    { token: 'status', status: 'IN_REVIEW' },
+  ]);
+  check('NL: bekende status krijgt een label', statusOnbekend === 'In review', String(statusOnbekend));
+
+  const statusRaar = formatReadinessHint(await tFor('nl', true), [
+    { token: 'status', status: 'SOMETHING_NEW' },
+  ]);
+  check(
+    'onbekende status toont zijn rauwe waarde i.p.v. te verdwijnen',
+    statusRaar === 'Status: SOMETHING_NEW',
+    String(statusRaar),
+  );
+
+  check('publicatie-klaar item heeft geen hint', formatReadinessHint(await tFor('en', true), []) === null);
+}
 
 async function runDbChecks(): Promise<void> {
   const { prisma } = await import('../../src/lib/prisma');
@@ -209,7 +309,7 @@ async function runDbChecks(): Promise<void> {
     },
   ];
 
-  console.log('\n6. Echte rijen door de ECHTE route-query (kruising #2)');
+  console.log('\n7. Echte rijen door de ECHTE route-query (kruising #2)');
   const found: Record<string, Row> = {};
   for (const c of cases) {
     const row = await pick(c.where);
@@ -224,11 +324,9 @@ async function runDbChecks(): Promise<void> {
       where: { id: row.id },
       include: {
         components: {
-          where: {
-            generatedContent: { not: null },
-            NOT: { generatedContent: '' },
-            componentType: { notIn: ['image', 'video'] },
-          },
+          // Dezelfde constante als de route — een kopie hier zou de drift die
+          // deze smoke moet vangen juist onzichtbaar maken.
+          where: TEXT_COMPONENT_WHERE,
           select: { id: true },
           take: 1,
         },
@@ -245,11 +343,11 @@ async function runDbChecks(): Promise<void> {
     const oudeHint = oud ? null : 'No content generated';
     console.log(
       `      oud: hasContent=${oud}, hint=${JSON.stringify(oudeHint)}` +
-        `  |  nieuw: hasContent=${signal.hasContent}, hint=${JSON.stringify(signal.contentHint)}`,
+        `  |  nieuw: hasContent=${signal.hasContent}, signaal=${JSON.stringify(signal.contentSignal)}`,
     );
   }
 
-  console.log('\n7. Dezelfde rijen door de ECHTE Brand-Assistant-tool (kruising #3)');
+  console.log('\n8. Dezelfde rijen door de ECHTE Brand-Assistant-tool (kruising #3)');
   const tool = readTools.find((t) => t.name === 'read_deliverable_content');
   if (!tool) {
     check('read_deliverable_content bestaat', false);
@@ -282,10 +380,56 @@ async function runDbChecks(): Promise<void> {
     }
   }
 
+  console.log('\n9. Dezelfde rijen door de PUBLIEKE reader — MCP + /api/v1/deliverable (kruising #23)');
+  const { getDeliverableContent } = await import('../../src/lib/content/deliverable-content');
+
+  for (const [label, row] of Object.entries(found)) {
+    const result = await getDeliverableContent(row.workspaceId, row.id);
+    if (!result.ok) {
+      check(`${label}: publieke reader vindt de rij`, false, result.code);
+      continue;
+    }
+    const d = result.deliverable;
+
+    if (label === 'awaiting-choice') {
+      check('publiek/ongekozen: contentState = awaiting-choice', d.contentState === 'awaiting-choice');
+      check('publiek/ongekozen: geen ongekozen versie prijsgegeven', d.text === null);
+      check('publiek/ongekozen: noemt het aantal versies', d.variantOptionCount > 0);
+    } else if (label === 'empty') {
+      check('publiek/leeg: contentState = empty', d.contentState === 'empty');
+      check('publiek/leeg: geen tekst', d.text === null);
+    } else {
+      check(`publiek/${label}: contentState = ready`, d.contentState === 'ready', d.contentState);
+      check(`publiek/${label}: tekst is niet leeg`, (d.text ?? '').trim().length > 0);
+      // Dít is de bug van #23: wie alleen `components` las kreeg een ánder
+      // antwoord dan de waarheid — leeg bij een pure keten-B-pagina, en de
+      // verouderde pre-flip-tekst bij een pagina die ná een GEO-flip zowel
+      // componenten als een gekozen variant heeft.
+      if (label.includes('keten B')) {
+        const alleenComponenten = d.components
+          .map((c) => (c.text ?? '').trim())
+          .filter((t) => t.length > 0)
+          .join('\n\n');
+        check(
+          'publiek/keten B: alleen `components` lezen geeft een ánder antwoord',
+          alleenComponenten !== (d.text ?? ''),
+          `components=${d.components.length} (${alleenComponenten.length} tekens), text=${(d.text ?? '').length} tekens`,
+        );
+      }
+    }
+  }
+
   await prisma.$disconnect();
 }
 
 async function main(): Promise<void> {
+  try {
+    await runI18nChecks();
+  } catch (err) {
+    fail++;
+    console.log(`  ✗ i18n-deel faalde — ${err instanceof Error ? err.message : String(err)}`);
+  }
+
   if (process.env.SKIP_DB === '1') {
     console.log('\n(DB-deel overgeslagen — SKIP_DB=1)');
   } else {

@@ -3,9 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import {
   deriveReadinessBucket,
-  readinessHintTokens,
+  readinessSignalTokens,
   resolveLibraryContentSignal,
+  type ReadinessSignal,
 } from "@/lib/content/library-readiness";
+import { TEXT_COMPONENT_WHERE } from "@/lib/content/resolve-deliverable-content";
 
 // Content type → category mapping
 const TYPE_CATEGORY_MAP: Record<string, string> = {
@@ -167,11 +169,7 @@ export async function GET(request: NextRequest) {
         // `resolveDeliverableContentSignal` heeft alleen de telling nodig.
         // image/video dragen hun PROMPT in `generatedContent`, geen tekst.
         components: {
-          where: {
-            generatedContent: { not: null },
-            NOT: { generatedContent: "" },
-            componentType: { notIn: ["image", "video"] },
-          },
+          where: TEXT_COMPONENT_WHERE,
           select: { id: true },
           take: 1,
         },
@@ -200,12 +198,18 @@ export async function GET(request: NextRequest) {
       // green. The status check above covers both cases.
       const isPublishReady = isApproved;
 
-      // Build a human-readable hint about what's missing
-      const hints: string[] = [];
-      if (signal.contentHint) hints.push(signal.contentHint);
-      if (!isPipelineComplete && signal.hasContent) hints.push("Pipeline incomplete");
-      if (!isApproved) hints.push(d.approvalStatus === "DRAFT" ? "Not reviewed" : `Status: ${d.approvalStatus ?? "DRAFT"}`);
-      const readinessHint = hints.length > 0 ? hints.join(" · ") : null;
+      // Wat er nog mist, als tokens — de UI maakt er de zin van in de taal van
+      // de gebruiker. Zie ReadinessSignal voor waarom dit geen Engelse tekst meer is.
+      const readinessSignals: ReadinessSignal[] = [];
+      if (signal.contentSignal) readinessSignals.push(signal.contentSignal);
+      if (!isPipelineComplete && signal.hasContent) readinessSignals.push({ token: "pipeline-incomplete" });
+      if (!isApproved) {
+        readinessSignals.push(
+          d.approvalStatus === "DRAFT"
+            ? { token: "not-reviewed" }
+            : { token: "status", status: d.approvalStatus ?? "DRAFT" },
+        );
+      }
 
       return {
         id: d.id,
@@ -232,7 +236,7 @@ export async function GET(request: NextRequest) {
         /** `awaiting-choice` = gegenereerd, nog geen variant gekozen. Voortgang
          *  voor het stoplicht, maar géén publiceerbare payload. */
         contentState: signal.contentState,
-        readinessHint,
+        readinessSignals,
         // Extra bookkeeping used only for post-filtering; stripped below
         _isScheduled: isScheduled,
         _isPublished: d.approvalStatus === "PUBLISHED",
@@ -258,7 +262,7 @@ export async function GET(request: NextRequest) {
         if (!readinessList.includes(bucket)) return false;
       }
       if (readinessHintsList.length > 0) {
-        const tokens = readinessHintTokens(it.readinessHint);
+        const tokens = readinessSignalTokens(it.readinessSignals);
         const matches = readinessHintsList.some((req) => tokens.includes(req));
         if (!matches) return false;
       }

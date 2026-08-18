@@ -28,6 +28,7 @@
     "smoke:claw-security": "tsx scripts/smoke-tests/claw-security-hardening.ts",
     "smoke:security-residual": "tsx scripts/smoke-tests/security-residual.ts",
     "smoke:lp-retention": "node --env-file-if-exists=.env.local node_modules/.bin/tsx scripts/dev/lp-retention-smoke.ts",
+    "smoke:i18n-namespaces": "tsx scripts/smoke-tests/i18n-namespace-reachability.ts",
     "smoke:lp-generation-abort": "tsx scripts/dev/lp-generation-abort-smoke.ts",
     "smoke:mcp-toolset": "node --env-file-if-exists=.env.local node_modules/.bin/tsx scripts/smoke-tests/mcp-connector-toolset.ts",
     "eval:brandstyle-golden": "tsx scripts/eval/brandstyle-golden-set/run.ts",
