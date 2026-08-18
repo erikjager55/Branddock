@@ -51,6 +51,9 @@ async function main(): Promise<void> {
     '../../src/lib/content/update-deliverable-settings'
   );
   const { patchHeroVisualUrl } = await import('../../src/lib/deliverable/patch-hero-visual');
+  const { MIN_PERSISTABLE_PARTIAL, partialWouldShrink } = await import(
+    '../../src/lib/landing-pages/partial-variant-persist'
+  );
 
   const marker = `settings-write-smoke-${Date.now()}`;
   const createdOrgIds: string[] = [];
@@ -189,6 +192,73 @@ async function main(): Promise<void> {
       heroPatch.patched === true && JSON.stringify(heroSettings).includes('hero.png'),
       JSON.stringify(heroPatch),
     );
+
+    console.log('\n── D. Deel-resultaat na een afgebroken run ────────────────');
+
+    // De regel zelf, zonder database.
+    check('drempel staat op 2', MIN_PERSISTABLE_PARTIAL === 2);
+    check('4 bestaand vs 1 inkomend = krimp', partialWouldShrink({ structuredVariantOptions: [1, 2, 3, 4] }, 1));
+    check('2 bestaand vs 2 inkomend = geen krimp', !partialWouldShrink({ structuredVariantOptions: [1, 2] }, 2));
+    check('geen bestaande set = geen krimp', !partialWouldShrink({}, 1));
+    check('niet-array wordt genegeerd i.p.v. te gooien', !partialWouldShrink({ structuredVariantOptions: 'kapot' }, 1));
+
+    /**
+     * De regel zoals hij echt draait: binnen de mutate-callback van de helper,
+     * op de verse waarde onder rijlock. `guard: false` zet precies de guard-tak
+     * uit — dat is de mutatie waarmee we bewijzen dat deze scene discrimineert.
+     */
+    async function persistPartial(id: string, incoming: number[], guard: boolean): Promise<boolean> {
+      const written = await updateDeliverableSettings(id, (current) => {
+        if (guard && partialWouldShrink(current, incoming.length)) return null;
+        return { ...current, structuredVariantOptions: incoming };
+      });
+      return written !== null;
+    }
+
+    const partialId = await seedDeliverable('partial');
+    await updateDeliverableSettings(partialId, (current) => ({
+      ...current,
+      structuredVariantOptions: [1, 2, 3, 4],
+      puckData: { content: [], root: { title: 'niet aankomen' } },
+    }));
+
+    const blocked = await persistPartial(partialId, [9], true);
+    const afterBlocked = await readSettings(partialId);
+    check('deel-resultaat (1) vervangt een bestaande set (4) NIET', blocked === false);
+    check(
+      'de vier varianten staan er nog',
+      (afterBlocked.structuredVariantOptions as unknown[]).length === 4,
+    );
+    check(
+      'puckData is ongemoeid gebleven',
+      JSON.stringify(afterBlocked.puckData ?? {}).includes('niet aankomen'),
+    );
+
+    const equal = await persistPartial(partialId, [1, 2, 3, 4], true);
+    check('deel-resultaat dat niet krimpt mag wel schrijven', equal === true);
+
+    // Een VOLTOOIDE run mag wel krimpen — de gebruiker vroeg dan om minder.
+    const shrankOnPurpose = await updateDeliverableSettings(partialId, (current) => ({
+      ...current,
+      structuredVariantOptions: [7, 8],
+    }));
+    check('een voltooide run mag de set wel verkleinen', shrankOnPurpose !== null);
+
+    // MUTATIETEST — zonder guard MOET de vollere set sneuvelen. Blijft hij
+    // staan, dan bewijst de scene hierboven niets.
+    const mutId = await seedDeliverable('partial-mut');
+    await updateDeliverableSettings(mutId, (current) => ({
+      ...current,
+      structuredVariantOptions: [1, 2, 3, 4],
+    }));
+    await persistPartial(mutId, [9], false);
+    const afterMutation = await readSettings(mutId);
+    check(
+      'MUTATIETEST — zonder guard wordt de vollere set wel gewist (anders meet deze smoke niets)',
+      (afterMutation.structuredVariantOptions as unknown[]).length === 1,
+      `lengte na mutatie: ${(afterMutation.structuredVariantOptions as unknown[]).length}`,
+    );
+
   } finally {
     for (const organizationId of createdOrgIds) {
       try {

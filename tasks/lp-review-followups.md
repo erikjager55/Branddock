@@ -270,25 +270,48 @@ route-interne functies te exporteren, en een test tegen een nagebouwde kopie zou
 niets bewijzen. `npm run smoke:lp-generation-abort` 13/13 (regressie op de
 client-registry), `tsc` 0, `lint` 0.
 
-**Beslissing van Erik, 2026-08-18** — de keuze van 17-08 om bij een abort níets te
-persisteren is **herzien**: er wordt bewaard **vanaf 2 varianten**. De grond onder
-de oude keuze was het openstaande read-modify-write-venster, en dat is gesloten met
-de rijlock uit #299. Onder de twee is bewaren duurder dan weggooien (1 + 2 = 3
-calls tegen 2), vanaf twee heeft de gebruiker een echte vergelijking. **Nog niet
-gebouwd**: de implementatie ligt op `claude/sse-abort-disconnect` (`4a8f12b`,
-`MIN_PERSISTABLE_PARTIAL`) en hoort bij de consolidatie van die tak — zie de
-notitie hieronder.
+**Beslissing van Erik, 2026-08-18 — ✅ GEBOUWD.** De keuze van 17-08 om bij een
+abort níets te persisteren is herzien: er wordt bewaard **vanaf 2 varianten**. De
+grond onder de oude keuze was het openstaande read-modify-write-venster, en dat is
+gesloten met de rijlock uit #299. Onder de twee is bewaren duurder dan weggooien
+(1 + 2 = 3 calls tegen 2), vanaf twee heeft de gebruiker een echte vergelijking.
+Zie §Tak-consolidatie hieronder.
 
-**Openstaand uit die tak** — hij bevat óók `merge-deliverable-settings.ts`, een
-tweede oplossing voor dezelfde race als `update-deliverable-settings.ts` (#299):
-`jsonb ||` tegenover `SELECT … FOR UPDATE`, met woordelijk dezelfde diagnose in de
-header. Let op: #299 verwierp expliciet `jsonb_set` omdat "de call-sites hele
-objecten mergen" — maar `jsonb ||` mergt juist wél hele objecten, dus die
-afwijzingsgrond raakt deze variant niet. Advies bij de consolidatie: één deur
-houden (de gemergde helper, 11 call-sites) en de guard van de tak erop porten via
-`mutate → null`. Van de acht bestanden op die tak zijn er **vijf al inhoudelijk
-identiek aan main** ondanks niet-voorouder-commits — squash-merge-effect; de tak
-is in werkelijkheid drie bestanden groot.
+## ✅ Tak-consolidatie `claude/sse-abort-disconnect` — afgerond 2026-08-18
+
+Die tak hoorde bij PR #287, die op 17-08 **squash**-gemerged is; daarna zijn er
+commits bovenop gezet. Daardoor leek hij zeven commits groot terwijl **vijf van de
+acht bestanden inhoudelijk al identiek aan main** waren. Alleen een contentdiff
+laat dat zien — een commit-lijst niet.
+
+**Eén deur, niet twee.** De tak bevatte `merge-deliverable-settings.ts`: een tweede
+oplossing voor dezelfde race als `update-deliverable-settings.ts` (#299), met
+woordelijk dezelfde diagnose in de header — `jsonb ||` tegenover
+`SELECT … FOR UPDATE`. Twee sessies, dezelfde bug, twee medicijnen. Bewust **niet**
+overgenomen: de gemergde helper dekt 11 call-sites en laat de nieuwe waarde in JS
+berekenen. Wel het waard om vast te leggen: #299 verwierp expliciet `jsonb_set`
+omdat "de call-sites hele objecten mergen" — maar `jsonb ||` mergt juist wél hele
+objecten, dus díe afwijzingsgrond raakte deze variant nooit. De keuze staat op
+call-site-dekking en composeerbaarheid, niet op die redenering.
+
+**Wat er wél is overgenomen** — als gedrag, niet als code, want `route.ts` is sinds
+die tak flink veranderd (#299 + #322):
+- `MIN_PERSISTABLE_PARTIAL` en de krimp-guard staan nu in
+  [`src/lib/landing-pages/partial-variant-persist.ts`](../src/lib/landing-pages/partial-variant-persist.ts).
+  Apart module omdat het een productregel codeert, en omdat het zo toetsbaar is
+  zonder de route te booten.
+- De guard draait **binnen** de `mutate`-callback van de helper, dus op de verse
+  waarde ónder de rijlock. Buiten de lock zou er een venster zitten waarin de set
+  alsnog groeit tussen check en write.
+- `abortedEarly` markeert de set in `structuredGenerationMeta`, zodat een consument
+  een deel-resultaat kan herkennen.
+
+**Bewijs**: `SMOKE_DB=1 npm run smoke:settings-write` **19/19** (was 8/8), met een
+nieuwe sectie D. Inclusief mutatietest: met de guard-tak uit móet de vollere set
+sneuvelen — doet hij dat niet, dan meet de scène niets en faalt de smoke.
+
+⚠️ **De tak `claude/sse-abort-disconnect` is hiermee volledig achterhaald** en kan
+weg. Niet zelf verwijderd: hij is niet van deze sessie.
 
 ## Bewuste niet-fixes (gedocumenteerd, geen actie)
 - **`cta_click`-events**: uit het publieke `/api/t`-enum gehaald (spoofbaar);
@@ -304,8 +327,8 @@ is in werkelijkheid drie bestanden groot.
       workspace met >10k events/maand — gebouwd 2026-08-17 (ADR + cron + smoke 47/47)
 - [~] Robuustheid-items opgepakt in een reguliere hardening-sessie — **grotendeels**:
       de SSE-dekkingsgaten zijn gedicht (18-08, §Dekkingsgaten). Nog open: Turnstile
-      (bewust gegate op waargenomen spam-druk), het niet-abortbare voorwerk vóór de
-      stream, en `MIN_PERSISTABLE_PARTIAL` uit de tak-consolidatie. Het registry-type
+      (bewust gegate op waargenomen spam-druk) en het niet-abortbare voorwerk vóór de
+      stream. De tak-consolidatie is afgerond. Het registry-type
       is verhuisd naar [`build-heap-investigation`](build-heap-investigation.md)
 
 # Out of scope

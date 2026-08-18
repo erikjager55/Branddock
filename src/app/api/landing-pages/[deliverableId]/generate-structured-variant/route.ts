@@ -46,6 +46,10 @@ import {
 } from "@/lib/landing-pages/pattern-choice";
 import { trackAICallStart, trackAICallComplete } from "@/lib/learning-loop/call-tracker";
 import { isPuckRenderable } from "@/lib/landing-pages/webpage-types";
+import {
+  MIN_PERSISTABLE_PARTIAL,
+  partialWouldShrink,
+} from "@/lib/landing-pages/partial-variant-persist";
 import { updateDeliverableSettings } from "@/lib/content/update-deliverable-settings";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
@@ -384,6 +388,12 @@ async function persistVariantOptions(args: {
   count: number;
   archetypeResult: Awaited<ReturnType<typeof ensureBrandArchetype>>;
   layoutResult: Awaited<ReturnType<typeof ensureLayoutStyle>>;
+  /**
+   * Deze set komt uit een AFGEBROKEN run en is dus mogelijk incompleet.
+   * Zet de guard aan die voorkomt dat hij een vollere set overschrijft, en
+   * markeert het resultaat als deel-resultaat.
+   */
+  abortedEarly?: boolean;
 }): Promise<GenerationResponsePayload> {
   const { results, count, archetypeResult, layoutResult } = args;
   const variants = results.map((r) => r.variant);
@@ -407,7 +417,15 @@ async function persistVariantOptions(args: {
 
   // Verse settings onder rijlock: de snapshot van vóór deze generatie is
   // inmiddels minuten oud en zou een autosave uit dat venster wissen.
-  await updateDeliverableSettings(args.deliverableId, (current) => ({
+  //
+  // De krimp-guard hieronder draait bewust BINNEN de callback: hij moet de
+  // verse, gelockte waarde vergelijken. Buiten de lock zou hij een venster
+  // hebben waarin de set alsnog kan groeien tussen check en write.
+  const written = await updateDeliverableSettings(args.deliverableId, (current) => {
+    if (args.abortedEarly === true && partialWouldShrink(current, variants.length)) {
+      return null;
+    }
+    return {
     ...current,
     structuredVariantOptions: variants,
     structuredVariantLabels: variantLabels,
@@ -416,6 +434,7 @@ async function persistVariantOptions(args: {
       count,
       requestedCount: count,
       deliveredCount: variants.length,
+      ...(args.abortedEarly === true ? { abortedEarly: true } : {}),
       inputTokens: totalInputTokens + (archetypeResult.inputTokens ?? 0),
       outputTokens: totalOutputTokens + (archetypeResult.outputTokens ?? 0),
       archetypeClassified: archetypeResult.classified,
@@ -425,7 +444,15 @@ async function persistVariantOptions(args: {
       layoutStyle: layoutResult.layoutStyle,
       layoutStyleConfidence: layoutResult.confidence ?? null,
     },
-  }));
+  };
+  });
+
+  if (written === null) {
+    console.warn(
+      "[generate-structured-variant] deel-resultaat (%d variant(en)) NIET bewaard — er stond al een vollere set",
+      variants.length,
+    );
+  }
 
   // Cache-invalidatie per CLAUDE.md API conventies (verplicht na mutatie)
   invalidateCache(cacheKeys.prefixes.studio(args.workspaceId));
@@ -686,7 +713,7 @@ export async function POST(
       generationModel,
       postArgs,
       signal: request.signal,
-      persist: (results) =>
+      persist: (results, opts) =>
         persistVariantOptions({
           deliverableId,
           workspaceId,
@@ -695,6 +722,7 @@ export async function POST(
           count,
           archetypeResult,
           layoutResult,
+          abortedEarly: opts?.abortedEarly,
         }),
     });
   }
@@ -778,7 +806,10 @@ function streamSequentialGeneration(args: {
    * component unmount en de client aborteert de fetch.
    */
   signal: AbortSignal;
-  persist: (results: GenerationResult[]) => Promise<GenerationResponsePayload>;
+  persist: (
+    results: GenerationResult[],
+    opts?: { abortedEarly?: boolean },
+  ) => Promise<GenerationResponsePayload>;
 }): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -904,23 +935,37 @@ function streamSequentialGeneration(args: {
 
         await Promise.allSettled(trackingPromises);
 
-        // Weggelopen client: niets persisten. Bewuste productkeuze — de al
-        // betaalde varianten gaan verloren, de database blijft ongemoeid.
+        // Weggelopen client: bewaren wat af is, mits het bruikbaar is.
         //
-        // De oorspronkelijke motivering noemde óók het read-modify-write-venster
-        // (een minuten-oude snapshot die een autosave zou overschrijven). Dat
-        // venster is inmiddels dicht: `persistVariantOptions` leest vers binnen
-        // een transactie. Persisteren ná een abort zou dus niet langer gevaarlijk
-        // zijn — het gebeurt niet omdat het niet gewenst is, niet omdat het niet
-        // kan.
+        // Tot 18-08 werd hier álles weggegooid. Die keuze rustte op het
+        // read-modify-write-venster — een minuten-oude snapshot die een
+        // autosave zou overschrijven — en dat venster is dicht sinds
+        // `updateDeliverableSettings` onder `SELECT … FOR UPDATE` leest. De
+        // resterende afweging is puur economisch, zie MIN_PERSISTABLE_PARTIAL.
         if (args.signal.aborted) {
           // `trackingPromises.length`, niet `results.length`: de slot waarin de
           // abort werd opgemerkt is wél gegenereerd en geboekt, maar nooit in
-          // `results` gepusht. Loggen op results zou minder weggegooid werk
-          // melden dan er betaald is.
-          console.warn(
-            `[generate-structured-variant] client disconnected — paid for ${trackingPromises.length} generation(s), discarded all, nothing persisted`,
-          );
+          // `results` gepusht. Loggen op results zou minder betaald werk
+          // melden dan er is afgerekend.
+          if (results.length < MIN_PERSISTABLE_PARTIAL) {
+            console.warn(
+              `[generate-structured-variant] client disconnected — paid for ${trackingPromises.length} generation(s), only ${results.length} completed (< ${MIN_PERSISTABLE_PARTIAL}), not persisted`,
+            );
+            return;
+          }
+          try {
+            await args.persist(results, { abortedEarly: true });
+            console.warn(
+              `[generate-structured-variant] client disconnected — persisted ${results.length} of ${args.count} variant(s) (paid for ${trackingPromises.length})`,
+            );
+          } catch (persistError) {
+            // Niet fataal: de client is er niet meer om een fout te ontvangen,
+            // en de volgende run genereert gewoon opnieuw.
+            console.error(
+              "[generate-structured-variant] persisteren van deel-resultaat na disconnect faalde",
+              persistError,
+            );
+          }
           return;
         }
 
