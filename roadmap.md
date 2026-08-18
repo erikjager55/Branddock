@@ -176,7 +176,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 |---|---|---|---|
 | [`serverless-hardening-jobs`](tasks/done/serverless-hardening-jobs.md) | A1 — fire-and-forget onboarding-pipelines → `AgentJob`-queue | representant done + 3-5d rest | ✅ **done 2026-07-06** (PR #78 Tier 3 = laatste deel; Fase-5-smoke → smoke-batch) |
 | [`serverless-seo-decompose`](tasks/done/serverless-seo-decompose.md) | SEO 8-staps-pipeline decompose → resumable queued job (A3-deel-2) | 1-2d | ✅ **done 2026-07-06** (PR #80 + resumable-fix `0705eb87`; deploy-smoke → smoke-batch) |
-| [`seo-pipeline-speedup`](tasks/seo-pipeline-speedup.md) | SEO 8-staps-pipeline versnellen (kwaliteit behouden) | — | ⏸️ **meting-gated** — code gemerged 2026-07-06 (PR #83 + round 2 `3be8f487`); deploy-meting beslist Fase 3/4 |
+| [`seo-pipeline-speedup`](tasks/done/seo-pipeline-speedup.md) | SEO 8-staps-pipeline versnellen (kwaliteit behouden) | — | ✅ **af 18-08** — snelheid stopte bewust op 7,5 min (Fase 4b NO-GO); Fase 3 landde als bugfix: variant B kreeg nul research (changelog #480) |
 
 ### Sprint-volgorde
 
