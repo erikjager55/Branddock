@@ -1,10 +1,11 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> **Laatst bijgewerkt: 2026-08-17** (na de campagnewizard-sessie: #279-#284 gemerged,
-> vijf productiebugs weg, wizard voor het eerst end-to-end getest. Daarna een
-> takenlijst-opruiming: 39 afgeronde task-files naar `tasks/done/`, `kpi-fase0` +
-> `marketing-homepage-v2` alsnog opgenomen, research-stack-bundel in `roadmap.md` afgesloten).
+> **Laatst bijgewerkt: 2026-08-18** (drie parallelle sessies, zeven PR's naar main:
+> de CSP-enforce-flip is af en `security-residual-hardening` daarmee dicht (#294),
+> gepubliceerde landingspagina's hadden géén `<title>` en geen meta-description (#301),
+> plus van de andere sessies de SSE-abort (#287), de twee content-accessor-productkeuzes
+> (#288), de golden-set-analyse (#289) en een sectie-edit-fix (#295)).
 
 ---
 
@@ -26,6 +27,47 @@ sporen dragen dat:
 **Wat er niét meer speelt:** het credit-model is compleet (bouw, Stripe-config,
 smokes). Het enige dat rest is jouw schakelmoment: `NEXT_PUBLIC_TOPUP_ENABLED=true`
 plus één echte betaal-smoke.
+
+---
+
+## Wat er landde (2026-08-18)
+
+**De CSP-enforce-flip is af** (#294, changelog 476) en daarmee is `security-residual-hardening`
+— de restscope van de audit uit juni — definitief dicht. `script-src` staat op prod nu op
+`'nonce-…' 'strict-dynamic'`, zonder `'unsafe-inline'` en `'unsafe-eval'`; zes routes gesweept
+met een browser, nul violations.
+
+De opgegeven gate hield geen stand. "Gated op prod-Report-Only-data" ging uit van bruikbare
+rapporten, maar de meetfase stempelde bewust géén nonce — dus violeerde élk script op élke
+pagina en waren de rapporten vrijwel volledig ruis. De collector persisteert niet, Vercel
+bewaart runtime-logs dagen in plaats van een maand, en de opgeslagen CLI-token bleek verlopen.
+De beslissing is genomen op een lokale meting tegen een echte productiebuild, met headers die
+geverifieerd identiek zijn aan die van `branddock.app`.
+
+Twee ontwerpaannames sneuvelden daarbij. **Hashes voor al het publieke terrein kan niet**: Next
+zet per pagina tientallen inline scripts neer die de RSC-payload dragen, en die inhoud ís de
+pagina-inhoud — onhashbaar. **En het argument dat nonce-propagatie static/ISR zou kosten bleek
+niet te bestaan**: alles rendert al dynamic. Wat overbleef als echt obstakel staat los van
+rendering — het bevroren `compiledHtml`-artifact, waar een per-request nonce de bytes nooit
+bereikt. Vandaar hashes, alleen op `/p/…`.
+
+**Gepubliceerde landingspagina's hadden géén `<title>` en geen meta-description** (#301,
+changelog 477) — opgevallen tijdens diezelfde prod-verificatie. Niet de verkeerde titel:
+helemaal geen. Oorzaak: een metadata-sleutel met waarde `undefined` **wist** de geërfde
+layout-default, en het fail-soft-vangnet dat dat moest voorkomen was dode code omdat de route
+altijd een canonical meegeeft. De smoke dekte het af in plaats van het te vangen —
+`result.title === undefined` is waar bij zowel "sleutel afwezig" als "sleutel aanwezig met
+waarde undefined". Titel en description komen nu uit de pagina zelf (hero-kop en -`sub`);
+`Deliverable.title` bleek onbruikbaar omdat het het content-type-label bevat ("Landing Page").
+
+⚠️ De rode draad van vandaag: **twee keer bewees een test iets anders dan hij leek te bewijzen**
+— een Report-Only-meting waarin alles violeert meet niets, en een assert op een wáárde in
+plaats van op sleutel-aanwezigheid dekt precies de bug af die hij moest vangen. Beide staan in
+`gotchas.md`.
+
+**Van de andere sessies**: SSE-abort zodat weglopen tijdens een generatie geen tokens meer kost
+(#287), de twee content-accessor-productkeuzes verwerkt (#288), de golden-set-analyse (#289) en
+een sectie-edit-fix met een dichtgezet race-venster (#295).
 
 ---
 
@@ -113,27 +155,31 @@ nu 71-98 met uitleg. Mails herschreven naar Nederlands, één CTA per stuk.
 **1. 💳 TOPUP aanzetten.** Nog steeds het enige met directe omzet-impact, en er is geen
 technisch werk meer — alleen `NEXT_PUBLIC_TOPUP_ENABLED=true` en één betaal-smoke.
 
-**2. 🧹 [`lp-review-followups`](tasks/lp-review-followups.md) — de retentie-items.**
-Naar voren gehaald omdat ze als enige tijdgevoelig zijn en met de dag duurder worden:
-`PageEvent` groeit onbegrensd en `FormSubmission` bevat PII zonder wisroutine. Dat is
-geen feature-werk maar een schuld die zichzelf oplaadt.
+**2. 🧹 [`lp-review-followups`](tasks/lp-review-followups.md) — de resterende
+robuustheid-items.** De retentie-items (#286) en de SSE-abort (#287) zijn af; wat overblijft
+is een hardening-sessie. Twee daarvan zijn echt: het `persistVariantOptions`-venster kan een
+concurrent autosave clobberen, en het registry-type dwong de CI-heap naar 8GB.
 
-**3. 🧩 [`content-chain-accessor`](tasks/content-chain-accessor.md) — de laatste twee
-kruisingen.** Fase 1 en 3 zijn af, fase 2 op #2 en #3 na. Die twee vragen géén techniek maar
-een productkeuze van jou: wat toont het Content Library-stoplicht, en wat zegt de Brand
-Assistant, bij `structured-unchosen`? Zie Open beslissingen #1. Zodra je kiest is het een
-halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
+**3. 📉 [`static-rendering-regressie`](tasks/static-rendering-regressie.md) — nieuw, 18-08.**
+Élke pagina-route rendert `ƒ (Dynamic)`; alleen twee icon-PNG's zijn statisch. Oorzaak is één
+`await cookies()` in de root layout (UI-locale), waardoor `generateStaticParams` op de
+marketing-slugs en `revalidate = 604800` op de klant-landingspagina's al maanden niets
+opleveren. Bewust meet-eerst opgezet: de omvang van de winst bepaalt of een fix loont, en
+"bewust accepteren en de misleidende directives weghalen" is een geldige uitkomst.
 
 ---
 
 ## Open beslissingen (blokkeren werk)
 
-1. **Content-accessor `structured-unchosen`** — twee productkeuzes, geen techniek:
-   het Content Library-stoplicht toont rood + "No content generated" op een vólle pagina,
-   en de Brand Assistant zegt onterecht "deze pagina heeft nog geen content".
+1. ~~**Content-accessor `structured-unchosen`**~~ — ✅ **beslist 18-08** (#288): beide
+   productkeuzes zijn gemaakt en verwerkt.
 2. **`guard-hooks-hardening`** — raakt je veiligheidsnet, vraagt expliciet akkoord.
    Kernvraag: móet `gh pr merge` blokkeren bij een co-sessie, of volstaat waarschuwen?
-   Deze sessie bewees dat de guard werkt maar eenrichting beschermt (zie gotchas 15-08).
+   De guard beschermt eenrichting (zie gotchas 15-08). ⚠️ **Nieuw bewijs 18-08**: hij
+   fout-positieft ook op *prosa* — een taakregel met de force-delete-vorm van `git branch`
+   erin blokkeerde een pure documentatie-edit, en hij leest de worktree van de sessie in
+   plaats van die van het commando (een `git` in worktree A wordt geweigerd omdat er een
+   co-sessie in worktree B draait). Beide kosten omwegen, geen veiligheid.
 3. **brand.md-strategie** — akkoord op de omarm-strategie + outreach naar de maintainer;
    de upstream-PR's liggen als tekstpakket klaar.
 4. **Meertaligheid brand.md-funnel** — de pagina's en mails zijn nu Nederlands. De wens was
@@ -149,12 +195,12 @@ halve dag werk in de bestaande worktree `branddock-content-chain-accessor`.
 | Taak | Staat |
 |---|---|
 | [`brand-md-open-standaard`](tasks/brand-md-open-standaard.md) | in-progress — funnel live; rest is upstream-PR's + jouw strategie-akkoord |
-| [`content-chain-accessor`](tasks/content-chain-accessor.md) | in-progress — fase 1 ✅ + fase 3 ✅; alleen kruisingen #2/#3 open (jouw productkeuze) |
+| [`content-chain-accessor`](tasks/content-chain-accessor.md) | in-progress — fase 1 ✅ + 3 ✅; kruisingen #2/#3 ✅ beslist 18-08 (#288). Rest volgens de andere sessie: 3 beslissingen + `repair-defaults` op prod |
 | [`lp-image-routes`](tasks/lp-image-routes.md) | review — wacht op één prod-smoke door jou |
 | [`seo-pipeline-speedup`](tasks/seo-pipeline-speedup.md) | open — fase 4a deed 12→7,5 min |
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
-| [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst, deels achterhaald. ⚠️ Nieuw in §B: twee retentie-indexen op Neon (uit PR #286) — `CREATE INDEX CONCURRENTLY`, níet `prisma db push` |
-| [`lp-review-followups`](tasks/lp-review-followups.md) | open — ⚠️ naar Nu gehaald 16-08: de retentie-items zijn tijdgevoelig (`PageEvent` groeit onbegrensd, `FormSubmission` bevat PII zonder wisroutine) |
+| [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst. §B bevat nu: twee retentie-indexen op Neon (`CREATE INDEX CONCURRENTLY`, níet `prisma db push`), `NEXT_PUBLIC_POSTHOG_KEY` op prod (staat er niet → geen analytics) en drie lokale branches die opgeruimd mogen |
+| [`lp-review-followups`](tasks/lp-review-followups.md) | open — retentie ✅ (#286) + SSE-abort ✅ (#287); rest = robuustheid-items, waarvan `persistVariantOptions` (clobber-venster) en het registry-type (CI-heap) de echte zijn |
 | [`kpi-fase0`](tasks/kpi-fase0.md) | in-progress — meetfundament €100k-plan (funnel/activatie/noordster/Gate-1 als developer-tab); worktree `branddock-kpi-fase0` |
 | [`marketing-homepage-v2`](tasks/marketing-homepage-v2.md) | in-progress — homepage-herbouw + nav/footer NL-first; worktree `branddock-marketing-homepage-v2` |
 
@@ -185,6 +231,14 @@ op marketing en `revalidate` op de klant-landingspagina's leveren al maanden nie
 
 ## Losse eindjes uit deze sessie
 
+- **`NEXT_PUBLIC_POSTHOG_KEY` staat niet op prod** — je hebt daar dus géén product-analytics.
+  De CSP-kant is per 18-08 gedicht (beide PostHog-hosts in `connect-src`), dus het zetten van
+  de key volstaat. Staat in `open-acties` §B.
+- **Geen prod-smoke van een `/p/…`-pagina op een custom domein** buiten `linfi.branddock.app`.
+  Die ene is volledig geverifieerd (artifact-script draait, beacon vuurt, hashes dragend);
+  andere klant-subdomeinen zijn niet gecontroleerd.
+- **Pagina's zonder hero-`sub` én zonder lopende tekst** (puur formulier of prijstabel) houden
+  geen meta-description. Bewuste keuze — liever niets dan een verzonnen samenvatting.
 - **F-VAL onder de drempel** bij `linkedin-post` (69), `linkedin-poll` (70), `search-ad`
   (70,5) en `twitter-thread` (71). Signaal, geen conclusie: Napking's styleguide staat op
   `published = false`, dus de stijl-pijler mist context. Sluit dat eerst uit.

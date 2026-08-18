@@ -75,7 +75,7 @@ Meegenomen: **`eu-assets.i.posthog.com`** staat nu in `connect-src`. posthog-js 
 
 ⚠️ **Het risico dat blijft staan**: wie `buildPageRuntimeScriptBody` wijzigt, maakt élk reeds gepubliceerd artifact ongeldig — die dragen de oude bytes, en dat faalt **stil**: de pagina rendert gewoon, alleen de view-beacon en de form-enhancement niet. De smoke dwingt af dat de hash-lijst meebeweegt, maar niet dat de oude hash blijft staan. Vandaag nul risico: de snippets zijn sinds #251 niet gewijzigd, dus alle bestaande artifacts dragen één van deze twee bodies. De enforce-policy houdt `report-uri` aan, zodat er zicht blijft op wat er geblokkeerd wordt — een enforce zonder rapportage faalt stil, precies de klasse fout die deze migratie moest voorkomen.
 
-- Task: [tasks/security-residual-hardening.md](../tasks/security-residual-hardening.md)
+- Task: [tasks/done/security-residual-hardening.md](../tasks/done/security-residual-hardening.md)
 - ADR: [docs/adr/2026-08-18-csp-enforce-nonce-en-hashes.md](adr/2026-08-18-csp-enforce-nonce-en-hashes.md)
 
 ### 475. Weglopen tijdens een generatie kost geen tokens meer
@@ -1345,7 +1345,7 @@ Eerste increment van het meertaligheid-programma (ADR 2026-06-28): een client-si
 
 Restscope van H1 (na #349). Sluit élk resterend server-side fetch-pad dat nog op het oude patroon zat (`fetch` + post-hoc `assertSafeRedirect`, soms zonder entry-validatie). `fetchWithSizeLimit` (`security/fetch-with-limit.ts`, 16 AI-artifact-callers) loopt nu via `safeFetch`; daarnaast in code-review nog 3 raw-fetch-routes ontdekt en geconverteerd: `media/import-url` (entry-probe), `media/stock/import` (user-URL die **geen enkele** SSRF-validatie had) en `export/proxy-image` (allowlisted). Het dode `assertSafeRedirect` is verwijderd. `safeFetch` kreeg fetch-spec-conforme method-handling (303 + 301/302-op-non-GET → bodyless GET; 307/308 behoudt method+body). Drie ongelimiteerde scrape-routes (`website-scanner`/`claw/scrape`/`briefing-sources/parse-url`) kregen `checkGenericRateLimit` (429 + Retry-After). `products/url-scraper` leest de body nu via `readBodyWithCap` (10MB stream-cap, OOM-defense). Ge-finalized via 3-ronde 2-subagent review (eindoordeel ready-to-merge, 0 CRITICAL/0 WARNING; charset-"regressie" weerlegd als false-positive — `Response.text()` is spec-matig óók UTF-8-only). Smoke `ssrf-guard.ts` 65/65, tsc 0, lint 0, build groen (echte node_modules + prisma + env in de worktree). H1 is hiermee volledig afgehecht.
 
-- Task: [tasks/security-residual-hardening.md](../tasks/security-residual-hardening.md) (SSRF-blok afgevinkt; L4/L6/L9 + Zod-sweep blijven open)
+- Task: [tasks/done/security-residual-hardening.md](../tasks/done/security-residual-hardening.md) (SSRF-blok afgevinkt; L4/L6/L9 + Zod-sweep blijven open)
 - ADR: -
 - Spec: [docs/audits/2026-06-26-security-audit.md](audits/2026-06-26-security-audit.md)
 - Commit: ba0ff9b5 (PR #64)

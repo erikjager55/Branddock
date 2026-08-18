@@ -53,6 +53,13 @@ taken-spiegel daarvan + de twee nieuwe items uit deze sessie.
       CSP-kant is per 18-08 gedicht (`eu.i.posthog.com` én `eu-assets.i.posthog.com` staan
       in `connect-src`, changelog #476), dus zodra je de key zet werkt het meteen. Zonder
       die fix zou de eigen CSP de remote-config-call stil hebben geblokkeerd.
+- [ ] **Drie lokale branches opruimen** — `feat/security-csp-enforce`, `docs/csp-followups` en
+      `feat/lp-title-metadata` staan nog lokaal. Alle drie zijn squash-gemerged (#294/#297/#301)
+      en read-only geverifieerd identiek aan `origin/main` (0 regels diff), maar
+      `scripts/dev/worktree.sh --done` laat ze staan omdat git een squash-merge nooit als
+      "merged" herkent — de commits zijn geen ancestor. Force-delete ze zodra er geen co-sessie
+      meer in de main-worktree draait; de session-guard blokkeert branch-mutaties tot 15 minuten
+      ná de laatste heartbeat van de andere sessie.
 - [ ] **Barneveld-logo** uploaden — `~/Downloads/logo_barneveld.svg` in Brandstyle
 - [ ] **"+12"-proof point** nog in prod-HQ-workspace — in-app aanpassen (Brand Promise → proof points) of her-import
 - [ ] **Marketing-site restjes** — copy-review, quote/testimonial, 3 ontbrekende feature-screenshots
