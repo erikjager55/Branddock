@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { updateDeliverableSettings } from "@/lib/content/update-deliverable-settings";
 import { getDeliverableText } from "@/lib/content/resolve-deliverable-content";
 import { flattenPuckData } from "@/lib/content/puck-data-text";
 import { computeEditDistance } from "@/lib/content-test/edit-distance";
@@ -178,54 +179,62 @@ export async function PATCH(
       if (value !== undefined) updateData[key] = value;
     });
 
-    if (settings !== undefined) {
-      // Shallow-merge with existing settings to avoid wiping unrelated keys
-      const existingSettings =
-        existing.settings && typeof existing.settings === 'object' && !Array.isArray(existing.settings)
-          ? (existing.settings as Record<string, unknown>)
-          : {};
-      // Hero-preserve chokepoint: een autosave/regen/race die settings.puckData
-      // of structuredVariant wholesale herschrijft mag een al-gezette hero-image
-      // niet leegclobberen (audit 2026-06-08). Behoud een bestaande niet-lege
-      // heroVisualUrl wanneer de inkomende write 'm leeg laat.
-      // R9 (audit 2026-06-10): zelfde guard voor feature-imageUrls — een
-      // wholesale settings-replace mag gezette feature-beelden niet stil wissen.
-      const preservedIncoming = preserveFeatureVisualsOnSettings(
-        existingSettings,
-        preserveHeroOnSettings(existingSettings, settings as Record<string, unknown>),
-      );
-      // Dual-track sync ná de merge: autosave/image-field PATCHen alleen
-      // puckData — spiegel een non-lege puckData-hero naar
-      // structuredVariant.hero zodat export/regenerate niet op een stale URL
-      // lezen. Volgorde: clear-guards (hero + feature-preserve) eerst, dan de
-      // sync. Alleen wanneer de schrijver puckData meestuurt ZONDER eigen
-      // structuredVariant (= het autosave/image-field-pad). Stuurt een writer
-      // beide tracks (variant-keuze, regenerate), dan is hij zelf
-      // verantwoordelijk voor consistentie en mag zijn expliciete sv-hero
-      // niet stil door de (mogelijk stale) puckData worden overschreven;
-      // een sv-only PATCH idem. Bekende rest-race (pre-existing klasse, zie
-      // gotchas 2026-06-09): een stale in-flight autosave kan een net
-      // out-of-band gezette hero op beide tracks terugdraaien.
-      const merged = { ...existingSettings, ...preservedIncoming };
-      const incomingSettings = settings as Record<string, unknown>;
-      // Schrijfpad: inspecteert de VORM van de binnenkomende payload om een autosave te
-      // herkennen, en leest geen content. De accessor is een leeslaag en heeft hier niets
-      // te zoeken.
-      // eslint-disable-next-line no-restricted-syntax -- zie noot hierboven
-      const autosaveShapedWrite = !!incomingSettings.puckData && !incomingSettings.structuredVariant;
-      updateData.settings = JSON.parse(
-        JSON.stringify(autosaveShapedWrite ? syncHeroFromPuck(merged) : merged),
-      );
-    }
+    // De settings-merge is verplaatst naar de transactie hieronder: hij moet op
+    // de VERSE blob draaien, niet op de read van bovenaan.
     if (generatedSlides !== undefined)
       updateData.generatedSlides = JSON.parse(JSON.stringify(generatedSlides));
     if (checklistItems !== undefined)
       updateData.checklistItems = JSON.parse(JSON.stringify(checklistItems));
 
-    const updated = await prisma.deliverable.update({
-      where: { id: deliverableId },
-      data: updateData,
-    });
+    // De settings-blob van vlak vóór deze write, gelezen onder rijlock. Het
+    // edit-distance-signaal hieronder vergelijkt daartegen — niet tegen de read
+    // van bovenaan, want die kan een tussenliggende autosave missen en dan meet
+    // je andermans wijziging mee.
+    // Blijft leeg in de tak zonder settings-write; het signaal hieronder draait
+    // alleen wanneer er settings meekwamen.
+    let settingsBefore: Record<string, unknown> = {};
+
+    const updated =
+      settings === undefined
+        ? await prisma.deliverable.update({ where: { id: deliverableId }, data: updateData })
+        : await (async () => {
+            const incomingSettings = settings as Record<string, unknown>;
+            // Schrijfpad: inspecteert de VORM van de binnenkomende payload om een autosave te
+            // herkennen, en leest geen content. De accessor is een leeslaag en heeft hier niets
+            // te zoeken.
+            // eslint-disable-next-line no-restricted-syntax -- zie noot hierboven
+            const autosaveShapedWrite = !!incomingSettings.puckData && !incomingSettings.structuredVariant;
+            const written = await updateDeliverableSettings(
+              deliverableId,
+              (current) => {
+                const currentSettings = current as Record<string, unknown>;
+                settingsBefore = { ...currentSettings };
+                // Hero-preserve chokepoint: een autosave/regen/race die settings.puckData
+                // of structuredVariant wholesale herschrijft mag een al-gezette hero-image
+                // niet leegclobberen (audit 2026-06-08). Behoud een bestaande niet-lege
+                // heroVisualUrl wanneer de inkomende write 'm leeg laat.
+                // R9 (audit 2026-06-10): zelfde guard voor feature-imageUrls — een
+                // wholesale settings-replace mag gezette feature-beelden niet stil wissen.
+                const preservedIncoming = preserveFeatureVisualsOnSettings(
+                  currentSettings,
+                  preserveHeroOnSettings(currentSettings, incomingSettings),
+                );
+                // Dual-track sync ná de merge: autosave/image-field PATCHen alleen
+                // puckData — spiegel een non-lege puckData-hero naar
+                // structuredVariant.hero zodat export/regenerate niet op een stale URL
+                // lezen. Stuurt een writer beide tracks (variant-keuze, regenerate), dan
+                // is hij zelf verantwoordelijk voor consistentie en mag zijn expliciete
+                // sv-hero niet stil door de (mogelijk stale) puckData worden overschreven.
+                const merged = { ...currentSettings, ...preservedIncoming };
+                return autosaveShapedWrite ? syncHeroFromPuck(merged) : merged;
+              },
+              updateData,
+            );
+            // `mutate` geeft hier nooit `null`, dus dit is een onmogelijke tak — maar
+            // een non-null-assertion zou 'm stil maken als dat ooit verandert.
+            if (!written) throw new Error("[studio PATCH] settings-write leverde geen rij op");
+            return written;
+          })();
 
     // ── Edit-distance signal voor web-page-bewerkingen ───────
     //
@@ -240,9 +249,7 @@ export async function PATCH(
     // event. Zonder dat onderscheid zou elke autosave-tick de tabel volspammen.
     if (settings !== undefined) {
       try {
-        const beforeText = flattenPuckData(
-          (existing.settings as Record<string, unknown> | null)?.puckData,
-        );
+        const beforeText = flattenPuckData(settingsBefore.puckData);
         const afterText = flattenPuckData(
           (updated.settings as Record<string, unknown> | null)?.puckData,
         );

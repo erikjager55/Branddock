@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { updateDeliverableSettings } from "@/lib/content/update-deliverable-settings";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
 import { variantToPuckDataFromStructured } from "@/features/campaigns/components/canvas/medium/variant-to-puck-data";
 import type { PageVariantContent } from "@/lib/landing-pages/page-type-schemas";
@@ -168,19 +169,19 @@ export async function POST(
     });
   }
 
-  await prisma.deliverable.update({
-    where: { id: deliverableId },
-    data: {
-      settings: {
-        ...settings,
-        puckData: newPuckData,
-        // B4: destructieve re-seed herstelt de baseline-invariant zodat een
-        // volgende merge-refresh edits kan onderscheiden van de seed.
-        puckDataBaseline: newPuckData,
-        puckRegeneratedAt: new Date().toISOString(),
-      },
-    },
-  });
+  // Verse read onder rijlock. Let op de reikwijdte: dit beschermt de sleutels
+  // die deze route NIET schrijft tegen verlies. De merge zelf rekent nog met de
+  // `puckData` van bovenaan, dus een autosave die tijdens de regeneratie op
+  // diezelfde sleutel landt wordt overschreven — dat is inherent aan
+  // regenereren en de client vraagt daar expliciet bevestiging voor.
+  await updateDeliverableSettings(deliverableId, (current) => ({
+    ...current,
+    puckData: newPuckData,
+    // B4: destructieve re-seed herstelt de baseline-invariant zodat een
+    // volgende merge-refresh edits kan onderscheiden van de seed.
+    puckDataBaseline: newPuckData,
+    puckRegeneratedAt: new Date().toISOString(),
+  }));
 
   invalidateCache(cacheKeys.prefixes.studio(workspaceId));
   invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));

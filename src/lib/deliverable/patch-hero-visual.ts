@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { updateDeliverableSettings } from '@/lib/content/update-deliverable-settings';
 
 /**
  * Pure transform (geïsoleerd zodat 'm deterministisch getest kan worden zonder
@@ -63,13 +64,11 @@ export function applyHeroUrlToSettings(
  * een gefaalde patch blijft het beeld als DeliverableComponent bestaan en kan een
  * latere (re)selectie de hero alsnog wiren.
  *
- * BEKENDE BEPERKING (pre-existing, gedeeld met de PATCH-route): dit is een
- * read-modify-write op de hele settings-blob zonder lock. Commit er een
- * gelijktijdige content-edit-PATCH in het smalle SELECT→UPDATE-venster, dan kan
- * die edit verloren gaan. Het venster is enkele ms (geen await tussen read en
- * write) en hero-generatie + content-edit overlappen zelden. Een sluitende fix
- * (atomische jsonb_set of serializable+retry) hoort de hele settings-write-laag
- * te dekken (generate-visual + PATCH-route) en valt buiten deze helper.
+ * De read-modify-write loopt via `updateDeliverableSettings`: verse read onder
+ * `SELECT … FOR UPDATE`, zodat een gelijktijdige content-edit-PATCH niet meer in
+ * het SELECT→UPDATE-venster verloren gaat. Dat venster was hier smal (geen await
+ * tussen read en write), maar de BEKENDE BEPERKING die hier stond vroeg om een
+ * cure voor de héle settings-write-laag — die is er nu.
  */
 export async function patchHeroVisualUrl(
   deliverableId: string,
@@ -77,17 +76,18 @@ export async function patchHeroVisualUrl(
   opts?: { onlyIfEmpty?: boolean },
 ): Promise<{ patched: boolean }> {
   try {
-    const fresh = await prisma.deliverable.findUnique({
-      where: { id: deliverableId },
-      select: { settings: true },
+    // `applyHeroUrlToSettings` muteert in place; dat mag hier, want `current` is
+    // een verse deserialisatie uit de gelockte rij en wordt nergens gedeeld.
+    let puckPatched = false;
+    const written = await updateDeliverableSettings(deliverableId, (current) => {
+      const settings = current as Record<string, unknown>;
+      const result = applyHeroUrlToSettings(settings, heroUrl, opts);
+      puckPatched = result.puckPatched;
+      // `null` = niets te doen: de hero stond er al, of fill-only-modus liet 'm staan.
+      return result.patched ? settings : null;
     });
-    const settings = (fresh?.settings ?? {}) as Record<string, unknown>;
-    const { patched, puckPatched } = applyHeroUrlToSettings(settings, heroUrl, opts);
+    const patched = written !== null;
     if (patched) {
-      await prisma.deliverable.update({
-        where: { id: deliverableId },
-        data: { settings: settings as never },
-      });
       // Rij alleen upserten wanneer de BrandHero in puckData daadwerkelijk
       // deze URL kreeg: de rij spiegelt de GERENDERDE hero. In fill-only-modus
       // (self-heal) kan `patched` true zijn via alleen de structuredVariant-

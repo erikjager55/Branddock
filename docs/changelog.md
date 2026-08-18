@@ -37,6 +37,24 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 476. De settings-blob heeft één schrijfdeur — en de vorige "fix" sloot de race niet
+
+`Deliverable.settings` is één JSON-blob waar tien codepaden in schrijven, allemaal als read-modify-write: lees de hele blob, spreid er sleutels overheen, schrijf 'm terug. Landt er tussen de read en de write een andere schrijver, dan verdwijnt diens werk. De autosave van de Puck-editor is de frequentste tegenpartij; bij `generate-structured-variant` was het venster **minutenlang** (de hele SSE-generatie), bij de SEO-pijplijn en de fidelity-scoring net zo goed.
+
+⚠️ **De bestaande "fix" waar het task-file naar wees, werkte niet.** `publish/route.ts` zette read + write in één `prisma.$transaction` en noteerde dat de race daarmee "geëlimineerd" was. Onder de Postgres-default READ COMMITTED neemt een kale `SELECT` echter geen lock: beide transacties lezen de oude blob, de tweede `UPDATE` wacht netjes op de eerste — en overschrijft die dan alsnog met een payload die op de verouderde read is gebouwd. Een transactie zónder lock verplaatst het venster, hij sluit het niet.
+
+Cure: één gedeelde `updateDeliverableSettings()` die de rij leest onder `SELECT … FOR UPDATE` en in dezelfde transactie terugschrijft. Gekozen boven `jsonb_set` (de call-sites mergen hele objecten, geen losse paden) en boven serializable+retry (dat vraagt een retry-lus per call-site). De SEO-pijplijn zit al ín een transactie en kon de helper dus niet gebruiken — geneste interactieve transacties bestaan niet in Prisma — en kreeg daarom `lockDeliverableSettings(tx, id)`, dezelfde lock als los primitief.
+
+**De scope groeide tijdens het werk.** Het plan telde zeven schrijvers, gevonden met een grep over `src/app/api`. Een sweep over de hele `src` vond er tien: `canvas-orchestrator` (2×), `seo-pipeline`, `fidelity-runner` (2×) en `headless-webpage` stonden er ook, met precies dezelfde vorm. Bewust níet omgezet: de versie-restore in `content-version.ts` (die vervángt de blob per definitie, geen read-modify-write) en een eenmalig onderhoudsscript.
+
+Bijvangst: het stale snapshot is uit `generate-structured-variant` verdwenen in plaats van gerepareerd — `existingSettings` werd door twee call-sites heen doorgegeven en is nu weg, dus er valt niets meer per ongeluk op terug te vallen. Idem twee dode reads in `fidelity-runner`.
+
+⚠️ **Wat dit niet oplost**: `regenerate-puck-data` rekent zijn merge nog steeds met de `puckData` van vóór de regeneratie. De lock beschermt de sleutels die die route níet schrijft; een autosave op diezelfde sleutel wordt nog altijd overschreven. Dat is inherent aan regenereren, en de client vraagt er expliciet bevestiging voor.
+
+**Bewijs**: `SMOKE_DB=1 npm run smoke:settings-write` → **8/8** tegen een echte Postgres. De belangrijkste check is de mutatietest: dezelfde race draait óók met een kale `findUnique`, en dáár moet een sleutel verdwijnen — anders meet de smoke niets. Plus `smoke:hero-clobber-guard` 29/29 ongewijzigd (die dekt de omgezette `patchHeroVisualUrl`), `tsc` 0 errors, `lint` 0 errors (964 warnings, ongewijzigd).
+
+- Task: [tasks/lp-review-followups.md](../tasks/lp-review-followups.md)
+
 ### 475. Weglopen tijdens een generatie kost geen tokens meer
 
 De SSE-variantgenerator luisterde niet naar `request.signal`: liep een bezoeker weg, dan genereerde de server rustig door tot `maxDuration` (480s) — alle resterende varianten plus hun rewrite- en iterate-stappen, betaald voor niemand. Beide helften waren nodig, en dat is het niet-evidente deel: in deze SPA unmount de component bij wegnavigeren, maar de browser verbreekt de fetch dan **niet** vanzelf. Zonder een client-`AbortController` ging het server-signaal dus nooit af, hoeveel guards je server-side ook zet.

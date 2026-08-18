@@ -12,6 +12,7 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
+import { updateDeliverableSettings } from '@/lib/content/update-deliverable-settings';
 import type { Prisma } from '@prisma/client';
 import { assembleCanvasContext, type CanvasContextStack, type MediumContext, type PersonaContext, type BriefContext, type ProductContext, type VisualBrief, type VisualStyleDirection } from './canvas-context';
 import { VISUAL_STYLE_IMAGE_INSTRUCTIONS } from './visual-brief-prompts';
@@ -993,28 +994,19 @@ export async function* orchestrateContentGeneration(
       }
       if (iterateOutcome && iterateOutcome.attemptsExecuted > 0) {
         try {
-          const existing = await prisma.deliverable.findUnique({
-            where: { id: deliverableId },
-            select: { settings: true },
-          });
-          const currentSettings = (existing?.settings as Record<string, unknown> | null) ?? {};
-          await prisma.deliverable.update({
-            where: { id: deliverableId },
-            data: {
-              settings: {
-                ...currentSettings,
-                autoIterate: {
-                  attemptsExecuted: iterateOutcome.attemptsExecuted,
-                  finalScore: iterateOutcome.finalScore,
-                  thresholdMet: iterateOutcome.thresholdMet,
-                  stopReason: iterateOutcome.stopReason,
-                  finalText: iterateOutcome.finalText,
-                  iterations: iterateOutcome.iterations,
-                  iteratedAt: new Date().toISOString(),
-                },
-              },
+          // Verse read onder rijlock — de iteratie hierboven duurt minuten.
+          await updateDeliverableSettings(deliverableId, (current) => ({
+            ...current,
+            autoIterate: {
+              attemptsExecuted: iterateOutcome.attemptsExecuted,
+              finalScore: iterateOutcome.finalScore,
+              thresholdMet: iterateOutcome.thresholdMet,
+              stopReason: iterateOutcome.stopReason,
+              finalText: iterateOutcome.finalText,
+              iterations: iterateOutcome.iterations,
+              iteratedAt: new Date().toISOString(),
             },
-          });
+          }));
         } catch (persistErr) {
           console.warn(
             '[canvas-orchestrator] auto-iterate snapshot persist failed:',
@@ -3349,17 +3341,10 @@ async function persistVariants(
   const variantAngles = extractVariantAngles(textResult);
   if (variantAngles.length > 0) {
     try {
-      const existing = await prisma.deliverable.findUnique({
-        where: { id: deliverableId },
-        select: { settings: true },
-      });
-      const currentSettings = (existing?.settings as Record<string, unknown> | null) ?? {};
-      await prisma.deliverable.update({
-        where: { id: deliverableId },
-        data: {
-          settings: { ...currentSettings, variantAngles },
-        },
-      });
+      await updateDeliverableSettings(deliverableId, (current) => ({
+        ...current,
+        variantAngles,
+      }));
     } catch (err) {
       // Non-fatal — variants persist normaal, alleen labels gaan verloren
       console.warn('[canvas-orchestrator] variantAngles persist failed:', (err as Error).message);

@@ -19,6 +19,7 @@
 
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { updateDeliverableSettings } from '@/lib/content/update-deliverable-settings';
 import { resolveDeliverableContent } from '@/lib/content/resolve-deliverable-content';
 import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
@@ -197,28 +198,20 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         // Persist snapshot
         if (outcome && outcome.attemptsExecuted > 0) {
           try {
-            const existing = await prisma.deliverable.findUnique({
-              where: { id: deliverableId },
-              select: { settings: true },
-            });
-            const currentSettings = (existing?.settings as Record<string, unknown> | null) ?? {};
-            await prisma.deliverable.update({
-              where: { id: deliverableId },
-              data: {
-                settings: {
-                  ...currentSettings,
-                  autoIterate: {
-                    attemptsExecuted: outcome.attemptsExecuted,
-                    finalScore: outcome.finalScore,
-                    thresholdMet: outcome.thresholdMet,
-                    stopReason: outcome.stopReason,
-                    finalText: outcome.finalText,
-                    iterations: outcome.iterations,
-                    iteratedAt: new Date().toISOString(),
-                  },
-                },
+            // De losse herlees-dan-schrijf hieronder had nog steeds een
+            // SELECT→UPDATE-venster; de helper leest onder rijlock.
+            await updateDeliverableSettings(deliverableId, (current) => ({
+              ...current,
+              autoIterate: {
+                attemptsExecuted: outcome.attemptsExecuted,
+                finalScore: outcome.finalScore,
+                thresholdMet: outcome.thresholdMet,
+                stopReason: outcome.stopReason,
+                finalText: outcome.finalText,
+                iterations: outcome.iterations,
+                iteratedAt: new Date().toISOString(),
               },
-            });
+            }));
           } catch (persistErr) {
             console.warn(
               '[auto-iterate/trigger] snapshot persist failed:',
