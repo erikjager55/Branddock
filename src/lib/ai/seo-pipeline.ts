@@ -13,6 +13,7 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
+import { lockDeliverableSettings } from '@/lib/content/update-deliverable-settings';
 import type { CanvasContextStack } from './canvas-context';
 import type { OrchestrationEvent } from './canvas-orchestrator';
 import { createStructuredCompletion } from './exploration/ai-caller';
@@ -387,15 +388,12 @@ export async function* runSeoPipeline(
         });
       }
 
-      // Store SEO checklist + write back AI-generated data to contentTypeInputs
-      const existingSettings = (await tx.deliverable.findUnique({
-        where: { id: deliverableId },
-        select: { settings: true },
-      }))?.settings;
-
-      const currentSettings = existingSettings && typeof existingSettings === 'object'
-        ? existingSettings as Record<string, unknown>
-        : {};
+      // Store SEO checklist + write back AI-generated data to contentTypeInputs.
+      // Onder rijlock: de 8-staps-pipeline hierboven duurt minuten, en zonder de
+      // lock leest deze read dezelfde oude blob als een gelijktijdige autosave —
+      // waarna de laatste schrijver de ander wist. De lock loopt tot deze
+      // transactie commit; de update onderaan zit erbinnen.
+      const currentSettings = await lockDeliverableSettings(tx, deliverableId) as Record<string, unknown>;
 
       // Merge AI-generated SEO data back into contentTypeInputs
       const currentInputs = (currentSettings.contentTypeInputs ?? {}) as Record<string, unknown>;
