@@ -94,28 +94,40 @@ bugfixes met een mutatietest die aantoonbaar rood wordt zonder de fix.
 **Stoppen en wachten** bij: een tweede sessie in hetzelfde bestand · een testfout die niet met
 één retry weggaat · een externe dienst die eruit ligt · scope die buiten het task-file valt.
 
-### "Alle checks groen" is geen poort — het is een bewering die je moet controleren
+### De CI-poort — en een correctie op mijn eigen onderbouwing
 
-Op één dag drie keer leeg gebleken, en dat is precies het predicaat waar een onbeheerde merge
-op leunt:
+⚠️ **Eerst een rechtzetting.** De eerste versie van dit document onderbouwde regel 1 met de
+bewering dat bij #333 `check` en `e2e` **nooit gedraaid** hadden en alleen Vercel groen stond.
+Die kreeg ik doorgegeven van een andere sessie en ik nam hem over zonder te meten. Nagemeten:
 
-| Geval | Wat "groen" verborg |
-|---|---|
-| #333 | `check` en `e2e` **draaiden nooit** — feature-branch als base, alleen Vercel stond groen |
-| #334 | `e2e` hing **93 minuten** zonder ooit rood te worden |
-| #332 | `e2e` hing 30 minuten op *Install Playwright chromium*; cancel + rerun gaf groen in 7 |
+    #333  base=main  ·  e2e pass 2m43s  ·  check pass 6m44s
 
-Een afwezige check is niet te onderscheiden van een geslaagde check als je alleen naar de kleur
-kijkt — dezelfde fout als `|| true` in een meetcommando. Mijn poort vóór elke merge is daarom
-niet "geen rood" maar:
+De bewering is dus **onjuist** en staat hier alleen nog als correctie. Ik laat 'm zichtbaar
+staan in plaats van hem weg te poetsen, want het is exact de fout waar dit document tegen
+waarschuwt: een cijfer overnemen en tot beleid maken zonder de meting zelf te doen. Dank aan
+`branddock-static-rendering-regressie` en `dc` voor het terugdraaien.
 
-1. `check` én `e2e` zijn **aanwezig** in de rollup én `COMPLETED/SUCCESS` — afwezigheid is een blocker
-2. de base van de PR is **`main`**, niet een andere feature-branch
-3. de head-SHA komt uit `git ls-remote`, niet uit de GitHub-API, en gaat mee als `--match-head-commit`
-4. hangt CI >30 minuten: **niet mergen**, cancel + rerun, en bij herhaling laten liggen voor Erik
+**Wat wél staat**, met drie waarnemingen op één dag: `e2e` hangt intermitterend op
+*Install Playwright chromium* en blokkeert dan **zonder rood te worden**. Ik zag het zelf bij
+#332 (30 minuten; na cancel + rerun groen in 4m12s), `dc` zag er een, `f8` meldt er een van
+93 minuten. Alle drie eindigden ná ingrijpen in een pass.
 
-Dank aan de sessies `branddock-static-rendering-regressie` en `f8` — de eerste twee gevallen
-komen van hen; zonder die melding was mijn poort een kleurcontrole gebleven.
+Dat onderscheid is wezenlijk. "Groen terwijl er niets draaide" zou betekenen dat je iets
+ongetests kunt mergen — een correctheidsgat. "Hangt zonder rood te worden" betekent dat je
+kunt blíjven wachten — een doorloopprobleem. Alleen het tweede is aangetoond.
+
+**De poort blijft desondanks alle vier de regels**, want ze zijn goedkoop en een afwezige check
+is principieel niet te onderscheiden van een geslaagde. Regel 1 is dus **defensief, niet op een
+waargenomen geval**:
+
+1. `check` én `e2e` zijn **aanwezig** in de rollup én `COMPLETED/SUCCESS` — afwezigheid is een
+   blocker (defensief: nog nooit voorgekomen)
+2. de base van de PR is **`main`**, niet een andere feature-branch (idem defensief)
+3. de head-SHA komt uit `git ls-remote`, niet uit de GitHub-API, en gaat mee als
+   `--match-head-commit` — dit vangt wél een waargenomen geval: bij #287 slikte een squash op
+   een verouderde API-head vijf commits, met een gevonden regressie live tot #303
+4. hangt CI >30 minuten: **niet mergen**, cancel + rerun; blijft het hangen, laten liggen voor
+   Erik — dit is het enige aangetoonde faalpatroon van vandaag
 
 ---
 
