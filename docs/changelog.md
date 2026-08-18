@@ -37,6 +37,30 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 483. index.css was gecompileerde output die als bron in git stond — 358 kleurklassen renderden stil niets
+
+De enige stylesheet van de app was 10.555 regels gecompileerde Tailwind-output, zónder `@import "tailwindcss"` en zónder `@theme`. `@tailwindcss/postcss` had daardoor niets te genereren en liet het bestand passeren: er kwam **nooit iets bij**. Elke utility die na het compileermoment in de code kwam bestond simpelweg niet — stil, zonder build-fout. Gemeten: **846 kleur-utilities in gebruik, 366 zonder definitie**, waarvan 358 levend over 1.303 bestand-voorkomens en 21 kleurfamilies. `bg-primary-50` in 33 bestanden, `bg-emerald-500` in 30 (de EmptyState-knopbug die als "opgelost" in het geheugen stond en gewoon nog leefde), `hover:text-gray-600` in 70.
+
+**De diagnose stond al jaren verkeerd.** Overal heette dit "Tailwind purge". Er wordt niets weggesnoeid; er komt alleen nooit iets bij. Dat verschil stuurt je naar safelists in plaats van naar de pijplijn. Het bestand bevatte zelf al **drie generaties handmatige reparaties** in losse `@layer utilities`-blokken, elk met een commentaar over een productiebug: `z-20` (de Claw history-popover rende onder zijn eigen scrim, rijen onklikbaar), `grid-cols-12` (12-koloms layout brak), `order-1/2` (mobiele volgorde).
+
+**Een experiment koos de aanpak, geen voorkeur.** Verse build vs. het gecommitte bestand, vergeleken via de PostCSS-AST: een echte build lost **321 van de 366** vanzelf op. De resterende 45 zijn de `primary`-familie, die geen Tailwind-kleur is en dus een `@theme`-definitie nodig heeft — dat werk zat in élk alternatief. Andersom reproduceert een verse build 344 selectors niet, maar **182 daarvan zijn dood** en van de 162 die overblijven zijn er 119 semantische tokens (`bg-background`, `bg-muted`, `text-foreground`) waarvan de CSS-variabelen al in `:root` stonden — ze werden alleen nooit aan Tailwind blootgesteld. Handmatig 358 klassen appenden was dus verdedigbaar geweest én weggegooid werk.
+
+`src/index.css` is nu **320 regels bron**: `@import "tailwindcss"` + `@import "tw-animate-css"`, een `@theme inline`-blok met een primary-ramp waarvan **stap 400 `var(--primary)` IS** (de merkkleur ligt qua lichtheid op `teal-400`, niet `teal-500` — `oklch(0.771 0.139 176.4)`), de bestaande `:root`/`.dark`-variabelen, de vier `@layer components`-klassen, de WebKit-scrollbarregels en `@media print`.
+
+**Twee Tailwind 4-eigenaardigheden die dit kostte** en die nu in de bron vastliggen: door de gebruiker geschreven `@layer utilities` wordt **volledig genegeerd** (custom klassen verdwijnen stil; `@layer components` blijft wél), en je hebt `@theme inline` nodig i.p.v. `@theme` zodra theme-waarden naar andere variabelen verwijzen — anders werken `.dark`-overrides alleen op `:root`.
+
+**Bewijs, live op productie gemeten na de deploy**: de focusring op een invoerveld was `rgb(31, 41, 55)` (`#1f2937` = `--foreground`, de `currentcolor`-terugval omdat `focus:outline-none` de native outline weghaalde en `focus:ring-primary-500` niet bestond) en is nu `oklab(0.771417 -0.138875 …)` = **`#1fd1b2`**, exact de merkkleur. Selector-telling 2126 → 2835, met `bg-primary-50`, `focus:ring-primary-500`, `bg-emerald-500` en `hover:text-gray-600` alle vier van ✗ naar ✓. `z-20` en `grid-cols-12` zitten in béíde — dat waren de handmatige reparaties, wat het beeld intern consistent maakt. Alle 10 `data-[state=…]`-animatievarianten aanwezig in oud én nieuw met identieke keyframes (`enter`, `exit`, `accordion-down/up`), dus de overstap naar `tw-animate-css` verliest niets.
+
+**Guard**: `npm run smoke:css-utilities` draait de echte Tailwind-build en toetst de **gegenereerde** CSS, niet de bron — na deze migratie is `index.css` immers geen output meer. Staat in `ci.yml` met `--strict` en een lege baseline. Gekalibreerd: `--color-primary-500` uit het `@theme`-blok halen geeft exit 1 met precies de 9 geraakte klassen en hun vindplaatsen.
+
+⚠️ **Wat dit niet dekt**: dialog, popover en tooltip zijn niet door een klikpad gegaan — die zitten achter login. Hun animatieklassen en keyframes zijn aantoonbaar identiek aan de oude, maar het gedrag is niet visueel getoetst.
+
+Bijvangst: `src/styles/globals.css` en `design-system.css` bleken nergens geïmporteerd, en `globals.css` definieerde een `--primary` die afweek van de levende merkkleur — wie daar de merkkleur aanpaste veranderde niets. Beide gemarkeerd als dood.
+
+- Task: [tasks/done/primary-color-scale.md](../tasks/done/primary-color-scale.md)
+- ADR: [docs/adr/2026-08-18-tailwind-bronpijplijn.md](adr/2026-08-18-tailwind-bronpijplijn.md)
+- Spec: `-`
+
 ### 482. De settings-blob heeft één schrijfdeur — en de vorige "fix" sloot de race niet
 
 `Deliverable.settings` is één JSON-blob waar tien codepaden in schrijven, allemaal als read-modify-write: lees de hele blob, spreid er sleutels overheen, schrijf 'm terug. Landt er tussen de read en de write een andere schrijver, dan verdwijnt diens werk. De autosave van de Puck-editor is de frequentste tegenpartij; bij `generate-structured-variant` was het venster **minutenlang** (de hele SSE-generatie), bij de SEO-pijplijn en de fidelity-scoring net zo goed.

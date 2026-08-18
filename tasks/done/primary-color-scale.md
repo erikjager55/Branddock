@@ -5,12 +5,12 @@ fase: post-launch
 priority: now
 effort: guard + ADR + migratie uitgevoerd 18-08; rest is visuele verificatie
 owner: claude-code
-status: review
+status: done
 created: 2026-08-18
-completed: -
+completed: 2026-08-18
 related-adr: docs/adr/2026-08-18-tailwind-bronpijplijn.md
 related-spec: -
-worktree: branddock-primary-color-scale
+worktree: - (opgeruimd na merge)
 ---
 
 # Probleem
