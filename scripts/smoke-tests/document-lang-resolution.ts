@@ -32,6 +32,8 @@ import {
   isBilingualQueryRoute,
   langFromSearch,
 } from '../../src/lib/ui-i18n/document-locale.shared';
+import { readFile } from 'node:fs/promises';
+
 import { resolveDocumentLocale } from '../../src/lib/ui-i18n/document-locale';
 
 let passed = 0;
@@ -187,6 +189,51 @@ async function runWiringChecks(): Promise<void> {
   const app = await resolveDocumentLocale('/', 'nl', null, stubLoader);
   check('bedrading: app-route volgt de cookie', app.lang, 'nl');
   check('bedrading: leeg pad valt terug op de UI-taal', (await resolveDocumentLocale('', 'en', null, stubLoader)).lang, 'en');
+
+  // ── Bedrading: de client-tak die een RUNTIME-taalwissel opvangt ─────────
+  //
+  // `DocumentLangSync` heeft een tak die geen enkele gate ooit uitvoert: de
+  // `languageChanged`-listener. De pure checks hierboven raken de DOM niet, en
+  // de browser-smoke zet de cookie vóór de page load — dus wisselt er nooit
+  // iets tijdens een sessie. Valt die tak stil, dan blijft de taal ná een
+  // wissel de hele sessie verkeerd; dezelfde klasse fout die deze module
+  // oploste.
+  //
+  // Wat hieronder staat is nadrukkelijk een BEDRADINGSCHECK, geen gedragstest.
+  // Hij vangt verwijderen en hernoemen — de refactor-risico's — en niet of het
+  // attribuut ná een echte wissel klopt. Dat laatste vraagt een browser die
+  // daadwerkelijk van taal wisselt, en dat kan alleen via de ingelogde
+  // instellingen-UI; het staat als open punt in tasks/document-lang-followups.md.
+  //
+  // De asserties leunen op i18next-API-namen (`on`/`off`/`languageChanged`) en
+  // niet op onze eigen bewoording. Wordt de component omgebouwd naar een ander
+  // mechanisme, dan hóórt dit rood te worden: iemand moet dan opnieuw vaststellen
+  // dat een runtime-wissel nog werkt.
+  const syncSource = await readFile(
+    new URL('../../src/lib/ui-i18n/DocumentLangSync.tsx', import.meta.url),
+    'utf8',
+  );
+  check(
+    'bedrading: er is een languageChanged-listener',
+    /i18n\.on\(\s*'languageChanged'/.test(syncSource),
+    true,
+  );
+  check(
+    'bedrading: die listener wordt ook weer afgemeld (geen stapeling)',
+    /i18n\.off\(\s*'languageChanged'/.test(syncSource),
+    true,
+  );
+  // Bewust NIET `/document\.documentElement\.lang\s*=/`: dat patroon staat drie
+  // keer in het bestand (de `fixed`-tak, de app-tak, en de handler), dus het
+  // slaagt ook als juist de handler leeg is. Gemeten: die versie liet een
+  // mutatie ongemoeid door. Dit patroon bindt de toewijzing aan de handler zelf.
+  check(
+    'bedrading: de languageChanged-handler schrijft zelf naar documentElement.lang',
+    /onChange\s*=\s*\([^)]*\)\s*=>\s*\{[^}]*document\.documentElement\.lang\s*=/.test(
+      syncSource,
+    ),
+    true,
+  );
 
   // ── Randgeval dat de host-routing vóór prefix-matching afdwingt ──────────
   // Een workspace-host met slug `marketing` is een KLANTPAGINA, geen NL-site.
