@@ -10,6 +10,11 @@
 # kop noemden 85 en 77: 85 telde de acht `test:`-scripts mee, waarvan `test:e2e` en
 # `test:csp` juist wél draaiden, en 77 zat er één naast.)
 #
+# ⚠️ WAT DEZE POORT KOST — gemeten 2026-08-19, niet geschat.
+# 119 bewakers: 64s lokaal, **1m54s in CI** (21% van de check-job, tweede na de
+# build). Bij 18 bewakers was dit ~10s. "Aanhaken is bijna gratis" was toen waar
+# en is het nu niet meer; wie er veel bij wil hangen, meet eerst.
+#
 # Bewust GEEN fail-fast: bij een rode CI wil je alle kapotte bewakers in één keer
 # zien, niet één per run.
 #

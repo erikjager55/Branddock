@@ -217,6 +217,29 @@ e2e-hangups van 18-08 zaten in de omgeving, niet in de bewakers.
 rondes registreerden 119 regels met echte exit-codes en assertie-aantallen. Een
 lege vergelijking geeft ook nul verschillen.
 
+## Wat de poort kost — gemeten 2026-08-19
+
+Ná de groei van 18 naar 119 bewakers, uit zes geslaagde CI-runs op main
+(8m32s–10m11s totaal, timeout 30 min):
+
+| stap | tijd | aandeel |
+|---|---:|---:|
+| `npm run build` | 2m03s | 22% |
+| **de bewakers-poort** | **1m54s** | **21%** |
+| `npm run lint` | 1m27s | 16% |
+| `npx tsc --noEmit` | 1m20s | 14% |
+| `npm ci` | 1m04s | 11% |
+| `typecheck:scripts` | 0m35s | 6% |
+| taalbewaker + CSP-sweep | 0m14s | 1% |
+
+⚠️ **"Aanhaken is bijna gratis" gold bij 18 bewakers en geldt niet meer.** Die zin
+staat een paar keer in de commit-geschiedenis van vandaag en klopte op het moment
+van schrijven; bij 119 is de poort de op één na duurste stap. Lokaal is het 64s,
+in CI 1m54s — de runner is trager, dus lokaal meten onderschat.
+
+Er is nu ruimte zat (30 min timeout, ~9 min gebruikt). Maar wie er nog honderd bij
+wil hangen, meet eerst in plaats van de oude uitspraak over te nemen.
+
 # Risico's
 
 - **Een groene wees kan verouderd zijn.** Groen betekent hier "draait en toetst

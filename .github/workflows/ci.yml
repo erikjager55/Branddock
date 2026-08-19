@@ -78,8 +78,16 @@ jobs:
       # Van de 78 smoke-/eval-scripts in package.json stonden er op 2026-08-19 maar
       # DRIE in een workflow. De rest bestond wel maar draaide nooit — waaronder
       # guards die juist waren gebouwd nádat er iets stil was misgegaan. Deze stap
-      # draait de goedkope, deterministische selectie (geen DB, geen keys, ~30s
-      # samen). Welke dat zijn en waarom staat in het script.
+      # draait de goedkope, deterministische selectie (geen DB, geen keys).
+      # Welke dat zijn en waarom staat in het script.
+      #
+      # ⚠️ GEMETEN 2026-08-19, ná de groei van 18 naar 119 bewakers: deze stap
+      # kost **1m54s in CI** en is daarmee de op één na duurste van de job, ná
+      # `npm run build` (2m03s). Lokaal is het 64s; de runner is trager.
+      #
+      # De uitspraak "aanhaken is bijna gratis" gold bij 18 bewakers en geldt niet
+      # meer. Wie er honderd bij wil hangen: meet eerst. De verdeling van de job
+      # staat in tasks/weesbewakers-triage.md.
       #
       # Elke bewaker draagt daar een assertie-ondergrens: groen mét te weinig
       # asserties faalt, want dat is hoe een bewaker stil afhaakt zonder het te
