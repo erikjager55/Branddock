@@ -196,6 +196,27 @@ niet.
       ⚠️ Die lijst is **schuld, geen uitzonderingslijst** — hij hoort te krimpen.
       Een tweede check meldt dode regels, zodat de lijst zelf niet kan verrotten.
 
+## De poort is deterministisch — gemeten, 2026-08-19
+
+Een gate van 119 bewakers is alleen bruikbaar als een rood vinkje te vertrouwen is.
+Eén flakey bewaker maakt het geheel ruis, en dan gaat men rood negeren — exact de
+faalwijze uit de golden-set-gotcha van 07-07.
+
+Drie keer achter elkaar gedraaid, per bewaker exit-code én assertie-aantal
+vergeleken:
+
+    3 rondes × 119 bewakers = 357 datapunten
+    afwijkend: 0
+
+⚠️ **Wat dit niet aantoont**: dit is lokaal gemeten, sequentieel, op één machine.
+CI draait op een andere OS met koude caches en andere timing. Het zegt dus dat de
+bewakers zélf deterministisch zijn — niet dat de CI-omgeving dat is. De
+e2e-hangups van 18-08 zaten in de omgeving, niet in de bewakers.
+
+⚠️ En "nul afwijkend" is pas bewijs omdat de opzet is nagekeken: alle drie de
+rondes registreerden 119 regels met echte exit-codes en assertie-aantallen. Een
+lege vergelijking geeft ook nul verschillen.
+
 # Risico's
 
 - **Een groene wees kan verouderd zijn.** Groen betekent hier "draait en toetst
