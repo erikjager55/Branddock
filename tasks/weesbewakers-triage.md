@@ -44,6 +44,38 @@ dezelfde nummers**: de ketting heeft `phase45-typescale-normalizer` (aug), de we
 toegevoegd. Of dat abandonnement of bewuste opvolging is, vraagt oordeel per
 bestand — ze zijn wél allemaal groen, dus ze toetsen levende code.
 
+## ⚠️ Scherper gemeten: 76 src-modules hebben GEEN aangehaakte bewaker
+
+De eerste splitsing hierboven telt bestanden. Belangrijker is welke **code** daardoor
+onbewaakt is. Gemeten door de imports van alle aangehaakte bewakers (161 modules) af
+te trekken van de imports van de wezen:
+
+**76 `src/`-modules worden alléén door een weesbewaker geraakt.** Per gebied:
+
+```
+14  lib/brandstyle        3  lib/landing-pages     1  lib/utils
+10  lib/ai                3  lib/brand-fidelity    1  lib/stripe
+ 8  lib/brandclaw         2  lib/export            1  lib/scraping
+ 8  lib/agents            2  lib/email             1  lib/products
+ 5  lib/content-test      2  lib/content-locale    1  lib/integrations
+ 4  lib/content           2  lib/competitors       1  lib/deliverable
+ 4  features/campaigns                             1  lib/constants
+                                                   1  lib/claw · 1 lib/brandmd
+```
+
+⚠️ **`lib/agents` staat er met acht modules bij** — de complete registry
+(`run-agent`, `artifact-contract`, `run-collector`, `data-analyst/query-tools`,
+`schedules/cadence`). Dat is code die volgens de projectstand op **productie
+draait**, met bewakers die er wél zijn maar nooit hebben gedraaid.
+
+Dit maakt de junireeks-vraag ook kleiner. Van de 27 `web-page-builder-phaseNN`-
+wezen importeren er **10** uitsluitend modules die de augustus-ketting óók raakt —
+die zijn kandidaat om te verwijderen. De andere **17** raken modules die de ketting
+niet aanraakt: `css-var-resolver`, `framework-defaults`, `color-pairings`,
+`palette-usage-filter`, `observed-color-pairings`, `non-brand-colors`,
+`semantic-role-resolver`, `component-extractor`, `variant-copy-diff`,
+`canvas-angle-generator`, `fidelity-token-guard` en `google-fonts-catalog`.
+
 ## De 28 losse, gesorteerd op asserties
 
 ```
@@ -85,6 +117,7 @@ heeft sindsdien nooit gedraaid. `security-medium.ts` idem sinds 26-06.
 - [ ] Elk van de 27 junireeks-bestanden is beoordeeld: aangehaakt óf verwijderd
       met reden
 - [ ] De 18 rode zijn getrieerd
+- [ ] `lib/agents` heeft bewaking in een gate — die code draait op productie
 - [ ] `package.json`-telling is niet langer de bron van waarheid voor "welke
       bewakers bestaan er" — de bestandslijst is dat
 
