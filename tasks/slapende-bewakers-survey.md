@@ -44,9 +44,9 @@ met echte sleutels, en een smoke die AI-calls doet zou geld uitgeven.
 
 | Groep | Aantal | Toelichting |
 |---|---:|---|
-| **Infrastructuurvrij** | **31** | geen DB, geen sleutels, geen netwerk — samen **15s** |
+| **Infrastructuurvrij** | **30** | geen DB, geen sleutels, geen netwerk — samen ~15s |
 | Netwerk-afhankelijk | 2 | zie hieronder |
-| Database nodig | 25 | elders opgepakt tegen een wegwerp-DB |
+| Database nodig | 26 | elders opgepakt tegen een wegwerp-DB |
 | Browser nodig | 1 | `smoke:document-lang-browser` (vraagt een draaiende server) |
 | Verouderde assertie | 1 | `smoke:mcp-toolset` — gefixt in #367 |
 
@@ -66,13 +66,31 @@ smoke:document-lang              smoke:preserve-user-rows
 smoke:geo-author-profile         smoke:rule-violation-stats
 smoke:geo-claw-gate              smoke:security-residual
 smoke:geo-discovery              smoke:seo-context
-smoke:geo-longform-render        smoke:settings-write
-eval:brand-manifest-golden       smoke:source-image-matcher
+smoke:geo-longform-render        eval:brand-manifest-golden       smoke:source-image-matcher
                                  smoke:voice-baseline
 ```
 
 (`smoke:css-utilities` en `smoke:document-lang` staan al aangehaakt; ze komen hier
-terug omdat ze in dezelfde meting zaten. Netto dus 29 nieuwe.)
+terug omdat ze in dezelfde meting zaten. Netto dus **28 nieuwe**.)
+
+## ⚠️ Eén vals vinkje in mijn eigen lijst
+
+`smoke:settings-write` stond eerst bij de 30 infrastructuurvrije. Hij is dat niet:
+zonder `SMOKE_DB=1` print hij *"deze smoke heeft een echte database nodig"* en geeft
+dan **exit 0**. Groen zonder één assertie.
+
+Dat is de gevaarlijkste vorm: had die env-var ooit uit de workflow gevallen, dan liep
+hij eeuwig mee als groen vinkje. Gevonden doordat een parallelle sessie er in de
+DB-groep tegenaan liep en het doorgaf; hij is daar gefixt (#369) en hoort in die
+groep thuis.
+
+**Toets die je hierop moet doen vóór je iets aansluit**: draai de kandidaat één keer
+zónder de omgeving die hij nodig heeft en kijk naar de exit-code. Alles wat dan 0
+teruggeeft én over overslaan praat, is een vals vinkje.
+
+⚠️ Mijn eigen scan hierop gaf 6 valse treffers op 1 echte: hij matchte het woord
+"overgeslagen" in assertie-namen als `PASS sectie zonder props wordt overgeslagen`.
+Tel assertie-regels, niet trefwoorden.
 
 ## ⚠️ Twee die er NIET in horen
 
@@ -87,7 +105,7 @@ terug omdat ze in dezelfde meting zaten. Netto dus 29 nieuwe.)
 
 # Wat er nog wacht
 
-- [ ] De 29 nieuwe aanhaken in `scripts/ci/run-guards.sh` (+15s op de `check`-job).
+- [ ] De 28 nieuwe aanhaken in `scripts/ci/run-guards.sh` (+~15s op de `check`-job).
       ⚠️ Dat bestand is geclaimd door de design-sync-sessie; deze taak levert de
       meting, niet de wiring.
 - [ ] De twee netwerk-bewakers in een nightly-job, niet in de PR-poort.
