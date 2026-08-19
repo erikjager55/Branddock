@@ -257,17 +257,25 @@ een distributie-probleem, en het enige wat de volgende stap tegenhoudt is jouw a
 omarm-strategie plus de outreach naar de maintainer. De upstream-PR's liggen als tekstpakket
 klaar.
 
-**3. 🔤 [`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) — 44 van 44
-merkfonts hebben geen bestand.** Gemeten, niet vermoed: de storage-URL-audit tegen Neon-prod
-(18-08) vond `StyleguideFont.fileUrl` **44 van de 44 keer leeg**. Alles rendert in Inter —
-ook PDF-exports en AI-content. Geen bug: het upload-pad bestaat volledig, er is nooit iets
-geüpload. We verkopen merkconsistentie, en een klant die zijn eigen styleguide opent en
-overal Inter ziet staan onder "Neue Haas Grotesk Display" ziet het product zijn belofte niet
-waarmaken.
+**3. 🔤 [`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) — 18 merkfonts
+renderen in een substituut.** Een klant die zijn eigen styleguide opent en overal Inter ziet
+staan onder "Neue Haas Grotesk Display", ziet het product zijn belofte niet waarmaken. Geen
+bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
 
-> Twee sporen: **B (de code)** kan ik zelfstandig doen, **A (de bestanden)** heeft jou nodig —
-> per merk een `.woff2` plus de licentie-afweging, ~15 min per merk. Dit is dus geen
-> "los-het-op-terwijl-je-weg-bent"-item zoals de vorige bewoner van deze plek.
+> ⚠️ **Dit blok stond hier tot 19-08 met "44 van 44" — twee keer verkeerd.** De correctie
+> stond al sinds 18-08 in het task-file zelf; deze sessie-opener liep erop achter, en dat is
+> de gevaarlijkste plek om achter te lopen, want dit is wat een nieuwe sessie als eerste leest.
+>
+> - **Niet 44 maar 29.** Een leeg `fileUrl` betekent níet dat er een substituut rendert:
+>   de 15 `GOOGLE_FONTS` laden bij Google en hebben nooit een bestand nodig. Linfi heeft
+>   nul problemen. Het item leidde zijn impact af uit één kolom.
+> - **En sinds vandaag 18, niet 29.** Jouw besluit van 19-08: de drie Adobe-kit-id's doen
+>   we niet. Die 11 `ADOBE_FONTS` blijven bewust op het substituut.
+>
+> Dat maakt dit **volledig een wacht-op-jou-item**: spoor B (de code) is af sinds #342 —
+> een font zonder bestand telt mee in de merk-gereedheid. Wat rest is per merk een `.woff2`
+> plus de licentie-afweging, ~15 min per merk, bij vijf merken: DTS Ede (5), PartnerSelect (5),
+> Zwarthout (3), Nobox (1), sulejman (1). Ik kan hier niets meer aan doen.
 
 ---
 
@@ -318,11 +326,14 @@ waarmaken.
 | [`marketing-site-verbeterslag`](tasks/marketing-site-verbeterslag.md) | in-progress — pagina-voor-pagina-doorloop van alle 26 marketing-URL's + verzamelbak voor website-brede wijzigingen |
 
 ### Volgende
-[`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) (⚠️ **44 van 44**
-merkfonts op prod hebben géén bestand — alles rendert in Inter, ook in PDF-exports en
-AI-content; het upload-pad bestaat al, er is nooit iets geüpload) ·
+[`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) (⚠️ **18 fonts bij
+vijf merken** renderen in een substituut — niet 44: de 15 Google-fonts hadden nooit een
+bestand nodig, en de 11 Adobe-fonts zijn per besluit 19-08 bewust afgewezen. De code is af;
+dit wacht volledig op uploads van Erik) ·
 [`pg-major-sslmode-semantiek`](tasks/pg-major-sslmode-semantiek.md) (pg v9 maakt van onze
-`sslmode=require` stil een zwakkere modus — nu vastleggen i.p.v. bij de upgrade ontdekken) ·
+`sslmode=require` stil een zwakkere modus. ✅ **Code af per 19-08** incl. de bewaker die er
+nooit was aangesloten; wacht nog op één env-handeling van Erik — `verify-full` in de prod-URL,
+en pas dáárna `DATABASE_SSL_STRICT=true`) ·
 `workspaces-online-migratie` (4 workspaces resteren, jouw keuze) ·
 [`deferred-browser-smokes-unblocked`](tasks/done/deferred-browser-smokes-unblocked.md) ✅ **done**
 (3 smokes wachtten op een blocker die sinds 05-07 weg is) ·
@@ -354,8 +365,38 @@ nauwelijks verkeer. De taak draagt vier meetbare triggers plus de SQL om ze te t
 ## Losse eindjes uit deze sessie
 
 - **F-VAL onder de drempel** bij `linkedin-post` (69), `linkedin-poll` (70), `search-ad`
-  (70,5) en `twitter-thread` (71). Signaal, geen conclusie: Napking's styleguide staat op
-  `published = false`, dus de stijl-pijler mist context. Sluit dat eerst uit.
+  (70,5) en `twitter-thread` (71). ✅ **Uitgesloten 19-08 — de Napking-verklaring klopt niet.**
+  De opdracht was "sluit dat eerst uit"; dat is gedaan, en het antwoord is nee.
+
+  | content-type | published (n, gem.) | unpublished (n, gem.) |
+  |---|---|---|
+  | `linkedin-poll` | 14 → **79,3** | **0 metingen** |
+  | `twitter-thread` | 8 → **80,6** | **0 metingen** |
+  | `search-ad` | 9 → 80,8 | 4 → 77,8 |
+  | `linkedin-post` | 33 → **68,9** | 38 → **78,7** |
+
+  Twee van de vier types hebben **nul** unpublished-metingen — hun score kán dus niet door
+  een niet-gepubliceerde styleguide komen. En bij `linkedin-post` wijst het de andere kant
+  op: de *gepubliceerde* groep scoort tien punten lager. Op productie staat Napking
+  bovendien gewoon op `published = true` (24 regels); alleen lokaal staat hij op `false`,
+  en dáár is gemeten.
+
+  ⚠️ **Wat wél waar is, en apart de moeite waard**: het mechanisme bestaat. De stijl-pijler
+  is systematisch zwakker zonder gepubliceerde styleguide — over alle workspaces 87,8
+  (published) tegen 59-69 (unpublished), en bij `search-ad` 99,3 tegen 57,0. `brand-context.ts:1242`
+  gate't zeven contextvelden op diezelfde vlag (manifest, kleuren, fonts, typografie,
+  tone-of-voice, twee beeldvelden), en `styleguide-rule-compiler.ts:126` zet de rules-pijler
+  op nul. Alleen verklaart dat déze vier scores niet. De echte oorzaak van de lage
+  `linkedin-post` staat nog open.
+
+- ⚠️ **Nieuw gevonden op prod (19-08): `better brands` genereert zónder merkcontext.** Van de
+  zeven prod-styleguides met `published = false` is dat de enige met échte content: 22 regels,
+  5 deliverables, laatste 17-07. Die vijf zijn dus gemaakt zonder de zeven contextvelden en
+  zonder de rules-pijler. Dat is jouw eigen pilot-merk. Eén klik (finalize/publish) verandert
+  dat — maar controleer eerst of de pilot-F-VAL-claim (+6,8) op deze workspace rust, want dan
+  is die gemeten onder andere omstandigheden dan een klant zou krijgen.
+  Bijvangst: er staan **drie** workspaces met de naam `better brands` op prod, twee daarvan
+  leeg en aangemaakt op 14-08.
 - ~~Campagnewizard voorbij stap 3 ongetest~~ → **eigen taak sinds 16-08**:
   [`campagne-wizard-e2e-restscope`](tasks/done/campagne-wizard-e2e-restscope.md). Inclusief de
   vraag of de 80-drempel klopt — een rijk ingevulde briefing haalde 68.
