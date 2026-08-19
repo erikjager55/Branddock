@@ -29,7 +29,25 @@ console.log('── GEO prompt-dispatch (long-form) ──');
 const geo = buildLandingPageVariantPrompt({ ...base, contentType: 'blog-post' });
 assert('blog-post → GEO system-prompt met geoArticle-discriminant', geo.system.includes('"geoArticle": true'));
 assert('GEO-prompt instrueert answerFirstIntro', geo.system.includes('answerFirstIntro'));
-assert('GEO-prompt eist citeableStats mét bron', geo.system.includes('citeableStats') && geo.system.includes('VERPLICHTE bron'));
+// De oude assertie eiste de letterlijke tekst "VERPLICHTE bron". Die is op
+// 2026-06-24 BEWUST vervallen (2f78eec3): een bron mag `null` zijn voor een
+// eigen merk-cijfer, juist omdat een verplichte bron het model dwong er één te
+// verzinnen — meestal een interne context-laagnaam. De bewaker draaide nergens,
+// dus stond hij sindsdien ongezien rood.
+//
+// Wat nu wél de moeite van het bewaken waard is, is de reparatie zelf: het
+// contract mag citeableStats vragen, maar moet expliciet zeggen dat een interne
+// laagnaam nooit als bron mag verschijnen. Verdwijnt die zin, dan keert de
+// lekbug terug.
+assert('GEO-prompt vraagt citeableStats', geo.system.includes('citeableStats'));
+assert(
+  'GEO-prompt verbiedt een interne laagnaam als bron (regressie 2f78eec3)',
+  /NOOIT een interne laagnaam/i.test(geo.system),
+);
+assert(
+  'GEO-prompt staat een bronloos first-party cijfer toe (null), i.p.v. er één af te dwingen',
+  /"source":\s*string \| null/.test(geo.system),
+);
 assert('GEO-prompt bevat tldr', geo.system.includes('tldr'));
 assert('GEO-prompt rol = GEO-contentstrateeg', geo.system.includes('GEO-contentstrateeg'));
 assert('GEO user-prompt-label', geo.user.includes('LONG-FORM GEO-ARTIKEL OPDRACHT'));

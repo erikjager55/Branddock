@@ -8,7 +8,8 @@
  *   2. Live AI-level: send a NL prompt with mixed-language brand-context to real AI
  *      and check the output is single-language NL (heuristic word-count detection)
  *
- * Run: `set -a && source .env.local && set +a && npx tsx scripts/smoke-tests/locale-enforcement.ts`
+ * Run: `npm run smoke:locale` (laag 1 — geen DB, geen sleutels)
+ *      `SMOKE_AI=1 npm run smoke:locale` (ook laag 2 — kost echte AI-calls)
  */
 
 import { buildLocaleInstruction, buildLocaleSystemFragment } from '@/lib/ai/locale-instruction';
@@ -118,6 +119,26 @@ console.log(`\n=== LAYER 1 RESULT: ${pass} passed, ${fail} failed ===\n`);
 if (fail > 0) {
   console.error('UNIT-LEVEL CHECKS FAILED — fix before running live AI test.');
   process.exit(1);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Laag 2 is opt-in via SMOKE_AI=1 — zelfde afspraak als SMOKE_DB=1.
+//
+// Waarom: laag 1 zijn 30 asserties die geen database, sleutel of netwerk nodig
+// hebben, maar ze zaten opgesloten achter twee live AI-calls. Daardoor gaf deze
+// bewaker altijd exit 1 zonder sleutel en kon hij nergens aanhaken — dus draaide
+// hij nergens, dus bewaakte hij niets.
+//
+// Het overslaan wordt LUID gemeld en niet als succes verpakt: een bewaker die
+// stil de helft overslaat is precies de valse-vinkje-vorm waar de
+// bewakers-survey over gaat (tasks/slapende-bewakers-survey.md).
+if (process.env.SMOKE_AI !== '1') {
+  console.log('⚠ LAAG 2 (live AI-roundtrip) OVERGESLAGEN — SMOKE_AI=1 niet gezet.');
+  console.log('  Laag 1 dekt de prompt-constructie; of het MODEL zich aan die');
+  console.log('  instructie houdt is hiermee NIET getoetst.');
+  console.log('  Volledig bewijs: SMOKE_AI=1 npm run smoke:locale');
+  console.log(`\n=== TOTAL: ${pass} passed, ${fail} failed (laag 2 overgeslagen) ===\n`);
+  process.exit(0);
 }
 
 // ─────────────────────────────────────────────────────────────────
