@@ -37,6 +37,86 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 500. De junireeks ontdubbeld zonder 27 handmatige oordelen
+
+`smoke:web-page-builder` ketent 55 phase-bestanden aan elkaar, maar dat is een **andere serie
+met dezelfde nummers**: de ketting heeft `phase45-typescale-normalizer` (augustus), de wezen
+`phase45-result-audit` (5 juni). De junireeks 40-68 is nooit aan die ketting toegevoegd, en de
+triage vroeg een oordeel per bestand: opvolging of abandonnement?
+
+**Dat oordeel is grotendeels overbodig gemaakt door eerst mechanisch te bepalen welke code
+alleen door een wees wordt geraakt** — de imports van de 55 kettingleden afgetrokken van die
+van de 27 wezen:
+
+| uitkomst | aantal |
+|---|---:|
+| raakt uitsluitend modules die de ketting al dekt | 10 — verwijder-kandidaat |
+| raakt modules die nergens anders getoetst worden | **17** — aangehaakt |
+
+Die 17 dragen **401 asserties** en dekken vrijwel de complete brandstyle-palet-stack:
+`color-pairings`, `palette-usage-filter`, `observed-color-pairings`, `non-brand-colors`,
+`analysis-engine`, `css-var-resolver`, `framework-defaults`, `google-fonts-catalog`,
+`landing-pages/brand-images`. Code die op productie draait en waar geen enkele aangehaakte
+bewaker naar keek.
+
+De 10 verwijder-kandidaten zijn **niet** verwijderd. "Raakt dezelfde module" is niet hetzelfde
+als "toetst hetzelfde gedrag" — de import-overlap maakt de leeslijst kort, hij vervangt de
+leesbeurt niet.
+
+- Task: [tasks/weesbewakers-triage.md](../tasks/weesbewakers-triage.md)
+- Commit: PR #412
+
+### 499. Van 3 draaiende bewakers naar 80 — en wat dat in dekking oplevert
+
+De weesbestanden-triage telde 73 bewakerbestanden zonder npm-script. Daarvan zijn er in drie
+stappen 45 aangehaakt (#399, #408, #411, #412), plus negen database-bewakers door een
+parallelle sessie (#410). De goedkope PR-poort ging van 18 naar **80 bewakers in 47 seconden**.
+
+**Het cijfer dat ertoe doet is een ander.** Modules die alléén door een niet-draaiende bewaker
+werden geraakt: **76 → 15**. Dat 45 aangehaakte bewakers maar ~21 modules toevoegen, is zelf
+de bevinding: veel bewakers dekken code die al gedekt was. Bestandsaantallen overdrijven de
+winst; wie "80 bewakers" rapporteert meet activiteit, niet dekking.
+
+Twee dingen die het aanhaken zelf opleverde:
+
+**`ssrf-guard.ts` had 65 asserties en heeft nooit gedraaid.** Gecommit bij een SSRF-fix eind
+juni, zonder npm-script, dus onzichtbaar voor elke telling die `package.json` leest. Dat is een
+tweede blinde vlek naast "een bewaker die niet draait": een bewaker die niet eens meetelt als
+bewaker — en die vind je niet door beter naar je lijst te kijken.
+
+**De assertie-ondergrens kon 65 en 1 niet onderscheiden.** Bewakers die alleen een samenvatting
+printen (`SSRF-guard: 65 passed`) werden als 1 geteld, en een ondergrens van 1 beschermt niets.
+`tel_asserties()` neemt nu het maximum van assertie-regels en het getal uit een
+samenvattingsregel. Nagemeten dat de correctie nodig was: de oude telling gaf op een versie met
+3 asserties exact hetzelfde getal als op de echte met 65.
+
+- Task: [tasks/weesbewakers-triage.md](../tasks/weesbewakers-triage.md)
+- Commit: PR #399, #408, #412
+
+### 498. Een bewaker die twee maanden rood stond op een correcte vertaling
+
+Van de 18 rode weesbewakers had er precies **één** een verouderde assertie. De andere 17: veertien
+hebben een echte database nodig, twee een sleutel, en één is helemaal geen bewaker maar een
+CLI-tool die argumenten verwacht.
+
+`smoke:checkpoint-gates` eiste de Nederlandse zin `"Workspace heeft 3 persona(s)"`. Die is op
+2026-06-17 vertaald in commit `35097c25` — *"migrate crept-in Dutch UI/communication text to
+English"* — een bewuste migratie, want de product-UI is monolinguaal Engels (ADR 2026-06-17).
+De bewaker faalde dus **op een correcte vertaling**, twee maanden lang, ongezien: hij had geen
+npm-script en draaide nergens.
+
+Nu getoetst op het **gedrag** in plaats van op de zin: geen pass, severity `warn`, en de reden
+noemt het aantal én de campagne-koppeling. De controle-mutatie maakt het punt — de melding
+opnieuw vertalen (naar Duits) houdt hem groen, terwijl het weghalen van het aantal of de
+koppeling hem laat omvallen.
+
+⚠️ De eerste twee mutaties beten níet, en dat lag aan de mutaties: één vindplaats vervangen van
+`campaign` (7× in het bestand) en van `severity: 'warn'` (11×). Een zwakke mutatie ziet eruit
+als een zwakke assertie. Tel de vindplaatsen vóór je muteert.
+
+- Task: [tasks/weesbewakers-triage.md](../tasks/weesbewakers-triage.md)
+- Commit: PR #411
+
 ### 497. Een bewaker met een adres maar zonder bestemming — en drie keer een meting die het tegenovergestelde bewees
 
 `smoke:db-ssl-mode` draaide nergens. Geen bewuste uitzondering: `run-db-guards.sh:36`
