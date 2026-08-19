@@ -5,9 +5,9 @@ fase: post-launch
 priority: next
 effort: 2-3 uur
 owner: claude-code
-status: open
+status: done
 created: 2026-08-19
-completed:
+completed: 2026-08-19
 related-adr: -
 related-spec: -
 worktree: -
@@ -30,20 +30,30 @@ if (!wsA || !wsB) assert("dev workspaces Zwarthout + Linfi exist", false, "seed 
 13 asserties slagen daarvóór; daarna stopt hij. Hij heeft geen npm-script en
 draait dus nergens — gevonden in de weesbewaker-triage (`weesbewakers-triage`).
 
-# ⚠️ De voor de hand liggende fix maakt hem gróén en LEEG
+# ⚠️ CORRECTIE 2026-08-19 — de val die hier stond bestaat niet
 
-De seed maakt twee workspaces aan, dus "pak gewoon de twee uit de seed" lijkt een
-regel werk. Gemeten op een verse seed:
+Deze taak waarschuwde dat "pak de twee workspaces uit de seed" hem **groen en
+leeg** zou maken, omdat `TechCorp Brand` nul concurrenten heeft en de
+overlap-check dan triviaal slaagt.
+
+**Dat klopt niet.** De assertie luidt:
+
+```js
+namesA.size > 0 && rowsB.length > 0 && overlap.length === 0
+```
+
+Hij eist dat BEIDE kanten niet-leeg zijn. Empirisch getoetst met de twee
+seed-workspaces vóór de fix:
 
 ```
-Branddock Demo | competitors = 3
-TechCorp Brand | competitors = 0
+FAIL workspace isolation ... -- A=3 B=0 overlap=0
 ```
 
-De isolatie-assertie vergelijkt de concurrenten-tabel van A met die van B en eist
-dat ze niet overlappen. Met een lege B is dat **triviaal waar**: geen overlap per
-constructie. De bewaker zou groen worden zonder de eigenschap te toetsen — precies
-het valse vinkje waar de hele bewakerslag van 19-08 over ging.
+Luid rood, precies zoals het hoort. De auteur van die bewaker had de val al
+gedicht; ik had de assertie moeten lezen vóór ik hem als risico opschreef.
+
+De seed moest nog steeds uitgebreid worden — `rowsB.length > 0` vraagt echte
+rijen — maar dat is aanvullen, niet een valstrik omzeilen.
 
 # Voorstel
 

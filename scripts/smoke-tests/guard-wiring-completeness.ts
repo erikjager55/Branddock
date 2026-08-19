@@ -57,8 +57,6 @@ const NIET_AANGEHAAKT: Record<string, string> = {
 
   // ── cli / herschrijf ──────────────────────────────────────────────────────
   'eval/position-swap-judge.ts': 'cli — verwacht --candidateA/--candidateB/--rubric',
-  'smoke-tests/agents-data-analyst.ts':
-    'herschrijf — hardcodeert de dev-workspaces Zwarthout en Linfi, kan nooit in CI draaien',
 
 };
 

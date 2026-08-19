@@ -27,6 +27,7 @@
     "smoke:hero-clobber-guard": "tsx scripts/smoke-tests/web-page-builder-phase61-hero-clobber-guard.ts",
     "smoke:zombie-tab-guard": "node scripts/dev/f2-zombie-tab-smoke.mjs",
     "smoke:lp-assistant-edits": "tsx scripts/smoke-tests/lp-assistant-content-edits.ts",
+    "smoke:agents-data-analyst": "tsx scripts/smoke-tests/agents-data-analyst.ts",
     "smoke:agents-foundation": "tsx scripts/smoke-tests/agents-foundation.ts",
     "smoke:brandclaw-data": "tsx scripts/smoke-tests/brandclaw-data-foundation.ts",
     "smoke:brandclaw-orchestrator": "tsx scripts/smoke-tests/brandclaw-orchestrator-foundation.ts",
