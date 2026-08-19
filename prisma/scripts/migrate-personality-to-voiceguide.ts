@@ -165,7 +165,12 @@ async function main() {
  * Stores via raw SQL (Prisma doesn't support pgvector at type-level).
  */
 async function computeCentroid(
-  prisma: PrismaClient,
+  // Bewust versmald tot wat deze functie écht gebruikt. Met de volledige
+  // `PrismaClient` kostte de aanroep op regel 141 alleen al 3,27s aan
+  // `structuredTypeRelatedTo`: TypeScript vergelijkt dan het complete
+  // 182-tabellen-clienttype structureel. Gemeten 2026-08-19 met
+  // `tsc --generateTrace`; zie tasks/build-heap-investigation.md.
+  prisma: Pick<PrismaClient, "$executeRaw">,
   voiceguideId: string,
   samples: string[],
 ): Promise<boolean> {

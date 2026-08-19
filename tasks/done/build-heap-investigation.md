@@ -5,12 +5,12 @@ fase: post-launch
 priority: next
 effort: 4-8 uur (meten eerst; de fix hangt af van wat de meting zegt)
 owner: claude-code
-status: open
+status: done
 created: 2026-08-18
-completed:
+completed: 2026-08-19
 related-adr: -
 related-spec: -
-worktree: -
+worktree: branddock-static-rendering-regressie
 ---
 
 # Probleem
@@ -39,6 +39,67 @@ dat 8GB niet meer volstaat is er nog steeds geen aanknopingspunt.
 
 ⚠️ **Dit is óók een waarschuwing over hoe je meet.** De vorige verklaring werd
 aangenomen zonder meting en stond twee maanden als feit in `ci.yml`.
+
+# Meting 2026-08-19 — waar gaat de heap heen?
+
+Alles koud gemeten (élke `*.tsbuildinfo` verwijderd vóór de run) en met **piek-RSS**
+via `/usr/bin/time -l`, niet met `Memory used` uit `--extendedDiagnostics`.
+
+## ⚠️ Twee meetfouten die ik onderweg maakte, want ze zijn leerzamer dan de uitkomst
+
+1. **Warm gemeten.** `incremental: true` staat aan; een tweede `tsc --noEmit` doet
+   bijna niets. Mijn eerste meting gaf **14.974 instantiaties en 0,15s check-tijd**
+   tegen koud **9.275.956 en 26,4s**. Elke `tsc`-gate die vandaag in deze repo
+   gedraaid is, was warm — dat vangt nog steeds fouten in gewijzigde bestanden,
+   maar het zegt niets over geheugen.
+2. **De verkeerde maat.** `Memory used` is een momentopname ná GC. Toen ik 521
+   bestanden uitsloot, ging dat getal **omhoog** (4,38 → 4,95 GB) terwijl de
+   instantiaties met 6,6% daalden. Piek-RSS is de maat die telt bij een OOM.
+   En zelfs mijn piek-RSS-script mat eerst warm, omdat het alleen
+   `tsconfig.tsbuildinfo` wiste en niet de buildinfo van een experiment-config —
+   dat gaf 2,05 GB waar koud 4,12 GB stond.
+
+## Wat het wél is
+
+| Configuratie | Piek-RSS (koud) |
+|---|---:|
+| Volledige tsconfig (huidig) | **4,95 GB** |
+| Alleen de app (scripts + e2e uitgesloten) | 4,12 GB |
+| Alleen scripts + prisma-scripts + e2e | 3,39 GB |
+
+Node's default is ~4 GB, dus de app zit er **op zichzelf al overheen**. De 8GB-bump
+is daarmee terecht en blijft nodig.
+
+**Geen dominant bestand.** De trace wijst `prisma/scripts/migrate-personality-to-voiceguide.ts`
+aan als duurste (9,8s, waarvan 3,27s in één `structuredTypeRelatedTo` op de aanroep
+`computeCentroid(prisma, …)` — de volledige `PrismaClient` als parameter). Dat is
+versmald tot `Pick<PrismaClient, "$executeRaw">`, want die functie gebruikt precies
+één lid. Effect, koud gemeten: **−192.576 instantiaties (−2,1%)**. Instantiaties zijn
+deterministisch (twee runs exact gelijk), dus dat is echt — maar het is 2%.
+
+**Wat de massa wél verklaart**: 8236 bestanden, 4,65M symbolen, 2,08M types.
+`node_modules/.prisma/client/index.d.ts` is in zijn eentje **451.394 regels** — 37%
+van alle 1.231.201 definitieregels — en ~210.000 van de 2,08M types (≈10%) hebben
+een Prisma-herkomst. Het is een brede optelsom met één grote dependency erin, geen
+enkel app-bestand dat eruit springt.
+
+## Conclusie
+
+**De heap-bump is het eindantwoord, niet een TODO.** Type-versmalling per aanroep
+levert ~2% per geval; je hebt er tientallen nodig voor één GB. De vorige verklaring
+("inference over de 22-component-registry") is op 18-08 al weerlegd; deze meting
+vervangt hem door een cijfer in plaats van een nieuw vermoeden.
+
+## Optie die op tafel blijft (niet doorgevoerd)
+
+De app-tsconfig checkt 402 script-bestanden plus de e2e-suite mee (`include: **/*.ts`,
+alleen `node_modules` en `integrations` uitgesloten). Ze splitsen scheelt **0,83 GB
+op de app-piek** (4,95 → 4,12 GB) en geeft twee processen die elk beter passen.
+
+Niet doorgevoerd, om drie redenen: het haalt de bump er níét af (4,12 GB blijft boven
+4 GB), CI draait op 8 GB dus het praktische effect is vandaag nul, en het kost een
+tweede config plus mogelijk editor-dekking voor die 402 bestanden. Het is winst in
+hoofdruimte, geen oplossing — en daarmee een keuze voor Erik, niet voor mij.
 
 # Voorstel
 
