@@ -6,6 +6,7 @@ import { Plus, Zap } from "lucide-react";
 import { AddContentModal } from "../shared/AddContentModal";
 import { PageShell, PageHeader } from "@/components/ui/layout";
 import { Button } from "@/components/shared";
+import { BrandAssistantCTA } from "../../../claw/components/BrandAssistantCTA";
 import { CampaignStatsCards } from "./CampaignStatsCards";
 import { CampaignFilterBar } from "./CampaignFilterBar";
 import { CampaignGrid } from "./CampaignGrid";
@@ -156,6 +157,17 @@ export function ActiveCampaignsPage({
       />
 
       <div className="space-y-6">
+        {/* Sprint B · Step 3 — de Brand Assistant is een volwaardige ingang voor
+            content-creatie maar wordt nergens proactief getoond. Bewust NIET in
+            de lege staat: daar heeft de gebruiker een campagne nodig, geen
+            alternatieve route. Dit is voor wie al campagnes heeft en sneller wil. */}
+        {campaigns.length > 0 && (
+          <BrandAssistantCTA
+            variant="tip"
+            prompts={[t("assistant.examplePrompt")]}
+          />
+        )}
+
         {/* Draft campaigns list — DB-backed (Fase 2) */}
         <DraftCampaignsList
           drafts={drafts}

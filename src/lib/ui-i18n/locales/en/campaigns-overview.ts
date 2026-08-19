@@ -116,6 +116,9 @@ const ns = {
     updated: 'Updated {{date}}',
     viewCampaign: 'View Campaign →',
   },
+  assistant: {
+    examplePrompt: 'Create a new campaign for the autumn launch',
+  },
 } as const;
 
 export default ns;

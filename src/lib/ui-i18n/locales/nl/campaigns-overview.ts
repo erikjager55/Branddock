@@ -116,6 +116,9 @@ const ns = {
     updated: 'Bijgewerkt {{date}}',
     viewCampaign: 'Campagne bekijken →',
   },
+  assistant: {
+    examplePrompt: 'Maak een nieuwe campagne voor de najaarslancering',
+  },
 } as const;
 
 export default ns;
