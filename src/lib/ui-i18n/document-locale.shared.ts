@@ -24,7 +24,20 @@ export const DUTCH_PUBLIC_PREFIXES = ['/marketing', '/brandmd'] as const;
  * module oploste. Gemeten 2026-08-18: 0 `useTranslation`-aanroepen, en de
  * zichtbare strings zijn "Password updated", "Authorize access", "Sign in".
  */
-export const ENGLISH_PUBLIC_PREFIXES = ['/oauth', '/reset-password'] as const;
+export const ENGLISH_PUBLIC_PREFIXES = [
+  '/oauth',
+  '/reset-password',
+  // Genest ONDER een Nederlandse prefix (`/brandmd`) en daarom afhankelijk van de
+  // langste-match-regel hieronder. De claim-pagina is volledig Engels — gemeten
+  // 2026-08-19 op de zichtbare tekst: 0 Nederlandse tegen 29 Engelse stopwoorden
+  // ("Your brand is already here.", "Claimed. Your workspace is ready.") — terwijl
+  // hij `lang="nl"` erfde van `/brandmd`. Het spiegelbeeld van de bug die deze
+  // module oploste, één niveau dieper dan de prefix.
+  //
+  // Dit repareert het ATTRIBUUT, niet de copy. Of die pagina Engels hóórt te zijn
+  // terwijl de rest van de funnel NL-first is, staat als productvraag open.
+  '/brandmd/claim',
+] as const;
 
 /** Taal van die Engelstalige publieke schermen. */
 export const ENGLISH_PUBLIC_LANG = 'en';
@@ -165,6 +178,36 @@ export function resolveClientLangDecision(
  * @param search Effectieve query-string, uit `x-search`. Alleen gebruikt door de
  *   tweetalige route.
  */
+/**
+ * Kiest de hardgecodeerde taal via de LANGSTE matchende prefix, niet via
+ * lijstvolgorde.
+ *
+ * Waarom dat verschil telt: `/brandmd/claim` ligt genest onder `/brandmd`. Werd
+ * de Nederlandse lijst eerst getoetst — zoals hiervoor — dan won `/brandmd` altijd
+ * en was elke Engelse uitzondering eronder dode code. Met langste-match wint de
+ * specifiekste regel, ongeacht in welke lijst hij staat.
+ *
+ * Geen gedragswijziging voor de bestaande routes: `/oauth` en `/reset-password`
+ * liggen niet onder een Nederlandse prefix, dus daar is de langste match ook de
+ * enige match.
+ */
+function hardcodedLangFor(pathname: string): string | null {
+  let beste: { lengte: number; taal: string } | null = null;
+  const groepen = [
+    { prefixes: DUTCH_PUBLIC_PREFIXES, taal: PUBLIC_CONTENT_LANG },
+    { prefixes: ENGLISH_PUBLIC_PREFIXES, taal: ENGLISH_PUBLIC_LANG },
+  ] as const;
+
+  for (const groep of groepen) {
+    for (const prefix of groep.prefixes) {
+      if (matchesPrefix(pathname, prefix) && (!beste || prefix.length > beste.lengte)) {
+        beste = { lengte: prefix.length, taal: groep.taal };
+      }
+    }
+  }
+  return beste?.taal ?? null;
+}
+
 export function decideDocumentLang(
   pathname: string,
   uiLocale: UiLocale,
@@ -175,7 +218,7 @@ export function decideDocumentLang(
     return isUsableLang(landingLocale) ? landingLocale : PUBLIC_CONTENT_LANG;
   }
   if (isBilingualQueryRoute(pathname)) return langFromSearch(search);
-  if (isDutchPublicRoute(pathname)) return PUBLIC_CONTENT_LANG;
-  if (isEnglishPublicRoute(pathname)) return ENGLISH_PUBLIC_LANG;
+  const hardgecodeerd = hardcodedLangFor(pathname);
+  if (hardgecodeerd) return hardgecodeerd;
   return uiLocale;
 }
