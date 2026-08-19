@@ -118,6 +118,52 @@ GUARDS=(
   smoke:ssrf-guard:60
   smoke:security-medium:6
   smoke:brand-name-caps:7
+
+  # ── De resterende 25 weesbestanden, aangehaakt 2026-08-19 ──────────────────
+  # Uit de triage van #400: 73 bewakerbestanden hebben geen npm-script en waren
+  # daardoor onzichtbaar voor een telling die `package.json` leest. Deze 25
+  # draaien groen zonder database, sleutels of netwerk — samen 481 asserties.
+  #
+  # Vóór het aanhaken gedaan, want aanhaken is niet neutraal (gotcha 19-08):
+  #  · elk bestand gedraaid met een dode DATABASE_URL en onbruikbare sleutels
+  #  · een detector losgelaten die zoekt of `src/` ná de bewaker is bewogen op
+  #    een gepinde frase — 13 treffers, vrijwel allemaal ruis (generieke woorden
+  #    en fixture-data die de bewaker zelf aanmaakt). Voor GROENE bewakers heeft
+  #    die detector lage opbrengst: een groene assertie matcht per definitie de
+  #    huidige code, dus de bevriezingsvorm uit #375 kan er niet spelen. Hij is
+  #    bedoeld voor de 18 RODE wezen uit #400, en daar hoort hij ook thuis.
+  #
+  # ⚠️ `brandmd-emitter` en `brandmd-lifecycle` staan bewust op 1. Ze zijn
+  # fail-fast: elke fout doet meteen `process.exit(1)` en bij succes printen ze
+  # één samenvattingsregel ZONDER getal, dus er valt niets te tellen. Nagekeken
+  # dat ze geen enkel overslaan-pad hebben (geen env-gate, geen vroege return),
+  # en dáárom is hun exit-code hier het echte signaal. Lees die 1 niet als een
+  # vergeten ondergrens.
+  smoke:deliverable-content-accessor:48
+  smoke:competitor-diff-engine:42
+  smoke:photography-token-truncation:30
+  smoke:property-evals:28
+  smoke:sanitize-strategy-output:27
+  smoke:feature-visual-prompts:27
+  smoke:heuristic-stem-variants:22
+  smoke:plan-and-solve:22
+  smoke:section-edit-synthetic-ids:21
+  smoke:feature-visual-preserve:18
+  smoke:apify-fallback-chain:17
+  smoke:auto-iterate:17
+  smoke:edit-distance:16
+  smoke:tree-of-thoughts-angles:16
+  smoke:position-swap-judge:14
+  smoke:feedback-compiler:12
+  smoke:violation-dedup:10
+  smoke:brand-language-detect:9
+  smoke:claw-fencing:9
+  smoke:agent-schedule-cadence:9
+  smoke:plan-enforcement:5
+  smoke:compose-pipeline-gemini:2
+  smoke:ui-content-locale-separation:2
+  smoke:brandmd-emitter:1
+  smoke:brandmd-lifecycle:1
 )
 
 # ── Hoe asserties geteld worden ─────────────────────────────────────────────
