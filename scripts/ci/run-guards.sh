@@ -164,6 +164,12 @@ GUARDS=(
   smoke:ui-content-locale-separation:2
   smoke:brandmd-emitter:1
   smoke:brandmd-lifecycle:1
+
+  # De enige van de 18 RODE wezen met een echt verouderde assertie. Hij eiste de
+  # Nederlandse zin "Workspace heeft 3 persona(s)", die op 2026-06-17 bewust naar
+  # het Engels is vertaald (35097c25). Twee maanden ongezien rood. Nu getoetst op
+  # gedrag in plaats van op de zin — zie de noot in het bestand zelf.
+  smoke:checkpoint-gates:40
 )
 
 # ── Hoe asserties geteld worden ─────────────────────────────────────────────

@@ -101,11 +101,23 @@ async function main() {
     workspacePersonaCount: 3,
     workspaceProductCount: 2,
   });
+  // ⚠️ Deze assertie eiste tot 19-08 de Nederlandse zin "Workspace heeft 3
+  // persona(s)". Die is op 2026-06-17 vertaald naar het Engels (`35097c25`,
+  // "migrate crept-in Dutch UI/communication text to English") — een bewuste
+  // migratie, want de product-UI is monolinguaal Engels (ADR 2026-06-17). De
+  // bewaker stond sindsdien twee maanden ongezien rood, want hij heeft geen
+  // npm-script en draaide nergens.
+  //
+  // Nu getoetst op het GEDRAG in plaats van op de zin: geen pass, severity warn,
+  // en de reden noemt het aantal én de campagne-koppeling. Dat overleeft een
+  // volgende vertaling, en valt nog steeds om als de workspace-fallback
+  // verdwijnt of naar block-niveau schuift.
   assert(
-    '[2] workspace-personas warn (info-level "niet campaign-linked")',
+    '[2] workspace-personas warn (info-level, niet campaign-linked)',
     !ctxWsFallback.pass &&
       ctxWsFallback.severity === 'warn' &&
-      ctxWsFallback.reasons[0].includes('Workspace heeft 3 persona(s)'),
+      /\b3 persona/.test(ctxWsFallback.reasons[0]) &&
+      /campaign/i.test(ctxWsFallback.reasons[0]),
   );
 
   const ctxFullyEmpty = validateContextCompleteness({
