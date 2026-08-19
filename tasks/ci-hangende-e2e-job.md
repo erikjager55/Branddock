@@ -4,13 +4,13 @@ title: De e2e-job kan uren hangen zonder ooit rood te worden — geen timeout, g
 fase: post-launch
 priority: now
 effort: 2-4 uur (de fix is klein; het bewijzen dat hij werkt is het werk)
-owner: unassigned
-status: open
+owner: claude-code
+status: in-progress
 created: 2026-08-18
 completed: -
 related-adr: -
 related-spec: -
-worktree: -
+worktree: branddock-ci-hang  # geclaimd door sessie 78a1d49f, 2026-08-18
 ---
 
 # Probleem
