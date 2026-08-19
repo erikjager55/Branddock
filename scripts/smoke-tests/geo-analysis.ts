@@ -55,6 +55,31 @@ assert('schemaTypes bevat DefinedTermSet (uit definities)', a.schemaTypes.includ
 assert('canonicalUrl bewaard', a.canonicalUrl === 'https://acme.branddock.app/wat-is-geo');
 assert('measuredAt = ingegeven now (deterministisch)', a.measuredAt === '2026-06-19T12:00:00.000Z');
 
+console.log('\n── sanitizer-tak (junifix 2f78eec3, changelog #340) ──');
+// De junifix voegde hier een tak toe: is de bron een interne context-laagnaam,
+// dan valt de bronvermelding wég uit de scoringstekst. Die tak stond sinds
+// 24-06 ONBEWAAKT — de bewaker is van 19-06 en zijn fixture draagt alleen een
+// echte bron ('Gartner 2026'), dus het gelukkige pad.
+const metStat = (source: string | null) =>
+  buildGeoOptimizationAnalysis({
+    variant: { ...variant, citeableStats: [{ label: 'AI-zoekgroei', value: '+40%', source }] },
+    canonicalUrl: 'https://acme.branddock.app/wat-is-geo',
+    now,
+  });
+const echteBron = metStat('Gartner 2026');
+const interneLaag = metStat('brand-context: delivery evidence');
+const geenBron = metStat(null);
+assert(
+  'interne laagnaam telt NIET als bron (scoort als bronloos)',
+  interneLaag.signals.citedStats === geenBron.signals.citedStats,
+  `intern=${interneLaag.signals.citedStats} geen=${geenBron.signals.citedStats}`,
+);
+assert(
+  'MUTATIETEST — een echte bron scoort WEL anders (anders meet deze check niets)',
+  echteBron.signals.citedStats !== geenBron.signals.citedStats,
+  `echt=${echteBron.signals.citedStats} geen=${geenBron.signals.citedStats}`,
+);
+
 console.log('\n── deterministisch ──');
 const b = buildGeoOptimizationAnalysis({ variant, canonicalUrl: 'https://acme.branddock.app/wat-is-geo', now });
 assert('zelfde input → zelfde score', b.geoScore === a.geoScore);
