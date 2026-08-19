@@ -452,6 +452,15 @@ nauwelijks verkeer. De taak draagt vier meetbare triggers plus de SQL om ze te t
   De nieuwe foutmelding wijst het aan als het gebeurt.
 - **Mail 2.4** citeert nu de positionering uit de scan. Merken zonder bruikbare
   positionering vallen terug op een datum-variant — dat is de zwakkere versie.
+- **`contentType` wordt gemengd behandeld — sommige consumenten normaliseren, andere niet.**
+  Gevonden bij de verificatie-sweep van 19-08, na het opschonen van drie smoke-scripts die de
+  display-naam als id schreven (#414). `evaluatePageQualityForType` vergelijkt **exact**
+  (`=== 'landing-page'`), terwijl de send-route en twee Content-Library-views
+  `.toLowerCase()` doen. De data is nu schoon en prod was het al, dus er is vandaag geen
+  gevolg — maar de vraag "hoort `contentType` genormaliseerd te worden bij het schrijven?"
+  staat open. Bewust niet opgelost: dat raakt meer plekken dan de opruiming die het aan het
+  licht bracht.
+
 - **`channelTones`** wordt nooit door een scan gevuld: 2,5 punt van de Brand Score is
   daarmee onbereikbaar zonder mens. Bewust zo gelaten.
 
