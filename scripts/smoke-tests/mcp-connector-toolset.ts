@@ -8,9 +8,9 @@
  * hij bestaan (bewuste, per-merk vergrendelde handeling).
  *
  * Dekt:
- *   1. OAuth-context → 17 tools, zónder import_brand_data
- *   2. API-key-context → 18 tools, mét import_brand_data
- *   3. De 17 gedeelde tools zijn in beide identiek (geen andere drift)
+ *   1. OAuth-context → exact EXPECTED_OAUTH_TOOLS, zónder import_brand_data
+ *   2. API-key-context → diezelfde lijst PLUS import_brand_data
+ *   3. De gedeelde tools zijn in beide identiek (geen andere drift)
  *
  * Draait volledig in-memory: de tools worden alleen geregistreerd, nooit
  * aangeroepen — geen DB, geen AI-calls, geen netwerk.
@@ -63,6 +63,51 @@ const API_KEY_CTX: PublicMcpContext = {
 
 const IMPORT_TOOL = 'import_brand_data';
 
+/**
+ * De tools die een OAuth-connector hoort te zien, expliciet en op naam.
+ *
+ * ⚠️ Stond hier tot 2026-08-19 als hardgecodeerd AANTAL (17 en 18). Dat liep
+ * achter zodra er een tool bijkwam: `get_brand_md` is in `ab8db316` toegevoegd
+ * en de smoke meldde sindsdien `FAIL 17 tools -- gevonden: 18`. Dat las als een
+ * regressie terwijl het een bewuste uitbreiding was — en niemand merkte het,
+ * want dit script draaide in geen enkele workflow.
+ *
+ * Een lijst op naam verrot niet op dezelfde manier: hij faalt met WELKE tool
+ * erbij kwam of verdween, en dat is meteen de vraag die je wilt beantwoorden.
+ * Komt er bewust een tool bij, dan is deze lijst bijwerken het werk van één
+ * regel — en dat is precies de bedoeling.
+ */
+const EXPECTED_OAUTH_TOOLS = [
+  'generate_campaign_strategy',
+  'generate_image',
+  'generate_long_form_seo',
+  'generate_on_brand',
+  'generate_video',
+  'generate_web_page',
+  'get_brand_context',
+  'get_brand_md',
+  'get_deliverable_content',
+  'get_seo_status',
+  'get_strategy_status',
+  'list_brands',
+  'list_competitors',
+  'list_personas',
+  'list_products',
+  'rewrite_on_brand',
+  'score_against_brand',
+  'search_knowledge',
+] as const;
+
+/** Meldt precies welke tools erbij kwamen of verdwenen. */
+function diffTools(actual: string[], expected: readonly string[]): string {
+  const extra = actual.filter((t) => !expected.includes(t));
+  const missing = expected.filter((t) => !actual.includes(t));
+  const parts: string[] = [];
+  if (extra.length) parts.push(`NIEUW: ${extra.join(', ')}`);
+  if (missing.length) parts.push(`WEG: ${missing.join(', ')}`);
+  return parts.join(' | ') || 'geen verschil';
+}
+
 async function main(): Promise<void> {
   console.log('\nMCP connector-toolset smoke\n');
 
@@ -75,11 +120,19 @@ async function main(): Promise<void> {
     !oauthTools.includes(IMPORT_TOOL),
     `tools: ${oauthTools.join(', ')}`,
   );
-  assert('17 tools', oauthTools.length === 17, `gevonden: ${oauthTools.length}`);
+  assert(
+    'exact de verwachte toolset',
+    diffTools(oauthTools, EXPECTED_OAUTH_TOOLS) === 'geen verschil',
+    diffTools(oauthTools, EXPECTED_OAUTH_TOOLS),
+  );
 
   console.log('\n2. API-key (bd_live_…)');
   assert(`${IMPORT_TOOL} wél aanwezig`, keyTools.includes(IMPORT_TOOL));
-  assert('18 tools', keyTools.length === 18, `gevonden: ${keyTools.length}`);
+  assert(
+    'exact de verwachte toolset + import_brand_data',
+    diffTools(keyTools, [...EXPECTED_OAUTH_TOOLS, IMPORT_TOOL]) === 'geen verschil',
+    diffTools(keyTools, [...EXPECTED_OAUTH_TOOLS, IMPORT_TOOL]),
+  );
 
   console.log('\n3. Geen overige drift tussen de twee');
   const keyWithoutImport = keyTools.filter((t) => t !== IMPORT_TOOL);
