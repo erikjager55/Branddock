@@ -1,0 +1,67 @@
+name: Nachtelijke productie-bewakers
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Bewakers die de ÉCHTE productie-site ophalen. Ze horen bewust NIET in de
+# PR-poort: daar zouden ze CI koppelen aan productie-beschikbaarheid, en dan
+# kleurt élke openstaande PR rood zodra de site hikt of een pagina wordt
+# gedepubliceerd. Dat leert mensen de check te negeren — en dan ziet niemand de
+# échte regressie (zelfde redenering als de golden-set-splitsing in #351).
+#
+# Waarom ze tóch ergens moeten draaien: `smoke:published-page-prod` bestaat
+# precies omdat gepubliceerde klantpagina's **44 dagen lang geen `<title>`**
+# hadden (changelog #477), gevonden bij toeval tijdens ander werk. Een bewaker
+# die nergens draait, vangt die volgende keer ook niet.
+#
+# ⚠️ EEN RODE RUN HEEFT TWEE BETEKENISSEN — lees welke check faalde:
+#   "de pagina is bereikbaar"     faalt → de site hikt, of `linfi/pillar-page`
+#                                          is gedepubliceerd. Geen coderegressie.
+#   een van de metadata-checks    faalt → wél een regressie: de pagina staat er,
+#                                          maar mist titel, OG-tags of scoping.
+#
+# Melding loopt via GitHub's standaard e-mail bij een gefaalde scheduled run
+# (naar wie de cron als laatste wijzigde). Er is bewust geen extra kanaal
+# bijgebouwd: een nightly die niemand leest is net zo dood als een bewaker die
+# nergens draait, maar een half-gebouwd alertingpad is dat óók.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  schedule:
+    # 03:30 UTC — een half uur ná golden-sets (03:00), zodat ze niet om dezelfde
+    # runner-capaciteit vechten.
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+    # Handmatig draaien na een deploy die metadata of routing raakt.
+
+concurrency:
+  group: nightly-prod-guards
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  productie-bewakers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Smoke-tests importeren `@prisma/client` transitief via src/lib/prisma.ts;
+      # zonder generate crashen ze op een ontbrekende module. Schema-only, geen
+      # DB-connectie nodig.
+      - run: npx prisma generate
+
+      # De bewaker raakt de database niet, maar `src/lib/prisma.ts` gooit al bij
+      # het IMPORTEREN als DATABASE_URL ontbreekt. Een dode poort volstaat en is
+      # veiliger dan een echte URL: zou er ooit een query bij komen, dan valt hij
+      # luid om in plaats van stil iets te doen op een echte database.
+      - name: Gepubliceerde klantpagina op productie
+        env:
+          DATABASE_URL: "postgresql://nobody:x@127.0.0.1:59999/geen-db-in-deze-job"
+        run: npm run smoke:published-page-prod
