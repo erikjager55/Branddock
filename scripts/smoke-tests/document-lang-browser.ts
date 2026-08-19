@@ -102,7 +102,7 @@ async function checkServerHtml(s: Scenario): Promise<boolean> {
 }
 
 /** Fase 2: leest het attribuut ná hydratie, eventueel ná een client-navigatie. */
-async function checkAfterHydration(browser: Browser, s: Scenario): Promise<boolean> {
+async function checkAfterHydration(browser: Browser, s: Scenario): Promise<boolean | null> {
   const ctx = await browser.newContext();
   if (s.cookie) {
     await ctx.addCookies([{ name: 'branddock-ui-locale', value: s.cookie, url: BASE }]);
@@ -112,14 +112,40 @@ async function checkAfterHydration(browser: Browser, s: Scenario): Promise<boole
     await page.goto(BASE + s.path, { waitUntil: 'networkidle' });
     if (s.navigateTo) {
       await page.waitForTimeout(1500);
-      // Next patcht `history.pushState`; die aanroep werkt `usePathname()` bij
-      // zonder page load. Bewust GEEN extra klik of popstate-dispatch: een klik
-      // kan op een echte link landen (dan wordt het een volledige page load, die
-      // niets over de client-sync bewijst), en `new PopStateEvent('popstate')`
-      // heeft `state === null` waarop Next' handler direct returnt.
-      await page.evaluate((to) => {
-        window.history.pushState({}, '', to);
-      }, s.navigateTo);
+
+      // ⚠️ NAVIGEER MET EEN ECHTE KLIK, niet met `history.pushState`.
+      //
+      // Hier stond een `pushState`-aanroep met het comment dat Next die patcht
+      // en `usePathname()` daarmee bijwerkt. Dat klopt niet in Next 16.2.9.
+      // Gemeten met drie mechanismen naast elkaar, startend op
+      // /marketing/pricing (lang="nl") en navigerend naar / (verwacht "en"):
+      //
+      //   kale pushState             lang: nl -> nl   pathname=/
+      //   pushState + popstate       lang: nl -> nl   pathname=/
+      //   echte klik op een next/link lang: nl -> en  pathname=/
+      //
+      // Alleen de klik werkt. De URL verandert bij pushState wél, maar de
+      // React-router niet — dus het effect in DocumentLangSync draait niet en
+      // deze scenario's faalden ongeacht het gedrag van de component. Ze hebben
+      // dus nooit iets bewezen.
+      //
+      // Het oude comment wees de klik expliciet af ("kan op een echte link
+      // landen, dan wordt het een volledige page load"). Ook dat klopt niet:
+      // een `next/link`-anchor doet client-side navigatie, en de meting laat
+      // zien dat `<html lang>` dan wél meebeweegt.
+      // Geen link naar het doel = niet alleen ontestbaar, maar ook ONBEREIKBAAR:
+      // zonder link kan een bezoeker die client-side navigatie niet maken. Een
+      // overgeslagen scenario is hier dus geen dekkingsgat maar een grens van
+      // wat er kán gebeuren. Verschijnt de link later wél, dan gaat het scenario
+      // vanzelf meedoen.
+      const link = page.locator(`a[href="${s.navigateTo}"]`).first();
+      if ((await link.count()) === 0) {
+        console.log(
+          `OVER [browser] ${s.label.padEnd(42)} -> geen next/link naar ${s.navigateTo} op deze pagina`,
+        );
+        return null;
+      }
+      await link.click();
     }
     await page.waitForTimeout(2500); // ruim ná hydratie + LocaleReconciler
     const got = await page.evaluate(() => document.documentElement.lang);
@@ -142,6 +168,7 @@ async function main(): Promise<void> {
 
   let failed = 0;
   let checks = 0;
+  let overgeslagen = 0;
 
   // Fase 1 alleen voor scenario's zónder client-navigatie: bij die laatste is
   // de serverrespons per definitie die van het STARTpad, niet van het doel.
@@ -161,8 +188,15 @@ async function main(): Promise<void> {
     const browser = await chromium.launch();
     try {
       for (const s of scenarios) {
+        const uitkomst = await checkAfterHydration(browser, s);
+        // `null` = niet te toetsen (geen link naar het doel op deze pagina).
+        // Dat is stilte, geen goedkeuring — het telt niet mee als check.
+        if (uitkomst === null) {
+          overgeslagen++;
+          continue;
+        }
         checks++;
-        if (!(await checkAfterHydration(browser, s))) failed++;
+        if (!uitkomst) failed++;
       }
     } finally {
       await browser.close();
@@ -177,6 +211,12 @@ async function main(): Promise<void> {
   if (failed > 0) {
     console.error(`\n✗ document-lang-browser: ${failed} van ${checks} checks fout`);
     process.exit(1);
+  }
+  if (overgeslagen > 0) {
+    console.log(
+      `\n⚠ ${overgeslagen} navigatie-scenario('s) niet getoetst: geen next/link naar het doel\n` +
+        "  op de startpagina. Dat is stilte, geen goedkeuring.",
+    );
   }
   console.log(`\n✓ document-lang-browser: ${checks} checks correct (${scenarios.length} scenario's)`);
 }
