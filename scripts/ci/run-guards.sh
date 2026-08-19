@@ -113,6 +113,80 @@ GUARDS=(
   # Zijn eerste bevinding was hijzelf: hij stond nog niet in deze lijst.
   smoke:guard-wiring:3
 
+  # ── 28 bewakers waarvan MIJN EIGEN label fout was ─────────────────────────
+  # Bij het opstellen van NIET_AANGEHAAKT (#419) heb ik 51 redenen ingevuld,
+  # deels afgeleid uit eerdere classificaties en deels uit de bestandsnaam.
+  # Daarna nagemeten door ze allemaal te draaien met een dode DATABASE_URL en
+  # onbruikbare sleutels: **38 van de 51 kwamen groen terug**. De labels
+  # "database" en "sleutel" klopten voor de meerderheid niet.
+  #
+  # Dat is precies waarom een onbewezen label niet in een schuldlijst hoort: hij
+  # ziet er compleet uit en niemand toetst hem meer.
+  #
+  # Ook gecontroleerd op stil overslaan — groen zonder database kan óók betekenen
+  # dat een bewaker een deel wegslaat. Twee treffers op "overgeslagen" bleken
+  # ASSERTIE-NAMEN te zijn ("sectie zonder props wordt overgeslagen"), dezelfde
+  # vals-positieve als een eerdere scan op datzelfde woord. Geen stille
+  # overslaan-paden gevonden.
+  #
+  # De 10 junireeks-wezen zijn hier bewust NIET bij: hun label "gedekt door de
+  # ketting" gaat over redundantie, niet over of ze draaien.
+  smoke:preserve-user-rows:40
+  smoke:content-library-ingest:40
+  smoke:rule-violation-stats:40
+  smoke:seo-context:38
+  smoke:brand-library:33
+  smoke:security-residual:33
+  smoke:page-seo-metadata:32
+  smoke:lp-assistant-edits:29
+  smoke:voice-baseline:29
+  smoke:brief-render:28
+  smoke:brandstyle-provenance:27
+  smoke:geo-discovery:27
+  smoke:image-coupling:23
+  smoke:page-derived-meta:23
+  smoke:geo-longform-schema:22
+  smoke:geo-panel:22
+  smoke:geo-longform-render:18
+  smoke:geo-puck-renderable:17
+  smoke:geo-optimization-goals:16
+  smoke:guard-hooks:16
+  smoke:geo-author-profile:15
+  smoke:ad-creative-validation:14
+  smoke:brand-manifest-golden:13
+  smoke:brand-font-substitutes:12
+  smoke:geo-claw-gate:11
+  smoke:source-image-matcher:10
+  smoke:claw-security:8
+  smoke:brandstyle-golden:3
+
+  # ── De laatste 10 junireeks-wezen ─────────────────────────────────────────
+  # Ze stonden als "gedekt door de ketting" op de schuldlijst — een claim die op
+  # MODULE-overlap rustte, en ik schreef er zelf bij dat dat geen GEDRAGS-overlap
+  # is. Toen ik de koppeling uitwerkte bleek die waarschuwing terecht:
+  #
+  #   phase40 toetst "Zwarthout brand is NIET Branddock-teal"  (cross-brand-lek)
+  #   phase53 toetst contrastverhoudingen op hero-elementen    (≥3:1 / ≥4,5:1)
+  #   phase54 toetst spacing-ondergrenzen per archetype
+  #
+  # Dat de ketting dezelfde module áánraakt, zegt over dat gedrag niets. Ze als
+  # verwijder-kandidaat laten staan op een ongemeten claim is de verkeerde kant
+  # van de fout: redundante dekking kost twee seconden, een ten onrechte
+  # verwijderde bewaker kost een regressie.
+  #
+  # Wie ze alsnog wil opruimen, leest eerst per paar wát het kettinglid met
+  # diezelfde module toetst. Die leesbeurt heeft niemand gedaan.
+  smoke:wpb-accent-reservation:21
+  smoke:wpb-lp-contrast:19
+  smoke:wpb-brand-fallback-no-leak:18
+  smoke:wpb-band-alternation:17
+  smoke:wpb-button-reconcile:15
+  smoke:wpb-font-assets:12
+  smoke:wpb-card-context:11
+  smoke:wpb-variant-angle:8
+  smoke:wpb-feature-images:7
+  smoke:wpb-lp-rhythm:5
+
   # ── Weesbestanden, aangehaakt 2026-08-19 ───────────────────────────────────
   # Deze drie hadden geen npm-script en waren daardoor ONZICHTBAAR voor de survey:
   # die telde scripts in package.json, niet bestanden op schijf. `ssrf-guard` is

@@ -49,58 +49,17 @@ const NIET_AANGEHAAKT: Record<string, string> = {
   'smoke-tests/structured-tweaks.ts': 'sleutel — volledig AI, geen gratis laag',
   'smoke-tests/google-vision-api-key.ts': 'sleutel — GOOGLE_VISION_API_KEY',
   'smoke-tests/seo-pipeline-wiring.ts': 'sleutel — 1 PASS / 19 FAIL zonder sleutel in CI',
-  'eval/brand-manifest-golden/run.ts': 'sleutel — live LLM-evaluatie',
-  'eval/brandstyle-golden-set/run.ts': 'sleutel — live LLM-evaluatie',
 
   // ── database ──────────────────────────────────────────────────────────────
   'smoke-tests/claw-review-tool.ts': 'database — rood met nul asserties, vraagt meer dan een DB',
   'smoke-tests/competitor-refresh-dual-write.ts': 'database — idem',
   'smoke-tests/locale-picker-api.ts': 'database — idem',
-  'smoke-tests/preserve-user-rows.ts': 'database',
-  'smoke-tests/rule-violation-stats.ts': 'database',
-  'smoke-tests/brand-library-accessor.ts': 'database',
-  'smoke-tests/brandstyle-provenance.ts': 'database',
-  'smoke-tests/campaign-brief-render.ts': 'database',
-  'smoke-tests/claw-security-hardening.ts': 'database',
-  'smoke-tests/source-image-matcher.ts': 'database',
-  'smoke-tests/voice-baseline-1pager.ts': 'database',
-  'smoke-tests/content-item-library-ingest.ts': 'database',
-  'smoke-tests/ad-creative-validation.ts': 'database',
-  'smoke-tests/lp-assistant-content-edits.ts': 'database',
-  'smoke-tests/seo-context-selection.ts': 'database',
-  'smoke-tests/page-derived-meta.ts': 'database',
-  'smoke-tests/page-seo-metadata.ts': 'database',
-  'smoke-tests/brand-font-substitutes.ts': 'database',
-  'smoke-tests/security-residual.ts': 'database',
-  'smoke-tests/image-content-coupling.ts': 'database',
-  'smoke-tests/geo-author-profile.ts': 'database',
-  'smoke-tests/geo-claw-gate.ts': 'database',
-  'smoke-tests/geo-discovery.ts': 'database',
-  'smoke-tests/geo-longform-render.ts': 'database',
-  'smoke-tests/geo-longform-schema.ts': 'database',
-  'smoke-tests/geo-optimization-goals.ts': 'database',
-  'smoke-tests/geo-panel.ts': 'database',
-  'smoke-tests/geo-puck-renderable.ts': 'database',
 
   // ── cli / herschrijf ──────────────────────────────────────────────────────
   'eval/position-swap-judge.ts': 'cli — verwacht --candidateA/--candidateB/--rubric',
-  'smoke-tests/guard-hooks.ts': 'cli — toetst de git-hooks, draait buiten CI',
   'smoke-tests/agents-data-analyst.ts':
     'herschrijf — hardcodeert de dev-workspaces Zwarthout en Linfi, kan nooit in CI draaien',
 
-  // ── junireeks: raakt alleen modules die de augustus-ketting al dekt ───────
-  // ⚠️ Verwijder-KANDIDATEN, niet verwijderd. "Raakt dezelfde module" is niet
-  // hetzelfde als "toetst hetzelfde gedrag" (zie tasks/weesbewakers-triage.md).
-  'smoke-tests/web-page-builder-phase40-brand-fallback-no-leak.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase53-lp-contrast.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase54-lp-rhythm.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase56-feature-images.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase57-font-assets.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase58-card-context.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase59-accent-reservation.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase62-button-component-reconcile.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase63-section-band-alternation.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase65-variant-angle-prompt.ts': 'gedekt door de ketting',
 };
 
 let pass = 0;
