@@ -671,3 +671,16 @@ Bewezen via Playwright: `el.style.background = '<grad>, url(...)'; el.style.setP
 - Draai elke kandidaat één keer met zijn voorwaarde weg en kijk naar de exit-code vóór je hem aansluit.
 - Een script dat een opt-in-vlag (`SMOKE_DB=1`) namens jou zet, moet de veiligheid overnemen die die vlag borgde. `scripts/ci/run-db-guards.sh` weigert daarom tegen een `DATABASE_URL` die niet lokaal is of geen `test` in de naam draagt.
 **Prior art**: PR #369 (`scripts/ci/run-db-guards.sh`), #368 (de survey van de parallelle sessie), #358/#360 (de goedkope groep), #359 (bewaker die het verkeerde bewaakte).
+
+## 2026-08-19: een bewaker die niet draait, bevriest op de bug in plaats van op de fix — en kalibreer óók de knop waaraan je draait
+**What went wrong**: Drie dingen in één sessie, alle drie over bewijs dat er wel uitzag als bewijs.
+1. **Een assertie bewaakte de weggehaalde bug.** `smoke:geo-generation-prompt` eiste de letterlijke tekst `VERPLICHTE bron` in de GEO-prompt. Die eis is op 2026-06-24 bewust vervallen (`2f78eec3`): een verplichte bron dwong het model er één te *verzinnen*, meestal een interne laagnaam als `brand-context`, die als bronvermelding op de klantpagina belandde. De fix maakte de bron nullable. De bewaker faalde dus bijna twee maanden op een verbeterde prompt — ongezien, want hij stond in geen enkele workflow.
+2. **Ik kalibreerde mijn meter, maar niet mijn ingreep.** Voor de survey toetste ik netjes of mijn vals-vinkje-detector het enige bekende geval kón vinden. Wat ik niet toetste, is of mijn *ingreep* — sleutels strippen met `env -u` — überhaupt iets deed. Dat deed het niet. Eén regel (de waarde printen ná het strippen) had het meteen laten zien; in plaats daarvan publiceerde ik een conclusie over 27 bewakers die op niets rustte.
+3. **Een zwakke mutatie leest als een zwakke assertie.** Bij het natoetsen van een nieuwe assertie verving ik de bewaakte zin in de prompt — en de bewaker bleef groen. Even leek de assertie waardeloos. De zin stond op *twee* plekken en mijn `replace` verving er één. De mutatie was zwak, niet de assertie.
+**Rule**:
+- Verandert een contract, dan is de bijbehorende bewaker mee-veranderd werk. Assert de **reparatie**, niet de weggehaalde eis: hier "de prompt verbiedt een interne laagnaam als bron", niet "de prompt eist een bron". De eerste vorm vangt de terugkeer van de bug, de tweede vangt de fix.
+- Een bewaker die nergens draait, wordt met de tijd een *valse rode* — even misleidend als een vals vinkje, want wie hem eindelijk draait leest een echte regressie waar een verouderde assertie staat. Aanhaken is daarom geen luxe; het is wat een assertie levend houdt.
+- Kalibreer niet alleen je meetinstrument maar ook je **ingreep**. "Ik heb X weggehaald" is een aanname tot je X ná de ingreep hebt geprint.
+- Tel bij een mutatietest eerst de vindplaatsen (`grep -c`). Muteer je er één van drie, dan bewijst een groene run niets over je assertie.
+**Prior art**: PR #374 (elf bewakers + assertie-ondergrens), #375 (deze twee reparaties), #368 (de survey), #369/#373 (de parallelle sessie).
+
