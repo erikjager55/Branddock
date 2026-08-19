@@ -1,17 +1,84 @@
 ---
 id: fval-merkwoorden-vs-antipattern
-title: Vier van Linfi's tien voorkeurstermen zijn precies de woorden die de anti-AI-pijler bestraft
+title: INGETROKKEN — de merkwoord/anti-AI-botsing was op 2026-06-10 al gerepareerd; ik vergeleek scores van vóór en ná die fix
 fase: post-launch
-priority: next
+priority: -
 effort: 1 dag meten + de productvraag; de fix hangt van het antwoord af
 owner: unassigned
-status: open
+status: done
 created: 2026-08-19
-completed: -
+completed: 2026-08-19
 related-adr: docs/adr/2026-05-05-fval-three-pillar.md
 related-spec: -
 worktree: -
 ---
+
+# ⛔ INGETROKKEN 2026-08-19, binnen een dag na aanmaak — het probleem is al opgelost
+
+**Dit task-file beschreef verouderde data. Er is niets te bouwen; Eriks akkoord op optie 3
+is hiermee vervallen.** De analyse hieronder blijft staan omdat de meetfout leerzamer is dan
+de bevinding was.
+
+## Wat er werkelijk aan de hand was
+
+De botsing bestónd — en is **op 2026-06-10 gerepareerd**, drie maanden vóór ik hem
+"ontdekte". `detectAiTells()` heeft een `brandVocabulary`-optie die merkwoorden uit de
+tell-matches filtert, en `composition-engine.ts:410` voedt die met `wordsWeUse` +
+`brandVocabularyDo`. De comment daarboven noemt letterlijk mijn twee grootste vindplaatsen:
+
+> *"het detector-lexicon bevat letterlijk seed-woorden ('naadloos', 'op maat') waardoor de
+> judge hetzelfde woord prees én bestrafte."*
+
+Gemeten effect van die fix, over alle workspaces:
+
+| | n | antiPattern |
+|---|---|---|
+| Scores vóór 2026-06-10 | 209 | **6,37** |
+| Scores ná 2026-06-10 | 98 | **9,13** |
+
+En op Linfi's eigen content nagemeten met de echte detector: mét allowlist gaat de score van
+**40,3 → 15,4** per 1000 woorden (40 → 17 matches), en het verdict kantelt van `MIXED` naar
+`HUMAN_BASELINE`.
+
+## Waarom mijn analyse er toch uitzag als een bevinding
+
+Mijn "Linfi tegen de rest"-vergelijking was in werkelijkheid **vóór-de-fix tegen ná-de-fix**:
+
+| Workspace | n | periode | scores ná de fix | antiPattern |
+|---|---|---|---|---|
+| Linfi | 33 | alleen 2026-05-19 | **0** | 4,82 |
+| Better brands | 16 | juli | 16 | 8,94 |
+| Napking | 20 | mei–juni | 10 | 9,15 |
+| Zwarthout | 2 | juli | 2 | 10,00 |
+
+Linfi is de enige workspace waarvan **alle** linkedin-post-scores van vóór de fix zijn. Het
+verschil van 4,3 punten is dus geen eigenschap van dat merk maar de leeftijd van zijn scores.
+Er was geen workspace-effect en geen ontwerpspanning — er was een datum.
+
+## Twee meetfouten, gestapeld
+
+1. **Ik nam de judge-rationale als bron in plaats van de code.** Mijn eerste claim was "vier van
+   de tien voorkeurstermen (`hoogwaardig`, `stijlvol`, `optimaal`, `oogstrelend`) staan
+   letterlijk op de buzzword-lijst". Onjuist: géén van die vier staat in `TELL_DEFINITIONS`.
+   De judge schreef *"nl_buzzword_adjectives (e.g., 'hoogwaardig', 'stijlvol')"* — dat "e.g."
+   was het model dat de categorie illustreerde met eigen voorbeelden, niet een lijst van
+   werkelijke matches. Tegen de echte detector gemeten waren het er drie, en andere:
+   `vakkundig`, `naadloos`, `op maat`.
+2. **Ik vergeleek scores zonder hun datum te bekijken.** Een rij in `ContentFidelityScore` is
+   een momentopname van de code van dát moment. Twee workspaces vergelijken is dan alleen
+   geldig als hun scores uit dezelfde periode komen.
+
+## Wat hiervan overeind blijft
+
+- De `brandVocabulary`-allowlist werkt aantoonbaar en wordt correct gevoed.
+- ⚠️ **Wel echt**: Linfi's 33 scores zijn verouderd en kleuren elke ranglijst waarin ze
+  meedoen. Wie F-VAL-cijfers per content-type of workspace rapporteert, filtert op
+  `scoredAt >= '2026-06-10'` of hermeet. Dat is de enige actie die uit dit hele onderzoek
+  volgt, en hij staat als los eindje in `START_HERE.md`.
+
+---
+
+# Oorspronkelijke analyse (bewaard — de meetfout is de les)
 
 # Probleem
 
