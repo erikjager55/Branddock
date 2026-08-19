@@ -60,6 +60,7 @@
     "smoke:ui-content-locale-separation": "tsx scripts/smoke-tests/ui-content-locale-separation.ts",
     "smoke:brandmd-emitter": "tsx scripts/smoke-tests/brandmd-emitter.ts",
     "smoke:brandmd-lifecycle": "tsx scripts/smoke-tests/brandmd-lifecycle.ts",
+    "smoke:checkpoint-gates": "tsx scripts/smoke-tests/checkpoint-gates.ts",
     "smoke:security-medium": "tsx scripts/smoke-tests/security-medium.ts",
     "smoke:brand-name-caps": "tsx scripts/smoke-tests/enforce-brand-name-capitalization.ts",
     "smoke:document-lang-browser": "tsx scripts/smoke-tests/document-lang-browser.ts",
