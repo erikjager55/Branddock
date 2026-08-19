@@ -37,6 +37,56 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 497. Een bewaker met een adres maar zonder bestemming — en drie keer een meting die het tegenovergestelde bewees
+
+`smoke:db-ssl-mode` draaide nergens. Geen bewuste uitzondering: `run-db-guards.sh:36`
+verwijst hem expliciet door met "goedkope groep in run-guards.sh, niet hier" — naar een plek
+waar hij nooit is aangekomen. Hij bewaakt iets dat stil verzwakt: ná de pg-major betekent
+dezelfde `sslmode=require`-string versleuteld **zonder** certificaat- en hostnaamcontrole.
+Nu aangehaakt (15 asserties, 0,27s, puur), met een mutatietest op de gate-regel zelf —
+ondergrens 14 geeft exit 0, ondergrens 999 exit 1. Dat een regel in het bestand staat bewijst
+niet dat hij draait.
+
+De leesbeurt vóór het aanhaken (regel uit #494) leverde meteen een gat op, en van een soort
+die nog niet in de categorieën zat: **`no-verify` krijgt `level === 'ok'`.** Binnen de lens
+van de bewaker klopt dat — `no-verify` wordt niet zwakker door de major, want hij is al zwak.
+Maar `env-validation.ts` leest diezelfde uitkomst als "geen bezwaar", óók met
+`DATABASE_SSL_STRICT=true`. De strengste stand laat de zwakste modus door. Niet stil
+gerepareerd: de check zit op het productie-startpad, dus de assertie is geannoteerd met wat
+`ok` hier wél en niet betekent, plus waarom `weakening` de functie over haar eigen onderwerp
+zou laten liegen. Als beslispunt bij Erik neergelegd.
+
+**Drie keer bewees een meting het tegenovergestelde van wat de tekst beweerde.** Dat is de
+rode draad van deze entry, niet de bewaker.
+
+1. **Twee lokale branches zouden ongepusht werk dragen** — inclusief Eriks besluiten van die
+   dag. Onjuist: `git cherry` gaf patch-equivalent, en hun "unieke" inhoud was de ónafgevinkte
+   versie van checklists die in main al afgevinkt stonden. Oorzaak: `rev-list --left-right`
+   omgekeerd gelezen (45 commits *achter*, niet vooruit) en een three-dot diff gebruikt als
+   bewijs van afwezigheid. Beide gaven een net, niet-leeg antwoord. Als gotcha vastgelegd —
+   derde variant van "zit dit al in main?" in één week, na `merged: true` en "open task-file
+   bewijst niets".
+2. **`START_HERE` zei op drie plekken "44 van 44 merkfonts"** terwijl het task-file sinds
+   18-08 "29 van de 44" zei en Eriks besluit van 19-08 er 18 van maakte. De sessie-opener liep
+   achter op zijn eigen bron, in de top 3, op de plek die elke nieuwe sessie als eerste leest.
+3. **De verklaring voor vier lage F-VAL-scores klopte niet.** Het losse eindje wees naar
+   Napkings niet-gepubliceerde styleguide en vroeg "sluit dat eerst uit". Gemeten:
+   `linkedin-poll` en `twitter-thread` hebben **nul** unpublished-metingen, en bij
+   `linkedin-post` scoort de gepubliceerde groep juist tien punten lager (68,9 tegen 78,7).
+   Op prod staat Napking gewoon op `published = true`.
+
+   ⚠️ Het mechanisme eronder bestaat wél: de stijl-pijler is 87,8 (published) tegen 59-69
+   (unpublished). `brand-context.ts:1242` gate't zeven contextvelden op die vlag,
+   `styleguide-rule-compiler.ts:126` zet de rules-pijler op nul. Het verklaart déze vier
+   scores alleen niet. **Bijvangst op prod**: `better brands` is de enige unpublished
+   styleguide mét content (22 regels, 5 deliverables) — die zijn dus zonder merkcontext
+   gemaakt. Plus drie workspaces met die naam, twee leeg.
+
+- Task: [tasks/pg-major-sslmode-semantiek.md](../tasks/pg-major-sslmode-semantiek.md)
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #395, #397, #398
+
 ### 496. De taalbewaker en de CSP-policy draaien weer — en één sweep bleek half gratis
 
 `smoke:document-lang-browser` is gebouwd nadat élke bezoeker `lang="en"` kreeg op een
