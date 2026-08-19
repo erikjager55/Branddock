@@ -152,6 +152,18 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}
 
+      # Laat apt WACHTEN op een bezette lock in plaats van erop stuk te lopen.
+      # Gemeten 2026-08-19 (run 32223950965): `playwright install-deps` faalde
+      # drie keer op "Could not get lock /var/lib/apt/lists/lock ... held by
+      # process 3285 (apt-get)" terwijl in datzelfde log de andere apt-get
+      # gewoon doorliep. De runner draait bij het opstarten zijn eigen
+      # apt-taken; wij komen er middenin. Dit lost de klasse op, de backoff in
+      # retry-with-timeout.sh is het vangnet eronder.
+      - name: apt laten wachten op locks
+        run: |
+          echo 'DPkg::Lock::Timeout "180";' | sudo tee /etc/apt/apt.conf.d/99lock-timeout
+          echo 'Acquire::Retries "3";' | sudo tee -a /etc/apt/apt.conf.d/99lock-timeout
+
       - name: Install Playwright chromium
         if: steps.pw-cache.outputs.cache-hit != 'true'
         run: scripts/ci/retry-with-timeout.sh 300 3 npx playwright install --with-deps chromium
