@@ -98,7 +98,7 @@ GUARDS=(
   # Puur: geen database, geen sleutels, geen netwerk (0,3s). Bewaakt dat de
   # sslmode-semantiek van pg expliciet blijft; ná de pg-major betekent dezelfde
   # `require`-string versleuteld ZONDER certificaat- en hostnaamcontrole.
-  smoke:db-ssl-mode:14
+  smoke:db-ssl-mode:30
 
   # Faalt bij VERGETEN, niet bij toevoegen: wie een publieke pagina bouwt en hem
   # niet indeelt, krijgt hier rood in plaats van stil lang="en" op Nederlandse

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { judgeDatabaseSslMode } from "./db-ssl-mode";
+import { judgeDatabaseSslMode, shouldFailStartup } from "./db-ssl-mode";
 
 const envSchema = z.object({
   // Required — app will not start without these
@@ -129,9 +129,16 @@ export function validateEnv(): void {
   // mag geen productie-incident worden. Zet `DATABASE_SSL_STRICT=true` zodra de
   // prod-URL op verify-full staat; dan wordt dit wél fail-fast en kan het niet
   // stilletjes terugzakken bij een volgende copy-paste uit het Neon-dashboard.
+  //
+  // ⚠️ `ok` is hier het ENIGE oordeel dat doorgelaten mag worden, en dat is per
+  // 2026-08-19 aangescherpt. Daarvóór werd alleen op `weakening|missing` gereageerd,
+  // waardoor `sslmode=no-verify` — versleuteld zónder enige verificatie — stil
+  // passeerde, óók met DATABASE_SSL_STRICT=true. De strengste stand liet de
+  // zwakste modus door. Schrijf dit niet terug naar een opsomming van slechte
+  // niveaus: dan is elk nieuw niveau opnieuw stil toegestaan.
   const sslVerdict = judgeDatabaseSslMode(process.env.DATABASE_URL, process.env.NODE_ENV === "production");
-  if (sslVerdict.level === "weakening" || sslVerdict.level === "missing") {
-    if (process.env.DATABASE_SSL_STRICT === "true") {
+  if (sslVerdict.level !== "ok" && sslVerdict.level !== "not-applicable") {
+    if (shouldFailStartup(sslVerdict, process.env.DATABASE_SSL_STRICT === "true")) {
       throw new Error(`DATABASE_SSL_STRICT=true en ${sslVerdict.message}`);
     }
     if (process.env.NODE_ENV === "production") {

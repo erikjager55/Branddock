@@ -14,7 +14,7 @@
  * Puur, geen database. Run: npx tsx scripts/smoke-tests/db-ssl-mode.ts
  */
 
-import { judgeDatabaseSslMode } from '../../src/lib/db-ssl-mode';
+import { judgeDatabaseSslMode, shouldFailStartup } from '../../src/lib/db-ssl-mode';
 
 let passed = 0;
 const failures: string[] = [];
@@ -35,22 +35,20 @@ function main(): void {
   check('sslmode=verify-full is ok', judgeDatabaseSslMode(`${NEON}?sslmode=verify-full`, true).level === 'ok');
   check('géén sslmode wordt gevlagd als ontbrekend',
     judgeDatabaseSslMode(NEON, true).level === 'missing');
-  // ⚠️ LET OP bij het lezen van deze assertie: `ok` betekent hier "wordt niet
-  // zwakker door de pg-major", NIET "veilig". `no-verify` is de zwakste modus die
-  // er is. Deze functie beoordeelt uitsluitend de verzwakking waar
-  // `pg-major-sslmode-semantiek` over gaat, en binnen die lens is het antwoord
-  // correct.
-  //
-  // GEVOLG dat je moet kennen voordat je hier iets "repareert": `env-validation.ts`
-  // gebruikt `level === 'ok'` als "geen bezwaar", óók met DATABASE_SSL_STRICT=true.
-  // Een prod-URL met `sslmode=no-verify` passeert dus stil, zelfs in de strengste
-  // stand. Vandaag niet blootgesteld (de prod-URL draagt `require`), maar het is een
-  // echt gat en het staat als open punt in tasks/pg-major-sslmode-semantiek.md.
-  //
-  // Zet deze assertie dus NIET om naar 'weakening' om dat gat te dichten — dan
-  // liegt de functie over haar eigen onderwerp. De juiste fix is een apart niveau.
-  check('no-verify telt niet als verzwakkend (was al zwak, wordt niet zwakker)',
-    judgeDatabaseSslMode(`${NEON}?sslmode=no-verify`, true).level === 'ok');
+  // `no-verify` is GEEN 'weakening': hij wordt niet zwakker door de pg-major,
+  // hij ís al zwak. Dat onderscheid is het hele punt van het aparte `weak`-niveau
+  // (toegevoegd 2026-08-19). Tot die dag gaf deze modus `ok`, en `env-validation`
+  // las dat als "geen bezwaar" — óók onder DATABASE_SSL_STRICT=true. De strengste
+  // stand liet daarmee de zwakste modus door.
+  check('no-verify is zwak, maar niet VERZWAKKEND — eigen niveau',
+    judgeDatabaseSslMode(`${NEON}?sslmode=no-verify`, true).level === 'weak');
+  check('disable telt óók als zwak', judgeDatabaseSslMode(`${NEON}?sslmode=disable`, true).level === 'weak');
+  check('allow telt óók als zwak', judgeDatabaseSslMode(`${NEON}?sslmode=allow`, true).level === 'weak');
+  check('een typfout in de modus wordt niet stil goedgekeurd',
+    judgeDatabaseSslMode(`${NEON}?sslmode=verifyfull`, true).level === 'unknown');
+  check('de zwak-melding legt uit WAT er zwak aan is',
+    (() => { const v = judgeDatabaseSslMode(`${NEON}?sslmode=disable`, true);
+             return v.level === 'weak' && v.message.includes('niet eens versleuteld'); })());
 
   console.log('\n── B. Lokaal ─────────────────────────────────────────────');
   check('localhost zonder sslmode in dev = geen bezwaar',
@@ -66,6 +64,30 @@ function main(): void {
   const v = judgeDatabaseSslMode(`${NEON}?sslmode=require`, true);
   check('de melding noemt de gevonden modus', v.level === 'weakening' && v.message.includes('require'));
   check('en noemt wat je moet zetten', v.level === 'weakening' && v.message.includes('verify-full'));
+
+  console.log('\n── D2. Startup-poort (het ECHTE beslispad) ───────────────');
+  // Dit is de sectie die er het meest toe doet. Het oordeel klopte al vóór
+  // 2026-08-19; wat níet klopte was wat de aanroeper ermee deed. `no-verify`
+  // gaf 'ok' en passeerde daardoor stil, óók met DATABASE_SSL_STRICT=true.
+  // Deze checks toetsen `shouldFailStartup` — dezelfde functie die
+  // `env-validation.ts` aanroept, geen replica ervan.
+  const poort = (mode: string | null, strict: boolean) =>
+    shouldFailStartup(judgeDatabaseSslMode(mode ? `${NEON}?sslmode=${mode}` : NEON, true), strict);
+
+  for (const slecht of ['no-verify', 'disable', 'allow', 'require', 'prefer', 'verify-ca', 'verifyfull']) {
+    check(`STRICT=true weigert sslmode=${slecht}`, poort(slecht, true) === true);
+  }
+  check('STRICT=true weigert een ontbrekende sslmode', poort(null, true) === true);
+  check('STRICT=true laat verify-full door', poort('verify-full', true) === false);
+
+  // Tegenproef: zónder de vlag mag NIETS de startup breken. Deze kant is even
+  // belangrijk als de andere — de vlag bestaat juist omdat een throw by default
+  // de eerstvolgende deploy zou laten omvallen (Neon deelt `require` uit).
+  for (const slecht of ['no-verify', 'disable', 'require', 'verifyfull']) {
+    check(`ZONDER strict blijft sslmode=${slecht} een waarschuwing, geen crash`, poort(slecht, false) === false);
+  }
+  check('lokale dev-URL breekt nooit, ook niet met STRICT aan',
+    shouldFailStartup(judgeDatabaseSslMode(LOCAL, false), true) === false);
 
   console.log('\n── D. Mutatietest ────────────────────────────────────────');
   const levels = new Set([
