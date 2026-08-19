@@ -152,6 +152,26 @@ jobs:
           # gestopt: de runner ruimt de job op.
           BASE_URL=http://localhost:3000 npm run smoke:document-lang-browser
 
+      # De CSP-sweep draaide in géén enkele workflow, terwijl hij de enige
+      # automatische bescherming is onder de enforce-flip van 18-08 (ADR
+      # 2026-08-18, PR #294). De reden was dat hij build + database + chromium
+      # leek te vragen; die drie samen heeft geen enkele job.
+      #
+      # GEMETEN: van de 15 checks vragen er NEGEN geen van drieën. De vier
+      # policy-checks en de vijf nonce-integriteitschecks gaan via Playwrights
+      # `request`-fixture — pure HTTP. Gedraaid met PLAYWRIGHT_BROWSERS_PATH naar
+      # een lege map en een neppe DATABASE_URL: 9 passed in 2,1s.
+      #
+      # De overige zes gebruiken `page` en vragen dus een chromium-binary; één
+      # daarvan (de ingelogde app-shell) vraagt bovendien een geseede database.
+      # Die staan hier BEWUST niet: chromium installeren op deze job is een
+      # kostenafweging die aan Erik is. Zie de open beslissing in START_HERE.
+      - name: CSP-policy en nonce-integriteit
+        env:
+          E2E_DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
+          BETTER_AUTH_SECRET: "ci-build-secret-not-real"
+        run: npm run test:csp -- --grep-invert "CSP in de browser"
+
   e2e:
     runs-on: ubuntu-latest
     # Zie de toelichting bij `check`. Normale duur is 3-5 min; 25 laat ruimte
