@@ -93,7 +93,17 @@ console.log('## lifestyle chip — persona + product injection\n');
   assert('Prompt mentions platform (linkedin)', p.includes('linkedin'));
   assert('Prompt mentions aspect-ratio (1.91:1)', p.includes('1.91:1'));
   assert('Prompt mentions creative-platform/theme', p.includes('Brand-control op AI-snelheid'));
-  assert('Prompt mentions call-to-action', p.includes('Start een gratis trial'));
+  // F36 (audit 2026-05-13, commit 059dd8ba): de CTA hoort JUIST NIET in de
+  // image-prompt. Een gequote CTA las het image-model als instructie om die
+  // tekst letterlijk op het beeld te renderen — een blog-image kreeg de overlay
+  // "Plan a free consultation to discover how we can relieve yourtextile
+  // management concerns": Engels op een Nederlandse blog, inclusief typefout.
+  //
+  // Deze assertie stond tot 2026-08-19 omgekeerd en eiste de CTA nog. Ze faalde
+  // dus terecht — maar op de smoke, niet op de code. Dat bleef drie maanden
+  // onopgemerkt omdat dit script in geen enkele workflow draaide. Nu bewaakt hij
+  // het invariant dat F36 vestigde in plaats van het gedrag dat F36 wegnam.
+  assert('Prompt bevat JUIST GEEN call-to-action (F36)', !p.includes('Start een gratis trial'));
   assert('Prompt has lifestyle style instruction', p.includes('Lifestyle photography'));
   assert('Prompt has brand visual identity', p.includes('Teal #0D9488') || p.includes('Brand colors'));
 }
