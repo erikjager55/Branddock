@@ -703,3 +703,18 @@ Hernoem één van beide teksten en er vallen twee asserties om in plaats van nul
 - Toets een negatie op een productstring met `git log -S '<tekst>' -- src/` vóór je aanneemt dat hij nog bijt. Nul commits = sentinel of fixture, prima. Wél commits = echte productstring, dus controleer of er een positieve tegenhanger is.
 - Negaties op runtime-waarden (`x === false`, `!result.patched`) verouderen niet op deze manier — die vallen buiten deze regel.
 **Prior art**: gevonden bij het aanhaken van de slapende bewakers (#358, #369, #374, #375); de klasse zelf is zichtbaar geworden door #359 en changelog #493.
+
+## 2026-08-19: een slapende bewaker aanzetten is niet neutraal — je promoveert zijn asserties tot blokkade
+**What went wrong**: Op één dag gingen 15 bewakers van "draait nergens" naar "blokkeert elke PR". Dat is de bedoeling, maar er zat een gevolg aan dat ik vooraf niet meewoog: **elke bevroren assertie in zo'n bewaker wordt daarmee een actieve blokkade op de fix van precies datgene wat hij verkeerd bewaakt.**
+
+Concreet. `smoke:geo-directives` assert dat de GEO-directive de tekst *"Citeerbare stats MET bron"* draagt. Diezelfde prompt bevat 27 regels verderop het tegenovergestelde: een eigen/first-party merk-cijfer krijgt `source: null`. Die tweede helft is de fix van 2026-06-24 (`2f78eec3`, changelog #340) — een verplichte bron dwong het model er één te *verzinnen*, meestal een interne context-laagnaam die als bronvermelding op de klantpagina belandde. De prompt-kant is toen gecorrigeerd, de directive niet.
+
+Zolang die bewaker nergens draaide, was dat een sluimerende tegenstrijdigheid. Vanaf het moment dat hij in de PR-poort staat (#374) dwingt CI de verouderde helft áf: wie `geo-directives.ts` fatsoeneert krijgt rood met een cryptische regel, en de goedkoopste weg naar groen is de oude tekst terugzetten. Dat is exact de fout die #375 in `geo-generation-prompt` moest herstellen — nu geautomatiseerd.
+
+**Rule**:
+- **Lees een bewaker vóór je hem aanhaakt, niet alleen zijn exit-code.** "Groen met genoeg asserties" bewijst dat hij draait, niet dat hij het juiste vastlegt. Aanhaken zonder die leesbeurt verplaatst het probleem van onzichtbaar naar hardnekkig.
+- Een assertie die een tekst uit `src/` pint, verdient bij het aanhaken één `git log -S '<tekst>' -- src/`. Is die tekst ná de bewaker gewijzigd, lees dan de commit-boodschap: bij `geo-generation-prompt` stond het hele antwoord in die ene regel ("stop interne context-laagnamen lekken").
+- Kun je de onderliggende tegenstrijdigheid niet zelf oplossen — omdat het een product- of kwaliteitsafweging is — **annoteer de assertie dan ter plekke** met wat er tegenstrijdig is en welke kant mee moet bewegen. Zonder die noot is terugzetten de makkelijkste uitweg voor de volgende lezer, en dan is de bewaker van hulpmiddel tot bewaker van de bug geworden.
+- Dit geldt symmetrisch voor de andere kant: een bewaker die iets bewaakt wat elders al hard wordt afgedwongen (de Next-build laat de bundel-grens knappen bij server-only code in een client-keten) hoort niet aangehaakt maar verwijderd. Onderhoud zonder dekking.
+**Prior art**: #374 (de elf aangehaakte bewakers), #375 (de bevroren assertie die de weggehaalde bug bewaakte), #391 (de annotatie van deze tegenstrijdigheid), changelog #340 (de junifix die half bleef staan).
+
