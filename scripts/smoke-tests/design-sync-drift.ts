@@ -180,6 +180,25 @@ for (const naam of Object.keys(cfg.componentSrcMap)) {
   if (!geexporteerd) fout('entry-barrel', `${naam} staat in componentSrcMap maar wordt niet uit entry.ts geëxporteerd`);
 }
 
+// ─── 4. Staat .design-sync in de typecheck? ───────────────────────────────────
+//
+// TypeScript's `**/*.ts` slaat dot-mappen over. Tot 2026-08-19 zaten deze map en
+// haar 34 previews daardoor in NUL typechecks — een preview die een verwijderde
+// prop gebruikt, rendert dan verkeerd in de componentkiezer zonder dat iets rood
+// wordt. Twee regels in tsconfig.json lossen dat op; deze controle bewaakt dat
+// ze blijven staan, want zonder is de rot weer stil.
+{
+  const tsconfig = readFileSync('tsconfig.json', 'utf8');
+  const inInclude = /"\.design-sync\/\*\*\/\*\.tsx?"/.test(tsconfig);
+  const heeftAlias = /"branddock-app"\s*:/.test(tsconfig);
+
+  if (inInclude) ok('.design-sync staat in de tsconfig-include');
+  else fout('typecheck', '.design-sync staat niet in de tsconfig-include — de previews worden niet getypecheckt');
+
+  if (heeftAlias) ok("path-mapping voor 'branddock-app' staat er (anders falen de 34 previews op TS2307)");
+  else fout('typecheck', "path-mapping voor 'branddock-app' ontbreekt — de previews kunnen hun imports niet oplossen");
+}
+
 // ─── Uitkomst ─────────────────────────────────────────────────────────────────
 console.log(`\n=== ${checks} controles, ${fouten.length} gefaald ===`);
 if (fouten.length) {
