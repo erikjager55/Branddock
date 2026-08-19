@@ -79,6 +79,21 @@ GUARDS=(
   smoke:review-drift-reset
   smoke:styleguide-rules-fval
   smoke:settings-write
+  # ── toegevoegd 2026-08-19 uit de weesbewaker-triage (tasks/weesbewakers-triage) ──
+  # Negen bewakerbestanden zonder npm-script. Ze bestonden, waren groen en
+  # draaiden nergens, omdat elke telling package.json leest en een bestand
+  # zonder script daar niet in staat. Samen 153 asserties, 36s.
+  # Gemeten op een GESEEDE database (zie de waarschuwing bovenaan) en twee keer
+  # achter elkaar gedraaid zonder herseeden: idempotent.
+  smoke:brandclaw-data
+  smoke:brandclaw-orchestrator
+  smoke:content-library-readiness
+  smoke:content-locale-foundation
+  smoke:content-locale-picker
+  smoke:internal-findings
+  smoke:learning-loop
+  smoke:strategy-analyst
+  smoke:visual-brief-readiness
 )
 
 failed=()
