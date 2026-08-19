@@ -37,6 +37,53 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 502. Mijn eigen schuldlijst klopte voor de meerderheid niet
+
+Bij `smoke:guard-wiring` (#419) hoorde een lijst van **51 bewakers die "bewust stilstaan"**, elk
+met een reden: sleutel, database, cli, herschrijf, of gedekt-door-de-ketting. Ik vulde die
+redenen deels in uit eerdere classificaties en deels uit de bestandsnaam, en schreef er in
+dezelfde commit bij dat de lijst hoort te krimpen.
+
+**Toen heb ik ze nagemeten. 38 van de 51 kwamen groen terug** met een dode `DATABASE_URL` en
+onbruikbare sleutels. De labels "database" en "sleutel" klopten voor de meerderheid niet.
+
+Dat is precies waarom een onbewezen label niet in een schuldlijst hoort: **hij ziet er compleet
+uit, en niemand toetst hem meer.** Eenenvijftig keurig gegroepeerde redenen lezen als werk dat
+gedaan is.
+
+De laatste tien stonden er als *"gedekt door de ketting"* — een claim op MODULE-overlap, terwijl
+ik er zelf bij had geschreven dat dat geen gedragsoverlap is. Uitgewerkt bleek die waarschuwing
+terecht: twintig kettingleden importeren `brand-tokens`, maar geen ervan toetst of het merk van
+de ene klant niet in dat van de andere lekt — wat `phase40` wél doet. Ze zijn aangehaakt in
+plaats van verwijderd: redundante dekking kost twee seconden, een ten onrechte verwijderde
+bewaker kost een regressie.
+
+Gate: 81 → **119 bewakers** in 64s. Stilstaande bewakers: 51 → **13**, en die dertien zijn
+stuk voor stuk gedraaid en falen aantoonbaar.
+
+- Task: [tasks/weesbewakers-triage.md](../tasks/weesbewakers-triage.md)
+- Commit: PR #421, #424
+
+### 501. `package.json` is niet langer de bron van waarheid — de bestandslijst is dat
+
+De slapende-bewakers-survey begon met een telling uit `package.json`, en juist daardoor bleef
+`ssrf-guard.ts` onzichtbaar: 65 asserties op een beveiligingsoppervlak, gecommit bij een
+SSRF-fix eind juni, zónder npm-script. Dat is een andere blinde vlek dan "een bewaker die niet
+draait" — het is een bewaker die **niet meetelt als bewaker**, en die vind je niet door beter
+naar je lijst te kijken.
+
+`smoke:guard-wiring` legt de bestandslijst naast de gate-lijst. Een nieuw bestand in
+`scripts/smoke-tests/` of `scripts/eval/` dat nergens draait, maakt CI rood — dezelfde vorm als
+`smoke:route-language`: falen bij *vergeten*, niet bij toevoegen. Zijn eerste bevinding was
+hijzelf.
+
+Een tweede check meldt **dode regels** in de schuldlijst: een bestand dat inmiddels wél draait
+of niet meer bestaat. Zonder die check kan de lijst zelf verrotten — precies de fout die deze
+survey blootlegde.
+
+- Task: [tasks/weesbewakers-triage.md](../tasks/weesbewakers-triage.md)
+- Commit: PR #419
+
 ### 500. De junireeks ontdubbeld zonder 27 handmatige oordelen
 
 `smoke:web-page-builder` ketent 55 phase-bestanden aan elkaar, maar dat is een **andere serie
