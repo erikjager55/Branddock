@@ -684,3 +684,22 @@ Bewezen via Playwright: `el.style.background = '<grad>, url(...)'; el.style.setP
 - Tel bij een mutatietest eerst de vindplaatsen (`grep -c`). Muteer je er één van drie, dan bewijst een groene run niets over je assertie.
 **Prior art**: PR #374 (elf bewakers + assertie-ondergrens), #375 (deze twee reparaties), #368 (de survey), #369/#373 (de parallelle sessie).
 
+
+## 2026-08-19: een losstaande negatieve assertie kan stil hol worden — koppel hem aan een positieve
+**What went wrong**: Nog geen schade, wél een gat dat per constructie onzichtbaar is. Een *positieve* assertie die veroudert valt om zodra de bewaker draait — die vind je vanzelf (zo kwam `smoke:geo-generation-prompt` boven, die de wéggehaalde bug bewaakte in plaats van de reparatie). Een *negatieve* assertie (`!tekst.includes('FOO')`) doet het omgekeerde: zodra `FOO` hernoemd wordt, slaagt hij gratis — voor altijd, met een groen vinkje en een meegetelde assertieregel. Geen enkele gate ziet dat, want er faalt niets.
+**Hoe je ze scheidt van vals alarm**: een scan op "tekst staat niet in `src/`" gaf 32 treffers op 105 negaties en was vrijwel volledig ruis — sentinels (`SHOULD-NOT-APPEAR`), verzonnen invoer (`not-a-real-icon-name`), fixture-namen en regex-patronen staan per definitie niet letterlijk in productiecode. Het onderscheid dat wél werkt is **`git log -S '<tekst>' -- src/`: heeft die tekst er ooit gestaan?** Een sentinel nooit, een hernoemde productstring wél. Daarmee bleven van 89 onderzochte negaties er twee over, en in de database-groep van twaalf negaties ook twee (de rest toetst runtime-waarden als `truncated === false`, of is een sentinel).
+**Uitkomst: nul holle negaties, en niet door geluk.** Alle vier de echte gevallen bleken gedekt doordat er een positieve assertie op hetzelfde onderwerp naast stond. De sterkste vorm zit in `scripts/smoke-tests/context-priority.ts` — een symmetrisch paar over twee varianten:
+
+```
+primary   → includes('## PRIORITY SOURCE MATERIAL')       positief
+          → !includes('shared with you for discussion')   negatief
+reference → includes('shared with you for discussion')    positief
+          → !includes('## PRIORITY SOURCE MATERIAL')      negatief
+```
+
+Hernoem één van beide teksten en er vallen twee asserties om in plaats van nul.
+**Rule**:
+- **Koppel elke negatieve assertie aan een positieve op hetzelfde onderwerp.** Losstaand bewaakt een negatie alleen de afwezigheid van een wóórd, en een woord kan verdwijnen zonder dat het gedrag verandert.
+- Toets een negatie op een productstring met `git log -S '<tekst>' -- src/` vóór je aanneemt dat hij nog bijt. Nul commits = sentinel of fixture, prima. Wél commits = echte productstring, dus controleer of er een positieve tegenhanger is.
+- Negaties op runtime-waarden (`x === false`, `!result.patched`) verouderen niet op deze manier — die vallen buiten deze regel.
+**Prior art**: gevonden bij het aanhaken van de slapende bewakers (#358, #369, #374, #375); de klasse zelf is zichtbaar geworden door #359 en changelog #493.
