@@ -160,6 +160,33 @@ GUARDS=(
   smoke:claw-security:8
   smoke:brandstyle-golden:3
 
+  # ── De laatste 10 junireeks-wezen ─────────────────────────────────────────
+  # Ze stonden als "gedekt door de ketting" op de schuldlijst — een claim die op
+  # MODULE-overlap rustte, en ik schreef er zelf bij dat dat geen GEDRAGS-overlap
+  # is. Toen ik de koppeling uitwerkte bleek die waarschuwing terecht:
+  #
+  #   phase40 toetst "Zwarthout brand is NIET Branddock-teal"  (cross-brand-lek)
+  #   phase53 toetst contrastverhoudingen op hero-elementen    (≥3:1 / ≥4,5:1)
+  #   phase54 toetst spacing-ondergrenzen per archetype
+  #
+  # Dat de ketting dezelfde module áánraakt, zegt over dat gedrag niets. Ze als
+  # verwijder-kandidaat laten staan op een ongemeten claim is de verkeerde kant
+  # van de fout: redundante dekking kost twee seconden, een ten onrechte
+  # verwijderde bewaker kost een regressie.
+  #
+  # Wie ze alsnog wil opruimen, leest eerst per paar wát het kettinglid met
+  # diezelfde module toetst. Die leesbeurt heeft niemand gedaan.
+  smoke:wpb-accent-reservation:21
+  smoke:wpb-lp-contrast:19
+  smoke:wpb-brand-fallback-no-leak:18
+  smoke:wpb-band-alternation:17
+  smoke:wpb-button-reconcile:15
+  smoke:wpb-font-assets:12
+  smoke:wpb-card-context:11
+  smoke:wpb-variant-angle:8
+  smoke:wpb-feature-images:7
+  smoke:wpb-lp-rhythm:5
+
   # ── Weesbestanden, aangehaakt 2026-08-19 ───────────────────────────────────
   # Deze drie hadden geen npm-script en waren daardoor ONZICHTBAAR voor de survey:
   # die telde scripts in package.json, niet bestanden op schijf. `ssrf-guard` is

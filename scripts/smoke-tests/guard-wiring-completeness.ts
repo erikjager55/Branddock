@@ -60,19 +60,6 @@ const NIET_AANGEHAAKT: Record<string, string> = {
   'smoke-tests/agents-data-analyst.ts':
     'herschrijf — hardcodeert de dev-workspaces Zwarthout en Linfi, kan nooit in CI draaien',
 
-  // ── junireeks: raakt alleen modules die de augustus-ketting al dekt ───────
-  // ⚠️ Verwijder-KANDIDATEN, niet verwijderd. "Raakt dezelfde module" is niet
-  // hetzelfde als "toetst hetzelfde gedrag" (zie tasks/weesbewakers-triage.md).
-  'smoke-tests/web-page-builder-phase40-brand-fallback-no-leak.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase53-lp-contrast.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase54-lp-rhythm.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase56-feature-images.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase57-font-assets.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase58-card-context.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase59-accent-reservation.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase62-button-component-reconcile.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase63-section-band-alternation.ts': 'gedekt door de ketting',
-  'smoke-tests/web-page-builder-phase65-variant-angle-prompt.ts': 'gedekt door de ketting',
 };
 
 let pass = 0;
