@@ -184,6 +184,53 @@ eerlijke 401. Die verdienen een splitsing, geen sleutel:
 `review-drift-reset`, `styleguide-rules-fval`, `zombie-tab-guard`, `geo-fidelity`.
 Die vallen onder `run-db-guards.sh` (#369).
 
+## Eén manier van verrotten is nu uitgesloten — mechanisch
+
+De vraag "bewaken deze 32 nog het júiste" is duur, want per bewaker een oordeel. Maar er
+zit één deelvraag in die je wél machinaal kunt beantwoorden, en het is de gevaarlijkste.
+
+**Een positieve assertie die verouderd is, valt om** zodra de bewaker draait — precies wat er
+met `smoke:geo-generation-prompt` gebeurde. **Een negatieve niet.** `!x.includes('FOO')` slaagt
+gratis zodra FOO hernoemd is: groen, mét een getelde assertieregel, voor altijd. Geen gate ziet
+dat, ook de assertie-ondergrens niet.
+
+**Uitkomst: nul holle negaties**, en niet door geluk.
+
+De eerste scan was te grof — 105 negaties, 32 waarvan de tekst niet in `src/` staat. Vrijwel
+allemaal geen bevinding: sentinels (`SHOULD-NOT-APPEAR`), verzonnen invoer
+(`not-a-real-icon-name`), fixture-namen, en regex-patronen die per definitie niet letterlijk in
+de broncode voorkomen. Dezelfde vals-positieve vorm als de "overgeslagen"-scan uit meetfout 4.
+
+Het onderscheid dat wél werkt is `git log -S <tekst> -- src/`: **stond die tekst er ooit?** Een
+sentinel nooit; een hernoemde productstring wel. Daarmee bleven van 89 onderzochte negaties er
+**twee** over:
+
+| bewaker | bewaakt de afwezigheid van |
+|---|---|
+| `content-item-library-ingest.ts:156` | `editedImageUrl: first.url` |
+| `web-page-builder-phase8-variant-generator.ts:131` | `max 44 tekens` |
+
+Beide veilig, en om dezelfde reden — ze staan **gekoppeld aan een positieve assertie op
+hetzelfde onderwerp**:
+
+```ts
+assert('edit-image: retourneert stored-URL (upload.url)', edit.includes('editedImageUrl: upload.url'));
+assert('edit-image: retourneert NIET de rauwe fal-URL',  !edit.includes('editedImageUrl: first.url'));
+
+assert('P1: headline-limiet 60 (niet stale 44)',
+  prompt.system.includes('max 60 tekens') && !prompt.system.includes('max 44 tekens'));
+```
+
+Wordt het veld of de limiet hernoemd, dan valt de *positieve* helft om vóórdat de negatieve hol
+kan worden.
+
+**Regel die daaruit volgt**: koppel elke negatieve assertie aan een positieve op hetzelfde
+onderwerp. Losstaand bewaakt een negatie alleen de afwezigheid van een wóórd, en een woord kan
+verdwijnen zonder dat het gedrag verandert.
+
+⚠️ Wat dit **niet** aantoont: of de positieve asserties nog het juiste gedrag beschrijven. Dat
+blijft het dure deel, en dat staat hieronder.
+
 ## Wat ik nog steeds niet gemeten heb
 
 Of de bewakers **inhoudelijk** nog kloppen. Groen met geldige asserties zegt dat ze
