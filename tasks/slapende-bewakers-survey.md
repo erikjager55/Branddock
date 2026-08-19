@@ -103,48 +103,99 @@ Tel assertie-regels, niet trefwoorden.
 - **`smoke:storage-url-expiry`** haalt `images.pexels.com` en `pub-test.r2.dev` op.
   Zelfde bezwaar, kleinere blast radius.
 
-# De sleutel-/netwerkgroep — gemeten wat meetbaar was
+# De sleutel-/netwerkgroep — herzien, want de eerste meting deugde niet
 
-27 kandidaten, elk één keer gedraaid met **alle sleutels gestript**. De vraag die
-zonder één betaalde AI-call te beantwoorden is: geeft een bewaker GROEN terwijl hij
-weigert te draaien?
+**Wat hier eerst stond was fout.** Ik schreef: "27 kandidaten, alle sleutels
+gestript, nul valse vinkjes, alle 27 falen eerlijk". Beide helften klopten niet.
 
-**Uitkomst: nul valse vinkjes.** Alle 27 falen eerlijk met exit 1 als hun omgeving
-ontbreekt. De enige die exit 0 geeft is `smoke:mcp-toolset`, en die draait legitiem
-zonder database (pure toolset-vergelijking, gefixt in #367).
+**De sleutels waren nooit weg.** `env -u SLEUTEL npm run <bewaker>` neemt niets weg
+bij een script dat `--env-file-if-exists=.env.local` gebruikt — node laadt de waarde
+gewoon terug. Bewezen:
 
-⚠️ **Die uitkomst is pas bewijs omdat de methode gekalibreerd is.** Losgelaten op
-`smoke:settings-write` — het enige bekende valse vinkje — meldt hij hem correct
-(exit 0, nul assertie-regels). Zonder die kalibratie zou "nul gevonden" net zo goed
-kunnen betekenen dat de detector stuk was; dat is deze week drie keer gebeurd.
+    env -u ANTHROPIC_API_KEY  → sleutel zichtbaar, 108 tekens
+    ANTHROPIC_API_KEY=ongeldig → 8 tekens
 
-**Wat ik NIET heb kunnen meten**, en dat is de eerlijke grens: of deze bewakers
-inhoudelijk nog kloppen. Draaien met een ontbrekende sleutel toetst de
-foutafhandeling, niet de bewaker. Een parallelle sessie liet zien hoe scheef dat kan
-uitpakken: `smoke:context-priority` deed 0 toetsen tegen een lege database en 9 tegen
-een geseede. Verifiëren vraagt echte AI-calls en dus een budget-besluit.
+Een reeds gezette variabele wint wél van `--env-file`; een weggestripte niet. Een
+parallelle sessie liep tegen hetzelfde aan en meldde het.
 
-Op basis van de twee gevallen die we deze week wél inhoudelijk naliepen — beide
-verouderde asserties, geen bugs — is de verwachting dat een deel van deze 27 hetzelfde
-beeld geeft. Dat is een verwachting, geen meting.
+**En bij de overige bewakers mat ik iets anders dan ik dacht.** Dat raakt namelijk
+maar 5 van de 78 scripts:
+
+| hoe het script zijn omgeving laadt | aantal |
+|---|---:|
+| `--env-file-if-exists=.env.local` | 5 |
+| `--env-file-if-exists=.env` (bestaat niet) | 1 |
+| kale `tsx`, laadt niets | 71 |
+
+Die 71 nemen hun omgeving niet mee. Staat `DATABASE_URL` niet in de shell, dan valt
+`src/lib/prisma.ts` om bij het *importeren* — nog vóór er één assertie draait:
+
+    Error: DATABASE_URL is not configured in .env
+        at src/lib/prisma.ts:9
+
+Dát was wat ik 26 keer aanzag voor "faalt netjes zonder sleutel". Er faalde niets
+netjes; er startte niets. Ik heb een foutafhandeling gemeten die nooit aan bod kwam,
+en dat opgeschreven als bewijs over sleutelgedrag.
+
+## De hermeting
+
+Alle sleutels op een onbruikbare *waarde*, en `DATABASE_URL` gezet maar dood
+(`127.0.0.1:59999`). Die dode poort is meteen het vangnet: `lp-retention` en
+`review-drift-reset` verwijderen rijen, en tegen een dode poort kunnen ze niets.
+
+**Elf van de 27 draaien groen zonder database én zonder sleutels** — samen 2.315
+asserties, twee identieke runs elk, samen ~17s:
+
+| bewaker | asserties | | bewaker | asserties |
+|---|---:|---|---|---:|
+| `smoke:web-page-builder` | 1914 | | `smoke:geo-blogposting-jsonld` | 26 |
+| `smoke:page-types` | 181 | | `smoke:geo-analysis` | 15 |
+| `smoke:heuristics-locales` | 51 | | `smoke:geo-directives` | 14 |
+| `smoke:lp-text-quality` | 51 | | `eval:lp-variant-golden` | 13 |
+| `smoke:deep-research` | 31 | | `smoke:geo-polish` | 13 |
+| | | | `smoke:mcp-toolset` | 6 |
+
+Ze zijn aangesloten in PR #374. De gate gaat daarmee van 18 naar 29 bewakers.
+
+**Vier zijn half gratis**: de pure logica draait, alleen de AI-laag valt om met een
+eerlijke 401. Die verdienen een splitsing, geen sleutel:
+
+- `smoke:locale` — 30 geslaagd, 2 gefaald (alleen de live AI-roundtrip)
+- `smoke:geo-generation-prompt` — 12 geslaagd, 1 gefaald
+- `smoke:lp-retention` — 23/23 groen; deel B zit achter `SMOKE_DB=1`
+- `smoke:conversion-tweaks` / `longform-tweaks` / `structured-tweaks` — volledig AI
+
+**Acht hebben echt een database nodig**: `competitor-activities`,
+`competitor-content-discovery`, `context-priority`, `knowledge-context`,
+`review-drift-reset`, `styleguide-rules-fval`, `zombie-tab-guard`, `geo-fidelity`.
+Die vallen onder `run-db-guards.sh` (#369).
+
+## Wat ik nog steeds niet gemeten heb
+
+Of de bewakers **inhoudelijk** nog kloppen. Groen met geldige asserties zegt dat ze
+draaien, niet dat ze het juiste bewaken. De vier AI-bewakers vragen echte calls en
+dus een budget-besluit. Op basis van de twee gevallen die we deze week wél naliepen
+— beide verouderde asserties, geen bugs — verwacht ik hetzelfde beeld. Verwachting,
+geen meting.
 
 # Wat er nog wacht
 
-- [ ] De 28 nieuwe aanhaken in `scripts/ci/run-guards.sh` (+~15s op de `check`-job).
-      ⚠️ Dat bestand is geclaimd door de design-sync-sessie; deze taak levert de
-      meting, niet de wiring.
+- [x] De goedkope groep aangesloten in `scripts/ci/run-guards.sh`: 18 → **29
+      bewakers** (#358/#360 + #374), ~10s → ~30s op de `check`-job. Elke bewaker
+      draagt daar nu een assertie-ondergrens.
 - [ ] De twee netwerk-bewakers in een nightly-job, niet in de PR-poort.
 - [ ] De browser-groep: `smoke:document-lang-browser` vraagt `npm run build` plus
       een draaiende server. Zelfde afweging als `test:csp`.
-- [x] De key/netwerk-groep gecontroleerd op valse vinkjes: **nul gevonden**, methode
-      gekalibreerd op het enige bekende geval.
-- [ ] **Inhoudelijk verifiëren van die 27 kan alleen mét sleutels** — dat zijn echte
-      AI-calls en dus een budget-besluit. Verwachting op basis van deze week: een deel
-      zijn verouderde asserties, geen bugs. Verwachting, geen meting.
+- [x] De sleutelgroep hermeten met een methode die standhoudt: **elf bewakers met
+      2.315 asserties bleken gratis draaibaar** en zijn aangesloten (#374).
+- [ ] De vier half-gratis bewakers splitsen: pure logica in de goedkope gate, de
+      AI-laag apart. `smoke:locale` draait nu 30 van de 32 asserties voor niets.
+- [ ] **Inhoudelijk verifiëren vraagt echte AI-calls** en dus een budget-besluit.
+      Verwachting: een deel zijn verouderde asserties, geen bugs. Geen meting.
 
 # Gemeten meetfouten (voor wie dit herhaalt)
 
-Drie keer was mijn eigen opstelling stuk vóór de data klopte:
+Vier keer was mijn eigen opstelling stuk vóór de data klopte:
 
 1. **78× FAIL, 0× PASS.** `timeout` bestaat niet op macOS, en mijn naamextractie
    sloopte de dubbele punt (`eval:brandstyle-golden` → `evalbrandstyle-golden`).
@@ -159,3 +210,14 @@ Drie keer was mijn eigen opstelling stuk vóór de data klopte:
    `DATABASE_URL` staan; pas zónder bleek wie er echt geen omgeving nodig heeft.
    En "bevat een URL" ≠ "doet een netwerk-aanroep": een eerste scan vlagde 15
    scripts waarvan er 13 alleen `https://example.com` als testdata hadden.
+5. **De duurste: een hele conclusie op een methode die niets wegnam.** `env -u VAR`
+   laat `.env.local` de waarde terugladen (5 van de 78 scripts), en bij de andere 71
+   crashte de bewaker al bij het importeren op een ontbrekende `DATABASE_URL` — nog
+   vóór er iets getoetst werd. Ik las 26 van die crashes als "faalt netjes zonder
+   sleutel" en publiceerde dat als bevinding. Hermeting: **elf van die 27 draaien
+   gewoon gratis**, samen 2.315 asserties.
+
+   De les zit niet in de vlag maar in de vorm: ik toetste of mijn detector een vals
+   vinkje kón vinden, maar niet of mijn *ingreep* iets deed. Eén regel — de waarde
+   printen na het strippen — had het meteen laten zien. Kalibreer niet alleen de
+   meter, maar ook de knop waaraan je draait.
