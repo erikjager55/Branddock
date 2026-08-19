@@ -113,10 +113,17 @@ Volledige onderbouwing en metingen: `tasks/done/static-rendering-regressie.md`.
 
 ## C. Opgeruimd worden
 
-- [ ] **Drie `revalidatePath('/p/…')`-aanroepen** (publish, rollback, deliverable-DELETE)
-      zijn even effectloos als de wél geannoteerde `revalidate`, maar dragen geen
-      annotatie. Strikt genomen is "niets suggereert nog een optimalisatie die niet
-      plaatsvindt" daarmee niet volledig gehaald.
+- [x] **Drie `revalidatePath('/p/…')`-aanroepen** — ✅ **geannoteerd 2026-08-19.**
+      Bij `publish` was de bestaande comment niet alleen ontbrekend maar **onjuist**:
+      hij noemde on-demand revalidation "het primaire verversmechanisme van de
+      statisch gecachte render-route". Die route is niet statisch gecacht, dus dat
+      leest als een optimalisatie die er niet is — erger dan geen comment.
+
+      Alle drie dragen nu dezelfde noot: dit doet op dit moment niets, het staat er
+      bewust, en het wordt vanzelf weer het juiste mechanisme zodra sectie D wordt
+      opgepakt. Bij `publish` is ook de volgorde-reden bewaard (ná de artifact-write,
+      zodat een verse cache-vulling het artifact ziet) — die blijft gelden zodra
+      caching terugkomt.
 - [ ] **`/p/<ws>/<slug>` in de CSP-violation-sweep.** Vereist een fixture van vier
       entiteiten (Campaign → Deliverable → LandingPage → PagePublish); de e2e-seed heeft
       geen landingspagina. ⚠️ Voeg de route toe aan `PUBLIC_ROUTES`, niet aan
