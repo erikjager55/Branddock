@@ -91,6 +91,11 @@ GUARDS=(
   # fetch-aanroepen zitten achter SMOKE_R2=1. Zonder die vlag draait hij 16
   # checks pure logica en nul netwerk.
   smoke:storage-url-expiry:14
+
+  # Faalt bij VERGETEN, niet bij toevoegen: wie een publieke pagina bouwt en hem
+  # niet indeelt, krijgt hier rood in plaats van stil lang="en" op Nederlandse
+  # tekst (de bug van #335). Leest de bestandsboom, niet een lijst.
+  smoke:route-language:28
 )
 
 log_dir=$(mktemp -d)
