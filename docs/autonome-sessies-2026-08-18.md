@@ -53,6 +53,35 @@ gh api repos/<owner>/<repo>/actions/jobs/<id> --jq '.steps[] | "\(.number). \(.n
 telkens opgelost, maar dat is een pleister — de structurele fix staat als
 [`tasks/ci-hangende-e2e-job.md`](../tasks/ci-hangende-e2e-job.md).
 
+### 2b. Een LEGE checklijst is geen wachtrij — het is "kan niet starten"
+
+Eis 1 zegt *aanwezig* én completed. Dat "aanwezig" is op 2026-08-19 twee keer gemist, door
+twee verschillende sessies, en het is de moeite waard te weten waaróm het gebeurt.
+
+**Een PR met merge-conflicten krijgt géén `pull_request`-checks.** GitHub kan de merge-commit
+niet berekenen en start de workflow dus niet — niet later, helemaal niet. `gh pr checks` geeft
+dan een **lege lijst**: geen rood, geen pending, niets. Dat leest als een drukke wachtrij.
+
+Wat het extra verraderlijk maakt: `gh run list --branch <tak>` kan wél een groene run tonen.
+Die hoort dan bij de **ouder** van je head — je eigen wijziging is nooit getoetst. Een
+parallelle sessie stond op het punt daarop te mergen.
+
+En een poort die op "geen pending" toetst in plaats van op "aanwezig én geslaagd", laat zo'n
+PR gewoon door. Nagemeten op een lege lijst: `[.[] | select(.bucket=="pending")] | length`
+geeft 0, en dat leest als groen.
+
+```bash
+gh pr view <n> --json mergeStateStatus -q .mergeStateStatus   # DIRTY = conflicten, geen CI
+gh pr checks <n> --json bucket | jq 'length'                  # 0 = niet gedraaid, NIET groen
+gh run list --branch <tak> --json headSha,conclusion          # vergelijk met git ls-remote
+```
+
+Toets dus op **drie** dingen, niet op één: er zíjn checks, ze zijn allemaal geslaagd, en de
+kop-SHA is die van de remote. "Nul mislukt" is bij nul checks triviaal waar.
+
+Zelfde familie als de andere meetfouten van die dag (zie `gotchas.md` 2026-08-19): een
+negatieve uitkomst gelezen als bewijs, terwijl de toets zelf niets kón vinden.
+
 ## 3. Claims — wie zit waar
 
 **De `worktree:`-frontmatter van het task-file is de ownership-marker.** Zet je claim daar
