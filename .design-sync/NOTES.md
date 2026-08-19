@@ -148,6 +148,30 @@ lege root: de floor card komt er pas als er géén geschreven preview is.
 strings komen uit `getUnavailableMessage` in `src/lib/ai/ai-error-client.ts` en lopen niet
 via i18n.
 
+## Bewaakt sinds 2026-08-19: `npm run smoke:design-sync-drift`
+
+De risico's hieronder waren tot dan alleen opgeschreven. Drie ervan zijn nu
+gecontroleerd, en de smoke draait mee in CI (`scripts/ci/run-guards.sh`):
+
+| faalvorm | wat er misging zonder bewaking |
+|---|---|
+| prop-drift | `dtsPropsFor` is handgeschreven; verandert een prop, dan codeert de design-agent tegen een contract dat niet meer klopt |
+| namespace-drift | de provider noemt zijn i18n-namespaces met de hand; een nieuwe namespace geeft rauwe sleutels op de kaart |
+| nieuw component | een component in `ui/layout/` of `shared/` die niemand in `entry.ts` en `componentSrcMap` zet, ontbreekt stil |
+
+Alle vier de faalvormen zijn mutatie-gekalibreerd. ⚠️ Twee dingen die de mutatietest
+ving en die anders stil waren meegegaan: de entry-controle deed eerst een
+deelreeks-match (`SkeletonBadge` bevat `Badge`, dus een verwijderde Badge-export
+bleef onzichtbaar), en de prop-controle sloeg alarm op componenten waarvan de
+interface `extends` gebruikt — daar mag de config méér noemen dan de bron opsomt.
+
+Bijvangst bij het bouwen: `IssueCard` en `Modal` misten `'data-testid'` in hun
+contract. Toegevoegd.
+
+**De uitsluitingslijst staat in de smoke zelf**, niet in `config.json` — die
+accepteert alleen bekende sleutels, en een uitsluiting zonder reden ziet er over
+een half jaar uit als een vergissing.
+
 ## Re-sync risico's
 
 - **`dtsPropsFor` is een handgeschreven kopie van de bron.** Wijzigt een prop, dan klopt

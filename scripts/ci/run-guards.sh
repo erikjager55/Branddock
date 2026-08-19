@@ -36,6 +36,7 @@ GUARDS=(
   smoke:pagerender-parity
   smoke:feature-visual-gate
   smoke:judge-image-prep
+  smoke:design-sync-drift
 )
 
 failed=()

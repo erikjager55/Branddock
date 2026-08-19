@@ -108,7 +108,8 @@
     "smoke:brand-font-substitutes": "tsx scripts/smoke-tests/brand-font-substitutes.ts",
     "smoke:settings-write": "node --env-file-if-exists=.env.local node_modules/.bin/tsx scripts/smoke-tests/deliverable-settings-write.ts",
     "smoke:css-utilities": "tsx scripts/smoke-tests/css-utilities.ts",
-    "smoke:icon-registry": "tsx scripts/smoke-tests/icon-registry.ts"
+    "smoke:icon-registry": "tsx scripts/smoke-tests/icon-registry.ts",
+    "smoke:design-sync-drift": "tsx scripts/smoke-tests/design-sync-drift.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
