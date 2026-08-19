@@ -100,6 +100,14 @@ GUARDS=(
   # `require`-string versleuteld ZONDER certificaat- en hostnaamcontrole.
   smoke:db-ssl-mode:30
 
+  # Aangesloten 2026-08-19. Faalt bij VERGETEN, niet bij toevoegen: wie een nieuw
+  # type introduceert zet het in DELIVERABLE_TYPES en is klaar; wie een
+  # display-naam of typfout schrijft krijgt rood. Aanleiding: de POST-route
+  # valideert contentType als z.string().min(1), dus élke string wordt
+  # geaccepteerd — zo kwamen "Landing Page" (nog op 18-08 geschreven) en
+  # "document_one-pager" in de database. Puur, 0,4s.
+  smoke:content-type-canonical:5
+
   # Faalt bij VERGETEN, niet bij toevoegen: wie een publieke pagina bouwt en hem
   # niet indeelt, krijgt hier rood in plaats van stil lang="en" op Nederlandse
   # tekst (de bug van #335). Leest de bestandsboom, niet een lijst.

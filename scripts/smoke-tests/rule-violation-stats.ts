@@ -306,12 +306,12 @@ assert(
 console.log('\n10. Een regel met contentTypeFilter telt alleen passende generaties');
 
 const gemengd = [
-  { id: 'a1', scoredAt: new Date('2026-06-02T00:00:00Z'), contentType: 'Blog Post' },
-  { id: 'a2', scoredAt: new Date('2026-06-03T00:00:00Z'), contentType: 'Landing Page' },
-  { id: 'a3', scoredAt: new Date('2026-06-04T00:00:00Z'), contentType: 'Blog Post' },
-  { id: 'a4', scoredAt: new Date('2026-06-05T00:00:00Z'), contentType: 'Landing Page' },
+  { id: 'a1', scoredAt: new Date('2026-06-02T00:00:00Z'), contentType: 'blog-post' },
+  { id: 'a2', scoredAt: new Date('2026-06-03T00:00:00Z'), contentType: 'landing-page' },
+  { id: 'a3', scoredAt: new Date('2026-06-04T00:00:00Z'), contentType: 'blog-post' },
+  { id: 'a4', scoredAt: new Date('2026-06-05T00:00:00Z'), contentType: 'landing-page' },
 ];
-const blogRegel = rule({ contentTypeFilter: ['Blog Post'] });
+const blogRegel = rule({ contentTypeFilter: ['blog-post'] });
 const gefilterd = aggregateViolations([hit('a1'), hit('a3')], gemengd, [blogRegel]);
 assert(
   'alleen de twee blogposts vormen de noemer',
@@ -324,7 +324,13 @@ assert(
 );
 assert(
   'casing in het filter maakt niet uit',
-  aggregateViolations([hit('a1')], gemengd, [rule({ contentTypeFilter: ['blog post'] })])[0]
+  // Let op bij het wijzigen van de fixtures hierboven: het verschil tussen filter
+  // en data moet ALLEEN casing zijn. Stond hier eerder 'blog post' tegen data
+  // 'Blog Post'; toen de data op 2026-08-19 naar de canonieke id 'blog-post' ging,
+  // verschilde ook het scheidingsteken en zakte deze assertie — de normalisatie
+  // doet lowercase, geen spatie→koppelteken. Dat is precies wat hij hoort te
+  // vangen, dus hier een echte casing-variant van de canonieke id.
+  aggregateViolations([hit('a1')], gemengd, [rule({ contentTypeFilter: ['BLOG-POST'] })])[0]
     ?.generationsTotal === 2,
 );
 assert(

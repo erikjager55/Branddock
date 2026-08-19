@@ -182,7 +182,8 @@
     "smoke:settings-write": "node --env-file-if-exists=.env.local node_modules/.bin/tsx scripts/smoke-tests/deliverable-settings-write.ts",
     "smoke:css-utilities": "tsx scripts/smoke-tests/css-utilities.ts",
     "smoke:icon-registry": "tsx scripts/smoke-tests/icon-registry.ts",
-    "smoke:design-sync-drift": "tsx scripts/smoke-tests/design-sync-drift.ts"
+    "smoke:design-sync-drift": "tsx scripts/smoke-tests/design-sync-drift.ts",
+    "smoke:content-type-canonical": "tsx scripts/smoke-tests/content-type-canonical.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
