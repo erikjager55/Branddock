@@ -35,9 +35,12 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function main(): Promise<void> {
   if (process.env.SMOKE_DB !== '1') {
-    console.log('SMOKE_DB=1 niet gezet — deze smoke heeft een echte database nodig.');
-    console.log('Run: SMOKE_DB=1 npm run smoke:settings-write');
-    process.exit(0);
+    // Exit 1, niet 0: met exit 0 meldt deze smoke zich GROEN terwijl hij niets
+    // toetst — precies wat je in CI niet merkt. Gemeten 2026-08-19: van de
+    // vijftien db-bewakers was dit de enige die dat deed.
+    console.error('SMOKE_DB=1 niet gezet — deze smoke heeft een echte database nodig.');
+    console.error('Run: SMOKE_DB=1 npm run smoke:settings-write');
+    process.exit(1);
   }
   const url = process.env.DATABASE_URL ?? '';
   const isLocal = url.includes('localhost') || url.includes('127.0.0.1');
