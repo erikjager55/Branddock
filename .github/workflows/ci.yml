@@ -48,6 +48,20 @@ jobs:
           # -2,1% instantiaties. De massa is een brede optelsom, met de gegenereerde
           # Prisma-client als grootste enkele post (451k regels = 37% van alle
           # definitieregels). Volledige meting: tasks/done/build-heap-investigation.md.
+          #
+          # De config-splitsing van 19-08 verkleint deze piek naar 4,12 GB en HEFT
+          # de bump dus niet op — ze koopt marge, geen oplossing. Ook de aparte
+          # scripts-stap hieronder krijgt 8 GB: die piekt op 3,39 GB, te dicht op
+          # Node's default om er zonder bump op te vertrouwen.
+          NODE_OPTIONS: "--max-old-space-size=8192"
+
+      # `tsconfig.json` dekt sinds 19-08 alleen nog de app; scripts/, prisma/ en
+      # e2e/ zitten in `tsconfig.scripts.json`. Die 491 bestanden MOETEN hier
+      # blijven draaien — zonder deze stap is de splitsing geen verbetering maar
+      # dekkingsverlies. Geverifieerd dat beide configs samen exact dezelfde 3241
+      # bestanden zien als de config van vóór de splitsing.
+      - run: npm run typecheck:scripts
+        env:
           NODE_OPTIONS: "--max-old-space-size=8192"
 
       - run: npm run lint
