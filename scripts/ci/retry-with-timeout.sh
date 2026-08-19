@@ -93,7 +93,21 @@ for i in $(seq 1 "$attempts"); do
   else
     echo "✗ poging $i faalde met exit-code $status"
   fi
-  [ "$i" -lt "$attempts" ] && sleep 5
+  # Exponentiële backoff i.p.v. vast 5s. Reden, gemeten 2026-08-19: de
+  # faalmodus die we hier het vaakst zien is niet "het commando hangt" maar
+  # "een ander proces houdt de apt-lock". Zo'n dpkg/apt-lock duurt makkelijk
+  # 30-60s, terwijl drie pogingen met 5s ertussen na ~10s opgaven — in het
+  # log liep de ándere apt-get op dat moment gewoon door. Netto zetten we een
+  # hang die vanzelf goed kwam om in een harde rode CI.
+  if [ "$i" -lt "$attempts" ]; then
+    case "$i" in
+      1) backoff=15 ;;
+      2) backoff=45 ;;
+      *) backoff=60 ;;
+    esac
+    echo "  ... $backoff s wachten voor de volgende poging"
+    sleep "$backoff"
+  fi
 done
 
 echo "✗ alle $attempts pogingen mislukt — laatste exit-code $status" >&2
