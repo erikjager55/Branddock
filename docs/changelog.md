@@ -37,6 +37,69 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 489. Merk-domein-componenten in het design system — NO-GO, gemeten op productiedata
+
+`validate-brand-domain-component-fit` vroeg of het design system eigen componenten moest krijgen voor merkbegrippen (persona-kaart, merkregel, F-VAL-score) in plaats van generieke primitives. De drempel is **vóór** de eerste query vastgelegd in commit `c775fff0` — anders beslist de uitkomst achteraf wat "genoeg" was.
+
+**Uitkomst: NO-GO.** De gemeten hergebruikfrequentie bleef onder de vooraf vastgelegde drempel; de bestaande primitives dekken de gevallen zonder dat er een merkspecifieke laag bij hoeft. De afweging staat volledig in het draft-bestand, inclusief de condities waaronder dit heropend hoort te worden.
+
+⚠️ De waarde zit hier niet in de bouw maar in het níet bouwen — en in het feit dat de drempel niet meer verschoven kón worden toen de data tegenviel.
+
+- Task: [tasks/_drafts/idea-brand-domain-specific-components.md](../tasks/_drafts/idea-brand-domain-specific-components.md) (`verdict: no-go-voorlopig`)
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #365
+
+### 488. De CI-hersteltap uit #351 brak zelf elke PR met een cache-hit
+
+#351 bracht tijdslimieten en hertes tegen de drie CI-hangs van 18-08 (30, 30 en 93 minuten, alle drie op de browserdownload). Eén stap daarin — apt draaien bij een cache-hit — faalde vervolgens op **élke** PR met een cache-hit.
+
+**Root-cause**: apt is niet veilig af te kappen. Poging 1 werd op 180s afgebroken, poging 2 en 3 vielen om op de staat die de afgebroken transactie achterliet. Een parallelle sessie fixte in #362 de lock-conflicten (`DPkg::Lock::Timeout`); geverifieerd dat dat de klasse niet oploste — een run mét die fix faalde op dezelfde stap.
+
+**De fix draait het om**: bij een cache-hit draait er nu **helemaal geen apt**. De e2e-suite is daarna groen, en dat is meteen het bewijs dat `ubuntu-latest` de chromium-bibliotheken zelf al meebrengt. ⚠️ Daarmee verschuift ook het vermoeden over de oorspronkelijke hangs: alle drie zaten op een stap die apt draaide.
+
+- Task: `-` (CI-herstel)
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #364 (na #351, #362)
+
+### 487. Het design system kon op drie manieren stil verrotten — nu bewaakt
+
+De sync naar claude.ai/design levert 35 componenten met 103 beoordeelde previews. Drie manieren waarop dat stil uit de pas loopt zijn nu afgevangen door `smoke:design-sync-drift`: propcontracten die afwijken van de bron, i18n-namespaces die uit de preview-provider lopen, en componenten die uit de barrel verdwijnen zonder dat de sync het merkt.
+
+⚠️ **De bewaker faalde eerst zijn eigen mutatietest.** De export-check gebruikte `entry.includes(naam)`, en `SkeletonBadge` bevat `Badge` — daardoor kón hij niet rood worden. Nu op woordgrens (`\b`). Een guard die zijn mutatietest niet doorstaat, bewaakt niets.
+
+- Task: `-` (voortgekomen uit de design-sync)
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #360
+
+### 486. `smoke:image-coupling` bewaakte precies het gedrag dat F36 bewust wegnam
+
+Bij het aanzetten van de slapende bewakers viel `smoke:image-coupling` om. Eerste lezing: regressie. **Fout.** De call-to-action is bewust uit de beeldprompt gehaald in `059dd8ba` (F36, 13-05-2026), omdat het beeldmodel de tekst letterlijk op het beeld rendeerde — een Engelse overlay met typefout op een Nederlandse blog.
+
+⚠️ **De les is breder dan deze bewaker**: een bewaker die niet draait vangt niet alleen niets, hij **verrot** ook. Hij blijft een gedrag eisen dat het product allang bewust heeft verlaten, en meldt zich bij het aanzetten als regressie. Aanbeveling voor wie er meer aanzet: draai `git log -S` op de betrokken assertie vóór je iets een regressie noemt.
+
+- Task: `-`
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #359
+
+### 485. 82 van de 85 bewakers draaiden nergens — de goedkope groep draait nu wel
+
+`package.json` bevatte 77 smoke- en eval-scripts; **drie** stonden in een workflow. De andere 74 bestonden wel maar draaiden nooit, waaronder guards die speciaal gebouwd waren nádat er iets stil was misgegaan.
+
+⚠️ **De PR-tekst van #358 zei "82 van de 85" en dat klopte niet**: dat getal telde de acht `test:*`-scripts mee, waarvan `test:e2e` en `test:csp` juist wél in een workflow stonden. Nagerekend op de package.json van commit `0a4e036a`. De strekking verandert niet, de noemer wel.
+
+`scripts/ci/run-guards.sh` draait nu de goedkope, deterministische groep in de `check`-job — bewust **zonder** fail-fast, zodat één rode run alle kapotte bewakers laat zien in plaats van de eerste. Elke bewaker is vóór opname in een schone omgeving gedraaid.
+
+⚠️ **De selectie op "groen in een schone omgeving" is te zwak gebleken** en is achteraf nagemeten op assertie-aantallen: alle 18 toetsen aantoonbaar iets (van 1 samenvattende bewaker over 211 iconen tot 294 asserties). Waar dat criterium wél faalde staat in #369.
+
+- Task: [tasks/slapende-bewakers-survey.md](../tasks/slapende-bewakers-survey.md) (meting door een parallelle sessie, PR #368)
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #358
+
 ### 484. Elke nieuwe bezoeker kreeg `lang="en"` op een Nederlandse pagina — en statisch renderen bleek geen vrije keuze
 
 `static-rendering-regressie` begon als prestatietaak: sinds de CSP-enforce-flip was zichtbaar dat **élke pagina-route `ƒ (Dynamic)`** is, waardoor `generateStaticParams` op drie marketing-routes en `revalidate = 604800` op de klant-landingspagina's al maanden niets opleverden. De meting bevestigde de diagnose en bracht twee dingen boven water die de taak niet kende.
