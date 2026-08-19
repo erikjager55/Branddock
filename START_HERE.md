@@ -325,7 +325,7 @@ bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
 | Taak | Staat |
 |---|---|
 | [`brand-md-open-standaard`](tasks/brand-md-open-standaard.md) | in-progress — funnel live; rest is upstream-PR's + jouw strategie-akkoord |
-| [`content-chain-followups`](tasks/content-chain-followups.md) | open — `content-chain-accessor` is ✅ **done** (alle 23 kruisingen). Wat rest zijn drie *keuzes*, geen bugs: dode code, de schrijf-kant, repurpose |
+| [`content-chain-followups`](tasks/done/content-chain-followups.md) | ✅ **done 19-08** — alle drie de keuzes gemaakt: dode code weg (314 → 38 regels), de schrijf-kant en repurpose bewust níet gebouwd, elk met een toetsbare trigger |
 | [`lp-image-routes`](tasks/done/lp-image-routes.md) | review — wacht op één prod-smoke door jou |
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
 | [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst. ⚠️ §B: de retentie-indexen zijn ✅ af (#311); wat resteert is `NEXT_PUBLIC_POSTHOG_KEY` op prod |
@@ -336,6 +336,10 @@ bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
 vijf merken** renderen in een substituut — niet 44: de 15 Google-fonts hadden nooit een
 bestand nodig, en de 11 Adobe-fonts zijn per besluit 19-08 bewust afgewezen. De code is af;
 dit wacht volledig op uploads van Erik) ·
+[`fval-merkwoorden-vs-antipattern`](tasks/fval-merkwoorden-vs-antipattern.md) (⚠️ **vier van
+Linfi's tien voorkeurstermen staan op de buzzword-lijst van de anti-AI-detector** — het merk-DNA
+schrijft woorden voor die een andere F-VAL-pijler bestraft; kost 4,3 punten op `antiPattern`.
+Vraagt een productbesluit: merk wint, detector wint, of de botsing zichtbaar maken) ·
 [`pg-major-sslmode-semantiek`](tasks/pg-major-sslmode-semantiek.md) (pg v9 maakt van onze
 `sslmode=require` stil een zwakkere modus. ✅ **Code af per 19-08** incl. de bewaker die er
 nooit was aangesloten; wacht nog op één env-handeling van Erik — `verify-full` in de prod-URL,
@@ -387,7 +391,18 @@ nauwelijks verkeer. De taak draagt vier meetbare triggers plus de SQL om ze te t
   bovendien gewoon op `published = true` (24 regels); alleen lokaal staat hij op `false`,
   en dáár is gemeten.
 
-  ⚠️ **Wat wél waar is, en apart de moeite waard**: het mechanisme bestaat. De stijl-pijler
+  ✅ **En de échte oorzaak is 19-08 gevonden** — eigen taak:
+  [`fval-merkwoorden-vs-antipattern`](tasks/fval-merkwoorden-vs-antipattern.md). Het is geen
+  content-type-probleem maar één workspace (Linfi, 68,9 tegen 77-92 elders), en binnen die
+  workspace één sub-criterium: **`antiPattern` 4,82 tegen 9,11** — alle andere criteria liggen
+  binnen 0,7, en `brandRecognition` is gelíjk. De judge vlagt `nl_buzzword_adjectives` op
+  "hoogwaardig", "stijlvol", "oogstrelend". Dat zijn **Linfi's eigen voorkeurstermen**: vier
+  van de tien uit `wordsWeUse` staan letterlijk op de buzzword-lijst. Het merk-DNA schrijft
+  dus woorden voor die de anti-AI-pijler bestraft — twee pijlers met tegengestelde instructies
+  over dezelfde woorden. ⚠️ Hieruit volgt ook dat de published/unpublished-vergelijking bij dit
+  content-type een **confounder** had: de published-groep bestónd uit Linfi.
+
+  ⚠️ **Wat daarnaast waar blijft**: het publish-mechanisme bestaat. De stijl-pijler
   is systematisch zwakker zonder gepubliceerde styleguide — over alle workspaces 87,8
   (published) tegen 59-69 (unpublished), en bij `search-ad` 99,3 tegen 57,0. `brand-context.ts:1242`
   gate't zeven contextvelden op diezelfde vlag (manifest, kleuren, fonts, typografie,
@@ -395,12 +410,15 @@ nauwelijks verkeer. De taak draagt vier meetbare triggers plus de SQL om ze te t
   op nul. Alleen verklaart dat déze vier scores niet. De echte oorzaak van de lage
   `linkedin-post` staat nog open.
 
-- ⚠️ **Nieuw gevonden op prod (19-08): `better brands` genereert zónder merkcontext.** Van de
-  zeven prod-styleguides met `published = false` is dat de enige met échte content: 22 regels,
-  5 deliverables, laatste 17-07. Die vijf zijn dus gemaakt zonder de zeven contextvelden en
-  zonder de rules-pijler. Dat is jouw eigen pilot-merk. Eén klik (finalize/publish) verandert
-  dat — maar controleer eerst of de pilot-F-VAL-claim (+6,8) op deze workspace rust, want dan
-  is die gemeten onder andere omstandigheden dan een klant zou krijgen.
+- ⛔ **`better brands` op prod publiceren — BESLUIT 19-08: doen we niet.** De bevinding blijft
+  staan als vastlegging: van de zeven prod-styleguides met `published = false` is dit de enige
+  met échte content (22 regels, 5 deliverables, laatste 17-07), dus die vijf zijn gemaakt
+  zonder de zeven gegate contextvelden en zonder de rules-pijler.
+
+  **Consequenties van het schrappen, expliciet zodat niemand ze later voor een vergissing
+  aanziet**: (1) de pilot-claim van +6,8 blijft gemeten onder deze omstandigheden — dus als
+  ondergrens, zie hieronder; (2) nieuwe content in deze workspace blijft zonder die velden
+  genereren; (3) wie de claim ooit wil aanscherpen, moet eerst publiceren én hermeten.
   Bijvangst: er staan **drie** workspaces met de naam `better brands` op prod, twee daarvan
   leeg en aangemaakt op 14-08.
 

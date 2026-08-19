@@ -5,9 +5,9 @@ fase: post-launch
 priority: later
 effort: klein per item (½-1 dag), maar elk vraagt eerst een keuze
 owner: unassigned
-status: in-progress
+status: done
 created: 2026-08-18
-completed: -
+completed: 2026-08-19
 related-adr: docs/adr/2026-07-17-deliverable-content-accessor.md
 related-spec: -
 worktree: branddock-content-chain-dode-code
@@ -116,6 +116,23 @@ raken. Voorstel voor de trigger: **≥10 keten-B-deliverables op prod, of één 
 om een landingspagina te herschrijven.** De melding is sinds 16-08 eerlijk, dus niemand
 loopt tegen een stille muur; dat maakt uitstellen verdedigbaar.
 
+### ⛔ BESLUIT ERIK 2026-08-19 — niet bouwen, wachten op de trigger
+
+De schrijfkant van keten B wordt **niet gebouwd**. Niet "later een keer": de meting hierboven
+maakt het expliciet — twee productie-items rechtvaardigen geen eigen schrijflaag, en de
+melding is sinds 16-08 eerlijk, dus niemand loopt tegen een stille muur.
+
+**Heropen bij een van deze twee**, toetsbaar met de SQL hieronder:
+
+- ≥10 keten-B-deliverables op productie, óf
+- één klantverzoek om een landingspagina te herschrijven
+
+```sql
+SELECT count(*) FROM "Deliverable" WHERE settings ? 'structuredVariant';
+```
+
+Herschrijven blijft tot dan bewust een keten-A-functie.
+
 ⚠️ **Bijvangst uit dezelfde meting**: `contentType` kent zowel `landing-page` (29) als
 `Landing Page` (3). Dezelfde soort, twee schrijfwijzen — elke query, filter of
 `switch` op dat veld telt er één van de twee. Niet onderzocht hoe dat is ontstaan of
@@ -153,14 +170,35 @@ nog niet is. **Trigger: de eerste derive vanaf een keten-B-bron** — toetsbaar 
 hierboven. Tot dan is de huidige strip het veilige gedrag: liever geen bron-content dan de
 verkeerde.
 
+### ⛔ BESLUIT ERIK 2026-08-19 — geblokkeerd op een trigger, niet ontworpen
+
+Wat "afleiden" betekent wordt **niet nu ontworpen**. Met nul waargenomen gevallen — lokaal
+één derive in totaal, op prod geen enkele — zou elk ontwerp raden zijn naar de behoefte van
+een gebruiker die er nog niet is. Zelfde vorm als
+[`lp-turnstile-form-endpoint`](lp-turnstile-form-endpoint.md): geblokkeerd op een trigger,
+niet op werk.
+
+**Trigger**: de eerste derive vanaf een keten-B-bron.
+
+```sql
+SELECT count(*) FROM "Deliverable" d
+JOIN "Deliverable" src ON src.id = d."derivedFromId"
+WHERE src.settings ? 'structuredVariant';
+```
+
+Tot dan blijft de strip van 16-08 het veilige gedrag: liever géén bron-content dan de
+verkeerde. Dat is bewust de zwakkere kant van de afweging, en het staat hier zodat niemand
+het later voor een vergissing aanziet.
+
 # Acceptatiecriteria
 
-- [~] Per punt een besluit vastgelegd (uitvoeren óf expliciet "bewust niet, want …")
-      - **Punt 1** ✅ uitgevoerd 2026-08-19 (verwijderd, en breder dan gedacht)
-      - **Punt 2** ⏭️ meting ligt er, het besluit is aan Erik — voorstel: uitstellen mét
-        trigger (≥10 keten-B op prod, of één klantverzoek)
-      - **Punt 3** ⏭️ meting ligt er, het besluit is aan Erik — voorstel: blokkeren op een
-        trigger (de eerste derive vanaf een keten-B-bron), niet ontwerpen zonder gebruik
+- [x] Per punt een besluit vastgelegd (uitvoeren óf expliciet "bewust niet, want …")
+      — ✅ **alle drie 2026-08-19**
+      - **Punt 1** ✅ uitgevoerd (verwijderd, en breder dan gedacht — 314 → 38 regels)
+      - **Punt 2** ⛔ bewust niet gebouwd; trigger vastgelegd (≥10 keten-B op prod, of één
+        klantverzoek) mét de SQL om hem te toetsen
+      - **Punt 3** ⛔ bewust niet ontworpen; trigger vastgelegd (de eerste derive vanaf een
+        keten-B-bron) mét de SQL om hem te toetsen
 - [x] Bij uitvoeren: bewijs uit een echte run, niet alleen `tsc` — ✅ **`npm run build`
       volledig geslaagd** na de verwijdering, plus `tsc`, `typecheck:scripts`, `lint`
       (0 errors) en de bewakers-gate 37/37. De build is hier het relevante bewijs: die
