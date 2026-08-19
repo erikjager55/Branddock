@@ -12,7 +12,14 @@
  */
 
 /** Versie van de directive-inhoud — voor reproduceerbaarheid/prompt-tracking. */
-export const GEO_DIRECTIVE_VERSION = '1.0.0';
+// 1.1.0 (2026-08-19): 'Citeerbare stats MET bron' eiste voor ELK cijfer een bron
+// "uit de aangeleverde context". Changelog #340 wees die dwang op 24-06 aan als de
+// DIRECTE oorzaak dat het model een bron verzint — en de brand-context- en
+// briefinglagen ZIJN onderdeel van die context, dus het citeerde die lagen. De fix
+// van toen paste variant-generator.ts aan maar niet dit blok, dat diezelfde prompt
+// in gaat (regel 747 naast de gecorrigeerde regel 774). Nu uitgelijnd: echte
+// externe bron of weglaten.
+export const GEO_DIRECTIVE_VERSION = '1.1.0';
 
 export interface GeoDirectiveOpts {
   /** Content-locale (bijv. "nl-NL" / "en-US"); puur informatief in de regeltekst. */
@@ -53,7 +60,7 @@ export function buildGeoDirective(opts: GeoDirectiveOpts = {}): string {
 Schrijf zo dat een AI-engine losse passages zelfstandig kan citeren. Citeerbaarheid > vindbaarheid.
 - **Answer-first (AEO)**: beantwoord elke kernvraag in de eerste zin, volledig en zelfstandig leesbaar — een engine moet die zin los kunnen citeren zonder de rest.
 - **Atomic chunking**: schrijf in zelfstandige brokken van 2-4 zinnen; elk brok staat op zichzelf. Geen lange lappen tekst.
-- **Citeerbare stats MET bron**: elk cijfer/feit heeft een expliciete bron uit de aangeleverde context. Verzin nooit cijfers, percentages of bronnen.
+- **Citeerbare stats**: geef een cijfer of feit alleen een bron als er een ÉCHTE externe bron voor is — een titel of URL uit het aangeleverde bronmateriaal. Is die er niet, of is het een eigen/first-party merk-gegeven, laat de bron dan wég: geen bron is beter dan een verzonnen of interne. Verzin nooit cijfers, percentages of bronnen, en gebruik NOOIT een interne laagnaam als bron ("brand-context", "briefing", "evidence pieces", "delivery evidence").
 - **Entity-clarity**: definieer sleuteltermen en gebruik volledige entiteitsnamen; vermijd vage verwijzingen ("dit", "het", "het systeem").
 - **Freshness**: maak recentheid expliciet waar de context dat toelaat (datums, "per <jaar>", actuele cijfers) zodat de passage als actueel gelezen wordt.
 - **Anti-patterns (vermijd)**: keyword-stuffing, marketing-fluff zonder inhoud, het antwoord begraven onder inleiding, ongefundeerde claims, vage voornaamwoorden, en muren van tekst.${localeRule}${tradeOff}`;

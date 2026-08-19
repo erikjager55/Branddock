@@ -25,10 +25,20 @@ function assert(name: string, cond: boolean, detail?: string): void {
 
 console.log('── buildGeoDirective kernprincipes ──');
 const gen = buildGeoDirective({ locale: 'nl-NL' });
-assert('version geëxporteerd', GEO_DIRECTIVE_VERSION === '1.0.0');
+assert('version geëxporteerd', GEO_DIRECTIVE_VERSION === '1.1.0');
 assert('Answer-first', gen.includes('Answer-first'));
 assert('Atomic chunking', gen.includes('Atomic chunking'));
-assert('Citeerbare stats MET bron', gen.includes('Citeerbare stats MET bron'));
+// Gekoppeld paar (positief + negatief op hetzelfde onderwerp, zie gotcha 19-08).
+// Tot 1.1.0 eiste de directive voor ELK cijfer een bron "uit de aangeleverde
+// context" — changelog #340 wees die dwang aan als de directe oorzaak dat het
+// model er een verzon, en de brand-context-/briefinglagen ZIJN die context. De
+// junifix paste variant-generator.ts aan maar niet dit blok, dat in diezelfde
+// prompt landt. De losse negatie hieronder zou stil hol worden bij een
+// hernoeming; de positieve ernaast valt dan eerst om.
+assert('Citeerbare stats', gen.includes('Citeerbare stats'));
+assert('bron mag ontbreken bij first-party', gen.includes('laat de bron dan wég'));
+assert('interne laagnaam expliciet verboden als bron', gen.includes('interne laagnaam'));
+assert('de dwang van vóór 24-06 is weg', !gen.includes('MET bron'));
 assert('Entity-clarity', gen.includes('Entity-clarity'));
 assert('Freshness', gen.includes('Freshness'));
 assert('Anti-patterns', gen.includes('Anti-patterns'));
@@ -47,6 +57,24 @@ const geoPrompt = buildLandingPageVariantPrompt({
 }).system;
 assert('GEO-prompt bevat de canonieke directive-kop', geoPrompt.includes('# GEO-DIRECTIVE'));
 assert('GEO-prompt bevat answer-first uit directive', geoPrompt.includes('Answer-first (AEO)'));
+// ─── De samengestelde prompt mag zichzelf niet tegenspreken ──────────────────
+// Dit is de check die de bug van 24-06 tot 19-08 had kunnen vangen. Beide helften
+// waren op zichzelf verdedigbaar: variant-generator.ts:774 kreeg de junifix, dit
+// directive-blok niet, en ze landen 27 regels uit elkaar in DEZELFDE prompt. Geen
+// van beide bestanden was los te betrappen — alleen hun combinatie.
+assert(
+  'samengestelde GEO-prompt draagt de bron-dwang van vóór 24-06 NIET meer',
+  !/elk cijfer\/feit heeft een expliciete bron|MET bron/i.test(geoPrompt),
+);
+assert(
+  'samengestelde GEO-prompt staat bronloos toe (first-party)',
+  /laat de bron dan wég|source null/i.test(geoPrompt),
+);
+assert(
+  'samengestelde GEO-prompt verbiedt interne laagnamen als bron',
+  /interne laagnaam|brand-context/i.test(geoPrompt),
+);
+
 assert('directive niet gelekt naar landing-page', !buildLandingPageVariantPrompt({ brand: {}, userPrompt: 'x', contentType: 'landing-page' }).system.includes('# GEO-DIRECTIVE'));
 
 console.log(`\n${pass} passed, ${fail} failed`);
