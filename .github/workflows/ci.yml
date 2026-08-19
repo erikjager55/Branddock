@@ -191,6 +191,22 @@ jobs:
         env:
           CI: "true"
 
+      # De zeven bewakers die een échte database nodig hebben. Ze staan hier en
+      # niet in `check`, want deze job heeft al een postgres draaien én
+      # global-setup heeft het schema gepusht en geseed.
+      #
+      # NA de e2e-suite, niet ervoor: een deel muteert (smoke:lp-retention wist
+      # rijen, smoke:review-drift-reset zet review-statussen terug). Ervoor draaien
+      # trekt de fixtures onder de tests vandaan.
+      #
+      # De seed is de reden dat dit werkt. Op een lege database komt een deel van
+      # deze bewakers groen terug zónder iets te toetsen — smoke:context-priority
+      # ging van "0 toetsen" naar 9 zodra er data stond. Zie run-db-guards.sh.
+      - name: DB-bewakers
+        run: scripts/ci/run-db-guards.sh
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/branddock_test
+
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

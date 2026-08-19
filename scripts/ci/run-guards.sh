@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # run-guards — draait de goedkope, deterministische bewakers en meldt ze allemaal.
 #
-# WAAROM DIT BESTAAT: op 2026-08-19 bleek dat van de 85 smoke-/eval-scripts in
-# package.json er maar DRIE in een workflow stonden. De andere 82 bestonden wel,
+# WAAROM DIT BESTAAT: op 2026-08-19 bleek dat van de 77 smoke-/eval-scripts in
+# package.json er maar DRIE in een workflow stonden. De andere 74 bestonden wel,
 # maar draaiden nooit — waaronder guards die speciaal waren gebouwd nadat er iets
 # stil was misgegaan. Een bewaker die niet draait is geen bewaker.
 #
@@ -14,8 +14,14 @@
 # zien, niet één per run.
 #
 # Toevoegen? Draai 'm eerst in een schone omgeving. Faalt hij daar op een
-# ontbrekende DATABASE_URL, dan hoort hij hier niet — die groep wacht op een
-# aparte job met een database.
+# ontbrekende DATABASE_URL, dan hoort hij hier niet — die groep draait in de
+# e2e-job via run-db-guards.sh.
+#
+# ⚠️ EN "GROEN" IS NIET GENOEG. Dit criterium was te zwak: smoke:settings-write
+# kwam groen terug zonder iets te toetsen (exit 0 bij een ontbrekende
+# SMOKE_DB=1). Tel assertie-regels, niet uitkomsten. Alle 18 hieronder zijn
+# daarop nagemeten — van 1 samenvattende bewaker over 211 iconen tot 294
+# asserties.
 set -uo pipefail
 
 GUARDS=(
