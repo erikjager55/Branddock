@@ -113,22 +113,87 @@ Volledige onderbouwing en metingen: `tasks/done/static-rendering-regressie.md`.
 
 ## C. Opgeruimd worden
 
-- [ ] **Drie `revalidatePath('/p/…')`-aanroepen** (publish, rollback, deliverable-DELETE)
-      zijn even effectloos als de wél geannoteerde `revalidate`, maar dragen geen
-      annotatie. Strikt genomen is "niets suggereert nog een optimalisatie die niet
-      plaatsvindt" daarmee niet volledig gehaald.
+- [x] **Drie `revalidatePath('/p/…')`-aanroepen** — ✅ **geannoteerd 2026-08-19.**
+      Bij `publish` was de bestaande comment niet alleen ontbrekend maar **onjuist**:
+      hij noemde on-demand revalidation "het primaire verversmechanisme van de
+      statisch gecachte render-route". Die route is niet statisch gecacht, dus dat
+      leest als een optimalisatie die er niet is — erger dan geen comment.
+
+      Alle drie dragen nu dezelfde noot: dit doet op dit moment niets, het staat er
+      bewust, en het wordt vanzelf weer het juiste mechanisme zodra sectie D wordt
+      opgepakt. Bij `publish` is ook de volgorde-reden bewaard (ná de artifact-write,
+      zodat een verse cache-vulling het artifact ziet) — die blijft gelden zodra
+      caching terugkomt.
 - [ ] **`/p/<ws>/<slug>` in de CSP-violation-sweep.** Vereist een fixture van vier
       entiteiten (Campaign → Deliverable → LandingPage → PagePublish); de e2e-seed heeft
       geen landingspagina. ⚠️ Voeg de route toe aan `PUBLIC_ROUTES`, niet aan
       `NONCE_GUARD_ROUTES` — die filtert `/p` er bewust uit (hash-scope zonder nonce).
-- [ ] **`decideHostRoute` moet puur en client-veilig blijven.** `DocumentLangSync`
-      importeert het via `document-locale.shared.ts`. Zodra `DomainMapping` live gaat
-      moet die host door dezelfde resolutie — maar dat is een DB-lookup, dus die hoort
-      in een aparte servertak, niet in `decideHostRoute` zelf.
+
+      ⚠️ **Geblokkeerd achter een ándere beslissing — vastgesteld 2026-08-19.** De
+      violation-sweep zit in `test.describe('CSP in de browser')` en gebruikt de
+      `page`-fixture. Dat is precies de groep van zes die een chromium-binary vraagt en
+      die daarom nog nergens draait; alleen de negen `request`-checks zijn in #380
+      aangehaakt. En `NONCE_GUARD_ROUTES` filtert `/p` er bewust uit, dus de route zou
+      *uitsluitend* in de browser-groep landen.
+
+      Gevolg: de fixture bouwen levert vandaag **nul draaiende checks** op. Het is werk
+      dat pas rendement geeft ná de chromium-afweging (open beslissing 0 in
+      `START_HERE.md`). Eerst bouwen zou een slapende bewaker toevoegen aan een lijst die
+      vandaag juist is opgeschoond — zie de gotcha van 19-08.
+
+      Volgorde is dus: chromium-besluit → fixture → route toevoegen. Niet andersom.
+- [x] **`decideHostRoute` moet puur en client-veilig blijven** — ✅ **al afgedwongen,
+      gemeten 2026-08-19.** Er is hier géén eigen bewaker nodig: de Next-build doet het al.
+      Getoetst door een `import { prisma }` in `host-router.ts` te zetten en te bouwen:
+
+          Build error occurred
+          Error: Turbopack build failed with 6 errors
+
+      `DocumentLangSync` is een client-component en importeert `decideHostRoute` via
+      `document-locale.shared.ts`; server-only code daarin laat de bundel-grens knappen
+      en dat is een harde buildfout, geen waarschuwing.
+
+      De onderliggende zorg blijft wél staan en verhuist naar de opmerking hieronder:
+      zodra `DomainMapping` live gaat moet die host door dezelfde resolutie, en dát is
+      een DB-lookup. Die hoort in een aparte servertak — niet omdat een bewaker het
+      verbiedt, maar omdat de build je anders tegenhoudt.
+
+      ⚠️ Bewust géén bewaker gebouwd. Een tweede controle op wat de build al hard
+      afdwingt is onderhoud zonder dekking; hij zou nooit rood worden zonder dat de
+      build eerder rood is.
 - [ ] **Drie call-sites resolven dezelfde landingspagina-rij** met drie queryvormen:
-      `loadPublishedPageSeo`, `resolvePublishedPage` en `loadLandingPageLocale`. Zodra er
-      een tweede `PUBLISHED`-rij per slug bestaat (kan vandaag al, via een locale-wissel
-      plus herpublicatie) moeten die verzoend worden tot één gedeelde lookup.
+      `loadPublishedPageSeo`, `resolvePublishedPage` en `loadLandingPageLocale`.
+
+      **Gemeten 2026-08-19 — de risico-inschatting klopt structureel, maar er zijn nul
+      gevallen.** De unieke sleutel is `@@unique([workspaceId, locale, slug])`, dus twee
+      rijen met dezelfde slug en een andere locale kunnen inderdaad bestaan. Geteld:
+
+      | | rijen | unieke (ws, slug) | locales |
+      |---|---:|---:|---|
+      | productie (Neon) | 1 | 1 | `nl-NL` |
+      | dev | 2 | 2 | — |
+
+      Nul dubbele slugs, in beide. Het is dus latent, niet actief.
+
+      **Waar de drie precies uiteenlopen**, zodat de volgende persoon niet opnieuw hoeft
+      te vergelijken:
+
+      - `loadPublishedPageSeo` en `resolvePublishedPage` doen
+        `findFirst({ workspaceId, slug })` **zonder `orderBy`** en toetsen `status` daarná.
+        Bij twee rijen kiest de database willekeurig, en als dat de niet-gepubliceerde is
+        volgt een 404 op een pagina die wél gepubliceerd is.
+      - `loadLandingPageLocale` filtert `status: 'PUBLISHED'` **in** de query en sorteert
+        op `updatedAt desc`. Die kiest dus altijd een gepubliceerde rij.
+
+      Gevolg zodra er een tweede rij komt: het taalattribuut kan een pagina vinden die de
+      render-route weigert.
+
+      ⚠️ **Bewust nog niet verzoend.** De drie gelijktrekken vraagt een antwoord op *welke*
+      rij juist is bij twee gepubliceerde locales, en dat is locale-onderhandeling — een
+      productbeslissing die bij het multi-markt-spoor hoort, niet bij deze opruiming. Ze
+      alle drie op `updatedAt desc` zetten zou de divergentie wegnemen maar een willekeurige
+      keuze tot norm verheffen. Heropenen zodra multi-markt-pagina's echt landen; de
+      meting hierboven is dan het startpunt (en check hem opnieuw — hij is van 19-08).
 
 ## D. De grote openstaande vraag
 

@@ -28,13 +28,26 @@ const gen = buildGeoDirective({ locale: 'nl-NL' });
 assert('version geëxporteerd', GEO_DIRECTIVE_VERSION === '1.1.0');
 assert('Answer-first', gen.includes('Answer-first'));
 assert('Atomic chunking', gen.includes('Atomic chunking'));
-// Gekoppeld paar (positief + negatief op hetzelfde onderwerp, zie gotcha 19-08).
-// Tot 1.1.0 eiste de directive voor ELK cijfer een bron "uit de aangeleverde
-// context" — changelog #340 wees die dwang aan als de directe oorzaak dat het
-// model er een verzon, en de brand-context-/briefinglagen ZIJN die context. De
-// junifix paste variant-generator.ts aan maar niet dit blok, dat in diezelfde
-// prompt landt. De losse negatie hieronder zou stil hol worden bij een
-// hernoeming; de positieve ernaast valt dan eerst om.
+// ─── Geschiedenis: hier stond tot 19-08 een vastgepinde tegenstrijdigheid ────
+//
+// Tot versie 1.1.0 eiste de directive "elk cijfer/feit heeft een expliciete bron
+// uit de aangeleverde context", terwijl 27 regels verderop in DEZELFDE prompt
+// (variant-generator.ts, het JSON-contract) stond dat een first-party cijfer
+// `source: null` krijgt.
+//
+// Die tweede helft is de fix van 2026-06-24 (2f78eec3, changelog #340). De
+// aanleiding was precies deze eis: een verplichte bron dwong het model er één te
+// VERZINNEN, meestal een interne context-laagnaam die als bronvermelding op de
+// klantpagina belandde. De prompt-kant werd toen gecorrigeerd, dit blok niet.
+//
+// Sinds #374 draaide deze bewaker in de PR-poort en dwong CI de verouderde helft
+// actief af — wie de directive fatsoeneerde kreeg rood, en de goedkoopste weg
+// naar groen was de oude tekst terugzetten. Dat gat is beschreven in #391 en
+// opgelost in #393: de directive is uitgelijnd, deze asserties bewegen mee.
+//
+// Vorm: een gekoppeld paar (positief + negatief op hetzelfde onderwerp, gotcha
+// 19-08). De losse negatie hieronder zou stil hol worden bij een hernoeming; de
+// positieve ernaast valt dan eerst om.
 assert('Citeerbare stats', gen.includes('Citeerbare stats'));
 assert('bron mag ontbreken bij first-party', gen.includes('laat de bron dan wég'));
 assert('interne laagnaam expliciet verboden als bron', gen.includes('interne laagnaam'));

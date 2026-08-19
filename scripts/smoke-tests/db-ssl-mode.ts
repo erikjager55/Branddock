@@ -35,6 +35,20 @@ function main(): void {
   check('sslmode=verify-full is ok', judgeDatabaseSslMode(`${NEON}?sslmode=verify-full`, true).level === 'ok');
   check('géén sslmode wordt gevlagd als ontbrekend',
     judgeDatabaseSslMode(NEON, true).level === 'missing');
+  // ⚠️ LET OP bij het lezen van deze assertie: `ok` betekent hier "wordt niet
+  // zwakker door de pg-major", NIET "veilig". `no-verify` is de zwakste modus die
+  // er is. Deze functie beoordeelt uitsluitend de verzwakking waar
+  // `pg-major-sslmode-semantiek` over gaat, en binnen die lens is het antwoord
+  // correct.
+  //
+  // GEVOLG dat je moet kennen voordat je hier iets "repareert": `env-validation.ts`
+  // gebruikt `level === 'ok'` als "geen bezwaar", óók met DATABASE_SSL_STRICT=true.
+  // Een prod-URL met `sslmode=no-verify` passeert dus stil, zelfs in de strengste
+  // stand. Vandaag niet blootgesteld (de prod-URL draagt `require`), maar het is een
+  // echt gat en het staat als open punt in tasks/pg-major-sslmode-semantiek.md.
+  //
+  // Zet deze assertie dus NIET om naar 'weakening' om dat gat te dichten — dan
+  // liegt de functie over haar eigen onderwerp. De juiste fix is een apart niveau.
   check('no-verify telt niet als verzwakkend (was al zwak, wordt niet zwakker)',
     judgeDatabaseSslMode(`${NEON}?sslmode=no-verify`, true).level === 'ok');
 

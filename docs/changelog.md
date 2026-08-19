@@ -37,6 +37,142 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 497. Een bewaker met een adres maar zonder bestemming — en drie keer een meting die het tegenovergestelde bewees
+
+`smoke:db-ssl-mode` draaide nergens. Geen bewuste uitzondering: `run-db-guards.sh:36`
+verwijst hem expliciet door met "goedkope groep in run-guards.sh, niet hier" — naar een plek
+waar hij nooit is aangekomen. Hij bewaakt iets dat stil verzwakt: ná de pg-major betekent
+dezelfde `sslmode=require`-string versleuteld **zonder** certificaat- en hostnaamcontrole.
+Nu aangehaakt (15 asserties, 0,27s, puur), met een mutatietest op de gate-regel zelf —
+ondergrens 14 geeft exit 0, ondergrens 999 exit 1. Dat een regel in het bestand staat bewijst
+niet dat hij draait.
+
+De leesbeurt vóór het aanhaken (regel uit #494) leverde meteen een gat op, en van een soort
+die nog niet in de categorieën zat: **`no-verify` krijgt `level === 'ok'`.** Binnen de lens
+van de bewaker klopt dat — `no-verify` wordt niet zwakker door de major, want hij is al zwak.
+Maar `env-validation.ts` leest diezelfde uitkomst als "geen bezwaar", óók met
+`DATABASE_SSL_STRICT=true`. De strengste stand laat de zwakste modus door. Niet stil
+gerepareerd: de check zit op het productie-startpad, dus de assertie is geannoteerd met wat
+`ok` hier wél en niet betekent, plus waarom `weakening` de functie over haar eigen onderwerp
+zou laten liegen. Als beslispunt bij Erik neergelegd.
+
+**Drie keer bewees een meting het tegenovergestelde van wat de tekst beweerde.** Dat is de
+rode draad van deze entry, niet de bewaker.
+
+1. **Twee lokale branches zouden ongepusht werk dragen** — inclusief Eriks besluiten van die
+   dag. Onjuist: `git cherry` gaf patch-equivalent, en hun "unieke" inhoud was de ónafgevinkte
+   versie van checklists die in main al afgevinkt stonden. Oorzaak: `rev-list --left-right`
+   omgekeerd gelezen (45 commits *achter*, niet vooruit) en een three-dot diff gebruikt als
+   bewijs van afwezigheid. Beide gaven een net, niet-leeg antwoord. Als gotcha vastgelegd —
+   derde variant van "zit dit al in main?" in één week, na `merged: true` en "open task-file
+   bewijst niets".
+2. **`START_HERE` zei op drie plekken "44 van 44 merkfonts"** terwijl het task-file sinds
+   18-08 "29 van de 44" zei en Eriks besluit van 19-08 er 18 van maakte. De sessie-opener liep
+   achter op zijn eigen bron, in de top 3, op de plek die elke nieuwe sessie als eerste leest.
+3. **De verklaring voor vier lage F-VAL-scores klopte niet.** Het losse eindje wees naar
+   Napkings niet-gepubliceerde styleguide en vroeg "sluit dat eerst uit". Gemeten:
+   `linkedin-poll` en `twitter-thread` hebben **nul** unpublished-metingen, en bij
+   `linkedin-post` scoort de gepubliceerde groep juist tien punten lager (68,9 tegen 78,7).
+   Op prod staat Napking gewoon op `published = true`.
+
+   ⚠️ Het mechanisme eronder bestaat wél: de stijl-pijler is 87,8 (published) tegen 59-69
+   (unpublished). `brand-context.ts:1242` gate't zeven contextvelden op die vlag,
+   `styleguide-rule-compiler.ts:126` zet de rules-pijler op nul. Het verklaart déze vier
+   scores alleen niet. **Bijvangst op prod**: `better brands` is de enige unpublished
+   styleguide mét content (22 regels, 5 deliverables) — die zijn dus zonder merkcontext
+   gemaakt. Plus drie workspaces met die naam, twee leeg.
+
+- Task: [tasks/pg-major-sslmode-semantiek.md](../tasks/pg-major-sslmode-semantiek.md)
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #395, #397, #398
+
+### 496. De taalbewaker en de CSP-policy draaien weer — en één sweep bleek half gratis
+
+`smoke:document-lang-browser` is gebouwd nadat élke bezoeker `lang="en"` kreeg op een
+Nederlandse pagina (#335). Daarna draaide hij nergens, want hij vroeg een server **én** een
+browser. Die twee zijn ontkoppeld: fase 2 zit achter `SMOKE_BROWSER=1`, fase 1 draait in de
+`check`-job tegen `next start` — 10 checks, geen chromium nodig.
+
+Dezelfde vraag gesteld aan `test:csp`, die óók nergens draaide terwijl hij de enige
+automatische bescherming is onder de enforce-flip. **Van de 15 checks vragen er negen geen
+browser en geen database**: de vier policy-checks en de vijf nonce-integriteitschecks gaan via
+Playwrights `request`-fixture. Gemeten door `PLAYWRIGHT_BROWSERS_PATH` naar een lege map te
+wijzen — zonder die lege map zegt "het werkt hier" niets over een runner zonder browsers.
+
+De zes overige gebruiken `page` en wachten op een kostenafweging. Beslispunt 0 in
+`START_HERE.md` is daarmee van "0 van de 15 draait" naar "9 van de 15 draait" gegaan.
+
+Erbij: een nieuwe bewaker die faalt bij **vergeten** in plaats van bij toevoegen. Wie een
+publieke route bouwt en hem niet indeelt voor `<html lang>`, krijgt nu rood — de bewaker leest
+de bestandsboom, niet een lijst. Alle 25 bestaande routes zijn geclassificeerd.
+
+- Task: [tasks/document-lang-followups.md](../tasks/document-lang-followups.md)
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #380, #384, #385
+
+### 495. Vier openstaande punten werden geen code — en dat is de uitkomst
+
+Sectie C van `document-lang-followups` leverde vier keer een meting op in plaats van een fix.
+Elk daarvan bespaart de volgende sessie werk dat niets had opgeleverd.
+
+**Een `not-found.tsx` repareert de `/p`-404 niet.** De diagnose luidde "er is nergens een
+`not-found.tsx`, dus Next' foutdocument vervangt de root layout" — wat impliceert dat er één
+toevoegen het oplost. Gebouwd op beide niveaus, twee builds: de eigen 404-tekst rendert, de
+status klopt, en het `<html>`-element draagt nog steeds géén `lang`. Het echte onderscheid
+bleek uit de productiemeting ernaast: alleen een `notFound()` uit een *dynamisch segment*
+verliest de layout; `/marketing/bestaat-niet` houdt hem gewoon.
+
+**`decideHostRoute` heeft geen bewaker nodig** — de Next-build valt om met 6 fouten zodra je
+er Prisma in importeert, want `DocumentLangSync` is een client-component. Een tweede controle
+daarop zou nooit rood worden zonder dat de build eerder rood is.
+
+**De CSP-sweep-fixture levert nul draaiende checks op** zolang de browser-groep op een
+kostenafweging wacht. Eerst bouwen zou een slapende bewaker toevoegen aan een lijst die
+diezelfde dag juist is opgeschoond.
+
+**De drie landingspagina-lookups lopen echt uiteen**, maar prod heeft één rij en dev twee,
+allebei zonder dubbele slug. Gelijktrekken vraagt een antwoord op welke rij juist is bij twee
+gepubliceerde locales — locale-onderhandeling, en dat hoort bij het multi-markt-spoor.
+
+Bijvangst die wél code werd: bij `publish` beweerde een comment dat on-demand revalidation
+"het primaire verversmechanisme van de statisch gecachte render-route" is. Die route is niet
+statisch gecacht. Alle drie de `revalidatePath`-aanroepen zeggen nu wat ze doen — niets — en
+waarom ze toch blijven staan.
+
+- Task: [tasks/document-lang-followups.md](../tasks/document-lang-followups.md)
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #386, #387, #388, #389, #390
+
+### 494. Een slapende bewaker aanzetten is niet neutraal
+
+Op één dag gingen 15 bewakers van "draait nergens" naar "blokkeert elke PR". Dat is de
+bedoeling, maar er zat een gevolg aan dat vooraf niet is meegewogen: **elke bevroren assertie
+in zo'n bewaker wordt daarmee een actieve blokkade op de fix van precies datgene wat hij
+verkeerd bewaakt.**
+
+`smoke:geo-directives` assert dat de GEO-directive de tekst "Citeerbare stats MET bron"
+draagt. Dezelfde prompt zegt 27 regels verderop het tegenovergestelde: een first-party
+merk-cijfer krijgt `source: null`. Die tweede helft is de fix van 24 juni (`2f78eec3`,
+changelog #340) — een verplichte bron dwong het model er één te *verzinnen*, meestal een
+interne context-laagnaam die als bronvermelding op de klantpagina belandde.
+
+Zolang die bewaker nergens draaide was dat sluimerend. Sinds hij in de PR-poort staat dwingt
+CI de verouderde helft áf: wie de directive fatsoeneert krijgt rood, en de goedkoopste weg
+naar groen is de oude tekst terugzetten. Precies de fout die #375 moest herstellen, nu
+geautomatiseerd.
+
+De prompt is niet gewijzigd — dat is een generatie-kwaliteitsafweging. De assertie draagt nu
+de hele uitleg, inclusief dat **zij** moet meebewegen en niet de directive terug. Gevonden
+door een parallelle sessie, onafhankelijk nagetrokken op alle drie de vindplaatsen.
+
+- Task: [tasks/slapende-bewakers-survey.md](../tasks/slapende-bewakers-survey.md)
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #391, #392
+
 ### 493. Twee bewakers bleken bevroren: één bewaakte de weggehaalde bug, de ander mocht niet draaien
 
 `smoke:geo-generation-prompt` stond sinds **24 juni** ongezien rood. De assertie eiste de

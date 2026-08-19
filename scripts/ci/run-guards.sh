@@ -92,11 +92,57 @@ GUARDS=(
   # checks pure logica en nul netwerk.
   smoke:storage-url-expiry:14
 
+  # Aangesloten 2026-08-19. Stond in geen enkele workflow, en dat was geen
+  # bewuste keuze: run-db-guards.sh verwijst hem door met "goedkope groep in
+  # run-guards.sh, niet hier" — de doorverwijzing was geschreven, de landing niet.
+  # Puur: geen database, geen sleutels, geen netwerk (0,3s). Bewaakt dat de
+  # sslmode-semantiek van pg expliciet blijft; ná de pg-major betekent dezelfde
+  # `require`-string versleuteld ZONDER certificaat- en hostnaamcontrole.
+  smoke:db-ssl-mode:14
+
   # Faalt bij VERGETEN, niet bij toevoegen: wie een publieke pagina bouwt en hem
   # niet indeelt, krijgt hier rood in plaats van stil lang="en" op Nederlandse
   # tekst (de bug van #335). Leest de bestandsboom, niet een lijst.
-  smoke:route-language:28
+  smoke:route-language:44
+
+  # ── Weesbestanden, aangehaakt 2026-08-19 ───────────────────────────────────
+  # Deze drie hadden geen npm-script en waren daardoor ONZICHTBAAR voor de survey:
+  # die telde scripts in package.json, niet bestanden op schijf. `ssrf-guard` is
+  # gecommit als onderdeel van een SSRF-fix (faf2dbe6, 30-06) en heeft sindsdien
+  # nooit gedraaid — 65 asserties op een beveiligingsoppervlak.
+  #
+  # ⚠️ Ze printen alléén een samenvatting ("65 passed, 0 failed"), geen regel per
+  # assertie. Een telling op regels gaf hier 1; vandaar de tel_asserties-functie
+  # hierboven. Zonder die correctie zouden hun ondergrenzen 1 zijn geweest, en dat
+  # beschermt niets.
+  smoke:ssrf-guard:60
+  smoke:security-medium:6
+  smoke:brand-name-caps:7
 )
+
+# ── Hoe asserties geteld worden ─────────────────────────────────────────────
+#
+# Twee vormen, en de tweede kostte bijna een vals oordeel. De meeste bewakers
+# printen één regel per assertie (`✓ ...`), maar sommige printen alléén een
+# samenvatting: `SSRF-guard: 65 passed, 0 failed`. Een telling op regels gaf daar
+# **1** terwijl er 65 toetsen draaien — en een ondergrens van 1 beschermt niets.
+#
+# Daarom: neem het MAXIMUM van (a) het aantal assertie-regels en (b) het getal uit
+# een samenvattingsregel. Onderrapporteren is hier gevaarlijker dan overrapporteren:
+# een te lage ondergrens leest als dekking die er niet is.
+tel_asserties() {
+  local log="$1" per_regel samenvatting
+  per_regel=$(grep -cE "✓|✔|PASS|OK |passed|geslaagd" "$log")
+  # `65 passed` / `8 pass` / `14/14 checks` / `97 checks groen` / `9 passed (5.0s)`
+  samenvatting=$(grep -oiE "[0-9]+ ?(/ ?[0-9]+)? *(passed|pass\b|checks|geslaagd)" "$log" \
+    | grep -oE "^[0-9]+" | sort -rn | head -1)
+  samenvatting=${samenvatting:-0}
+  if [ "$samenvatting" -gt "$per_regel" ]; then
+    echo "$samenvatting"
+  else
+    echo "$per_regel"
+  fi
+}
 
 log_dir=$(mktemp -d)
 trap 'rm -rf "$log_dir"' EXIT
@@ -110,7 +156,7 @@ for entry in "${GUARDS[@]}"; do
 
   npm run "$g" --silent > "$log" 2>&1
   code=$?
-  asserts=$(grep -cE "✓|✔|PASS|OK |passed|geslaagd" "$log")
+  asserts=$(tel_asserties "$log")
 
   if [ "$code" -ne 0 ]; then
     cat "$log"
