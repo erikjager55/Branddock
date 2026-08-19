@@ -105,7 +105,13 @@ async function main() {
     '[2] workspace-personas warn (info-level "niet campaign-linked")',
     !ctxWsFallback.pass &&
       ctxWsFallback.severity === 'warn' &&
-      ctxWsFallback.reasons[0].includes('Workspace heeft 3 persona(s)'),
+      // Op het AANTAL matchen, niet op de zin. De melding is op 2026-06-17
+      // (35097c25, i18n-migratie) van "Workspace heeft 3 persona(s)" naar
+      // "Workspace has 3 persona(s)" gegaan — alleen de taal, niet het gedrag:
+      // pass en severity bleven gelijk. Deze bewaker stond sindsdien rood en
+      // niemand zag het, want hij heeft geen npm-script en draait nergens.
+      // '3 persona(s)' overleeft beide talen en is het feit dat ertoe doet.
+      ctxWsFallback.reasons[0].includes('3 persona(s)'),
   );
 
   const ctxFullyEmpty = validateContextCompleteness({

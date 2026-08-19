@@ -27,6 +27,7 @@
     "smoke:hero-clobber-guard": "tsx scripts/smoke-tests/web-page-builder-phase61-hero-clobber-guard.ts",
     "smoke:zombie-tab-guard": "node scripts/dev/f2-zombie-tab-smoke.mjs",
     "smoke:lp-assistant-edits": "tsx scripts/smoke-tests/lp-assistant-content-edits.ts",
+    "smoke:checkpoint-gates": "tsx scripts/smoke-tests/checkpoint-gates.ts",
     "smoke:claw-security": "tsx scripts/smoke-tests/claw-security-hardening.ts",
     "smoke:security-residual": "tsx scripts/smoke-tests/security-residual.ts",
     "smoke:storage-url-expiry": "node --env-file-if-exists=.env.local node_modules/.bin/tsx scripts/smoke-tests/storage-url-expiry-resolution.ts",
