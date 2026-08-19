@@ -1,7 +1,9 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> **Laatst bijgewerkt: 2026-08-18, derde helft** (retentie-plafond live, CSP op enforce,
+> **Laatst bijgewerkt: 2026-08-19** (bewakers-schoonmaak: PR-poort van 18 naar 32
+> bewakers, nachtelijke prod-bewaker, en beslispunt 0 is van 15 naar 6 checks gekrompen).
+> Daarvoor: **2026-08-18, derde helft** (retentie-plafond live, CSP op enforce,
 > SSE-abort gedeeltelijk, de twee Neon-indexen aangemaakt en prod drift-vrij bevonden —
 > zie hieronder. Twee sessies liepen elkaar in de weg; dat is de belangrijkste les van de dag).
 
@@ -25,6 +27,44 @@ sporen dragen dat:
 **Wat er niét meer speelt:** het credit-model is compleet (bouw, Stripe-config,
 smokes). Het enige dat rest is jouw schakelmoment: `NEXT_PUBLIC_TOPUP_ENABLED=true`
 plus één echte betaal-smoke.
+
+---
+
+## Wat er landde (2026-08-19)
+
+**De bewakers-schoonmaak. Van 78 smoke-scripts draaiden er drie.** Een survey (#368) telde ze,
+en de aanhaakslag daarna bracht de goedkope PR-poort van 18 naar **32 bewakers** — samen ruim
+2.900 asserties die eerst nergens draaiden. Plus een nachtelijke productie-bewaker (#377) en
+negen CSP-checks (#380).
+
+Drie dingen daaruit zijn belangrijker dan het aantal:
+
+**1. Een bewaker die nergens draait, verrot naar de verkeerde kant.**
+`smoke:geo-generation-prompt` stond sinds **24 juni ongezien rood**. Zijn assertie eiste de
+tekst `VERPLICHTE bron` in de GEO-prompt — een eis die in juni bewust was wéggehaald, omdat
+een verplichte bron het model dwong er één te verzinnen (meestal een interne laagnaam als
+`brand-context`, die als bronvermelding op de klantpagina belandde). De bewaker faalde dus op
+een *verbeterde* prompt. Wie hem eindelijk had aangezet, had een fix gerepareerd die geen bug
+was. Nu bewaakt hij de reparatie in plaats van de weggehaalde eis (#375).
+
+**2. Elf bewakers waren niet stuk maar konden niet starten.**
+Ze golden als "heeft een database nodig". In werkelijkheid crashen ze op een *ontbrekende*
+`DATABASE_URL`, niet op een onbereikbare: 71 van de 78 scripts laden zelf geen env-file, dus
+`prisma.ts` valt om bij het importeren — nog vóór er één assertie draait. Met een gezette maar
+dode URL komen ze alle elf groen terug, samen 2.315 asserties in ~17s (#374).
+
+**3. Mijn eigen meting deugde niet, en dat is de bruikbaarste les.**
+Ik concludeerde eerst dat alle 27 sleutel-bewakers "netjes falen zonder sleutel". Die conclusie
+rustte op `env -u SLEUTEL`, en dat neemt niets weg als het script `.env.local` laadt. Ik had
+netjes getoetst of mijn detector een vals vinkje kón vinden — maar niet of mijn *ingreep* iets
+déed. Eén regel (de waarde printen ná het strippen) had het meteen laten zien. Een parallelle
+sessie meldde het; de gotcha van 19-08 staat op beide namen.
+
+**Verder**: de type-check draait in twee processen (#372) — dat verkleint de piek van 4,95 naar
+4,12 GB maar **heft de 8 GB-bump niet op**, en dekt aantoonbaar nog exact dezelfde 3241
+bestanden. En `smoke:storage-url-expiry` bleek nooit netwerk te doen (#379): de URL's in zijn
+broncode zijn testdata. Dat was dezelfde fout die twee dagen eerder al in het survey-bestand
+stond opgeschreven — een les opschrijven voorkomt hem niet, een toets wel.
 
 ---
 
@@ -233,10 +273,22 @@ waarmaken.
 
 ## Open beslissingen (blokkeren werk)
 
-0. **`test:csp` en `smoke:document-lang-browser` draaien in géén enkele workflow.** Ze zijn
-   de enige automatische bescherming onder de bewuste keuze "dynamisch renderen blijft
-   dynamisch", maar vragen een build + test-DB in CI. Kostenafweging, dus jouw besluit.
-   Staat in [`document-lang-followups`](tasks/document-lang-followups.md).
+0. **KLEINER GEWORDEN — nog zes checks, niet vijftien.** Dit punt luidde: `test:csp` en
+   `smoke:document-lang-browser` draaien nergens en vragen een build + test-DB. Dat bleek
+   voor het grootste deel niet te kloppen; het is nagemeten in plaats van aangenomen (#380).
+
+   - `smoke:document-lang-browser` vroeg een server **én** een browser. Die twee zijn
+     ontkoppeld: fase 1 (wat de proxy en de root layout uitsturen — precies de bug van #335)
+     draait nu in de `check`-job tegen `next start`, 10 checks. Fase 2 zit achter
+     `SMOKE_BROWSER=1`.
+   - Van de 15 CSP-checks vragen er **negen** geen browser en geen database: gedraaid met
+     `PLAYWRIGHT_BROWSERS_PATH` naar een lege map, 9 passed in 2,1s. Die draaien nu mee.
+
+   **Wat er nog wél aan jou is**: de zes overige CSP-checks gebruiken een echte browser, en
+   één daarvan (de ingelogde app-shell) ook een geseede database. Chromium installeren op de
+   `check`-job is de kostenafweging. Niet urgent — de enforce-flip is live geverifieerd met
+   0 violations op prod (#294) — maar het is het enige stuk CSP-dekking dat nu nog nergens
+   draait.
 
 
 1. **Resterende SSE-abort-wijzigingen** — de atomaire settings-merge, deel-resultaten bewaren
