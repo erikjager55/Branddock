@@ -248,12 +248,20 @@ geen meting.
       `smoke:published-page-prod` draait nachtelijk (#377);
       `smoke:storage-url-expiry` bleek geen netwerk te doen en hoort in de
       goedkope gate.
-- [ ] De browser-groep: `smoke:document-lang-browser` vraagt `npm run build` plus
-      een draaiende server. Zelfde afweging als `test:csp`.
+- [~] De browser-groep — **fase 1 draait sinds 19-08** (#380). Het probleem was de
+      kóppeling, niet de kosten: de bewaker vroeg een server én een browser, dus draaide
+      hij nergens. Fase 1 (wat de proxy en root layout uitsturen — precies de bug van
+      #335) draait nu in de `check`-job tegen `next start`, 10 checks. Fase 2 zit achter
+      `SMOKE_BROWSER=1` en wacht op dezelfde chromium-beslissing als de zes CSP-checks.
 - [x] De sleutelgroep hermeten met een methode die standhoudt: **elf bewakers met
       2.315 asserties bleken gratis draaibaar** en zijn aangesloten (#374).
-- [ ] De vier half-gratis bewakers splitsen: pure logica in de goedkope gate, de
-      AI-laag apart. `smoke:locale` draait nu 30 van de 32 asserties voor niets.
+- [~] De half-gratis bewakers splitsen — **`smoke:locale` gedaan** (#375): laag 2
+      achter `SMOKE_AI=1`, 30 asserties draaien nu gratis in de gate, met een luide
+      melding van wát er níet getoetst is.
+      **Resteren de drie tweaks-bewakers** (`conversion-`, `longform-`,
+      `structured-tweaks`). Die hebben géén gratis laag om af te splitsen — ze zijn
+      volledig AI en falen zonder sleutel met een eerlijke 401. Splitsen heeft daar dus
+      geen zin; ze wachten op hetzelfde budget-besluit als het punt hieronder.
 - [ ] **Inhoudelijk verifiëren vraagt echte AI-calls** en dus een budget-besluit.
       Verwachting: een deel zijn verouderde asserties, geen bugs. Geen meting.
 
