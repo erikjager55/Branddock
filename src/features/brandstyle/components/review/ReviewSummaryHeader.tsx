@@ -73,7 +73,10 @@ function componentSectionToTypeKey(section: string): ComponentTypeKey | null {
 }
 
 export function ReviewSummaryHeader({ styleguide, canEdit }: ReviewSummaryHeaderProps) {
-  const { t } = useTranslation("brandstyle");
+  // `brandstyle` vooraan: die blijft de default voor kale sleutels. Zonder
+  // `brandstyle-review` erbij werkte dit alleen zolang een van de SystemRole-
+  // schermen al gemount was — anders viel de lookup terug op het Engels.
+  const { t } = useTranslation(["brandstyle", "brandstyle-review"]);
   const reviews = styleguide.reviews ?? [];
   const approvedSet = useMemo(
     () => new Set(reviews.filter((r) => r.status === "APPROVED").map((r) => r.section)),

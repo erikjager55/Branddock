@@ -4,13 +4,13 @@ title: i18n — namespaces die alleen werken zolang een ánder scherm ze geladen
 fase: post-launch
 priority: later
 effort: 2-4 uur (mechanisch) + de guard uitbreiden
-owner: unassigned
-status: open
+owner: claude-code
+status: done
 created: 2026-08-18
-completed: -
+completed: 2026-08-19
 related-adr: docs/adr/2026-06-28-multilingual-i18n-and-multi-market-content.md
 related-spec: -
-worktree: -
+worktree: branddock-static-rendering-regressie
 ---
 
 # Probleem
@@ -49,6 +49,35 @@ Bekende vindplaatsen op het moment van schrijven (na de fix van #298):
    `lib/claw/quick-actions.ts`) hoort de namespace bij de aanroeper. Die gevallen
    moeten expliciet uitgezonderd of naar hun caller herleid worden — anders wordt de
    strengere guard een bron van ruis.
+
+# Uitkomst 2026-08-19
+
+⚠️ **Vijf van de zes gedocumenteerde vindplaatsen bestonden niet meer.** Nagemeten met
+een per-bestand-scan over 2610 bestanden: bij `products-registry`,
+`campaigns-content-inputs`, `consistent-models-registry`, `media-registry` en
+`trends-personas-registry` laadt inmiddels élke aanroeper de namespace zelf. Ze zijn
+sinds het schrijven van deze taak stilletjes opgelost. Alleen `brandstyle-review` in
+`ReviewSummaryHeader` was er nog — die werkte alleen zolang een van de
+SystemRole-schermen al gemount was geweest.
+
+Daarmee verschoof het zwaartepunt van opruimen naar de guard: één regel code-fix, en
+de bewaking die voorkomt dat het terugkomt.
+
+**Wat de guard nu doet** (`scripts/smoke-tests/i18n-namespace-reachability.ts`):
+1. GLOBAAL — wordt elke aangeroepen namespace érgens geladen? (bestond al)
+2. LOKAAL — laadt het bestand dat `t('ns:…')` schrijft hem ook zélf? (nieuw)
+
+`TFUNCTION_RECIPIENTS` is de gedocumenteerde uitzondering voor bestanden die een
+`TFunction` doorkrijgen. **Die lijst is leeg, en dat is een meting**: op 2026-08-19
+bestond er geen enkel zo'n geval. De taak voorzag ruis uit die hoek; die is er niet.
+
+**Kalibratie**: de fix terugdraaien maakt de guard rood op dat bestand, en een nieuw
+geval introduceren in `MediaCardList` wordt óók gevonden.
+
+⚠️ **Restpunt**: `npm run smoke:i18n-namespaces` draait in **geen enkele workflow**.
+De guard uit #298 heeft dus nooit automatisch gedraaid. `ci.yml` is geclaimd door een
+andere sessie met een open PR, dus de regel is daar aangedragen in plaats van zelf
+toegevoegd. Zie `tasks/document-lang-followups.md` §A voor het bredere patroon.
 
 # Waarom dit niet in #298 zat
 
