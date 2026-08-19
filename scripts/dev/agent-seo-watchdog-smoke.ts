@@ -111,7 +111,7 @@ async function seed() {
   };
   const decayed = await prisma.deliverable.create({
     data: {
-      campaignId: campaign.id, title: `${SEED_TAG} — vervallen artikel`, contentType: "Landing Page",
+      campaignId: campaign.id, title: `${SEED_TAG} — vervallen artikel`, contentType: 'landing-page',
       approvalStatus: "PUBLISHED", publishedUrl: "https://pilot.example/geo/merkconsistentie-v2",
       settings: JSON.parse(JSON.stringify({ structuredVariant: storedVariantA, geoOptimizationAnalysis: analysisA })),
     },
@@ -125,7 +125,7 @@ async function seed() {
   });
   const healthy = await prisma.deliverable.create({
     data: {
-      campaignId: campaign.id, title: `${SEED_TAG} — gezond artikel`, contentType: "Landing Page",
+      campaignId: campaign.id, title: `${SEED_TAG} — gezond artikel`, contentType: 'landing-page',
       approvalStatus: "PUBLISHED", publishedUrl: "https://pilot.example/geo/meetlat",
       settings: JSON.parse(JSON.stringify({ structuredVariant: variantB, geoOptimizationAnalysis: analysisB })),
     },
@@ -134,7 +134,7 @@ async function seed() {
   // C — corrupt: analysis zonder signals (format-drift) → skip-teller.
   await prisma.deliverable.create({
     data: {
-      campaignId: campaign.id, title: `${SEED_TAG} — corrupt record`, contentType: "Landing Page",
+      campaignId: campaign.id, title: `${SEED_TAG} — corrupt record`, contentType: 'landing-page',
       approvalStatus: "PUBLISHED", publishedUrl: "https://pilot.example/geo/corrupt",
       settings: JSON.parse(JSON.stringify({
         structuredVariant: makeVariant(),

@@ -189,7 +189,7 @@ async function runDbChecks(): Promise<void> {
       select: { id: true },
     });
     const deliverable = await prisma.deliverable.create({
-      data: { campaignId: campaign.id, title: slug, contentType: 'Landing Page' },
+      data: { campaignId: campaign.id, title: slug, contentType: 'landing-page' },
       select: { id: true },
     });
     const page = await prisma.landingPage.create({
