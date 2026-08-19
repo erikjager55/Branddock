@@ -126,6 +126,43 @@ jobs:
           # Runner heeft 16GB.
           NODE_OPTIONS: "--max-old-space-size=8192"
 
+      # ── Chromium voor de browser-checks ───────────────────────────────────
+      #
+      # Toegevoegd 2026-08-19. Het alternatief was de CSP-sweep naar de e2e-job
+      # verplaatsen, maar die draait `npm run dev` terwijl de sweep een
+      # PRODUCTIEBUILD nodig heeft (nonce-gedrag verschilt) — dat had dáár een
+      # tweede build gekost. Chromium hier is de goedkope kant.
+      #
+      # ⚠️ Het risico is niet de kosten maar de HANG: op 18-08 bleef
+      # `playwright install` drie keer uren staan. Dat is afgedekt en die
+      # bescherming is hier één-op-één overgenomen uit de e2e-job:
+      #   · cache op de playwright-versie, dus normaal geen download
+      #   · installatie ALLEEN bij een cache-miss
+      #   · `retry-with-timeout.sh 600 1` eromheen — harde bovengrens 10 min
+      #   · apt laten wachten op locks in plaats van erop stuk te lopen
+      # Slechtste geval is dus ~10 min bovenop de ~9 die deze job kost, tegen
+      # een limiet van 30.
+      - name: Playwright-versie
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Browsercache
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}
+
+      - name: apt laten wachten op locks
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: |
+          echo 'DPkg::Lock::Timeout "180";' | sudo tee /etc/apt/apt.conf.d/99lock-timeout
+          echo 'Acquire::Retries "3";' | sudo tee -a /etc/apt/apt.conf.d/99lock-timeout
+
+      - name: Install Playwright chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: scripts/ci/retry-with-timeout.sh 600 1 npx playwright install --with-deps chromium
+
       # `<html lang>` tegen de ECHTE productieserver die we hier net gebouwd
       # hebben. Deze bewaker is gebouwd nadat elke bezoeker `lang="en"` kreeg op
       # een Nederlandse pagina (#335, changelog #484) — en draaide daarna nergens,
@@ -133,8 +170,15 @@ jobs:
       #
       # Fase 1 vraagt alleen de server en dekt precies de bug: wat de proxy en de
       # root layout uitsturen. Fase 2 (ná hydratie, DocumentLangSync) vraagt een
-      # chromium-binary en zit achter SMOKE_BROWSER=1 — die staat hier bewust uit,
-      # want chromium installeren kost meer dan deze stap waard is.
+      # chromium-binary; die staat er sinds 19-08 en dus draait fase 2 mee.
+      #
+      # ⚠️ Fase 2 was tot 19-08 STUK, en dat is bijna ongemerkt aangehaakt. Zijn
+      # navigatie-scenario's gebruikten `history.pushState`, wat `usePathname()`
+      # in Next 16.2.9 niet bijwerkt — drie scenario's faalden dus ongeacht het
+      # gedrag van de component en bewezen niets. Gerepareerd naar een echte klik
+      # op een next/link (#435). Twee scenario's melden zich luid als overgeslagen
+      # omdat er geen link van de app-shell naar /marketing of /brandmd is; dat is
+      # een grens van wat er kán gebeuren, geen dekkingsgat.
       #
       # De neppe DATABASE_URL is dezelfde als bij de build: de publieke routes die
       # fase 1 ophaalt raken de database niet. Het klantpagina-scenario is de enige
@@ -158,7 +202,7 @@ jobs:
           # Geen exit-code-gedoe: de stap draait met `bash -e`, dus een falende
           # bewaker breekt hier meteen af. De achtergrondserver hoeft niet netjes
           # gestopt: de runner ruimt de job op.
-          BASE_URL=http://localhost:3000 npm run smoke:document-lang-browser
+          SMOKE_BROWSER=1 BASE_URL=http://localhost:3000 npm run smoke:document-lang-browser
 
       # De CSP-sweep draaide in géén enkele workflow, terwijl hij de enige
       # automatische bescherming is onder de enforce-flip van 18-08 (ADR
@@ -170,15 +214,16 @@ jobs:
       # `request`-fixture — pure HTTP. Gedraaid met PLAYWRIGHT_BROWSERS_PATH naar
       # een lege map en een neppe DATABASE_URL: 9 passed in 2,1s.
       #
-      # De overige zes gebruiken `page` en vragen dus een chromium-binary; één
-      # daarvan (de ingelogde app-shell) vraagt bovendien een geseede database.
-      # Die staan hier BEWUST niet: chromium installeren op deze job is een
-      # kostenafweging die aan Erik is. Zie de open beslissing in START_HERE.
-      - name: CSP-policy en nonce-integriteit
+      # Sinds 19-08 staat er chromium, dus de vijf violation-checks draaien mee:
+      # 14 van de 15. De vijftiende ("ingelogde app-shell") blijft eruit — die
+      # vraagt een GESEEDE database om in te loggen, en die heeft deze job niet.
+      # Gemeten: met een neppe DATABASE_URL faalt hij op `sign-in faalde`, niet
+      # op een CSP-violation.
+      - name: CSP-policy, nonce-integriteit en violations
         env:
           E2E_DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
           BETTER_AUTH_SECRET: "ci-build-secret-not-real"
-        run: npm run test:csp -- --grep-invert "CSP in de browser"
+        run: npm run test:csp -- --grep-invert "ingelogde app-shell"
 
   e2e:
     runs-on: ubuntu-latest
