@@ -23,9 +23,29 @@
 # (smoke:lp-retention wist rijen, smoke:review-drift-reset zet review-statussen
 # terug); ervóór draaien sloopt de fixtures onder de e2e-tests vandaan.
 #
-# NIET HIER: smoke:competitor-activities en smoke:competitor-content-discovery.
-# Die hebben naast een database ook API-sleutels nodig en horen bij de
-# sleutel/netwerk-groep.
+# WIE HIER NIET IN HOORT, EN HOE DAT BLEEK.
+# Deze lijst begon op vijftien. Acht zijn eruit gegaan nadat ze in de júiste
+# omgeving gemeten werden — twee keer omdat mijn lokale omgeving stiller hielp
+# dan ik doorhad:
+#
+#   smoke:seo-wiring        heeft ANTHROPIC_API_KEY nodig. Lokaal slaagde hij
+#                           omdat `.env.local` die sleutel meelaadt; in CI viel
+#                           hij om met 19 FAIL. Hoort in de sleutelgroep.
+#   smoke:claw-security     draaien alle vijf zonder database én zonder
+#   smoke:brief-render      sleutels, met 9 tot 32 asserties. Horen in de
+#   smoke:db-ssl-mode       goedkope groep in run-guards.sh, niet hier.
+#   smoke:source-image-matcher
+#   smoke:voice-baseline
+#   smoke:web-page-builder  slagen tegen een ONBEREIKBARE database, met 1893
+#   smoke:deep-research     resp. 31 asserties. Raken de database dus niet.
+#
+# De toets die dit uitwees: wijs DATABASE_URL naar een onbereikbare host in
+# plaats van hem weg te strippen. Wegstrippen werkt niet — `.env.local` bevat
+# zelf een DATABASE_URL en npm laadt die terug. Een reeds gezette variabele
+# wint wél van --env-file.
+#
+# Ook niet hier: smoke:competitor-activities en smoke:competitor-content-discovery.
+# Die hebben naast een database ook API-sleutels nodig; zelfde groep als seo-wiring.
 #
 # Bewust geen fail-fast, net als in run-guards.sh: één run laat alle kapotte
 # bewakers zien, niet de eerste.
@@ -52,21 +72,13 @@ esac
 export SMOKE_DB=1
 
 GUARDS=(
-  smoke:claw-security
   smoke:lp-retention
-  smoke:seo-wiring
   smoke:knowledge-context
   smoke:context-priority
-  smoke:voice-baseline
-  smoke:brief-render
-  smoke:web-page-builder
-  smoke:source-image-matcher
   smoke:geo-fidelity
   smoke:review-drift-reset
   smoke:styleguide-rules-fval
-  smoke:db-ssl-mode
   smoke:settings-write
-  smoke:deep-research
 )
 
 failed=()
