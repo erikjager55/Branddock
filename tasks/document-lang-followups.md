@@ -141,9 +141,38 @@ Volledige onderbouwing en metingen: `tasks/done/static-rendering-regressie.md`.
       afdwingt is onderhoud zonder dekking; hij zou nooit rood worden zonder dat de
       build eerder rood is.
 - [ ] **Drie call-sites resolven dezelfde landingspagina-rij** met drie queryvormen:
-      `loadPublishedPageSeo`, `resolvePublishedPage` en `loadLandingPageLocale`. Zodra er
-      een tweede `PUBLISHED`-rij per slug bestaat (kan vandaag al, via een locale-wissel
-      plus herpublicatie) moeten die verzoend worden tot één gedeelde lookup.
+      `loadPublishedPageSeo`, `resolvePublishedPage` en `loadLandingPageLocale`.
+
+      **Gemeten 2026-08-19 — de risico-inschatting klopt structureel, maar er zijn nul
+      gevallen.** De unieke sleutel is `@@unique([workspaceId, locale, slug])`, dus twee
+      rijen met dezelfde slug en een andere locale kunnen inderdaad bestaan. Geteld:
+
+      | | rijen | unieke (ws, slug) | locales |
+      |---|---:|---:|---|
+      | productie (Neon) | 1 | 1 | `nl-NL` |
+      | dev | 2 | 2 | — |
+
+      Nul dubbele slugs, in beide. Het is dus latent, niet actief.
+
+      **Waar de drie precies uiteenlopen**, zodat de volgende persoon niet opnieuw hoeft
+      te vergelijken:
+
+      - `loadPublishedPageSeo` en `resolvePublishedPage` doen
+        `findFirst({ workspaceId, slug })` **zonder `orderBy`** en toetsen `status` daarná.
+        Bij twee rijen kiest de database willekeurig, en als dat de niet-gepubliceerde is
+        volgt een 404 op een pagina die wél gepubliceerd is.
+      - `loadLandingPageLocale` filtert `status: 'PUBLISHED'` **in** de query en sorteert
+        op `updatedAt desc`. Die kiest dus altijd een gepubliceerde rij.
+
+      Gevolg zodra er een tweede rij komt: het taalattribuut kan een pagina vinden die de
+      render-route weigert.
+
+      ⚠️ **Bewust nog niet verzoend.** De drie gelijktrekken vraagt een antwoord op *welke*
+      rij juist is bij twee gepubliceerde locales, en dat is locale-onderhandeling — een
+      productbeslissing die bij het multi-markt-spoor hoort, niet bij deze opruiming. Ze
+      alle drie op `updatedAt desc` zetten zou de divergentie wegnemen maar een willekeurige
+      keuze tot norm verheffen. Heropenen zodra multi-markt-pagina's echt landen; de
+      meting hierboven is dan het startpunt (en check hem opnieuw — hij is van 19-08).
 
 ## D. De grote openstaande vraag
 
