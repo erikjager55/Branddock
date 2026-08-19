@@ -128,9 +128,11 @@ Doe je het andersom, dan kalibreer je opnieuw op de rand.
 
 **Nog te doen**, in volgorde:
 
-1. **Twee productbesluiten van Erik** (staan als eerste twee acceptatiecriteria) —
-   die bepalen of de vage-brief- en LINFI-case een prompt- of een rubric-fix
-   krijgen. Zonder deze twee is elke reparatie een gok.
+1. ~~**Twee productbesluiten van Erik**~~ — **19-08: GEPARKEERD.** Erik pakt de twee
+   vragen nu niet op (hóórt een blog-post zijn aannames te benoemen; eisen we het keyword
+   letterlijk in de H1 ook als de zin krom wordt). Daarmee blijven de vage-brief- en
+   LINFI-case staan zoals ze zijn — bewust, niet vergeten. De analyse eronder blijft
+   geldig en maakt de besluiten later goedkoop.
 2. ~~**De meta-description-case**~~ — ✅ **gedaan 2026-08-18.** De eis is uit beide
    rubrics (de algemene én die van de SEO-focus-case). Geverifieerd vóór het wijzigen:
    het productie-format voor `blog-post` is

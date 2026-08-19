@@ -161,3 +161,22 @@ op terugkomt. Dat leverde de scherpste vondst van de reeks op — zie hieronder.
 AI-beeldgeneratie, expliciet kosten-gated), `video-chain-explainer-showcase` (~4d, video-
 chain), en de twee resterende geo-sub-items (externe entity-bronnen + live
 AI-crawler-citatiemeting) die allebei externe diensten aanroepen. Die wachten op Erik.
+
+---
+
+## Afsluiting 2026-08-19 — Eriks besluiten
+
+Drie van de vier openstaande punten uit deze reeks zijn **niet** doorgezet, en dat is
+vastgelegd in de betreffende task-files in plaats van hier:
+
+| Punt | Besluit |
+|---|---|
+| Drie Adobe-kit-id's (11 merkfonts) | ⛔ **doen we niet** — de fonts blijven op het substituut |
+| Variant B (onderscheidend / schrappen / on-demand) | ⏸️ **geparkeerd** — geen van de drie nu |
+| Twee golden-set-productbesluiten | ⏸️ **geparkeerd** |
+| `sslmode=verify-full` + `DATABASE_SSL_STRICT` | ➡️ **op de takenlijst** (`open-acties-2026-07-23` §E) |
+
+De metingen eronder blijven in alle drie de gevallen geldig; ze maken de beslissing later
+goedkoop in plaats van dat hij opnieuw uitgezocht moet worden. Dat is het punt van
+meten-voor-je-bouwt: een geparkeerde vraag met een cijfer erbij kost bij heropening minuten,
+zonder cijfer weer dagen.

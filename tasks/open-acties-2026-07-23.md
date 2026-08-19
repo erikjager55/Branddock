@@ -109,6 +109,22 @@ taken-spiegel daarvan + de twee nieuwe items uit deze sessie.
 - [ ] **Ada-drempel-kalibratie** + **Vera go/no-go** — vielen samen rond 28-07, staan nog open
 
 ## E. Nieuw uit deze sessie
+- [ ] **`sslmode=verify-full` op de prod-`DATABASE_URL` + `DATABASE_SSL_STRICT=true`**
+      (op jouw verzoek op de lijst gezet, 19-08). Twee handelingen op Vercel, in deze volgorde:
+
+      1. Zet in de prod-`DATABASE_URL` `sslmode=require` om naar `sslmode=verify-full`.
+         Neon deelt `require` uit; dat gedraagt zich vandaag identiek, maar krijgt na de
+         pg-major (v9) libpq-semantiek — versleuteld **zonder** certificaat- en
+         hostnaamcontrole, zonder foutmelding. Geverifieerd werkend tegen `branddock-prod`:
+         `verify-full` verbindt in 189ms, `require` in 471ms. De strengste modus is dus
+         gratis, en zelfs sneller.
+      2. Zet daarná `DATABASE_SSL_STRICT=true`. De startup-check waarschuwt vandaag alleen;
+         met die vlag wordt hij fail-fast, zodat een latere copy-paste uit het Neon-dashboard
+         de verificatie niet stil kan uitzetten.
+
+      ⚠️ **Volgorde is niet vrijblijvend.** De vlag vóór de URL omzetten laat de
+      eerstvolgende deploy omvallen — precies daarom is de check bewust géén harde throw
+      by default (zie #348). Toetsen: `npm run smoke:db-ssl-mode` (14/14, puur).
 - [x] **Branch-opruiming** — ✅ 2026-08-18: **22 achterhaalde takken van origin verwijderd**,
       elk geverifieerd met twee checks: hoort er een gemergde PR bij, én is er ná die merge
       niets meer op gezet (`headRefOid` bij merge vs. de huidige head). Dat tweede is de

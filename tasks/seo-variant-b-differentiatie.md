@@ -2,10 +2,10 @@
 id: seo-variant-b-differentiatie
 title: Variant B van de SEO-pipeline is een bijna-duplicaat van variant A — kost een volledige generatie, levert 95% hetzelfde
 fase: post-launch
-priority: next
+priority: later
 effort: 1-2 dagen (meten eerst, dan pas prompt of schrappen)
 owner: unassigned
-status: open
+status: blocked
 created: 2026-08-18
 completed:
 related-adr: -
@@ -62,7 +62,7 @@ herhalen.
 
 **Het is waarschijnlijk niet de context.** De hypothese lag voor de hand dat variant B te
 weinig te werken had: hij kreeg door een tail-slice-bug nul researchstappen mee (zie
-[`seo-pipeline-speedup`](seo-pipeline-speedup.md), gerepareerd 18-08). Een A/B met de
+[`seo-pipeline-speedup`](done/seo-pipeline-speedup.md), gerepareerd 18-08). Een A/B met de
 volledige research erbij liet de overlap niet zakken. De oorzaak ligt dus vermoedelijk in
 het promptontwerp, of in het feit dat variant B `originalContent` als vertrekpunt krijgt en
 daardoor herschrijft in plaats van herdenkt.
@@ -111,7 +111,12 @@ Eerst meten, dan pas bouwen — de vraag is een productvraag, geen promptvraag.
 
 - [ ] Overlap-meting over ≥4 workspaces en ≥3 content-types, met het ijkpunt ernaast
 - [x] Vastgesteld of de LP-angle-aanpak overdraagbaar is naar de markdown-pipeline — ✅ ja, zie stap 2
-- [ ] Expliciete keuze van Erik vastgelegd (onderscheidend maken / schrappen / on-demand)
+- [~] Expliciete keuze van Erik vastgelegd — **19-08: GEPARKEERD, geen van de drie nu.**
+      Niet "variant B is goedgekeurd" en niet "variant B gaat eruit": de vraag wordt op dit
+      moment niet opgepakt. De meting eronder blijft geldig en maakt de keuze later goedkoop —
+      het gat is ~30 punten, en variant B kost een volledige generatie per pipeline-run.
+      Heropen dit wanneer die kosten gaan knellen of wanneer iemand de twee varianten naast
+      elkaar legt en er niets te kiezen valt.
 - [ ] Bij "onderscheidend maken": overlap aantoonbaar richting het 65%-ijkpunt, F-VAL niet lager
 - [ ] `npx tsc --noEmit` 0 errors
 - [ ] `npm run lint` 0 errors
