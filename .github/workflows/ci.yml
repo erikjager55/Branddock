@@ -118,6 +118,60 @@ jobs:
           # Runner heeft 16GB.
           NODE_OPTIONS: "--max-old-space-size=8192"
 
+      # `<html lang>` tegen de ECHTE productieserver die we hier net gebouwd
+      # hebben. Deze bewaker is gebouwd nadat elke bezoeker `lang="en"` kreeg op
+      # een Nederlandse pagina (#335, changelog #484) — en draaide daarna nergens,
+      # omdat hij een server én een browser vroeg.
+      #
+      # Fase 1 vraagt alleen de server en dekt precies de bug: wat de proxy en de
+      # root layout uitsturen. Fase 2 (ná hydratie, DocumentLangSync) vraagt een
+      # chromium-binary en zit achter SMOKE_BROWSER=1 — die staat hier bewust uit,
+      # want chromium installeren kost meer dan deze stap waard is.
+      #
+      # De neppe DATABASE_URL is dezelfde als bij de build: de publieke routes die
+      # fase 1 ophaalt raken de database niet. Het klantpagina-scenario is de enige
+      # tak die dat wél doet, en die slaat de bewaker luid over zonder LP_PATH.
+      #
+      # De bewaker is zelf-discriminerend: hij verwacht "nl" op sommige routes en
+      # "en" op andere. Zou de taalresolutie naar één constante ontsporen, dan
+      # vallen er per definitie checks om — een groene run kan niet betekenen dat
+      # hij niets meet.
+      - name: Taalattribuut op de gebouwde server
+        env:
+          DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
+          BETTER_AUTH_SECRET: "ci-build-secret-not-real"
+          BETTER_AUTH_URL: "http://localhost:3000"
+        run: |
+          npx next start -p 3000 &
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:3000/marketing/pricing && break
+            sleep 1
+          done
+          # Geen exit-code-gedoe: de stap draait met `bash -e`, dus een falende
+          # bewaker breekt hier meteen af. De achtergrondserver hoeft niet netjes
+          # gestopt: de runner ruimt de job op.
+          BASE_URL=http://localhost:3000 npm run smoke:document-lang-browser
+
+      # De CSP-sweep draaide in géén enkele workflow, terwijl hij de enige
+      # automatische bescherming is onder de enforce-flip van 18-08 (ADR
+      # 2026-08-18, PR #294). De reden was dat hij build + database + chromium
+      # leek te vragen; die drie samen heeft geen enkele job.
+      #
+      # GEMETEN: van de 15 checks vragen er NEGEN geen van drieën. De vier
+      # policy-checks en de vijf nonce-integriteitschecks gaan via Playwrights
+      # `request`-fixture — pure HTTP. Gedraaid met PLAYWRIGHT_BROWSERS_PATH naar
+      # een lege map en een neppe DATABASE_URL: 9 passed in 2,1s.
+      #
+      # De overige zes gebruiken `page` en vragen dus een chromium-binary; één
+      # daarvan (de ingelogde app-shell) vraagt bovendien een geseede database.
+      # Die staan hier BEWUST niet: chromium installeren op deze job is een
+      # kostenafweging die aan Erik is. Zie de open beslissing in START_HERE.
+      - name: CSP-policy en nonce-integriteit
+        env:
+          E2E_DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
+          BETTER_AUTH_SECRET: "ci-build-secret-not-real"
+        run: npm run test:csp -- --grep-invert "CSP in de browser"
+
   e2e:
     runs-on: ubuntu-latest
     # Zie de toelichting bij `check`. Normale duur is 3-5 min; 25 laat ruimte

@@ -29,8 +29,10 @@
  * de lokale database met minstens één gepubliceerde landingspagina.
  *
  * Draaien:
- *   BASE_URL=http://localhost:3000 LP_PATH=/p/<ws>/<slug> LP_LANG=nl-NL \
- *     node node_modules/.bin/tsx scripts/smoke-tests/document-lang-browser.ts
+ *   BASE_URL=http://localhost:3000 npm run smoke:document-lang-browser
+ *     → fase 1 (rauwe server-HTML). Vraagt alleen een draaiende server.
+ *   SMOKE_BROWSER=1 LP_PATH=/p/<ws>/<slug> LP_LANG=nl-NL npm run smoke:document-lang-browser
+ *     → ook fase 2. Vraagt daarnaast een chromium-binary en een gepubliceerde pagina.
  */
 
 import { chromium, type Browser } from 'playwright';
@@ -149,15 +151,27 @@ async function main(): Promise<void> {
     if (!(await checkServerHtml(s))) failed++;
   }
 
-  console.log('\n— fase 2: ná hydratie in een echte browser —');
-  const browser = await chromium.launch();
-  try {
-    for (const s of scenarios) {
-      checks++;
-      if (!(await checkAfterHydration(browser, s))) failed++;
+  // Fase 2 is opt-in via SMOKE_BROWSER=1 — zelfde afspraak als SMOKE_DB=1 en
+  // SMOKE_AI=1. Reden: fase 1 heeft alleen een draaiende server nodig, fase 2
+  // ook een geïnstalleerde chromium-binary. Door beide te koppelen kon deze
+  // bewaker alleen draaien waar álles stond, en dus draaide hij nergens —
+  // terwijl juist fase 1 de bug van #335 dekt (`lang` uit de proxy + root layout).
+  if (process.env.SMOKE_BROWSER === '1') {
+    console.log('\n— fase 2: ná hydratie in een echte browser —');
+    const browser = await chromium.launch();
+    try {
+      for (const s of scenarios) {
+        checks++;
+        if (!(await checkAfterHydration(browser, s))) failed++;
+      }
+    } finally {
+      await browser.close();
     }
-  } finally {
-    await browser.close();
+  } else {
+    console.log('\n⚠ FASE 2 (browser, ná hydratie) OVERGESLAGEN — SMOKE_BROWSER=1 niet gezet.');
+    console.log('  Fase 1 dekt wat de server uitstuurt; of DocumentLangSync het');
+    console.log('  attribuut ná hydratie correct bijstelt is hiermee NIET getoetst.');
+    console.log('  Volledig bewijs: SMOKE_BROWSER=1 npm run smoke:document-lang-browser');
   }
 
   if (failed > 0) {
