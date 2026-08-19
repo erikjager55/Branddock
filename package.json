@@ -33,6 +33,7 @@
     "smoke:lp-retention": "node --env-file-if-exists=.env.local node_modules/.bin/tsx scripts/dev/lp-retention-smoke.ts",
     "smoke:i18n-namespaces": "tsx scripts/smoke-tests/i18n-namespace-reachability.ts",
     "smoke:document-lang": "tsx scripts/smoke-tests/document-lang-resolution.ts",
+    "smoke:route-language": "tsx scripts/smoke-tests/route-language-classification.ts",
     "smoke:document-lang-browser": "tsx scripts/smoke-tests/document-lang-browser.ts",
     "smoke:lp-generation-abort": "tsx scripts/dev/lp-generation-abort-smoke.ts",
     "smoke:mcp-toolset": "node --env-file-if-exists=.env.local node_modules/.bin/tsx scripts/smoke-tests/mcp-connector-toolset.ts",
