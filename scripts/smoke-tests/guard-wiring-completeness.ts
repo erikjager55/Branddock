@@ -120,11 +120,41 @@ const namen = aangehaakteNamen();
 assert('er zijn aangehaakte bewakers gevonden', namen.size > 0, `${namen.size} namen`);
 
 const bereikbaar = new Set<string>();
+const zonderScript: string[] = [];
 for (const naam of namen) {
-  for (const m of (pkg.scripts[naam] ?? '').matchAll(/\S+\.tsx?/g)) {
+  const cmd = pkg.scripts[naam];
+  if (!cmd) {
+    zonderScript.push(naam);
+    continue;
+  }
+  for (const m of cmd.matchAll(/\S+\.tsx?/g)) {
     bereikbaar.add(m[0].replace(/^\.\//, ''));
   }
 }
+
+// ⚠️ Faal hier LUID en met de juiste diagnose als de opzoeking stuk is.
+//
+// Zonder deze check komt een kapotte opzoeking eruit als "190 bestanden draaien
+// nergens" — een uitkomst die leest als een ramp terwijl het gereedschap stuk is.
+// Dat is niet theoretisch: mijn eerste versie van dezelfde extractie nam de
+// assertie-ondergrens mee (`smoke:foo:42`), vond daardoor niets in package.json,
+// en rapporteerde 7 bereikbare bestanden waar er 154 zijn.
+//
+// Generieker (dank aan een parallelle sessie die dezelfde val vond): elke bewaker
+// die tegen een lijst toetst, hoort te controleren dát die lijst gevuld is.
+assert(
+  'elke aangehaakte naam bestaat in package.json',
+  zonderScript.length === 0,
+  zonderScript.length > 0
+    ? `${zonderScript.length} gate-namen hebben geen npm-script: ${zonderScript.slice(0, 3).join(', ')}` +
+      ' — waarschijnlijk is de naam-extractie stuk, niet de bedrading'
+    : undefined,
+);
+assert(
+  'de opzoeking levert een plausibel aantal bestanden',
+  bereikbaar.size >= namen.size * 0.5,
+  `${bereikbaar.size} bestanden voor ${namen.size} namen — te weinig om te kloppen`,
+);
 
 const bestanden = execSync(
   'ls scripts/smoke-tests/*.ts scripts/eval/*.ts scripts/eval/*/*.ts 2>/dev/null || true',
