@@ -40,10 +40,14 @@ jobs:
           # branch (koud type-checken duurt ~35s), maar geheugen.
           #
           # Runner heeft 16GB, dus 8GB is ruim en consistent met de build-stap.
-          # NB: "type-versmalling is de echte oplossing" stond hier tot 18-08 als
-          # feit, maar is met #302 gemeten weerlegd — de annotatie uit #295 zat er
-          # toen in en de build viel alsnog om. Waar het geheugen wél heen gaat is
-          # open: tasks/build-heap-investigation.md.
+          #
+          # GEMETEN 2026-08-19 (koud, piek-RSS via `/usr/bin/time -l`): de volledige
+          # type-check piekt op 4,95 GB, en de app alléén al op 4,12 GB — beide boven
+          # Node's default van ~4 GB. Deze bump is dus het eindantwoord, geen TODO.
+          # Er is GEEN dominant bestand: het duurste geval leverde na versmalling
+          # -2,1% instantiaties. De massa is een brede optelsom, met de gegenereerde
+          # Prisma-client als grootste enkele post (451k regels = 37% van alle
+          # definitieregels). Volledige meting: tasks/done/build-heap-investigation.md.
           NODE_OPTIONS: "--max-old-space-size=8192"
 
       - run: npm run lint
@@ -85,8 +89,13 @@ jobs:
           #   FATAL ERROR: Ineffective mark-compacts near heap limit
           #
           # De registry-inferentie was dus NIET de oorzaak (of niet de enige).
-          # Wie het opnieuw wil proberen: eerst meten waar het geheugen heen gaat
-          # (`tsc --generateTrace`), niet opnieuw een type versmallen op gevoel.
+          #
+          # GEMETEN 2026-08-19: zie de check-stap hierboven. Kort — 4,95 GB koude
+          # piek, geen dominant bestand, bump is het eindantwoord. ⚠️ Meet je dit
+          # zelf na: verwijder ÉLKE *.tsbuildinfo eerst (incremental staat aan, warm
+          # meten geeft 15k instantiaties i.p.v. 9,3M) en gebruik piek-RSS, niet
+          # `Memory used` uit --extendedDiagnostics — dat is een momentopname ná GC
+          # en bewoog tijdens de meting de verkeerde kant op.
           # Runner heeft 16GB.
           NODE_OPTIONS: "--max-old-space-size=8192"
 
