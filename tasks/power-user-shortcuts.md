@@ -10,7 +10,7 @@ created: 2026-05-07
 completed: -
 related-adr: -
 related-spec: docs/archive/plans-pending-task-migration/IMPLEMENTATIEPLAN-POWER-USER-SHORTCUTS.md
-worktree: -
+worktree: branddock-static-rendering-regressie
 ---
 
 > **Triage 2026-07-14 (doc-keeper-audit)**: stappen 1-3 bleken **al gebouwd in april 2026**
@@ -36,6 +36,45 @@ Content-item creatie binnen een bestaande campagne is niet wezenlijk te lang (~7
 4. **Recent prompts dropdown** in Canvas Step 1 — laatste 5 prompts van zelfde content-type
 5. **Brand Assistant entry-point banner** op Campaigns overview en lege Content Library
 
+
+# Meting 2026-08-19 — vier van de vijf stappen bestonden al
+
+Vóór er iets gebouwd is, geteld wat er al was en wie het gebruikt.
+
+**Stap 1-3**: stonden al als "AL GEBOUWD" in dit bestand, met onafgevinkte vakjes.
+Dat klopt.
+
+**Stap 5 was voor driekwart af.** `BrandAssistantCTA` bestaat in twee varianten
+(`card` en `tip`) en `openClawWithPrompt` is de gedeelde ingang. Al aanwezig:
+- Content Library lege staat → `card`-variant (`ContentLibraryPage.tsx:263`)
+- `AddDeliverableTypeModal` → `tip`-variant
+- onboarding-tooltip → `BrandAssistantTooltip`
+
+Ontbrak alleen: de banner op het campagne-overzicht. **Dat is nu gebouwd** —
+`tip`-variant, alleen zichtbaar bij `campaigns.length > 0`, want in de lege staat
+heeft de gebruiker een campagne nodig en geen alternatieve route.
+
+⚠️ **Stap 4 is NIET gebouwd, op een meting.** De dropdown met je laatste vijf
+prompts per content-type bedient "power-users die hetzelfde type herhalen (bv 5
+LinkedIn-posts achter elkaar)". Op productie geteld:
+
+| | |
+|---|---:|
+| Deliverables totaal | 13 |
+| Campagnes | 16 |
+| Zelfde content-type herhaald binnen één campagne | **1 geval** |
+| Grootste herhaling | **2** |
+
+Dat gedrag bestaat dus vrijwel niet. De functie is ~3 uur werk en het ontwerp ligt
+vast in dit bestand; hij kan er staan zodra dat gedrag zich aandient. Bouwen vóór
+dat moment is bouwen voor een publiek dat er niet is — dezelfde afweging die vandaag
+ook `content-test-regression-7B` en `validate-brand-domain-component-fit` van de
+lijst haalde.
+
+**Niet visueel geverifieerd**: de banner is type-check-, lint- en build-groen en
+hergebruikt een component die elders in productie draait, maar ik heb hem niet in
+een browser gezien. Dat vraagt een ingelogde sessie met campagnes.
+
 # Acceptatiecriteria
 
 ## Stap 1 — Auto-inherit settings — ✅ AL GEBOUWD (ccb7e1cd, april 2026)
@@ -56,17 +95,17 @@ Content-item creatie binnen een bestaande campagne is niet wezenlijk te lang (~7
 - [ ] Per type: optioneel auto-inherit van laatste van dat type
 - [ ] POST /api/campaigns/[id]/deliverables/bulk → array creation in $transaction
 
-## Stap 4 — Recent prompts dropdown (~3 uur)
+## Stap 4 — Recent prompts dropdown (~3 uur) — ⏸️ BEWUST NIET GEBOUWD (zie meting)
 - [ ] Lokale store `useRecentPromptsStore` — last 5 prompts per workspace per content-type
 - [ ] Persisted via Zustand `persist` middleware
 - [ ] Dropdown in Canvas Step 1 PromptSection naast textarea
 - [ ] Klik op recent prompt → vult textarea + auto-extends met "(zelfde structuur, andere [topic])"
 
-## Stap 5 — Brand Assistant entry banner (~2 uur)
-- [ ] Banner op Campaigns overview wanneer campagnes-lijst >0 (niet voor lege state)
+## Stap 5 — Brand Assistant entry banner (~2 uur) — ✅ AF 2026-08-19
+- [x] Banner op Campaigns overview wanneer campagnes-lijst >0 (niet voor lege state)
 - [ ] Tekst (Lucide-icoon, geen emoji): "Of vraag de Brand Assistant: 'Maak een nieuwe campagne voor X'"
-- [ ] Banner op Content Library wanneer empty state
-- [ ] Klik → opent Brand Assistant chat met pre-prompted context
+- [x] Banner op Content Library wanneer empty state — bestond al (`card`-variant)
+- [x] Klik → opent Brand Assistant chat met pre-prompted context — via `openClawWithPrompt`
 
 ## Cross-cutting
 - [ ] `npx tsc --noEmit` 0 errors
