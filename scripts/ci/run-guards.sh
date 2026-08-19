@@ -170,6 +170,48 @@ GUARDS=(
   # het Engels is vertaald (35097c25). Twee maanden ongezien rood. Nu getoetst op
   # gedrag in plaats van op de zin — zie de noot in het bestand zelf.
   smoke:checkpoint-gates:40
+
+  # ── De junireeks: 17 van de 27, aangehaakt 2026-08-19 ──────────────────────
+  # `smoke:web-page-builder` ketent 55 phase-bestanden aan elkaar, maar dat is een
+  # ANDERE serie met dezelfde nummers: de ketting heeft phase45-typescale-normalizer
+  # (augustus), de wezen phase45-result-audit (5 juni). De junireeks 40-68 is nooit
+  # aan die ketting toegevoegd.
+  #
+  # Welke daarvan echte dekking dragen is mechanisch bepaald in plaats van per
+  # bestand beoordeeld: de imports van de 55 kettingleden afgetrokken van die van
+  # de 27 wezen. Uitkomst — 10 wezen raken UITSLUITEND modules die de ketting al
+  # dekt (verwijder-kandidaten, staan in het task-file), en deze 17 raken modules
+  # die NERGENS anders getoetst worden:
+  #
+  #   lib/brandstyle/color-pairings        lib/brandstyle/analysis-engine
+  #   lib/brandstyle/palette-usage-filter  lib/brandstyle/non-brand-colors
+  #   lib/brandstyle/observed-color-pairings  lib/brandstyle/css-var-resolver
+  #   lib/brandstyle/framework-defaults    lib/brandstyle/google-fonts-catalog
+  #   lib/landing-pages/brand-images       features/../useBrandFontLoader
+  #
+  # Dat is de brandstyle-palet-stack, die op productie draait.
+  #
+  # Vóór het aanhaken door de drift-detector gehaald — juni-bewakers op een stack
+  # die in augustus is verbouwd (#255-#259) is precies het risicoprofiel. 8 van 55
+  # frases hadden een latere src-wijziging, allemaal fixture-namen ('Ocean Blue')
+  # of generieke woorden. Alle 17 draaien groen, samen 401 asserties.
+  smoke:wpb-result-audit:54
+  smoke:wpb-cross-brand-palette:35
+  smoke:wpb-cta-visibility:29
+  smoke:wpb-hero-url-wiring:28
+  smoke:wpb-variant-count:26
+  smoke:wpb-usage-filter:22
+  smoke:wpb-framework-no-usage:20
+  smoke:wpb-primary-from-signal:19
+  smoke:wpb-framework-defaults:18
+  smoke:wpb-brand-images-split:18
+  smoke:wpb-observed-pairings:17
+  smoke:wpb-var-resolution:16
+  smoke:wpb-color-pairings:15
+  smoke:wpb-fidelity-race:14
+  smoke:wpb-lp-fonts:10
+  smoke:wpb-recompute-observed:9
+  smoke:wpb-variant-copy-diff:8
 )
 
 # ── Hoe asserties geteld worden ─────────────────────────────────────────────

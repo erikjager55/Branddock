@@ -102,6 +102,54 @@ niet aanraakt: `css-var-resolver`, `framework-defaults`, `color-pairings`,
 als onderdeel van `faf2dbe6` ("SSRF-convergentie — fetch-with-limit→safeFetch") en
 heeft sindsdien nooit gedraaid. `security-medium.ts` idem sinds 26-06.
 
+## Junireeks mechanisch ontdubbeld (2026-08-19)
+
+Het voorstel hieronder vraagt een oordeel per bestand: opvolging of abandonnement?
+Dat oordeel is grotendeels overbodig gemaakt door eerst te bepalen **welke code**
+alleen door een wees wordt geraakt — de imports van de 55 kettingleden afgetrokken
+van die van de 27 wezen.
+
+| uitkomst | aantal | wat het betekent |
+|---|---:|---|
+| raakt uitsluitend modules die de ketting al dekt | **10** | verwijder-kandidaat |
+| raakt modules die nergens anders getoetst worden | **17** | ✅ aangehaakt |
+
+**De 17 dragen samen 401 asserties** en dekken vrijwel de complete
+brandstyle-palet-stack, die op productie draait en waar geen enkele aangehaakte
+bewaker naar keek:
+
+```
+lib/brandstyle/color-pairings           lib/brandstyle/analysis-engine
+lib/brandstyle/palette-usage-filter     lib/brandstyle/non-brand-colors
+lib/brandstyle/observed-color-pairings  lib/brandstyle/css-var-resolver
+lib/brandstyle/framework-defaults       lib/brandstyle/google-fonts-catalog
+lib/landing-pages/brand-images          features/../useBrandFontLoader
+```
+
+⚠️ Vóór het aanhaken door de drift-detector gehaald, want juni-bewakers op een
+stack die in augustus is verbouwd (#255-#259) is precies het risicoprofiel. 8 van
+55 frases hadden een latere src-wijziging — allemaal fixture-namen (`'Ocean Blue'`)
+of generieke woorden (`'headline'`, `'subhead'`). Alle 17 draaien groen.
+
+### De 10 verwijder-kandidaten
+
+**Niet verwijderd** — dat is een aparte beslissing en verwijderen is onomkeerbaar.
+Wat hieronder staat is de meting, niet het besluit.
+
+```
+phase40-brand-fallback-no-leak    phase58-card-context
+phase53-lp-contrast               phase59-accent-reservation
+phase54-lp-rhythm                 phase62-button-component-reconcile
+phase56-feature-images            phase63-section-band-alternation
+phase57-font-assets               phase65-variant-angle-prompt
+```
+
+⚠️ **"Raakt dezelfde module" is niet hetzelfde als "toetst hetzelfde gedrag".**
+Twee bewakers kunnen `color-pairings` importeren en er totaal andere dingen mee
+doen. Wie deze tien wil opruimen, leest eerst wát het kettinglid met diezelfde
+module toetst. De import-overlap maakt de leeslijst kort; hij vervangt de leesbeurt
+niet.
+
 # Voorstel
 
 1. De 28 losse een npm-script geven en aanhaken in `scripts/ci/run-guards.sh`
