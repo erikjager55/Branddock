@@ -87,7 +87,9 @@ Bij het aanzetten van de slapende bewakers viel `smoke:image-coupling` om. Eerst
 
 ### 485. 82 van de 85 bewakers draaiden nergens — de goedkope groep draait nu wel
 
-`package.json` bevatte 85 smoke- en eval-scripts; **drie** stonden in een workflow. De andere 82 bestonden wel maar draaiden nooit, waaronder guards die speciaal gebouwd waren nádat er iets stil was misgegaan.
+`package.json` bevatte 77 smoke- en eval-scripts; **drie** stonden in een workflow. De andere 74 bestonden wel maar draaiden nooit, waaronder guards die speciaal gebouwd waren nádat er iets stil was misgegaan.
+
+⚠️ **De PR-tekst van #358 zei "82 van de 85" en dat klopte niet**: dat getal telde de acht `test:*`-scripts mee, waarvan `test:e2e` en `test:csp` juist wél in een workflow stonden. Nagerekend op de package.json van commit `0a4e036a`. De strekking verandert niet, de noemer wel.
 
 `scripts/ci/run-guards.sh` draait nu de goedkope, deterministische groep in de `check`-job — bewust **zonder** fail-fast, zodat één rode run alle kapotte bewakers laat zien in plaats van de eerste. Elke bewaker is vóór opname in een schone omgeving gedraaid.
 
