@@ -5,12 +5,12 @@ fase: post-launch
 priority: later
 effort: 1-2 dagen (analyse) + optioneel 1 dag (wizard-of-oz)
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-06-24
 completed: -
 related-adr: -
 related-spec: tasks/_drafts/idea-brand-domain-specific-components.md
-worktree: -
+worktree: branddock-brand-domain-fit  # geclaimd door sessie 78a1d49f, 2026-08-19
 ---
 
 # Probleem
@@ -25,6 +25,28 @@ Meet de aanname vóórdat er component-architectuur wordt aangeraakt. Twee stapp
 2. **(Optioneel) Wizard-of-oz / prompt-only experiment** — toets ~70% van de waarde zónder de component-architectuur te raken: laat de bestaande generieke blokken via een aangepaste prompt een aanbod-object beter presenteren, en beoordeel of de output al "goed genoeg" is. Als prompt-only het gat grotendeels dicht, is een nieuw blok-type niet de goedkoopste oplossing.
 
 Output is een go/no-go met cijfers, niet code. Bij groen (+ post-launch) promoten naar `technical-planner`.
+
+# Drempel — VOORAF vastgelegd, 2026-08-19
+
+> Acceptatiecriterium 3 eist dat dit vóór de meting staat, niet erna. Vastgelegd
+> in dezelfde commit als de claim, vóórdat er ook maar één cijfer is opgevraagd.
+
+**Promoten naar `technical-planner` als beide waar zijn:**
+
+1. **≥ 30%** van de gegenereerde web-page-/landingspagina-deliverables betreft een merk
+   met een gestructureerd, herhaald aanbod-object (units, panden, menu-items, SKU's,
+   abonnementen) — iets wat `FeatureGrid`/`PricingTable` niet natuurlijk weergeeft.
+2. **≥ 3 verschillende workspaces/klanten** vertonen dat patroon. Eén merk is een
+   anekdote, ook als het er veel pagina's van zijn.
+
+**Waarom deze twee getallen.** Onder de 30% bouw je voor een minderheid terwijl elke
+nieuwe blok-soort de generieke set duurder maakt om te onderhouden. Minder dan drie
+klanten is geen patroon maar toeval — precies de fout die het idee nu al maakt door
+op één extern voorbeeld (Nèjbox) te leunen.
+
+**Vooraf erkende uitkomst die géén go is**: te weinig data om de vraag te beantwoorden.
+Dat is een geldig antwoord en geen reden om de drempel te verlagen. De risico-sectie
+hieronder voorzag dit expliciet.
 
 # Acceptatiecriteria
 
