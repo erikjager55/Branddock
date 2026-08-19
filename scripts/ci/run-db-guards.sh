@@ -72,44 +72,91 @@ esac
 export SMOKE_DB=1
 
 GUARDS=(
-  smoke:lp-retention
-  smoke:knowledge-context
-  smoke:context-priority
-  smoke:geo-fidelity
-  smoke:review-drift-reset
-  smoke:styleguide-rules-fval
-  smoke:settings-write
+  smoke:lp-retention:45
+  smoke:knowledge-context:8
+  smoke:context-priority:9
+  smoke:geo-fidelity:19
+  smoke:review-drift-reset:14
+  smoke:styleguide-rules-fval:16
+  smoke:settings-write:18
   # ── toegevoegd 2026-08-19 uit de weesbewaker-triage (tasks/weesbewakers-triage) ──
   # Negen bewakerbestanden zonder npm-script. Ze bestonden, waren groen en
   # draaiden nergens, omdat elke telling package.json leest en een bestand
   # zonder script daar niet in staat. Samen 153 asserties, 36s.
   # Gemeten op een GESEEDE database (zie de waarschuwing bovenaan) en twee keer
   # achter elkaar gedraaid zonder herseeden: idempotent.
-  smoke:brandclaw-data
-  smoke:brandclaw-orchestrator
-  smoke:content-library-readiness
-  smoke:content-locale-foundation
-  smoke:content-locale-picker
-  smoke:internal-findings
-  smoke:learning-loop
-  smoke:strategy-analyst
-  smoke:visual-brief-readiness
+  smoke:brandclaw-data:27
+  smoke:brandclaw-orchestrator:27
+  smoke:content-library-readiness:38
+  smoke:content-locale-foundation:12
+  smoke:content-locale-picker:8
+  smoke:internal-findings:14
+  smoke:learning-loop:5
+  smoke:strategy-analyst:9
+  smoke:visual-brief-readiness:2
   # agents-foundation dekt lib/agents/registry, run-agent, artifact-contract en
   # echo-test — code die op productie draait en tot 19-08 geen enkele bewaker in
   # een gate had. Hij zet zelf een ANTHROPIC_API_KEY-plaatsvervanger als die
   # ontbreekt; zie de toelichting in het bestand waarom dat veilig en kosteloos
   # is, en waarom die plaatsvervanger NIET hier op gate-niveau hoort.
-  smoke:agents-foundation
+  smoke:agents-foundation:12
 )
 
+# ── Hoe asserties geteld worden ─────────────────────────────────────────────
+#
+# Letterlijk overgenomen uit run-guards.sh, bewust niet opnieuw bedacht: twee
+# varianten van dezelfde telling lopen gegarandeerd uit elkaar.
+#
+# Twee vormen. De meeste bewakers printen één regel per assertie (`✓ ...`), maar
+# sommige printen alléén een samenvatting (`65 passed, 0 failed`). Een telling op
+# regels geeft daar 1, en een ondergrens van 1 beschermt niets. Neem daarom het
+# MAXIMUM van beide. Onderrapporteren is hier gevaarlijker dan overrapporteren:
+# een te lage ondergrens leest als dekking die er niet is.
+tel_asserties() {
+  local log="$1" per_regel samenvatting
+  per_regel=$(grep -cE "✓|✔|PASS|OK |passed|geslaagd" "$log")
+  samenvatting=$(grep -oiE "[0-9]+ ?(/ ?[0-9]+)? *(passed|pass\b|checks|geslaagd)" "$log" \
+    | grep -oE "^[0-9]+" | sort -rn | head -1)
+  samenvatting=${samenvatting:-0}
+  if [ "$samenvatting" -gt "$per_regel" ]; then echo "$samenvatting"; else echo "$per_regel"; fi
+}
+
+# ── Ondergrenzen ────────────────────────────────────────────────────────────
+#
+# Gemeten 2026-08-19 op een VERSE SEED, en met de bestanden uit `origin/main` in
+# plaats van uit de werkboom. Dat laatste is niet pedant: de main-worktree liep
+# 15 commits achter, kende de nieuwe npm-scripts niet, en `npm run` op een
+# ontbrekend script gaf stil niets — waardoor tien bewakers als "0 asserties"
+# uit de meting kwamen. Wie deze grenzen herijkt: draai de bestanden, niet de
+# scripts, of werk eerst je worktree bij.
+#
+# De grens ligt iets onder het gemeten aantal, zodat een enkele toegevoegde of
+# verwijderde assertie de gate niet rood maakt maar een instorting wél.
+
+log_dir=$(mktemp -d)
+trap 'rm -rf "$log_dir"' EXIT
+
 failed=()
-for g in "${GUARDS[@]}"; do
+for entry in "${GUARDS[@]}"; do
+  g="${entry%:*}"
+  drempel="${entry##*:}"
   printf '→ %s\n' "$g"
-  if npm run "$g" --silent; then
-    printf '  ✓ %s\n' "$g"
+  log="$log_dir/$(printf '%s' "$g" | tr ':' '_').log"
+
+  npm run "$g" --silent > "$log" 2>&1
+  code=$?
+  asserts=$(tel_asserties "$log")
+
+  if [ "$code" -ne 0 ]; then
+    cat "$log"
+    printf '  ✗ %s (exit %s)\n' "$g" "$code"
+    failed+=("$g (exit $code)")
+  elif [ "$asserts" -lt "$drempel" ]; then
+    cat "$log"
+    printf '  ✗ %s — groen, maar %s asserties waar er >=%s werden verwacht\n' "$g" "$asserts" "$drempel"
+    failed+=("$g (${asserts} asserties, ondergrens ${drempel})")
   else
-    printf '  ✗ %s (exit %s)\n' "$g" "$?"
-    failed+=("$g")
+    printf '  ✓ %s (%s asserties)\n' "$g" "$asserts"
   fi
 done
 
