@@ -58,11 +58,17 @@ Volledige onderbouwing en metingen: `tasks/done/static-rendering-regressie.md`.
       taal ná een wissel de hele sessie verkeerd — dezelfde klasse fout die de taak
       oploste. ⚠️ Het acceptatiecriterium "taal-switch blijft werken" is in de
       oorspronkelijke taak afgevinkt op handmatige waarneming, niet op een gate.
-- [ ] **Een nieuwe publieke NL-route toevoegen is onbeschermd.** `DUTCH_PUBLIC_PREFIXES`
-      is een handmatige lijst; wie `src/app/handleiding/page.tsx` bouwt ziet nergens dat
-      hij bestaat. De bestaande check faalt bij *toevoegen* (de veilige handeling) en
-      zwijgt bij *vergeten*. De juiste vorm staat al in de repo:
-      `scripts/smoke-tests/i18n-namespace-reachability.ts` scant de bestandsboom.
+- [x] **Een nieuwe publieke NL-route toevoegen is onbeschermd** — ✅ **af 2026-08-19**
+      (#384). `smoke:route-language` leest de bestandsboom en eist dat elke route bij
+      precies één taalregel hoort. Faalt bij *vergeten*, niet bij toevoegen; alle 25
+      bestaande routes zijn geclassificeerd.
+
+      ⚠️ En hij vond meteen een gat dat de indeling zelf niet dekte: `/brandmd/claim/
+      [token]` is volledig Engels (0 Nederlandse tegen 29 Engelse stopwoorden) maar erfde
+      `lang="nl"` van `/brandmd`. Toevoegen aan `ENGLISH_PUBLIC_PREFIXES` hielp niet —
+      de Nederlandse lijst werd eerst getoetst, dus elke Engelse uitzondering eronder was
+      dode code. Nu wint de **langste match** (#396). De bewaker toetst sindsdien ook of
+      de indeling *klopt* met de tekst, niet alleen dát er een indeling is.
 
 ## B. Dezelfde bug, andere routes
 
