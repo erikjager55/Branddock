@@ -28,6 +28,29 @@ const gen = buildGeoDirective({ locale: 'nl-NL' });
 assert('version geëxporteerd', GEO_DIRECTIVE_VERSION === '1.0.0');
 assert('Answer-first', gen.includes('Answer-first'));
 assert('Atomic chunking', gen.includes('Atomic chunking'));
+// ⚠️ DEZE ASSERTIE PINT EEN TEGENSTRIJDIGHEID VAST — lees dit vóór je hem "repareert".
+//
+// De directive zegt op deze regel: "elk cijfer/feit heeft een expliciete bron uit
+// de aangeleverde context". In DEZELFDE prompt staat 27 regels verderop
+// (`variant-generator.ts`, het JSON-contract) juist: een eigen/first-party
+// merk-cijfer krijgt `source: null`.
+//
+// Die tweede helft is de fix van 2026-06-24 (`2f78eec3`, changelog #340). De
+// aanleiding was precies deze eis: een verplichte bron dwong het model er één te
+// VERZINNEN, meestal een interne context-laagnaam die als bronvermelding op de
+// klantpagina belandde. De prompt-kant is toen gecorrigeerd, deze directive niet.
+//
+// Sinds 2026-08-19 draait deze bewaker in de PR-poort (#374). Daarmee dwingt CI de
+// verouderde helft actief af: wie `geo-directives.ts` fatsoeneert, krijgt hier rood
+// en zou de oude tekst kunnen terugzetten om de gate groen te krijgen. Dat is
+// precies de fout die #375 in `geo-generation-prompt` moest herstellen, nu
+// geautomatiseerd.
+//
+// Bewust NIET zelf opgelost: de prompt wijzigen is een generatie-kwaliteitsafweging
+// (de sanitizer vangt de oude leak nog, maar `INTERNAL_SOURCE_PATTERNS` is een
+// denylist van vier — een verzonnen "McKinsey, 2024" glipt erdoor). Dat besluit
+// ligt bij Erik. Wordt de directive aangepast, dan hoort DEZE assertie mee te
+// veranderen — niet de directive terug.
 assert('Citeerbare stats MET bron', gen.includes('Citeerbare stats MET bron'));
 assert('Entity-clarity', gen.includes('Entity-clarity'));
 assert('Freshness', gen.includes('Freshness'));
