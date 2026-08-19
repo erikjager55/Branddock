@@ -78,6 +78,13 @@ GUARDS=(
   smoke:mcp-toolset:5
   smoke:page-types:170
   smoke:web-page-builder:1800
+
+  # Aangesloten 2026-08-19 ná reparatie. Beide draaiden nergens en waren daardoor
+  # bevroren: geo-generation-prompt eiste een prompt-tekst die in juni bewust was
+  # vervallen, en locale hield 30 gratis asserties gevangen achter twee live
+  # AI-calls (nu opt-in via SMOKE_AI=1).
+  smoke:geo-generation-prompt:14
+  smoke:locale:28
 )
 
 log_dir=$(mktemp -d)
