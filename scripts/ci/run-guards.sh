@@ -92,6 +92,14 @@ GUARDS=(
   # checks pure logica en nul netwerk.
   smoke:storage-url-expiry:14
 
+  # Aangesloten 2026-08-19. Stond in geen enkele workflow, en dat was geen
+  # bewuste keuze: run-db-guards.sh verwijst hem door met "goedkope groep in
+  # run-guards.sh, niet hier" — de doorverwijzing was geschreven, de landing niet.
+  # Puur: geen database, geen sleutels, geen netwerk (0,3s). Bewaakt dat de
+  # sslmode-semantiek van pg expliciet blijft; ná de pg-major betekent dezelfde
+  # `require`-string versleuteld ZONDER certificaat- en hostnaamcontrole.
+  smoke:db-ssl-mode:14
+
   # Faalt bij VERGETEN, niet bij toevoegen: wie een publieke pagina bouwt en hem
   # niet indeelt, krijgt hier rood in plaats van stil lang="en" op Nederlandse
   # tekst (de bug van #335). Leest de bestandsboom, niet een lijst.
