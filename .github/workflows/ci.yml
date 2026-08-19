@@ -57,6 +57,14 @@ jobs:
       # die server en client delen. Zie tasks/done/static-rendering-regressie.md.
       - run: npm run smoke:document-lang
 
+      # Van de 85 smoke-/eval-scripts in package.json stonden er op 2026-08-19 maar
+      # DRIE in een workflow. De rest bestond wel maar draaide nooit — waaronder
+      # guards die juist waren gebouwd nádat er iets stil was misgegaan. Deze stap
+      # draait de goedkope, deterministische selectie (geen DB, geen keys, ~10s
+      # samen). Welke dat zijn en waarom staat in het script.
+      - name: Goedkope bewakers
+        run: scripts/ci/run-guards.sh
+
       - run: npm run build
         env:
           # These env vars must match the required fields in src/lib/env-validation.ts
