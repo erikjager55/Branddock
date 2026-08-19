@@ -44,9 +44,6 @@ const NIET_AANGEHAAKT: Record<string, string> = {
   'smoke-tests/competitor-ai-classifier.ts': 'sleutel — 401 zonder ANTHROPIC_API_KEY',
   'smoke-tests/competitor-activities.ts': 'sleutel + database',
   'smoke-tests/competitor-content-discovery.ts': 'sleutel + database',
-  'smoke-tests/conversion-tweaks.ts': 'sleutel — volledig AI, geen gratis laag',
-  'smoke-tests/longform-tweaks.ts': 'sleutel — volledig AI, geen gratis laag',
-  'smoke-tests/structured-tweaks.ts': 'sleutel — volledig AI, geen gratis laag',
   'smoke-tests/google-vision-api-key.ts': 'sleutel — GOOGLE_VISION_API_KEY',
   'smoke-tests/seo-pipeline-wiring.ts': 'sleutel — 1 PASS / 19 FAIL zonder sleutel in CI',
 

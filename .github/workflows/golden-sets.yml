@@ -233,3 +233,68 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
+  # ── Canvas-tweaks: eigen job, bewust NIET in live-eval ──────────────────────
+  #
+  # Deze drie toetsen of een prompt-tweak de AI-OUTPUT verschuift: ze genereren
+  # zonder en mét de tweak en eisen dat de tweede wegschuift van generieke
+  # patronen ("What is X — A Comprehensive Guide", generic-promo). Dat is per
+  # definitie niet-deterministisch, dus ze horen niet in de PR-poort: een
+  # modelupdate of gewone sampling-variatie zou andermans PR rood kleuren.
+  #
+  # ⚠️ En bewust ook niet ALS STAP in `live-eval`. Die job zit structureel onder
+  # zijn drempel (zie de kop van dit bestand: echt niveau ~50-60%, gate op 70,
+  # bewust niet verlaagd omdat het echte bevindingen zijn). Gemeten over de
+  # laatste vier runs: skipped, failure, skipped, skipped. Drie bewakers in een
+  # job die al verwacht-rood is worden niet gelezen — precies de gotcha van
+  # 2026-07-07 over een gate die lang rood staat. Een eigen job betekent dat
+  # rood hier iets betekent.
+  #
+  # Kosten: circa elf AI-calls per nacht. Ze weigeren eerlijk zonder sleutel
+  # (exit 1, gemeten), dus er is geen stil-groen-risico als het secret wegvalt —
+  # de key-detectie hieronder slaat ze dan netjes over met een notice.
+  canvas-tweaks:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request' &&
+      (github.repository_owner == 'erikjager55' || github.event_name == 'workflow_dispatch')
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Smoke-tests importeren @prisma/client transitief; zonder generate
+      # crashen ze op een ontbrekende module. Schema-only, geen DB-connectie.
+      - run: npx prisma generate
+
+      - name: Detect LLM keys
+        id: keys
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::ANTHROPIC_API_KEY ontbreekt — canvas-tweaks overgeslagen."
+          fi
+
+      # `src/lib/prisma.ts` gooit al bij het IMPORTEREN als DATABASE_URL
+      # ontbreekt. Een dode poort volstaat en is veiliger dan een echte URL:
+      # komt er ooit een query bij, dan valt hij luid om in plaats van stil iets
+      # te doen op een echte database.
+      - name: Canvas-tweaks (live AI)
+        if: steps.keys.outputs.present == 'true'
+        env:
+          DATABASE_URL: "postgresql://nobody:x@127.0.0.1:59999/geen-db-in-deze-job"
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          npm run smoke:conversion-tweaks
+          npm run smoke:longform-tweaks
+          npm run smoke:structured-tweaks
