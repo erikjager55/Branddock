@@ -37,6 +37,70 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 493. Twee bewakers bleken bevroren: één bewaakte de weggehaalde bug, de ander mocht niet draaien
+
+`smoke:geo-generation-prompt` stond sinds **24 juni** ongezien rood. De assertie eiste de
+letterlijke tekst `VERPLICHTE bron` in de GEO-prompt — een eis die in `2f78eec3` bewust was
+weggehaald, omdat een verplichte bron het model dwong er één te verzinnen (meestal een interne
+laagnaam als `brand-context`, die als bronvermelding op de klantpagina belandde). De bewaker
+faalde dus op een *verbeterde* prompt, en niemand zag het omdat hij nergens draaide.
+
+Vervangen door twee asserties op de reparatie in plaats van op de weggehaalde eis: de prompt
+moet een interne laagnaam als bron verbieden, en een bronloos first-party cijfer toestaan.
+Beide nagemeten door die zinnen uit de prompt te slopen.
+
+`smoke:locale` hield 30 gratis asserties gevangen achter twee live AI-calls. Laag 2 draaide
+onvoorwaardelijk, dus altijd exit 1 zonder sleutel, dus nergens aan te haken. Nu opt-in via
+`SMOKE_AI=1` — zelfde vorm als `SMOKE_DB=1` — met een luide melding van wat er *niet*
+getoetst is.
+
+Gate: 29 → **31 bewakers**.
+
+- Task: [tasks/slapende-bewakers-survey.md](../tasks/slapende-bewakers-survey.md)
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #375
+
+### 492. Elf bewakers met 2.315 asserties draaiden niet omdat een variabele ontbrak, niet omdat ze een database nodig hadden
+
+Elf bewakers golden als "heeft een database nodig". Ze crashen in werkelijkheid op een
+**ontbrekende** `DATABASE_URL`, niet op een onbereikbare: 71 van de 78 smoke-scripts laden zelf
+geen env-file, dus `src/lib/prisma.ts` valt om bij het *importeren* — nog vóór er één assertie
+draait. Met een gezette-maar-dode URL komen ze alle elf groen terug, samen ~17s, aangevoerd door
+`smoke:web-page-builder` met 1914 asserties.
+
+Daarnaast draagt elke bewaker in `run-guards.sh` nu een **assertie-ondergrens**: groen mét te
+weinig asserties faalt. Exit 0 bewijst niet dat er iets getoetst is — zo belandde
+`smoke:settings-write` groen op een aanhaaklijst zonder één assertie te draaien. Nagemeten op een
+bewaker die exit 0 geeft en niets doet.
+
+Gemeten dat de gezette URL het gedrag van de oorspronkelijke 18 bewakers niet verandert: zelfde
+exit-codes, zelfde assertie-aantallen, 18 van de 18.
+
+- Task: [tasks/slapende-bewakers-survey.md](../tasks/slapende-bewakers-survey.md)
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #374
+
+### 491. De type-check draait in twee processen — en dekt aantoonbaar nog steeds alles
+
+De CI-type-check piekt op 4,95 GB en zat daarmee ver boven Node's default heap; vandaar de
+8 GB-bump van 15-08. `tsconfig.json` dekt nu alleen de app (2750 bestanden, piek 4,12 GB),
+`tsconfig.scripts.json` de overige 491 (piek 3,39 GB), met een eigen CI-stap.
+
+**De bump blijft nodig** — 4,12 GB ligt nog altijd boven de default. De splitsing koopt marge,
+geen oplossing.
+
+De kern is de controle eromheen: met `tsc --listFilesOnly` is vergeleken wat beide configs samen
+zien tegen de config van vóór de splitsing — 3241 tegen 3241, nul bestanden verloren. Die
+vergelijking verdiende zichzelf meteen terug: de eerste include gebruikte `scripts/**/*.ts` en
+liet acht `.tsx`-render-scripts stil buiten de dekking vallen.
+
+- Task: [tasks/done/build-heap-investigation.md](../tasks/done/build-heap-investigation.md)
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #372
+
 ### 490. Zeven database-bewakers draaien nu in de e2e-job — en de weg ernaartoe legde drie meetfouten bloot
 
 De `check`-job draait sinds #358 de goedkope bewakers; de groep die een échte database nodig heeft stond nog stil. Die hoort in `e2e`, want daar draait al een postgres en heeft `global-setup` het schema gepusht en geseed. `scripts/ci/run-db-guards.sh` draait er zeven, in 156s, ná de e2e-suite (twee ervan muteren: `lp-retention` wist rijen, `review-drift-reset` zet reviewstatussen terug).
