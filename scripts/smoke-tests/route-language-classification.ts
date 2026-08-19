@@ -22,13 +22,14 @@
  *
  * Run: npm run smoke:route-language
  */
-import { readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
   BILINGUAL_QUERY_ROUTES,
   DUTCH_PUBLIC_PREFIXES,
   ENGLISH_PUBLIC_PREFIXES,
+  decideDocumentLang,
   matchPublishedPagePath,
   matchesPrefix,
 } from '../../src/lib/ui-i18n/document-locale.shared';
@@ -89,8 +90,15 @@ function routesFromTree(dir: string, prefix = ''): string[] {
 /** Welke regel claimt dit pad? `null` = niemand, en dat is de bevinding. */
 function classify(route: string): string | null {
   if (matchPublishedPagePath(route.replace(/\[[^\]]+\]/g, 'x'))) return 'gepubliceerde pagina';
-  if (DUTCH_PUBLIC_PREFIXES.some((p) => matchesPrefix(route, p))) return 'NL publiek';
-  if (ENGLISH_PUBLIC_PREFIXES.some((p) => matchesPrefix(route, p))) return 'EN publiek';
+  // Ook hier de resolver vragen in plaats van de lijsten in volgorde aflopen:
+  // `/brandmd/claim` ligt onder `/brandmd` en zou anders als "NL publiek" worden
+  // gelabeld terwijl hij 'en' krijgt — een uitvoer die zichzelf tegenspreekt.
+  const hardgecodeerd =
+    DUTCH_PUBLIC_PREFIXES.some((p) => matchesPrefix(route, p)) ||
+    ENGLISH_PUBLIC_PREFIXES.some((p) => matchesPrefix(route, p));
+  if (hardgecodeerd) {
+    return `${decideDocumentLang(route, 'en', null).toUpperCase()} publiek`;
+  }
   if (BILINGUAL_QUERY_ROUTES.some((p) => matchesPrefix(route, p))) return 'tweetalig via ?lang';
   if (APP_SHELL_ROUTES.some((p) => matchesPrefix(route, p))) return 'app-shell (UI-taal)';
   return null;
@@ -155,6 +163,104 @@ assert(
   'de gepubliceerde-pagina-regel matcht nog de /p-vorm',
   matchPublishedPagePath(PUBLISHED_PAGE_SAMPLE) !== null,
 );
+
+console.log('\n── Klopt de indeling met de tekst op de pagina? ──\n');
+
+/**
+ * De check hierboven toetst DÁT een route is ingedeeld. Dat is niet hetzelfde
+ * als of de indeling klópt. Een parallelle sessie vond het gat: `/brandmd/claim/
+ * [token]` is volledig Engels ("Your brand is already here.", "Claimed. Your
+ * workspace is ready.") maar erft `lang="nl"` van de `/brandmd`-prefix. Precies
+ * het spiegelbeeld dat `ENGLISH_PUBLIC_PREFIXES` voor `/oauth` oplost — alleen
+ * één niveau dieper dan de prefix, dus buiten het bereik van een prefix-lijst.
+ *
+ * Deze steekproef telt stopwoorden in de JSX-tekst van het page-bestand zelf en
+ * vergelijkt dat met de gedeclareerde taal.
+ *
+ * ⚠️ Alleen voor routes met een HARDGECODEERDE taal. App-shell-routes gebruiken
+ * i18next (de tekst staat in vertaalbestanden), gepubliceerde pagina's halen hun
+ * taal uit de database, en de tweetalige route wisselt per query. Daar zegt een
+ * stopwoordtelling niets.
+ *
+ * ⚠️ En "geen tekst gevonden" is GEEN goedkeuring. Een page-bestand dat zijn
+ * tekst uit componenten haalt levert nul woorden op; dat wordt hieronder als
+ * `onbepaald` gemeld en niet als groen weggeschreven.
+ */
+const NL_WOORDEN = /\b(de|het|een|jouw|jij|wordt|zijn|voor|met|naar|onze|deze|niet|ook)\b/gi;
+const EN_WOORDEN = /\b(the|your|is|are|we|you|for|with|our|this|not|also|from)\b/gi;
+
+/** Haalt zichtbare JSX-tekst uit een bestand: `>tekst<`, zonder expressies. */
+function zichtbareTekst(bestand: string): string {
+  const src = readFileSync(bestand, 'utf8');
+  return (src.match(/>[^<>{}]{8,}</g) ?? []).join(' ');
+}
+
+function paginaBestand(route: string): string {
+  const segmenten = route === '/' ? [] : route.slice(1).split('/');
+  return join(APP_DIR, ...segmenten, 'page.tsx');
+}
+
+/**
+ * De gedeclareerde taal komt uit `decideDocumentLang` zelf — niet uit een eigen
+ * afleiding hier.
+ *
+ * Dat is geen stijlkeuze. Een eerdere versie liep de twee prefix-lijsten in
+ * volgorde af en koos daarmee 'nl' voor `/brandmd/claim`, terwijl de resolver
+ * (langste match wint) 'en' geeft. Een bewaker die de regel nábouwt, bewaakt zijn
+ * eigen kopie — precies de fout die `document-locale.shared.ts` moest voorkomen
+ * door server en client uit ÉÉN definitie te laten lezen.
+ *
+ * De UI-taal is hier 'en' en de landing-locale null: alleen routes met een
+ * hardgecodeerde taal komen door de filter hieronder, dus die twee doen niet mee.
+ */
+function gedeclareerdeTaal(route: string): 'nl' | 'en' | null {
+  const isHardgecodeerd =
+    DUTCH_PUBLIC_PREFIXES.some((p) => matchesPrefix(route, p)) ||
+    ENGLISH_PUBLIC_PREFIXES.some((p) => matchesPrefix(route, p));
+  if (!isHardgecodeerd) return null;
+
+  const taal = decideDocumentLang(route, 'en', null);
+  return taal === 'nl' || taal === 'en' ? taal : null;
+}
+
+let onbepaald = 0;
+for (const route of routes) {
+  const verwacht = gedeclareerdeTaal(route);
+  if (!verwacht) continue;
+
+  const bestand = paginaBestand(route);
+  let tekst = '';
+  try {
+    tekst = zichtbareTekst(bestand);
+  } catch {
+    continue; // route-groep of dynamische map: geen direct page-bestand
+  }
+
+  const nl = (tekst.match(NL_WOORDEN) ?? []).length;
+  const en = (tekst.match(EN_WOORDEN) ?? []).length;
+
+  if (nl + en < 3) {
+    console.log(`  ? ${route.padEnd(40)} onbepaald — te weinig tekst in het page-bestand`);
+    onbepaald++;
+    continue;
+  }
+
+  const gemeten = nl >= en ? 'nl' : 'en';
+  assert(
+    `${route} is ${verwacht} en de tekst leest als ${verwacht} (nl=${nl} en=${en})`,
+    gemeten === verwacht,
+    `de route is ingedeeld als ${verwacht.toUpperCase()}, maar de zichtbare tekst telt ` +
+      `${nl} Nederlandse en ${en} Engelse stopwoorden. Kies er één: vertaal de pagina, ` +
+      `of geef hem een eigen prefix in document-locale.shared.ts.`,
+  );
+}
+
+if (onbepaald > 0) {
+  console.log(
+    `\n  ⚠ ${onbepaald} route(s) leverden te weinig tekst voor een oordeel. Dat is stilte,\n` +
+      '    geen goedkeuring: hun tekst zit in componenten en wordt hier niet gelezen.',
+  );
+}
 
 console.log(
   failures.length === 0

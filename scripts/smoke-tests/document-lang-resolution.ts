@@ -282,6 +282,16 @@ check('client: reset-password is fixed en', resolveClientLangDecision('localhost
 check('client: invite volgt de query', resolveClientLangDecision('app.branddock.app', '/invite/accept', '?lang=nl'), { kind: 'fixed', lang: 'nl' });
 check('client: invite zonder query is en', resolveClientLangDecision('app.branddock.app', '/invite/accept'), { kind: 'fixed', lang: 'en' });
 
+// ── Langste prefix wint, niet de lijstvolgorde ───────────────────────────
+// `/brandmd/claim` ligt genest onder `/brandmd`. Werd de Nederlandse lijst eerst
+// getoetst, dan won `/brandmd` altijd en was elke Engelse uitzondering eronder
+// dode code. Zonder deze checks kan iemand de langste-match-helper terugdraaien
+// naar twee losse if-takken zonder dat er iets rood wordt.
+check('genest EN-pad wint van de kortere NL-prefix', decideDocumentLang('/brandmd/claim/abc123', 'nl', null), 'en');
+check('de NL-prefix eromheen blijft NL', decideDocumentLang('/brandmd/use', 'en', null), 'nl');
+check('de NL-root zelf blijft NL', decideDocumentLang('/brandmd', 'en', null), 'nl');
+check('een niet-genest EN-pad blijft EN', decideDocumentLang('/oauth/login', 'nl', null), 'en');
+
 // ── Constanten waarop beide kanten leunen ────────────────────────────────
 check('publieke contenttaal is nl', PUBLIC_CONTENT_LANG, 'nl');
 check('twee NL-prefixen', [...DUTCH_PUBLIC_PREFIXES], ['/marketing', '/brandmd']);

@@ -95,7 +95,7 @@ GUARDS=(
   # Faalt bij VERGETEN, niet bij toevoegen: wie een publieke pagina bouwt en hem
   # niet indeelt, krijgt hier rood in plaats van stil lang="en" op Nederlandse
   # tekst (de bug van #335). Leest de bestandsboom, niet een lijst.
-  smoke:route-language:28
+  smoke:route-language:44
 )
 
 log_dir=$(mktemp -d)
