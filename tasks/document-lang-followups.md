@@ -27,14 +27,31 @@ Volledige onderbouwing en metingen: `tasks/done/static-rendering-regressie.md`.
 
 ## A. Bewaking die niet automatisch draait
 
-- [ ] **`npm run test:csp` staat in geen enkele workflow.** De nonce-integriteitguard
-      (5 checks) is de énige automatische bescherming onder de bewuste keuze
-      "dynamisch renderen blijft dynamisch", en hij draait alleen handmatig. Vereist
-      een build + test-DB, dus het is een echte CI-kostenafweging — vandaar hier en
-      niet eenzijdig doorgevoerd.
-- [ ] **`npm run smoke:document-lang-browser` idem.** Zelfde reden; deze dekt de
-      keten proxy → root layout (fase 1) en de client-sync (fase 2).
-- [ ] **De `languageChanged`-listener heeft géén gate.** In `DocumentLangSync` staat
+- [x] **`npm run test:csp`** — ✅ **grotendeels af 2026-08-19 (#380).** De aanname
+      "vereist build + test-DB" is nagemeten en klopte voor 9 van de 15 checks niet:
+      de vier policy-checks en de vijf nonce-integriteitschecks gaan via Playwrights
+      `request`-fixture. Gedraaid met `PLAYWRIGHT_BROWSERS_PATH` naar een lege map en
+      een neppe `DATABASE_URL`: 9 passed in 2,1s. Draaien nu in de `check`-job.
+      **Rest**: de zes `page`-checks vragen chromium (één ook een geseede DB). Dat
+      blijft een kostenafweging voor Erik.
+- [x] **`npm run smoke:document-lang-browser`** — ✅ **fase 1 af 2026-08-19 (#380).**
+      Het probleem was de kóppeling, niet de kosten: hij vroeg een server én een
+      browser, dus draaide hij nergens. Fase 2 zit nu achter `SMOKE_BROWSER=1`; fase 1
+      draait in de `check`-job tegen `next start` (10 checks). Fase 2 wacht op dezelfde
+      chromium-beslissing.
+- [~] **De `languageChanged`-listener heeft géén gate.** ⚠️ **Deels afgedekt
+      2026-08-19**: `smoke:document-lang` heeft drie bedradingschecks gekregen die
+      verwijderen en hernoemen vangen — listener geregistreerd, listener afgemeld
+      (geen stapeling), en de handler schrijft zélf naar `documentElement.lang`.
+      Alle drie nagemeten met een mutatie.
+
+      De eerste versie van die derde check matchte `document.documentElement.lang =`
+      ergens in het bestand, en dat patroon staat er drie keer — hij liet de mutatie
+      dus gewoon door. Nu bindt hij de toewijzing aan de handler zelf.
+
+      **Wat nog steeds niet gedekt is**: of het attribuut ná een échte wissel klopt.
+      Dat vraagt een browser die tijdens de sessie van taal wisselt, en dat kan alleen
+      via de ingelogde instellingen-UI. Origineel punt hieronder: In `DocumentLangSync` staat
       de tak die `<html lang>` bijwerkt bij een runtime-taalwissel. Geen enkele van de
       vijf gates draait ooit een echte wissel: de pure gate raakt de DOM niet, de
       browser-smoke zet de cookie vóór de page load. Valt die tak stil, dan blijft de
