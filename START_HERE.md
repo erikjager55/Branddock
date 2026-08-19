@@ -397,6 +397,20 @@ nauwelijks verkeer. De taak draagt vier meetbare triggers plus de SQL om ze te t
   is die gemeten onder andere omstandigheden dan een klant zou krijgen.
   Bijvangst: er staan **drie** workspaces met de naam `better brands` op prod, twee daarvan
   leeg en aangemaakt op 14-08.
+
+  ✅ **Nagemeten 19-08 — de claim wordt hier níet door ondergraven, eerder andersom.**
+  `docs/reports/pilot-hermeting-2026-07-21.md` noemt als bron: *"Workspace: Better brands
+  (dev) — rijk merk-DNA, voiceguide mét centroid"* en *"8,9K chars merkcontext"*. Dat is
+  precies de workspace die op `published = false` staat. Die 8,9K kwam er dus **zonder** de
+  zeven gegate velden en zonder de `StyleguideRule`-bron in de rules-pijler.
+
+  Wat dat wél en niet betekent: de stijl-pijler líep (via de voiceguide-centroid, een andere
+  bron dan de styleguide), dus "pijler 1 actief" in het rapport klopt. Kleuren en fonts wegen
+  nauwelijks voor tekstcontent — maar `brandManifest` en `brandToneOfVoice` vielen óók weg, en
+  die zijn wél tekstrelevant. **De +6,8 is daarmee vermoedelijk een ondergrens, geen
+  overschatting.** Publiceren maakt de claim dus niet stuk; het vraagt een hermeting om hem te
+  kunnen aanscherpen. Het script is reproduceerbaar:
+  `scripts/experiments/pilot-hermeting-2026-07.ts`.
 - ~~Campagnewizard voorbij stap 3 ongetest~~ → **eigen taak sinds 16-08**:
   [`campagne-wizard-e2e-restscope`](tasks/done/campagne-wizard-e2e-restscope.md). Inclusief de
   vraag of de 80-drempel klopt — een rijk ingevulde briefing haalde 68.
