@@ -100,6 +100,11 @@ GUARDS=(
   # ontbreekt; zie de toelichting in het bestand waarom dat veilig en kosteloos
   # is, en waarom die plaatsvervanger NIET hier op gate-niveau hoort.
   smoke:agents-foundation:12
+  # agents-data-analyst toetst tenant-isolatie: de data-analyst van workspace A
+  # mag geen rijen van B zien. Kon tot 19-08 nergens draaien omdat hij twee
+  # dev-workspaces op naam zocht. Nu op slug uit de seed, met een tweede
+  # gevulde workspace zodat de isolatie iets te vergelijken heeft.
+  smoke:agents-data-analyst:21
 )
 
 # ── Hoe asserties geteld worden ─────────────────────────────────────────────

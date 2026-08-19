@@ -149,10 +149,14 @@ async function main() {
 
   // ─ 4. Query-tools tegen de échte DB ─
   console.log("\n## Query-tools (real dev DB, read-only)\n");
-  const wsA = await prisma.workspace.findFirst({ where: { name: "Zwarthout" }, select: { id: true, name: true } });
-  const wsB = await prisma.workspace.findFirst({ where: { name: "Linfi" }, select: { id: true, name: true } });
+  // Op SLUG, niet op naam en niet op volgorde. De vorige versie zocht de
+  // dev-workspaces "Zwarthout" en "Linfi", die alleen in één persoonlijke
+  // database bestaan — daardoor kon deze bewaker nergens draaien en stond hij
+  // sinds altijd zonder npm-script. De seed levert deze twee gegarandeerd.
+  const wsA = await prisma.workspace.findUnique({ where: { slug: "branddock-demo" }, select: { id: true, name: true } });
+  const wsB = await prisma.workspace.findUnique({ where: { slug: "techcorp-brand" }, select: { id: true, name: true } });
   if (!wsA || !wsB) {
-    assert("dev workspaces Zwarthout + Linfi exist", false, "seed the dev DB first");
+    assert("seed-workspaces branddock-demo + techcorp-brand bestaan", false, "draai `npx prisma db seed`");
   } else {
     for (const tool of dataAnalystQueryTools) {
       const ctx = fakeCtx(wsA.id);

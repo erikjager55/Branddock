@@ -2123,6 +2123,36 @@ async function main() {
     },
   });
 
+  // ─── Tweede workspace: eigen concurrenten ───────────────────────────────────
+  //
+  // TechCorp Brand had geen concurrenten, waardoor de workspace-isolatietest in
+  // `smoke:agents-data-analyst` niet kon draaien: die eist dat BEIDE workspaces
+  // rijen hebben (`namesA.size > 0 && rowsB.length > 0`) en faalde met B=0.
+  //
+  // Namen bewust NIET overlappend met die van de demo-workspace, anders toetst de
+  // overlap-check ruis in plaats van isolatie.
+  for (const c of [
+    {
+      name: "Northwind Analytics",
+      slug: "northwind-analytics",
+      websiteUrl: "https://northwind.example",
+      description: "Analytics-suite voor B2B-marketingteams.",
+      tagline: "Meet wat telt",
+    },
+    {
+      name: "Vermeer Studio",
+      slug: "vermeer-studio",
+      websiteUrl: "https://vermeer.example",
+      description: "Designbureau met een eigen merkframework.",
+      tagline: "Vorm volgt verhaal",
+    },
+  ]) {
+    await prisma.competitor.create({
+      data: { ...c, workspaceId: directWorkspace.id },
+    });
+  }
+
+
   // Link competitor1 to product1
   await prisma.competitorProduct.create({
     data: {
