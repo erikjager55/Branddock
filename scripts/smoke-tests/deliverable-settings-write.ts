@@ -74,7 +74,14 @@ async function main(): Promise<void> {
       select: { id: true },
     });
     const deliverable = await prisma.deliverable.create({
-      data: { campaignId: campaign.id, title: slug, contentType: 'Landing Page', settings: {} },
+      // `landing-page` is de canonieke id uit deliverable-types.ts; "Landing Page"
+      // is de dísplay-naam en bestaat als contentType nergens in de code. Tot
+      // 2026-08-19 stond hier die display-naam, waardoor deze smoke rijen maakte
+      // met een type dat productie nooit produceert. Vandaag zonder gevolg (niets
+      // hier filtert op contentType), maar wie deze smoke uitbreidt naar een
+      // type-afhankelijk pad — `evaluatePageQualityForType` splitst op exact
+      // 'landing-page' — zou stil de generieke tak testen in plaats van de echte.
+      data: { campaignId: campaign.id, title: slug, contentType: 'landing-page', settings: {} },
       select: { id: true },
     });
     return deliverable.id;
