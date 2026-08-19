@@ -161,13 +161,40 @@ niet.
 
 # Acceptatiecriteria
 
-- [ ] De 28 losse hebben een npm-script en draaien in een gate
-- [ ] Elk van de 27 junireeks-bestanden is beoordeeld: aangehaakt óf verwijderd
-      met reden
-- [ ] De 18 rode zijn getrieerd
-- [ ] `lib/agents` heeft bewaking in een gate — die code draait op productie
-- [ ] `package.json`-telling is niet langer de bron van waarheid voor "welke
-      bewakers bestaan er" — de bestandslijst is dat
+- [x] **De 28 losse hebben een npm-script en draaien in een gate** — #399 (3) en
+      #408 (25). Samen 546 asserties.
+- [x] **Elk van de 27 junireeks-bestanden is beoordeeld** — #412. Mechanisch in
+      plaats van per bestand: 17 raken modules die de ketting niet dekt en zijn
+      aangehaakt, 10 raken uitsluitend al-gedekte modules.
+      ⚠️ Die 10 zijn **niet verwijderd**, en dat is bewust. "Raakt dezelfde
+      module" is niet hetzelfde als "toetst hetzelfde gedrag" — de import-overlap
+      maakt de leeslijst kort, hij vervangt de leesbeurt niet. Het criterium is
+      dus gehaald op *beoordeeld*, niet op *opgeruimd*.
+- [x] **De 18 rode zijn getrieerd** — #411. Veertien hebben een echte database
+      nodig, twee een sleutel, één is een CLI-tool, en precies één had een
+      verouderde assertie (`checkpoint-gates`, rood op een correcte vertaling).
+- [~] **`lib/agents` heeft bewaking in een gate** — deels. `agents-foundation`
+      loopt in #413 (parallelle sessie). `agents-data-analyst` kan niet in CI
+      draaien: hij hardcodeert de dev-workspaces Zwarthout en Linfi. Dat is
+      herschrijfwerk tegen de seed en verdient een eigen task-file, geen regel
+      hier.
+- [ ] **`package.json`-telling is niet langer de bron van waarheid** — nog open,
+      en dit is het criterium dat er het langst toe blijft doen.
+
+      De hele survey begon met een telling uit `package.json`, en juist daardoor
+      bleef `ssrf-guard.ts` onzichtbaar: 65 asserties op een beveiligingsoppervlak,
+      gecommit bij een SSRF-fix eind juni, zonder npm-script. Een bewaker die niet
+      meetelt als bewaker vind je niet door beter naar je lijst te kijken.
+
+      ✅ **Gebouwd: `smoke:guard-wiring`** (2026-08-19). Hij legt de bestandslijst
+      naast de gate-lijst en wordt rood bij een nieuw bestand zonder aanhaking —
+      dezelfde vorm als `smoke:route-language`, die faalt bij *vergeten* in plaats
+      van bij toevoegen. Zijn eerste bevinding was hijzelf.
+
+      De 51 die bewust stilstaan hebben nu elk een reden in `NIET_AANGEHAAKT`,
+      gegroepeerd: sleutel, database, cli, herschrijf, of gedekt-door-de-ketting.
+      ⚠️ Die lijst is **schuld, geen uitzonderingslijst** — hij hoort te krimpen.
+      Een tweede check meldt dode regels, zodat de lijst zelf niet kan verrotten.
 
 # Risico's
 
