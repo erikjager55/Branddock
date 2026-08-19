@@ -121,10 +121,25 @@ Volledige onderbouwing en metingen: `tasks/done/static-rendering-regressie.md`.
       entiteiten (Campaign → Deliverable → LandingPage → PagePublish); de e2e-seed heeft
       geen landingspagina. ⚠️ Voeg de route toe aan `PUBLIC_ROUTES`, niet aan
       `NONCE_GUARD_ROUTES` — die filtert `/p` er bewust uit (hash-scope zonder nonce).
-- [ ] **`decideHostRoute` moet puur en client-veilig blijven.** `DocumentLangSync`
-      importeert het via `document-locale.shared.ts`. Zodra `DomainMapping` live gaat
-      moet die host door dezelfde resolutie — maar dat is een DB-lookup, dus die hoort
-      in een aparte servertak, niet in `decideHostRoute` zelf.
+- [x] **`decideHostRoute` moet puur en client-veilig blijven** — ✅ **al afgedwongen,
+      gemeten 2026-08-19.** Er is hier géén eigen bewaker nodig: de Next-build doet het al.
+      Getoetst door een `import { prisma }` in `host-router.ts` te zetten en te bouwen:
+
+          Build error occurred
+          Error: Turbopack build failed with 6 errors
+
+      `DocumentLangSync` is een client-component en importeert `decideHostRoute` via
+      `document-locale.shared.ts`; server-only code daarin laat de bundel-grens knappen
+      en dat is een harde buildfout, geen waarschuwing.
+
+      De onderliggende zorg blijft wél staan en verhuist naar de opmerking hieronder:
+      zodra `DomainMapping` live gaat moet die host door dezelfde resolutie, en dát is
+      een DB-lookup. Die hoort in een aparte servertak — niet omdat een bewaker het
+      verbiedt, maar omdat de build je anders tegenhoudt.
+
+      ⚠️ Bewust géén bewaker gebouwd. Een tweede controle op wat de build al hard
+      afdwingt is onderhoud zonder dekking; hij zou nooit rood worden zonder dat de
+      build eerder rood is.
 - [ ] **Drie call-sites resolven dezelfde landingspagina-rij** met drie queryvormen:
       `loadPublishedPageSeo`, `resolvePublishedPage` en `loadLandingPageLocale`. Zodra er
       een tweede `PUBLISHED`-rij per slug bestaat (kan vandaag al, via een locale-wissel
