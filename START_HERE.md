@@ -1,7 +1,7 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> **Laatst bijgewerkt: 2026-08-19** (bewakers-schoonmaak: PR-poort van 18 naar 32
+> **Laatst bijgewerkt: 2026-08-19** (bewakers-schoonmaak: PR-poort van 18 naar 37
 > bewakers, nachtelijke prod-bewaker, en beslispunt 0 is van 15 naar 6 checks gekrompen).
 > Daarvoor: **2026-08-18, derde helft** (retentie-plafond live, CSP op enforce,
 > SSE-abort gedeeltelijk, de twee Neon-indexen aangemaakt en prod drift-vrij bevonden —
@@ -33,9 +33,15 @@ plus één echte betaal-smoke.
 ## Wat er landde (2026-08-19)
 
 **De bewakers-schoonmaak. Van 78 smoke-scripts draaiden er drie.** Een survey (#368) telde ze,
-en de aanhaakslag daarna bracht de goedkope PR-poort van 18 naar **32 bewakers** — samen ruim
-2.900 asserties die eerst nergens draaiden. Plus een nachtelijke productie-bewaker (#377) en
+en de aanhaakslag daarna bracht de goedkope PR-poort van 18 naar **37 bewakers** — samen ruim
+3.000 asserties die eerst nergens draaiden. Plus een nachtelijke productie-bewaker (#377) en
 negen CSP-checks (#380).
+
+Drie van die 37 kwamen pas laat in beeld en verdienen een aparte vermelding: `ssrf-guard.ts`
+(65 asserties), `security-medium.ts` en `enforce-brand-name-capitalization.ts` hadden **geen
+npm-script** en waren daardoor onzichtbaar voor de survey — die telde scripts in
+`package.json`, niet bestanden op schijf. `ssrf-guard` is gecommit bij een SSRF-fix eind juni
+en had sindsdien nooit gedraaid.
 
 Drie dingen daaruit zijn belangrijker dan het aantal:
 
