@@ -76,8 +76,40 @@ Volledige onderbouwing en metingen: `tasks/done/static-rendering-regressie.md`.
       ándere gebruiker juist de verkeerde taal geeft. `<html lang>` volgt nu dezelfde bron.
       Vereiste één nieuwe request-header (`x-search`), omdat een layout `searchParams`
       niet kan lezen.
-- [ ] **`/p`-404's hebben helemaal géén `lang`-attribuut.** Er is nergens een
-      `not-found.tsx`, dus Next' foutdocument vervangt de root layout. Pre-existing.
+- [ ] **`/p`-404's hebben helemaal géén `lang`-attribuut.** Pre-existing.
+
+      ⚠️ **De voor de hand liggende fix werkt NIET — gemeten 2026-08-19, twee
+      builds.** De oorspronkelijke diagnose hier ("er is nergens een
+      `not-found.tsx`") suggereert dat er één toevoegen het oplost. Dat is
+      geprobeerd op beide niveaus:
+
+      | wat | resultaat |
+      |---|---|
+      | `src/app/p/[workspace]/[slug]/not-found.tsx` | eigen 404-tekst rendert, `<html id="__next_error__">`, **geen `lang`** |
+      | `src/app/not-found.tsx` (rootniveau) | idem — **geen `lang`** |
+
+      In beide gevallen rendert de eigen component wél (de tekst staat in de
+      HTML) en klopt de status (404, was 500 door een niet-opgeruimde probe-
+      server), maar Next 16.2.9 zet er zijn eigen foutdocument omheen in plaats
+      van de root layout. Een `not-found.tsx` is dus niet het ontbrekende stuk.
+
+      Ter vergelijking, dezelfde meting op productie:
+
+          linfi.branddock.app/pillar-page        200  <html lang="nl-NL">
+          linfi.branddock.app/bestaat-niet       404  <html id="__next_error__">
+          branddock.app/marketing/bestaat-niet   404  <html lang="nl">
+          branddock.app/bestaat-niet             404  <html lang="en">
+
+      Alleen een `notFound()` uit een DYNAMISCH segment verliest de layout; een
+      onbekende route onder een statisch pad houdt hem gewoon. Wie dit oppakt
+      begint dus bij die vraag, niet bij een `not-found.tsx`.
+
+      Afweging voor later: de impact is klein (een 404 is per definitie
+      noindex; het raakt vooral schermlezers, die terugvallen op de
+      browsertaal). Een rootniveau-404 zou bovendien álle 404's raken — ook die
+      van de Engelstalige app-shell — en dat is een productbeslissing over
+      wiens 404-pagina dit is, niet alleen een attribuut-fix. De pagina draait
+      op het subdomein van een KLANT.
 
 ## C. Opgeruimd worden
 
