@@ -85,6 +85,12 @@ GUARDS=(
   # AI-calls (nu opt-in via SMOKE_AI=1).
   smoke:geo-generation-prompt:14
   smoke:locale:28
+
+  # Stond geclassificeerd als netwerk-bewaker om de URL's in zijn broncode
+  # (`images.pexels.com`, `pub-test.r2.dev`). Dat zijn testdata: beide
+  # fetch-aanroepen zitten achter SMOKE_R2=1. Zonder die vlag draait hij 16
+  # checks pure logica en nul netwerk.
+  smoke:storage-url-expiry:14
 )
 
 log_dir=$(mktemp -d)
