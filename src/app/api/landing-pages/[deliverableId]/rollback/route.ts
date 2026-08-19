@@ -95,6 +95,13 @@ export async function POST(
       where: { id: workspaceId },
       select: { slug: true },
     });
+    // ⚠️ DOET OP DIT MOMENT NIETS. `/p/<ws>/<slug>` rendert dynamisch per
+    // request — de root layout leest `cookies()` en `headers()`, dus er staat
+    // niets in de cache om te verversen. Deze aanroep is bewust blijven staan:
+    // hij wordt vanzelf weer het juiste mechanisme zodra statisch renderen
+    // aangaat (sectie D van tasks/document-lang-followups.md), en hem nu
+    // weghalen betekent hem later opnieuw bedenken.
+    // Lees hem dus niet als een actieve optimalisatie.
     if (workspace?.slug) {
       revalidatePath(`/p/${workspace.slug}/${publish.landingPage.slug}`);
     }

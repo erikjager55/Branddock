@@ -178,9 +178,17 @@ export async function POST(request: NextRequest) {
       where: { id: workspaceId },
       select: { slug: true },
     });
-    // P0 ISR-fix: on-demand revalidation is het primaire verversmechanisme
-    // van de statisch gecachte render-route (pad-params; fallback-TTL 7d).
-    // Ná de artifact-write zodat de verse cache-vulling het artifact ziet.
+    // ⚠️ DOET OP DIT MOMENT NIETS. Hier stond dat on-demand revalidation "het
+    // primaire verversmechanisme van de statisch gecachte render-route" is.
+    // Dat klopt niet meer: `/p/<ws>/<slug>` rendert dynamisch per request —
+    // de root layout leest `cookies()` en `headers()` — dus er staat niets in
+    // de cache om te verversen.
+    //
+    // Bewust blijven staan: dit wordt vanzelf weer het juiste mechanisme zodra
+    // statisch renderen aangaat (sectie D van tasks/document-lang-followups.md),
+    // en hem nu weghalen betekent hem later opnieuw bedenken. De plaatsing ná
+    // de artifact-write hoort daar dan ook bij: een verse cache-vulling moet
+    // het artifact zien, niet de staat ervoor.
     if (workspace?.slug) {
       revalidatePath(`/p/${workspace.slug}/${body.slug}`);
     }

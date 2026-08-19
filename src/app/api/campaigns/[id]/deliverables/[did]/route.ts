@@ -165,6 +165,12 @@ export async function DELETE(
 
     for (const page of livePages) {
       try {
+        // ⚠️ DOET OP DIT MOMENT NIETS. `/p/<ws>/<slug>` rendert dynamisch per
+        // request — de root layout leest `cookies()` en `headers()`, dus er
+        // staat niets in de cache om te verversen. Bewust blijven staan: hij
+        // wordt vanzelf weer het juiste mechanisme zodra statisch renderen
+        // aangaat (sectie D van tasks/document-lang-followups.md). Lees hem
+        // dus niet als een actieve optimalisatie.
         revalidatePath(`/p/${page.workspace.slug}/${page.slug}`);
       } catch (err) {
         console.warn("[DELETE deliverable] revalidatePath faalde (genegeerd):", err instanceof Error ? err.message : err);
