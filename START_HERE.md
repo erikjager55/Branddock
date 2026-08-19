@@ -365,8 +365,38 @@ nauwelijks verkeer. De taak draagt vier meetbare triggers plus de SQL om ze te t
 ## Losse eindjes uit deze sessie
 
 - **F-VAL onder de drempel** bij `linkedin-post` (69), `linkedin-poll` (70), `search-ad`
-  (70,5) en `twitter-thread` (71). Signaal, geen conclusie: Napking's styleguide staat op
-  `published = false`, dus de stijl-pijler mist context. Sluit dat eerst uit.
+  (70,5) en `twitter-thread` (71). ✅ **Uitgesloten 19-08 — de Napking-verklaring klopt niet.**
+  De opdracht was "sluit dat eerst uit"; dat is gedaan, en het antwoord is nee.
+
+  | content-type | published (n, gem.) | unpublished (n, gem.) |
+  |---|---|---|
+  | `linkedin-poll` | 14 → **79,3** | **0 metingen** |
+  | `twitter-thread` | 8 → **80,6** | **0 metingen** |
+  | `search-ad` | 9 → 80,8 | 4 → 77,8 |
+  | `linkedin-post` | 33 → **68,9** | 38 → **78,7** |
+
+  Twee van de vier types hebben **nul** unpublished-metingen — hun score kán dus niet door
+  een niet-gepubliceerde styleguide komen. En bij `linkedin-post` wijst het de andere kant
+  op: de *gepubliceerde* groep scoort tien punten lager. Op productie staat Napking
+  bovendien gewoon op `published = true` (24 regels); alleen lokaal staat hij op `false`,
+  en dáár is gemeten.
+
+  ⚠️ **Wat wél waar is, en apart de moeite waard**: het mechanisme bestaat. De stijl-pijler
+  is systematisch zwakker zonder gepubliceerde styleguide — over alle workspaces 87,8
+  (published) tegen 59-69 (unpublished), en bij `search-ad` 99,3 tegen 57,0. `brand-context.ts:1242`
+  gate't zeven contextvelden op diezelfde vlag (manifest, kleuren, fonts, typografie,
+  tone-of-voice, twee beeldvelden), en `styleguide-rule-compiler.ts:126` zet de rules-pijler
+  op nul. Alleen verklaart dat déze vier scores niet. De echte oorzaak van de lage
+  `linkedin-post` staat nog open.
+
+- ⚠️ **Nieuw gevonden op prod (19-08): `better brands` genereert zónder merkcontext.** Van de
+  zeven prod-styleguides met `published = false` is dat de enige met échte content: 22 regels,
+  5 deliverables, laatste 17-07. Die vijf zijn dus gemaakt zonder de zeven contextvelden en
+  zonder de rules-pijler. Dat is jouw eigen pilot-merk. Eén klik (finalize/publish) verandert
+  dat — maar controleer eerst of de pilot-F-VAL-claim (+6,8) op deze workspace rust, want dan
+  is die gemeten onder andere omstandigheden dan een klant zou krijgen.
+  Bijvangst: er staan **drie** workspaces met de naam `better brands` op prod, twee daarvan
+  leeg en aangemaakt op 14-08.
 - ~~Campagnewizard voorbij stap 3 ongetest~~ → **eigen taak sinds 16-08**:
   [`campagne-wizard-e2e-restscope`](tasks/done/campagne-wizard-e2e-restscope.md). Inclusief de
   vraag of de 80-drempel klopt — een rijk ingevulde briefing haalde 68.
