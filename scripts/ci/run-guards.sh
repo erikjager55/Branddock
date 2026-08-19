@@ -105,6 +105,14 @@ GUARDS=(
   # tekst (de bug van #335). Leest de bestandsboom, niet een lijst.
   smoke:route-language:44
 
+  # Sluit de wortel van de hele slapende-bewakers-survey: `package.json` is niet
+  # langer de bron van waarheid voor "welke bewakers bestaan er" — de
+  # BESTANDSLIJST is dat. Een nieuw bestand in scripts/smoke-tests/ of
+  # scripts/eval/ dat nergens draait, maakt CI rood.
+  #
+  # Zijn eerste bevinding was hijzelf: hij stond nog niet in deze lijst.
+  smoke:guard-wiring:3
+
   # ── Weesbestanden, aangehaakt 2026-08-19 ───────────────────────────────────
   # Deze drie hadden geen npm-script en waren daardoor ONZICHTBAAR voor de survey:
   # die telde scripts in package.json, niet bestanden op schijf. `ssrf-guard` is

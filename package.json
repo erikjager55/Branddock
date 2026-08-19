@@ -44,6 +44,7 @@
     "smoke:i18n-namespaces": "tsx scripts/smoke-tests/i18n-namespace-reachability.ts",
     "smoke:document-lang": "tsx scripts/smoke-tests/document-lang-resolution.ts",
     "smoke:route-language": "tsx scripts/smoke-tests/route-language-classification.ts",
+    "smoke:guard-wiring": "tsx scripts/smoke-tests/guard-wiring-completeness.ts",
     "smoke:ssrf-guard": "tsx scripts/smoke-tests/ssrf-guard.ts",
     "smoke:deliverable-content-accessor": "tsx scripts/smoke-tests/deliverable-content-accessor.ts",
     "smoke:competitor-diff-engine": "tsx scripts/smoke-tests/competitor-diff-engine.ts",

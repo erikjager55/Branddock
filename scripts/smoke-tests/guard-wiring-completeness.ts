@@ -1,0 +1,215 @@
+/**
+ * Smoke-test — elk bewakerbestand is BEWUST wel of niet aangehaakt.
+ *
+ * Waarom dit bestaat. De hele slapende-bewakers-survey van 2026-08-19 begon met
+ * een telling uit `package.json`, en juist daardoor bleef `ssrf-guard.ts`
+ * onzichtbaar: 65 asserties op een beveiligingsoppervlak, gecommit bij een
+ * SSRF-fix eind juni, zónder npm-script. Een bewaker die niet meetelt als
+ * bewaker vind je niet door beter naar je lijst te kijken — je moet naar de
+ * schijf kijken.
+ *
+ * Deze bewaker legt de BESTANDSLIJST naast de gate-lijst. Een nieuw bestand in
+ * `scripts/smoke-tests/` of `scripts/eval/` dat nergens draait, maakt CI rood.
+ * Dat is de bedoeling: de fix is één regel — haak hem aan, of zet hem hieronder
+ * met een reden.
+ *
+ * ⚠️ `NIET_AANGEHAAKT` is schuld, geen uitzonderingslijst. Elke regel is een
+ * bewaker die bestaat en niet draait. De lijst hoort te krimpen; groeit hij,
+ * dan is dat een beslissing die iemand expliciet neemt in plaats van vergeet.
+ *
+ * Geen DB, geen sleutels, geen netwerk.
+ *
+ * Run: npm run smoke:guard-wiring
+ */
+import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const ROOT = process.cwd();
+
+/**
+ * Bewakerbestanden die bewust NIET in een gate draaien, met de reden.
+ *
+ * De redenen zijn groepen, geen individuele excuses:
+ *   sleutel   — vraagt een echte API-sleutel; kost geld per run
+ *   database  — vraagt een echte, geseede database
+ *   browser   — vraagt een chromium-binary
+ *   netwerk   — haalt een externe host op
+ *   cli       — is een gereedschap dat argumenten verwacht, geen bewaker
+ *   gedekt    — junireeks-wees die alleen modules raakt die de ketting al dekt
+ *   herschrijf — kan niet in CI draaien zonder eerst herschreven te worden
+ */
+const NIET_AANGEHAAKT: Record<string, string> = {
+  // ── sleutel ───────────────────────────────────────────────────────────────
+  'smoke-tests/competitor-ai-classifier.ts': 'sleutel — 401 zonder ANTHROPIC_API_KEY',
+  'smoke-tests/competitor-activities.ts': 'sleutel + database',
+  'smoke-tests/competitor-content-discovery.ts': 'sleutel + database',
+  'smoke-tests/conversion-tweaks.ts': 'sleutel — volledig AI, geen gratis laag',
+  'smoke-tests/longform-tweaks.ts': 'sleutel — volledig AI, geen gratis laag',
+  'smoke-tests/structured-tweaks.ts': 'sleutel — volledig AI, geen gratis laag',
+  'smoke-tests/google-vision-api-key.ts': 'sleutel — GOOGLE_VISION_API_KEY',
+  'smoke-tests/seo-pipeline-wiring.ts': 'sleutel — 1 PASS / 19 FAIL zonder sleutel in CI',
+  'eval/brand-manifest-golden/run.ts': 'sleutel — live LLM-evaluatie',
+  'eval/brandstyle-golden-set/run.ts': 'sleutel — live LLM-evaluatie',
+
+  // ── database ──────────────────────────────────────────────────────────────
+  'smoke-tests/claw-review-tool.ts': 'database — rood met nul asserties, vraagt meer dan een DB',
+  'smoke-tests/competitor-refresh-dual-write.ts': 'database — idem',
+  'smoke-tests/locale-picker-api.ts': 'database — idem',
+  'smoke-tests/preserve-user-rows.ts': 'database',
+  'smoke-tests/rule-violation-stats.ts': 'database',
+  'smoke-tests/brand-library-accessor.ts': 'database',
+  'smoke-tests/brandstyle-provenance.ts': 'database',
+  'smoke-tests/campaign-brief-render.ts': 'database',
+  'smoke-tests/claw-security-hardening.ts': 'database',
+  'smoke-tests/source-image-matcher.ts': 'database',
+  'smoke-tests/voice-baseline-1pager.ts': 'database',
+  'smoke-tests/content-item-library-ingest.ts': 'database',
+  'smoke-tests/ad-creative-validation.ts': 'database',
+  'smoke-tests/lp-assistant-content-edits.ts': 'database',
+  'smoke-tests/seo-context-selection.ts': 'database',
+  'smoke-tests/page-derived-meta.ts': 'database',
+  'smoke-tests/page-seo-metadata.ts': 'database',
+  'smoke-tests/brand-font-substitutes.ts': 'database',
+  'smoke-tests/security-residual.ts': 'database',
+  'smoke-tests/image-content-coupling.ts': 'database',
+  'smoke-tests/geo-author-profile.ts': 'database',
+  'smoke-tests/geo-claw-gate.ts': 'database',
+  'smoke-tests/geo-discovery.ts': 'database',
+  'smoke-tests/geo-longform-render.ts': 'database',
+  'smoke-tests/geo-longform-schema.ts': 'database',
+  'smoke-tests/geo-optimization-goals.ts': 'database',
+  'smoke-tests/geo-panel.ts': 'database',
+  'smoke-tests/geo-puck-renderable.ts': 'database',
+
+  // ── cli / herschrijf ──────────────────────────────────────────────────────
+  'eval/position-swap-judge.ts': 'cli — verwacht --candidateA/--candidateB/--rubric',
+  'smoke-tests/guard-hooks.ts': 'cli — toetst de git-hooks, draait buiten CI',
+  'smoke-tests/agents-data-analyst.ts':
+    'herschrijf — hardcodeert de dev-workspaces Zwarthout en Linfi, kan nooit in CI draaien',
+
+  // ── junireeks: raakt alleen modules die de augustus-ketting al dekt ───────
+  // ⚠️ Verwijder-KANDIDATEN, niet verwijderd. "Raakt dezelfde module" is niet
+  // hetzelfde als "toetst hetzelfde gedrag" (zie tasks/weesbewakers-triage.md).
+  'smoke-tests/web-page-builder-phase40-brand-fallback-no-leak.ts': 'gedekt door de ketting',
+  'smoke-tests/web-page-builder-phase53-lp-contrast.ts': 'gedekt door de ketting',
+  'smoke-tests/web-page-builder-phase54-lp-rhythm.ts': 'gedekt door de ketting',
+  'smoke-tests/web-page-builder-phase56-feature-images.ts': 'gedekt door de ketting',
+  'smoke-tests/web-page-builder-phase57-font-assets.ts': 'gedekt door de ketting',
+  'smoke-tests/web-page-builder-phase58-card-context.ts': 'gedekt door de ketting',
+  'smoke-tests/web-page-builder-phase59-accent-reservation.ts': 'gedekt door de ketting',
+  'smoke-tests/web-page-builder-phase62-button-component-reconcile.ts': 'gedekt door de ketting',
+  'smoke-tests/web-page-builder-phase63-section-band-alternation.ts': 'gedekt door de ketting',
+  'smoke-tests/web-page-builder-phase65-variant-angle-prompt.ts': 'gedekt door de ketting',
+};
+
+let pass = 0;
+const failures: string[] = [];
+
+function assert(name: string, cond: boolean, detail?: string): void {
+  if (cond) {
+    console.log(`  ✓ ${name}`);
+    pass++;
+  } else {
+    console.error(`  ✗ ${name}${detail ? ` — ${detail}` : ''}`);
+    failures.push(name);
+  }
+}
+
+/** npm-scripts die daadwerkelijk in een gate of workflow draaien. */
+function aangehaakteNamen(): Set<string> {
+  const namen = new Set<string>();
+
+  for (const gate of ['scripts/ci/run-guards.sh', 'scripts/ci/run-db-guards.sh']) {
+    let tekst = '';
+    try {
+      tekst = readFileSync(join(ROOT, gate), 'utf8');
+    } catch {
+      continue; // gate bestaat (nog) niet
+    }
+    // De entries dragen een assertie-ondergrens: `smoke:foo:42`. Die moet eraf,
+    // anders matcht de opzoeking in package.json niets.
+    for (const m of tekst.matchAll(/^ {2}((?:smoke|eval):[a-z0-9:-]+)/gm)) {
+      namen.add(m[1].replace(/:\d+$/, ''));
+    }
+  }
+
+  // ⚠️ ALLE workflows, niet alleen ci.yml — de nachtelijke productie-bewaker
+  // staat in een eigen bestand.
+  const workflows = execSync('ls .github/workflows/*.yml 2>/dev/null || true', {
+    cwd: ROOT,
+    encoding: 'utf8',
+  })
+    .split('\n')
+    .filter(Boolean);
+  for (const wf of workflows) {
+    const tekst = readFileSync(join(ROOT, wf), 'utf8');
+    for (const m of tekst.matchAll(/npm run ((?:smoke|eval):[a-z0-9:-]+)/g)) {
+      namen.add(m[1]);
+    }
+  }
+  return namen;
+}
+
+console.log('\n── Elk bewakerbestand is bewust wel of niet aangehaakt ──\n');
+
+const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {
+  scripts: Record<string, string>;
+};
+
+const namen = aangehaakteNamen();
+assert('er zijn aangehaakte bewakers gevonden', namen.size > 0, `${namen.size} namen`);
+
+const bereikbaar = new Set<string>();
+for (const naam of namen) {
+  for (const m of (pkg.scripts[naam] ?? '').matchAll(/\S+\.tsx?/g)) {
+    bereikbaar.add(m[0].replace(/^\.\//, ''));
+  }
+}
+
+const bestanden = execSync(
+  'ls scripts/smoke-tests/*.ts scripts/eval/*.ts scripts/eval/*/*.ts 2>/dev/null || true',
+  { cwd: ROOT, encoding: 'utf8' },
+)
+  .split('\n')
+  .filter(Boolean);
+
+const onaangehaakt = bestanden
+  .filter((p) => !bereikbaar.has(p))
+  .map((p) => p.slice('scripts/'.length));
+
+const onverklaard = onaangehaakt.filter((p) => !(p in NIET_AANGEHAAKT));
+const verdwenen = Object.keys(NIET_AANGEHAAKT).filter((p) => !onaangehaakt.includes(p));
+
+console.log(`  bewakerbestanden : ${bestanden.length}`);
+console.log(`  aangehaakt       : ${bestanden.length - onaangehaakt.length}`);
+console.log(`  bewust niet      : ${onaangehaakt.length - onverklaard.length}`);
+console.log();
+
+assert(
+  'geen bewakerbestand draait nergens zónder reden',
+  onverklaard.length === 0,
+  onverklaard.length > 0
+    ? `\n      ${onverklaard.join('\n      ')}\n` +
+      '      Haak ze aan in scripts/ci/run-guards.sh, of zet ze in NIET_AANGEHAAKT\n' +
+      '      met een reden. Een bewaker die nergens draait, verrot naar de\n' +
+      '      verkeerde kant — zie gotchas.md 2026-08-19.'
+    : undefined,
+);
+
+assert(
+  'de NIET_AANGEHAAKT-lijst bevat geen dode regels',
+  verdwenen.length === 0,
+  verdwenen.length > 0
+    ? `deze staan als "bewust niet aangehaakt" maar draaien inmiddels wél (of ` +
+      `bestaan niet meer): ${verdwenen.join(', ')}`
+    : undefined,
+);
+
+console.log(
+  failures.length === 0
+    ? `\n✓ guard-wiring-completeness: ${pass} checks groen ` +
+      `(${onaangehaakt.length} bewakers staan bewust stil)\n`
+    : `\n✗ guard-wiring-completeness: ${failures.length} fout\n`,
+);
+process.exit(failures.length === 0 ? 0 : 1);
