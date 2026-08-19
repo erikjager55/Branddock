@@ -31,6 +31,12 @@ dus géén enkel fontbestand.
 >
 > **29 van de 44**, niet 44 van de 44. Linfi (3 Google-fonts) heeft nul problemen.
 >
+> ⛔ **BESLUIT ERIK 2026-08-19: de drie Adobe-kit-id's doen we niet.** Het goedkope pad
+> hieronder is dus geen actie meer — het staat er alleen nog als vastlegging van wat er
+> gemeten is. De elf `ADOBE_FONTS`-fonts blijven op het metric-substituut renderen, net als
+> de achttien `COMMERCIAL`-fonts. Wie dit later heropent: de meting hieronder klopt nog, maar
+> controleer 'm opnieuw — hij is van 18-08.
+>
 > **En er ligt een veel goedkoper pad dan dit task-file aannam.** De elf Adobe-fonts hebben
 > geen licentie-upload nodig maar één kit-id per workspace: `better brands` (6 fonts),
 > `Branddock` (4) en `Napking` (1). Drie velden invullen repareert 11 van de 29. De echte
@@ -71,8 +77,9 @@ het in de merk-gereedheid opduikt in plaats van onzichtbaar te blijven.
 
 # Acceptatiecriteria
 
-- [ ] Per merk op prod vastgelegd: fontbestand geüpload, Adobe-kit gezet, of expliciet
-      "bewust niet — licentie ontbreekt"
+- [~] Per merk op prod vastgelegd — **deels, per besluit 19-08**: de Adobe-kit-route is
+      expliciet afgewezen door Erik (11 fonts). De 18 `COMMERCIAL`-fonts blijven open;
+      de 15 `GOOGLE_FONTS` hadden nooit een probleem.
 - [ ] Minstens één merk toont in de Typography-tab de échte merkfont (geen substituut-melding)
 - [x] Een gedetecteerde font zonder bestand telt mee in de merk-gereedheid/`dataQuality` —
       ✅ 2026-08-18 (spoor B). `substitutedFontItems()` in
