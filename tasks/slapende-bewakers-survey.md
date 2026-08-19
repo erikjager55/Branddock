@@ -100,8 +100,22 @@ Tel assertie-regels, niet trefwoorden.
   bestaat. In de PR-poort zou hij CI koppelen aan productie-beschikbaarheid: elke
   storing, en elke keer dat die pagina gedepubliceerd wordt, kleurt élke PR rood.
   Hoort in een nightly.
-- **`smoke:storage-url-expiry`** haalt `images.pexels.com` en `pub-test.r2.dev` op.
-  Zelfde bezwaar, kleinere blast radius.
+  ✅ **Draait sinds 19-08 nachtelijk** om 03:30 UTC (#377), met in de workflow
+  expliciet wat een rode nacht betekent: faalt "de pagina is bereikbaar", dan hikt
+  de site of is de pagina gedepubliceerd; faalt een metadata-check, dan is er een
+  echte regressie.
+- ~~**`smoke:storage-url-expiry`** haalt `images.pexels.com` en `pub-test.r2.dev`
+  op.~~ ⚠️ **FOUT — herzien 19-08.** Die twee zijn testdata, geen aanroepen. Beide
+  `fetch`-aanroepen zitten achter `SMOKE_R2=1`; zonder die vlag draait hij 16 checks
+  pure logica en nul netwerk. Hoort dus in de goedkope gate, niet in een nightly.
+
+  Dit is dezelfde fout als meetfout 4 hieronder, twee dagen later opnieuw gemaakt:
+  ik las een URL in de broncode als bewijs van een aanroep. De toets die het wél
+  uitwijst is naar de *aanroep* kijken (`fetch(`, `axios.`, `https.get(`) en
+  controleren of die achter een opt-in-vlag staat. Zo gescand over alle 78: precies
+  **één** bewaker doet een onvoorwaardelijke aanroep naar het internet
+  (`published-page-prod`) en één naar localhost (`document-lang-browser`, die een
+  draaiende server nodig heeft).
 
 # De sleutel-/netwerkgroep — herzien, want de eerste meting deugde niet
 
@@ -183,7 +197,10 @@ geen meting.
 - [x] De goedkope groep aangesloten in `scripts/ci/run-guards.sh`: 18 → **29
       bewakers** (#358/#360 + #374), ~10s → ~30s op de `check`-job. Elke bewaker
       draagt daar nu een assertie-ondergrens.
-- [ ] De twee netwerk-bewakers in een nightly-job, niet in de PR-poort.
+- [x] De netwerk-groep geplaatst: het zijn er **geen twee maar één**.
+      `smoke:published-page-prod` draait nachtelijk (#377);
+      `smoke:storage-url-expiry` bleek geen netwerk te doen en hoort in de
+      goedkope gate.
 - [ ] De browser-groep: `smoke:document-lang-browser` vraagt `npm run build` plus
       een draaiende server. Zelfde afweging als `test:csp`.
 - [x] De sleutelgroep hermeten met een methode die standhoudt: **elf bewakers met
