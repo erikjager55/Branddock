@@ -336,10 +336,6 @@ bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
 vijf merken** renderen in een substituut — niet 44: de 15 Google-fonts hadden nooit een
 bestand nodig, en de 11 Adobe-fonts zijn per besluit 19-08 bewust afgewezen. De code is af;
 dit wacht volledig op uploads van Erik) ·
-[`fval-merkwoorden-vs-antipattern`](tasks/fval-merkwoorden-vs-antipattern.md) (⚠️ **vier van
-Linfi's tien voorkeurstermen staan op de buzzword-lijst van de anti-AI-detector** — het merk-DNA
-schrijft woorden voor die een andere F-VAL-pijler bestraft; kost 4,3 punten op `antiPattern`.
-Vraagt een productbesluit: merk wint, detector wint, of de botsing zichtbaar maken) ·
 [`pg-major-sslmode-semantiek`](tasks/pg-major-sslmode-semantiek.md) (pg v9 maakt van onze
 `sslmode=require` stil een zwakkere modus. ✅ **Code af per 19-08** incl. de bewaker die er
 nooit was aangesloten; wacht nog op één env-handeling van Erik — `verify-full` in de prod-URL,
@@ -391,16 +387,28 @@ nauwelijks verkeer. De taak draagt vier meetbare triggers plus de SQL om ze te t
   bovendien gewoon op `published = true` (24 regels); alleen lokaal staat hij op `false`,
   en dáár is gemeten.
 
-  ✅ **En de échte oorzaak is 19-08 gevonden** — eigen taak:
-  [`fval-merkwoorden-vs-antipattern`](tasks/fval-merkwoorden-vs-antipattern.md). Het is geen
-  content-type-probleem maar één workspace (Linfi, 68,9 tegen 77-92 elders), en binnen die
-  workspace één sub-criterium: **`antiPattern` 4,82 tegen 9,11** — alle andere criteria liggen
-  binnen 0,7, en `brandRecognition` is gelíjk. De judge vlagt `nl_buzzword_adjectives` op
-  "hoogwaardig", "stijlvol", "oogstrelend". Dat zijn **Linfi's eigen voorkeurstermen**: vier
-  van de tien uit `wordsWeUse` staan letterlijk op de buzzword-lijst. Het merk-DNA schrijft
-  dus woorden voor die de anti-AI-pijler bestraft — twee pijlers met tegengestelde instructies
-  over dezelfde woorden. ⚠️ Hieruit volgt ook dat de published/unpublished-vergelijking bij dit
-  content-type een **confounder** had: de published-groep bestónd uit Linfi.
+  ✅ **Afgehecht 19-08 — en de "oorzaak" die ik eerst meldde was zélf een meetfout.**
+  Het losse eindje beschrijft **verouderde scores**, meer niet.
+
+  Ik meldde eerst een botsing tussen twee F-VAL-pijlers: het merk-DNA zou woorden
+  voorschrijven die de anti-AI-detector bestraft. Die botsing bestónd, maar is **op
+  2026-06-10 gerepareerd** — `detectAiTells()` heeft een `brandVocabulary`-allowlist,
+  gevoed uit `wordsWeUse`, en de comment daarboven noemt letterlijk de twee woorden die ik
+  als bewijs aanvoerde. Gemeten: `antiPattern` 6,37 vóór die datum, **9,13** erna.
+
+  Mijn vergelijking "Linfi tegen de rest" was in werkelijkheid **vóór-de-fix tegen
+  ná-de-fix**: Linfi heeft 33 scores, allemaal van 19-05, nul erna; de andere workspaces
+  hebben er 10-16 van ná die datum. Geen workspace-effect, geen ontwerpspanning — een datum.
+  Volledige analyse in [`fval-merkwoorden-vs-antipattern`](tasks/done/fval-merkwoorden-vs-antipattern.md)
+  (ingetrokken, bewaard om de meetfout); les in `gotchas.md` 19-08.
+
+  ⚠️ **Wat er wél uit volgt, en het enige actiepunt**: Linfi's 33 linkedin-post-scores zijn
+  van vóór de fix en kleuren elke ranglijst waarin ze meedoen — ze trokken het gemiddelde van
+  dit content-type omlaag. Wie F-VAL-cijfers per content-type of workspace rapporteert,
+  filtert op `scoredAt >= '2026-06-10'` of hermeet eerst.
+
+  ⚠️ En de published/unpublished-vergelijking bij dit content-type had een **confounder**:
+  de published-groep bestónd uit Linfi.
 
   ⚠️ **Wat daarnaast waar blijft**: het publish-mechanisme bestaat. De stijl-pijler
   is systematisch zwakker zonder gepubliceerde styleguide — over alle workspaces 87,8
