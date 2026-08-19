@@ -1,0 +1,28 @@
+// Type-check-config voor alles wat NIET meegaat in de Next-build: scripts/,
+// prisma/ en e2e/. Die staan sinds 19-08 in `tsconfig.json` op de exclude-lijst,
+// puur om de piek-RSS van één `tsc`-proces te drukken (4,95 GB -> 4,12 GB).
+//
+// Deze config is de tweede helft van die afspraak en is niet optioneel: zonder
+// `npm run typecheck:scripts` in CI verliezen 491 bestanden hun type-check en is
+// de splitsing dekkingsverlies met een mooie naam. Beide configs samen zien exact
+// dezelfde 3241 bestanden als de config van vóór de splitsing.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./tsconfig.scripts.tsbuildinfo"
+  },
+  // `.tsx` staat er expliciet bij: acht render-scripts zijn React-componenten, en
+  // een include op alleen `.ts` liet die stil buiten de dekking vallen.
+  "include": [
+    "scripts/**/*.ts",
+    "scripts/**/*.tsx",
+    "prisma/**/*.ts",
+    "prisma/**/*.tsx",
+    "e2e/**/*.ts",
+    "e2e/**/*.tsx",
+    "next-env.d.ts"
+  ],
+  "exclude": ["node_modules", "integrations"]
+}
