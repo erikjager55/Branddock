@@ -143,8 +143,43 @@ dat zou de functie laten liegen over haar eigen onderwerp. De juiste fix is een 
 (bijvoorbeeld `weak`) dat in productie waarschuwt zonder de verzwakkings-beoordeling te
 vertroebelen.
 
-⏭️ **Beslispunt voor Erik**: wil je dat `no-verify` en `disable` in productie luid falen onder
-`DATABASE_SSL_STRICT=true`? Zo ja, dan is dat ~1 uur werk plus een gerichte smoke.
+✅ **Besloten en uitgevoerd 2026-08-19 (Erik: "pak op").** `no-verify`, `disable` en `allow`
+falen nu luid onder `DATABASE_SSL_STRICT=true`, plus een typfout in de modus.
+
+**Niet** door `no-verify` naar `weakening` te duwen — dat zou de functie over haar eigen
+onderwerp laten liegen. In plaats daarvan twee nieuwe niveaus:
+
+| niveau | modi | betekenis |
+|---|---|---|
+| `weak` | `disable`, `allow`, `no-verify` | vandaag al zwak; wordt niet zwakker door de major |
+| `unknown` | alles wat libpq/node-postgres niet kent | vermoedelijk een typfout |
+
+**De echte fix zat in de aanroeper, niet in het oordeel.** `env-validation.ts` reageerde op een
+*opsomming* van slechte niveaus (`weakening || missing`); `no-verify` stond er niet in en
+passeerde daardoor stil. Dat is nu een **allowlist**: alleen `ok` en `not-applicable` komen
+door, zodat een toekomstig niveau standaard blokkerend is in plaats van standaard toegestaan —
+de veilige kant van een vergissing.
+
+De beslissing staat als aparte pure functie `shouldFailStartup(verdict, strict)` in
+`db-ssl-mode.ts`, niet als `if` in de validatielaag. Reden: het gat zát in die verstopte `if`,
+en een pure functie is toetsbaar zónder de app te booten. De bewaker roept nu **dezelfde
+functie** aan die productie aanroept, geen replica ervan — die replica was mijn eerste opzet
+en dat is precies de meetfout-klasse van deze week.
+
+**Bewijs:**
+- `npm run smoke:db-ssl-mode` **32/32** (was 14/14), met een nieuwe sectie D2 "Startup-poort"
+- **Mutatietest**: allowlist teruggedraaid naar de oude opsomming → **28/32**, en exact de vier
+  nieuwe gevallen vallen om (`no-verify`, `disable`, `allow`, typfout). De bewaker vangt de
+  regressie dus aantoonbaar
+- **Tegenproef even belangrijk**: zónder de vlag breekt niets — vier slechte modi blijven een
+  waarschuwing. De vlag bestaat juist omdat een throw by default de eerstvolgende deploy zou
+  laten omvallen
+- Ondergrens in de gate 14 → 30 (33 gemeten); volledige gate **80 bewakers, 0 gefaald**
+- `tsc`, `typecheck:scripts`, `lint` 0 errors
+
+⚠️ **Voor jou verandert er vandaag niets**: `DATABASE_SSL_STRICT` staat niet aan, dus dit
+waarschuwt alleen. De volgorde uit het eerste acceptatiecriterium blijft onverkort gelden —
+eerst de prod-URL op `verify-full`, pas dáárna de vlag.
 
 ## Stand 2026-08-19 — code af, wacht op één handeling van Erik
 
