@@ -164,16 +164,21 @@ jobs:
           echo 'DPkg::Lock::Timeout "180";' | sudo tee /etc/apt/apt.conf.d/99lock-timeout
           echo 'Acquire::Retries "3";' | sudo tee -a /etc/apt/apt.conf.d/99lock-timeout
 
+      # ⚠️ Alleen bij een cache-MISS, en zonder hertes. `--with-deps` draait apt,
+      # en een pakketbeheer-transactie is niet veilig af te kappen: een afgebroken
+      # apt laat een staat achter waarin de volgende poging meteen faalt. Gemeten
+      # op 2026-08-19 — drie pogingen, de eerste afgekapt, de andere twee stuk.
+      # De job-timeout hierboven blijft de vangnet voor een echte hang.
+      #
+      # Bij een cache-hit draaien we GEEN apt. De ubuntu-latest-runner brengt de
+      # bibliotheken die chromium nodig heeft zelf al mee; dat is hier getoetst
+      # doordat de e2e-suite groen draait zonder deze stap. Dat scheelt niet alleen
+      # tijd: de drie hangs van 2026-08-18 zaten allemaal op een stap die apt
+      # draaide, dus dit haalt de vermoedelijke oorzaak zélf weg in plaats van
+      # alleen de download eromheen.
       - name: Install Playwright chromium
         if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: scripts/ci/retry-with-timeout.sh 300 3 npx playwright install --with-deps chromium
-
-      # De cache bevat de browser, niet de OS-pakketten die Playwright nodig
-      # heeft. Bij een hit halen we daarom alleen die deps op — dat is apt-werk
-      # van seconden, geen download van honderden MB's.
-      - name: Playwright systeem-deps (bij cache-hit)
-        if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: scripts/ci/retry-with-timeout.sh 180 3 npx playwright install-deps chromium
+        run: scripts/ci/retry-with-timeout.sh 600 1 npx playwright install --with-deps chromium
 
       - name: Enable pgvector extension
         run: PGPASSWORD=postgres psql -h localhost -U postgres -d branddock_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
