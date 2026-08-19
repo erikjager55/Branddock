@@ -103,6 +103,31 @@ Tel assertie-regels, niet trefwoorden.
 - **`smoke:storage-url-expiry`** haalt `images.pexels.com` en `pub-test.r2.dev` op.
   Zelfde bezwaar, kleinere blast radius.
 
+# De sleutel-/netwerkgroep — gemeten wat meetbaar was
+
+27 kandidaten, elk één keer gedraaid met **alle sleutels gestript**. De vraag die
+zonder één betaalde AI-call te beantwoorden is: geeft een bewaker GROEN terwijl hij
+weigert te draaien?
+
+**Uitkomst: nul valse vinkjes.** Alle 27 falen eerlijk met exit 1 als hun omgeving
+ontbreekt. De enige die exit 0 geeft is `smoke:mcp-toolset`, en die draait legitiem
+zonder database (pure toolset-vergelijking, gefixt in #367).
+
+⚠️ **Die uitkomst is pas bewijs omdat de methode gekalibreerd is.** Losgelaten op
+`smoke:settings-write` — het enige bekende valse vinkje — meldt hij hem correct
+(exit 0, nul assertie-regels). Zonder die kalibratie zou "nul gevonden" net zo goed
+kunnen betekenen dat de detector stuk was; dat is deze week drie keer gebeurd.
+
+**Wat ik NIET heb kunnen meten**, en dat is de eerlijke grens: of deze bewakers
+inhoudelijk nog kloppen. Draaien met een ontbrekende sleutel toetst de
+foutafhandeling, niet de bewaker. Een parallelle sessie liet zien hoe scheef dat kan
+uitpakken: `smoke:context-priority` deed 0 toetsen tegen een lege database en 9 tegen
+een geseede. Verifiëren vraagt echte AI-calls en dus een budget-besluit.
+
+Op basis van de twee gevallen die we deze week wél inhoudelijk naliepen — beide
+verouderde asserties, geen bugs — is de verwachting dat een deel van deze 27 hetzelfde
+beeld geeft. Dat is een verwachting, geen meting.
+
 # Wat er nog wacht
 
 - [ ] De 28 nieuwe aanhaken in `scripts/ci/run-guards.sh` (+~15s op de `check`-job).
@@ -111,8 +136,11 @@ Tel assertie-regels, niet trefwoorden.
 - [ ] De twee netwerk-bewakers in een nightly-job, niet in de PR-poort.
 - [ ] De browser-groep: `smoke:document-lang-browser` vraagt `npm run build` plus
       een draaiende server. Zelfde afweging als `test:csp`.
-- [ ] **De key/netwerk-groep inhoudelijk verifiëren kan ik niet**: dat vraagt echte
-      AI-calls en dus een budget-akkoord van Erik. Classificeren kan wel.
+- [x] De key/netwerk-groep gecontroleerd op valse vinkjes: **nul gevonden**, methode
+      gekalibreerd op het enige bekende geval.
+- [ ] **Inhoudelijk verifiëren van die 27 kan alleen mét sleutels** — dat zijn echte
+      AI-calls en dus een budget-besluit. Verwachting op basis van deze week: een deel
+      zijn verouderde asserties, geen bugs. Verwachting, geen meting.
 
 # Gemeten meetfouten (voor wie dit herhaalt)
 
