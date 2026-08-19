@@ -128,6 +128,20 @@ Volledige onderbouwing en metingen: `tasks/done/static-rendering-regressie.md`.
       entiteiten (Campaign → Deliverable → LandingPage → PagePublish); de e2e-seed heeft
       geen landingspagina. ⚠️ Voeg de route toe aan `PUBLIC_ROUTES`, niet aan
       `NONCE_GUARD_ROUTES` — die filtert `/p` er bewust uit (hash-scope zonder nonce).
+
+      ⚠️ **Geblokkeerd achter een ándere beslissing — vastgesteld 2026-08-19.** De
+      violation-sweep zit in `test.describe('CSP in de browser')` en gebruikt de
+      `page`-fixture. Dat is precies de groep van zes die een chromium-binary vraagt en
+      die daarom nog nergens draait; alleen de negen `request`-checks zijn in #380
+      aangehaakt. En `NONCE_GUARD_ROUTES` filtert `/p` er bewust uit, dus de route zou
+      *uitsluitend* in de browser-groep landen.
+
+      Gevolg: de fixture bouwen levert vandaag **nul draaiende checks** op. Het is werk
+      dat pas rendement geeft ná de chromium-afweging (open beslissing 0 in
+      `START_HERE.md`). Eerst bouwen zou een slapende bewaker toevoegen aan een lijst die
+      vandaag juist is opgeschoond — zie de gotcha van 19-08.
+
+      Volgorde is dus: chromium-besluit → fixture → route toevoegen. Niet andersom.
 - [x] **`decideHostRoute` moet puur en client-veilig blijven** — ✅ **al afgedwongen,
       gemeten 2026-08-19.** Er is hier géén eigen bewaker nodig: de Next-build doet het al.
       Getoetst door een `import { prisma }` in `host-router.ts` te zetten en te bouwen:
