@@ -19,7 +19,12 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      // De previews in .design-sync importeren uit 'branddock-app' — de naam die
+      // de design-sync-bundler aan de barrel geeft. Zonder deze mapping staan de
+      // 34 previews buiten de typecheck en merkt niemand dat een preview een prop
+      // gebruikt die niet meer bestaat.
+      "branddock-app": ["./.design-sync/entry.ts"]
     }
   },
   "include": [
@@ -28,7 +33,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    ".design-sync/**/*.ts",
+    ".design-sync/**/*.tsx"
   ],
   "exclude": ["node_modules", "integrations"]
 }
