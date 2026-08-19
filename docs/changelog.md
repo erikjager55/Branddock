@@ -37,6 +37,25 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 490. Zeven database-bewakers draaien nu in de e2e-job — en de weg ernaartoe legde drie meetfouten bloot
+
+De `check`-job draait sinds #358 de goedkope bewakers; de groep die een échte database nodig heeft stond nog stil. Die hoort in `e2e`, want daar draait al een postgres en heeft `global-setup` het schema gepusht en geseed. `scripts/ci/run-db-guards.sh` draait er zeven, in 156s, ná de e2e-suite (twee ervan muteren: `lp-retention` wist rijen, `review-drift-reset` zet reviewstatussen terug).
+
+⚠️ **De PR begon op vijftien en eindigde op zeven.** Alle drie de correcties hadden dezelfde vorm — gemeten in een omgeving die stiller meehielp dan gedacht:
+
+1. **Lege database.** Geseed veranderde de uitkomst compleet: `smoke:context-priority` ging van "30s, 0 toetsen" naar "1s, 9 toetsen", en `seo-wiring`, `review-drift-reset` en `styleguide-rules-fval` van ROOD naar groen. Eén bewaker stond op het punt afgeschreven te worden als hol terwijl hij er negen toetst.
+2. **`.env.local` laadde een sleutel stil mee.** `smoke:seo-wiring` was lokaal groen omdat npm `--env-file-if-exists=.env.local` gebruikt; in CI viel hij om met **1 PASS / 19 FAIL** op een ontbrekende `ANTHROPIC_API_KEY`. Hij hoort in de sleutelgroep.
+3. **`env -u VAR` neemt een variabele niet weg** als `.env.local` hem bevat. Daardoor zaten zeven bewakers in de DB-groep die de database niet aanraken — `smoke:web-page-builder` slaagt met **1893 asserties** tegen een onbereikbare database. De werkende toets is een onbruikbare wáárde zetten, niet unsetten: een reeds gezette variabele wint wél van `--env-file`.
+
+**Bijvangst, en het gevaarlijkste gat**: `smoke:settings-write` gaf zonder `SMOKE_DB=1` **exit 0** terwijl hij weigerde te draaien — groen zonder één assertie. Een parallelle sessie had precies die bewaker in haar lijst van "infrastructuurvrij" staan; door de melding is hij daar weggehaald vóór hij als vals vinkje in de PR-poort belandde. Andersom bleek uit die sessie dat vijf van mijn vijftien juist géén database nodig hadden.
+
+`run-db-guards.sh` zet `SMOKE_DB=1` zelf en neemt daarom de rem over die het daarmee wegneemt: het weigert tegen een `DATABASE_URL` die niet lokaal is of geen `test` in de naam draagt. Niet theoretisch — een parallelle sessie richtte diezelfde dag bijna wissende bewakers op haar eigen dev-database.
+
+- Task: [tasks/slapende-bewakers-survey.md](../tasks/slapende-bewakers-survey.md) (meting), PR #368
+- ADR: `-`
+- Spec: `-`
+- Commit: PR #369
+
 ### 489. Merk-domein-componenten in het design system — NO-GO, gemeten op productiedata
 
 `validate-brand-domain-component-fit` vroeg of het design system eigen componenten moest krijgen voor merkbegrippen (persona-kaart, merkregel, F-VAL-score) in plaats van generieke primitives. De drempel is **vóór** de eerste query vastgelegd in commit `c775fff0` — anders beslist de uitkomst achteraf wat "genoeg" was.

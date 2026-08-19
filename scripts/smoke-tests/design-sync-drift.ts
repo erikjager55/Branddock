@@ -44,8 +44,12 @@ const EXCLUDED: Record<string, string> = {
   WorkspaceSwitchGuard: 'vereist workspace-context; geen ontwerp-element',
   ItemKnowledgeSources: 'importeert de app-barrel (trekt next/image mee); bovendien ongebruikt',
   KnowledgeContextSelectorModal: 'importeert de app-barrel (trekt next/image mee)',
-  StatsCard: 'import * as LucideIcons trok de hele iconenbibliotheek de bundel in',
-  StatsCardGrid: 'hoort bij StatsCard',
+  // ⚠️ De oude reden (wildcard-import blies de bundel op) is sinds #334 niet meer
+  // waar — StatsCard gebruikt nu resolveIcon. De uitsluiting blijft, maar om een
+  // ándere, gemeten reden: het is een bijna-dubbel van StatCard (34 gebruikers,
+  // getypeerde `icon: LucideIcon`) met 1 gebruiker en een zwakkere `icon: string`.
+  StatsCard: 'bijna-dubbel van StatCard: 1 gebruiker tegen 34, en een zwakkere icon-API',
+  StatsCardGrid: 'hoort bij StatsCard; 0 gebruikers',
   PageHeader_shared: 'naambotsing: de ui/layout-variant wint (15 importeurs tegen 0)',
   markdownComponents: 'geen component maar een map met renderers',
 };

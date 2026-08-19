@@ -15,7 +15,8 @@
 //   - Niet opgenomen: OptimizedImage (next/image werkt niet buiten Next),
 //     WorkspaceSwitchGuard (vereist workspace-context), ItemKnowledgeSources en
 //     KnowledgeContextSelectorModal (importeren de app-barrel).
-//   - StatsCard/StatsCardGrid: doet `import * as LucideIcons` voor icoon-op-naam-lookup
+//   - StatsCard/StatsCardGrid: bijna-dubbel van StatCard (1 gebruiker tegen 34).
+//     ⚠️ NIET meer om de wildcard-import — die is weg sinds #334.
 //     en trekt daarmee de HELE iconenbibliotheek de bundel in (155 KB -> 1727 KB, 11x).
 //     Bovendien nergens in de app gebruikt. Niet gesynct.
 
