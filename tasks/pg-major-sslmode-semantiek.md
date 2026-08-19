@@ -118,6 +118,34 @@ uitdeelt) niet ongemerkt de verificatie uitzet.
 
 Gevonden als bijvangst van `deferred-browser-smokes-unblocked` (prod-audit 2026-08-18).
 
+## Open punt gevonden bij het aanhaken (2026-08-19): `no-verify` passeert stil
+
+Gevonden door de bewaker te **lezen** in plaats van alleen zijn exit-code te bekijken —
+de regel uit de gotcha van 19-08 ("een slapende bewaker aanzetten is niet neutraal").
+
+`judgeDatabaseSslMode()` geeft voor `sslmode=no-verify` het niveau `ok`. Binnen de lens van
+deze taak klopt dat: `no-verify` wordt niet zwakker door de pg-major, want hij is al zwak.
+Maar `env-validation.ts` leest `level === 'ok'` als **"geen bezwaar"**, ook met
+`DATABASE_SSL_STRICT=true`. Gevolg: een prod-`DATABASE_URL` met `sslmode=no-verify` passeert
+stil — in de strengste stand van de vlag die juist tegen stille verzwakking is gebouwd.
+
+**Vandaag geen blootstelling**: de prod-URL draagt `require`. Dit is een gat in de dekking,
+geen incident.
+
+**Bewust niet in deze ronde gefixt.** De check zit op het productie-startpad en de hele taak
+is er expliciet op ontworpen dat een beveiligingsnotitie geen deploy-incident wordt (zie het
+`[~]`-criterium). Een extra niveau toevoegen verandert het gedrag van `validateEnv()` op prod,
+en dat hoort een eigen afweging te zijn — niet iets dat meelift met een aanhaak-PR.
+
+De assertie in `scripts/smoke-tests/db-ssl-mode.ts` is ter plekke geannoteerd met wat `ok`
+hier wél en niet betekent, plus de waarschuwing om hem niet naar `weakening` om te zetten:
+dat zou de functie laten liegen over haar eigen onderwerp. De juiste fix is een apart niveau
+(bijvoorbeeld `weak`) dat in productie waarschuwt zonder de verzwakkings-beoordeling te
+vertroebelen.
+
+⏭️ **Beslispunt voor Erik**: wil je dat `no-verify` en `disable` in productie luid falen onder
+`DATABASE_SSL_STRICT=true`? Zo ja, dan is dat ~1 uur werk plus een gerichte smoke.
+
 ## Stand 2026-08-19 — code af, wacht op één handeling van Erik
 
 Alles wat in code kán, is gedaan en bewaakt. Wat rest is **niet-technisch** en staat als
