@@ -85,13 +85,26 @@ done
 
 # ── Laag 2: BRANCH-AWARE — alleen blokkeren richting main/master ─────────────
 TARGET_WT=$(resolve_target_worktree "$COMMAND" "$CWD")
+# Payload is DATA, geen commando. Een heredoc-body waarin je uitlegt dat een
+# force-push naar main geblokkeerd wordt, bevat letterlijk die woorden — en werd
+# daarop geblokkeerd (gereproduceerd 2026-08-19; de test die dat aantoonde werd
+# er zelf door tegengehouden). Alles vanaf `<<` valt dus weg vóór analyse.
+CMD_SAFE=$(strip_heredoc_payload "$COMMAND")
 # Zie guard-lib: zonder normalisatie glipt `git -C <pad> reset --hard` erlangs.
-CMD_NORM=$(normalize_git_cmd "$COMMAND")
+CMD_NORM=$(normalize_git_cmd "$CMD_SAFE")
 
 # Force-push: expliciete refspec naar main/master, anders de huidige branch.
 if printf '%s' "$CMD_NORM" | grep -qE 'git[[:space:]]+push([[:space:]]|$)' \
    && printf '%s' "$CMD_NORM" | grep -qE '(--force-with-lease|--force|[[:space:]]-f([[:space:]]|$))'; then
-  if printf '%s' "$COMMAND" | grep -qE '(^|[[:space:]:])(main|master)([[:space:]]|$)'; then
+  # Alleen de argumenten van een ECHTE push, niet het hele commando: anders telt
+  # elk voorkomen van "main" mee — in een pad, een aanpalend commando, of in
+  # tekst. `unwrap_shell_c` zorgt dat `bash -c '<push>'` óók geanalyseerd wordt;
+  # zonder die stap glipte precies dat geval erlangs (eigen testrij, 19-08).
+  PUSH_ARGS=$(unwrap_shell_c "$CMD_NORM" | while IFS= read -r variant; do
+    git_push_args "$variant"
+  done)
+  if printf '%s' "$PUSH_ARGS" \
+     | grep -qE '(^|[[:space:]:])(main|master)([[:space:]]|$)'; then
     block "force-push naar een beschermde branch (main/master)"
   fi
   CUR=$(current_branch_of "$TARGET_WT")
