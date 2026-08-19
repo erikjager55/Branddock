@@ -109,6 +109,11 @@ iconenbibliotheek mee: **155 KB -> 1727 KB**. Niet gesynct (en nergens in de app
 gebruikt). ⚠️ Nog 6 andere app-bestanden doen dezelfde wildcard-import; die zitten wél
 in de app-bundel. Kandidaat voor een eigen taak.
 
+✅ **Opgelost in #334** (2026-08-19): alle zeven wildcard-imports zijn vervangen door
+`src/lib/icons/icon-registry.ts` met 214 expliciete imports — 672 KB → 65 KB, bewaakt
+door `npm run smoke:icon-registry`. Daarmee verviel de bundel-reden om `StatsCard` uit te
+sluiten; de uitsluiting blijft staan om de dubbel-reden hierboven.
+
 ### Wat er nog meer nodig bleek
 
 - **Eigen entry-barrel** (`.design-sync/entry.ts`). Nooit `@/components/shared`
@@ -131,7 +136,7 @@ in de app-bundel. Kandidaat voor een eigen taak.
 | `OptimizedImage` | `next/image` werkt niet buiten een Next-runtime |
 | `WorkspaceSwitchGuard` | vereist workspace-context; geen ontwerp-element |
 | `ItemKnowledgeSources`, `KnowledgeContextSelectorModal` | importeren de app-barrel (zie hierboven); bovendien de eerste ongebruikt |
-| `StatsCard` / `StatsCardGrid` | iconen-wildcard, zie punt 3 |
+| `StatsCard` / `StatsCardGrid` | bijna-dubbel van `StatCard` (1 gebruiker tegen 34, zwakkere `icon: string`). ⚠️ De iconen-wildcard uit punt 3 is sinds #334 wég; dat is niet langer de reden |
 | 36 shadcn-bestanden in `ui/` | nul importeurs |
 
 `CreditCostHint` is wél gesynct maar heeft **geen preview**: het component geeft `null`
