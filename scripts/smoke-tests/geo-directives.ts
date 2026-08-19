@@ -25,33 +25,33 @@ function assert(name: string, cond: boolean, detail?: string): void {
 
 console.log('── buildGeoDirective kernprincipes ──');
 const gen = buildGeoDirective({ locale: 'nl-NL' });
-assert('version geëxporteerd', GEO_DIRECTIVE_VERSION === '1.0.0');
+assert('version geëxporteerd', GEO_DIRECTIVE_VERSION === '1.1.0');
 assert('Answer-first', gen.includes('Answer-first'));
 assert('Atomic chunking', gen.includes('Atomic chunking'));
-// ⚠️ DEZE ASSERTIE PINT EEN TEGENSTRIJDIGHEID VAST — lees dit vóór je hem "repareert".
+// ─── Geschiedenis: hier stond tot 19-08 een vastgepinde tegenstrijdigheid ────
 //
-// De directive zegt op deze regel: "elk cijfer/feit heeft een expliciete bron uit
-// de aangeleverde context". In DEZELFDE prompt staat 27 regels verderop
-// (`variant-generator.ts`, het JSON-contract) juist: een eigen/first-party
-// merk-cijfer krijgt `source: null`.
+// Tot versie 1.1.0 eiste de directive "elk cijfer/feit heeft een expliciete bron
+// uit de aangeleverde context", terwijl 27 regels verderop in DEZELFDE prompt
+// (variant-generator.ts, het JSON-contract) stond dat een first-party cijfer
+// `source: null` krijgt.
 //
-// Die tweede helft is de fix van 2026-06-24 (`2f78eec3`, changelog #340). De
+// Die tweede helft is de fix van 2026-06-24 (2f78eec3, changelog #340). De
 // aanleiding was precies deze eis: een verplichte bron dwong het model er één te
 // VERZINNEN, meestal een interne context-laagnaam die als bronvermelding op de
-// klantpagina belandde. De prompt-kant is toen gecorrigeerd, deze directive niet.
+// klantpagina belandde. De prompt-kant werd toen gecorrigeerd, dit blok niet.
 //
-// Sinds 2026-08-19 draait deze bewaker in de PR-poort (#374). Daarmee dwingt CI de
-// verouderde helft actief af: wie `geo-directives.ts` fatsoeneert, krijgt hier rood
-// en zou de oude tekst kunnen terugzetten om de gate groen te krijgen. Dat is
-// precies de fout die #375 in `geo-generation-prompt` moest herstellen, nu
-// geautomatiseerd.
+// Sinds #374 draaide deze bewaker in de PR-poort en dwong CI de verouderde helft
+// actief af — wie de directive fatsoeneerde kreeg rood, en de goedkoopste weg
+// naar groen was de oude tekst terugzetten. Dat gat is beschreven in #391 en
+// opgelost in #393: de directive is uitgelijnd, deze asserties bewegen mee.
 //
-// Bewust NIET zelf opgelost: de prompt wijzigen is een generatie-kwaliteitsafweging
-// (de sanitizer vangt de oude leak nog, maar `INTERNAL_SOURCE_PATTERNS` is een
-// denylist van vier — een verzonnen "McKinsey, 2024" glipt erdoor). Dat besluit
-// ligt bij Erik. Wordt de directive aangepast, dan hoort DEZE assertie mee te
-// veranderen — niet de directive terug.
-assert('Citeerbare stats MET bron', gen.includes('Citeerbare stats MET bron'));
+// Vorm: een gekoppeld paar (positief + negatief op hetzelfde onderwerp, gotcha
+// 19-08). De losse negatie hieronder zou stil hol worden bij een hernoeming; de
+// positieve ernaast valt dan eerst om.
+assert('Citeerbare stats', gen.includes('Citeerbare stats'));
+assert('bron mag ontbreken bij first-party', gen.includes('laat de bron dan wég'));
+assert('interne laagnaam expliciet verboden als bron', gen.includes('interne laagnaam'));
+assert('de dwang van vóór 24-06 is weg', !gen.includes('MET bron'));
 assert('Entity-clarity', gen.includes('Entity-clarity'));
 assert('Freshness', gen.includes('Freshness'));
 assert('Anti-patterns', gen.includes('Anti-patterns'));
@@ -70,6 +70,24 @@ const geoPrompt = buildLandingPageVariantPrompt({
 }).system;
 assert('GEO-prompt bevat de canonieke directive-kop', geoPrompt.includes('# GEO-DIRECTIVE'));
 assert('GEO-prompt bevat answer-first uit directive', geoPrompt.includes('Answer-first (AEO)'));
+// ─── De samengestelde prompt mag zichzelf niet tegenspreken ──────────────────
+// Dit is de check die de bug van 24-06 tot 19-08 had kunnen vangen. Beide helften
+// waren op zichzelf verdedigbaar: variant-generator.ts:774 kreeg de junifix, dit
+// directive-blok niet, en ze landen 27 regels uit elkaar in DEZELFDE prompt. Geen
+// van beide bestanden was los te betrappen — alleen hun combinatie.
+assert(
+  'samengestelde GEO-prompt draagt de bron-dwang van vóór 24-06 NIET meer',
+  !/elk cijfer\/feit heeft een expliciete bron|MET bron/i.test(geoPrompt),
+);
+assert(
+  'samengestelde GEO-prompt staat bronloos toe (first-party)',
+  /laat de bron dan wég|source null/i.test(geoPrompt),
+);
+assert(
+  'samengestelde GEO-prompt verbiedt interne laagnamen als bron',
+  /interne laagnaam|brand-context/i.test(geoPrompt),
+);
+
 assert('directive niet gelekt naar landing-page', !buildLandingPageVariantPrompt({ brand: {}, userPrompt: 'x', contentType: 'landing-page' }).system.includes('# GEO-DIRECTIVE'));
 
 console.log(`\n${pass} passed, ${fail} failed`);
