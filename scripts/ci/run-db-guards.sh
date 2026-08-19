@@ -94,6 +94,12 @@ GUARDS=(
   smoke:learning-loop
   smoke:strategy-analyst
   smoke:visual-brief-readiness
+  # agents-foundation dekt lib/agents/registry, run-agent, artifact-contract en
+  # echo-test — code die op productie draait en tot 19-08 geen enkele bewaker in
+  # een gate had. Hij zet zelf een ANTHROPIC_API_KEY-plaatsvervanger als die
+  # ontbreekt; zie de toelichting in het bestand waarom dat veilig en kosteloos
+  # is, en waarom die plaatsvervanger NIET hier op gate-niveau hoort.
+  smoke:agents-foundation
 )
 
 failed=()

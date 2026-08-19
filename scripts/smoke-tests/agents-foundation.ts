@@ -83,6 +83,28 @@ async function main() {
   }
 
   // ─ Guard-fail (timeout vóór eerste turn → truncated, 0 artefacten) ─
+  // ─── Guard-fail ─────────────────────────────────────────────────────────────
+  //
+  // Dit blok registreert de agent met `timeoutMs: -1` en toetst dat de
+  // timeout-guard de run afkapt. Het vereist dat ANTHROPIC_API_KEY GEZET is —
+  // niet dat hij geldig is. `agent-loop.ts` roept `getClient()` op regel 147
+  // bewust aan vóór `createRunRow` ("cached, gratis"), een fail-fast zodat er
+  // geen weesrij ontstaat voor een run die toch niet kan starten; die controle
+  // kijkt alleen naar aanwezigheid.
+  //
+  // Er wordt GEEN API-call gedaan: de deadline is al verstreken, dus de
+  // deadline-check in de turn-loop kapt af vóór het request. Een plaatsvervanger
+  // is hier dus veilig én kosteloos, en zonder die plaatsvervanger stond deze
+  // bewaker nergens te draaien (geen npm-script, sinds altijd).
+  //
+  // Bewust NIET in run-db-guards.sh gezet: een sleutel-plaatsvervanger op
+  // gate-niveau zou ándere bewakers stil laten slagen die een ECHTE sleutel
+  // nodig hebben. Dat is precies het valse vinkje dat deze gate moet vangen.
+  if (!process.env.ANTHROPIC_API_KEY) {
+    process.env.ANTHROPIC_API_KEY = "placeholder-geen-call-deadline-al-verstreken";
+    console.log("\n  (ANTHROPIC_API_KEY-plaatsvervanger gezet — er volgt geen API-call, zie comment)");
+  }
+
   console.log("\n## Guard-fail\n");
   const workspace = await prisma.workspace.findFirst({
     select: { id: true, name: true },
