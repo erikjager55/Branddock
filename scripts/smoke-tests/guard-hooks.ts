@@ -169,6 +169,35 @@ function buildCases(wt1: string, wt2: string): Case[] {
       expectStderr: 'beschermde branch',
     },
     {
+      // Payload is DATA. Een PR-body waarin je uitlegt dat force-push naar main
+      // geblokkeerd wordt, bevat letterlijk die woorden — en werd daarop
+      // geblokkeerd. Je kon dus niet ÓVER een geblokkeerd commando schrijven.
+      name: '16. heredoc-body noemt force-push naar main → doorlaten',
+      hook: 'check-dangerous-bash.sh',
+      command: `gh pr create --body-file - <<PRBODY\nwe doen geen git ${'push'} --force naar ${'main'}\nPRBODY`,
+      cwd: wt2,
+      expectCode: 0,
+    },
+    {
+      // Een gequote argument is geen commando: `gh pr create --body '…'` pusht niet.
+      name: '17. gequote body noemt force-push naar main → doorlaten',
+      hook: 'check-dangerous-bash.sh',
+      command: `gh pr create --body 'geen git ${'push'} --force naar ${'main'}'`,
+      cwd: wt2,
+      expectCode: 0,
+    },
+    {
+      // ⚠️ Maar bij een SHELL-WRAPPER is de gequote string wél een commando.
+      // Zonder deze rij ruilde de fix een vals alarm in voor een gemiste echte
+      // force-push naar main — die rij viel om tijdens het bouwen, 2026-08-19.
+      name: '18. bash -c met echte force-push naar main → blokkeren',
+      hook: 'check-dangerous-bash.sh',
+      command: `bash -c 'git ${'push'} --force origin ${'main'}'`,
+      cwd: wt2,
+      expectCode: 2,
+      expectStderr: 'beschermde branch',
+    },
+    {
       name: '11. rm -rf / → blokkeren',
       hook: 'check-dangerous-bash.sh',
       command: 'rm -rf /',

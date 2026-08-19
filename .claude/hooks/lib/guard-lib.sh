@@ -79,6 +79,75 @@ normalize_git_cmd() {
   printf '%s' "$1" | sed 's/git[[:space:]][[:space:]]*-C[[:space:]][[:space:]]*[^[:space:]][^[:space:]]*[[:space:]][[:space:]]*/git /g'
 }
 
+# strip_heredoc_payload <command> → alles vóór de eerste heredoc-opening
+#
+# Waarom: een PreToolUse-hook krijgt het HELE commando, inclusief de tekst van een
+# heredoc. Een `gh pr create --body-file - <<EOF …` waarin je uitlegt dat `git push
+# --force naar main` geblokkeerd wordt, bevat dus letterlijk die woorden — en werd
+# daarop geblokkeerd. Gemeten en gereproduceerd op 2026-08-19.
+#
+# Je kunt zo niet ÓVER een geblokkeerd commando schrijven zonder geblokkeerd te
+# worden, en dat duwt je naar omwegen die riskanter zijn dan wat de hook tegenhield
+# (in het gemelde geval: de remote branch verwijderen en opnieuw aanmaken).
+#
+# Payload is data, geen commando. Alles vanaf `<<` valt daarom weg vóór analyse.
+strip_heredoc_payload() {
+  printf '%s' "$1" | awk '
+    { i = index($0, "<<")
+      if (i > 0) { printf "%s", substr($0, 1, i - 1); exit }
+      print }
+  '
+}
+
+# unwrap_shell_c <command> → de INHOUD van een shell-wrapper, plus het origineel
+#
+# Waarom dit moet: de segment-analyse hieronder ziet `bash -c 'git push --force
+# origin main'` niet als push, want `git push` staat daar niet aan het begin van
+# een segment maar binnen een argument. Zonder deze stap ruilt de guard een vals
+# alarm in voor een gemíste echte force-push naar main — slechter dan waar we
+# mee begonnen. Gevonden door de eigen testrij, 2026-08-19.
+#
+# Onderscheid dat hier gemaakt wordt: bij `bash -c` / `sh -c` / `eval` IS de
+# gequote string een commando en hoort hij geanalyseerd te worden. Bij
+# `gh pr create --body '…'` is het data. Alleen shell-wrappers worden uitgepakt.
+unwrap_shell_c() {
+  printf '%s\n' "$1"
+  case "$1" in
+    *bash\ -c\ *|*sh\ -c\ *|*zsh\ -c\ *|*dash\ -c\ *|*eval\ *)
+      inner=$(printf '%s' "$1" | sed -e "s/.*-c[[:space:]]*['\"]//" -e "s/['\"][[:space:]]*$//")
+      [ -n "$inner" ] && printf '%s\n' "$inner"
+      ;;
+  esac
+}
+
+# git_push_args <command> → de argumenten van een ECHTE `git push`-aanroep,
+# of leeg als het commando geen push ís.
+#
+# Waarom segment-gebaseerd en niet met een substring-zoek: `gh pr create --body
+# 'we doen geen git push --force naar main'` bevat die woorden maar is geen push.
+# Alleen een `git push` aan het BEGIN van een commando-segment (start, of na
+# `;` `&&` `||` `|`) telt. Dat is dezelfde les als gotcha 2026-08-18: match op de
+# operatie, niet op de tekst — een guard die je met andere spelling omzeilt
+# beschermt niets, en een guard die op tekst aanslaat blokkeert het verkeerde.
+#
+# Het argument-deel stopt bij de eerstvolgende scheider, zodat
+# `git push origin feat/x && echo main` niet als push-naar-main leest.
+git_push_args() {
+  printf '%s' "$1" | awk '
+    {
+      n = split($0, seg, /;|&&|\|\||\|/)
+      for (i = 1; i <= n; i++) {
+        s = seg[i]
+        sub(/^[[:space:]]+/, "", s)
+        if (s ~ /^git[[:space:]]+push([[:space:]]|$)/) {
+          sub(/^git[[:space:]]+push[[:space:]]*/, "", s)
+          print s
+        }
+      }
+    }
+  '
+}
+
 # current_branch_of <worktree> → branchnaam, of leeg (detached / geen repo / onbekend)
 current_branch_of() {
   local wt="$1"
