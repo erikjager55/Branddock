@@ -3,7 +3,7 @@ id: brand-domain-specific-components
 title: Domein-gegronde web-page-componenten (BrandHero → UnitCard/MenuSection/SpecList)
 status: pending-tech
 created: 2026-06-24
-verdict: needs-validation-first
+verdict: no-go-voorlopig  # gemeten 2026-08-19, zie onderaan
 ---
 
 # Probleemstelling (1 zin)
@@ -153,3 +153,79 @@ Reden: het idee is strategisch coherent (sluit aan op de "merk-DNA door-en-door"
 # Volgende stap
 
 Parkeren als **post-launch + needs-validation-first**. Niet doorzetten naar technical-planner. Eerst: (1) pipeline-fit-telling + afkeur-analyse op bestaande gegenereerde web-pages, (2) optioneel prompt-only / wizard-of-oz experiment om 70%-van-de-waarde-zonder-nieuw-blok te toetsen. Pas bij groene aannames én na launch promoten naar tech-planner voor het typed-slot-contract van één blok-type.
+
+
+---
+
+# Meting 2026-08-19 — verdict: NO-GO (voorlopig)
+
+Uitgevoerd volgens `tasks/validate-brand-domain-component-fit.md`. Drempel is
+**vóór** de meting vastgelegd en gepusht (commit `c775fff0`), zodat hij niet
+achteraf te fitten was: promoten bij **≥30%** van de web-page-deliverables mét een
+gestructureerd aanbod-object **én ≥3 verschillende workspaces**.
+
+Bron: productiedatabase `branddock-prod`/`production` via de Neon-MCP.
+
+## De gevraagde meting is niet uit te voeren
+
+| | aantal |
+|---|---|
+| Deliverables totaal | 13 |
+| daarvan **web-page/landingspagina** | **0** (8 blog-post, 3 pillar-page, 2 linkedin-post) |
+| `LandingPage`-rijen | **1** |
+| `PagePublish`-rijen | 2 |
+
+Acceptatiecriterium 1 vraagt een percentage van de web-page-deliverables. Dat
+percentage bestaat niet: de noemer is nul. Met één landingspagina zou elke uitkomst
+0% of 100% zijn, en criterium 2 (≥3 workspaces) is bij één pagina onhaalbaar.
+
+Het risico dat de task-file zelf voorzag — *"te weinig productiedata pre-launch"* —
+is dus precies wat er speelt. Dat is een geldige uitkomst en geen reden om de
+drempel te verlagen.
+
+## Proxy-meting: het aanbod-object zélf
+
+Omdat de directe vraag onbeantwoordbaar is, is de dragende aanname getoetst langs de
+`Product`-tabel: **hebben Branddock-merken een gestructureerd, herhaald aanbod-object?**
+47 producten over 12 workspaces.
+
+| workspace | producten | vorm | wringt `FeatureGrid`/`PricingTable`? |
+|---|---|---|---|
+| Het Nieuwe Golfen | 13 | funnel-fasen (instap/kern/leadmagneet/materiaal) | **nee** — de drie lidmaatschapstiers zijn letterlijk waar `PricingTable` voor is |
+| DTS Ede | 5 | lidmaatschapsvormen met jaarcontributie | **nee** — zelfde vorm, past in `PricingTable` |
+| Linfi | 4 | vloerluik-varianten, prijs op maat van afmetingen en specificaties | **ja** — specs per variant, geen vaste prijs |
+| overige 9 | 1-3 elk | dienstenportfolio | nee |
+
+**Uitkomst: 1 van de 12 workspaces (8%)** heeft plausibel een aanbod-object waar de
+bestaande blokken tegen wringen. Ruim onder de 30%-drempel, en ver onder de eis van
+minimaal drie klanten.
+
+⚠️ Belangrijker dan het percentage is *waaróm* de rest niet telt. Het idee neemt aan
+dat een gestructureerd aanbod om een nieuw bloktype vraagt. Bij HNG en DTS Ede is het
+aanbod wél gestructureerd en herhaald — maar het is een **prijstabel**, en dat blok
+bestaat al. De aanname verwart "gestructureerd aanbod" met "aanbod dat de huidige
+blokken niet aankunnen". Alleen bij Linfi vallen die twee samen, omdat de prijs een
+functie is van afmetingen en specificaties en dus niet in een prijskolom past.
+
+## Opvallend, maar geen bewijs
+
+De enige landingspagina op productie is **van Linfi** — precies de workspace waar het
+aanbod-object wringt. Aardig signaal, maar n=1: het onderbouwt niets.
+
+## Wat dit verdict wél en niet zegt
+
+- **Wel**: op de best beschikbare data haalt het idee zijn eigen drempel niet, en de
+  vaakst voorkomende vorm van "gestructureerd aanbod" wordt al gedekt door
+  `PricingTable`.
+- **Niet**: dat het idee verkeerd is. De directe meting is onmogelijk zolang er
+  vrijwel geen landingspagina's gegenereerd zijn.
+
+## Hermeten wanneer
+
+Zodra er **≥20 web-page/landingspagina-deliverables** over **≥5 workspaces** staan.
+Dan is criterium 1 voor het eerst betekenisvol. Tot die tijd blijft dit `no-go`.
+
+**Aanbevolen tussenstap als het onderwerp terugkomt**: het wizard-of-oz-experiment uit
+stap 2 van de task-file, op de Linfi-casus. Dat toetst ~70% van de waarde zonder één
+component aan te raken — en als prompt-only het gat dicht, is een nieuw bloktype
+sowieso niet de goedkoopste oplossing.

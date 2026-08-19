@@ -5,12 +5,12 @@ fase: post-launch
 priority: later
 effort: 1-2 dagen (analyse) + optioneel 1 dag (wizard-of-oz)
 owner: claude-code
-status: open
+status: done
 created: 2026-06-24
-completed: -
+completed: 2026-08-19
 related-adr: -
 related-spec: tasks/_drafts/idea-brand-domain-specific-components.md
-worktree: -
+worktree: branddock-brand-domain-fit  # geclaimd door sessie 78a1d49f, 2026-08-19
 ---
 
 # Probleem
@@ -26,14 +26,44 @@ Meet de aanname vóórdat er component-architectuur wordt aangeraakt. Twee stapp
 
 Output is een go/no-go met cijfers, niet code. Bij groen (+ post-launch) promoten naar `technical-planner`.
 
+# Drempel — VOORAF vastgelegd, 2026-08-19
+
+> Acceptatiecriterium 3 eist dat dit vóór de meting staat, niet erna. Vastgelegd
+> in dezelfde commit als de claim, vóórdat er ook maar één cijfer is opgevraagd.
+
+**Promoten naar `technical-planner` als beide waar zijn:**
+
+1. **≥ 30%** van de gegenereerde web-page-/landingspagina-deliverables betreft een merk
+   met een gestructureerd, herhaald aanbod-object (units, panden, menu-items, SKU's,
+   abonnementen) — iets wat `FeatureGrid`/`PricingTable` niet natuurlijk weergeeft.
+2. **≥ 3 verschillende workspaces/klanten** vertonen dat patroon. Eén merk is een
+   anekdote, ook als het er veel pagina's van zijn.
+
+**Waarom deze twee getallen.** Onder de 30% bouw je voor een minderheid terwijl elke
+nieuwe blok-soort de generieke set duurder maakt om te onderhouden. Minder dan drie
+klanten is geen patroon maar toeval — precies de fout die het idee nu al maakt door
+op één extern voorbeeld (Nèjbox) te leunen.
+
+**Vooraf erkende uitkomst die géén go is**: te weinig data om de vraag te beantwoorden.
+Dat is een geldig antwoord en geen reden om de drempel te verlagen. De risico-sectie
+hieronder voorzag dit expliciet.
+
 # Acceptatiecriteria
 
-- [ ] Telling: % bestaande web-page-deliverables met een gestructureerd aanbod-object, gesegmenteerd per branche/archetype, met absolute aantallen + databron benoemd
-- [ ] Afkeur-analyse: concrete voorbeelden waar `FeatureGrid`/`PricingTable` het aanbod aantoonbaar slecht weergeeft (met deliverable-referenties)
-- [ ] Expliciete baseline + drempel vooraf vastgelegd ("promoten als ≥ X% én ≥ N klanten") — niet achteraf gefit
-- [ ] (Indien uitgevoerd) wizard-of-oz-uitkomst: dekt prompt-only de waarde, ja/nee + voorbeelden
-- [ ] Go/no-go-verdict geschreven terug in `tasks/_drafts/idea-brand-domain-specific-components.md`
-- [ ] Smoke-test: n.v.t. (analyse-task, geen code) — bewijs = de telling-data zelf
+- [x] Telling — **niet uitvoerbaar, en dát is de bevinding**: 0 van de 13 deliverables
+      is een web-page (8 blog-post, 3 pillar-page, 2 linkedin-post) en er is 1
+      `LandingPage`. De noemer bestaat niet. Bron: `branddock-prod`/`production`.
+- [x] Afkeur-analyse — via proxy op de `Product`-tabel (47 producten, 12 workspaces).
+      Eén casus waar de bestaande blokken aantoonbaar wringen: **Linfi**,
+      vloerluik-varianten met prijs als functie van afmetingen en specificaties.
+      Bij HNG en DTS Ede is het aanbod wél gestructureerd maar past het gewoon in
+      `PricingTable`.
+- [x] Drempel vooraf vastgelegd — commit `c775fff0`, vóór de eerste query. ≥30% én
+      ≥3 workspaces. Uitkomst: **1 van 12 (8%)**, dus onder beide.
+- [ ] Wizard-of-oz — niet uitgevoerd; zinloos zolang de directe meting geen noemer
+      heeft. Aanbevolen als eerste stap wanneer dit terugkomt.
+- [x] Go/no-go geschreven in `tasks/_drafts/idea-brand-domain-specific-components.md`
+- [x] Bewijs = de telling zelf (queries reproduceerbaar op de prod-DB)
 
 # Bestanden die ik aanraak
 
@@ -53,6 +83,20 @@ N.v.t. (analyse). Verificatie = de telling-dataset + afkeur-voorbeelden zijn rep
 
 - **Te weinig productiedata pre-launch** om de telling betekenisvol te maken → mitigatie: voer dit pas uit ná de eerste pilot-klanten (post-launch), of beperk tot een kwalitatieve afkeur-analyse op de bestaande test-workspaces met expliciet voorbehoud.
 - **Confirmation bias** in de afkeur-analyse → mitigatie: drempel + segmentatie vooraf vastleggen (acceptatiecriterium 3).
+
+# Uitkomst 2026-08-19 — NO-GO (voorlopig)
+
+De dragende aanname haalt zijn eigen drempel niet, en de directe meting is
+onuitvoerbaar. Beide onafhankelijk van elkaar genoeg voor een no-go.
+
+⚠️ **De interessantste bevinding zit niet in het percentage.** Het idee neemt aan dat
+een gestructureerd aanbod om een nieuw bloktype vraagt. Bij twee van de drie
+kandidaten (HNG, DTS Ede) is het aanbod wél gestructureerd en herhaald — maar het ís
+een prijstabel, en dat blok bestaat al. De aanname verwart *"gestructureerd aanbod"*
+met *"aanbod dat de huidige blokken niet aankunnen"*. Alleen bij Linfi vallen die
+samen, omdat de prijs een functie is van afmetingen en niet in een kolom past.
+
+**Hermeten bij ≥20 web-page-deliverables over ≥5 workspaces.** Tot die tijd no-go.
 
 # Out of scope
 
