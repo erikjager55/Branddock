@@ -4,7 +4,6 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   Dna,
   Palette,
@@ -45,15 +44,12 @@ interface Group {
   title: string;
   intro: string;
   grad: string;
-  /** UX-15: compacte productshot naast de stap-intro. */
-  shot: { img: string; alt: string };
   modules: Module[];
 }
 
 const GROUPS: Group[] = [
   {
     key: 'fundament',
-    shot: { img: '/marketing/features/brand-voice.png', alt: 'Branddock: brand voice vastleggen' },
     label: 'Stap 1',
     title: 'Fundament: leg je merk vast',
     intro: 'Het complete merk in één workspace. Dit fundament gaat in élke generatie mee.',
@@ -80,7 +76,6 @@ const GROUPS: Group[] = [
   },
   {
     key: 'onderzoek',
-    shot: { img: '/marketing/features/trend-radar.png', alt: 'Branddock: Trend Radar' },
     label: 'Stap 2',
     title: 'Onderzoek: ken je markt',
     intro: 'Persona’s, concurrenten en trends: je merk-DNA staat niet op giswerk.',
@@ -107,7 +102,6 @@ const GROUPS: Group[] = [
   },
   {
     key: 'genereren',
-    shot: { img: '/marketing/features/content-canvas.png', alt: 'Branddock: Content Canvas' },
     label: 'Stap 3',
     title: 'Genereren: maak on-brand',
     intro: 'Content, campagnes, beeld en landingspagina’s, allemaal in jouw merk-DNA.',
@@ -139,7 +133,6 @@ const GROUPS: Group[] = [
   },
   {
     key: 'bewaken',
-    shot: { img: '/marketing/features/agents.png', alt: 'Branddock: AI-agents' },
     label: 'Stap 4',
     title: 'Bewaken: houd het op merk',
     intro: 'Agents doen het werk, de merk-check bewaakt dat alles on-brand blijft.',
@@ -173,76 +166,77 @@ export default function PlatformPage() {
         className="mb-14"
       />
 
-      {/* Modules per stap van de merk-loop */}
-      <div className="space-y-14">
-        {GROUPS.map((group) => (
-          <section key={group.key}>
-            {/* UX-15: intro + compacte productshot naast elkaar. */}
-            <div className="flex flex-wrap gap-8 items-center mb-6">
-              <div className="flex-1" style={{ minWidth: '18rem' }}>
-                <div className="flex items-baseline gap-3 mb-2">
-                  <span
-                    className="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded text-white"
-                    style={{ background: group.grad }}
-                  >
-                    {group.label}
-                  </span>
-                  <h2 className="text-gray-900">{group.title}</h2>
+      {/* Stepper: de 4 stappen van de merk-loop lopen na elkaar, met een
+          genummerde rail + doorlopende lijn zodat de volgorde zichtbaar is
+          i.p.v. losse blokken (besluit Erik: geen productshots meer, wél de
+          stap-voor-stap-opbouw benadrukken). */}
+      <div>
+        {GROUPS.map((group, i) => {
+          const isLast = i === GROUPS.length - 1;
+          return (
+            <section key={group.key} className="flex gap-5 md:gap-8">
+              {/* Rail: nummer-cirkel + lijn naar de volgende stap. De lijn is
+                  een flex-child die de resthoogte van de rij opvult, dus hij
+                  loopt vanzelf door tot precies waar de volgende cirkel begint. */}
+              <div className="flex flex-col items-center flex-shrink-0" style={{ width: '2.75rem' }} aria-hidden>
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                  style={{ background: group.grad }}
+                >
+                  {i + 1}
                 </div>
-                <p className="text-gray-600 max-w-2xl">{group.intro}</p>
+                {!isLast && <div className="w-px flex-1 mt-2" style={{ background: '#e5e7eb', minHeight: '2rem' }} />}
               </div>
-              <div className="mkt-frame" style={{ width: '19rem', flexShrink: 0 }}>
-                <div className="mkt-frame__bar">
-                  <i></i>
-                  <i></i>
-                  <i></i>
-                </div>
-                <Image src={group.shot.img} alt={group.shot.alt} width={2880} height={1800} className="w-full h-auto" />
-              </div>
-            </div>
-            {/* UX-15: kolommen per module-aantal — geen orphan-rijen (4 → 2x2, 2 → 2 breed). */}
-            <div className={`grid gap-4 ${group.modules.length === 3 ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2'}`}>
-              {group.modules.map(({ Icon, title, desc, href }) => {
-                const card = (
-                  <>
-                    <div className="mkt-tile mb-3">
-                      <Mosaic
-                        id={`tile-${group.key}-${title}`}
-                        cols={2}
-                        rows={2}
-                        palette={[['#343CED', '#07E5AB']]}
-                        className="absolute inset-0 w-full h-full"
-                      />
-                      <div className="mkt-tile__badge">
-                        <i>
-                          <Icon className="w-3.5 h-3.5" style={{ color: 'var(--brand-slate)' }} />
-                        </i>
+
+              <div className={`flex-1 min-w-0 ${isLast ? '' : 'pb-14'}`}>
+                <span className="sr-only">{group.label}: </span>
+                <h2 className="text-gray-900 mb-2">{group.title}</h2>
+                <p className="text-gray-600 max-w-2xl mb-6">{group.intro}</p>
+                {/* UX-15: kolommen per module-aantal — geen orphan-rijen (4 → 2x2, 2 → 2 breed). */}
+                <div className={`grid gap-4 ${group.modules.length === 3 ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2'}`}>
+                  {group.modules.map(({ Icon, title, desc, href }) => {
+                    const card = (
+                      <>
+                        <div className="mkt-tile mb-3">
+                          <Mosaic
+                            id={`tile-${group.key}-${title}`}
+                            cols={2}
+                            rows={2}
+                            palette={[['#343CED', '#07E5AB']]}
+                            className="absolute inset-0 w-full h-full"
+                          />
+                          <div className="mkt-tile__badge">
+                            <i>
+                              <Icon className="w-3.5 h-3.5" style={{ color: 'var(--brand-slate)' }} />
+                            </i>
+                          </div>
+                        </div>
+                        <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-1.5">
+                          {title}
+                          {href ? <ArrowRight className="w-3.5 h-3.5 text-gray-500" /> : null}
+                        </h3>
+                        <p className="text-sm text-gray-600 leading-relaxed">{desc}</p>
+                      </>
+                    );
+                    return href ? (
+                      <Link
+                        key={title}
+                        href={href}
+                        className="rounded-xl border border-gray-200 bg-white p-5 hover:border-gray-300 transition-colors block"
+                      >
+                        {card}
+                      </Link>
+                    ) : (
+                      <div key={title} className="rounded-xl border border-gray-200 bg-white p-5">
+                        {card}
                       </div>
-                    </div>
-                    <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-1.5">
-                      {title}
-                      {href ? <ArrowRight className="w-3.5 h-3.5 text-gray-500" /> : null}
-                    </h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">{desc}</p>
-                  </>
-                );
-                return href ? (
-                  <Link
-                    key={title}
-                    href={href}
-                    className="rounded-xl border border-gray-200 bg-white p-5 hover:border-gray-300 transition-colors block"
-                  >
-                    {card}
-                  </Link>
-                ) : (
-                  <div key={title} className="rounded-xl border border-gray-200 bg-white p-5">
-                    {card}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          );
+        })}
       </div>
 
       {/* CTA */}
