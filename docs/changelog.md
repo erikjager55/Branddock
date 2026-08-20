@@ -43,8 +43,8 @@ Vier regels in `CLAUDE.md` beschreven de Tailwind-situatie van vóór PR #323. Z
 nieuwe sessie regelrecht tegen ADR `2026-08-18-tailwind-bronpijplijn.md` in — en tegen wat
 `src/index.css` inmiddels zelf in zijn kop zegt.
 
-| Regel | Wat er stond | Waarom fout |
-|---|---|---|
+| Wat er stond | Waarom fout |
+|---|---|
 | "`src/index.css` is een gecompileerde, gecommitte output" | sinds #323 een echte bron met `@import "tailwindcss"` |
 | "Voor missende utilities: append regel aan `src/index.css`" | het bestand zegt letterlijk: *voeg hier GEEN handgeschreven utility-klassen toe* |
 | "`min-h-0` werkt niet door purge" | **nagemeten en onwaar**: de klasse staat in de gebouwde CSS |
