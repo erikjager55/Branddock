@@ -34,6 +34,20 @@
 // dezelfde instructie. Website & Landing Pages naar GPT verplaatsen op grond
 // van een gelijkspel zou dat gedrag dus kapotmaken zonder dat de score het ziet.
 //
+// ⚠️ NAGEMETEN MET 5 SAMPLES (2026-08-20, 240 generaties): het is erger dan
+// "de ruis is groot". In **7 van de 8** categorieën is het verschil tussen de
+// winnaar en de nummer 2 NIET AANTOONBAAR — gemiddelde sd 2,9 punten, dus een
+// verschil is pas hard vanaf ~5,9. De winnaars hierboven liggen 1-4 punten uit
+// elkaar. Alleen `one-pager` haalt het (4,0 tegen gepoolde sd 1,7).
+//
+// De extreemste conditie spreidt 61 tot 86 op IDENTIEKE invoer (sd 9,4). Eén
+// generatie daaruit trekken en die "de score van dit model" noemen is een greep,
+// geen meting — en zo is deze tabel in mei tot stand gekomen.
+//
+// Dat betekent NIET dat de routing fout is. Het betekent dat ze niet door deze
+// meting wordt gedragen. Laat staan tenzij je een betere reden hebt dan een
+// composite-score.
+//
 // Wil je hier weer op sturen? Eerst de methode repareren: meerdere samples per
 // conditie en een spreiding in plaats van één getal. Zie
 // tasks/model-routing-herijking.md en de rapporten in docs/experiments/.

@@ -150,3 +150,43 @@ onderscheiden. Wie hier weer op wil sturen, moet eerst:
 
 **Rapporten**: `docs/experiments/2026-08-20-per-content-type-herijking-report.md`
 (+ `-raw.json`). Het mei-rapport is intact gebleven.
+
+---
+
+# VERVOLG 2026-08-20 — de methode is nagemeten, en het antwoord is hard
+
+De open methodevraag ("één sample per conditie is te weinig") is beantwoord met
+**5 samples per conditie**: 240 generaties, 8 content-types × 6 modellen, nul
+fouten, $4,00, zelfde judge.
+
+## Uitkomst
+
+**In 7 van de 8 content-types is het verschil tussen winnaar en nummer 2 niet
+aantoonbaar.** Gemiddelde sd over 48 condities: **2,9 punten**, dus een verschil
+is pas hard vanaf ~5,9. De winnaars liggen 1-4 punten uit elkaar. Alleen
+`one-pager` haalt het.
+
+Extreemste conditie: **61-86 op identieke invoer**, sd 9,4. Eén generatie daaruit
+is geen score maar een greep — en zo is de tabel in mei tot stand gekomen.
+
+## Besluit
+
+Routing blijft ongewijzigd. De comment in `canvas-model-routing.ts` draagt nu
+deze uitkomst, zodat niemand de tabel nog leest als een gemeten optimum.
+
+⚠️ **Dit zegt niet dat de routing fout is**, alleen dat ze niet door deze meting
+wordt gedragen. Bij het eerste is er niets te doen; bij het tweede weet je dat je
+het niet weet.
+
+## Wat er nu open blijft — een keuze, geen taak
+
+- [ ] **Of** een meting die het wél kan dragen: bij sd 2,9 en gewenste
+      detectie van 2 punten is dat ruwweg **35 samples per conditie** — 1.680
+      generaties, ordegrootte $30. Haalbaar, maar een bewuste investering.
+- [ ] **Of** stoppen met per-categorie optimaliseren en kiezen op iets dat wél
+      stabiel meet: kosten, latency, of instructie-trouw. Dat laatste is de
+      sterkste kandidaat — bij de skeleton-bevinding was het verschil 4/4 tegen
+      3/5, en dat verdween niet in de ruis.
+
+De tweede is mijn voorkeur: hij is goedkoper én meet iets waarvan we hebben
+gezien dat het gebruikers raakt.
