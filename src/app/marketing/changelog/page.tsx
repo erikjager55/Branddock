@@ -30,6 +30,41 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    date: '18 augustus 2026',
+    title: 'Content die leeg leek, is weer zichtbaar',
+    body:
+      'Lange pagina’s en GEO-artikelen kwamen via de API, de MCP-connector en de ZIP-export als leeg item terug, terwijl de tekst er gewoon stond. Dat is opgelost: 13 opgeslagen pagina’s die 0 woorden gaven, leveren er nu 497 tot 1.306. De ZIP-export deed dit voor élk content-type.',
+    tag: 'Content',
+  },
+  {
+    date: '18 augustus 2026',
+    title: 'Gepubliceerde pagina’s hebben weer een titel',
+    body:
+      'Pagina’s uit de webpage-builder gingen zonder titel en zonder meta-omschrijving live: naamloos in elk zoekresultaat, elke browsertab en elke gedeelde link. Ze halen de titel nu uit je eigen H1, dus ook zonder ingevulde SEO-checklist staat er iets zinnigs.',
+    tag: 'Content',
+  },
+  {
+    date: '18 augustus 2026',
+    title: 'Weglopen tijdens een generatie kost je niets meer',
+    body:
+      'Verliet je de Canvas terwijl er varianten werden gemaakt, dan liep de generatie op de achtergrond door tot het einde. Nu stopt hij. Een tabwissel breekt bewust níet af, want dan zou je net betaalde varianten kwijtraken.',
+    tag: 'Facturering',
+  },
+  {
+    date: '17 augustus 2026',
+    title: 'Campagnewizard levert weer complete campagnes',
+    body:
+      'Achter de briefing-gate zaten vijf fouten. "Approve Concept" gaf een campagne zonder AI-deliverables, stap 4 faalde stil, en de briefing-score wees je naar het verkeerde veld. Dezelfde wizard en briefing geven nu 8 deliverables in plaats van 1, en de doorlooptijd ging van 18-24 minuten naar 6.',
+    tag: 'Campagnes',
+  },
+  {
+    date: '15 augustus 2026',
+    title: 'Je merkregels tellen mee in de merk-check',
+    body:
+      'Regels uit je styleguide bereikten de regel-pijler van F-VAL niet, waardoor een deel van je merkafspraken niet werd getoetst. Dat is aangesloten. Overtredingen leveren nu ook curatie-suggesties op, zodat je bibliotheek leert van haar eigen gebruik.',
+    tag: 'Merk-check',
+  },
+  {
     date: '12 augustus 2026',
     title: 'Gratis brand.md-generator',
     body:
