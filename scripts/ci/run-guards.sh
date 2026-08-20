@@ -277,6 +277,10 @@ GUARDS=(
   # Bewaakt het samenvátten van BrandAssets — het gat waar brandmd-emitter
   # structureel langs kijkt (die start bij een fixture-model, dus mét
   # samenvattingen). Kostte 79 stil lege secties over 11 prod-merken.
+  # Twee sessies pakten op 20-08 dezelfde changelog-nummers (#513-515 elk 2x)
+  # plus een weesheader uit een rebase. Git zag geen conflict: beide voegden op
+  # net andere plekken in. Deze bewaker maakt dat zichtbaar voor de merge.
+  smoke:changelog-nummering:8
   smoke:brand-asset-summary:18
   smoke:brandmd-emitter:1
   smoke:brandmd-lifecycle:1
