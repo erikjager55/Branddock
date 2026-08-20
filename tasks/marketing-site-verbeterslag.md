@@ -104,7 +104,7 @@ brand.md-URL's ontbreken er (zie observaties).
 | # | URL | Bestand | Omvang | Status |
 |---|---|---|---|---|
 | 1 | `/` | `src/app/marketing/page.tsx` | 560 r | ✅ **af 18-08** (#321, #325) |
-| 2 | `/marketing/platform` | `platform/page.tsx` | 266 r | ⬜ |
+| 2 | `/marketing/platform` | `platform/page.tsx` | 266 r | ✅ **af 20-08** (#457) — productshots weg, stappen als genummerde stepper |
 | 3 | `/marketing/pricing` | `pricing/page.tsx` | 383 r | ⬜ |
 
 ## B2 — Features (7 URL's, 1 template)
