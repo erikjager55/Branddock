@@ -95,7 +95,7 @@ const FAQ = [
   },
   {
     q: 'Wat kost de generator?',
-    a: 'Niets, en er is geen account voor nodig. Voor het uitgebreide rapport bij je scan vragen we een e-mailadres. Het bestand zelf kun je zonder e-mail downloaden.',
+    a: 'Geen geld en geen account. Wel je e-mailadres: dat vragen we vóór de download. Je krijgt het volledige rapport ook per mail, met je downloadlink erin, zodat je het later kunt oppakken.',
   },
   {
     q: 'Hoe blijft het bestand actueel?',
@@ -219,7 +219,7 @@ export default function BrandMdPage() {
         >
           Genereer je brand.md <ArrowRight className="w-4 h-4" />
         </Link>
-        <p className="text-sm text-gray-500 mt-2">Gratis · geen account nodig</p>
+        <p className="text-sm text-gray-500 mt-2">Gratis · e-mailadres voor de download</p>
       </div>
 
       {/* Waarom omarmen */}
@@ -291,9 +291,10 @@ export default function BrandMdPage() {
       <div className="prose-like max-w-2xl space-y-5 text-gray-700 leading-relaxed mb-14">
         <p>
           De generator is gratis en blijft gratis. Je plakt je URL, je krijgt je brand.md, je
-          downloadt het en je bent klaar. Geen account nodig. We vragen je e-mailadres voor het
-          uitgebreide rapport, niet voor het bestand. Dat zeggen we liever hier dan dat je het
-          onderweg ontdekt.
+          krijgt je Brand Score en je bevindingen te zien. Voor de download zelf vragen we je
+          e-mailadres. Dat is de prijs van het bestand, en je krijgt hetzelfde rapport per mail
+          zodat je het later kunt oppakken. Dat zeggen we liever hier dan dat je het onderweg
+          ontdekt.
         </p>
         <p>
           Wat we verkopen is dat het bestand bijblijft. Een gedownload bestand veroudert stil: je
@@ -368,7 +369,7 @@ export default function BrandMdPage() {
             >
               Genereer je brand.md <ArrowRight className="w-4 h-4" />
             </Link>
-            <p className="text-sm text-gray-500 mt-2">Gratis · geen account nodig</p>
+            <p className="text-sm text-gray-500 mt-2">Gratis · e-mailadres voor de download</p>
           </div>
           <div>
             <Link

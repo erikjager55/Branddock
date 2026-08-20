@@ -37,6 +37,36 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 520. Mijn eigen artikel beweerde het tegenovergestelde van wat het product doet
+
+Gevonden bij de eerste end-to-end-toets van de brand.md-funnel op productie. De download gaf
+`403 EMAIL_REQUIRED`, terwijl het artikel van #507 — sinds vanochtend live — letterlijk zei:
+*"We vragen je e-mailadres voor het uitgebreide rapport, **niet voor het bestand**."* En in de
+FAQ: *"Het bestand zelf kun je zonder e-mail downloaden."*
+
+**Het product heeft gelijk, de tekst niet.** `download/route.ts:39` is ondubbelzinnig:
+`if (!profile.email)` → 403, voor élke download. De code-comment noemt het zelf "de HARDE
+e-mail-gate".
+
+**Waarom ik het fout had**: ik baseerde de tekst op ontwerpregel §4b van het launch-plan
+(02-08) — *"Downloaden blijft écht gratis en accountloos; de e-mail-gate zit op herhaalruns,
+niet op de eerste."* Die regel is bij het bouwen verlaten en nooit bijgewerkt. De launch-kit
+van 15-08 klopt wél (*"Email is required for the download"*). Ik las het plan in plaats van de
+code, en dat is precies de fout die deze changelog vandaag drie keer bij anderen aanwees.
+
+Gecorrigeerd op drie plekken in het artikel (FAQ, hoofdtekst, twee CTA-bijschriften) en één in
+het nieuwsitem. De `/brandmd`-pagina zelf blijft ongewijzigd: *"Gratis, zonder account"* is
+waar — een e-mailadres is geen account.
+
+⚠️ **Blijft staan als schuld**: launch-plan §4b beschrijft nog steeds de niet-gebouwde variant.
+Wie dat plan leest als bron van waarheid maakt dezelfde fout. Óf de regel bijwerken, óf het
+product alsnog naar de regel brengen — dat is een productbeslissing van Erik, want het raakt
+het verdienmodel.
+
+- Task: -
+- ADR: -
+- Spec: docs/marketing/brand-md-launch-plan-2026-08-02.md (§4b — achterhaald)
+
 ### 519. Twee sessies pakten dezelfde changelog-nummers — en git zag geen conflict
 
 `#513`, `#514` en `#515` bestonden elk **twee keer** op `main`: één van deze sessie

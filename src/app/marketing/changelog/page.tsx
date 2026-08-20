@@ -68,7 +68,7 @@ const ENTRIES: ChangelogEntry[] = [
     date: '12 augustus 2026',
     title: 'Gratis brand.md-generator',
     body:
-      'Plak je URL en je krijgt je brand.md: een bestand dat je merk beschrijft en dat je zelf meeneemt naar ChatGPT, Claude, Cursor of welke AI-tool dan ook. Open standaard, gratis, geen account nodig. Wat een scan niet kan bevestigen, staat er eerlijk als onbevestigd bij. Let op het verschil met de MCP-connector hieronder: dat is een live koppeling naar je merk in Branddock, dit is een los bestand dat je overal kunt plakken.',
+      'Plak je URL en je krijgt je brand.md: een bestand dat je merk beschrijft en dat je zelf meeneemt naar ChatGPT, Claude, Cursor of welke AI-tool dan ook. Open standaard en gratis; voor de download vragen we je e-mailadres. Wat een scan niet kan bevestigen, staat er eerlijk als onbevestigd bij. Let op het verschil met de MCP-connector hieronder: dat is een live koppeling naar je merk in Branddock, dit is een los bestand dat je overal kunt plakken.',
     tag: 'brand.md',
     href: '/marketing/resources/brand-md',
     linkLabel: 'Lees wat brand.md is',
