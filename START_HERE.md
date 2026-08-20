@@ -1,7 +1,7 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> **Laatst bijgewerkt: 2026-08-20** (PR-poort staat op **121 bewakers**, een flappende
+> **Laatst bijgewerkt: 2026-08-20** (PR-poort staat op **121 goedkope + 18 database**-bewakers, een flappende
 > `check` op main gerepareerd, judge-variantie gemeten zonder AI-kosten, en de fontlijst
 > bleek voor 15 van de 18 geen echte merkfonts te bevatten — zie de top-3 hieronder).
 > Daarvoor: **2026-08-19** (bewakers-schoonmaak: PR-poort van 18 naar 37 bewakers,
@@ -35,11 +35,45 @@ plus één echte betaal-smoke.
 
 ## Wat er landde (2026-08-20)
 
-**De PR-poort staat op 121 bewakers** (120 smoke + `eval:lp-variant-golden`). Dat was 37 bij
-de vorige update en 3 aan het begin van de schoonmaak. ⚠️ **Aanhaken is niet langer gratis**:
+**De PR-poort staat op 121 goedkope bewakers** (120 `smoke:` + `eval:lp-variant-golden`),
+plus **18 in de database-poort** (`run-db-guards.sh`). Dat was samen 37 bij de vorige update
+en 3 aan het begin van de schoonmaak. Die twee poorten apart noemen is bewust: ze draaien
+onder verschillende voorwaarden, en één samengeteld getal verbergt dat. ⚠️ **Aanhaken is niet langer gratis**:
 de poort kost nu 1m54s in CI, 21% van de check-job en tweede na de build. Bij 18 bewakers was
 dat ~10s. Wie er een toevoegt, voegt kosten toe — dat stond eerder als "bijna gratis" in de
 kop van `run-guards.sh` en klopt niet meer.
+
+**Van 3 draaiende bewakers naar 139** — 121 in de PR-poort, 18 in de e2e-job (database, met
+assertie-ondergrenzen), plus vier nachtelijke workflows.
+
+⚠️ **De telling zelf had een blinde vlek.** Wie bewakers telt in `package.json` ziet een
+bestand zónder npm-script niet; dat waren er 73. Gemeten in code in plaats van in bestanden:
+**76 src-modules werden door geen enkele aangehaakte bewaker geraakt. Nu 1.**
+
+**Vier keer dezelfde klasse: een bewaker die op het verkeerde bevroor.** Een bewaker die niet
+draait vangt niet alleen niets — hij verrot, en meldt zich bij het aanzetten als regressie.
+
+- `image-coupling` eiste de CTA ín de beeldprompt; die is in F36 bewust weggehaald omdat het
+  model 'm op het beeld rendeerde
+- `checkpoint-gates` stond **twee maanden rood** op een melding die op 17-06 naar het Engels ging
+- de junifix van 24-06 (#340) bleek op **drie** plekken incompleet, en één daarvan werd door CI
+  *actief afgedwongen*: wie het promptbestand fatsoeneerde kreeg rood
+- `ssrf-guard` droeg **65 beveiligingsasserties** die sinds 30-06 nooit hadden gedraaid
+
+⚠️ `lib/agents` had nul dekking terwijl daar negen agents op productie draaien. Nu bewaakt
+inclusief tenant-isolatie, met een mutatietest die aantoont dat die assertie een echte breuk
+vangt.
+
+**Model-routing: de ruis is groter dan de verschillen.** Het experiment van 13-05 herhaald op
+de juli-generatie, met twee ONGEWIJZIGDE modellen als controle. Hun drift: **gemiddeld 4,0
+punten, uitschieter 13**. De winnaars liggen 1-4 punten uit elkaar — deze methode kan die
+verschillen dus niet onderscheiden, niet nu en met dezelfde opzet ook niet in mei. De twee
+categorieën die van winnaar wisselden, deden dat op **nul** punten verschil.
+
+Routing bewust ongewijzigd; de comment draagt nu de ruismarge. Wat openblijft is de méthode:
+[`model-routing-herijking`](tasks/model-routing-herijking.md). ⚠️ En een composite-score meet
+niet alles: `gpt-5.6` honoreert een slide-skeleton voor 3 van de 5 titels waar
+`claude-sonnet-5` er 4 van 4 haalt — zelfde run, zelfde instructie.
 
 **Een flappende `check` op main gerepareerd** (#445). Sinds de browserfase aanstond wisselde
 main rood en groen zonder tussenliggende wijziging. De eerste diagnose (`networkidle` is
@@ -65,6 +99,17 @@ omdat er een open PR op dat bestand zat.
 `networkidle`-patroon, maar acht klantsites nagemeten gaven geen enkele hang. Eén alarmerende
 meting (28,6s van 30) bleek een artefact van mijn eigen opzet — de variant die eerst draait
 betaalt de koude start. Geen productiecode gewijzigd.
+
+**De rode draad van deze twee dagen, breder dan bewakers.** De meetfouten hadden allemaal
+dezelfde vorm: *een meting die iets oplevert, is juist daarom niet verdacht.* Een lege
+database in plaats van een geseede; `env -u` dat niets wegneemt omdat `.env.local` het
+terugzet; een teller die 65 asserties als 1 leest; `npm run` op een ontbrekend script dat
+**stil niets** doet; een grep die commentaarregels meetelt (twee keer); een globale replace
+die de judge van een experiment verwisselde; en een A/B-tijdmeting waarin de eerste variant
+de koude start betaalt. Allemaal uitgeschreven in `gotchas.md` onder 19 en 20 augustus.
+
+Wie hier begint en één ding meeneemt: **een uitkomst die je hypothese bevestigt, is het
+moment om je meetopzet te verdenken** — niet het moment om te rapporteren.
 
 ---
 
@@ -399,7 +444,6 @@ bestaan.** Dat maakt dit item niet urgenter maar veel kleiner.
 | Taak | Staat |
 |---|---|
 | [`brand-md-open-standaard`](tasks/brand-md-open-standaard.md) | in-progress — funnel live; rest is upstream-PR's + jouw strategie-akkoord |
-| [`content-chain-followups`](tasks/done/content-chain-followups.md) | ✅ **done 19-08** — alle drie de keuzes gemaakt: dode code weg (314 → 38 regels), de schrijf-kant en repurpose bewust níet gebouwd, elk met een toetsbare trigger |
 | [`lp-image-routes`](tasks/done/lp-image-routes.md) | review — wacht op één prod-smoke door jou |
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
 | [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst. ⚠️ §B: de retentie-indexen zijn ✅ af (#311); wat resteert is `NEXT_PUBLIC_POSTHOG_KEY` op prod |
