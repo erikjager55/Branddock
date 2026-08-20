@@ -37,6 +37,40 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 521. De funnel voor het eerst in zijn geheel doorlopen — vier schakels gemeten, twee bevindingen
+
+Eerste end-to-end-toets van de gratis brand.md-generator op productie, met een echte scan van
+`betterbrands.nl` (geen fixture, geen klantmerk).
+
+| Schakel | Uitkomst |
+|---|---|
+| 1. Scan | ✅ HTTP 200 in 20,5s; las `/` en `/over-ons`; 3 kleuren, 1 lettertype, 3 doelgroepen, echte voorbeeldzinnen |
+| 2. Brand Score | ✅ **82**, drie uitlegbare dimensies met gewichten (40/35/25) en leesbare toelichting |
+| 3. Download | ⚠️ werkt, maar achter een **harde e-mail-gate** die de marketing anders beschreef — zie #520 |
+| 4. `unvalidated`-markering | ✅ alle 5 secties `unvalidated`, 2× "Not yet defined", `language: nl` correct |
+
+**Schakel 4 is de belangrijkste bevestiging.** De eerlijkheidsbelofte uit het artikel — een scan
+kan niets verifiëren, dus alles wat hij niet kan bevestigen krijgt dat label — is geen
+marketingtekst maar geïmplementeerd gedrag, op een echt merk aantoonbaar.
+
+**Eén ding dat ik eerst ten onrechte als bug meldde**: van de drie negatieve bevindingen vuurde
+er geen enkele. Dat is correct — het zijn `else`-takken, en `betterbrands.nl` heeft werkelijk
+een voice-beschrijving, ≥3 kleuren, een zichtbare doelgroep én voorbeeldzinnen. Niet elke
+opvallende nul is een defect. Wel opgemerkt: `findings.slice(0, 4)` kapt op vier, dus een vijfde
+(positionering) valt af — bewust of niet, het is nergens vastgelegd.
+
+**Nieuwe taak**: [`brandmd-resultaat-engels`](tasks/brandmd-resultaat-engels.md) — het
+resultaatscherm is Engels op een Nederlandse pagina, mét een Nederlandse placeholder ertussen.
+Dat is precies het scherm waarop de bezoeker zijn e-mailadres afgeeft. Vraagt eerst een keuze
+(NL / EN / tweetalig), want half vertalen is slechter dan consistent Engels.
+
+**Nog niet getoetst**: schakel 5 (rapport-mail) en 6 (claim-flow). Die vragen een echt
+e-mailadres; bewust niet ongevraagd naar Eriks inbox gestuurd.
+
+- Task: [tasks/brandmd-resultaat-engels.md](tasks/brandmd-resultaat-engels.md)
+- ADR: -
+- Spec: docs/marketing/brand-md-touchpoints-2026-08-03.md
+
 ### 520. Mijn eigen artikel beweerde het tegenovergestelde van wat het product doet
 
 Gevonden bij de eerste end-to-end-toets van de brand.md-funnel op productie. De download gaf
