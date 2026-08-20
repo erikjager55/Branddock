@@ -56,6 +56,24 @@ export async function capturePageScreenshots(url: string): Promise<PageScreensho
       viewport: VIEWPORT,
     });
     const page = await ctx.newPage();
+    // NB: `networkidle` staat hier bewust, ook al doet de buurman het anders.
+    //
+    // `component-screenshotter.ts` gebruikt `domcontentloaded` + een gecapte,
+    // niet-blokkerende settle, mét een comment dat networkidle op externe sites
+    // nooit settelde. Dat verschil is nagemeten op 2026-08-20 tegen acht echte
+    // klantsites uit de lokale DB, met beide varianten naast elkaar:
+    // geen enkele hang, 1-5s, en identieke screenshots (zelfde scrollHeight,
+    // zelfde bytes). Er is dus geen gemeten reden om dit hier te veranderen.
+    //
+    // ⚠️ Eén meting daaruit LEEK alarmerend (28,6s van de 30s op één site) en was
+    // een artefact: in die ronde draaide networkidle altijd als eerste en betaalde
+    // dus de koude DNS/TCP/CDN-start. Met de volgorde omgedraaid verdween het
+    // verschil. Wie dit opnieuw meet: wissel de volgorde af, anders meet je de
+    // opwarming en niet de wachtconditie.
+    //
+    // Faalt dit ooit wél (het symptoom is stil: `goto` gooit → catch → `return []`
+    // → merkanalyse zonder beeld, met alleen een console.warn), dan is het patroon
+    // uit component-screenshotter.ts de bewezen oplossing — niet iets nieuws.
     await page.goto(url, { waitUntil: "networkidle", timeout: NAV_TIMEOUT_MS });
 
     // Hero / above-the-fold — just the current viewport
