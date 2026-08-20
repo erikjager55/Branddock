@@ -108,6 +108,43 @@ function main(): void {
     check(`gequote ruis "${naam}" blijft gefilterd`, uit.length === 0, `kreeg: ${JSON.stringify(uit)}`);
   }
 
+  console.log('\n── D3. Echte Tailwind-stacks (regressie van de quote-fix) ─');
+  // ⚠️ Deze sectie bestaat omdat mijn eigen quote-fix een regressie opleverde
+  // die pas op PRODUCTIE zichtbaar werd. Ik had de fix getoetst met simpele CSS
+  // (`.a{font-family:"X";}`) en niet met de vorm die echte sites emitten. Toen
+  // de `"` uit de regex verdween, liep de match door tot de `;` en pikte de
+  // sluithaak van Tailwinds preflight mee: `…,"Noto Color Emoji")`. Die rij
+  // stond na de re-analyse letterlijk met `")` in Branddocks styleguide — en
+  // matchte daardoor NIET meer met de generieke-namenlijst waar
+  // `noto color emoji` gewoon in staat. Eén teken maakte een bestaand filter blind.
+  const TAILWIND_SANS = '.a{font-family:ui-sans-serif,system-ui,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji");}';
+  const TAILWIND_MONO = '.b{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;}';
+  check('Tailwind sans-stack levert nul merkfonts', extractFontsFromCss(TAILWIND_SANS).length === 0,
+    `kreeg: ${JSON.stringify(extractFontsFromCss(TAILWIND_SANS))}`);
+  check('Tailwind mono-stack levert nul merkfonts', extractFontsFromCss(TAILWIND_MONO).length === 0,
+    `kreeg: ${JSON.stringify(extractFontsFromCss(TAILWIND_MONO))}`);
+  // Geen enkele uitkomst mag nog een haakje of quote dragen.
+  const alles = extractFontsFromCss(`${TAILWIND_SANS}${TAILWIND_MONO}.c{font-family:var(--f, "Hanken Grotesk", sans-serif);}`);
+  check('geen enkele fontnaam draagt een quote of haakje',
+    alles.every((f) => !/["'()]/.test(f)), `kreeg: ${JSON.stringify(alles)}`);
+  check('de merkfont uit een var()-fallback wordt wél gevonden',
+    alles.includes('Hanken Grotesk'), `kreeg: ${JSON.stringify(alles)}`);
+
+  // ⚠️ Deze twee staan er omdat ik ze zelf gesloopt heb. De eerste versie van de
+  // haakjes-strip deed `/[)\s]+$/` en haalde daarmee de sluithaak van een
+  // `var(…)` weg — de var()-regex eist `\)$`, dus de resolutie viel terug op
+  // null en het merkfont verdween. Gevangen door `smoke:wpb-result-audit`
+  // (58 → 57 pass), níet door mijn eigen toetsen: die gebruikten geen var()-stack.
+  // Sindsdien balanceert de strip de haakjes in plaats van blind te knippen.
+  const VAR_STACK = '.v{font-family:var(--brand-font, "Brandon Grotesque", system-ui, sans-serif);}';
+  check('var()-stack met merkfont resolvet naar de merkfont',
+    extractFontsFromCss(VAR_STACK).includes('Brandon Grotesque'),
+    `kreeg: ${JSON.stringify(extractFontsFromCss(VAR_STACK))}`);
+  const VAR_SYSTEEM = '.w{font-family:var(--ui-font, system-ui, -apple-system, sans-serif);}';
+  check('var()-stack zónder merkfont levert niets op',
+    extractFontsFromCss(VAR_SYSTEEM).length === 0,
+    `kreeg: ${JSON.stringify(extractFontsFromCss(VAR_SYSTEEM))}`);
+
   console.log('\n── E. Mutatietest ────────────────────────────────────────');
   // Discrimineert de functie, of zegt hij overal hetzelfde? Zonder deze check
   // zou "alles nul" én "alles één" beide door secties A-D kunnen glippen als

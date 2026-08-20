@@ -9,7 +9,14 @@
  * (colors/fonts/components/reviews/rules) en bouw opnieuw op. Alleen
  * gebruiken wanneer het record zelf corrupt is.
  *
- * Run: npx tsx scripts/rescrape-brand.ts <workspaceNameContains> [--hard]
+ * Run: npx tsx scripts/rescrape-brand.ts <workspaceNameContains|workspaceId> [--hard]
+ *
+ * 2026-08-20: twee blokkades weggenomen die een prod-re-analyse onmogelijk
+ * maakten. (1) `Workspace.websiteUrl` is op productie voor bijna elk merk
+ * `null`, terwijl de URL wél in `BrandStyleguide.sourceUrl` staat — daar wordt
+ * nu op teruggevallen. (2) Drie workspaces heten "better brands"; `findFirst`
+ * op naam pakte er willekeurig één. Een argument dat op `cm` begint en geen
+ * spaties bevat, wordt daarom als workspace-ID gelezen.
  */
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
@@ -24,23 +31,32 @@ async function main() {
     console.error("Usage: rescrape-brand.ts <workspaceNameContains> [--hard]");
     process.exit(1);
   }
-  const workspace = await prisma.workspace.findFirst({
-    where: { name: { contains: arg, mode: "insensitive" } },
-  });
+  // Een cuid (bv. cmrrgfox0000009j3vhyjnpea) is eenduidig; een naam niet.
+  const lijktOpId = /^c[a-z0-9]{20,}$/i.test(arg);
+  const workspace = lijktOpId
+    ? await prisma.workspace.findUnique({ where: { id: arg } })
+    : await prisma.workspace.findFirst({
+        where: { name: { contains: arg, mode: "insensitive" } },
+      });
   if (!workspace) {
     console.error(`Workspace met '${arg}' niet gevonden`);
     process.exit(1);
   }
-  console.log(`[rescrape] workspace=${workspace.id} (${workspace.name}) url=${workspace.websiteUrl} mode=${hard ? "HARD (destructief)" : "refresh"}`);
-  if (!workspace.websiteUrl) {
-    console.error("Workspace heeft geen websiteUrl");
-    process.exit(1);
-  }
-
   const existing = await prisma.brandStyleguide.findUnique({
     where: { workspaceId: workspace.id },
-    select: { id: true },
+    select: { id: true, sourceUrl: true },
   });
+
+  // Val terug op de URL waarmee de styleguide oorspronkelijk is gebouwd.
+  // Op productie is `Workspace.websiteUrl` vrijwel overal null.
+  const url = workspace.websiteUrl ?? existing?.sourceUrl ?? null;
+  console.log(`[rescrape] workspace=${workspace.id} (${workspace.name}) url=${url}` +
+    `${workspace.websiteUrl ? "" : " (uit BrandStyleguide.sourceUrl)"}` +
+    ` mode=${hard ? "HARD (destructief)" : "refresh"}`);
+  if (!url) {
+    console.error("Geen URL: noch Workspace.websiteUrl noch BrandStyleguide.sourceUrl is gevuld");
+    process.exit(1);
+  }
 
   let styleguideId: string;
   if (existing && !hard) {
@@ -85,7 +101,7 @@ async function main() {
       data: {
         status: "ANALYZING",
         sourceType: "URL",
-        sourceUrl: workspace.websiteUrl,
+        sourceUrl: url,
         analysisStatus: "SCANNING_STRUCTURE",
         analysisJobId: `manual_${Date.now()}`,
         createdById: owner.id,
@@ -98,7 +114,7 @@ async function main() {
 
   console.log(`[rescrape] Running analyzeUrl…`);
   const start = Date.now();
-  await analyzeUrl(styleguideId, workspace.websiteUrl);
+  await analyzeUrl(styleguideId, url);
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
   console.log(`[rescrape] Done in ${elapsed}s`);
 
