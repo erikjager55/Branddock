@@ -40,7 +40,28 @@ Productie-readiness vereist evidence dat verse gebruikers het zonder begeleiding
 - [ ] Consent-form ondertekend (sessie opnemen, anoniem rapporteren)
 
 **Test-script**:
-- [ ] 6-taken script gevalideerd (zelf doorlopen → klaar zonder context, doel duidelijk)
+- [~] 6-taken script gevalideerd — **code-validatie gedaan 2026-08-20, doorlopen nog niet.**
+
+      Elke taak tegen de code gelegd: bestaat de ingang, klopt de naamgeving, is hij
+      uitvoerbaar? Twee fouten gevonden die een betaalde sessie hadden gekost:
+
+      - **Taak 2 was onuitvoerbaar.** "Eerste workspace aanmaken" kán niet:
+        `provisionNewUser` (`src/lib/auth.ts:56`) maakt automatisch een organisatie én
+        workspace aan bij signup. De tester had gezocht naar een actie die er voor dit
+        doel niet is, en de observator had dat genoteerd als product-frictie. Herschreven
+        naar terugvinden + hernoemen, wat dezelfde terminologie-verwarring toetst.
+      - **Taak 3 droeg verkeerde asset-namen** ("brand-purpose" i.p.v. "Purpose
+        Statement"). In een test zónder hints is dat frictie van het script.
+
+      Taken 1, 4, 5 en 6 hebben een bestaande ingang (`AuthPage` register-tab, `personas`,
+      `content-canvas`, `PublishGate`).
+
+      Ook gecorrigeerd: de pre-conditie "geen demo-data" suggereerde een leeg account. Een
+      vers account krijgt twaalf lege canonieke brand-assets — geen demo-data, maar wie
+      "leeg" verwacht leest de eerste reactie van de tester verkeerd.
+
+      ⏳ **Wat resteert**: het script daadwerkelijk doorlopen door iemand die de app niet
+      kent. Dat is de andere helft van dit vakje en kan ik niet zijn.
 - [ ] Productie-URL gebruikt (geen dev-bypass)
 - [ ] Verse account per tester (geen pre-seeded data)
 

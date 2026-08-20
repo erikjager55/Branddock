@@ -121,7 +121,7 @@ async function provisionNewUser(userId: string, userName: string) {
       });
     }
 
-    console.log(`[auth] Provisioned org ${org.id} + workspace + 11 brand assets for user ${userId}`);
+    console.log(`[auth] Provisioned org ${org.id} + workspace + ${CANONICAL_BRAND_ASSETS.length} brand assets for user ${userId}`);
     return org.id;
   });
 

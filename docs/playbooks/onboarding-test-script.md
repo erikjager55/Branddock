@@ -1,5 +1,13 @@
 # Onboarding-flow test-script
 
+> **Validatie-stand 2026-08-20**: de zes taken zijn tegen de code gelegd — bestaat de
+> ingang, klopt de naamgeving, is de taak uitvoerbaar? Taak 2 bleek onuitvoerbaar en is
+> herschreven; taak 3 droeg verkeerde asset-namen. Taken 1, 4, 5 en 6 hebben een bestaande
+> ingang (`AuthPage` register-tab, `personas`, `content-canvas`, `PublishGate`).
+>
+> ⚠️ **Wat hiermee NIET gedaan is**: het script zelf doorlopen als gebruiker. Dat blijft het
+> tweede deel van dit acceptatiecriterium en vraagt iemand die de app niet kent.
+
 Voor pre-launch usability-validation met 3 externe testers. Doel: identificeer friction-points die nieuwe gebruikers tegenkomen vóór een paying-pilot live gaat.
 
 ## Pre-conditions
@@ -8,6 +16,9 @@ Voor pre-launch usability-validation met 3 externe testers. Doel: identificeer f
 - Sentry geconfigureerd (vangt onverwachte errors tijdens sessies)
 - PostHog event-stream actief
 - Geen demo-data in test-workspace (verse account per tester)
+  > ⚠️ **"Vers" is niet "leeg"** (gemeten 20-08). Een nieuw account krijgt automatisch een
+  > organisatie, een workspace én twaalf lege canonieke brand-assets. Dat is geen demo-data,
+  > maar wie "leeg" verwacht, leest de eerste reactie van de tester verkeerd.
 - Tester heeft consent-form ondertekend (sessie opname + anonieme rapportage)
 - Tester is uit doelgroep: marketing-manager / brand-strategist / agency-marketeer
 
@@ -26,11 +37,33 @@ Voor pre-launch usability-validation met 3 externe testers. Doel: identificeer f
 1. **Signup** — Account aanmaken met e-mail + wachtwoord.
    - Friction-checks: e-mail-verificatie? duidelijk hoe verder?
 
-2. **Workspace creëren** — Eerste workspace aanmaken met een merk-naam naar keuze.
+2. **Workspace terugvinden en hernoemen** — Zoek de workspace die er al staat en geef hem
+   de naam van je merk.
    - Friction-checks: snapt tester verschil organization vs workspace? Verwarrende terminologie?
+     Vindt hij de hernoem-actie? Verrast het dat er al een workspace is?
 
-3. **Brand-asset invullen** — Kies één van: brand-purpose / archetype / mission. Vul in en sla op.
+   > ⚠️ **Gecorrigeerd 2026-08-20 — deze taak was onuitvoerbaar zoals hij hier stond.**
+   > Er stond "Eerste workspace aanmaken". Dat kán een tester niet: `provisionNewUser`
+   > (`src/lib/auth.ts:56`) draait automatisch ná signup en maakt zowel een organisatie
+   > (`"{naam}'s Brand"`) als een workspace (`"{naam}'s Workspace"`) aan.
+   >
+   > Een tester zou dus zoeken naar een aanmaak-actie die er voor dit doel niet is, en de
+   > observator had dat genoteerd als product-frictie terwijl het een scriptfout was — in een
+   > sessie die €50 kost. Hernoemen kán wél (PATCH sinds #187), en dat toetst dezelfde
+   > terminologie-verwarring.
+
+3. **Brand-asset invullen** — Kies één van: **Purpose Statement** / **Brand Archetype** /
+   **Mission & Vision**. Vul in en sla op.
    - Friction-checks: weet tester wat een brand-asset is? Wat te invullen? Save-button vindbaar?
+     Overweldigt de lijst van twaalf?
+
+   > ⚠️ **Namen gecorrigeerd 2026-08-20.** Hier stond "brand-purpose / archetype / mission";
+   > de assets heten in de UI "Purpose Statement", "Brand Archetype" en "Mission & Vision"
+   > (`src/lib/constants/canonical-brand-assets.ts`). In een test zónder hints is dat verschil
+   > een frictiepunt van het script, niet van het product.
+   >
+   > Let op bij de observatie: de twaalf canonieke assets **bestaan al** bij signup, leeg. De
+   > taak is dus invullen, niet aanmaken — en de tester ziet meteen een lijst van twaalf.
 
 4. **Persona aanmaken** — Eén ideale klant-persona definiëren (naam, rol, pijn-punten).
    - Friction-checks: persona-form intuitief? Verplichte vs optionele velden duidelijk?
