@@ -83,6 +83,7 @@
     "smoke:plan-enforcement": "tsx scripts/smoke-tests/plan-enforcement.ts",
     "smoke:compose-pipeline-gemini": "tsx scripts/smoke-tests/compose-pipeline-gemini.ts",
     "smoke:ui-content-locale-separation": "tsx scripts/smoke-tests/ui-content-locale-separation.ts",
+    "smoke:brand-asset-summary": "tsx scripts/smoke-tests/brand-asset-summary.ts",
     "smoke:brandmd-emitter": "tsx scripts/smoke-tests/brandmd-emitter.ts",
     "smoke:brandmd-lifecycle": "tsx scripts/smoke-tests/brandmd-lifecycle.ts",
     "smoke:checkpoint-gates": "tsx scripts/smoke-tests/checkpoint-gates.ts",

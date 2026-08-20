@@ -11,9 +11,14 @@
 # `test:csp` juist wél draaiden, en 77 zat er één naast.)
 #
 # ⚠️ WAT DEZE POORT KOST — gemeten 2026-08-19, niet geschat.
-# 119 bewakers: 64s lokaal, **1m54s in CI** (21% van de check-job, tweede na de
-# build). Bij 18 bewakers was dit ~10s. "Aanhaken is bijna gratis" was toen waar
-# en is het nu niet meer; wie er veel bij wil hangen, meet eerst.
+# Gemeten bij 119 bewakers: 64s lokaal, **1m54s in CI** (21% van de check-job,
+# tweede na de build). Bij 18 bewakers was dit ~10s. "Aanhaken is bijna gratis"
+# was toen waar en is het nu niet meer; wie er veel bij wil hangen, meet eerst.
+#
+# ⚠️ Dit getal is een MEETMOMENT, geen telling van de lijst hieronder. Op
+# 2026-08-20 telde de lijst er 121 terwijl hier 119 stond — een kop die met de
+# hand wordt bijgehouden loopt achter. Tel de lijst als je het exacte aantal
+# nodig hebt: `awk '/^GUARDS=\(/,/^\)/' | grep -cE '^[[:space:]]+(smoke|eval|test):'`.
 #
 # Bewust GEEN fail-fast: bij een rode CI wil je alle kapotte bewakers in één keer
 # zien, niet één per run.
@@ -266,6 +271,10 @@ GUARDS=(
   smoke:plan-enforcement:5
   smoke:compose-pipeline-gemini:2
   smoke:ui-content-locale-separation:2
+  # Bewaakt het samenvátten van BrandAssets — het gat waar brandmd-emitter
+  # structureel langs kijkt (die start bij een fixture-model, dus mét
+  # samenvattingen). Kostte 79 stil lege secties over 11 prod-merken.
+  smoke:brand-asset-summary:16
   smoke:brandmd-emitter:1
   smoke:brandmd-lifecycle:1
 

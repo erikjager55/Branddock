@@ -397,7 +397,54 @@ async function fetchBrandAssetSummaries(
   }));
 }
 
-function summarizeBrandAsset(
+/**
+ * Sleutels in `frameworkData` die als sectie-samenvatting mogen dienen, op
+ * volgorde van voorkeur. Eerste treffer wint, dus type-specifieke sleutels
+ * staan vóór generieke.
+ *
+ * Gemeten op productie 2026-08-20: de oude lijst (de eerste vijf) dekte 3 van
+ * de 11 asset-typen. Bij `brand-essence`, `mission-statement`, `brand-archetype`,
+ * `transformative-goals`, `social-relevancy`, `brand-story`, `core-values` en
+ * `brand-personality` gaf hij NUL treffers over alle 13 workspaces met
+ * framework-data — 9 tot 11 merken per type kwamen daardoor stil als
+ * "_Not yet defined._" uit de export, terwijl de tekst in de DB stond.
+ * `brand-essence` voedt de Positioning-subsectie, dus élk gegenereerd
+ * BRAND.md miste zijn positionering.
+ *
+ * BEWUST NIET opgenomen: `valueTension` (core-values). Dat veld beschrijft de
+ * spanning tússen waarden, niet de waarden zelf — als samenvatting emitten zou
+ * het merk verkeerd weergeven. Core Values blijft dus leeg tot er een
+ * lijst-samenvatting is; leeg is hier eerlijker dan misleidend.
+ */
+export const NARRATIVE_SUMMARY_KEYS = [
+  // Bestaand — dekt purpose-statement, golden-circle en brand-promise.
+  'statement',
+  'promiseStatement',
+  'coreMessage',
+  'essence',
+  'why',
+  // brand-essence → Strategy > Positioning
+  'essenceStatement',
+  'essenceNarrative',
+  // mission-statement
+  'missionStatement',
+  'missionOneLiner',
+  // brand-archetype → Strategy > Personality (vóór brandVoiceDescription,
+  // dat dit type óók heeft maar dat de stem beschrijft, niet het archetype)
+  'archetypeInAction',
+  'coreDesire',
+  // brand-story → Strategy > Overview
+  'elevatorPitch',
+  'originStory',
+  // transformative-goals
+  'massiveTransformativePurpose',
+  // social-relevancy
+  'impactStatement',
+  // brand-personality
+  'brandVoiceDescription',
+] as const;
+
+export function summarizeBrandAsset(
   _description: unknown,
   content: unknown,
   frameworkData: unknown,
@@ -413,7 +460,7 @@ function summarizeBrandAsset(
   if (contentStr) return truncate(contentStr, 280);
   if (frameworkData && typeof frameworkData === 'object') {
     const fd = frameworkData as Record<string, unknown>;
-    for (const key of ['statement', 'promiseStatement', 'coreMessage', 'essence', 'why']) {
+    for (const key of NARRATIVE_SUMMARY_KEYS) {
       const val = fd[key];
       if (typeof val === 'string' && val.trim().length > 0) return truncate(val.trim(), 280);
     }
