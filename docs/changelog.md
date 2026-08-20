@@ -64,6 +64,34 @@ maar dat was de dag dat de generator live is *getest*.
 - ADR: -
 - Spec: docs/marketing/brand-md-launch-plan-2026-08-02.md
 ### 514. De drie golden-set-vragen waren er twee minder — en één ervan was mijn eigen meetfout
+### 515. De golden-set bewaakt nu ook de prompt die we écht shippen
+
+De promptfoo-set genereert met een eigen inline prompt, niet met de productiecode. Een regressie
+in `BLOG_POST_SYSTEM` was daardoor onzichtbaar, en de kwaliteitsscores beschreven een artefact dat
+geen gebruiker krijgt. Erik koos optie A: allebei, gescheiden.
+
+`scripts/eval/blog-post-golden/run.ts` — 16 asserties naar het precedent van `lp-variant-golden`.
+Geen database (`GenerationContext` is vier platte strings), geen API-sleutel, geen AI-call: hij
+bouwt de productie-prompt en toetst hem. Draait in de goedkope PR-poort.
+
+Naast het contract dat de rubrics aannemen (keyword-in-H1, meta-description, géén FAQ) bewaakt hij
+vooral dat merk-, persona-, campagne- en brief-context echt in de prompt landen. Dat is de ergste
+faalmodus van dit product: prompt gebouwd, generatie geslaagd, merk afwezig.
+
+Getoetst dat hij een breuk merkt in plaats van alleen groen te zijn: de H1-belofte uit
+`BLOG_POST_SYSTEM` verwijderd geeft 1 van 16 rood op de juiste check; alle meta-vermeldingen
+weghalen geeft er 2. Eén van de drie weghalen laat hem groen — hij toetst het contract, niet een
+regel. Volledige poort na aanhaken: **122 bewakers, 0 gefaald**.
+
+De promptfoo-set blijft ongewijzigd. Die beantwoordt "is de tekst goed?" ($0,34 per nacht, hoort
+'s nachts); deze runner "is de prompt nog heel?" (deterministisch, gratis, in de poort). Optie B
+zou beide in één ding hebben gepropt en dat betaald met de enige historische reeks die er is.
+
+- Task: [tasks/golden-set-blogpost-quality.md](../tasks/golden-set-blogpost-quality.md)
+- ADR: -
+- Spec: -
+
+### 513. De drie golden-set-vragen waren er twee minder — en één ervan was mijn eigen meetfout
 
 Twee van de drie "productbesluiten" bleken geen vragen aan Erik maar fouten in de eval.
 

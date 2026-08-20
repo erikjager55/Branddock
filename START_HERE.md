@@ -442,22 +442,14 @@ bestaan.** Dat maakt dit item niet urgenter maar veel kleiner.
      vandaag veranderen komende nachten, en kiezen op oude data is opnieuw op de rand
      kalibreren.
 
-   **Wat er wél voor jou openstaat is één vraag: wat moet deze set bewaken — de prompt die
-   we shippen, of de kwaliteit van wat eruit komt?** Hij kan niet allebei: hij genereert met
-   een eigen inline prompt, dus een regressie in `BLOG_POST_SYSTEM` is voor hem onzichtbaar,
-   en zijn scores beschrijven een artefact dat geen gebruiker krijgt (productie bestelt een
-   meta-description en géén FAQ; de eval-prompt precies andersom).
+   ✅ **En de vierde vraag is beantwoord: Erik koos A op 20-08.** Gebouwd en aangehaakt:
+   `scripts/eval/blog-post-golden/run.ts`, 16 asserties, geen database, geen API-sleutel,
+   geen AI-call — hij bouwt de productie-prompt en toetst hem, in de goedkope PR-poort.
 
-   Drie opties, uitgewerkt in het task-file met kosten en verlies per stuk:
-   **A** allebei gescheiden — een deterministische runner naar het bestaande LP-precedent
-   (119 regels, geen database, geen API-key, gratis in de PR-poort) naast de nachtelijke
-   kwaliteitsscores. **B** promptfoo op de productie-prompt zetten — eerlijker scores, maar
-   alle eerdere nachten worden onvergelijkbaar. **C** niets, en de beperking opschrijven.
-
-   Mijn advies is **A**: "is de prompt nog heel?" is deterministisch en gratis en hoort in de
-   PR-poort; "is de tekst goed?" kost geld en hoort 's nachts. B propt die twee in één ding en
-   betaalt dat met de enige historische reeks die we hebben. Huidige kosten, gemeten: $0,34
-   per nacht.
+   Daarmee is dit hele punt van je lijst. De promptfoo-set blijft ongewijzigd voor de
+   nachtelijke kwaliteitsscores; de nieuwe runner vangt prompt-regressies gratis. Getoetst
+   dat hij een breuk merkt: de H1-belofte uit `BLOG_POST_SYSTEM` weghalen laat hem omvallen
+   op de juiste check.
 
 ---
 

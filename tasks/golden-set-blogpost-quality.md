@@ -309,63 +309,38 @@ assert-uitslagen). Let op de repo-slug: `erikjager55/Branddock`, niet `erikjager
 
       Wat je níet moet doen is de lijn verlagen tot de nachten groen zijn. Dan meet je
       niets meer.
-- [ ] **DE VRAAG: wat moet deze set bewaken — de prompt die we shippen, of de kwaliteit
-      van wat eruit komt?** ⏳ Erik. Kies A, B of C hieronder.
+- [x] ~~**DE VRAAG: wat moet deze set bewaken?**~~ — ✅ **Erik koos A (2026-08-20): allebei,
+      gescheiden.** Gebouwd en aangehaakt.
 
-      **Waarom het één set niet allebei kan.** De promptfoo-set genereert met een eigen
-      inline prompt (regels 47-72 van de YAML), niet met de productiecode. Gevolg, beide
-      kanten op:
+      **`scripts/eval/blog-post-golden/run.ts`** — 16 asserties, naar het precedent van
+      `lp-variant-golden`. Geen database, geen API-sleutel, geen AI-call: hij bouwt de
+      productie-prompt en toetst hem. Draait in de goedkope PR-poort als
+      `eval:blog-post-golden:16`.
 
-      - Een regressie in `BLOG_POST_SYSTEM` is voor deze set **onzichtbaar** — hij draait
-        die prompt niet.
-      - De kwaliteitsscores beschrijven een artefact dat **geen gebruiker ooit krijgt**.
-        Gemeten divergentie: productie bestelt een meta-description (3x genoemd) en géén
-        FAQ; de eval-prompt bestelt géén meta en wél een FAQ met 3 Q&A's.
+      Wat hij bewaakt, in vier groepen:
 
-      **Wat de keuze goedkoop maakt: het precedent bestaat al.**
-      `scripts/eval/lp-variant-golden/run.ts` doet dit voor landingspagina's — **119 regels,
-      12 asserties**, en het draait al in de PR-poort als `eval:lp-variant-golden:12`.
+      | groep | wat | waarom |
+      |---|---|---|
+      | A | het contract dat de promptfoo-rubrics aannemen (keyword-in-H1, meta-description, géén FAQ) | verschuift er één, dan hoort iemand die rubrics ernaast te leggen — precies wat op 18-08 niet gebeurde |
+      | B | dat merk-, persona-, campagne- en brief-context écht in de prompt landen | stil contextverlies is de ergste faalmodus van dit product: prompt gebouwd, generatie geslaagd, merk afwezig |
+      | C | dat tone en length doorkomen, incl. de terugval bij een onbekende length | |
+      | D | mutatietests | zonder die toetst A-C alleen dat er tékst is |
 
-      Twee dingen die ik verwachtte als blokkade en die het niet zijn:
-      - **Geen database nodig.** Die runner geeft merk-context als letterlijke fixture mee.
-        `GenerationContext` is vier platte strings (`context-builder.ts:33`), dus
-        `buildLongFormUserPrompt` is net zo aanroepbaar.
-      - **Geen API-key nodig** in de standaardmodus: die toetst deterministisch op de
-        gebouwde prompt. `--live` genereert echt, maar is optioneel.
+      **Getoetst dat hij een breuk merkt, niet alleen dat hij groen is.** De H1-belofte uit
+      `BLOG_POST_SYSTEM` verwijderd → 1 van 16 faalt, op de juiste check. Alle drie de
+      meta-vermeldingen verwijderd → 2 van 16. Eén vermelding weghalen laat hem groen, en dat
+      is juist goed: hij toetst het contract, niet een regel. Productie daarna hersteld en
+      opnieuw 16/16.
 
-      **Kosten van de huidige set, gemeten**: $0,34 en 25.080 tokens per nacht voor 10 cases.
-      Ongeveer $10 per maand.
+      **De promptfoo-set blijft ongewijzigd.** Die beantwoordt een andere vraag ("is de tekst
+      goed?"), kost $0,34 per nacht en hoort daarom 's nachts. Deze runner beantwoordt "is de
+      prompt nog heel?" — deterministisch, gratis, in de poort. Wat B zou hebben gekost (alle
+      eerdere nachten onvergelijkbaar) is daarmee niet betaald.
 
-      ---
-
-      **A. Allebei, gescheiden.** Een deterministische runner naar het LP-precedent die het
-      productie-promptcontract vastpint (gratis, in de PR-poort, vangt regressies in
-      `BLOG_POST_SYSTEM` meteen). De promptfoo-set blijft ongewijzigd voor nachtelijke
-      kwaliteitsscores, met zijn beperking opgeschreven waar conclusies worden getrokken.
-      *Kosten*: ~een dagdeel. *Verlies*: geen. *Winst*: de blinde vlek verdwijnt zonder de
-      historische reeks weg te gooien. **← mijn advies**
-
-      **B. Promptfoo op de productie-prompt zetten.** Eén set, en de scores gaan eindelijk
-      over wat gebruikers krijgen. *Kosten*: ~een dag. *Verlies*: alle nachten vóór de
-      omslag worden onvergelijkbaar — inclusief de vier waarop de drempel-discussie rust.
-      Doe dit niet in dezelfde week als een drempelbesluit.
-
-      **C. Niets, en dat opschrijven.** Accepteren dat de set een benadering toetst, en dat
-      vermelden bij elke conclusie eruit. *Kosten*: nul. *Verlies*: een prompt-regressie in
-      productie blijft onzichtbaar tot een klant hem meldt.
-
-      ---
-
-      **Waarom ik A adviseer**: de twee vragen zijn verschillend en verdienen verschillend
-      gereedschap. "Is de prompt nog heel?" is deterministisch, gratis en hoort in de
-      PR-poort — daar hoort het antwoord binnen een minuut te komen. "Is de tekst goed?"
-      vraagt een oordeel, kost geld en hoort 's nachts. B propt die twee in één ding en
-      betaalt dat met de enige historische reeks die we hebben.
-
-      ⚠️ Bij C hoort één randvoorwaarde: schrijf de beperking dan óók in de rubric zelf,
-      niet alleen in dit bestand. De vorige keer dat een aanname over deze set alleen
-      buiten de code stond, kostte dat #350 een verkeerde motivering en een guard die zijn
-      eigen premisse bevestigde.
+      ⚠️ **Wat hiermee NIET is opgelost**: de divergentie zelf. Productie bestelt nog steeds
+      een meta-description die de eval-prompt niet bestelt, en de eval-prompt een FAQ die
+      productie niet bestelt. Die staat nu alleen niet meer stil — verandert een van beide
+      kanten, dan valt de runner om en kijkt er iemand naar.
 
 # Smoke test plan
 

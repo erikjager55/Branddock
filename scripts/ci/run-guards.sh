@@ -60,6 +60,9 @@ GUARDS=(
   smoke:inline-edit:24
   smoke:ad-encryption:12
   smoke:icon-registry:1
+  # Optie A (20-08): "is de prompt nog heel?" hoort deterministisch en gratis in
+  # deze poort; "is de tekst goed?" kost geld en draait 's nachts in promptfoo.
+  eval:blog-post-golden:16
   smoke:golden-set-drift:8
   smoke:review-drift:20
   smoke:styleguide-rules:45
