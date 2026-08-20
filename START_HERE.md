@@ -56,8 +56,11 @@ draait vangt niet alleen niets — hij verrot, en meldt zich bij het aanzetten a
 - `image-coupling` eiste de CTA ín de beeldprompt; die is in F36 bewust weggehaald omdat het
   model 'm op het beeld rendeerde
 - `checkpoint-gates` stond **twee maanden rood** op een melding die op 17-06 naar het Engels ging
-- de junifix van 24-06 (#340) bleek op **drie** plekken incompleet, en één daarvan werd door CI
-  *actief afgedwongen*: wie het promptbestand fatsoeneerde kreeg rood
+- de junifix van 24-06 (#340) bleek op **drie** plekken incompleet. De scherpste: de
+  gedeelde GEO-directive droeg de vóór-fix-eis nog, en die wordt in **dezelfde prompt**
+  gezet waar 27 regels verderop het tegenovergestelde staat — tegenstrijdig op precies het
+  veld dat de lek veroorzaakte. Eén van de drie werd bovendien door CI *actief afgedwongen*:
+  wie het promptbestand fatsoeneerde kreeg rood. Compleet gemaakt in `86a1a2e3`
 - `ssrf-guard` droeg **65 beveiligingsasserties** die sinds 30-06 nooit hadden gedraaid
 
 ⚠️ `lib/agents` had nul dekking terwijl daar negen agents op productie draaien. Nu bewaakt
