@@ -67,6 +67,10 @@ GUARDS=(
   smoke:icon-registry:1
   # Optie A (20-08): "is de prompt nog heel?" hoort deterministisch en gratis in
   # deze poort; "is de tekst goed?" kost geld en draait 's nachts in promptfoo.
+  # Bewaakt de INVOER van de drie nachtelijke AI-bewakers: een hernoemde
+  # veldsleutel valt daar stil weg en laat ze om de verkeerde reden falen.
+  # Kost niets — leest alleen. Zie tasks/slapende-bewakers-survey.md.
+  smoke:tweaks-fixture-sync:15
   eval:blog-post-golden:16
   smoke:golden-set-drift:8
   smoke:review-drift:20

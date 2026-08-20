@@ -262,8 +262,37 @@ geen meting.
       `structured-tweaks`). Die hebben géén gratis laag om af te splitsen — ze zijn
       volledig AI en falen zonder sleutel met een eerlijke 401. Splitsen heeft daar dus
       geen zin; ze wachten op hetzelfde budget-besluit als het punt hieronder.
-- [ ] **Inhoudelijk verifiëren vraagt echte AI-calls** en dus een budget-besluit.
-      Verwachting: een deel zijn verouderde asserties, geen bugs. Geen meting.
+- [~] **Inhoudelijk verifiëren vraagt echte AI-calls** — ⚠️ **maar niet helemaal.
+      Gesplitst op 2026-08-20; de helft die géén AI kost is gedaan.**
+
+      Het punt stond hier als één blok, met "Geen meting" er eerlijk bij. Dat bleek
+      te grof: de vraag *"toetst deze bewaker nog het juiste?"* valt uiteen in twee
+      stukken, en maar één daarvan vraagt generatie.
+
+      **Gratis te toetsen — gedaan.** De drie tweaks-bewakers bouwen hun invoer via
+      `getContentTypeInputs(contentType)` en slaan een sleutel die daar niet in staat
+      **stil** over. Hernoemt of verdwijnt er één, dan krijgt de "mét velden"-tak
+      minder mee, gaat lijken op de "zonder"-tak, en faalt de bewaker om een reden
+      die niets met kwaliteit te maken heeft — 's nachts, na elf AI-calls.
+
+      Gemeten: **27 sleutels over 6 content-types, nul stille wegvallers.** Vandaag
+      dus geen probleem, maar het pad was onbewaakt. Nu geborgd met
+      `smoke:tweaks-fixture-sync` (15 asserties, leest alleen, kost niets), inclusief
+      een mutatietest: `proofPoint` hernoemen in de definitie laat hem omvallen met
+      de juiste diagnose.
+
+      **Wat wél AI kost, en dus openblijft**: of de asserties nog de juiste
+      kwaliteitsregressies vangen. Daarvoor moet er gegenereerd worden. ⏳ Erik —
+      maar goedkoper dan het was: `canvas-tweaks` draait sinds 20-08 nachtelijk, dus
+      die runs zijn er al. Zie de judge-variantie-meting in
+      [`golden-set-blogpost-quality`](golden-set-blogpost-quality.md) voor de methode:
+      artefacten van bestaande nachten lezen in plaats van runs kopen.
+
+      **De les erachter**, en die is breder dan deze taak: "kost AI-calls" is vandaag
+      twee keer een verkeerd etiket gebleken. Bij de judge-variantie stonden de runs
+      al in GitHub; hier vroeg de helft van de vraag helemaal geen generatie. Splits
+      zo'n blokkade in wat je kunt lezen en wat je moet draaien vóór je hem als
+      budget-besluit wegzet.
 
 # Gemeten meetfouten (voor wie dit herhaalt)
 

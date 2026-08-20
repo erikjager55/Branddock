@@ -86,6 +86,18 @@ function main(): void {
       const tekst = readFileSync(join(WORTEL, pad), 'utf8');
       const regels = tekst.split('\n');
       regels.forEach((regel, i) => {
+        // Commentaar overslaan. Proza dat een waarde ILLUSTREERT is geen gebruik,
+        // en een comment draait niet — dit kost dus geen dekking.
+        // Gevonden 2026-08-20: een JSDoc die `contentType: '...'` noemde om een
+        // patroon uit te leggen, werd gemeld als niet-canoniek type. Dezelfde
+        // klasse als de grep die commentaarregels meetelde (gotcha 20-08): een
+        // controle die niet weet wat code is.
+        // ⚠️ Dekt `//`, `/*` en JSDoc-vervolgregels (` * `), want zo schrijft deze
+        // codebase ze. Een waarde in een blok-comment zónder sterretje glipt er
+        // langs; dat is bewust niet opgelost, want die vorm komt hier niet voor.
+        const kaal = regel.trim();
+        if (kaal.startsWith('//') || kaal.startsWith('*') || kaal.startsWith('/*')) return;
+
         const m = regel.match(/contentType:\s*['"]([^'"]+)['"]/);
         if (!m) return;
         const waarde = m[1];
