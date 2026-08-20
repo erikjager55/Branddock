@@ -180,13 +180,47 @@ het niet weet.
 
 ## Wat er nu open blijft — een keuze, geen taak
 
-- [ ] **Of** een meting die het wél kan dragen: bij sd 2,9 en gewenste
+- [x] ~~**Of** een meting die het wél kan dragen~~ — vervallen, zie besluit onderaan: bij sd 2,9 en gewenste
       detectie van 2 punten is dat ruwweg **35 samples per conditie** — 1.680
       generaties, ordegrootte $30. Haalbaar, maar een bewuste investering.
-- [ ] **Of** stoppen met per-categorie optimaliseren en kiezen op iets dat wél
+- [x] ~~**Of** stoppen met per-categorie optimaliseren~~ — vervallen, zie besluit onderaan en kiezen op iets dat wél
       stabiel meet: kosten, latency, of instructie-trouw. Dat laatste is de
       sterkste kandidaat — bij de skeleton-bevinding was het verschil 4/4 tegen
       3/5, en dat verdween niet in de ruis.
 
 De tweede is mijn voorkeur: hij is goedkoper én meet iets waarvan we hebben
 gezien dat het gebruikers raakt.
+
+---
+
+# BESLUIT 2026-08-20 — routing blijft staan, taak dicht
+
+Erik heeft gekozen: **de routing blijft ongewijzigd en er komt geen vervolgmeting.**
+De twee openstaande opties hierboven (35 samples per conditie, of een tweede
+as uitmeten) vervallen daarmee.
+
+**Waarom dat een verdedigbare eindstand is**: er is geen gemeten reden om iets te
+verplaatsen. Wat er lag was geen aanwijzing dat de routing fout is, maar dat ze
+niet is aangetoond — en dat repareer je niet door hem alsnog te verzetten op
+dezelfde ruis.
+
+**Wat deze taak wél heeft opgeleverd**, en waarom hij niet voor niets was:
+
+- de comment in `canvas-model-routing.ts` claimt geen gemeten optimum meer, maar
+  draagt de ruismarge en de 7-van-8-uitkomst. De volgende die ernaar kijkt hoeft
+  de meting niet over te doen om te weten wat ze waard is.
+- twee rapporten in `docs/experiments/` (spreiding + instructie-trouw) met de
+  ruwe data, zodat een toekomstige meting een vergelijkingspunt heeft in plaats
+  van een nieuw nulpunt.
+- de mei-meting is intact gebleven; de vergelijking mei → augustus blijft
+  mogelijk.
+
+⚠️ **Wat expliciet NIET is opgelost en bij een volgende modelwissel terugkomt**:
+er is nog steeds geen mechanisme dat merkt dat de onderbouwing van deze tabel
+veroudert. #226 verving in juli drie modellen zonder de meting te herhalen, en
+dat viel pas in augustus op — bij toeval, via een bewaker die nergens draaide.
+Wie de modellen weer ververst, ververst deze comment niet vanzelf.
+
+Heropenen heeft zin bij: een volgende modelwissel, of wanneer instructie-trouw
+een concrete keuze moet dragen (dan eerst meer samples op DIE as, niet op de
+kwaliteitsas — dat is de goedkopere en beter discriminerende meting).
