@@ -23,9 +23,21 @@ interface ChangelogEntry {
   /** Klanttaal-omschrijving: wat kun je er nu mee. */
   body: string;
   tag?: string;
+  /** Optionele verdiepingslink, bijv. naar een uitleg-pagina. */
+  href?: string;
+  linkLabel?: string;
 }
 
 const ENTRIES: ChangelogEntry[] = [
+  {
+    date: '12 augustus 2026',
+    title: 'Gratis brand.md-generator',
+    body:
+      'Plak je URL en je krijgt je brand.md: het open bestand waarmee ChatGPT, Claude, Cursor en elke andere AI-tool je merk kennen zonder dat je het opnieuw uitlegt. Gratis en zonder account. Wat een scan niet kan bevestigen, staat er eerlijk als onbevestigd bij.',
+    tag: 'brand.md',
+    href: '/marketing/resources/brand-md',
+    linkLabel: 'Lees wat brand.md is',
+  },
   {
     date: '18 juli 2026',
     title: 'Branddock in Claude en ChatGPT',
@@ -104,6 +116,16 @@ export default function ChangelogPage() {
             </div>
             <h2 className="text-lg font-semibold text-gray-900 mb-1">{entry.title}</h2>
             <p className="text-sm text-gray-600 leading-relaxed">{entry.body}</p>
+            {entry.href ? (
+              <p className="mt-3 text-sm">
+                <Link
+                  href={entry.href}
+                  className="mkt-accent underline underline-offset-2 font-medium"
+                >
+                  {entry.linkLabel ?? 'Lees meer'}
+                </Link>
+              </p>
+            ) : null}
           </article>
         ))}
       </div>
