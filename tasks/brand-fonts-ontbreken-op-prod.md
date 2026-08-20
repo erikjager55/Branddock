@@ -10,7 +10,7 @@ created: 2026-08-18
 completed:
 related-adr: docs/adr/2026-06-05-typography-font-canonicalization.md
 related-spec: -
-worktree: branddock-brand-fonts  # geclaimd door sessie 41832dfd, 2026-08-18
+worktree: branddock-font-ruis  # 2026-08-20
 ---
 
 # Probleem
@@ -74,6 +74,60 @@ dat er niets staat. Er is geen overzicht en geen signaal. Voorstel: het bestaand
 `dataQuality`-mechanisme in `BrandOnboardingWizard` (dat al een `tab === "typography"`-filter
 heeft) laten meetellen dat een gedetecteerde font zónder bestand een openstaand punt is, zodat
 het in de merk-gereedheid opduikt in plaats van onzichtbaar te blijven.
+
+## ⚠️ HERZIEN 2026-08-20 — de uploadlijst klopte niet: 18 fonts, hooguit 3 echt
+
+Bij het oppakken van de uploads bleek de lijst zelf het probleem. Van de **18** fonts die op
+productie als `COMMERCIAL` ("moet geüpload worden") stonden, zijn er hooguit **drie** een echt
+merkfont. De rest is scraper-ruis waarvoor geen bestand bestáát:
+
+| Categorie | Aantal | Voorbeelden | Waar |
+|---|---|---|---|
+| Systeem-/OS-fonts | 6 | `SFMono-Regular`, `Geneva`, `Droid Sans`, `Bitstream Charter` | Branddock, Zwarthout, better brands, sulejman, DTS Ede |
+| Plugin-icoonfonts | 4 | `ETmodules` (Divi), `slick` + `star` (slick-carousel), `DSEG7Classic` | Nobox, Zwarthout, PartnerSelect |
+| Build-hashes | 2 | `2cca21a49f7dad…`, `43d730c59dee…` | PartnerSelect |
+| Smoke-testworkspace | 3 | `RijksText`, `RijksCyrillicText`, `Rijksmuseum` | Claude Smoke 7 |
+| **Echt merkfont** | **2 + 2?** | **`Apercu`**, **`Apercu-Mono`**; twijfel: `HelveticaNeue-Light`, `nexus` | PartnerSelect, DTS Ede |
+
+⚠️ **Dit was géén verouderde data** — de eerste vraag die gesteld is. Zwarthout (06-06),
+sulejman (16-07), Nobox (21-07) en Branddock (**17-08**) zijn allemaal ná de filterronde van
+2026-06-05 gescrapet en bevatten dezelfde ruis. De filters waren **onvolledig**, niet oud, en
+elke nieuwe scrape voegde er weer aan toe.
+
+### Wat er gerepareerd is
+
+`url-scraper.ts` had al drie filters (`GENERIC_FONT_FAMILY_NAMES`, `isWebSafeFallbackFont`,
+`isIconFont`) — die zijn uitgebreid met de gemeten gevallen: systeemfonts, Divi/slick/swiper-
+icoonfonts, en een hash-patroon (≥16 hex-tekens). `slick` en `star` matchen **exact** in plaats
+van als fragment, anders sneuvelen "Slick Display" en "Star Grotesk"; dat is als tegenproef
+vastgelegd.
+
+Bewaakt door `npm run smoke:font-scraper-ruis` (**24/24**), waarin elke assertie een gemeten
+productie-vindplaats is. Draagt een tegenproef — echte merkfonts blijven staan — zodat een
+filter dat álles weggooit niet groen kan zijn. Mutatietest: één regel uit de systeemfont-lijst
+halen geeft exit 1.
+
+### ⏭️ Wat er nu van jou wordt gevraagd — en dat is veel minder
+
+**Zeker uploaden (2):** `Apercu` en `Apercu-Mono` voor **PartnerSelect**. Dat is een echt
+commercieel merkfont (Colophon Foundry) en vraagt een licentie-afweging.
+
+**Eerst beslissen (2), bij DTS Ede:**
+- `HelveticaNeue-Light` — ik heb hem als systeemfont gefilterd, maar Helvetica Neue ís een
+  commercieel merkfont. Is dit DTS Ede's bedoelde huisletter of een CSS-fallback? Als het de
+  huisletter is, hoort hij uit de systeemfont-lijst.
+- `nexus` — kan Martin Majoors *Nexus* zijn (commercieel) of themaruis. Lowercase suggereert
+  ruis, maar dat is een aanwijzing, geen bewijs.
+
+**Niets doen voor de overige 14.** Daar bestaat geen fontbestand van; die horen uit de
+styleguide te verdwijnen, niet gevuld te worden.
+
+### Nog niet gedaan: de bestaande rijen opruimen
+
+De filterfix voorkomt nieuwe ruis maar raakt de 14 bestaande rijen niet. Die verdwijnen bij een
+re-analyse van het betreffende merk (`scripts/rescrape-brand.ts <merk>`), of via een gerichte
+opruimquery. Bewust niet zelf uitgevoerd: het is een schrijfactie op productiedata en de
+re-analyse raakt méér dan alleen fonts.
 
 # Acceptatiecriteria
 
