@@ -79,6 +79,35 @@ function main(): void {
     check(`"${naam}" overleeft de exacte icoonfont-match`, uit.length === 1, `kreeg: ${JSON.stringify(uit)}`);
   }
 
+  console.log('\n── D2. Gequote fontnamen (de bug van 2026-03-05) ─────────');
+  // `font-family:"Open Sans"` gaf tot 2026-08-20 een LEGE capture: de regex
+  // sloot het dubbele-quote-teken uit. Vijf maanden lang werd daarmee de meest
+  // gangbare schrijfwijze in gecompileerde CSS volledig gemist — terwijl enkele
+  // quotes en ongequote waarden wél werkten. Dat maskeerde de bug: de scraper
+  // vond de ongequote systeemfonts uit de fallback-stack, maar niet de gequote
+  // merkfont die ervoor stond.
+  for (const [css, verwacht] of [
+    ['.a{font-family:"Montserrat";}', 'Montserrat'],
+    ['.b{font-family:"Montserrat", Arial;}', 'Montserrat'],
+    ['.c{font-family:"Hanken Grotesk", sans-serif;}', 'Hanken Grotesk'],
+    ['.d{font-family: "Open Sans", Arial;}', 'Open Sans'],
+  ] as const) {
+    const uit = extractFontsFromCss(css);
+    check(`dubbele quotes: ${verwacht}`, uit.length === 1 && uit[0] === verwacht, `kreeg: ${JSON.stringify(uit)}`);
+  }
+  for (const [css, verwacht] of [
+    [".e{font-family:'Montserrat';}", 'Montserrat'],
+    ['.f{font-family:Hanken Grotesk, sans-serif;}', 'Hanken Grotesk'],
+  ] as const) {
+    const uit = extractFontsFromCss(css);
+    check(`regressie enkel/ongequote: ${verwacht}`, uit.length === 1 && uit[0] === verwacht, `kreeg: ${JSON.stringify(uit)}`);
+  }
+  // De quote-fix mag de filters niet omzeilen.
+  for (const naam of ['SFMono-Regular', 'slick']) {
+    const uit = extractFontsFromCss(`.g{font-family:"${naam}";}`);
+    check(`gequote ruis "${naam}" blijft gefilterd`, uit.length === 0, `kreeg: ${JSON.stringify(uit)}`);
+  }
+
   console.log('\n── E. Mutatietest ────────────────────────────────────────');
   // Discrimineert de functie, of zegt hij overal hetzelfde? Zonder deze check
   // zou "alles nul" én "alles één" beide door secties A-D kunnen glippen als

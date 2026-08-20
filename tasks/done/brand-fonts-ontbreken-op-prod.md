@@ -5,12 +5,12 @@ fase: post-launch
 priority: next
 effort: 2-4 uur code + per merk ~15 min upload (afhankelijk van licenties)
 owner: claude-code + user (licenties + bestanden)
-status: open
+status: done
 created: 2026-08-18
-completed:
+completed: 2026-08-20
 related-adr: docs/adr/2026-06-05-typography-font-canonicalization.md
 related-spec: -
-worktree: branddock-font-ruis  # 2026-08-20
+worktree: -
 ---
 
 # Probleem
@@ -74,6 +74,42 @@ dat er niets staat. Er is geen overzicht en geen signaal. Voorstel: het bestaand
 `dataQuality`-mechanisme in `BrandOnboardingWizard` (dat al een `tab === "typography"`-filter
 heeft) laten meetellen dat een gedetecteerde font zónder bestand een openstaand punt is, zodat
 het in de merk-gereedheid opduikt in plaats van onzichtbaar te blijven.
+
+## ✅ AFGEROND 2026-08-20 — geen uploads nodig, en er lag een grotere bug onder
+
+**Besluit Erik**: PartnerSelect en DTS Ede krijgen binnenkort een nieuwe website, dus opzoeken
+en uploaden is voor beide niet nodig. Daarmee vervalt de **volledige** uploadlijst — de twee
+zekere fonts (`Apercu`, `Apercu-Mono`) en beide twijfelgevallen zaten precies bij die twee
+merken. Er blijft niets te uploaden.
+
+De taak sluit dus zonder dat er één bestand is geüpload, en dat is de juiste uitkomst: het werk
+dat hier lag bestond grotendeels niet.
+
+### ⚠️ Wat er wél uit kwam, en het is groter dan deze taak
+
+Bij het uitzoeken bleek `extractFontsFromCss` **gequote fontnamen volledig te missen**. De
+regex sloot het dubbele-quote-teken uit (`[^;}"]+`), waardoor `font-family:"Open Sans"` een
+**lege capture** gaf. Dat stond er sinds **2026-03-05**, de eerste implementatie — vijf maanden.
+
+Waarom niemand het zag: enkele quotes en ongequote waarden wérkten wel. De scraper vond dus
+netjes de ongequote systeem- en icoonfonts uit de fallback-stack (`SFMono-Regular`, `slick`,
+`Geneva`), maar niet de gequote merkfont die eráán voorafging. Het resultaat oogde als een
+gevulde fontlijst en was in werkelijkheid de ruis zónder het merk.
+
+Dubbele quotes zijn juist de gangbare vorm in gecompileerde CSS — Tailwind, SCSS-output,
+WordPress-thema's. Gerepareerd (één teken uit de character class; `resolveFontFamilyValue`
+strípt de quotes al) en vastgelegd in `smoke:font-scraper-ruis` sectie D2, mét de regressie op
+enkele quotes én de controle dat gequote rúis nog steeds gefilterd wordt.
+
+⏭️ **Openstaand gevolg voor jou**: elke styleguide die vóór 2026-08-20 is gescrapet kan
+merkfonts **missen**, niet alleen ruis bevatten. Een re-analyse (`scripts/rescrape-brand.ts
+<merk>`) haalt ze alsnog op. Bewust niet zelf gedraaid: dat is een schrijfactie op productie en
+raakt meer dan alleen fonts. Voor PartnerSelect en DTS Ede is het sowieso overbodig — die
+worden opnieuw gescrapet zodra hun nieuwe site live staat.
+
+Wat er ná die twee merken aan ruis overblijft: **11 rijen bij vijf workspaces** — better brands
+(4), Zwarthout (3), Branddock (2), Nobox (1), sulejman (1). Die verdwijnen bij dezelfde
+re-analyse.
 
 ## ⚠️ HERZIEN 2026-08-20 — de uploadlijst klopte niet: 18 fonts, hooguit 3 echt
 
