@@ -145,6 +145,53 @@ function main(): void {
     extractFontsFromCss(VAR_SYSTEEM).length === 0,
     `kreeg: ${JSON.stringify(extractFontsFromCss(VAR_SYSTEEM))}`);
 
+  console.log('\n── D4. Payload-waarden en plugin-fonts (meting 20-08) ────');
+  // Gemeten op de zes prod-workspaces die nul fonts hadden — die bleken leeg
+  // dóór de quote-bug, en leveren na de fix wél fonts op. Daarbij kwamen twee
+  // nieuwe soorten niet-font boven water.
+  for (const [naam, waar] of [
+    ['small=0em&medium=40em&large=64em&xlarge=75em', 'adullam.nu — breakpoint-map in een font-family'],
+    ['dearflip', 'adullam.nu — PDF-flipbook-plugin'],
+  ] as const) {
+    const uit = extractFontsFromCss(`.x{font-family:"${naam}";}`);
+    check(`geen merkfont: ${naam.slice(0, 24)}… (${waar})`, uit.length === 0, `kreeg: ${JSON.stringify(uit)}`);
+  }
+  // Tegenproef: de échte merkfonts die diezelfde meting opleverde moeten blijven.
+  for (const naam of ['Museo Sans 300', 'proxima-nova', 'Red Hat Display']) {
+    const uit = extractFontsFromCss(`.y{font-family:"${naam}";}`);
+    check(`echte merkfont blijft: ${naam}`, uit.length === 1, `kreeg: ${JSON.stringify(uit)}`);
+  }
+
+  console.log('\n── D5. @font-face kapte multi-woord namen af ─────────────');
+  // De @font-face-regex sloot whitespace uit (`[^"';}\s]+`), dus de capture
+  // stopte bij de EERSTE SPATIE. Elke multi-woord fontnaam kwam daardoor dubbel
+  // in de styleguide: volledig via de font-family-declaratie, én afgekapt via
+  // @font-face. Zes keer gemeten op productie — Museo/Museo Sans 300 (Adullam),
+  // Bree/Bree Serif en Fira/Fira Sans (Barneveld), Red/Red Hat Display (Het
+  // Nieuwe Golfen), Hanken/Hanken Grotesk (Branddock), Open/Open Sans (better
+  // brands). Ik zag het eerst voor een site-eigenaardigheid aan; zes keer
+  // hetzelfde patroon is geen eigenaardigheid.
+  for (const [css, verwacht] of [
+    ['@font-face{font-family:"Museo Sans 300";src:url(a.woff2);}', 'Museo Sans 300'],
+    ['@font-face{font-family:Bree Serif;src:url(b.woff2);}', 'Bree Serif'],
+    ['@font-face{font-family: "Red Hat Display";src:url(c.woff2);}', 'Red Hat Display'],
+    ['@font-face{font-family:"Fira Sans";font-weight:400;src:url(d.woff2);}', 'Fira Sans'],
+  ] as const) {
+    const uit = extractFontsFromCss(css);
+    check(`@font-face levert de VOLLEDIGE naam: ${verwacht}`,
+      uit.length === 1 && uit[0] === verwacht, `kreeg: ${JSON.stringify(uit)}`);
+  }
+  check('@font-face met een icoonfont blijft gefilterd',
+    extractFontsFromCss('@font-face{font-family:"slick";src:url(e.woff2);}').length === 0);
+  // Twee die pas ná de eerste prod-re-analyse zichtbaar werden (adullam.nu).
+  for (const [naam, waar] of [
+    ['gform-icons-theme', 'Gravity Forms — eindigt niet op "icons"'],
+    ['Segoe UI Adjusted', 'Windows-variant naast de al gefilterde "Segoe UI"'],
+  ] as const) {
+    const uit = extractFontsFromCss(`.z{font-family:"${naam}";}`);
+    check(`geen merkfont: ${naam} (${waar})`, uit.length === 0, `kreeg: ${JSON.stringify(uit)}`);
+  }
+
   console.log('\n── E. Mutatietest ────────────────────────────────────────');
   // Discrimineert de functie, of zegt hij overal hetzelfde? Zonder deze check
   // zou "alles nul" én "alles één" beide door secties A-D kunnen glippen als
