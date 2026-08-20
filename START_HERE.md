@@ -491,6 +491,19 @@ nauwelijks verkeer. De taak draagt vier meetbare triggers plus de SQL om ze te t
 
 ## Losse eindjes uit deze sessie
 
+- 🌙 **`canvas-tweaks` — kijk hier als eerste naar (nacht van 20 op 21-08).** De nachtelijke
+  job in `golden-sets.yml` was op 20-08 rood; de assertie die hem deed vallen is `softCheck`
+  geworden **mét de meting erbij**, dus hij hoort groen te zijn: 12 passed + 1 warning in
+  plaats van 12 + 1 failed. Draait om 03:00.
+
+  **Is hij rood, dan is dat een echte bevinding en geen restant van gisteren.** Bewust niet
+  handmatig geverifieerd omdat die job AI-calls kost en de nachtrun hem gratis doet — dezelfde
+  afweging waarmee de judge-variantie van 20-08 uit bestaande artefacten kwam in plaats van
+  uit gekochte runs. Controleren met:
+
+      gh run list --workflow=golden-sets.yml --limit 3 --json databaseId,conclusion,event
+
+
 - **F-VAL onder de drempel** bij `linkedin-post` (69), `linkedin-poll` (70), `search-ad`
   (70,5) en `twitter-thread` (71). ✅ **Uitgesloten 19-08 — de Napking-verklaring klopt niet.**
   De opdracht was "sluit dat eerst uit"; dat is gedaan, en het antwoord is nee.
