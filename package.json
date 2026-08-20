@@ -184,7 +184,8 @@
     "smoke:css-utilities": "tsx scripts/smoke-tests/css-utilities.ts",
     "smoke:icon-registry": "tsx scripts/smoke-tests/icon-registry.ts",
     "smoke:design-sync-drift": "tsx scripts/smoke-tests/design-sync-drift.ts",
-    "smoke:content-type-canonical": "tsx scripts/smoke-tests/content-type-canonical.ts"
+    "smoke:content-type-canonical": "tsx scripts/smoke-tests/content-type-canonical.ts",
+    "smoke:font-scraper-ruis": "tsx scripts/smoke-tests/font-scraper-ruis.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

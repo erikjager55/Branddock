@@ -929,8 +929,20 @@ function extractColorsFromCss(css: string): string[] {
 export function extractFontsFromCss(css: string): string[] {
   const fontSet = new Set<string>();
 
-  // Match font-family declarations
-  const fontFamilyPattern = /font-family\s*:\s*([^;}"]+)/gi;
+  // Match font-family declarations.
+  //
+  // ⚠️ De `"` stond hier tot 2026-08-20 in de uitsluitings-class, sinds de
+  // eerste implementatie (2026-03-05). Gevolg: `font-family:"Open Sans"` gaf
+  // een LEGE capture en werd volledig gemist — vijf maanden lang, en dat is
+  // juist de meest gangbare schrijfwijze in gecompileerde CSS (Tailwind,
+  // SCSS-output, WordPress-thema's). Enkele quotes en ongequote waarden
+  // werkten wél, waardoor het beeld ontstond dat de scraper functioneerde:
+  // hij vond de ongequote systeem- en icoonfonts uit fallback-stacks, maar
+  // niet de gequote merkfont ervoor.
+  //
+  // `resolveFontFamilyValue` strípt de quotes al (zie daar), dus het weghalen
+  // van de `"` hier is voldoende. De `;` en `}` blijven de begrenzers.
+  const fontFamilyPattern = /font-family\s*:\s*([^;}]+)/gi;
   let match;
   while ((match = fontFamilyPattern.exec(css)) !== null) {
     const fonts = match[1].split(',').map((f) => f.trim());
@@ -1049,6 +1061,15 @@ const WEB_SAFE_FALLBACK_FONTS = new Set([
   'courier', 'courier new', 'lucida console', 'lucida sans unicode',
   'palatino', 'palatino linotype', 'book antiqua', 'garamond', 'impact',
   'comic sans ms', 'monaco', 'consolas',
+  // 2026-08-20: gemeten op productie — deze kwamen als "merkfont" in de
+  // styleguide van vier workspaces terecht, óók bij scrapes ná de filterronde
+  // van 2026-06-05. Het zijn systeem- en OS-fonts die als eerste lid van een
+  // font-stack in code-blokken en thema-CSS staan, niet als merkkeuze.
+  'sfmono-regular', 'sf mono', 'sf pro text', 'sf pro display',
+  'geneva', 'droid sans', 'droid serif', 'bitstream charter', 'charter',
+  'helveticaneue-light', 'helveticaneue', 'lucida grande', 'menlo',
+  'andale mono', 'liberation sans', 'liberation serif', 'dejavu sans',
+  'noto sans', 'roboto mono', 'ubuntu mono', 'cantarell', 'oxygen',
 ]);
 
 /** Check if a font name is a system / web-safe fallback (not an intentional brand font). */
@@ -1069,7 +1090,32 @@ const ICON_FONT_FRAGMENTS = [
   // social-glyphs) die als font-family lekt op WP/Woo-sites (symptoom op
   // zwarthout.com: "WooCommerce" in de font-lijst).
   'woocommerce', 'elementoricons',
+  // 2026-08-20: gemeten op productie. Divi (`ETmodules`), de slick-carousel
+  // (`slick`, `star`) en een 7-segment-display-widget (`DSEG7Classic`) leverden
+  // alle drie een "merkfont" op. Geen van deze bevat "icon" in de naam, dus de
+  // suffix-regel hieronder ving ze niet.
+  'etmodules', 'divi', 'dseg7', 'dseg14', 'swiper',
+  'revicons', 'wpforms', 'jetpack',
 ];
+
+/**
+ * Fontnamen die géén naam zijn: build-hashes die sommige CSS-bundlers als
+ * `font-family` emitten. Gemeten op productie (PartnerSelect, 2026-04-28): twee
+ * SHA1-strings stonden als merkfont in de styleguide.
+ *
+ * Bewust streng: minimaal 16 hex-tekens én uitsluitend hex. Een merknaam als
+ * "Decade" (6 hex-letters) of "Facade" valt daar niet onder.
+ */
+const HASH_LIKE_FONT = /^[0-9a-f]{16,}$/i;
+
+/**
+ * Icoonfont-namen die te generiek zijn voor een substring-match. `slick` en
+ * `star` komen van de slick-carousel-plugin (gemeten op zwarthout.com), maar
+ * als fragment zouden ze "Slick Display" of "Star Grotesk" meeslepen. Daarom
+ * exacte, genormaliseerde naamvergelijking: een merkfont die exact "star" heet
+ * bestaat in de praktijk niet, "Star Grotesk" wel.
+ */
+const EXACT_ICON_FONT_NAMES = new Set(['slick', 'star', 'arrow', 'arrows', 'bullets', 'social']);
 
 /**
  * Check whether a font name looks like an icon font (not real typography).
@@ -1080,6 +1126,9 @@ const ICON_FONT_FRAGMENTS = [
  */
 function isIconFont(name: string): boolean {
   const normalised = name.toLowerCase().replace(/[\s_-]/g, '');
+  // Een build-hash is geen font. Zie HASH_LIKE_FONT.
+  if (HASH_LIKE_FONT.test(name.trim())) return true;
+  if (EXACT_ICON_FONT_NAMES.has(normalised)) return true;
   if (ICON_FONT_FRAGMENTS.some((frag) => normalised.includes(frag))) return true;
   // "…icons" suffix is almost always an icon font (Material Icons, Web
   // Icons, Dash Icons, etc.) without false-positive risk.

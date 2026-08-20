@@ -37,6 +37,104 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 505. Judge-variantie gemeten zonder één betaalde AI-call — en de drempel-vraag blijkt verkeerd gesteld
+
+De judge-variantie op de blog-post golden-set stond weken als "kost live-LLM-runs, ~55k tokens
+per run, bewust niet autonoom gestart". Die aanname klopte niet: de nachtelijke `live-eval`
+draait dagelijks dezelfde tien cases en bewaart per run een artefact. Vier nachten stonden nog
+in GitHub (17 t/m 20 augustus; ouder was verlopen). Herhaalde runs op identieke invoer *zijn*
+de meting — de vraag was al betaald, alleen niet opgehaald.
+
+**De rubric veranderde middenin het venster** (`d090ce58`, 18-08 om 23:22 — ná de nachtrun van
+18-08, vóór die van 19-08). Alle vier de nachten als één reeks lezen had die wijziging als
+variantie geteld. Gesplitst in twee regimes van elk twee identieke runs werd de meting juist
+scherper: het scheidt echte variantie van het effect van de fix, en bevestigt onafhankelijk dat
+#350 deed wat hij beloofde (`SEO-focus extreem` gaat van stabiel-zakken naar stabiel-slagen,
+zonder beweging bínnen een regime).
+
+**Het slaagpercentage schommelt 40 punten op identieke invoer**: 50% / 70% / 60% / 90% over de
+vier nachten, met de gate op 70%. Dat herkadert het openstaande besluit. De kop van
+`golden-sets.yml` stelt dat het echte niveau ~50-60% is en dat 70% daar net boven ligt, dus dat
+de gate flapt. Het werkelijke probleem is niet wáár de lijn ligt: tien cases waarvan er drie
+wisselen geven een spreiding van ±20 punten, en dan flapt elke lijn tussen 50 en 90. Meer cases
+of de wisseling wegnemen helpt; de lijn verschuiven niet.
+
+**Eén flip bleek geen judge-variantie.** `contains 'handgemaakte vloeren'` wisselde F P F P — een
+substring-check kan niet van mening veranderen, dus de variantie zit in de generatie. Dat is
+precies het openstaande productbesluit B, nu met een getal: in de huidige vorm is die assert een
+muntworp. Omgekeerd staat de vage-brief-case vier nachten op exact 2,50 en zakt elke keer; die
+lost op met besluit A, niet met meer data.
+
+Bijvangst: drie task-files droegen een claim van een sessie die niet meer bestaat, met opgeruimde
+worktrees. Voor wie werk zoekt lezen die als "bezet" — één ervan was deze taak. Twee opgeschoond;
+de derde bewust niet, want daar zit een open PR op het bestand.
+
+- Task: [tasks/golden-set-blogpost-quality.md](../tasks/golden-set-blogpost-quality.md)
+- ADR: -
+- Spec: -
+
+### 504. Beslispunt 0 opgelost — en de risico-analyse eronder klopte niet
+
+`test:csp` en `smoke:document-lang-browser` stonden als kostenafweging op Eriks lijst: ze
+draaien nergens en vragen een build, een database en een browser. Nagemeten viel die afweging
+de andere kant op. De CSP-sweep heeft een **productiebuild** nodig (nonce-gedrag verschilt van
+dev), dus naar de `e2e`-job verhuizen had dáár een tweede build gekost; chromium in `check` was
+de goedkope kant.
+
+Nu draaien **14 van de 15** CSP-checks en beide fasen van de taalbewaker. De vijftiende blijft
+eruit en dat is geen open beslissing meer maar een feit: hij logt in en vraagt een geseede
+database die deze job niet heeft.
+
+**Wat het werkelijk kostte**, tegen 8m58s daarvoor:
+
+```
+Browsercache            0m03s
+Install chromium        OVERGESLAGEN — cache-hit
+taalbewaker fase 1+2    0m59s   (was 0m09s)
+CSP-sweep               0m16s   (was 0m05s)
+hele check-job          10m21s  (+1m23s, limiet 30 min)
+```
+
+⚠️ De hele risico-analyse ging over een chromium-**download** en de hangs van 18-08. Dat
+gevaar geldt niet op het normale pad: de cachesleutel is dezelfde die de `e2e`-job al vult, dus
+de installatie wordt overgeslagen. De dominante nieuwe kost is fase 2 van de taalbewaker
+(+50s), niet de browser — precies de post die niemand had aangewezen.
+
+- Task: [tasks/document-lang-followups.md](../tasks/document-lang-followups.md)
+- Commit: PR #436, #437
+
+### 503. Fase 2 van de taalbewaker was stuk en toetste niets
+
+Bij het voorbereiden van die chromium-stap gaf fase 2 drie navigatie-scenario's rood. Dat leek
+een productbug in `DocumentLangSync` — de component die juist bestaat om `<html lang>` bij
+client-side navigatie bij te werken.
+
+Eerst uitgesloten dat het product stuk was: de pure beslissingslogica klopt voor alle drie de
+gevallen. Toen drie navigatie-mechanismen naast elkaar, startend op `/marketing/pricing`
+(lang="nl") en navigerend naar `/` (verwacht "en"):
+
+```
+kale pushState              lang: nl -> nl   pathname=/
+pushState + popstate        lang: nl -> nl   pathname=/
+echte klik op een next/link lang: nl -> en   pathname=/
+```
+
+**Alleen de klik werkt.** Bij `pushState` verandert de URL wél maar de React-router niet, dus
+het effect draait niet — die scenario's faalden ongeacht het gedrag van de component en hebben
+nooit iets bewezen. Het comment erboven beweerde het omgekeerde en wees de klik-aanpak
+expliciet af; juist die is de enige die werkt.
+
+Nu 22 checks correct. Twee scenario's melden zich luid als overgeslagen omdat er geen link van
+de app-shell naar `/marketing` of `/brandmd` is — een grens van wat er kán gebeuren, geen
+dekkingsgat.
+
+⚠️ Dit stond op het punt aangehaakt te worden als "zeven checks voor de prijs van één
+chromium-installatie". Drie van die zeven waren leeg. Exit-code en assertie-aantal bewijzen dat
+een bewaker draait, niet dat hij het juiste vastlegt — ook, en juist, bij je eigen bewakers.
+
+- Task: [tasks/document-lang-followups.md](../tasks/document-lang-followups.md)
+- Commit: PR #435
+
 ### 502. Mijn eigen schuldlijst klopte voor de meerderheid niet
 
 Bij `smoke:guard-wiring` (#419) hoorde een lijst van **51 bewakers die "bewust stilstaan"**, elk

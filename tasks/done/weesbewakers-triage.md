@@ -5,9 +5,9 @@ fase: post-launch
 priority: next
 effort: 2-4 uur
 owner: claude-code
-status: open
+status: done
 created: 2026-08-19
-completed:
+completed: 2026-08-19
 related-adr: -
 related-spec: -
 worktree: -
@@ -173,13 +173,17 @@ niet.
 - [x] **De 18 rode zijn getrieerd** — #411. Veertien hebben een echte database
       nodig, twee een sleutel, één is een CLI-tool, en precies één had een
       verouderde assertie (`checkpoint-gates`, rood op een correcte vertaling).
-- [~] **`lib/agents` heeft bewaking in een gate** — deels. `agents-foundation`
-      loopt in #413 (parallelle sessie). `agents-data-analyst` kan niet in CI
-      draaien: hij hardcodeert de dev-workspaces Zwarthout en Linfi. Dat is
-      herschrijfwerk tegen de seed en verdient een eigen task-file, geen regel
-      hier.
-- [ ] **`package.json`-telling is niet langer de bron van waarheid** — nog open,
-      en dit is het criterium dat er het langst toe blijft doen.
+- [x] **`lib/agents` heeft bewaking in een gate** — ✅ af, door een parallelle
+      sessie. Beide staan in `run-db-guards.sh`: `smoke:agents-foundation:12` en
+      `smoke:agents-data-analyst:21`.
+
+      Die tweede is de interessantste: hij toetst **tenant-isolatie** — de
+      data-analyst van workspace A mag geen rijen van B zien — en kon nergens
+      draaien omdat hij de dev-workspaces Zwarthout en Linfi op naam opzocht. Ik
+      schatte in dat herschrijven tegen de seed hem "groen en leeg" zou maken; dat
+      bleek onjuist, want de assertie eist dat beide kanten niet-leeg zijn.
+- [x] **`package.json`-telling is niet langer de bron van waarheid** — ✅ af, en dit
+      is het criterium dat er het langst toe blijft doen.
 
       De hele survey begon met een telling uit `package.json`, en juist daardoor
       bleef `ssrf-guard.ts` onzichtbaar: 65 asserties op een beveiligingsoppervlak,
@@ -191,10 +195,14 @@ niet.
       dezelfde vorm als `smoke:route-language`, die faalt bij *vergeten* in plaats
       van bij toevoegen. Zijn eerste bevinding was hijzelf.
 
-      De 51 die bewust stilstaan hebben nu elk een reden in `NIET_AANGEHAAKT`,
-      gegroepeerd: sleutel, database, cli, herschrijf, of gedekt-door-de-ketting.
-      ⚠️ Die lijst is **schuld, geen uitzonderingslijst** — hij hoort te krimpen.
-      Een tweede check meldt dode regels, zodat de lijst zelf niet kan verrotten.
+      De bewakers die bewust stilstaan hebben elk een reden in `NIET_AANGEHAAKT`,
+      gegroepeerd: sleutel, database, cli, herschrijf. ⚠️ Die lijst is **schuld,
+      geen uitzonderingslijst** — hij hoort te krimpen. Een tweede check meldt dode
+      regels, zodat de lijst zelf niet kan verrotten.
+
+      Hij begon op **51** en staat nu op **13**, want de redenen bleken grotendeels
+      niet te kloppen: nagemeten kwamen er 38 groen terug (#421, #424). De 13 die
+      overblijven zijn stuk voor stuk gedraaid en falen aantoonbaar.
 
 ## De poort is deterministisch — gemeten, 2026-08-19
 
