@@ -52,6 +52,32 @@ Volledige onderbouwing en metingen: `tasks/done/static-rendering-regressie.md`.
       18-08 als gevaar. Dat gevaar geldt niet op het normale pad: de cachesleutel
       is dezelfde die de `e2e`-job al vult, dus de installatie wordt overgeslagen.
       De dominante nieuwe kost is fase 2 van de taalbewaker (+50s), niet chromium.
+
+      ⚠️ **20-08 — die +50s bleek geen kost maar een symptoom.** De `check`-poort ging
+      flappen op main (rood/groen/groen/rood binnen twintig minuten). Oorzaak: de
+      browserfase wachtte op `networkidle`, en `/marketing/pricing` haalt tien externe
+      dingen op — een typekit-stylesheet in `<head>` (blokkeert de parser) en vier
+      PostHog-scripts (blijven pollen). In de GESLAAGDE run duurde één navigatie 24,6s
+      van de 30s limiet; de marge was er nooit. Gefixt in #445 door alles buiten de
+      eigen host af te kappen. Zie de gotcha van 20-08.
+
+      🔭 **Openstaand risico, bewust niet meegefixt: `csp-enforce.spec.ts` doet hetzelfde.**
+      Regel 168 en 182 gebruiken óók `waitUntil: 'networkidle'`, op dezelfde routes, in
+      dezelfde `check`-job.
+
+      **De fix van #445 werkt daar niet.** Een CSP-test bestaat juist om te zien wát de
+      pagina probeert te laden; externe verzoeken afkappen zou overtredingen kunnen
+      onderdrukken die hij moet vangen (een geblokkeerde bron bereikt de route-laag niet,
+      maar een tóegestane bron die vervolgens meer laadt wél).
+
+      Gemeten 20-08, drie rondes lokaal tegen een productiebuild: **3× 5/5 groen,
+      11,5-12,1s.** Lokaal is echter niet waar de taalbewaker faalde — dat was CI, waar
+      externe hosts trager en wisselvalliger zijn. En de CSP-stap is daar nog nooit
+      gedraaid met een groene voorganger, want de job viel eerder al om op de taalbewaker.
+
+      **Toetsbare verwachting**: gaat `test:csp` ná #445 flappen in CI, dan is dit de
+      oorzaak. De juiste ingreep is dan `waitUntil: 'load'` met de bestaande vaste
+      1000ms erachter — níet externe verzoeken blokkeren.
 - [x] **`npm run smoke:document-lang-browser`** — ✅ **fase 1 af 2026-08-19 (#380).**
       Het probleem was de kóppeling, niet de kosten: hij vroeg een server én een
       browser, dus draaide hij nergens. Fase 2 zit nu achter `SMOKE_BROWSER=1`; fase 1
