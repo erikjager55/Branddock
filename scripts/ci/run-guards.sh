@@ -105,6 +105,15 @@ GUARDS=(
   # `require`-string versleuteld ZONDER certificaat- en hostnaamcontrole.
   smoke:db-ssl-mode:30
 
+  # Aangesloten 2026-08-20. Elke assertie is een gemeten productie-vindplaats:
+  # van de 18 fonts die op prod als COMMERCIAL ("moet geüpload") stonden waren er
+  # hooguit drie een echt merkfont — de rest was systeemfont, plugin-icoonfont of
+  # een build-hash. Vier van die workspaces zijn ná de filterronde van 06-06
+  # gescrapet, dus de filters waren onvolledig en niet verouderd. Draagt een
+  # tegenproef (echte merkfonts blijven staan) zodat een filter dat alles weggooit
+  # niet groen kan zijn.
+  smoke:font-scraper-ruis:20
+
   # Aangesloten 2026-08-19. Faalt bij VERGETEN, niet bij toevoegen: wie een nieuw
   # type introduceert zet het in DELIVERABLE_TYPES en is klaar; wie een
   # display-naam of typfout schrijft krijgt rood. Aanleiding: de POST-route
