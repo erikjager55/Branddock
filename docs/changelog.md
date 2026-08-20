@@ -37,6 +37,35 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 507. brand.md-artikel live op de marketing-site — en wat de eigen pipeline ervan bakte
+
+Cornerstone-pagina `/marketing/resources/brand-md` bij de gratis generator: wat het formaat is,
+hoe het zich verhoudt tot `llms.txt` en `AGENTS.md`, waarom Branddock een bestaande standaard
+omarmt in plaats van een eigen te lanceren, en het verdienmodel expliciet benoemd (gratis
+bestand, betaald onderhoud). NL, volgens het patroon van `resources/f-val`, met FAQ +
+FAQPage-JSON-LD.
+
+**De dogfooding is de eigenlijke uitkomst.** Het artikel is geschreven met de eigen long-form
+SEO-pipeline via de MCP-connector (launch-plan §5: "dogfooding als bewijs"). Die leverde na
+±35 minuten 2.664 goed gestructureerde woorden op die **niet publiceerbaar** waren: 6 verzonnen
+interne links (alle 6 een 404), een F-VAL-cijferpaar "61 → 84" zonder enige bron, het door de
+hermeting van 21-07 al gecorrigeerde "+12 op nieuwsbrieven", een verzonnen klantcasus die in
+werkelijkheid persona Jesse Kramer is, géén vermelding van Caio Pizzol/MIT/spec v0.3.0, en géén
+verwijzing naar de gratis generator. De pipeline kent de merk*stem* wel en de merk*strategie*
+niet: wat in `docs/marketing/` staat, bereikt de generatie niet.
+
+Gebruikt als grondstof (FAQ-vraagvormen, de sectie "wat het niet oplost"), niet als eindtekst.
+F-VAL op de geplaatste tekst: **78 → 92** (TOP_TIER, baseline-positie 31 → 6) na het wegwerken
+van em-dash-overdaad, twee buzzword-adjectieven en twee ongefundeerde cijferclaims.
+
+⚠️ Beide scores zijn op **2 van de 3 pijlers** gemeten: de stijl-pijler had gewicht 0. Nagemeten
+op prod — niet de styleguide (die staat op `published = true`, 9 regels) maar de **voiceguide**:
+niet gepubliceerd en zonder centroid.
+
+- Task: [tasks/brandmd-artikel.md](tasks/brandmd-artikel.md)
+- ADR: -
+- Spec: docs/marketing/brand-md-launch-plan-2026-08-02.md (v2, §3 omarm-strategie) + docs/marketing/launch-wig-besluit.md (optie C)
+
 ### 506. De taalbewaker hing aan typekit en posthog — een verplichte poort met een externe faalbron
 
 `check` ging flappen op main zodra de browserfase aanstond: rood, groen, groen, rood binnen
