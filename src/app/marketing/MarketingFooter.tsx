@@ -31,8 +31,13 @@ export default function MarketingFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/marketing/platform?feature=brand-alignment" className="hover:text-gray-900">
+                Merk-check
+              </Link>
+            </li>
+            <li>
               <Link href="/marketing/resources/f-val" className="hover:text-gray-900">
-                Merk-check (F-VAL)
+                F-VAL uitgelegd
               </Link>
             </li>
             <li>

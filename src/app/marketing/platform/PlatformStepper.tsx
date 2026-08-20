@@ -221,12 +221,19 @@ function Lightbox({
           ))}
         </ul>
 
-        <Link
-          href={appHref(`/?view=register&utm_source=marketing-site&utm_medium=platform-lightbox-${slug}`)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg mkt-btn-primary text-sm font-medium"
-        >
-          Gratis proberen <ArrowRight className="w-4 h-4" />
-        </Link>
+        <div className="flex flex-wrap items-center gap-4">
+          <Link
+            href={appHref(`/?view=register&utm_source=marketing-site&utm_medium=platform-lightbox-${slug}`)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg mkt-btn-primary text-sm font-medium"
+          >
+            Gratis proberen <ArrowRight className="w-4 h-4" />
+          </Link>
+          {detail.moreHref && (
+            <Link href={detail.moreHref} className="inline-flex items-center gap-1.5 text-sm font-medium mkt-accent">
+              {detail.moreLabel ?? 'Lees meer'} <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

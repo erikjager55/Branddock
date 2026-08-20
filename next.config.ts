@@ -54,14 +54,8 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       // De 7 losse feature-detailpagina's zijn opgegaan in de platform-
-      // overzichtspagina (lightbox per module, besluit Erik). brand-alignment
-      // had zijn eigen, rijkere pagina al (F-VAL-uitleg) — die regel moet vóór
-      // de generieke :slug-regel staan, anders wint de bredere match eerst.
-      {
-        source: '/marketing/features/brand-alignment',
-        destination: '/marketing/resources/f-val',
-        permanent: true,
-      },
+      // overzichtspagina — elke tegel opent een lightbox, ook Merk-check
+      // (F-VAL, die verwijst er zelf naar door voor wie dieper wil).
       {
         source: '/marketing/features/:slug',
         destination: '/marketing/platform?feature=:slug',

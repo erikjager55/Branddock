@@ -117,17 +117,26 @@ brand.md-URL's ontbreken er (zie observaties).
 
 ~~Template: `src/app/marketing/features/[slug]/page.tsx` (216 r) · content: `FEATURES`-record~~
 **Verwijderd.** Inhoud verhuisd naar `platform/module-details.ts`, getoond als lightbox
-per module-tegel op `/marketing/platform`. De 7 oude URL's redirecten (permanent):
-`brand-alignment` → `/marketing/resources/f-val` (had al een rijkere eigen pagina), de
-overige 6 → `/marketing/platform?feature=<slug>` (opent meteen de juiste lightbox).
-Nav-item "Platform" is van dropdown naar directe link veranderd; footer, homepage-tegels,
-`HowItWorks`-CTA's en de F-VAL-CTA zijn meegerepoint.
+per module-tegel op `/marketing/platform` — **alle 7**, ook `brand-alignment` (F-VAL).
+Eerste versie linkte die tegel nog door naar de volledige `/marketing/resources/f-val`-
+pagina; Erik wilde consistentie, dus nu ook een lightbox, met een losse "Lees de volledige
+F-VAL-uitleg"-link erin voor wie dieper wil. Alle 7 oude URL's redirecten (permanent) naar
+`/marketing/platform?feature=<slug>` (opent meteen de juiste lightbox). Nav-item "Platform"
+is van dropdown naar directe link veranderd; footer, homepage-tegels, `HowItWorks`-CTA's en
+de F-VAL-CTA zijn meegerepoint.
+
+⚠️ **Bijvangst gevonden door Erik**: de "Merk-DNA"-tegel deelde zijn `slug` met "Brand
+voice & stijl" (bestond al vóór deze taak — beide linkten altijd naar dezelfde detailpagina),
+maar in een lightbox viel dat pas echt op: klikken op "Merk-DNA" opende een paneel getiteld
+"Brand Voice die écht klopt". Gefixt door "Merk-DNA" een gewone, niet-klikbare tegel te maken
+(geen eigen inhoud om te tonen) i.p.v. nieuwe merktekst te verzinnen — die keuze staat open
+als Erik liever wél een eigen Merk-DNA-lightbox wil.
 
 | # | URL (oud, redirect nu) | Slug | Status |
 |---|---|---|---|
 | 4 | `/marketing/features/brand-voice` | `brand-voice` | ✅ lightbox |
 | 5 | `/marketing/features/content-canvas` | `content-canvas` | ✅ lightbox |
-| 6 | `/marketing/features/brand-alignment` | `brand-alignment` | ✅ redirect → `/marketing/resources/f-val` |
+| 6 | `/marketing/features/brand-alignment` | `brand-alignment` | ✅ lightbox (+ link naar `/marketing/resources/f-val`) |
 | 7 | `/marketing/features/agents` | `agents` | ✅ lightbox |
 | 8 | `/marketing/features/personas` | `personas` | ✅ lightbox |
 | 9 | `/marketing/features/trend-radar` | `trend-radar` | ✅ lightbox |

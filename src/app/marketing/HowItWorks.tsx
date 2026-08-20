@@ -66,7 +66,7 @@ const STEPS: Step[] = [
       'Drempels per contenttype',
       'Onder de norm? Automatische herschrijfronde',
     ],
-    cta: { label: 'Bekijk de merk-check', href: '/marketing/resources/f-val' },
+    cta: { label: 'Bekijk de merk-check', href: '/marketing/platform?feature=brand-alignment' },
     Icon: BadgeCheck,
     art: 'check',
   },

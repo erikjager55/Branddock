@@ -1,8 +1,11 @@
 // Data voor de platform-overzichtspagina: de 4 stepper-stappen (GROUPS) en de
 // detailinhoud per module (MODULE_DETAILS), getoond in een lightbox i.p.v. een
 // losse pagina (besluit Erik: de 7 detailpagina's onder /marketing/features/[slug]
-// zijn hierin opgegaan). brand-alignment zit hier bewust niet in — die tegel
-// linkt al naar de bestaande, rijkere /marketing/resources/f-val-pagina.
+// zijn hierin opgegaan). Elke tegel met eigen inhoud opent een lightbox — ook
+// Merk-check (F-VAL), met een link naar de volledige uitleg als extra optie
+// (besluit Erik: consistent, geen tegel die naar een hele pagina doorlinkt).
+// Merk-DNA heeft bewust geen slug: die tegel opende eerder dezelfde lightbox
+// als Brand voice & stijl, wat het verkeerde label toonde (besluit Erik).
 
 import {
   Dna,
@@ -50,7 +53,6 @@ export const GROUPS: Group[] = [
         Icon: Dna,
         title: 'Merk-DNA',
         desc: '12 canonieke merk-assets als fundament onder alles wat je maakt.',
-        slug: 'brand-voice',
       },
       {
         Icon: Palette,
@@ -139,7 +141,7 @@ export const GROUPS: Group[] = [
         Icon: BadgeCheck,
         title: 'Merk-check (F-VAL)',
         desc: 'Elke output een merk-fideliteitsscore; onder de norm wordt automatisch herschreven.',
-        href: '/marketing/resources/f-val',
+        slug: 'brand-alignment',
       },
     ],
   },
@@ -150,9 +152,27 @@ export interface ModuleDetail {
   tagline: string;
   description: string;
   bullets: string[];
+  /** Optionele link naar een volledige uitlegpagina, voor wie dieper wil. */
+  moreHref?: string;
+  moreLabel?: string;
 }
 
 export const MODULE_DETAILS: Record<string, ModuleDetail> = {
+  'brand-alignment': {
+    title: 'Merk-check & inzichten',
+    tagline: 'Zie waaróm content scoort zoals het scoort.',
+    description:
+      'Geen black box: per generatie een uitsplitsing van stijl-fit / merk-judge / regel-compliance. Bevindingen worden gecategoriseerd in VOICE / TERMINOLOGIE / CLAIMS / STIJL / BUSINESS / AI-TELL, met severity en concrete suggesties.',
+    bullets: [
+      '3-pijler F-VAL-score: stijl (35%) / judge (45%) / rules (20%)',
+      'Categorisering van bevindingen met HOOG/MIDDEN/LAAG severity',
+      'Compliance-dimensie: onderbouwing van claims + sectorspecifieke risicoflags',
+      '30-daags trend-dashboard met slagingspercentage per contenttype',
+      'Edit-distance-signaal voor het regressie-corpusfilter',
+    ],
+    moreHref: '/marketing/resources/f-val',
+    moreLabel: 'Lees de volledige F-VAL-uitleg',
+  },
   'brand-voice': {
     title: 'Brand Voice die écht klopt',
     tagline: 'Bouw je brand voice uit voorbeeldteksten, geen generieke prompts.',

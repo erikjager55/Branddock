@@ -80,7 +80,7 @@ const MODULES: { Icon: typeof Dna; title: string; desc: string; href?: string }[
   { Icon: Images, title: 'Beeld', desc: 'On-brand visual, direct in het platform.' },
   { Icon: LayoutTemplate, title: 'Landingspagina’s', desc: 'Publiceren op je eigen subdomein.' },
   { Icon: Bot, title: '9 AI-agents', desc: 'Collega’s met rollen: ze stellen voor, jij keurt goed.', href: '/marketing/platform?feature=agents' },
-  { Icon: BadgeCheck, title: 'Merk-check', desc: 'F-VAL-score bewaakt dat elke output op merk blijft.', href: '/marketing/resources/f-val' },
+  { Icon: BadgeCheck, title: 'Merk-check', desc: 'F-VAL-score bewaakt dat elke output op merk blijft.', href: '/marketing/platform?feature=brand-alignment' },
   { Icon: Languages, title: 'Meertalig', desc: 'Multi-markt content voor internationale merken.' },
 ];
 
