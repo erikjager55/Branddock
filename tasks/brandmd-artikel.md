@@ -155,7 +155,8 @@ volgend strategisch stuk geldt dus: pipeline voor structuur en SEO, mens voor de
 | Meting | Score | Verdict | Baseline-positie |
 |---|---|---|---|
 | Eerste versie | 78 | AI_LEANING | 31 |
-| Na verwerking van de bevindingen | **92** | **TOP_TIER** | **6** |
+| Na verwerking van de bevindingen | 92 | TOP_TIER | 6 |
+| Na Eriks review (FAQ + CTA's) | **93** | **TOP_TIER** | **6** |
 
 Weggewerkt: 7 em-dash-treffers (Engels patroon in NL), `indrukwekkend` 2× (buzzword-adjectief,
 HIGH/hard), `10 procent` zonder bron (schijnprecisie, hard), en op de tweede ronde ook
@@ -167,6 +168,20 @@ styleguide: die staat op `published = true` met 9 regels. De **voiceguide** is n
 gepubliceerd (`publishedAt` null) en heeft **geen centroid** (`centroidEmbedding` null) —
 terwijl er wel 6 `wordsWeUse` en 5 `wordsWeAvoid` in staan. Eigen actiepunt voor Erik: het
 eigen merk scoort zichzelf op 2/3 pijlers.
+
+## Reviewronde Erik (2026-08-20)
+
+Drie punten, alle drie terecht:
+
+1. **FAQ-styling weekt af.** Ik bouwde statische kaarten; de site heeft al twee FAQ's
+   (homepage en pricing) die allebei `<details>`/`<summary>` met een roterende
+   `ChevronDown` gebruiken. Omgezet naar het homepage-patroon (`divide-y`-lijst).
+2. **De trial-regel hing aan de verkeerde knop.** `TrialNote` stond onder een rij van drie
+   knoppen, terwijl de primaire knop juist het **gratis, accountloze** pad is. De microcopy
+   beloofde dus een trial bij een actie waar geen account aan te pas komt. Slot-CTA herbouwd
+   als twee kolommen: gratis pad met "Gratis · geen account nodig", betaald pad met `TrialNote`.
+3. **Geen CTA halverwege.** Toegevoegd na "Wat er in het bestand staat" — daar weet de lezer
+   wát hij krijgt, dus dat is het natuurlijke conversiemoment.
 
 ## Bijvangst: CLAUDE.md geeft achterhaald CSS-advies
 

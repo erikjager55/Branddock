@@ -6,7 +6,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, FileText, Globe, Terminal } from 'lucide-react';
+import { ArrowRight, ChevronDown, FileText, Globe, Terminal } from 'lucide-react';
 import { appHref } from '../../app-url';
 import Mosaic, { MOSAIC_PRODUCT } from '../../Mosaic';
 import SplitHeader from '../../SplitHeader';
@@ -203,6 +203,25 @@ export default function BrandMdPage() {
         ))}
       </div>
 
+      {/* Inline CTA — conversiemoment halverwege: de lezer weet nu wát er in het
+          bestand hoort, dus "laat er een maken van jouw site" landt hier het best. */}
+      <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 mb-14 max-w-2xl">
+        <h3 className="text-base font-semibold text-gray-900 mb-1">
+          Benieuwd wat er van jouw merk in komt te staan?
+        </h3>
+        <p className="text-sm text-gray-600 leading-relaxed mb-4">
+          Plak je URL en je krijgt je eigen brand.md, met per sectie eerlijk aangegeven wat een
+          scan wel en niet kon bevestigen.
+        </p>
+        <Link
+          href="/brandmd"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg mkt-btn-primary text-sm font-medium"
+        >
+          Genereer je brand.md <ArrowRight className="w-4 h-4" />
+        </Link>
+        <p className="text-sm text-gray-500 mt-2">Gratis · geen account nodig</p>
+      </div>
+
       {/* Waarom omarmen */}
       <h2 className="text-gray-900 mb-2">Waarom we een bestaande standaard omarmen</h2>
       <div className="prose-like max-w-2xl space-y-5 text-gray-700 leading-relaxed mb-14">
@@ -310,13 +329,16 @@ export default function BrandMdPage() {
       </div>
 
       {/* FAQ */}
-      <h2 className="text-gray-900 mb-2">Veelgestelde vragen</h2>
-      <div className="space-y-4 max-w-2xl mb-14">
+      <h2 className="text-gray-900 mb-6">Veelgestelde vragen</h2>
+      <div className="divide-y divide-gray-200 border-t border-gray-200 max-w-2xl mb-14">
         {FAQ.map(({ q, a }) => (
-          <div key={q} className="rounded-xl border border-gray-200 bg-white p-5">
-            <h3 className="text-base font-semibold text-gray-900 mb-1">{q}</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">{a}</p>
-          </div>
+          <details key={q} className="group py-4">
+            <summary className="flex cursor-pointer items-center justify-between gap-3 text-gray-900 font-medium list-none">
+              {q}
+              <ChevronDown className="w-5 h-5 mkt-accent shrink-0 transition-transform group-open:rotate-180" />
+            </summary>
+            <p className="text-gray-600 text-sm mt-3 leading-relaxed">{a}</p>
+          </details>
         ))}
       </div>
       {/* FAQPage-JSON-LD: zelfde patroon als de JSON-LD in de marketing-layout. */}
@@ -335,27 +357,36 @@ export default function BrandMdPage() {
         }}
       />
 
-      {/* CTA */}
-      <div className="pt-8 border-t border-gray-200 flex flex-wrap gap-3">
-        <Link
-          href="/brandmd"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg mkt-btn-primary font-medium"
-        >
-          Genereer je brand.md <ArrowRight className="w-4 h-4" />
-        </Link>
-        <Link
-          href="/brandmd/use"
-          className="inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
-        >
-          Zo gebruik je het in Claude en ChatGPT
-        </Link>
-        <Link
-          href={appHref('/?view=register&utm_source=marketing-site&utm_medium=brandmd-explainer')}
-          className="inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
-        >
-          Houd het levend in Branddock
-        </Link>
-        <TrialNote />
+      {/* CTA — twee paden, elk met de microcopy die er echt bij hoort.
+          De trial-regel hoort bij het betaalde pad, niet bij de gratis generator. */}
+      <div className="pt-8 border-t border-gray-200">
+        <div className="grid sm:grid-cols-2 gap-6">
+          <div>
+            <Link
+              href="/brandmd"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg mkt-btn-primary font-medium"
+            >
+              Genereer je brand.md <ArrowRight className="w-4 h-4" />
+            </Link>
+            <p className="text-sm text-gray-500 mt-2">Gratis · geen account nodig</p>
+          </div>
+          <div>
+            <Link
+              href={appHref(
+                '/?view=register&utm_source=marketing-site&utm_medium=brandmd-explainer'
+              )}
+              className="inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
+            >
+              Houd het levend in Branddock
+            </Link>
+            <TrialNote className="mt-2" />
+          </div>
+        </div>
+        <p className="mt-6 text-sm">
+          <Link href="/brandmd/use" className="mkt-accent underline underline-offset-2">
+            Zo gebruik je het in Claude en ChatGPT
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -55,8 +55,13 @@ verwijzing naar de gratis generator. De pipeline kent de merk*stem* wel en de me
 niet: wat in `docs/marketing/` staat, bereikt de generatie niet.
 
 Gebruikt als grondstof (FAQ-vraagvormen, de sectie "wat het niet oplost"), niet als eindtekst.
-F-VAL op de geplaatste tekst: **78 → 92** (TOP_TIER, baseline-positie 31 → 6) na het wegwerken
+F-VAL op de geplaatste tekst: **78 → 93** (TOP_TIER, baseline-positie 31 → 6) na het wegwerken
 van em-dash-overdaad, twee buzzword-adjectieven en twee ongefundeerde cijferclaims.
+
+Na Eriks review nog drie wijzigingen: de FAQ gebruikt nu het bestaande `<details>`-patroon met
+roterende `ChevronDown` (zoals homepage en pricing), de trial-microcopy staat onder de knop
+waar hij bij hoort in plaats van onder een rij van drie (de primaire knop is juist het gratis,
+accountloze pad), en er is een tweede CTA halverwege toegevoegd.
 
 ⚠️ Beide scores zijn op **2 van de 3 pijlers** gemeten: de stijl-pijler had gewicht 0. Nagemeten
 op prod — niet de styleguide (die staat op `published = true`, 9 regels) maar de **voiceguide**:
