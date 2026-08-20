@@ -4,13 +4,35 @@ title: De blog-post golden-set zakt stabiel op 4-5 van de 10 cases — echte bev
 fase: post-launch
 priority: next
 effort: 1-2 dagen (onderzoek eerst, dan pas prompt/rubric)
-owner: unassigned
+owner: claude-code
 status: open
 created: 2026-08-16
 completed:
 related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md
-worktree: -  # claim vervallen 20-08: sessie 41832dfd en worktree branddock-golden-set bestaan niet meer; vrij op te pakken
+worktree: branddock-static-rendering-regressie  # 20-08; de dode claim van sessie 41832dfd stond hier tot vanochtend
+---
+
+# Stand 2026-08-20 — vier van de vijf punten dicht, één wacht op nachten
+
+| punt | stand |
+|---|---|
+| A — aannames in de tekst | ✅ **geen productvraag** — rubric-fout; productie verbiedt het juist |
+| B — keyword in de H1 | ✅ **geen productvraag** — hoofdlettergevoelige assert, gefixt |
+| C — de 70%-drempel | ⏳ **wacht op ~4 schone nachten.** Niets te doen tot dan |
+| v2 — wat bewaakt deze set? | ✅ **Erik koos A**; `eval:blog-post-golden` gebouwd en aangehaakt |
+| judge-variantie | ✅ gemeten uit bestaande artefacten, zonder AI-kosten |
+
+**Waarom de taak toch nog `open` staat**: punt C kan niet af zonder nieuwe data, en de
+fixes van vandaag veranderen die data. Afvinken vóór de nachten zijn gedraaid is precies
+de boekhoudgewoonte die de done-audit van 16-08 blootlegde.
+
+**Wat de volgende sessie moet doen** (en verder niets aan deze taak):
+1. Vanaf ~24-08 vier nachtelijke artefacten ophalen — zie "Reproduceren" verderop.
+2. Slaagpercentage per nacht opnieuw berekenen. Verwachting: minder spreiding dan
+   60/70/70/90, want drie wisselbronnen zijn weg.
+3. Valt de spreiding weg, dan klopt 70% gewoon en kan C dicht zonder wijziging.
+
 ---
 
 # Probleem

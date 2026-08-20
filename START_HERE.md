@@ -1,7 +1,7 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> **Laatst bijgewerkt: 2026-08-20** (PR-poort staat op **121 goedkope + 18 database**-bewakers, een flappende
+> **Laatst bijgewerkt: 2026-08-20** (PR-poort staat op **122 goedkope + 18 database**-bewakers, een flappende
 > `check` op main gerepareerd, judge-variantie gemeten zonder AI-kosten, en de fontlijst
 > bleek voor 15 van de 18 geen echte merkfonts te bevatten — zie de top-3 hieronder).
 > Daarvoor: **2026-08-19** (bewakers-schoonmaak: PR-poort van 18 naar 37 bewakers,
@@ -43,8 +43,9 @@ de poort kost nu 1m54s in CI, 21% van de check-job en tweede na de build. Bij 18
 dat ~10s. Wie er een toevoegt, voegt kosten toe — dat stond eerder als "bijna gratis" in de
 kop van `run-guards.sh` en klopt niet meer.
 
-**Van 3 draaiende bewakers naar 139** — 121 in de PR-poort, 18 in de e2e-job (database, met
-assertie-ondergrenzen), plus vier nachtelijke workflows.
+**Van 3 draaiende bewakers naar 140** — **122** in de PR-poort (de laatste is
+`eval:blog-post-golden`, zie hieronder), 18 in de e2e-job (database, met assertie-ondergrenzen),
+plus vier nachtelijke workflows.
 
 ⚠️ **De telling zelf had een blinde vlek.** Wie bewakers telt in `package.json` ziet een
 bestand zónder npm-script niet; dat waren er 73. Gemeten in code in plaats van in bestanden:
@@ -102,6 +103,19 @@ omdat er een open PR op dat bestand zat.
 `networkidle`-patroon, maar acht klantsites nagemeten gaven geen enkele hang. Eén alarmerende
 meting (28,6s van 30) bleek een artefact van mijn eigen opzet — de variant die eerst draait
 betaalt de koude start. Geen productiecode gewijzigd.
+
+**De golden-set bewaakt nu ook de prompt die we écht shippen.** De promptfoo-set genereert met
+een eigen inline prompt, dus een regressie in `BLOG_POST_SYSTEM` was onzichtbaar en de scores
+beschreven een artefact dat geen gebruiker krijgt. Erik koos optie A: allebei, gescheiden.
+`eval:blog-post-golden` (16 asserties, geen database, geen API-sleutel, geen AI-call) bouwt de
+productie-prompt en toetst hem in de goedkope poort. Hij bewaakt vooral dat merk-, persona-,
+campagne- en brief-context écht in de prompt landen — stil contextverlies is de ergste faalmodus
+van dit product.
+
+⚠️ **Twee van de drie openstaande "productbesluiten" bleken geen vragen maar defecten.** De ene
+rubric eiste zichtbare aannames in de copy terwijl de shipped prompt juist zegt *"produce only
+the final content"*; de andere assert was hoofdlettergevoelig en faalde wanneer het keyword
+alleen aan een zinsbegin stond. Beide stonden weken als "wacht op Erik".
 
 **De rode draad van deze twee dagen, breder dan bewakers.** De meetfouten hadden allemaal
 dezelfde vorm: *een meting die iets oplevert, is juist daarom niet verdacht.* Een lege
@@ -465,10 +479,10 @@ bestaan.** Dat maakt dit item niet urgenter maar veel kleiner.
 | [`marketing-site-verbeterslag`](tasks/marketing-site-verbeterslag.md) | in-progress — pagina-voor-pagina-doorloop van alle 26 marketing-URL's + verzamelbak voor website-brede wijzigingen |
 
 ### Volgende
-[`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) (⚠️ **18 fonts bij
-vijf merken** renderen in een substituut — niet 44: de 15 Google-fonts hadden nooit een
-bestand nodig, en de 11 Adobe-fonts zijn per besluit 19-08 bewust afgewezen. De code is af;
-dit wacht volledig op uploads van Erik) ·
+[`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) (⚠️ **hooguit 2
+echte merkfonts, niet 18** — per #442, 20-08. De rest bleek systeem-, plugin- en build-ruis plus
+een smoke-workspace. De code is af; dit wacht op uploads van Erik, maar het is een klusje van
+twee bestanden geworden) ·
 [`pg-major-sslmode-semantiek`](tasks/pg-major-sslmode-semantiek.md) (pg v9 maakt van onze
 `sslmode=require` stil een zwakkere modus. ✅ **Code af per 19-08** incl. de bewaker die er
 nooit was aangesloten; wacht nog op één env-handeling van Erik — `verify-full` in de prod-URL,
@@ -476,9 +490,11 @@ en pas dáárna `DATABASE_SSL_STRICT=true`) ·
 `workspaces-online-migratie` (4 workspaces resteren, jouw keuze) ·
 [`deferred-browser-smokes-unblocked`](tasks/done/deferred-browser-smokes-unblocked.md) ✅ **done**
 (3 smokes wachtten op een blocker die sinds 05-07 weg is) ·
-[`golden-set-blogpost-quality`](tasks/golden-set-blogpost-quality.md) (⚠️ de golden-set-gate is
-per 16-08 gesplitst — `evaluate` kleurt je PR's niet meer rood; wat resteert is de inhoudelijke
-vraag waarom 4-5 cases stabiel zakken) ·
+[`golden-set-blogpost-quality`](tasks/golden-set-blogpost-quality.md) (⚠️ **stand 20-08: vier
+van de vijf punten dicht.** De twee "productbesluiten" waren geen vragen maar defecten — de ene
+rubric eiste wat productie verbiedt, de andere assert was hoofdlettergevoelig. De v2-vraag is
+beantwoord (optie A) en gebouwd. Wat rest is de 70%-drempel, en die kán niet af vóór er ~4
+nachten met de nieuwe fixes zijn gedraaid — vanaf 24-08) ·
 [`document-lang-followups`](tasks/document-lang-followups.md) (restwerk uit
 `static-rendering-regressie`: statisch renderen heropenen vraagt eerst een CSP-scope zonder
 per-request nonce; plus dezelfde `lang`-bug op `/oauth/*`, `/reset-password` en
