@@ -10,7 +10,7 @@ created: 2026-08-16
 completed:
 related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md
-worktree: branddock-golden-set  # geclaimd door sessie 41832dfd, 2026-08-18
+worktree: -  # claim vervallen 20-08: sessie 41832dfd en worktree branddock-golden-set bestaan niet meer; vrij op te pakken
 ---
 
 # Probleem
@@ -151,12 +151,72 @@ Doe je het andersom, dan kalibreer je opnieuw op de rand.
    **Geborgd**: `npm run smoke:golden-set-drift` pint het productie-format vast. Wijzigt
    dat, dan faalt de guard en kijkt iemand naar de eval — in plaats van dat de twee stil
    uit elkaar lopen. Gekalibreerd met een mutatietest: een verschoven format geeft exit 1.
-3. **Judge-variantie meten** op de borderline-cases
-   (`scripts/smoke-tests/position-swap-judge.ts`) — kost live-LLM-runs, ~55k tokens
-   per run, bewust niet autonoom gestart.
+3. ~~**Judge-variantie meten** op de borderline-cases — kost live-LLM-runs~~ —
+   ✅ **gedaan 2026-08-20, en het kostte niets.** Die aanname was fout: de nachtelijke
+   `live-eval` bewaart per run een artefact, dus de herhaalde metingen stonden er al.
+   Zie "Judge-variantie gemeten" hieronder.
 4. **Het v2-besluit** (orchestrator-wrapped prompts). De thought-leadership-case is
    er het argument voor: die eist onderbouwing met data terwijl de eval geen enkele
    bron meegeeft, terwijl productie wél merk- en kennis-context injecteert.
+
+# Judge-variantie gemeten — 2026-08-20, zonder één betaalde AI-call
+
+De aanname dat deze meting live-LLM-runs kost (~55k tokens) klopte niet. De nachtelijke
+`live-eval` draait al weken en bewaart per run een artefact met de score per case. Vier
+nachten stonden nog in GitHub (17 t/m 20 augustus; 16-08 en ouder zijn verlopen). Vier
+keer dezelfde tien cases op identieke invoer — dat ís de variantie-meting.
+
+⚠️ **Eén regime-breuk in dat venster.** Commit `d090ce58` (#350) wijzigde de rubric op
+18-08 om 23:22 — ná de nachtrun van 18-08, vóór die van 19-08. Runs uit verschillende
+regimes naast elkaar leggen meet die wijziging, niet de variantie. Daarom twee paren van
+elk twee identieke runs: 17+18 (oude rubric) en 19+20 (nieuwe).
+
+## Het slaagpercentage schommelt 40 punten
+
+| nacht | geslaagd | rubric | 70%-gate |
+|---|---|---|---|
+| 17-08 | 5/10 = 50% | oud | zakt |
+| 18-08 | 7/10 = 70% | oud | haalt |
+| 19-08 | 6/10 = 60% | nieuw | zakt |
+| 20-08 | 9/10 = 90% | nieuw | haalt |
+
+**Dit herkadert de drempel-vraag.** De kop van `golden-sets.yml` stelt dat het echte
+niveau ~50-60% is en dat 70% daar net boven ligt, dus dat de gate flapt. De data wijst
+iets anders aan: op identieke invoer levert dezelfde set 50% óf 90%. Het probleem is niet
+wáár de lijn ligt, maar dat tien cases waarvan er drie wisselen een slaagpercentage met
+±20 punten spreiding opleveren. **Elke** drempel tussen 50 en 90 flapt dan. De lijn
+verschuiven lost dat niet op — meer cases, of de wisseling wegnemen, wel.
+
+## Drie cases wisselen tussen twee identieke runs
+
+| case | assert | 17 18 19 20 | duiding |
+|---|---|---|---|
+| Adversarial: Empty knowledge context | `llm-rubric` | F P F P | judge-variantie, in beide regimes |
+| Seed: Better Brands thought-leadership | `llm-rubric` | F F F P | judge-variantie (nieuwe rubric) |
+| Seed: LINFI vakmanschap-content | `contains` | F P F P | **géén** judge-variantie — zie hieronder |
+| Evolved: SEO-focus extreem | `llm-rubric` | F F P P | **géén** variantie — dit is #350 die werkt |
+
+Die laatste rij is een onafhankelijke bevestiging dat de rubric-fix deed wat hij beloofde:
+stabiel gezakt vóór, stabiel geslaagd ná, en geen beweging bínnen een regime.
+
+## De LINFI-flip is een generatie-probleem, geen judge-probleem
+
+`contains 'handgemaakte vloeren'` is een **deterministische** assert — die kan niet
+"anders geoordeeld" worden. Hij wisselt dus omdat het gegenereerde artikel de letterlijke
+term twee van de vier nachten niet bevat. Dat is precies productbesluit B, nu met een
+getal: in de huidige vorm is die assert een muntworp.
+
+## Wat juist níet wisselt
+
+`Evolved: Adversarial-input — vage brief` staat alle vier de nachten op exact 2,50 en
+zakt elke keer. Geen ruis maar een consistente afkeuring — die lost op met productbesluit
+A, niet met meer data.
+
+**Reproduceren**: `gh run list --workflow=golden-sets.yml --json databaseId,event`, dan
+`gh run download <id>` per nacht en de scores per case uit `blog-post-results.json`
+(`results.results[].score` / `.success`, en `.gradingResult.componentResults[]` voor de
+assert-uitslagen). Let op de repo-slug: `erikjager55/Branddock`, niet `erikjager/`.
+
 
 # Acceptatiecriteria
 
@@ -167,13 +227,25 @@ Doe je het andersom, dan kalibreer je opnieuw op de rand.
       De rubric eist het nu ín het artikel; de prompt kent al een verwante regel
       ("signaleer het conflict" bij off-brand briefs). Zonder dit besluit is niet te
       bepalen of de vage-brief-case een prompt-fout of een rubric-fout is. ⏳ Erik
+      → **20-08**: deze case scoort vier nachten op rij exact 2,50 en zakt elke keer.
+      Consistent, dus wachten op meer data heeft geen zin — alleen dit besluit helpt.
 - [ ] **Productbesluit B — keyword letterlijk in de H1?** Ook als de zin daardoor
       krom wordt? De LINFI-case toetst `contains 'handgemaakte vloeren'` op het hele
       artikel, met zoekterm `handgemaakte vloeren maatwerk`. Ja → de assert hoort op
       de H1-regel te toetsen (strenger én eerlijker). Nee → het moet een flexibele
       regex worden. ⏳ Erik
-- [ ] Judge-variantie gemeten voor de borderline-cases
-- [ ] Besluit over de 70%-drempel onderbouwd met data i.p.v. op de rand gekalibreerd
+      → **20-08**: gemeten wisselt deze assert F P F P over vier nachten. De letterlijke
+      term stond er twee van de vier keer in. Welke kant je ook kiest, de huidige vorm
+      is een muntworp — dit is het duurste openstaande vakje van de vier.
+- [x] Judge-variantie gemeten voor de borderline-cases — ✅ 2026-08-20 over vier
+      nachtruns, gesplitst per rubric-regime. Drie cases wisselen tussen twee
+      identieke runs, waarvan één (LINFI) géén judge-variantie is maar
+      generatie-variantie. Zie de sectie hierboven
+- [~] Besluit over de 70%-drempel onderbouwd met data i.p.v. op de rand gekalibreerd —
+      **de data ligt er** (50/70/60/90% over vier nachten). Die laat zien dat de vraag
+      "waar leggen we de lijn" de verkeerde is: bij ±20 punten spreiding op identieke
+      invoer flapt elke lijn tussen 50 en 90. Het besluit zelf (meer cases? de
+      wisselende asserts vervangen? de gate informatief maken?) blijft openstaan
 - [ ] Expliciet besluit over de v2 (orchestrator-wrapped prompts) — doen of bewust niet
 
 # Smoke test plan
