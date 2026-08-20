@@ -929,8 +929,20 @@ function extractColorsFromCss(css: string): string[] {
 export function extractFontsFromCss(css: string): string[] {
   const fontSet = new Set<string>();
 
-  // Match font-family declarations
-  const fontFamilyPattern = /font-family\s*:\s*([^;}"]+)/gi;
+  // Match font-family declarations.
+  //
+  // ⚠️ De `"` stond hier tot 2026-08-20 in de uitsluitings-class, sinds de
+  // eerste implementatie (2026-03-05). Gevolg: `font-family:"Open Sans"` gaf
+  // een LEGE capture en werd volledig gemist — vijf maanden lang, en dat is
+  // juist de meest gangbare schrijfwijze in gecompileerde CSS (Tailwind,
+  // SCSS-output, WordPress-thema's). Enkele quotes en ongequote waarden
+  // werkten wél, waardoor het beeld ontstond dat de scraper functioneerde:
+  // hij vond de ongequote systeem- en icoonfonts uit fallback-stacks, maar
+  // niet de gequote merkfont ervoor.
+  //
+  // `resolveFontFamilyValue` strípt de quotes al (zie daar), dus het weghalen
+  // van de `"` hier is voldoende. De `;` en `}` blijven de begrenzers.
+  const fontFamilyPattern = /font-family\s*:\s*([^;}]+)/gi;
   let match;
   while ((match = fontFamilyPattern.exec(css)) !== null) {
     const fonts = match[1].split(',').map((f) => f.trim());
