@@ -143,6 +143,33 @@ Volledige onderbouwing en metingen: `tasks/done/static-rendering-regressie.md`.
       wiens 404-pagina dit is, niet alleen een attribuut-fix. De pagina draait
       op het subdomein van een KLANT.
 
+      ## ⛔ Alle drie de Next-API's geprobeerd — geen ervan werkt
+
+      Uitgezocht op 2026-08-19/20, drie builds:
+
+      | aanpak | uitkomst |
+      |---|---|
+      | `not-found.tsx` in het segment | `<html id="__next_error__">`, geen `lang` |
+      | `not-found.tsx` op rootniveau | idem |
+      | `global-not-found.tsx` + `experimental.globalNotFound` | idem |
+
+      Die derde is de interessantste, want die API rendert per ontwerp een eígen
+      `<html>`-element — en tóch houdt Next voor dit geval zijn foutdocument aan.
+
+      De meting discrimineert: in dezelfde run gaven `/marketing/bestaat-niet`
+      wél `lang="nl"`, `/marketing/pricing` `lang="nl"` en `/reset-password`
+      `lang="en"`. Het is dus niet zo dat er niets werkte.
+
+      **Conclusie: dit is een grens van Next 16.2.9, geen bedradingsgat.** Een
+      `notFound()` uit een dynamisch segment tijdens een dynamische render valt
+      terug op het ingebouwde foutdocument, en geen van de not-found-API's
+      vervangt dat. Wie het alsnog wil oplossen, ontkomt niet aan het vermijden
+      van `notFound()` zelf — bijvoorbeeld door de route een eigen 404-weergave
+      te laten renderen en de status elders te zetten. Dat is een herbouw van de
+      route, geen attribuut-fix.
+
+      Probeer de drie hierboven niet opnieuw; dat kost drie builds.
+
 ## C. Opgeruimd worden
 
 - [x] **Drie `revalidatePath('/p/…')`-aanroepen** — ✅ **geannoteerd 2026-08-19.**
