@@ -60,7 +60,7 @@ GUARDS=(
   smoke:inline-edit:24
   smoke:ad-encryption:12
   smoke:icon-registry:1
-  smoke:golden-set-drift:5
+  smoke:golden-set-drift:8
   smoke:review-drift:20
   smoke:styleguide-rules:45
   smoke:brandstyle-typography:60

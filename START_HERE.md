@@ -424,20 +424,28 @@ bestaan.** Dat maakt dit item niet urgenter maar veel kleiner.
    `GeneratedBrandProfile` (schemawijziging → Neon-push) en template-lookup per taal.
    Het fundament ligt er: `renderLayout` kent al een `locale`.
 
-4. **De blog-post golden-set — drie vragen, één zitting** ([task](tasks/golden-set-blogpost-quality.md)).
-   Nieuw op deze lijst per 20-08, en nu mét data eronder, dus goedkoop te beslissen.
+4. **De blog-post golden-set** ([task](tasks/golden-set-blogpost-quality.md)) — ⚠️ **van drie
+   vragen naar één.** Dit punt stond hier sinds vanochtend als "drie vragen, één zitting". Bij
+   het uitzoeken bleken er **twee geen vraag aan jou** maar een fout in de eval.
 
-   - **A. Hóórt gepubliceerde copy zijn aannames te benoemen** bij een vage brief, of hoort
-     dat in een begeleidend veld? De rubric eist het nu ín het artikel. Deze case scoort
-     vier nachten op rij exact 2,50 en zakt elke keer — consistent, dus wachten op meer
-     data helpt hier niet.
-   - **B. Moet het keyword letterlijk in de H1**, ook als de zin daardoor krom wordt?
-     Gemeten wisselt deze assert `F P F P` over vier nachten: de letterlijke term stond er
-     twee van de vier keer in. Welke kant je ook kiest, de huidige vorm is een muntworp.
-   - **C. Wat doen we met de 70%-gate?** Het slaagpercentage was 50 / 70 / 60 / 90% over
-     vier nachten op identieke invoer. Bij die spreiding flapt élke lijn tussen 50 en 90 —
-     de vraag is dus niet waar de lijn ligt, maar of we meer cases toevoegen, de wisselende
-     asserts vervangen, of de gate informatief maken.
+   - ~~**A. aannames in de tekst?**~~ ✅ **opgelost — rubric-fout.** De shipped prompt
+     schrijft het tegenovergestelde voor van wat de rubric eiste (*"Mentally adjust BEFORE
+     writing — then produce only the final content"*). Het product had de vraag al
+     beantwoord; de eval keek op de verkeerde plek.
+   - ~~**B. keyword letterlijk in de H1?**~~ ✅ **opgelost — bug, geen keuze.** Correctie op
+     wat hier vanochtend stond: de term stond er **élke** nacht in. `promptfoo`'s `contains`
+     is hoofdlettergevoelig en faalde wanneer elk voorkomen aan een zinsbegin stond. De H1
+     was alle vier de nachten identiek en droeg de volledige zoekterm.
+   - **C. Wat doen we met de 70%-gate?** — **advies: nu niets, over ~4 nachten opnieuw
+     meten.** De cijfers hier waren 50/70/60/90%; gecorrigeerd voor de bug van B wordt het
+     **60/70/70/90%**. De spreiding blijft het probleem, niet de lijn — maar de fixes van
+     vandaag veranderen komende nachten, en kiezen op oude data is opnieuw op de rand
+     kalibreren.
+
+   **Wat er wél voor jou openstaat**, en dat is een echte productvraag: de **v2** — de eval
+   gebruikt eigen inline prompts in plaats van de productiecode. Gemeten divergentie, beide
+   kanten op: productie bestelt een meta-description en géén FAQ; de eval-prompt precies
+   andersom. Deze set toetst dus een format dat gebruikers niet krijgen.
 
 ---
 

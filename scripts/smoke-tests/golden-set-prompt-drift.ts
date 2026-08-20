@@ -40,6 +40,14 @@ function check(label: string, ok: boolean, detail?: string): void {
  */
 const VERWACHT_BLOG_FORMAT = 'Format: Blog post with H1 title, H2 sections, conclusion, and CTA.';
 
+/** De systeemprompt die productie voor dit content-type meegeeft. Hier staat het
+ *  outputcontract — niet in de user-prompt-formatregel. Dat onderscheid is de
+ *  hele reden dat deze guard sinds 2026-08-20 anders toetst. */
+function productionSystemFor(id: string): string {
+  const tpl = LONG_FORM_TEMPLATES[id];
+  return typeof tpl?.systemPrompt === 'string' ? tpl.systemPrompt : '';
+}
+
 function productionFormatFor(id: string): string {
   const tpl = LONG_FORM_TEMPLATES[id];
   if (!tpl) return '';
@@ -60,17 +68,44 @@ function main(): void {
     actual === VERWACHT_BLOG_FORMAT,
     `verwacht: ${VERWACHT_BLOG_FORMAT}\n      gevonden: ${actual || '(niet gevonden)'}`);
 
-  check('en het bestelt geen meta-description',
-    !/meta.?desc/i.test(actual), actual);
+  // ⚠️ Hier stond: check('en het bestelt geen meta-description', !/meta.?desc/i
+  // .test(actual)). Die assertie was waar én misleidend: hij toetste de
+  // USER-prompt-formatregel, waar het antwoord triviaal 'nee' is. Het
+  // outputcontract staat in de SYSTEEMprompt. Deze guard bevestigde daarmee de
+  // premisse van #350 in plaats van hem te toetsen — een guard die draait is nog
+  // geen guard die het juiste toetst. Vervangen op 2026-08-20.
 
-  console.log('\n── De rubric eist niets wat productie niet levert ─────────');
+  console.log('\n── Wat productie ECHT bestelt (systeemprompt) ─────────────');
+
+  const sys = productionSystemFor('blog-post');
+  check('de systeemprompt voor blog-post is vindbaar', sys.length > 1000,
+    `lengte: ${sys.length}`);
+
+  // Twee divergenties tussen eval-prompt en productie, beide kanten op. Ze staan
+  // hier vastgepind zodat een wijziging aan één van beide kanten opvalt, in plaats
+  // van dat de twee stil verder uit elkaar lopen.
+  check('productie bestelt WEL een meta-description (eval-prompt niet)',
+    /meta.?desc/i.test(sys),
+    'Zo niet: de divergentie is opgelost of verplaatst — leg eval en productie naast elkaar.');
+
+  check('productie bestelt GEEN FAQ-sectie (eval-prompt wel)',
+    !/\bFAQ\b/.test(sys),
+    'Zo wel: productie is bijgetrokken — dan mag de FAQ-eis in de rubric blijven staan.');
+
+  check('productie belooft het keyword in de H1',
+    /H1 contains the primary keyword/i.test(sys),
+    'Zo niet: de H1-assert van de LINFI-case toetst een belofte die niet meer bestaat.');
+
+  console.log('\n── De rubric volgt de EVAL-prompt (niet productie) ────────');
 
   const yamlPath = path.join('tests', 'content-golden-sets', 'long-form', 'blog-post.yaml');
   const raw = fs.readFileSync(yamlPath, 'utf8');
   // Alleen niet-commentaarregels: de toelichting bij de fix noemt het woord wel.
   const eisen = raw.split('\n').filter((l) => !l.trim().startsWith('#') && /meta.?desc/i.test(l));
-  check('geen meta-description-eis meer in de blog-post-rubrics', eisen.length === 0,
-    eisen.join('\n      '));
+  // De rubric hoort te matchen met de EVAL-prompt, want die genereert de output.
+  // Eisen dat het model iets levert wat hem nooit is opgedragen, faalt per definitie.
+  check('geen meta-description-eis in de blog-post-rubrics (de eval-prompt bestelt er geen)',
+    eisen.length === 0, eisen.join('\n      '));
 
   console.log('\n── Mutatietest ───────────────────────────────────────────');
   // Zou de guard het merken als het productie-format verschuift? Toets de

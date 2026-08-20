@@ -63,6 +63,49 @@ maar dat was de dag dat de generator live is *getest*.
 - Task: [tasks/done/brandmd-artikel.md](tasks/done/brandmd-artikel.md)
 - ADR: -
 - Spec: docs/marketing/brand-md-launch-plan-2026-08-02.md
+### 514. De drie golden-set-vragen waren er twee minder — en één ervan was mijn eigen meetfout
+
+Twee van de drie "productbesluiten" bleken geen vragen aan Erik maar fouten in de eval.
+
+**A — aannames in de tekst.** De rubric eiste dat de AI bij een vage brief zijn aannames
+zichtbaar benoemt ín het artikel. `prompt-templates/helpers.ts:119` schrijft het
+tegenovergestelde voor: *"If any answer is unclear... Mentally adjust BEFORE writing — then
+produce only the final content."* Het product had de vraag dus al beantwoord, alleen niet op de
+plek waar de eval keek. Waar aannames wél horen wist het ook: de SEO-pijplijn zet ze in een
+gestructureerd briefing-veld, niet in de copy.
+
+**B — keyword in de H1.** ⚠️ **Correctie op changelog 512.** Daar staat dat de letterlijke
+term "twee van de vier nachten" in het artikel stond en de assert daarom een muntworp was. Dat
+klopt niet. De term stond er élke nacht in; `promptfoo`'s `contains` is **hoofdlettergevoelig**
+en faalt zodra elk voorkomen aan een zinsbegin of in een kop staat — 0 kleine-letter-treffers op
+17 en 19 augustus, 1 op 18 en 20. Perfecte correlatie over vier nachten. De H1 was alle vier de
+nachten identiek en droeg de volledige zoekterm; er viel niets te kiezen tussen streng en krom.
+
+Gefixt als H1-assert, hoofdletterongevoelig — precies wat productie belooft en wat de eval-prompt
+bestelt. Getoetst tegen de vier opgeslagen artikelen: 4/4 waar de oude F P F P gaf, met tegenproef
+(faalt nog steeds zonder H1, bij een keyword alleen in de body, en bij een H1 zonder keyword).
+Twee latente exemplaren meegenomen: `brand strategy` had in twee nachten één kleine-letter-treffer
+in het hele artikel.
+
+**C — de 70%-drempel.** Gecorrigeerd naar 60/70/70/90% (was 50/70/60/90; twee nachten werden door
+de bug gedrukt). Advies: nu niets doen en over vier nachten opnieuw meten. Een drempel kiezen op
+data van vóór de fixes is opnieuw op de rand kalibreren — de fout die deze taak beschrijft.
+
+**Bijvangst die groter is dan de drie vragen.** #350 haalde de meta-descriptie-eis uit de rubric
+met als reden dat productie er geen bestelt. De uitkomst was juist — de eval-prompt bestelt er
+geen — maar de reden niet: `BLOG_POST_SYSTEM` noemt de meta-description **drie keer**. De meting
+van 18-08 keek naar de user-prompt-formatregel, terwijl het outputcontract in de systeemprompt
+staat.
+
+De drift-guard die dit moest borgen had dezelfde blinde vlek: hij toetste letterlijk *"en het
+bestelt geen meta-description"* op die user-prompt-regel, waar het antwoord triviaal nee is. Hij
+bevestigde de premisse in plaats van hem te toetsen. Nu verbreed naar de systeemprompt en de
+divergentie beide kanten op vastgepind (productie wel meta / geen FAQ; eval-prompt geen meta / wel
+FAQ). Guard van 5 naar 8 checks, ondergrens in de poort mee bijgewerkt.
+
+- Task: [tasks/golden-set-blogpost-quality.md](../tasks/golden-set-blogpost-quality.md)
+- ADR: -
+- Spec: -
 
 ### 512. CLAUDE.md gaf sinds 18-08 CSS-advies dat tegen de eigen ADR inging
 
