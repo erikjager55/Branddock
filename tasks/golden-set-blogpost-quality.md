@@ -222,31 +222,125 @@ assert-uitslagen). Let op de repo-slug: `erikjager55/Branddock`, niet `erikjager
 
 - [x] Per falende case vastgelegd wélke assert zakt (artefact-analyse over ≥2 nachten) — 2026-08-18
 - [x] Per case een verdict: prompt-probleem / rubric-probleem / terechte afkeuring — 2026-08-18
-- [ ] **Productbesluit A — aannames in de tekst?** Hóórt gepubliceerde copy zijn
-      aannames te benoemen bij een vage brief, of hoort dat in een begeleidend veld?
-      De rubric eist het nu ín het artikel; de prompt kent al een verwante regel
-      ("signaleer het conflict" bij off-brand briefs). Zonder dit besluit is niet te
-      bepalen of de vage-brief-case een prompt-fout of een rubric-fout is. ⏳ Erik
-      → **20-08**: deze case scoort vier nachten op rij exact 2,50 en zakt elke keer.
-      Consistent, dus wachten op meer data heeft geen zin — alleen dit besluit helpt.
-- [ ] **Productbesluit B — keyword letterlijk in de H1?** Ook als de zin daardoor
-      krom wordt? De LINFI-case toetst `contains 'handgemaakte vloeren'` op het hele
-      artikel, met zoekterm `handgemaakte vloeren maatwerk`. Ja → de assert hoort op
-      de H1-regel te toetsen (strenger én eerlijker). Nee → het moet een flexibele
-      regex worden. ⏳ Erik
-      → **20-08**: gemeten wisselt deze assert F P F P over vier nachten. De letterlijke
-      term stond er twee van de vier keer in. Welke kant je ook kiest, de huidige vorm
-      is een muntworp — dit is het duurste openstaande vakje van de vier.
+- [x] ~~**Productbesluit A — aannames in de tekst?**~~ — ✅ **HET PRODUCT HAD DE VRAAG
+      AL BEANTWOORD.** Opgelost 2026-08-20, rubric-fout.
+
+      `prompt-templates/helpers.ts:119` schrijft het tegenovergestelde voor van wat de
+      rubric eiste:
+
+      > *"If any answer is unclear, the content will feel generic. Mentally adjust
+      > BEFORE writing — then produce only the final content."*
+
+      De shipped prompt zegt dus: los de onduidelijkheid **mentaal** op en lever
+      alleen de eindtekst. De rubric eiste zichtbare aannames ín het artikel. Dat is
+      dezelfde klasse als de meta-descriptie-eis van #350: de rubric toetste iets wat
+      productie niet belooft.
+
+      Waar aannames wél thuishoren, wist het product ook al: de SEO-pijplijn zet ze in
+      een gestructureerd **briefing-veld** (`ai/prompts/seo-prompts.ts:59`), niet in de
+      copy. De vraag "in het artikel of in een begeleidend veld?" was dus beantwoord —
+      alleen niet op de plek waar de eval keek.
+
+      **Gefixt**: die bullet is vervangen door "WEL concrete, specifieke inhoud levert
+      ondanks de vage brief". De overgebleven eisen (geen fluff, concreet, geen
+      placeholders) zijn precies de goede toets onder productie's eigen regel.
+- [x] ~~**Productbesluit B — keyword letterlijk in de H1?**~~ — ✅ **GEEN PRODUCTVRAAG.
+      Opgelost 2026-08-20; het was een bug in de assert.**
+
+      ⚠️ **Correctie op wat hier eerder stond.** Ik schreef op 20-08 dat de letterlijke
+      term "twee van de vier keer" in het artikel stond en dat de assert daarom een
+      muntworp was. Dat klopt niet. De term stond er **élke nacht** in (1 tot 4 keer).
+
+      `promptfoo`'s `contains` is **hoofdlettergevoelig**, en de assert faalt zodra
+      elke voorkomen aan een zinsbegin of in een kop staat:
+
+      | nacht | kleine letter | hoofdletter | assert |
+      |---|---|---|---|
+      | 17-08 | 0 | 1 | faalde |
+      | 18-08 | 1 | 3 | slaagde |
+      | 19-08 | 0 | 2 | slaagde niet → faalde |
+      | 20-08 | 1 | 1 | slaagde |
+
+      Perfecte correlatie over 4/4 nachten. De H1 was bovendien alle vier de nachten
+      **identiek** en droeg de volledige zoekterm — er viel dus niets te kiezen tussen
+      "streng" en "krom Nederlands"; het model deed het gewoon goed.
+
+      **Gefixt**: de assert toetst nu de H1, hoofdletterongevoelig, precies wat
+      `BLOG_POST_SYSTEM` belooft (*"H1 contains the primary keyword"*) en wat de
+      eval-prompt bestelt (*"H1 met het SEO-keyword, gebruik het keyword letterlijk"*).
+      Getoetst tegen de vier opgeslagen artikelen: 4/4 PASS waar de oude F P F P gaf,
+      mét tegenproef — hij faalt nog steeds bij een H1 zonder keyword, bij een keyword
+      dat alleen in de body staat, en bij een ontbrekende H1.
+
+      **Twee latente exemplaren van dezelfde bug meegenomen**: `duurzaam servies`
+      (Napking) en `brand strategy` (Better Brands) waren ook `contains`. Napking zat
+      ruim, maar Better Brands had in twee van de vier nachten **één** kleine-letter-
+      treffer in het hele artikel — één zinsherschikking van dezelfde fout. Beide nu
+      `icontains`.
 - [x] Judge-variantie gemeten voor de borderline-cases — ✅ 2026-08-20 over vier
       nachtruns, gesplitst per rubric-regime. Drie cases wisselen tussen twee
       identieke runs, waarvan één (LINFI) géén judge-variantie is maar
       generatie-variantie. Zie de sectie hierboven
 - [~] Besluit over de 70%-drempel onderbouwd met data i.p.v. op de rand gekalibreerd —
-      **de data ligt er** (50/70/60/90% over vier nachten). Die laat zien dat de vraag
-      "waar leggen we de lijn" de verkeerde is: bij ±20 punten spreiding op identieke
-      invoer flapt elke lijn tussen 50 en 90. Het besluit zelf (meer cases? de
-      wisselende asserts vervangen? de gate informatief maken?) blijft openstaan
-- [ ] Expliciet besluit over de v2 (orchestrator-wrapped prompts) — doen of bewust niet
+      **advies: nu NIETS aan de drempel doen, en over ~4 nachten opnieuw meten.**
+
+      ⚠️ **Correctie op de cijfers die hier stonden.** Ik publiceerde 50/70/60/90% over
+      vier nachten. Twee van die vier zijn gedrukt door de hoofdletter-bug in de
+      LINFI-assert (zie B). Gecorrigeerd wordt het **60/70/70/90%** — nog steeds een
+      spreiding van 30 punten met de gate op 70, maar minder dramatisch dan ik schreef.
+
+      Dat de vraag verkeerd gesteld was, blijft staan: bij die spreiding op identieke
+      invoer flapt elke lijn tussen 60 en 90, en de lijn verschuiven verandert daar
+      niets aan. Wat wél helpt is het aantal wisselende bronnen verkleinen — en dat is
+      precies wat A en B vandaag deden.
+
+      **Daarom nu niet beslissen.** De drie fixes van 20-08 (H1-assert, twee
+      `icontains`, de vage-brief-rubric) veranderen de uitkomst van komende nachten.
+      Een drempel kiezen op data van vóór die fixes is opnieuw op de rand kalibreren —
+      exact de fout die deze taak beschrijft. Na ~4 nachten ligt er schone data.
+
+      **Wat er dan te kiezen valt**, in volgorde van mijn voorkeur:
+      1. **Niets** — als de spreiding onder de fixes wegvalt, klopt 70% gewoon.
+      2. **Meer cases.** Tien cases waarvan er één wisselt geeft al 10 punten sprong.
+         Twintig cases halveert de ruis zonder de lat te verlagen.
+      3. **De gate informatief maken** en de drempel op de trend leggen in plaats van
+         op één nacht. Pas doen als 1 en 2 niet volstaan — een gate die niet blokkeert,
+         wordt niet gelezen (gotcha 2026-07-07).
+
+      Wat je níet moet doen is de lijn verlagen tot de nachten groen zijn. Dan meet je
+      niets meer.
+- [x] ~~**DE VRAAG: wat moet deze set bewaken?**~~ — ✅ **Erik koos A (2026-08-20): allebei,
+      gescheiden.** Gebouwd en aangehaakt.
+
+      **`scripts/eval/blog-post-golden/run.ts`** — 16 asserties, naar het precedent van
+      `lp-variant-golden`. Geen database, geen API-sleutel, geen AI-call: hij bouwt de
+      productie-prompt en toetst hem. Draait in de goedkope PR-poort als
+      `eval:blog-post-golden:16`.
+
+      Wat hij bewaakt, in vier groepen:
+
+      | groep | wat | waarom |
+      |---|---|---|
+      | A | het contract dat de promptfoo-rubrics aannemen (keyword-in-H1, meta-description, géén FAQ) | verschuift er één, dan hoort iemand die rubrics ernaast te leggen — precies wat op 18-08 niet gebeurde |
+      | B | dat merk-, persona-, campagne- en brief-context écht in de prompt landen | stil contextverlies is de ergste faalmodus van dit product: prompt gebouwd, generatie geslaagd, merk afwezig |
+      | C | dat tone en length doorkomen, incl. de terugval bij een onbekende length | |
+      | D | mutatietests | zonder die toetst A-C alleen dat er tékst is |
+
+      **Getoetst dat hij een breuk merkt, niet alleen dat hij groen is.** De H1-belofte uit
+      `BLOG_POST_SYSTEM` verwijderd → 1 van 16 faalt, op de juiste check. Alle drie de
+      meta-vermeldingen verwijderd → 2 van 16. Eén vermelding weghalen laat hem groen, en dat
+      is juist goed: hij toetst het contract, niet een regel. Productie daarna hersteld en
+      opnieuw 16/16.
+
+      **De promptfoo-set blijft ongewijzigd.** Die beantwoordt een andere vraag ("is de tekst
+      goed?"), kost $0,34 per nacht en hoort daarom 's nachts. Deze runner beantwoordt "is de
+      prompt nog heel?" — deterministisch, gratis, in de poort. Wat B zou hebben gekost (alle
+      eerdere nachten onvergelijkbaar) is daarmee niet betaald.
+
+      ⚠️ **Wat hiermee NIET is opgelost**: de divergentie zelf. Productie bestelt nog steeds
+      een meta-description die de eval-prompt niet bestelt, en de eval-prompt een FAQ die
+      productie niet bestelt. Die staat nu alleen niet meer stil — verandert een van beide
+      kanten, dan valt de runner om en kijkt er iemand naar.
 
 # Smoke test plan
 
