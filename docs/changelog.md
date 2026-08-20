@@ -37,6 +37,34 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 516. Positioning werd een kreet van twee woorden — de rijke tekst stond ernaast
+
+Directe correctie op #514. Die fix maakte Positioning zichtbaar, maar met de verkeerde bron.
+`essenceStatement` stond vóór `essenceNarrative`, en gemeten op prod is dat bij **11 van de 12
+merken** de verkeerde keuze:
+
+| Merk | `essenceStatement` | `essenceNarrative` |
+|---|---|---|
+| Adullam | 19 tekens | **311** |
+| Linfi | 18 | **303** |
+| Zwarthout | 22 | **292** |
+| Napking | 19 | **286** |
+| Branddock | 19 ("Bewijsbaar on-brand") | **191** |
+
+Alleen Het Nieuwe Golfen heeft een inhoudelijk statement (44 tekens). Bij de rest won dus een
+label van 13-26 tekens van 191-311 tekens échte positionering die er direct naast stond.
+Volgorde omgedraaid; zonder narrative valt hij nog steeds terug op het statement.
+
+**Gevonden door ná het uitrollen te kijken wat er werkelijk uit kwam** — het gepubliceerde
+BRAND.md van Branddock gaf letterlijk `### Positioning` gevolgd door "Bewijsbaar on-brand".
+Technisch een geslaagde fix, inhoudelijk halve winst. De bewaker dekte dit niet: hij toetste
+dát er een samenvatting kwam, niet wélke. Nu twee checks erbij (18 totaal, gate-ondergrens mee
+omhoog).
+
+- Task: -
+- ADR: -
+- Spec: docs/specs/brand-md-full-profile.md
+
 ### 515. De nieuwspagina liep een maand achter
 
 Nieuwste item was 18 juli, terwijl er in augustus wel degelijk dingen landden die een klant
