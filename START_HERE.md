@@ -1,8 +1,11 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> **Laatst bijgewerkt: 2026-08-19** (bewakers-schoonmaak: PR-poort van 18 naar 37
-> bewakers, nachtelijke prod-bewaker, en beslispunt 0 is van 15 naar 6 checks gekrompen).
+> **Laatst bijgewerkt: 2026-08-20** (PR-poort staat op **121 bewakers**, een flappende
+> `check` op main gerepareerd, judge-variantie gemeten zonder AI-kosten, en de fontlijst
+> bleek voor 15 van de 18 geen echte merkfonts te bevatten — zie de top-3 hieronder).
+> Daarvoor: **2026-08-19** (bewakers-schoonmaak: PR-poort van 18 naar 37 bewakers,
+> nachtelijke prod-bewaker, beslispunt 0 gekrompen).
 > Daarvoor: **2026-08-18, derde helft** (retentie-plafond live, CSP op enforce,
 > SSE-abort gedeeltelijk, de twee Neon-indexen aangemaakt en prod drift-vrij bevonden —
 > zie hieronder. Twee sessies liepen elkaar in de weg; dat is de belangrijkste les van de dag).
@@ -27,6 +30,41 @@ sporen dragen dat:
 **Wat er niét meer speelt:** het credit-model is compleet (bouw, Stripe-config,
 smokes). Het enige dat rest is jouw schakelmoment: `NEXT_PUBLIC_TOPUP_ENABLED=true`
 plus één echte betaal-smoke.
+
+---
+
+## Wat er landde (2026-08-20)
+
+**De PR-poort staat op 121 bewakers** (120 smoke + `eval:lp-variant-golden`). Dat was 37 bij
+de vorige update en 3 aan het begin van de schoonmaak. ⚠️ **Aanhaken is niet langer gratis**:
+de poort kost nu 1m54s in CI, 21% van de check-job en tweede na de build. Bij 18 bewakers was
+dat ~10s. Wie er een toevoegt, voegt kosten toe — dat stond eerder als "bijna gratis" in de
+kop van `run-guards.sh` en klopt niet meer.
+
+**Een flappende `check` op main gerepareerd** (#445). Sinds de browserfase aanstond wisselde
+main rood en groen zonder tussenliggende wijziging. De eerste diagnose (`networkidle` is
+niet-deterministisch) klopte maar was niet genoeg: `/marketing/pricing` haalt tien externe
+dingen op, waaronder een typekit-stylesheet in `<head>` die de parser blokkeert. Een
+**verplichte** poort hing dus aan de uptime van typekit.net en posthog.com. Nu wordt alles
+buiten de eigen host afgekapt. In de geslaagde run vóór de fix duurde één navigatie 24,6s van
+de 30s limiet — de marge was er nooit.
+
+**Judge-variantie gemeten, zonder één betaalde AI-call** (#443). Die meting stond weken als
+"kost live-LLM-runs, ~55k tokens". Onjuist: de nachtelijke `live-eval` bewaart per run een
+artefact, dus vier nachten herhaalde metingen stonden al klaar. Uitkomst: het slaagpercentage
+schommelt **50 / 70 / 60 / 90%** op identieke invoer, met de gate op 70%. Dat herkadert het
+drempel-besluit — bij ±20 punten spreiding flapt elke lijn tussen 50 en 90. De lijn verschuiven
+helpt niet; meer cases of de wisseling wegnemen wel.
+
+**Drie taken waren geclaimd door een sessie die niet meer bestaat.** Voor wie werk zoekt lezen
+die als "bezet". Getoetst in plaats van aangenomen: de heartbeat-lock van de session-guard
+verloopt na 15 minuten, een `# geclaimd door`-comment nooit. Twee opgeschoond, de derde niet
+omdat er een open PR op dat bestand zat.
+
+**Niet gevonden, en dat is ook een uitkomst**: de productie-scrapers dragen hetzelfde
+`networkidle`-patroon, maar acht klantsites nagemeten gaven geen enkele hang. Eén alarmerende
+meting (28,6s van 30) bleek een artefact van mijn eigen opzet — de variant die eerst draait
+betaalt de koude start. Geen productiecode gewijzigd.
 
 ---
 
@@ -263,10 +301,19 @@ een distributie-probleem, en het enige wat de volgende stap tegenhoudt is jouw a
 omarm-strategie plus de outreach naar de maintainer. De upstream-PR's liggen als tekstpakket
 klaar.
 
-**3. 🔤 [`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) — 18 merkfonts
-renderen in een substituut.** Een klant die zijn eigen styleguide opent en overal Inter ziet
-staan onder "Neue Haas Grotesk Display", ziet het product zijn belofte niet waarmaken. Geen
-bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
+**3. 🔤 [`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) — niet 18
+maar hooguit 2 echte merkfonts.** Een klant die zijn eigen styleguide opent en overal Inter
+ziet staan onder "Neue Haas Grotesk Display", ziet het product zijn belofte niet waarmaken.
+Geen bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
+
+⚠️ **Bijgewerkt 2026-08-20 (#442) — de werklijst was zelf het probleem.** Van de 18 fonts
+die op productie als `COMMERCIAL` stonden, zijn er hooguit **twee** een echt merkfont
+(`Apercu` en `Apercu-Mono`, plus twee twijfelgevallen). De rest: zes systeem-/OS-fonts
+(`SFMono-Regular`, `Geneva`), vier plugin-icoonfonts (`ETmodules` van Divi, `slick`), twee
+build-hashes die als `font-family` waren opgeslagen, en drie uit een smoke-testworkspace.
+
+**Je stond op het punt achttien fontbestanden te gaan zoeken waarvan er vijftien niet
+bestaan.** Dat maakt dit item niet urgenter maar veel kleiner.
 
 > ⚠️ **Dit blok stond hier tot 19-08 met "44 van 44" — twee keer verkeerd.** De correctie
 > stond al sinds 18-08 in het task-file zelf; deze sessie-opener liep erop achter, en dat is
@@ -280,8 +327,16 @@ bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
 >
 > Dat maakt dit **volledig een wacht-op-jou-item**: spoor B (de code) is af sinds #342 —
 > een font zonder bestand telt mee in de merk-gereedheid. Wat rest is per merk een `.woff2`
-> plus de licentie-afweging, ~15 min per merk, bij vijf merken: DTS Ede (5), PartnerSelect (5),
-> Zwarthout (3), Nobox (1), sulejman (1). Ik kan hier niets meer aan doen.
+> plus de licentie-afweging.
+>
+> ⚠️ **De verdeling per merk hieronder is achterhaald sinds #442** (DTS Ede 5,
+> PartnerSelect 5, Zwarthout 3, Nobox 1, sulejman 1 — samen 15). Het merendeel daarvan
+> bleek geen merkfont maar systeem-, plugin- of build-ruis. Lees de actuele lijst uit het
+> task-file, niet uit dit blok.
+>
+> **Dit is de vierde correctie op ditzelfde blok** (44 → 29 → 18 → 2). Telkens dezelfde
+> fout: een aantal overnemen uit een kolom zonder te toetsen wat er in staat. Neem het
+> getal hier niet over zonder het na te lopen.
 
 ---
 
@@ -320,6 +375,21 @@ bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
    breder: site meertalig, mails volgen de gekozen taal. Vereist een locale-kolom op
    `GeneratedBrandProfile` (schemawijziging → Neon-push) en template-lookup per taal.
    Het fundament ligt er: `renderLayout` kent al een `locale`.
+
+4. **De blog-post golden-set — drie vragen, één zitting** ([task](tasks/golden-set-blogpost-quality.md)).
+   Nieuw op deze lijst per 20-08, en nu mét data eronder, dus goedkoop te beslissen.
+
+   - **A. Hóórt gepubliceerde copy zijn aannames te benoemen** bij een vage brief, of hoort
+     dat in een begeleidend veld? De rubric eist het nu ín het artikel. Deze case scoort
+     vier nachten op rij exact 2,50 en zakt elke keer — consistent, dus wachten op meer
+     data helpt hier niet.
+   - **B. Moet het keyword letterlijk in de H1**, ook als de zin daardoor krom wordt?
+     Gemeten wisselt deze assert `F P F P` over vier nachten: de letterlijke term stond er
+     twee van de vier keer in. Welke kant je ook kiest, de huidige vorm is een muntworp.
+   - **C. Wat doen we met de 70%-gate?** Het slaagpercentage was 50 / 70 / 60 / 90% over
+     vier nachten op identieke invoer. Bij die spreiding flapt élke lijn tussen 50 en 90 —
+     de vraag is dus niet waar de lijn ligt, maar of we meer cases toevoegen, de wisselende
+     asserts vervangen, of de gate informatief maken.
 
 ---
 
