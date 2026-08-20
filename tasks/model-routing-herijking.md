@@ -1,0 +1,101 @@
+---
+id: model-routing-herijking
+title: De model-routing draait op benchmark-scores van modellen die niet meer gebruikt worden
+fase: post-launch
+priority: next
+effort: 1-2 dagen
+owner: claude-code
+status: open
+created: 2026-08-20
+completed:
+related-adr: -
+related-spec: -
+worktree: -
+---
+
+# Probleem
+
+`src/lib/ai/canvas-model-routing.ts` kiest per content-type-categorie een
+generatiemodel. De onderbouwing staat als comment bovenaan het bestand:
+
+```
+//   Long-Form Content       → Opus 4.7    (91, runner-up GPT-5.4 87)
+//   Social Media            → GPT-5.4     (91, runner-up Sonnet 4.6 88)
+//   Website & Landing Pages → Sonnet 4.6  (91, runner-up Opus 4.7 89)
+```
+
+Die scores komen uit een eigen experiment van **2026-05-13** (8 content-types ×
+6 modellen). Op **2026-07-21** heeft `#226` (modellen-refresh fase 1) de modellen
+ververst:
+
+```
+claude-opus-4-7  → claude-opus-4-8
+gpt-5.4          → gpt-5.6
+claude-sonnet-4-6 → claude-sonnet-5
+```
+
+**De comment is niet meegegaan.** De keuze "Social Media → GPT" rust dus op een
+meting van `gpt-5.4`, terwijl de code `gpt-5.6` draait. Datzelfde geldt voor alle
+acht de categorieën: geen enkele score in dat blok is gemeten op het model dat er
+nu onder hangt.
+
+# Waarom dit meer is dan een verouderde comment
+
+Er is inmiddels hard bewijs dat zo'n wissel gedrag verandert. `smoke:structured-
+tweaks` toetst of een aangeleverde `slideSkeleton` letterlijk wordt overgenomen.
+Twee onafhankelijke runs op 2026-08-20 (nachtelijk 03:40 en handmatig 05:24),
+beide keren identiek:
+
+```
+carousel      → gpt-5.6          3/5 titels letterlijk
+landing-page  → claude-sonnet-5  4/4 titels letterlijk
+```
+
+Zelfde `buildSkeletonRender`-instructie, zelfde run, zelfde prompt-fragment —
+byte-identiek sinds 2026-05-08. Het verschil is het model. `gpt-5.6` neemt de
+narratieve slides letterlijk over en herschrijft consequent de oplossings- en
+CTA-slide.
+
+Dat is één datapunt op één instructie, maar het is precies het soort verschil dat
+een composite-score van 91 niet vangt: een model kan hoger scoren op kwaliteit en
+tegelijk slechter zijn in het volgen van structurele instructies.
+
+# Voorstel
+
+1. Het experiment van 2026-05-13 herhalen op de juli-generatie (opus-4-8,
+   gpt-5.6, sonnet-5, gemini 3.1 pro). Zelfde 8 categorieën, zelfde opzet, zodat
+   de scores vergelijkbaar zijn met het origineel.
+2. **Structuur-trouw als eigen as meenemen**, naast de composite-score. De
+   skeleton-bevinding laat zien dat "beste content" en "volgt de instructie" niet
+   hetzelfde zijn, en de huidige tabel meet alleen het eerste.
+3. De comment in `canvas-model-routing.ts` bijwerken met de nieuwe scores én de
+   meetdatum, zodat de volgende lezer ziet waar de keuze op rust.
+4. `smoke:structured-tweaks` terug op een harde assertie zetten (nu `softCheck`,
+   met verwijzing naar deze taak).
+
+# Acceptatiecriteria
+
+- [ ] Alle acht categorieën opnieuw gemeten op de modellen die de code draait
+- [ ] Structuur-trouw is als aparte as gemeten, niet alleen composite-kwaliteit
+- [ ] De comment noemt de meetdatum en de gemeten modelversies
+- [ ] `smoke:structured-tweaks` staat weer op `assert` en is groen — óf de
+      routing voor Social Media is gewijzigd met de meting als onderbouwing
+- [ ] Er staat een regel bij die zegt wat er moet gebeuren bij de VOLGENDE
+      modelwissel, zodat dit niet opnieuw stil verloopt
+
+# Risico's
+
+- **Een herhaling is niet gratis**: 8 categorieën × 4+ modellen aan echte
+  generaties. Budget vooraf afstemmen met Erik.
+- **De uitkomst kan zijn dat de huidige routing blijft.** Dat is een geldige
+  uitkomst, maar dan mét een meting eronder in plaats van een verouderde.
+- ⚠️ **Niet de scores overschrijven zonder de oude te bewaren.** De vergelijking
+  mei → augustus is zelf een bevinding: hij laat zien of een modelgeneratie
+  vooruitgang is op ónze content, niet op een publieke benchmark.
+
+# Notes
+
+De aanleiding: `linkedin-carousel` (het type waarop de bewaker faalt) staat op
+`hidden: true` sinds 19-05 omdat de carousel-pipeline niet productie-klaar is.
+Het defect zelf raakt dus geen gebruiker. **De onderliggende vraag wel** — die
+routingtabel bedient alle zichtbare content-types.
