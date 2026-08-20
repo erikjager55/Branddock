@@ -39,7 +39,7 @@ verzamelbak voor wijzigingen die op élke pagina moeten landen.
 raakt alle instanties tegelijk; alleen de content per slug is losstaand. Bij die groepen
 scheiden we dus expliciet "template" van "content".
 
-⚠️ **De derde template (`features/[slug]`, 7 URL's) is per 20-08 (#458) opgegaan in
+⚠️ **De derde template (`features/[slug]`, 7 URL's) is per 20-08 (#464) opgegaan in
 pagina #2** — zie sectie B2 hieronder. Vandaar 19 i.p.v. de oorspronkelijke 26 URL's.
 
 ---
@@ -100,7 +100,7 @@ website-brede actie als hij ze als zodanig markeert.
 # B. Pagina-inventaris (19 URL's uit 13 route-bestanden)
 
 Oorspronkelijk 26 URL's uit 14 bestanden (18-08); de 7 `features/[slug]`-URL's zijn per
-20-08 (#458) opgegaan in pagina #2 (zie B2) — vandaar de nieuwe totalen.
+20-08 (#464) opgegaan in pagina #2 (zie B2) — vandaar de nieuwe totalen.
 
 Geverifieerd tegen `MARKETING_SITEMAP_PATHS` — die lijst dekt 16 van de 19; de drie
 brand.md-URL's ontbreken er (zie observaties).
@@ -110,10 +110,10 @@ brand.md-URL's ontbreken er (zie observaties).
 | # | URL | Bestand | Omvang | Status |
 |---|---|---|---|---|
 | 1 | `/` | `src/app/marketing/page.tsx` | 560 r | ✅ **af 18-08** (#321, #325) |
-| 2 | `/marketing/platform` | `platform/page.tsx` | 266 r | ✅ **af 20-08** (#457, #458) — productshots weg, stappen als genummerde stepper; de 7 features-detailpagina's zijn erin opgegaan als lightbox per module (zie B2) |
+| 2 | `/marketing/platform` | `platform/page.tsx` | 266 r | ✅ **af 20-08** (#457, #464) — productshots weg, stappen als genummerde stepper; de 7 features-detailpagina's zijn erin opgegaan als lightbox per module (zie B2) |
 | 3 | `/marketing/pricing` | `pricing/page.tsx` | 383 r | ⬜ |
 
-## B2 — Features (7 URL's, 1 template) — ✅ **opgegaan in pagina #2, 20-08 (#458)**
+## B2 — Features (7 URL's, 1 template) — ✅ **opgegaan in pagina #2, 20-08 (#464)**
 
 ~~Template: `src/app/marketing/features/[slug]/page.tsx` (216 r) · content: `FEATURES`-record~~
 **Verwijderd.** Inhoud verhuisd naar `platform/module-details.ts`, getoond als lightbox
@@ -194,7 +194,7 @@ Redirect: `/marketing/terms` → `/marketing/voorwaarden` (permanent).
 
 ## B10 — Gedeelde chroom (geen eigen URL, wel op elke pagina)
 
-⚠️ Nav en footer kregen op 20-08 (#458) alleen een mechanische href-repoint (de 7
+⚠️ Nav en footer kregen op 20-08 (#464) alleen een mechanische href-repoint (de 7
 features-links) door het opgaan van B2 — geen volledige pass. Blijven dus `⬜` tot ze als
 eigen item worden opgepakt.
 
