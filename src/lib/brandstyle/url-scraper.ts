@@ -964,9 +964,19 @@ export function extractFontsFromCss(css: string): string[] {
   }
 
   // Match @font-face declarations (these are always intentional)
-  const fontFacePattern = /@font-face\s*\{[^}]*font-family\s*:\s*["']?([^"';}\s]+)/gi;
+  // ⚠️ De `\s` stond hier tot 2026-08-20 in de uitsluitings-class, waardoor de
+  // capture bij de EERSTE SPATIE stopte: `@font-face{font-family:"Museo Sans 300"}`
+  // leverde `Museo` op. Elke multi-woord fontnaam kwam er dus dubbel in — één keer
+  // volledig (via de font-family-declaratie elders in de CSS) en één keer afgekapt.
+  // Gemeten op productie: `Museo` naast `Museo Sans 300` (Adullam), `Bree` naast
+  // `Bree Serif` en `Fira` naast `Fira Sans` (Gemeente Barneveld), `Red` naast
+  // `Red Hat Display` (Het Nieuwe Golfen), `Hanken` naast `Hanken Grotesk`
+  // (Branddock), `Open` naast `Open Sans` (better brands) — zes keer hetzelfde
+  // patroon, dat ik eerst voor een site-eigenaardigheid aanzag.
+  const fontFacePattern = /@font-face\s*\{[^}]*font-family\s*:\s*([^;}]+)/gi;
   while ((match = fontFacePattern.exec(css)) !== null) {
-    const name = match[1].trim();
+    let name = stripOngebalanceerdeSluithaken(match[1].trim());
+    name = name.replace(/^["']|["']$/g, '').trim();
     if (!isWebSafeFallbackFont(name) && !isIconFont(name)) fontSet.add(name);
   }
 
@@ -1108,6 +1118,8 @@ const WEB_SAFE_FALLBACK_FONTS = new Set([
   // kwamen uit Tailwinds mono-stack en emoji-stack.
   'liberation mono', 'noto color emoji', 'apple color emoji',
   'segoe ui emoji', 'segoe ui symbol', 'ui-monospace',
+  // Windows-varianten die als aparte familie in thema-CSS staan.
+  'segoe ui adjusted', 'segoe ui historic', 'segoe ui variable',
 ]);
 
 /** Check if a font name is a system / web-safe fallback (not an intentional brand font). */
@@ -1132,7 +1144,10 @@ const ICON_FONT_FRAGMENTS = [
   // (`slick`, `star`) en een 7-segment-display-widget (`DSEG7Classic`) leverden
   // alle drie een "merkfont" op. Geen van deze bevat "icon" in de naam, dus de
   // suffix-regel hieronder ving ze niet.
-  'etmodules', 'divi', 'dseg7', 'dseg14', 'swiper',
+  'etmodules', 'divi', 'dseg7', 'dseg14', 'swiper', 'dearflip',
+  // Gravity Forms shipt `gform-icons-theme` — eindigt niet op "icons", dus de
+  // suffix-regel hieronder ving hem niet (gemeten op adullam.nu, 2026-08-20).
+  'gform',
   'revicons', 'wpforms', 'jetpack',
 ];
 
@@ -1145,6 +1160,17 @@ const ICON_FONT_FRAGMENTS = [
  * "Decade" (6 hex-letters) of "Facade" valt daar niet onder.
  */
 const HASH_LIKE_FONT = /^[0-9a-f]{16,}$/i;
+
+/**
+ * Waarden die geen fontnaam kúnnen zijn omdat ze een query-string of
+ * CSS-custom-property-payload bevatten.
+ *
+ * Gemeten op adullam.nu (2026-08-20): de scraper registreerde
+ * `small=0em&medium=40em&large=64em&xlarge=75em&xxlarge=90em` als merkfont —
+ * een breakpoint-map die een thema in een `font-family` parkeert om hem via JS
+ * uit te lezen. Een echte fontnaam draagt nooit `=` of `&`.
+ */
+const QUERY_LIKE_FONT = /[=&]/;
 
 /**
  * Icoonfont-namen die te generiek zijn voor een substring-match. `slick` en
@@ -1166,6 +1192,8 @@ function isIconFont(name: string): boolean {
   const normalised = name.toLowerCase().replace(/[\s_-]/g, '');
   // Een build-hash is geen font. Zie HASH_LIKE_FONT.
   if (HASH_LIKE_FONT.test(name.trim())) return true;
+  // Een query-string-payload evenmin. Zie QUERY_LIKE_FONT.
+  if (QUERY_LIKE_FONT.test(name)) return true;
   if (EXACT_ICON_FONT_NAMES.has(normalised)) return true;
   if (ICON_FONT_FRAGMENTS.some((frag) => normalised.includes(frag))) return true;
   // "…icons" suffix is almost always an icon font (Material Icons, Web
