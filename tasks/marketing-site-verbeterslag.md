@@ -34,10 +34,13 @@ verzamelbak voor wijzigingen die op élke pagina moeten landen.
 4. Een pagina is `✅` als de wijzigingen erin zitten, `tsc` + `lint` groen zijn en
    de Vercel-preview 'm rendert.
 
-⚠️ **Let op de drie templates.** 12 van de 26 URL's komen uit 3 bestanden
-(`features/[slug]`, `solutions/[slug]`, `vergelijk/[slug]`). Een wijziging in de
-lay-out van zo'n template raakt alle instanties tegelijk; alleen de content per
-slug is losstaand. Bij die groepen scheiden we dus expliciet "template" van "content".
+⚠️ **Let op de resterende twee templates.** 5 van de 19 URL's komen uit 2 bestanden
+(`solutions/[slug]`, `vergelijk/[slug]`). Een wijziging in de lay-out van zo'n template
+raakt alle instanties tegelijk; alleen de content per slug is losstaand. Bij die groepen
+scheiden we dus expliciet "template" van "content".
+
+⚠️ **De derde template (`features/[slug]`, 7 URL's) is per 20-08 (#458) opgegaan in
+pagina #2** — zie sectie B2 hieronder. Vandaar 19 i.p.v. de oorspronkelijke 26 URL's.
 
 ---
 
@@ -94,9 +97,12 @@ website-brede actie als hij ze als zodanig markeert.
 
 ---
 
-# B. Pagina-inventaris (26 URL's uit 14 route-bestanden)
+# B. Pagina-inventaris (19 URL's uit 13 route-bestanden)
 
-Geverifieerd tegen `MARKETING_SITEMAP_PATHS` — die lijst dekt 23 van de 26; de drie
+Oorspronkelijk 26 URL's uit 14 bestanden (18-08); de 7 `features/[slug]`-URL's zijn per
+20-08 (#458) opgegaan in pagina #2 (zie B2) — vandaar de nieuwe totalen.
+
+Geverifieerd tegen `MARKETING_SITEMAP_PATHS` — die lijst dekt 16 van de 19; de drie
 brand.md-URL's ontbreken er (zie observaties).
 
 ## B1 — Kern / conversie
@@ -104,22 +110,28 @@ brand.md-URL's ontbreken er (zie observaties).
 | # | URL | Bestand | Omvang | Status |
 |---|---|---|---|---|
 | 1 | `/` | `src/app/marketing/page.tsx` | 560 r | ✅ **af 18-08** (#321, #325) |
-| 2 | `/marketing/platform` | `platform/page.tsx` | 266 r | ✅ **af 20-08** (#457) — productshots weg, stappen als genummerde stepper |
+| 2 | `/marketing/platform` | `platform/page.tsx` | 266 r | ✅ **af 20-08** (#457, #458) — productshots weg, stappen als genummerde stepper; de 7 features-detailpagina's zijn erin opgegaan als lightbox per module (zie B2) |
 | 3 | `/marketing/pricing` | `pricing/page.tsx` | 383 r | ⬜ |
 
-## B2 — Features (7 URL's, 1 template)
+## B2 — Features (7 URL's, 1 template) — ✅ **opgegaan in pagina #2, 20-08 (#458)**
 
-Template: `src/app/marketing/features/[slug]/page.tsx` (216 r) · content: `FEATURES`-record
+~~Template: `src/app/marketing/features/[slug]/page.tsx` (216 r) · content: `FEATURES`-record~~
+**Verwijderd.** Inhoud verhuisd naar `platform/module-details.ts`, getoond als lightbox
+per module-tegel op `/marketing/platform`. De 7 oude URL's redirecten (permanent):
+`brand-alignment` → `/marketing/resources/f-val` (had al een rijkere eigen pagina), de
+overige 6 → `/marketing/platform?feature=<slug>` (opent meteen de juiste lightbox).
+Nav-item "Platform" is van dropdown naar directe link veranderd; footer, homepage-tegels,
+`HowItWorks`-CTA's en de F-VAL-CTA zijn meegerepoint.
 
-| # | URL | Slug | Status |
+| # | URL (oud, redirect nu) | Slug | Status |
 |---|---|---|---|
-| 4 | `/marketing/features/brand-voice` | `brand-voice` | ⬜ |
-| 5 | `/marketing/features/content-canvas` | `content-canvas` | ⬜ |
-| 6 | `/marketing/features/brand-alignment` | `brand-alignment` | ⬜ |
-| 7 | `/marketing/features/agents` | `agents` | ⬜ |
-| 8 | `/marketing/features/personas` | `personas` | ⬜ |
-| 9 | `/marketing/features/trend-radar` | `trend-radar` | ⬜ |
-| 10 | `/marketing/features/campaigns` | `campaigns` | ⬜ |
+| 4 | `/marketing/features/brand-voice` | `brand-voice` | ✅ lightbox |
+| 5 | `/marketing/features/content-canvas` | `content-canvas` | ✅ lightbox |
+| 6 | `/marketing/features/brand-alignment` | `brand-alignment` | ✅ redirect → `/marketing/resources/f-val` |
+| 7 | `/marketing/features/agents` | `agents` | ✅ lightbox |
+| 8 | `/marketing/features/personas` | `personas` | ✅ lightbox |
+| 9 | `/marketing/features/trend-radar` | `trend-radar` | ✅ lightbox |
+| 10 | `/marketing/features/campaigns` | `campaigns` | ✅ lightbox |
 
 ## B3 — Oplossingen (2 URL's, 1 template)
 
@@ -182,10 +194,14 @@ Redirect: `/marketing/terms` → `/marketing/voorwaarden` (permanent).
 
 ## B10 — Gedeelde chroom (geen eigen URL, wel op elke pagina)
 
+⚠️ Nav en footer kregen op 20-08 (#458) alleen een mechanische href-repoint (de 7
+features-links) door het opgaan van B2 — geen volledige pass. Blijven dus `⬜` tot ze als
+eigen item worden opgepakt.
+
 | Onderdeel | Bestand | Status |
 |---|---|---|
-| Nav + aankondigingsbalk | `MarketingNav.tsx` | ⬜ |
-| Footer | `MarketingFooter.tsx` | ⬜ |
+| Nav + aankondigingsbalk | `MarketingNav.tsx` | ⬜ (Platform-dropdown → directe link, 20-08) |
+| Footer | `MarketingFooter.tsx` | ⬜ (features-links repoint, 20-08) |
 | Layout / metadata / JSON-LD | `marketing/layout.tsx` | ⬜ |
 | Herbruikbare blokken | `SplitHeader` · `HeroModes` · `HowItWorks` · `Mosaic` · `Testimonial` · `CopyBlock` · `TrialNote` · `BookDemoButton` | ⬜ |
 | Sitemap-lijst | `sitemap-pages.ts` | ⬜ |

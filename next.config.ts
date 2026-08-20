@@ -53,6 +53,20 @@ const nextConfig: NextConfig = {
         destination: '/marketing/voorwaarden',
         permanent: true,
       },
+      // De 7 losse feature-detailpagina's zijn opgegaan in de platform-
+      // overzichtspagina (lightbox per module, besluit Erik). brand-alignment
+      // had zijn eigen, rijkere pagina al (F-VAL-uitleg) — die regel moet vóór
+      // de generieke :slug-regel staan, anders wint de bredere match eerst.
+      {
+        source: '/marketing/features/brand-alignment',
+        destination: '/marketing/resources/f-val',
+        permanent: true,
+      },
+      {
+        source: '/marketing/features/:slug',
+        destination: '/marketing/platform?feature=:slug',
+        permanent: true,
+      },
     ];
   },
   // Korte connector-URL: https://branddock.app/mcp is de publieke vorm;

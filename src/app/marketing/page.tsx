@@ -71,16 +71,16 @@ function HowSection() {
 // zonder pijl — consistent onderscheid.
 const MODULES: { Icon: typeof Dna; title: string; desc: string; href?: string }[] = [
   { Icon: Dna, title: 'Merk-DNA', desc: '12 canonieke merk-assets als fundament onder alles.' },
-  { Icon: Palette, title: 'Brand voice & stijl', desc: 'De merkstem en visuele stijl, herbruikbaar in elke output.', href: '/marketing/features/brand-voice' },
-  { Icon: Users, title: 'Persona’s', desc: 'Doelgroep-persona’s, inclusief persona-chat om te sparren.', href: '/marketing/features/personas' },
+  { Icon: Palette, title: 'Brand voice & stijl', desc: 'De merkstem en visuele stijl, herbruikbaar in elke output.', href: '/marketing/platform?feature=brand-voice' },
+  { Icon: Users, title: 'Persona’s', desc: 'Doelgroep-persona’s, inclusief persona-chat om te sparren.', href: '/marketing/platform?feature=personas' },
   { Icon: Swords, title: 'Concurrent-analyse', desc: 'Concurrenten in beeld en meegewogen in je content.' },
-  { Icon: Radar, title: 'Trend Radar', desc: 'Trendscan die kansen en signalen in je markt oppikt.', href: '/marketing/features/trend-radar' },
-  { Icon: PenLine, title: 'Content Canvas', desc: 'On-brand tekst-generatie over alle kanalen.', href: '/marketing/features/content-canvas' },
-  { Icon: Megaphone, title: 'Campagne-strategie', desc: 'Van strategie-blueprint tot concrete deliverables.', href: '/marketing/features/campaigns' },
+  { Icon: Radar, title: 'Trend Radar', desc: 'Trendscan die kansen en signalen in je markt oppikt.', href: '/marketing/platform?feature=trend-radar' },
+  { Icon: PenLine, title: 'Content Canvas', desc: 'On-brand tekst-generatie over alle kanalen.', href: '/marketing/platform?feature=content-canvas' },
+  { Icon: Megaphone, title: 'Campagne-strategie', desc: 'Van strategie-blueprint tot concrete deliverables.', href: '/marketing/platform?feature=campaigns' },
   { Icon: Images, title: 'Beeld', desc: 'On-brand visual, direct in het platform.' },
   { Icon: LayoutTemplate, title: 'Landingspagina’s', desc: 'Publiceren op je eigen subdomein.' },
-  { Icon: Bot, title: '9 AI-agents', desc: 'Collega’s met rollen: ze stellen voor, jij keurt goed.', href: '/marketing/features/agents' },
-  { Icon: BadgeCheck, title: 'Merk-check', desc: 'F-VAL-score bewaakt dat elke output op merk blijft.', href: '/marketing/features/brand-alignment' },
+  { Icon: Bot, title: '9 AI-agents', desc: 'Collega’s met rollen: ze stellen voor, jij keurt goed.', href: '/marketing/platform?feature=agents' },
+  { Icon: BadgeCheck, title: 'Merk-check', desc: 'F-VAL-score bewaakt dat elke output op merk blijft.', href: '/marketing/resources/f-val' },
   { Icon: Languages, title: 'Meertalig', desc: 'Multi-markt content voor internationale merken.' },
 ];
 
