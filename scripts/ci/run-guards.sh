@@ -277,7 +277,7 @@ GUARDS=(
   # Bewaakt het samenvátten van BrandAssets — het gat waar brandmd-emitter
   # structureel langs kijkt (die start bij een fixture-model, dus mét
   # samenvattingen). Kostte 79 stil lege secties over 11 prod-merken.
-  smoke:brand-asset-summary:16
+  smoke:brand-asset-summary:18
   smoke:brandmd-emitter:1
   smoke:brandmd-lifecycle:1
 

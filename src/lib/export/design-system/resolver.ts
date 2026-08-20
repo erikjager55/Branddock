@@ -423,9 +423,14 @@ export const NARRATIVE_SUMMARY_KEYS = [
   'coreMessage',
   'essence',
   'why',
-  // brand-essence → Strategy > Positioning
-  'essenceStatement',
+  // brand-essence → Strategy > Positioning.
+  // ⚠️ narrative VÓÓR statement. Gemeten op prod 2026-08-20: bij 11 van de 12
+  // merken is `essenceStatement` een label van 13-26 tekens ("Bewijsbaar
+  // on-brand") terwijl `essenceNarrative` 191-311 tekens echte positionering
+  // draagt. Statement-eerst maakte van Positioning dus een kreet van twee
+  // woorden. Alleen Het Nieuwe Golfen heeft een inhoudelijk statement (44).
   'essenceNarrative',
+  'essenceStatement',
   // mission-statement
   'missionStatement',
   'missionOneLiner',

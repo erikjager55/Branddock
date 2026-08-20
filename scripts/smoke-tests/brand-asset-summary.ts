@@ -67,6 +67,16 @@ assert(
   'brand-archetype kiest archetypeInAction, niet brandVoiceDescription',
   summarizeBrandAsset('', null, { brandVoiceDescription: 'STEM', archetypeInAction: 'ARCHETYPE' }) === 'ARCHETYPE',
 );
+// Bij 11 van de 12 prod-merken is essenceStatement een label van 13-26 tekens
+// en essenceNarrative 191-311 tekens echte positionering. Narrative wint.
+assert(
+  'brand-essence kiest essenceNarrative, niet het korte essenceStatement',
+  summarizeBrandAsset('', null, { essenceStatement: 'Bewijsbaar on-brand', essenceNarrative: 'NARRATIVE' }) === 'NARRATIVE',
+);
+assert(
+  'zonder narrative valt hij terug op het statement',
+  summarizeBrandAsset('', null, { essenceStatement: 'ALLEEN_STATEMENT' }) === 'ALLEEN_STATEMENT',
+);
 assert(
   'content wint van frameworkData',
   summarizeBrandAsset('', 'UIT_CONTENT', { essenceStatement: 'UIT_FRAMEWORK' }) === 'UIT_CONTENT',
@@ -87,5 +97,5 @@ assert(
   stilLeegOnderOud.every((p) => Object.keys(p.framework).some((k) => (NARRATIVE_SUMMARY_KEYS as readonly string[]).includes(k))),
 );
 
-console.log(`\n${failed === 0 ? 'PASS' : 'FAIL'} — ${PROD_SHAPES.length + 5} checks, ${failed} gefaald`);
+console.log(`\n${failed === 0 ? 'PASS' : 'FAIL'} — ${PROD_SHAPES.length + 7} checks, ${failed} gefaald`);
 process.exit(failed === 0 ? 0 : 1);
