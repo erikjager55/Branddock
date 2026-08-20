@@ -37,6 +37,33 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 513. brand.md stond nergens op de nieuwspagina — en leek daarna op de MCP-connector
+
+De publieke nieuwspagina (`/marketing/changelog`) noemde `brand.md` **nul keer**, terwijl de
+gratis generator sinds **12 augustus** live staat (commit `52521a51`) en de pagina in zijn eigen
+kop zegt: *"nieuwe release = nieuwe entry hier"*. Die pagina is bovendien de vaste bron voor de
+LinkedIn-cadans, dus wat er niet op staat wordt ook niet gedeeld. Nieuwste item was 18 juli: de
+pagina liep een maand achter.
+
+Toegevoegd: een entry voor de generator met een verdiepingslink naar het uitleg-artikel
+(#507). `ChangelogEntry` heeft daarvoor een optioneel `href` + `linkLabel` gekregen; entries
+zonder link renderen ongewijzigd.
+
+⚠️ **Erik ving er een verwarring uit die ik zelf had gemaakt.** Mijn eerste tekst beloofde "het
+open bestand waarmee ChatGPT, Claude, Cursor en elke andere AI-tool je merk kennen" — vrijwel
+woordelijk wat het MCP-item twee plekken lager belooft ("je agent kent je merk"). Twee losse
+producten met dezelfde belofte, boven elkaar. Beide teksten zeggen nu wat ze zijn:
+**brand.md is een bestand dat je zelf meeneemt** (open standaard, gratis, geen account, en dus
+een momentopname), **de MCP-connector is een levende koppeling** die altijd de actuele versie
+ophaalt. Het brand.md-item wijst expliciet naar dat verschil.
+
+De datum komt uit `git log --diff-filter=A`, niet uit het launch-kit: dat noemt 15 augustus,
+maar dat was de dag dat de generator live is *getest*.
+
+- Task: [tasks/done/brandmd-artikel.md](tasks/done/brandmd-artikel.md)
+- ADR: -
+- Spec: docs/marketing/brand-md-launch-plan-2026-08-02.md
+
 ### 512. CLAUDE.md gaf sinds 18-08 CSS-advies dat tegen de eigen ADR inging
 
 Vier regels in `CLAUDE.md` beschreven de Tailwind-situatie van vóór PR #323. Ze stuurden een
