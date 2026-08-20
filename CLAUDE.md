@@ -106,9 +106,10 @@ Branddock is een SaaS-platform voor **brand strategy, research validatie en AI c
 - PDF parsing: `unpdf` (server-safe), NIET `pdf-parse` (worker crashes in Next.js 16)
 
 ### Tailwind 4 caveats
-- `src/index.css` is een gecompileerde, gecommitte output. Veel teal/utility-klassen ontbreken
-- Voor missende utilities: append regel aan `src/index.css` of gebruik inline `style={{ ... }}` of swap naar `bg-primary`
-- `min-h-0` werkt niet door purge — gebruik `style={{ minHeight: 0 }}`
+- `src/index.css` is een **bron**, geen build-artefact (sinds PR #323, ADR `2026-08-18-tailwind-bronpijplijn.md`). Tot 18-08 stond hier 10.555 regels gecompileerde output in git zónder `@import "tailwindcss"`, waardoor er nooit iets bijkwam: 358 klassen renderden stil niets
+- **Ontbreekt er een utility? Repareer de pijplijn, niet de klasse.** Voeg géén handgeschreven utility-regels toe aan `src/index.css` — het bestand zegt dat zelf ook. Guard: `npm run smoke:css-utilities`
+- "Purge" was de verkeerde diagnose en stuurt je naar safelists en `content`-config: er wórdt niets weggesnoeid. Sinds de bronpijplijn werkt `min-h-0` gewoon (nagemeten 2026-08-20: de klasse staat in de gebouwde CSS)
+- Tailwind 4-eigenaardigheid: door de gebruiker geschreven `@layer utilities` wordt volledig genegeerd; `@layer components` blijft wél bewaard
 
 ---
 
@@ -208,7 +209,7 @@ TOKEN_ENCRYPTION_KEY=<voor OAuth tokens — back up zorgvuldig>
 2. **Direct AI SDK in componenten** — altijd via `src/lib/ai/`
 3. **Mock data fallbacks in productie code** — alleen contexts mogen fallback hebben
 4. **`pdf-parse` library** — gebruikt `unpdf`, pdf-parse v1+v2 crashed in Next.js 16
-5. **Inline styles voor reguliere utilities** — uitzondering: Tailwind 4 purge issues + custom colors
+5. **Inline styles voor reguliere utilities** — uitzondering: custom colors en merk-gradients. Niet meer voor "ontbrekende" klassen: die horen uit de bronpijplijn te komen
 6. **Emoji's in UI of code** — Lucide icons
 7. **`--no-verify` op git commits** — fix de hook, niet bypassen
 8. **Force push naar main/master**
