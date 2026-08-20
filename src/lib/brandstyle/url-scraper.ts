@@ -981,6 +981,29 @@ export function extractFontsFromCss(css: string): string[] {
  * @param depth - recursion guard to prevent infinite var() loops
  * @returns the clean font name, or null if the value is unresolvable / a CSS var
  */
+/**
+ * Verwijder sluithaken die geen bijbehorende openhaak hebben.
+ *
+ * ⚠️ Balanceren, niet blind strippen. Een eerdere versie deed `/[)\\s]+$/` en
+ * sloopte daarmee de sluithaak van `var(--font, "Brandon Grotesque", …)` — de
+ * var()-regex eist `\\)$`, dus de resolutie viel stil terug op null en het
+ * merkfont verdween. Gevangen door `smoke:wpb-result-audit` (58 → 57 pass),
+ * niet door mijn eigen toetsen: die gebruikten geen var()-stack.
+ *
+ * Wat wél weg moet: `Noto Color Emoji")` uit Tailwinds preflight, waar de
+ * font-family-match doorloopt tot de `;` en een vreemde sluithaak meepikt.
+ */
+function stripOngebalanceerdeSluithaken(waarde: string): string {
+  let uit = waarde.trim();
+  for (;;) {
+    if (!uit.endsWith(')')) return uit;
+    const open = (uit.match(/\(/g) ?? []).length;
+    const dicht = (uit.match(/\)/g) ?? []).length;
+    if (dicht <= open) return uit;
+    uit = uit.slice(0, -1).trim();
+  }
+}
+
 function resolveFontFamilyValue(
   rawValue: string,
   fullCss: string,
@@ -990,8 +1013,19 @@ function resolveFontFamilyValue(
 
   // Strip !important and surrounding whitespace
   let value = rawValue.replace(/!important/i, '').trim();
-  // Strip surrounding quotes
+  // Strip surrounding quotes én afsluitende haakjes-rommel.
+  //
+  // ⚠️ 2026-08-20: toen de `"` uit de font-family-regex verdween (zie daar),
+  // liep de match door tot de `;` en pikte hij de sluithaak van een `var(…)`
+  // of `@supports(…)` mee. Tailwinds preflight eindigt letterlijk op
+  // `…,"Noto Color Emoji")` — dat werd `Noto Color Emoji")` en matchte daardoor
+  // NIET meer met de generieke-namenlijst, waar `noto color emoji` gewoon in
+  // staat. Eén onbedoeld teken maakte een bestaand filter blind.
+  // Gemeten op productie (Branddock, re-analyse): de rij stond er letterlijk
+  // met `")` erachter in de styleguide.
+  value = stripOngebalanceerdeSluithaken(value);
   value = value.replace(/^["']|["']$/g, '').trim();
+  value = stripOngebalanceerdeSluithaken(value);
   // Decode CSS identifier escapes. The common case we see in the wild is
   // `Font Awesome\ 6 Brands` — the backslash-before-space is a CSS escape
   // for unquoted identifiers that persists when the value was already
@@ -1070,6 +1104,10 @@ const WEB_SAFE_FALLBACK_FONTS = new Set([
   'helveticaneue-light', 'helveticaneue', 'lucida grande', 'menlo',
   'andale mono', 'liberation sans', 'liberation serif', 'dejavu sans',
   'noto sans', 'roboto mono', 'ubuntu mono', 'cantarell', 'oxygen',
+  // Gemeten bij de prod-re-analyse van Branddock (2026-08-20): deze twee
+  // kwamen uit Tailwinds mono-stack en emoji-stack.
+  'liberation mono', 'noto color emoji', 'apple color emoji',
+  'segoe ui emoji', 'segoe ui symbol', 'ui-monospace',
 ]);
 
 /** Check if a font name is a system / web-safe fallback (not an intentional brand font). */

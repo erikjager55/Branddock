@@ -112,7 +112,7 @@ GUARDS=(
   # gescrapet, dus de filters waren onvolledig en niet verouderd. Draagt een
   # tegenproef (echte merkfonts blijven staan) zodat een filter dat alles weggooit
   # niet groen kan zijn.
-  smoke:font-scraper-ruis:28
+  smoke:font-scraper-ruis:32
 
   # Aangesloten 2026-08-19. Faalt bij VERGETEN, niet bij toevoegen: wie een nieuw
   # type introduceert zet het in DELIVERABLE_TYPES en is klaar; wie een
