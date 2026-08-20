@@ -37,6 +37,66 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 515. De nieuwspagina liep een maand achter
+
+Nieuwste item was 18 juli, terwijl er in augustus wel degelijk dingen landden die een klant
+merkt. Vijf items toegevoegd in klanttaal, met de cijfers erbij: content die leeg leek is weer
+zichtbaar (13 pagina's van 0 naar 497-1.306 woorden), gepubliceerde pagina's hebben weer een
+titel, weglopen tijdens een generatie kost niets meer, de campagnewizard levert weer complete
+campagnes (1 → 8 deliverables, 18-24 min → 6), en merkregels tellen mee in de merk-check.
+
+Bewust **niet** overgenomen: het merendeel van de augustus-changelog is intern werk — bewakers,
+CI, type-checks. Dat hoort niet op een klantpagina.
+
+- Task: -
+- ADR: -
+- Spec: -
+
+### 514. Acht van de elf asset-typen waren onzichtbaar in elk BRAND.md
+
+Erik vroeg "vul Positioning in" op zijn eigen merk. De data bleek er al te staan.
+`summarizeBrandAsset` zoekt in `frameworkData` naar vijf vaste sleutels — `statement`,
+`promiseStatement`, `coreMessage`, `essence`, `why` — en Branddocks essence gebruikt
+`essenceStatement` + `essenceNarrative`. Geen match, lege string, `_Not yet defined._` in
+het bestand, terwijl de tekst in de database stond.
+
+Gemeten op productie over 13 workspaces met framework-data, niet aangenomen:
+
+| Asset-type | Treffers oud → nieuw |
+|---|---|
+| brand-archetype | 0 → 12 |
+| brand-essence | 0 → 12 |
+| mission-statement | 0 → 12 |
+| social-relevancy | 0 → 12 |
+| brand-story | 0 → 11 |
+| transformative-goals | 0 → 11 |
+| brand-personality | 0 → 9 |
+
+**79 samenvattingen gerepareerd over 7 typen.** De drie die al werkten (`brand-promise`,
+`golden-circle`, `purpose-statement`) blijven exact gelijk — die gebruiken toevallig wél een
+sleutel uit de oude lijst. `brand-essence` voedt de Positioning-subsectie, dus élk gegenereerd
+BRAND.md — het artefact van de gratis funnel — miste zijn positionering.
+
+**Bewust niet gemapt**: `valueTension` (core-values). Dat veld beschrijft de spanning tússen
+waarden, niet de waarden zelf; als samenvatting emitten zou het merk verkeerd weergeven. Leeg
+is daar eerlijker dan misleidend.
+
+⚠️ **Waarom geen enkele bewaker dit ving**: `smoke:brandmd-emitter` start bij een
+fixture-`DesignSystemModel` — dus mét samenvattingen. Het samenvátten zelf had nul dekking.
+Nieuwe bewaker `smoke:brand-asset-summary` (16 checks, ondergrens 16 in de gate) draagt de
+echte sleutelnamen uit productie en bevat een mutatietest die aantoont dat de oude lijst
+7 typen leeg liet.
+
+Bijvangst: de kop van `run-guards.sh` claimde 119 bewakers terwijl de lijst er op `origin/main`
+al 121 telde. Nu geformuleerd als meetmoment, met het telcommando erbij.
+
+Nog open, als apart besluit: [`fval-personality-extern-pad`](tasks/fval-personality-extern-pad.md)
+— `score_against_brand` geeft `personality: null` door en draait pijler 1 daardoor half.
+
+- Task: [tasks/fval-personality-extern-pad.md](tasks/fval-personality-extern-pad.md)
+- ADR: -
+- Spec: docs/specs/brand-md-full-profile.md
+
 ### 513. brand.md stond nergens op de nieuwspagina — en leek daarna op de MCP-connector
 
 De publieke nieuwspagina (`/marketing/changelog`) noemde `brand.md` **nul keer**, terwijl de
