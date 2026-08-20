@@ -37,6 +37,51 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 511. Tenant-isolatie van de agents werd nergens getoetst — en de makkelijke fix maakte de bewaker leeg
+
+`smoke:agents-data-analyst` toetst dat de data-analyst-agent van workspace A geen rijen van B ziet. Hij kon nergens draaien: hij zocht de dev-workspaces *Zwarthout* en *Linfi* op naam, die alleen in één persoonlijke database bestaan. Geen npm-script, dus ook nooit opgemerkt — gevonden in de weesbewaker-triage.
+
+⚠️ **De task-file waarschuwde voor een val die niet bestond, en dat was mijn fout.** Ik schreef dat "pak de twee workspaces uit de seed" hem groen én leeg zou maken, omdat `TechCorp Brand` nul concurrenten heeft. De assertie eist echter `namesA.size > 0 && rowsB.length > 0 && overlap.length === 0` — beide kanten niet-leeg. Empirisch getoetst vóór de fix: `FAIL ... A=3 B=0 overlap=0`. Luid rood, precies zoals het hoort. Ik had de assertie moeten lezen vóór ik hem als risico opschreef; de correctie staat in het task-bestand zelf.
+
+De seed geeft `TechCorp Brand` nu twee concurrenten met niet-overlappende namen, en de bewaker zoekt de workspaces op **slug** in plaats van op naam of volgorde. **MUTATIETEST**: `workspaceId`-filter uit `query_competitor_activity` gehaald → `FAIL ... A=5 B=5 overlap=5`. De assertie detecteert dus een echte isolatie-breuk. Risico uit de taak nagelopen: hele db-gate 17/17 groen met de nieuwe seed, 18/18 met deze erbij.
+
+- Task: [tasks/agents-data-analyst-seed-fit.md](../tasks/agents-data-analyst-seed-fit.md)
+- Commit: PR #428
+
+### 510. De db-gate had geen assertie-ondergrenzen — één van de zeventien kon stil leeglopen
+
+De goedkope gate kreeg ondergrenzen; de database-gate niet. Daarmee kon een bewaker naar nul asserties zakken en tóch groen melden — wat `smoke:settings-write` diezelfde ochtend letterlijk deed (exit 0 zonder `SMOKE_DB=1`).
+
+`tel_asserties` is **letterlijk overgenomen** uit `run-guards.sh` in plaats van opnieuw bedacht: twee varianten van dezelfde telling lopen gegarandeerd uit elkaar. Hij neemt het maximum van assertie-regels en het getal uit een samenvattingsregel, want een bewaker die alleen `65 passed` print telt anders als **1** — en een ondergrens van 1 beschermt niets.
+
+**MUTATIETEST**: grens 2 → 50 op een bewaker die er 2 doet → *"groen, maar 2 asserties waar er >=50 werden verwacht"*.
+
+⚠️ Er staat een waarschuwing bij die vijf keer nodig bleek: **meet deze grenzen door de bestanden uit `origin/main` te draaien, niet via `npm run` op de werkboom.** Die liep 15 commits achter, kende de nieuwe scripts niet, en `npm run` op een ontbrekend script geeft **stil niets** — tien bewakers kwamen daardoor als "0 asserties" uit de meting.
+
+- Commit: PR #422
+
+### 509. Eén prompt sprak zichzelf tegen over stat-bronnen, 27 regels uit elkaar
+
+De junifix van 24-06 (changelog #340) diagnosticeerde scherp: de **geforceerde** bron was de directe oorzaak dat het model er een verzon, en de brand-context-lagen *zijn* onderdeel van "de aangeleverde context". Die fix patchte `variant-generator.ts` maar niet het directive-blok dat via regel 747 in **dezelfde prompt** landt — waar regel 774 sinds die fix het tegenovergestelde zegt.
+
+⚠️ En sinds het aanhaken van de slapende bewakers **dwong CI de verouderde helft actief af**: wie het promptbestand fatsoeneerde kreeg rood, en de goedkoopste weg naar groen was de oude tekst terugzetten.
+
+Directive uitgelijnd op het beleid van ná de junifix (echte externe bron óf weglaten, nooit een interne laagnaam), **herformuleerd in plaats van geschrapt** omdat `geo-polish` dezelfde directive gebruikt. Versie naar 1.1.0.
+
+**Het belangrijkste deel zijn drie asserties op de SAMENGESTELDE prompt.** Beide bestanden waren op zichzelf verdedigbaar; alleen hun combinatie was fout — en dat was met geen enkele check op één bestand te betrappen. Tweede vindplaats in dezelfde PR: de sanitizer-tak in `geo-analysis.ts` stond sinds 24-06 onbewaakt, want de fixture droeg alleen een echte bron.
+
+- Commit: PR #393
+
+### 508. `.design-sync` stond volledig buiten de type-check — 34 previews zonder vangnet
+
+TypeScript's `**/*.ts` slaat dot-mappen over, dus `.design-sync/**` zat in **nul** type-checks: de contractlaag van het design system plus 34 previews. Een preview die een verwijderde prop gebruikt, rendert verkeerd in de componentkiezer zonder dat iets rood wordt.
+
+Twee regels in `tsconfig.json` (include + een path-mapping voor `'branddock-app'`, de bundlernaam die de previews importeren). **MUTATIETEST**: een niet-bestaande prop op `<Button>` → `TS2322`, en na herstel exit 0. Twee driftcontroles erbij die borgen dat die regels blijven staan.
+
+Bijvangst: de uitsluiting van `StatsCard` uit het design system stond op *"`import * as LucideIcons` blies de bundel op"*. Die reden verviel toen de iconenregistry landde. Gemeten waarom hij er tóch niet hoort — 1 gebruiker tegen 34 voor `StatCard`, en een zwakkere `icon: string` — en de reden vervangen op alle drie de plekken waar hij stond.
+
+- Commit: PR #373
+
 ### 507. brand.md-artikel live op de marketing-site — en wat de eigen pipeline ervan bakte
 
 Cornerstone-pagina `/marketing/resources/brand-md` bij de gratis generator: wat het formaat is,
