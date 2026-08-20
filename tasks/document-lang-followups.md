@@ -161,19 +161,21 @@ Volledige onderbouwing en metingen: `tasks/done/static-rendering-regressie.md`.
       geen landingspagina. ⚠️ Voeg de route toe aan `PUBLIC_ROUTES`, niet aan
       `NONCE_GUARD_ROUTES` — die filtert `/p` er bewust uit (hash-scope zonder nonce).
 
-      ⚠️ **Geblokkeerd achter een ándere beslissing — vastgesteld 2026-08-19.** De
-      violation-sweep zit in `test.describe('CSP in de browser')` en gebruikt de
-      `page`-fixture. Dat is precies de groep van zes die een chromium-binary vraagt en
-      die daarom nog nergens draait; alleen de negen `request`-checks zijn in #380
-      aangehaakt. En `NONCE_GUARD_ROUTES` filtert `/p` er bewust uit, dus de route zou
-      *uitsluitend* in de browser-groep landen.
+      ⚠️ **De chromium-blokkade is weg, de fixture-blokkade niet.** Tot 19-08 stond
+      hier dat dit werk nul draaiende checks zou opleveren omdat de violation-sweep een
+      browser vroeg die nergens stond. Die staat er nu (#436), dus de sweep draait — maar
+      dat verplaatst de blokkade in plaats van hem op te heffen.
 
-      Gevolg: de fixture bouwen levert vandaag **nul draaiende checks** op. Het is werk
-      dat pas rendement geeft ná de chromium-afweging (open beslissing 0 in
-      `START_HERE.md`). Eerst bouwen zou een slapende bewaker toevoegen aan een lijst die
-      vandaag juist is opgeschoond — zie de gotcha van 19-08.
+      Wat nu in de weg staat is de **database**. De sweep draait in de `check`-job met
+      een neppe `DATABASE_URL`; `/p/<ws>/<slug>` heeft een echte gepubliceerde pagina
+      nodig (Campaign → Deliverable → LandingPage → PagePublish) en zou daar dus falen op
+      het ontbreken van de rij, niet op een CSP-violation.
 
-      Volgorde is dus: chromium-besluit → fixture → route toevoegen. Niet andersom.
+      Twee wegen, en het is een keuze: de fixture in de e2e-seed zetten en de sweep dáár
+      een tweede keer draaien (kost een build in die job), óf accepteren dat `/p` buiten
+      de violation-sweep blijft. ⚠️ Voeg de route hoe dan ook toe aan `PUBLIC_ROUTES`,
+      niet aan `NONCE_GUARD_ROUTES` — die filtert `/p` bewust uit (hash-scope zonder
+      nonce).
 - [x] **`decideHostRoute` moet puur en client-veilig blijven** — ✅ **al afgedwongen,
       gemeten 2026-08-19.** Er is hier géén eigen bewaker nodig: de Next-build doet het al.
       Getoetst door een `import { prisma }` in `host-router.ts` te zetten en te bouwen:
