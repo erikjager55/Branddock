@@ -1,8 +1,11 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> **Laatst bijgewerkt: 2026-08-19** (bewakers-schoonmaak: PR-poort van 18 naar 37
-> bewakers, nachtelijke prod-bewaker, en beslispunt 0 is van 15 naar 6 checks gekrompen).
+> **Laatst bijgewerkt: 2026-08-20** (PR-poort staat op **121 goedkope + 18 database**-bewakers, een flappende
+> `check` op main gerepareerd, judge-variantie gemeten zonder AI-kosten, en de fontlijst
+> bleek voor 15 van de 18 geen echte merkfonts te bevatten — zie de top-3 hieronder).
+> Daarvoor: **2026-08-19** (bewakers-schoonmaak: PR-poort van 18 naar 37 bewakers,
+> nachtelijke prod-bewaker, beslispunt 0 gekrompen).
 > Daarvoor: **2026-08-18, derde helft** (retentie-plafond live, CSP op enforce,
 > SSE-abort gedeeltelijk, de twee Neon-indexen aangemaakt en prod drift-vrij bevonden —
 > zie hieronder. Twee sessies liepen elkaar in de weg; dat is de belangrijkste les van de dag).
@@ -27,6 +30,89 @@ sporen dragen dat:
 **Wat er niét meer speelt:** het credit-model is compleet (bouw, Stripe-config,
 smokes). Het enige dat rest is jouw schakelmoment: `NEXT_PUBLIC_TOPUP_ENABLED=true`
 plus één echte betaal-smoke.
+
+---
+
+## Wat er landde (2026-08-20)
+
+**De PR-poort staat op 121 goedkope bewakers** (120 `smoke:` + `eval:lp-variant-golden`),
+plus **18 in de database-poort** (`run-db-guards.sh`). Dat was samen 37 bij de vorige update
+en 3 aan het begin van de schoonmaak. Die twee poorten apart noemen is bewust: ze draaien
+onder verschillende voorwaarden, en één samengeteld getal verbergt dat. ⚠️ **Aanhaken is niet langer gratis**:
+de poort kost nu 1m54s in CI, 21% van de check-job en tweede na de build. Bij 18 bewakers was
+dat ~10s. Wie er een toevoegt, voegt kosten toe — dat stond eerder als "bijna gratis" in de
+kop van `run-guards.sh` en klopt niet meer.
+
+**Van 3 draaiende bewakers naar 139** — 121 in de PR-poort, 18 in de e2e-job (database, met
+assertie-ondergrenzen), plus vier nachtelijke workflows.
+
+⚠️ **De telling zelf had een blinde vlek.** Wie bewakers telt in `package.json` ziet een
+bestand zónder npm-script niet; dat waren er 73. Gemeten in code in plaats van in bestanden:
+**76 src-modules werden door geen enkele aangehaakte bewaker geraakt. Nu 1.**
+
+**Vier keer dezelfde klasse: een bewaker die op het verkeerde bevroor.** Een bewaker die niet
+draait vangt niet alleen niets — hij verrot, en meldt zich bij het aanzetten als regressie.
+
+- `image-coupling` eiste de CTA ín de beeldprompt; die is in F36 bewust weggehaald omdat het
+  model 'm op het beeld rendeerde
+- `checkpoint-gates` stond **twee maanden rood** op een melding die op 17-06 naar het Engels ging
+- de junifix van 24-06 (#340) bleek op **drie** plekken incompleet. De scherpste: de
+  gedeelde GEO-directive droeg de vóór-fix-eis nog, en die wordt in **dezelfde prompt**
+  gezet waar 27 regels verderop het tegenovergestelde staat — tegenstrijdig op precies het
+  veld dat de lek veroorzaakte. Eén van de drie werd bovendien door CI *actief afgedwongen*:
+  wie het promptbestand fatsoeneerde kreeg rood. Compleet gemaakt in `86a1a2e3`
+- `ssrf-guard` droeg **65 beveiligingsasserties** die sinds 30-06 nooit hadden gedraaid
+
+⚠️ `lib/agents` had nul dekking terwijl daar negen agents op productie draaien. Nu bewaakt
+inclusief tenant-isolatie, met een mutatietest die aantoont dat die assertie een echte breuk
+vangt.
+
+**Model-routing: de ruis is groter dan de verschillen.** Het experiment van 13-05 herhaald op
+de juli-generatie, met twee ONGEWIJZIGDE modellen als controle. Hun drift: **gemiddeld 4,0
+punten, uitschieter 13**. De winnaars liggen 1-4 punten uit elkaar — deze methode kan die
+verschillen dus niet onderscheiden, niet nu en met dezelfde opzet ook niet in mei. De twee
+categorieën die van winnaar wisselden, deden dat op **nul** punten verschil.
+
+Routing bewust ongewijzigd; de comment draagt nu de ruismarge. Wat openblijft is de méthode:
+[`model-routing-herijking`](tasks/model-routing-herijking.md). ⚠️ En een composite-score meet
+niet alles: `gpt-5.6` honoreert een slide-skeleton voor 3 van de 5 titels waar
+`claude-sonnet-5` er 4 van 4 haalt — zelfde run, zelfde instructie.
+
+**Een flappende `check` op main gerepareerd** (#445). Sinds de browserfase aanstond wisselde
+main rood en groen zonder tussenliggende wijziging. De eerste diagnose (`networkidle` is
+niet-deterministisch) klopte maar was niet genoeg: `/marketing/pricing` haalt tien externe
+dingen op, waaronder een typekit-stylesheet in `<head>` die de parser blokkeert. Een
+**verplichte** poort hing dus aan de uptime van typekit.net en posthog.com. Nu wordt alles
+buiten de eigen host afgekapt. In de geslaagde run vóór de fix duurde één navigatie 24,6s van
+de 30s limiet — de marge was er nooit.
+
+**Judge-variantie gemeten, zonder één betaalde AI-call** (#443). Die meting stond weken als
+"kost live-LLM-runs, ~55k tokens". Onjuist: de nachtelijke `live-eval` bewaart per run een
+artefact, dus vier nachten herhaalde metingen stonden al klaar. Uitkomst: het slaagpercentage
+schommelt **50 / 70 / 60 / 90%** op identieke invoer, met de gate op 70%. Dat herkadert het
+drempel-besluit — bij ±20 punten spreiding flapt elke lijn tussen 50 en 90. De lijn verschuiven
+helpt niet; meer cases of de wisseling wegnemen wel.
+
+**Drie taken waren geclaimd door een sessie die niet meer bestaat.** Voor wie werk zoekt lezen
+die als "bezet". Getoetst in plaats van aangenomen: de heartbeat-lock van de session-guard
+verloopt na 15 minuten, een `# geclaimd door`-comment nooit. Twee opgeschoond, de derde niet
+omdat er een open PR op dat bestand zat.
+
+**Niet gevonden, en dat is ook een uitkomst**: de productie-scrapers dragen hetzelfde
+`networkidle`-patroon, maar acht klantsites nagemeten gaven geen enkele hang. Eén alarmerende
+meting (28,6s van 30) bleek een artefact van mijn eigen opzet — de variant die eerst draait
+betaalt de koude start. Geen productiecode gewijzigd.
+
+**De rode draad van deze twee dagen, breder dan bewakers.** De meetfouten hadden allemaal
+dezelfde vorm: *een meting die iets oplevert, is juist daarom niet verdacht.* Een lege
+database in plaats van een geseede; `env -u` dat niets wegneemt omdat `.env.local` het
+terugzet; een teller die 65 asserties als 1 leest; `npm run` op een ontbrekend script dat
+**stil niets** doet; een grep die commentaarregels meetelt (twee keer); een globale replace
+die de judge van een experiment verwisselde; en een A/B-tijdmeting waarin de eerste variant
+de koude start betaalt. Allemaal uitgeschreven in `gotchas.md` onder 19 en 20 augustus.
+
+Wie hier begint en één ding meeneemt: **een uitkomst die je hypothese bevestigt, is het
+moment om je meetopzet te verdenken** — niet het moment om te rapporteren.
 
 ---
 
@@ -263,10 +349,19 @@ een distributie-probleem, en het enige wat de volgende stap tegenhoudt is jouw a
 omarm-strategie plus de outreach naar de maintainer. De upstream-PR's liggen als tekstpakket
 klaar.
 
-**3. 🔤 [`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) — 18 merkfonts
-renderen in een substituut.** Een klant die zijn eigen styleguide opent en overal Inter ziet
-staan onder "Neue Haas Grotesk Display", ziet het product zijn belofte niet waarmaken. Geen
-bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
+**3. 🔤 [`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) — niet 18
+maar hooguit 2 echte merkfonts.** Een klant die zijn eigen styleguide opent en overal Inter
+ziet staan onder "Neue Haas Grotesk Display", ziet het product zijn belofte niet waarmaken.
+Geen bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
+
+⚠️ **Bijgewerkt 2026-08-20 (#442) — de werklijst was zelf het probleem.** Van de 18 fonts
+die op productie als `COMMERCIAL` stonden, zijn er hooguit **twee** een echt merkfont
+(`Apercu` en `Apercu-Mono`, plus twee twijfelgevallen). De rest: zes systeem-/OS-fonts
+(`SFMono-Regular`, `Geneva`), vier plugin-icoonfonts (`ETmodules` van Divi, `slick`), twee
+build-hashes die als `font-family` waren opgeslagen, en drie uit een smoke-testworkspace.
+
+**Je stond op het punt achttien fontbestanden te gaan zoeken waarvan er vijftien niet
+bestaan.** Dat maakt dit item niet urgenter maar veel kleiner.
 
 > ⚠️ **Dit blok stond hier tot 19-08 met "44 van 44" — twee keer verkeerd.** De correctie
 > stond al sinds 18-08 in het task-file zelf; deze sessie-opener liep erop achter, en dat is
@@ -280,8 +375,16 @@ bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
 >
 > Dat maakt dit **volledig een wacht-op-jou-item**: spoor B (de code) is af sinds #342 —
 > een font zonder bestand telt mee in de merk-gereedheid. Wat rest is per merk een `.woff2`
-> plus de licentie-afweging, ~15 min per merk, bij vijf merken: DTS Ede (5), PartnerSelect (5),
-> Zwarthout (3), Nobox (1), sulejman (1). Ik kan hier niets meer aan doen.
+> plus de licentie-afweging.
+>
+> ⚠️ **De verdeling per merk hieronder is achterhaald sinds #442** (DTS Ede 5,
+> PartnerSelect 5, Zwarthout 3, Nobox 1, sulejman 1 — samen 15). Het merendeel daarvan
+> bleek geen merkfont maar systeem-, plugin- of build-ruis. Lees de actuele lijst uit het
+> task-file, niet uit dit blok.
+>
+> **Dit is de vierde correctie op ditzelfde blok** (44 → 29 → 18 → 2). Telkens dezelfde
+> fout: een aantal overnemen uit een kolom zonder te toetsen wat er in staat. Neem het
+> getal hier niet over zonder het na te lopen.
 
 ---
 
@@ -321,6 +424,21 @@ bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
    `GeneratedBrandProfile` (schemawijziging → Neon-push) en template-lookup per taal.
    Het fundament ligt er: `renderLayout` kent al een `locale`.
 
+4. **De blog-post golden-set — drie vragen, één zitting** ([task](tasks/golden-set-blogpost-quality.md)).
+   Nieuw op deze lijst per 20-08, en nu mét data eronder, dus goedkoop te beslissen.
+
+   - **A. Hóórt gepubliceerde copy zijn aannames te benoemen** bij een vage brief, of hoort
+     dat in een begeleidend veld? De rubric eist het nu ín het artikel. Deze case scoort
+     vier nachten op rij exact 2,50 en zakt elke keer — consistent, dus wachten op meer
+     data helpt hier niet.
+   - **B. Moet het keyword letterlijk in de H1**, ook als de zin daardoor krom wordt?
+     Gemeten wisselt deze assert `F P F P` over vier nachten: de letterlijke term stond er
+     twee van de vier keer in. Welke kant je ook kiest, de huidige vorm is een muntworp.
+   - **C. Wat doen we met de 70%-gate?** Het slaagpercentage was 50 / 70 / 60 / 90% over
+     vier nachten op identieke invoer. Bij die spreiding flapt élke lijn tussen 50 en 90 —
+     de vraag is dus niet waar de lijn ligt, maar of we meer cases toevoegen, de wisselende
+     asserts vervangen, of de gate informatief maken.
+
 ---
 
 ## Openstaande taken
@@ -329,7 +447,6 @@ bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
 | Taak | Staat |
 |---|---|
 | [`brand-md-open-standaard`](tasks/brand-md-open-standaard.md) | in-progress — funnel live; rest is upstream-PR's + jouw strategie-akkoord |
-| [`content-chain-followups`](tasks/done/content-chain-followups.md) | ✅ **done 19-08** — alle drie de keuzes gemaakt: dode code weg (314 → 38 regels), de schrijf-kant en repurpose bewust níet gebouwd, elk met een toetsbare trigger |
 | [`lp-image-routes`](tasks/done/lp-image-routes.md) | review — wacht op één prod-smoke door jou |
 | [`onboarding-flow-test`](tasks/onboarding-flow-test.md) | open — hangt op 3 externe testers |
 | [`open-acties-2026-07-23`](tasks/open-acties-2026-07-23.md) | open — wacht-op-Erik-lijst. ⚠️ §B: de retentie-indexen zijn ✅ af (#311); wat resteert is `NEXT_PUBLIC_POSTHOG_KEY` op prod |
