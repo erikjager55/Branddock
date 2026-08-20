@@ -15,6 +15,7 @@ export const MARKETING_SITEMAP_PATHS: string[] = [
   'marketing/about',
   'marketing/contact',
   'marketing/resources/f-val',
+  'marketing/resources/brand-md',
   'marketing/features/brand-voice',
   'marketing/features/content-canvas',
   'marketing/features/brand-alignment',

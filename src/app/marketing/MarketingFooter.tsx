@@ -71,6 +71,11 @@ export default function MarketingFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/marketing/resources/brand-md" className="hover:text-gray-900">
+                brand.md uitgelegd
+              </Link>
+            </li>
+            <li>
               <Link href="/brandmd" className="hover:text-gray-900">
                 brand.md-generator (gratis)
               </Link>
