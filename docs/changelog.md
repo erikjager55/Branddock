@@ -37,6 +37,31 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 512. CLAUDE.md gaf sinds 18-08 CSS-advies dat tegen de eigen ADR inging
+
+Vier regels in `CLAUDE.md` beschreven de Tailwind-situatie van vóór PR #323. Ze stuurden een
+nieuwe sessie regelrecht tegen ADR `2026-08-18-tailwind-bronpijplijn.md` in — en tegen wat
+`src/index.css` inmiddels zelf in zijn kop zegt.
+
+| Wat er stond | Waarom fout |
+|---|---|
+| "`src/index.css` is een gecompileerde, gecommitte output" | sinds #323 een echte bron met `@import "tailwindcss"` |
+| "Voor missende utilities: append regel aan `src/index.css`" | het bestand zegt letterlijk: *voeg hier GEEN handgeschreven utility-klassen toe* |
+| "`min-h-0` werkt niet door purge" | **nagemeten en onwaar**: de klasse staat in de gebouwde CSS |
+| "Tailwind 4 purge issues" (verboden patroon 5) | purge was de verkeerde diagnose — er wordt niets gesnoeid, er kwam alleen nooit iets bij |
+
+Gevonden bij het bouwen van #507: mijn eigen controle meldde eerst dat álle 17 gebruikte
+klassen ontbraken, wat een kapotte detector bleek in plaats van kapotte CSS. Zonder die
+tweede toets was ik het advies gevolgd en had ik een handgeschreven utility toegevoegd aan
+een bestand dat dat verbiedt.
+
+Vervangen door wat er nu geldt, inclusief de guard (`npm run smoke:css-utilities`, gedraaid:
+2.737 bestanden, 847 utilities, 0 ontbrekend) en de twee Tailwind 4-eigenaardigheden uit de
+gotcha. `CLAUDE.md` blijft op 279 regels, onder zijn eigen grens van 300.
+
+- Task: [tasks/done/brandmd-artikel.md](tasks/done/brandmd-artikel.md)
+- ADR: docs/adr/2026-08-18-tailwind-bronpijplijn.md
+- Spec: -
 ### 511. Tenant-isolatie van de agents werd nergens getoetst — en de makkelijke fix maakte de bewaker leeg
 
 `smoke:agents-data-analyst` toetst dat de data-analyst-agent van workspace A geen rijen van B ziet. Hij kon nergens draaien: hij zocht de dev-workspaces *Zwarthout* en *Linfi* op naam, die alleen in één persoonlijke database bestaan. Geen npm-script, dus ook nooit opgemerkt — gevonden in de weesbewaker-triage.

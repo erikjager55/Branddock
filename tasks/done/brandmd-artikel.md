@@ -5,9 +5,9 @@ fase: post-launch
 priority: now
 effort: 3-5 uur (artikel via eigen pipeline; pagina volgt het bestaande resources-patroon)
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-08-20
-completed: -
+completed: 2026-08-20
 related-adr: docs/adr/2026-07-17-public-brand-api.md
 related-spec: docs/marketing/brand-md-launch-plan-2026-08-02.md (v2, omarm-strategie) + docs/marketing/launch-wig-besluit.md (optie C) + docs/marketing/brand-md-launch-kit-2026-08-15.md
 worktree: branddock-brandmd-artikel
@@ -122,6 +122,13 @@ Toon en scope volgen de drie vastgelegde besluiten:
 - Branddock-workspace (prod, via MCP): `cmrrgfox0000009j3vhyjnpea`
 - Deliverable: `cmt152esi000304l1jp5duzva` · job `cmt152evu000404l1a8fqb6jh`
 - Live geverifieerd 2026-08-20: `branddock.app/brandmd` en `/brandmd/use` geven beide 200
+- **Gemerged 2026-08-20 07:14 UTC** (PR #447, commit `9a96312b`), alle 4 checks groen,
+  head-SHA vlak vóór de merge getoetst tegen `git ls-remote`.
+- **Live geverifieerd op productie**, inhoudelijk en niet alleen op statuscode:
+  `lang="nl"` in de rauwe serverrespons, canonical correct, 6 `<details>` met 6 chevrons,
+  2 CTA's naar `/brandmd`, trial-regel ná de juiste knop, FAQPage-JSON-LD aanwezig,
+  pad in de productie-sitemap, footer-link rendert vanaf een andere pagina.
+  https://branddock.app/marketing/resources/brand-md
 
 ## Uitkomst van de dogfooding — de pipeline schreef het verkeerde artikel
 
