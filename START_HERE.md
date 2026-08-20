@@ -287,22 +287,26 @@ bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
 
 ## Open beslissingen (blokkeren werk)
 
-0. **KLEINER GEWORDEN — nog zes checks, niet vijftien.** Dit punt luidde: `test:csp` en
-   `smoke:document-lang-browser` draaien nergens en vragen een build + test-DB. Dat bleek
-   voor het grootste deel niet te kloppen; het is nagemeten in plaats van aangenomen (#380).
+0. ✅ **OPGELOST 2026-08-19 — dit punt kan van je lijst.** Het luidde: `test:csp` en
+   `smoke:document-lang-browser` draaien nergens en vragen een build + test-DB, dus het is
+   een kostenafweging voor jou.
 
-   - `smoke:document-lang-browser` vroeg een server **én** een browser. Die twee zijn
-     ontkoppeld: fase 1 (wat de proxy en de root layout uitsturen — precies de bug van #335)
-     draait nu in de `check`-job tegen `next start`, 10 checks. Fase 2 zit achter
-     `SMOKE_BROWSER=1`.
-   - Van de 15 CSP-checks vragen er **negen** geen browser en geen database: gedraaid met
-     `PLAYWRIGHT_BROWSERS_PATH` naar een lege map, 9 passed in 2,1s. Die draaien nu mee.
+   Nagemeten in plaats van aangenomen, en de afweging viel de andere kant op:
 
-   **Wat er nog wél aan jou is**: de zes overige CSP-checks gebruiken een echte browser, en
-   één daarvan (de ingelogde app-shell) ook een geseede database. Chromium installeren op de
-   `check`-job is de kostenafweging. Niet urgent — de enforce-flip is live geverifieerd met
-   0 violations op prod (#294) — maar het is het enige stuk CSP-dekking dat nu nog nergens
-   draait.
+   - **14 van de 15 CSP-checks draaien** (#380, #436). De aanname "build + database +
+     chromium" klopte voor negen ervan helemaal niet — die gaan via HTTP. Voor de andere
+     vijf bleek chromium in de `check`-job goedkoper dan het alternatief: de sweep heeft een
+     PRODUCTIEBUILD nodig, dus naar de `e2e`-job verhuizen had dáár een tweede build gekost.
+   - **De taalbewaker draait volledig** — fase 1 én 2. Dat kostte geen aparte beslissing; het
+     probleem was de kóppeling (server én browser in één eis), niet de prijs.
+
+   De **vijftiende** CSP-check blijft eruit en dat is geen open beslissing maar een feit: hij
+   logt in en vraagt dus een geseede database, die de `check`-job niet heeft. Hij faalt daar
+   op `sign-in faalde`, niet op een violation.
+
+   ⚠️ Eén ding om te weten: fase 2 van de taalbewaker was tot 19-08 **stuk** en toetste niets
+   (#435). Hij navigeerde met `history.pushState`, wat `usePathname()` in Next 16.2.9 niet
+   bijwerkt. Was bijna aangehaakt als "zeven checks voor de prijs van één".
 
 
 1. **Resterende SSE-abort-wijzigingen** — de atomaire settings-merge, deel-resultaten bewaren

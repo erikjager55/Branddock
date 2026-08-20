@@ -32,13 +32,39 @@ Volledige onderbouwing en metingen: `tasks/done/static-rendering-regressie.md`.
       de vier policy-checks en de vijf nonce-integriteitschecks gaan via Playwrights
       `request`-fixture. Gedraaid met `PLAYWRIGHT_BROWSERS_PATH` naar een lege map en
       een neppe `DATABASE_URL`: 9 passed in 2,1s. Draaien nu in de `check`-job.
-      **Rest**: de zes `page`-checks vragen chromium (één ook een geseede DB). Dat
-      blijft een kostenafweging voor Erik.
+      ✅ **Rest afgerond 19-08 (#436)**: chromium staat nu in de `check`-job, dus
+      **14 van de 15** draaien. Het alternatief — de sweep naar de `e2e`-job — was
+      duurder: die draait `npm run dev` terwijl de sweep een PRODUCTIEBUILD nodig
+      heeft, dus dat had daar een tweede build gekost.
+      De vijftiende (`ingelogde app-shell`) blijft eruit: hij logt in en vraagt een
+      GESEEDE database, en faalt zonder die op `sign-in faalde` — niet op een
+      violation.
+
+      **Wat het werkelijk kostte** (CI-run 32302698658, tegen 8m58s daarvoor):
+
+          Browsercache            0m03s
+          Install chromium        OVERGESLAGEN — cache-hit
+          taalbewaker fase 1+2    0m59s   (was 0m09s)
+          CSP-sweep               0m16s   (was 0m05s)
+          hele check-job          10m21s  (+1m23s, limiet 30 min)
+
+      ⚠️ De risico-analyse ging uit van een chromium-DOWNLOAD, met de hangs van
+      18-08 als gevaar. Dat gevaar geldt niet op het normale pad: de cachesleutel
+      is dezelfde die de `e2e`-job al vult, dus de installatie wordt overgeslagen.
+      De dominante nieuwe kost is fase 2 van de taalbewaker (+50s), niet chromium.
 - [x] **`npm run smoke:document-lang-browser`** — ✅ **fase 1 af 2026-08-19 (#380).**
       Het probleem was de kóppeling, niet de kosten: hij vroeg een server én een
       browser, dus draaide hij nergens. Fase 2 zit nu achter `SMOKE_BROWSER=1`; fase 1
-      draait in de `check`-job tegen `next start` (10 checks). Fase 2 wacht op dezelfde
-      chromium-beslissing.
+      draait in de `check`-job tegen `next start` (10 checks). ✅ **Fase 2 draait sinds
+      19-08 mee** (#436), samen 22 checks.
+
+      ⚠️ Maar fase 2 was tot dat moment **stuk**: hij navigeerde met
+      `history.pushState`, en dat werkt `usePathname()` in Next 16.2.9 niet bij. Drie
+      scenario's faalden dus ongeacht het gedrag van `DocumentLangSync` en bewezen
+      niets. Gerepareerd naar een echte klik op een `next/link` (#435). Twee
+      scenario's melden zich luid als overgeslagen omdat er geen link van de
+      app-shell naar `/marketing` of `/brandmd` is — een grens van wat er kán
+      gebeuren, geen dekkingsgat.
 - [~] **De `languageChanged`-listener heeft géén gate.** ⚠️ **Deels afgedekt
       2026-08-19**: `smoke:document-lang` heeft drie bedradingschecks gekregen die
       verwijderen en hernoemen vangen — listener geregistreerd, listener afgemeld
