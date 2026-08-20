@@ -37,6 +37,43 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 506. De taalbewaker hing aan typekit en posthog — een verplichte poort met een externe faalbron
+
+`check` ging flappen op main zodra de browserfase aanstond: rood, groen, groen, rood binnen
+twintig minuten zonder tussenliggende relevante wijziging. Gemeld door een parallelle sessie,
+die main nakeek vóórdat hij concludeerde dat het aan zijn eigen PR lag.
+
+De eerste diagnose — `waitUntil: 'networkidle'` is niet-deterministisch — klopte, maar alleen
+die vervangen loste niets op: met `domcontentloaded` liep de navigatie net zo goed vast. Pas
+het méten van wat `/marketing/pricing` werkelijk ophaalt wees de oorzaak aan: tien externe
+verzoeken, die verschillende mijlpalen blokkeren. De typekit-stylesheet staat in `<head>` en
+houdt de parser tegen (en dus DOMContentLoaded); de vier PostHog-scripts blijven pollen (en dus
+treedt networkidle nooit in). De "voor de hand liggende" fix verhuisde naar een mijlpaal die
+ná de blokkade ligt.
+
+De eigenlijke fout was dus niet de wachtconditie maar dat een **verplichte** poort afhing van
+de uptime van `typekit.net` en `posthog.com` — terwijl de check gaat over `<html lang>`, een
+attribuut van onze eigen server en hydratie waar geen van beide aan meedoet. Nu wordt alles
+buiten de eigen host afgekapt.
+
+Bewust niet gedaan: wachten tot het attribuut de verwachte waarde heeft. Dat maakt de assertie
+zichzelf waar — een fout-maar-stabiele waarde wordt dan een timeout in plaats van een leesbare
+FOUT-regel.
+
+Bewijs: vijf opeenvolgende rondes tegen een productiebuild (5× exit 0, 22 checks, 38-39s), plus
+een mutatietest waarbij een omgedraaide verwachting exit 1 geeft met FOUT op zowel de server-
+als de browserregel. Bij flakiness bewijst één groene run niets, en zonder de mutatie weet je
+niet of je de bewaker hebt gerepareerd of stilgelegd.
+
+Detail dat de diagnose scherper maakte: in de **geslaagde** CI-run duurde de navigatie 24,6s van
+de 30s limiet. De marge was er nooit — het is geen "tweede navigatie faalt" maar "beide zaten
+tegen de limiet".
+
+- Task: -
+- ADR: -
+- Spec: -
+- PR: #445
+
 ### 505. Judge-variantie gemeten zonder één betaalde AI-call — en de drempel-vraag blijkt verkeerd gesteld
 
 De judge-variantie op de blog-post golden-set stond weken als "kost live-LLM-runs, ~55k tokens
