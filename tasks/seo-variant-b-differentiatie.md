@@ -10,7 +10,7 @@ created: 2026-08-18
 completed:
 related-adr: -
 related-spec: -
-worktree: branddock-seo-variant-b  # geclaimd door sessie 41832dfd, 2026-08-18
+worktree: -  # claim vervallen 20-08: sessie 41832dfd en die worktree bestaan niet meer. Taak blijft terecht blocked op Eriks geparkeerde keuze, niet op een bezette werkplek
 ---
 
 # Probleem
