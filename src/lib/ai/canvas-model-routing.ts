@@ -7,16 +7,36 @@
 // content-types (canvas-text-generate feature). Deze module
 // resolved per content-type het optimale model.
 //
-// Mapping per categorie (composite-scores experimenteel gemeten):
+// Mapping per categorie. ⚠️ LEES DE RUISMARGE VOORDAT JE HIER IETS VERPLAATST.
 //
-//   Long-Form Content       → Opus 4.7    (91, runner-up GPT-5.4 87)
-//   Email & Automation      → Opus 4.7    (91, runner-up Sonnet 4.6 87)
-//   Video & Audio           → Opus 4.7    (91, runner-up GPT-5.4 87)
-//   PR/HR & Communications  → Opus 4.7    (92, runner-up GPT-5.4 90)
-//   Sales Enablement        → Opus 4.7    (89, tied Sonnet 4.6 89)
-//   Social Media            → GPT-5.4     (91, runner-up Sonnet 4.6 88)
-//   Advertising & Paid      → Gemini 3.1 Pro (90, runner-up Opus 4.7 89)
-//   Website & Landing Pages → Sonnet 4.6  (91, runner-up Opus 4.7 89)
+//   Long-Form Content       → Opus        (mei 91 / aug 90)
+//   Email & Automation      → Opus        (mei 91 / aug 90)
+//   Video & Audio           → Opus        (mei 91 / aug 92)
+//   PR/HR & Communications  → Opus        (mei 92 / aug 89)
+//   Sales Enablement        → Opus        (mei 89 / aug 91)
+//   Social Media            → GPT         (mei 91 / aug 90)
+//   Advertising & Paid      → Gemini 3.1 Pro (mei 90; aug won GPT-5.6 met 90 — GELIJKSPEL)
+//   Website & Landing Pages → Sonnet      (mei 91; aug won GPT-5.6 met 91 — GELIJKSPEL)
+//
+// ⚠️ DE RUIS IS GROTER DAN DE VERSCHILLEN. Bij de herijking van 2026-08-20
+// draaiden twee modellen ONGEWIJZIGD mee als controle (Haiku 4.5, Gemini 3.1
+// Pro): zelfde model, zelfde judge, zelfde prompts. Hun scores verschoven
+// gemiddeld **4,0 punten** tussen mei en augustus, met een uitschieter van
+// **13** (search-ad). De winnaars hierboven liggen 1-4 punten uit elkaar.
+//
+// Daarmee is dit GEEN tabel om op te sturen. De twee categorieën die van
+// winnaar wisselden deden dat op nul punten verschil; dat is gelijkspel, geen
+// bevinding. De routing is daarom op 2026-08-20 BEWUST ONGEWIJZIGD gelaten.
+//
+// En een composite-score meet niet alles wat telt. `smoke:structured-tweaks`
+// laat zien dat gpt-5.6 een aangeleverde slide-skeleton voor 3 van de 5 titels
+// honoreert waar claude-sonnet-5 er 4 van de 4 haalt — in dezelfde run, met
+// dezelfde instructie. Website & Landing Pages naar GPT verplaatsen op grond
+// van een gelijkspel zou dat gedrag dus kapotmaken zonder dat de score het ziet.
+//
+// Wil je hier weer op sturen? Eerst de methode repareren: meerdere samples per
+// conditie en een spreiding in plaats van één getal. Zie
+// tasks/model-routing-herijking.md en de rapporten in docs/experiments/.
 //
 // Cost-besparing voor cheap categorieën: factor 5-8 t.o.v. Opus.
 // =============================================================

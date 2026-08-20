@@ -5,9 +5,9 @@ fase: post-launch
 priority: next
 effort: 1-2 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-08-20
-completed:
+completed: 2026-08-20
 related-adr: -
 related-spec: -
 worktree: -
@@ -99,3 +99,54 @@ De aanleiding: `linkedin-carousel` (het type waarop de bewaker faalt) staat op
 `hidden: true` sinds 19-05 omdat de carousel-pipeline niet productie-klaar is.
 Het defect zelf raakt dus geen gebruiker. **De onderliggende vraag wel** — die
 routingtabel bedient alle zichtbare content-types.
+
+
+---
+
+# UITGEVOERD 2026-08-20 — en de uitkomst is een andere dan de vraag
+
+Het experiment is herhaald op de juli-generatie: 8 content-types × 6 modellen,
+**dezelfde judge** (`claude-sonnet-4-6`) als in mei.
+
+## De controles zijn het antwoord
+
+Twee modellen draaiden ongewijzigd mee (Haiku 4.5, Gemini 3.1 Pro). Hun drift
+tussen mei en augustus is pure meetruis: **gemiddeld 4,0 punten, uitschieter 13**.
+De winnaars in de tabel liggen 1-4 punten uit elkaar.
+
+**Deze methode kan de verschillen waarop de routing is gebouwd dus niet
+onderscheiden** — niet nu, en met dezelfde opzet ook niet in mei. De twee
+categorieën die van winnaar wisselden (Advertising & Paid, Website & Landing
+Pages) deden dat op **nul punten verschil**.
+
+## Besluit: routing ongewijzigd
+
+Geen gemeten reden om iets te verplaatsen. Bovendien zou Website & Landing Pages
+naar GPT-5.6 verplaatsen het skeleton-gedrag slopen dat daar vandaag werkt
+(`claude-sonnet-5` 4/4 tegen `gpt-5.6` 3/5, zelfde run, zelfde instructie) —
+zonder dat de composite-score dat ziet.
+
+De comment in `canvas-model-routing.ts` draagt nu de ruismarge, het gelijkspel
+en die waarschuwing.
+
+## Wat er open blijft: de METHODE, niet de tabel
+
+Eén generatie per model per content-type is te weinig om 1-4 punten te
+onderscheiden. Wie hier weer op wil sturen, moet eerst:
+
+- [ ] meerdere samples per conditie draaien en een **spreiding** rapporteren
+- [ ] de controle-opzet behouden — zonder ongewijzigde modellen is drift niet
+      van signaal te scheiden
+- [ ] pas daarna conclusies over winnaars trekken
+
+⚠️ Twee valkuilen die deze run bijna verpestten, allebei stil:
+
+1. Het script schreef standaard naar de bestandsnamen van **13 mei** — het zou
+   de oorspronkelijke meting hebben overschreven.
+2. Een globale replace van `'claude-sonnet-4-6'` → `'claude-sonnet-5'` raakte
+   ook **de judge**. Dat zou de vergelijking met mei stilzwijgend ongeldig
+   hebben gemaakt: andere meetlat, zelfde ogende getallen. Gevonden doordat een
+   crash dwong te kijken waar `temperature` vandaan kwam.
+
+**Rapporten**: `docs/experiments/2026-08-20-per-content-type-herijking-report.md`
+(+ `-raw.json`). Het mei-rapport is intact gebleven.
