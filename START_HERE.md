@@ -442,10 +442,22 @@ bestaan.** Dat maakt dit item niet urgenter maar veel kleiner.
      vandaag veranderen komende nachten, en kiezen op oude data is opnieuw op de rand
      kalibreren.
 
-   **Wat er wél voor jou openstaat**, en dat is een echte productvraag: de **v2** — de eval
-   gebruikt eigen inline prompts in plaats van de productiecode. Gemeten divergentie, beide
-   kanten op: productie bestelt een meta-description en géén FAQ; de eval-prompt precies
-   andersom. Deze set toetst dus een format dat gebruikers niet krijgen.
+   **Wat er wél voor jou openstaat is één vraag: wat moet deze set bewaken — de prompt die
+   we shippen, of de kwaliteit van wat eruit komt?** Hij kan niet allebei: hij genereert met
+   een eigen inline prompt, dus een regressie in `BLOG_POST_SYSTEM` is voor hem onzichtbaar,
+   en zijn scores beschrijven een artefact dat geen gebruiker krijgt (productie bestelt een
+   meta-description en géén FAQ; de eval-prompt precies andersom).
+
+   Drie opties, uitgewerkt in het task-file met kosten en verlies per stuk:
+   **A** allebei gescheiden — een deterministische runner naar het bestaande LP-precedent
+   (119 regels, geen database, geen API-key, gratis in de PR-poort) naast de nachtelijke
+   kwaliteitsscores. **B** promptfoo op de productie-prompt zetten — eerlijker scores, maar
+   alle eerdere nachten worden onvergelijkbaar. **C** niets, en de beperking opschrijven.
+
+   Mijn advies is **A**: "is de prompt nog heel?" is deterministisch en gratis en hoort in de
+   PR-poort; "is de tekst goed?" kost geld en hoort 's nachts. B propt die twee in één ding en
+   betaalt dat met de enige historische reeks die we hebben. Huidige kosten, gemeten: $0,34
+   per nacht.
 
 ---
 

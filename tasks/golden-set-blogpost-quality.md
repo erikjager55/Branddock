@@ -309,29 +309,63 @@ assert-uitslagen). Let op de repo-slug: `erikjager55/Branddock`, niet `erikjager
 
       Wat je níet moet doen is de lijn verlagen tot de nachten groen zijn. Dan meet je
       niets meer.
-- [ ] Expliciet besluit over de v2 (orchestrator-wrapped prompts) — doen of bewust niet.
-      ⏳ Erik — **het enige echt openstaande punt van deze taak.**
+- [ ] **DE VRAAG: wat moet deze set bewaken — de prompt die we shippen, of de kwaliteit
+      van wat eruit komt?** ⏳ Erik. Kies A, B of C hieronder.
 
-      **20-08: nu met een gemeten argument in plaats van een vermoeden.** De eval-prompt
-      en de productie-systeemprompt lopen in **beide richtingen** uiteen:
+      **Waarom het één set niet allebei kan.** De promptfoo-set genereert met een eigen
+      inline prompt (regels 47-72 van de YAML), niet met de productiecode. Gevolg, beide
+      kanten op:
 
-      | | productie (`BLOG_POST_SYSTEM`) | eval-prompt |
-      |---|---|---|
-      | meta-description | **wel** — 3x genoemd, incl. eigen output-checklist | niet |
-      | FAQ-sectie | **niet** — 0 treffers | wel, 3 Q&A's verplicht |
-      | keyword in H1 | wel | wel |
+      - Een regressie in `BLOG_POST_SYSTEM` is voor deze set **onzichtbaar** — hij draait
+        die prompt niet.
+      - De kwaliteitsscores beschrijven een artefact dat **geen gebruiker ooit krijgt**.
+        Gemeten divergentie: productie bestelt een meta-description (3x genoemd) en géén
+        FAQ; de eval-prompt bestelt géén meta en wél een FAQ met 3 Q&A's.
 
-      Gemeten door de template te bouwen en de systeemprompt te doorzoeken, niet door
-      te lezen — dat onderscheid is hier wezenlijk (zie hieronder).
+      **Wat de keuze goedkoop maakt: het precedent bestaat al.**
+      `scripts/eval/lp-variant-golden/run.ts` doet dit voor landingspagina's — **119 regels,
+      12 asserties**, en het draait al in de PR-poort als `eval:lp-variant-golden:12`.
 
-      Dat betekent: deze set toetst een format dat gebruikers **niet** krijgen (FAQ), en
-      toetst een format dat ze **wel** krijgen niet (meta). Elke conclusie over
-      "productiekwaliteit" uit deze set draagt die scheefheid mee. Dat is het v2-argument,
-      nu met cijfers.
+      Twee dingen die ik verwachtte als blokkade en die het niet zijn:
+      - **Geen database nodig.** Die runner geeft merk-context als letterlijke fixture mee.
+        `GenerationContext` is vier platte strings (`context-builder.ts:33`), dus
+        `buildLongFormUserPrompt` is net zo aanroepbaar.
+      - **Geen API-key nodig** in de standaardmodus: die toetst deterministisch op de
+        gebouwde prompt. `--live` genereert echt, maar is optioneel.
 
-      ⚠️ **Niet eenzijdig bijtrekken.** Een van de twee kanten aanpassen verandert wat er
-      gegenereerd wordt en maakt de nachten onvergelijkbaar met alles ervóór. Dit is een
-      bewuste keuze, geen opruimklus.
+      **Kosten van de huidige set, gemeten**: $0,34 en 25.080 tokens per nacht voor 10 cases.
+      Ongeveer $10 per maand.
+
+      ---
+
+      **A. Allebei, gescheiden.** Een deterministische runner naar het LP-precedent die het
+      productie-promptcontract vastpint (gratis, in de PR-poort, vangt regressies in
+      `BLOG_POST_SYSTEM` meteen). De promptfoo-set blijft ongewijzigd voor nachtelijke
+      kwaliteitsscores, met zijn beperking opgeschreven waar conclusies worden getrokken.
+      *Kosten*: ~een dagdeel. *Verlies*: geen. *Winst*: de blinde vlek verdwijnt zonder de
+      historische reeks weg te gooien. **← mijn advies**
+
+      **B. Promptfoo op de productie-prompt zetten.** Eén set, en de scores gaan eindelijk
+      over wat gebruikers krijgen. *Kosten*: ~een dag. *Verlies*: alle nachten vóór de
+      omslag worden onvergelijkbaar — inclusief de vier waarop de drempel-discussie rust.
+      Doe dit niet in dezelfde week als een drempelbesluit.
+
+      **C. Niets, en dat opschrijven.** Accepteren dat de set een benadering toetst, en dat
+      vermelden bij elke conclusie eruit. *Kosten*: nul. *Verlies*: een prompt-regressie in
+      productie blijft onzichtbaar tot een klant hem meldt.
+
+      ---
+
+      **Waarom ik A adviseer**: de twee vragen zijn verschillend en verdienen verschillend
+      gereedschap. "Is de prompt nog heel?" is deterministisch, gratis en hoort in de
+      PR-poort — daar hoort het antwoord binnen een minuut te komen. "Is de tekst goed?"
+      vraagt een oordeel, kost geld en hoort 's nachts. B propt die twee in één ding en
+      betaalt dat met de enige historische reeks die we hebben.
+
+      ⚠️ Bij C hoort één randvoorwaarde: schrijf de beperking dan óók in de rubric zelf,
+      niet alleen in dit bestand. De vorige keer dat een aanname over deze set alleen
+      buiten de code stond, kostte dat #350 een verkeerde motivering en een guard die zijn
+      eigen premisse bevestigde.
 
 # Smoke test plan
 
