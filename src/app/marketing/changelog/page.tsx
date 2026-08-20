@@ -23,13 +23,25 @@ interface ChangelogEntry {
   /** Klanttaal-omschrijving: wat kun je er nu mee. */
   body: string;
   tag?: string;
+  /** Optionele verdiepingslink, bijv. naar een uitleg-pagina. */
+  href?: string;
+  linkLabel?: string;
 }
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    date: '12 augustus 2026',
+    title: 'Gratis brand.md-generator',
+    body:
+      'Plak je URL en je krijgt je brand.md: een bestand dat je merk beschrijft en dat je zelf meeneemt naar ChatGPT, Claude, Cursor of welke AI-tool dan ook. Open standaard, gratis, geen account nodig. Wat een scan niet kan bevestigen, staat er eerlijk als onbevestigd bij. Let op het verschil met de MCP-connector hieronder: dat is een live koppeling naar je merk in Branddock, dit is een los bestand dat je overal kunt plakken.',
+    tag: 'brand.md',
+    href: '/marketing/resources/brand-md',
+    linkLabel: 'Lees wat brand.md is',
+  },
+  {
     date: '18 juli 2026',
     title: 'Branddock in Claude en ChatGPT',
-    body: 'Koppel Branddock als connector via branddock.app/mcp: log in met je Branddock-account en je agent kent je merk. 17 tools voor merkcontext, F-VAL-validatie en on-brand generatie. Gegenereerd werk landt gescoord in je library.',
+    body: 'Koppel Branddock als connector via branddock.app/mcp: log in met je Branddock-account en je agent haalt je merk lévend op, dus altijd de actuele versie in plaats van een gedownload bestand. 17 tools voor merkcontext, F-VAL-validatie en on-brand generatie. Gegenereerd werk landt gescoord in je library.',
     tag: 'Koppelingen',
   },
   {
@@ -104,6 +116,16 @@ export default function ChangelogPage() {
             </div>
             <h2 className="text-lg font-semibold text-gray-900 mb-1">{entry.title}</h2>
             <p className="text-sm text-gray-600 leading-relaxed">{entry.body}</p>
+            {entry.href ? (
+              <p className="mt-3 text-sm">
+                <Link
+                  href={entry.href}
+                  className="mkt-accent underline underline-offset-2 font-medium"
+                >
+                  {entry.linkLabel ?? 'Lees meer'}
+                </Link>
+              </p>
+            ) : null}
           </article>
         ))}
       </div>
