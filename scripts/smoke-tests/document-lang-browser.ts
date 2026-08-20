@@ -107,9 +107,33 @@ async function checkAfterHydration(browser: Browser, s: Scenario): Promise<boole
   if (s.cookie) {
     await ctx.addCookies([{ name: 'branddock-ui-locale', value: s.cookie, url: BASE }]);
   }
+
+  // ⚠️ ALLES BUITEN DE EIGEN HOST AFKAPPEN — dit is wat de gate deterministisch maakt.
+  //
+  // Deze check gaat over `<html lang>`: een attribuut van onze eigen server plus
+  // onze eigen hydratie. Externe fonts en analytics doen daar niet aan mee, maar
+  // ze bepaalden wél wanneer de pagina "klaar" heette. Gemeten op /marketing/pricing:
+  // tien externe verzoeken, waaronder een typekit-stylesheet in <head> (die blokkeert
+  // de parser en daarmee DOMContentLoaded zolang hij hangt) en vier PostHog-scripts
+  // (die blijven pollen, dus networkidle treedt nooit betrouwbaar in).
+  //
+  // Gevolg op main (20-08): de `check`-poort flapte rood/groen zonder tussenliggende
+  // wijziging. In de GESLAAGDE run duurde één navigatie 24,6s van de 30s limiet — de
+  // marge was er nooit, de volgende viel er net overheen. Lokaal reproduceerbaar:
+  // eerste run vast, tweede run groen, met identieke code.
+  //
+  // Alleen `networkidle` vervangen was niet genoeg: `domcontentloaded` liep óók vast,
+  // want de blokkerende stylesheet zit vóór dat punt. De echte fout is dat een
+  // verplichte poort afhing van de uptime van typekit.net en posthog.com.
+  await ctx.route('**', (route) => {
+    const url = route.request().url();
+    const eigen = url.startsWith(BASE) || url.startsWith('data:') || url.startsWith('about:');
+    return eigen ? route.continue() : route.abort();
+  });
+
   const page = await ctx.newPage();
   try {
-    await page.goto(BASE + s.path, { waitUntil: 'networkidle' });
+    await page.goto(BASE + s.path, { waitUntil: 'load' });
     if (s.navigateTo) {
       await page.waitForTimeout(1500);
 
@@ -147,7 +171,15 @@ async function checkAfterHydration(browser: Browser, s: Scenario): Promise<boole
       }
       await link.click();
     }
-    await page.waitForTimeout(2500); // ruim ná hydratie + LocaleReconciler
+    // Vaste wacht, ruim ná hydratie + LocaleReconciler. Bewust GEEN
+    // `waitForFunction` op het lang-attribuut: dat is precies wat deze check
+    // assert. Wachten tot de waarde klopt maakt de assertie zichzelf waar —
+    // een fout-maar-stabiele waarde wordt dan een timeout in plaats van een
+    // leesbare FOUT-regel. De wacht moet onafhankelijk zijn van wat hij toetst.
+    //
+    // Deze wacht was niet de bron van de flakiness (dat was `networkidle`
+    // hierboven) en hij is deterministisch in duur.
+    await page.waitForTimeout(2500);
     const got = await page.evaluate(() => document.documentElement.lang);
     const ok = got === s.expect;
     console.log(
