@@ -132,7 +132,7 @@ function PlatformInk() {
       </h1>
       <p className="text-xl mb-8" style={{ color: 'rgba(255,255,255,0.9)' }}>
         AI-agents doen het werk: onderzoek, strategie, content, merkbewaking. Alles op jouw
-        merk-DNA. Iedere uiting wordt gescoord of het bij je merk past en resoneert bij je
+        merk-DNA. Iedere uiting wordt gescoord of het bij je merk past en aanslaat bij je
         doelgroep(en).
       </p>
       <div className="flex flex-wrap gap-3">

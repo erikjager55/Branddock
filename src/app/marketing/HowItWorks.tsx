@@ -34,7 +34,7 @@ const STEPS: Step[] = [
     body:
       'Brand voice, brandstyle, persona’s, producten en concurrenten, het complete merk in één workspace, klaar om overal in te zetten.',
     highlights: [
-      '12 canonieke merk-assets met frameworks',
+      '12 kernonderdelen van je merk, overal automatisch gebruikt',
       'Brand voice en stijl uit je eigen materiaal',
       'Persona’s, producten en concurrenten erbij',
     ],
@@ -49,7 +49,7 @@ const STEPS: Step[] = [
       'Content, campagnes en beeld, allemaal in jouw merk-DNA. Van blogpost tot LinkedIn-ad tot e-mailflow, in de stem van je merk.',
     highlights: [
       '25+ contenttypes',
-      'Campagnes van strategie tot planning en deliverables',
+      'Campagnes van strategie tot kant-en-klare content',
       'Beeld in dezelfde merkstijl',
     ],
     cta: { label: 'Bekijk Content Canvas', href: '/marketing/platform?feature=content-canvas' },
@@ -77,7 +77,7 @@ const STEPS: Step[] = [
       'Schakel AI-agents in die altijd aan het werk voor je zijn: van onderzoek en trends tot content en bewaking, zodat je team op merk kan opschalen.',
     highlights: [
       'Voorstellen in je inbox, jij keurt goed',
-      'Wekelijkse rapporten en 24/7-watchdogs',
+      'Wekelijkse rapporten, en agents die dag en nacht meekijken',
       'Werkt ook in Claude en ChatGPT',
     ],
     cta: { label: 'Bekijk de agents', href: '/marketing/platform?feature=agents' },
