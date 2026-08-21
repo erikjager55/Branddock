@@ -81,6 +81,33 @@ productie-vindplaats, mét tegenproef dat echte merkfonts blijven staan).
 - ADR: `docs/adr/2026-06-05-typography-font-canonicalization.md`
 - Spec: `-`
 - Commit: PR #442, #444, #452, #460
+### 523. De eerste nacht ná de golden-set-fixes bevestigt ze alle drie
+
+De nachtrun van 21-08 was de eerste met de wijzigingen van 20-08. Drie dingen bevestigd in
+een echte run in plaats van in een simulatie tegen opgeslagen artefacten.
+
+**De LINFI-H1-assert slaagt**, en de twee `icontains` ook — de hoofdlettergevoeligheid die
+de assert een muntworp maakte, is weg.
+
+**De vage-brief-case ging van 2,50 naar 4,50 en slaagt.** Die stond vier nachten op rij op
+exact 2,50 en zakte elke keer. Dat is directe bevestiging dat het een rubric-defect was en
+geen productvraag: de weggehaalde eis vroeg precies wat de shipped prompt verbiedt
+(*"produce only the final content"*).
+
+**Slaagpercentage 9/10 = 90%**, met de gate op 70. De enige zakker is `Empty knowledge
+context`, en die faalt om de juiste reden — het model verzon een merkidentiteit voor
+'NieuweBrand'. Terechte afkeuring; die case doet precies wat hij moet doen.
+
+⚠️ Eén nacht is geen reeks. Het drempel-besluit wacht op drie nachten meer; de spreiding
+was het probleem, niet het niveau.
+
+Los daarvan draaide `canvas-tweaks` groen in dezelfde run: 12 passed, 0 failed, 1
+soft-warning, exact de voorspelde vorm. De soft-warning is de bekende 3/5 slide-titels met
+dezelfde twee ontbrekende — nu drie keer onafhankelijk identiek gemeten.
+
+- Task: [tasks/golden-set-blogpost-quality.md](../tasks/golden-set-blogpost-quality.md)
+- ADR: -
+- Spec: -
 
 ### 521. De funnel voor het eerst in zijn geheel doorlopen — vier schakels gemeten, twee bevindingen
 

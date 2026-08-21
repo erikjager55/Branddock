@@ -27,11 +27,30 @@ worktree: branddock-static-rendering-regressie  # 20-08; de dode claim van sessi
 fixes van vandaag veranderen die data. Afvinken vóór de nachten zijn gedraaid is precies
 de boekhoudgewoonte die de done-audit van 16-08 blootlegde.
 
+## Nacht 1 van 4 — 21-08: **9/10 = 90%**
+
+De eerste nachtrun mét de fixes van 20-08. Drie dingen bevestigd in een echte run, niet
+in een simulatie:
+
+- **De LINFI-H1-assert slaagt** (`javascript`, `pass=true`). De hoofdletter-bug is weg.
+- **Beide `icontains` slagen** (Napking, Better Brands).
+- **De vage-brief-case ging van 2,50 naar 4,50 en slaagt.** Vier nachten op rij stond die
+  op exact 2,50 en zakte. Dat is directe bevestiging dat **A een rubric-defect was** en
+  geen productvraag: de eis die weg is, vroeg precies wat de shipped prompt verbiedt.
+
+**De enige zakker is `Empty knowledge context`, en die faalt om de juiste reden**: het
+model verzon een identiteit voor 'NieuweBrand' ("Bij NieuweBrand werken we elke dag aan
+het toegankelijk maken van kennis…"). Dat is de hallucinatie-klasse die deze case moet
+vangen. Terechte afkeuring, laten staan.
+
+⚠️ **Eén nacht is geen reeks.** 90% zegt nog niets over de spreiding — dat was juist het
+probleem. Drie nachten te gaan.
+
 **Wat de volgende sessie moet doen** (en verder niets aan deze taak):
-1. Vanaf ~24-08 vier nachtelijke artefacten ophalen — zie "Reproduceren" verderop.
-2. Slaagpercentage per nacht opnieuw berekenen. Verwachting: minder spreiding dan
-   60/70/70/90, want drie wisselbronnen zijn weg.
-3. Valt de spreiding weg, dan klopt 70% gewoon en kan C dicht zonder wijziging.
+1. Vanaf ~24-08 de nachten 22, 23 en 24-08 ophalen — zie "Reproduceren" verderop.
+2. Slaagpercentage per nacht naast 21-08 (90%) leggen. Verwachting: minder spreiding dan
+   de 60/70/70/90 van vóór de fixes, want drie wisselbronnen zijn weg.
+3. Valt de spreiding weg, dan klopt 70% gewoon en kan C dicht zónder wijziging.
 
 ---
 
