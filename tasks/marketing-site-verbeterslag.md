@@ -125,12 +125,26 @@ F-VAL-uitleg"-link erin voor wie dieper wil. Alle 7 oude URL's redirecten (perma
 is van dropdown naar directe link veranderd; footer, homepage-tegels, `HowItWorks`-CTA's en
 de F-VAL-CTA zijn meegerepoint.
 
-⚠️ **Bijvangst gevonden door Erik**: de "Merk-DNA"-tegel deelde zijn `slug` met "Brand
-voice & stijl" (bestond al vóór deze taak — beide linkten altijd naar dezelfde detailpagina),
-maar in een lightbox viel dat pas echt op: klikken op "Merk-DNA" opende een paneel getiteld
-"Brand Voice die écht klopt". Gefixt door "Merk-DNA" een gewone, niet-klikbare tegel te maken
-(geen eigen inhoud om te tonen) i.p.v. nieuwe merktekst te verzinnen — die keuze staat open
-als Erik liever wél een eigen Merk-DNA-lightbox wil.
+⚠️ **Bijvangst gevonden door Erik, in twee rondes**:
+1. De "Merk-DNA"-tegel deelde zijn `slug` met "Brand voice & stijl" (bestond al vóór deze
+   taak — beide linkten altijd naar dezelfde detailpagina), maar in een lightbox viel dat pas
+   echt op: klikken op "Merk-DNA" opende een paneel getiteld "Brand Voice die écht klopt".
+   Eerste fix: niet-klikbaar maken. **Herzien op verzoek van Erik**: Merk-DNA heeft nu zijn
+   eigen `merk-dna`-entry in `MODULE_DETAILS` en is weer klikbaar, met eigen inhoud.
+2. **Alle 7 lightbox-teksten herschreven in gewone taal** — interne product-termen als
+   "voiceguide", "W-1-full embedding", "STRICT-mode", "multivariate output", "deterministische
+   property-checks" en "compliance-dimensie" zijn eruit; de functionaliteit is ongewijzigd,
+   alleen de uitleg is voor een lezer zonder productkennis geschreven.
+
+✅ **Verankerd als merkregel op productie (21-08)**: het "minder jargon"-principe staat nu
+ook als een écht afdwingbare `StyleguideRule` op de eigen `Branddock`-workspace
+(`styleguideId cmrrh309g000f2ems6ubd0awj`, gepubliceerd) — sectie `copy`, `forbidden-words`-
+constraint met de 11 termen die hierboven uit de platformpagina zijn gehaald. Dat is de
+eerste tekst-regel (met constraint) op die styleguide; de bestaande 9 regels zijn allemaal
+visueel (colors/logo/imagery) zonder constraint. Gezet via de Neon-MCP rechtstreeks op
+`branddock-prod`, ná akkoord van Erik op de exacte regeltekst — niet via de Branddock-MCP-
+koppeling zelf, die heeft geen schrijf-tool voor `StyleguideRule` (alleen `get_brand_context`
+/ `score_against_brand` / `rewrite_on_brand` e.d., allemaal lees/genereer/scoor).
 
 | # | URL (oud, redirect nu) | Slug | Status |
 |---|---|---|---|
