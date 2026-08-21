@@ -28,6 +28,7 @@ import {
   matchesPrefix,
   resolveClientLangDecision,
   decideDocumentLang,
+  hardcodedLangFor,
   isEnglishPublicRoute,
   isBilingualQueryRoute,
   langFromSearch,
@@ -283,13 +284,30 @@ check('client: invite volgt de query', resolveClientLangDecision('app.branddock.
 check('client: invite zonder query is en', resolveClientLangDecision('app.branddock.app', '/invite/accept'), { kind: 'fixed', lang: 'en' });
 
 // ── Langste prefix wint, niet de lijstvolgorde ───────────────────────────
-// `/brandmd/claim` ligt genest onder `/brandmd`. Werd de Nederlandse lijst eerst
-// getoetst, dan won `/brandmd` altijd en was elke Engelse uitzondering eronder
-// dode code. Zonder deze checks kan iemand de langste-match-helper terugdraaien
-// naar twee losse if-takken zonder dat er iets rood wordt.
-check('genest EN-pad wint van de kortere NL-prefix', decideDocumentLang('/brandmd/claim/abc123', 'nl', null), 'en');
+// Werd de Nederlandse lijst eerst getoetst, dan won een korte NL-prefix altijd
+// en was elke Engelse uitzondering eronder dode code. Zonder deze checks kan
+// iemand de langste-match-helper terugdraaien naar twee losse if-takken zonder
+// dat er iets rood wordt.
+//
+// Het echte voorbeeld was `/brandmd/claim` onder `/brandmd`. Die uitzondering
+// verviel op 2026-08-21 toen de pagina vertaald werd — en daarmee zou ook de
+// enige toets op deze regel zijn verdwenen. Daarom toetsen we de helper nu met
+// geïnjecteerde lijsten: de regel blijft bewaakt, óók als er geen geneste
+// uitzondering in productie staat. Dat is precies wanneer iemand hem per
+// ongeluk weghaalt.
+check('genest EN-pad wint van de kortere NL-prefix',
+  hardcodedLangFor('/nl-root/en-tak/detail', ['/nl-root'], ['/nl-root/en-tak']), 'en');
+check('genest NL-pad wint van de kortere EN-prefix',
+  hardcodedLangFor('/en-root/nl-tak/detail', ['/en-root/nl-tak'], ['/en-root']), 'nl');
+check('de omringende prefix blijft gelden buiten de geneste tak',
+  hardcodedLangFor('/nl-root/iets-anders', ['/nl-root'], ['/nl-root/en-tak']), 'nl');
+check('lijstvolgorde doet er niet toe, alleen lengte',
+  hardcodedLangFor('/a/b/c', ['/a/b'], ['/a']), 'nl');
+
+// En de echte routes, via de publieke ingang:
 check('de NL-prefix eromheen blijft NL', decideDocumentLang('/brandmd/use', 'en', null), 'nl');
 check('de NL-root zelf blijft NL', decideDocumentLang('/brandmd', 'en', null), 'nl');
+check('de claim-pagina is sinds de vertaling NL', decideDocumentLang('/brandmd/claim/abc123', 'en', null), 'nl');
 check('een niet-genest EN-pad blijft EN', decideDocumentLang('/oauth/login', 'nl', null), 'en');
 
 // ── Constanten waarop beide kanten leunen ────────────────────────────────
