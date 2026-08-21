@@ -161,10 +161,12 @@ async function generateForCase(
   }
   // ⚠️ SOFT, en dat is een gemeten keuze — geen weggeregelde drempel.
   //
-  // Gemeten in twee onafhankelijke runs (nachtelijk 03:40 en handmatig 05:24 op
-  // 2026-08-20), beide keren IDENTIEK: 3/5, met exact dezelfde twee ontbrekende
-  // titels — "Onze aanpak in 3 stappen" en "De volgende stap". Geen flake dus:
-  // reproduceerbaar gedrag. Het model neemt de narratieve slides letterlijk over
+  // Gemeten in DRIE onafhankelijke runs — nachtelijk 03:40 en handmatig 05:24 op
+  // 2026-08-20, plus nachtelijk 03:45 op 2026-08-21 — alle drie IDENTIEK: 3/5,
+  // met exact dezelfde twee ontbrekende titels ("Onze aanpak in 3 stappen" en
+  // "De volgende stap"). Drie keer hetzelfde is geen variantie meer maar
+  // vastgesteld gedrag: het model neemt de narratieve slides letterlijk over en
+  // herschrijft consequent de oplossings- en CTA-slide. Het model neemt de narratieve slides letterlijk over
   // en herschrijft de oplossings- en CTA-slide.
   //
   // Waarom NIET de prompt geharden: dezelfde `buildSkeletonRender`-instructie
@@ -188,7 +190,11 @@ async function generateForCase(
   softCheck(
     `All 5 slide titles appear verbatim in output (found ${titlesFound}/5)`,
     titlesFound === 5,
-    `missing: ${carouselSlides.filter((t) => !carouselOutput.toLowerCase().includes(t.toLowerCase())).join(' | ')}`,
+    // De reden staat IN het detail, want softCheck plakt er generiek
+    // "(soft check — AI variance)" achter — en variantie is dit aantoonbaar niet.
+    `missing: ${carouselSlides.filter((t) => !carouselOutput.toLowerCase().includes(t.toLowerCase())).join(' | ')}` +
+      ' — REPRODUCEERBAAR (3 runs identiek, zelfde 2 titels: 20-08 nachtelijk, 20-08 handmatig,' +
+      ' 21-08 nachtelijk), dus geen variantie maar modelgedrag',
   );
 
   // ── Test 3: landing-page sectionSkeleton — no generic sections ──
