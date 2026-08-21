@@ -4,8 +4,11 @@
 // zijn hierin opgegaan). Elke tegel met eigen inhoud opent een lightbox — ook
 // Merk-check (F-VAL), met een link naar de volledige uitleg als extra optie
 // (besluit Erik: consistent, geen tegel die naar een hele pagina doorlinkt).
-// Merk-DNA heeft bewust geen slug: die tegel opende eerder dezelfde lightbox
-// als Brand voice & stijl, wat het verkeerde label toonde (besluit Erik).
+// Merk-DNA heeft nu zijn eigen entry (was eerst gedeeld met Brand voice &
+// stijl, wat het verkeerde label toonde — besluit Erik). Alle teksten hier
+// zijn bewust in gewone taal geschreven: geen interne product-termen zoals
+// "voiceguide", "W-1-embedding" of "compliance-dimensie" — die vertellen een
+// bezoeker niet wat hij ervoor terugkrijgt (besluit Erik).
 
 import {
   Dna,
@@ -52,18 +55,19 @@ export const GROUPS: Group[] = [
       {
         Icon: Dna,
         title: 'Merk-DNA',
-        desc: '12 canonieke merk-assets als fundament onder alles wat je maakt.',
+        desc: 'De basis van je merk, één keer vastgelegd en overal automatisch gebruikt.',
+        slug: 'merk-dna',
       },
       {
         Icon: Palette,
         title: 'Brand voice & stijl',
-        desc: 'De merkstem en visuele stijl, uit jouw materiaal, herbruikbaar in elke output.',
+        desc: 'Hoe je merk klinkt en eruitziet, gehaald uit je eigen materiaal en overal herbruikbaar.',
         slug: 'brand-voice',
       },
       {
         Icon: Languages,
         title: 'Meertalig',
-        desc: 'Multi-markt content voor internationale merken, op hetzelfde merk-DNA.',
+        desc: 'Content in meerdere talen en markten, op basis van hetzelfde merk-DNA.',
       },
     ],
   },
@@ -77,13 +81,13 @@ export const GROUPS: Group[] = [
       {
         Icon: Users,
         title: 'Persona’s',
-        desc: 'Onderbouwde doelgroep-persona’s, inclusief persona-chat om te sparren.',
+        desc: 'Een goed onderbouwd beeld van je doelgroep, en een chat om er vragen aan te stellen.',
         slug: 'personas',
       },
       {
         Icon: Swords,
         title: 'Concurrent-analyse',
-        desc: 'Concurrenten in beeld en meegewogen in strategie en content.',
+        desc: 'Wie je concurrenten zijn en wat ze doen, meegenomen in je strategie en content.',
       },
       {
         Icon: Radar,
@@ -103,24 +107,24 @@ export const GROUPS: Group[] = [
       {
         Icon: PenLine,
         title: 'Content Canvas',
-        desc: 'On-brand tekst-generatie over 25+ contenttypes en alle kanalen.',
+        desc: 'On-brand teksten voor 25+ soorten content, op elk kanaal.',
         slug: 'content-canvas',
       },
       {
         Icon: Megaphone,
         title: 'Campagne-strategie',
-        desc: 'Van strategisch blueprint tot concrete deliverables, warm overgedragen.',
+        desc: 'Van strategie tot kant-en-klare content, in één beweging.',
         slug: 'campaigns',
       },
       {
         Icon: Images,
         title: 'Beeld',
-        desc: 'On-brand visual, direct in het platform.',
+        desc: 'On-brand beeld, direct in het platform.',
       },
       {
         Icon: LayoutTemplate,
         title: 'Landingspagina’s',
-        desc: 'Bouwen en publiceren op je eigen subdomein, zonder extra tooling.',
+        desc: 'Bouwen en publiceren op je eigen subdomein, zonder extra software.',
       },
     ],
   },
@@ -134,13 +138,13 @@ export const GROUPS: Group[] = [
       {
         Icon: Bot,
         title: '9 AI-agents',
-        desc: 'Van onderzoek en strategie tot wekelijkse rapporten en 24/7-watchdogs.',
+        desc: 'Van onderzoek en strategie tot wekelijkse rapporten en agents die dag en nacht meekijken.',
         slug: 'agents',
       },
       {
         Icon: BadgeCheck,
         title: 'Merk-check (F-VAL)',
-        desc: 'Elke output een merk-fideliteitsscore; onder de norm wordt automatisch herschreven.',
+        desc: 'Elke tekst krijgt een score voor hoe goed die bij je merk past; te laag, dan herschrijft Branddock hem automatisch.',
         slug: 'brand-alignment',
       },
     ],
@@ -158,94 +162,105 @@ export interface ModuleDetail {
 }
 
 export const MODULE_DETAILS: Record<string, ModuleDetail> = {
+  'merk-dna': {
+    title: 'Je complete merk-DNA, op één plek',
+    tagline: 'Alles wat je merk uniek maakt, één keer vastgelegd en overal automatisch gebruikt.',
+    description:
+      'Je vult je merk één keer in: waar het voor staat, hoe het klinkt, hoe het eruitziet en voor wie het is. Branddock gebruikt dat daarna bij alles wat het voor je maakt, zodat je nooit opnieuw hoeft uit te leggen wie je bent.',
+    bullets: [
+      'Eén centrale plek voor missie, waarden, doelgroep, merkstem en huisstijl',
+      'Automatisch meegenomen in elke tekst, elk beeld en elke pagina die je maakt',
+      'Eén keer invullen, overal consistent — geen losse briefing meer per kanaal',
+      'Altijd aan te vullen of bij te werken naarmate je merk groeit',
+    ],
+  },
   'brand-alignment': {
     title: 'Merk-check & inzichten',
     tagline: 'Zie waaróm content scoort zoals het scoort.',
     description:
-      'Geen black box: per generatie een uitsplitsing van stijl-fit / merk-judge / regel-compliance. Bevindingen worden gecategoriseerd in VOICE / TERMINOLOGIE / CLAIMS / STIJL / BUSINESS / AI-TELL, met severity en concrete suggesties.',
+      'Geen black box: elke tekst krijgt een uitsplitsing van drie dingen — hoe goed de schrijfstijl past, wat een AI-beoordelaar ervan vindt, en of je eigen merkregels worden gevolgd. Bevindingen komen met een duidelijke prioriteit en concrete suggesties om ze op te lossen.',
     bullets: [
-      '3-pijler F-VAL-score: stijl (35%) / judge (45%) / rules (20%)',
-      'Categorisering van bevindingen met HOOG/MIDDEN/LAAG severity',
-      'Compliance-dimensie: onderbouwing van claims + sectorspecifieke risicoflags',
-      '30-daags trend-dashboard met slagingspercentage per contenttype',
-      'Edit-distance-signaal voor het regressie-corpusfilter',
+      'Eén score, opgebouwd uit schrijfstijl, een AI-beoordeling en je eigen merkregels',
+      'Bevindingen ingedeeld naar type — bijvoorbeeld toon, woordkeuze of een claim die onderbouwing mist',
+      'Checkt of beweringen kloppen en of er risico’s spelen die in jouw sector gevoelig liggen',
+      'Een dashboard dat laat zien hoe vaak content de norm haalt, per contentsoort',
     ],
     moreHref: '/marketing/resources/f-val',
     moreLabel: 'Lees de volledige F-VAL-uitleg',
   },
   'brand-voice': {
     title: 'Brand Voice die écht klopt',
-    tagline: 'Bouw je brand voice uit voorbeeldteksten, geen generieke prompts.',
+    tagline: 'Bouw je merkstem uit je eigen voorbeeldteksten, geen generieke prompts.',
     description:
-      'Branddock leert je brand voice uit een voiceguide, voorbeeldteksten of allebei. Elke generatie wordt getoetst aan die basis, niet aan “klinkt het in het algemeen goed”.',
+      'Branddock leert je merkstem uit een schrijfprofiel, voorbeeldteksten of allebei. Elke nieuwe tekst wordt vergeleken met die basis, niet met de vraag "klinkt dit in het algemeen goed".',
     bullets: [
-      'Voiceguide-extractie uit 3 voorbeeldteksten in 5 minuten',
-      'Voice-similariteitsscore per gegenereerde variant (W-1-full embedding)',
-      'STRICT-mode herschrijft anti-AI-tells op verzoek',
-      'Eigen drempels per contenttype (blog vs LinkedIn vs e-mail)',
+      'Een schrijfprofiel uit 3 voorbeeldteksten, klaar in 5 minuten',
+      'Automatische check hoe goed elke gegenereerde tekst op je merkstem lijkt',
+      'Een strengere modus die AI-taalpatronen actief wegschrijft, op aanvraag',
+      'Eigen richtlijnen per contentsoort (een blog leest anders dan een LinkedIn-post of e-mail)',
     ],
   },
   'content-canvas': {
-    title: 'Content Canvas: 25+ contenttypes',
-    tagline: 'Van blogpost tot landingspagina tot LinkedIn-ad: één canvas, alle formats.',
+    title: 'Content Canvas: 25+ soorten content',
+    tagline: 'Van blogpost tot landingspagina tot LinkedIn-post: één plek, alle formats.',
     description:
-      'Briefing erin, on-brand content eruit, met automatische kwaliteitscontroles bij elke stap. Multivariate output, deterministische property-checks en een merk-check (F-VAL) op elke variant, plus volledige webpagina’s en SEO/GEO-longform met een visuele page-builder.',
+      'Briefing erin, on-brand content eruit, met automatische kwaliteitscontroles bij elke stap. Je krijgt meerdere versies om uit te kiezen, elk gecheckt op fouten en gescoord op merkfit, plus complete webpagina’s en lange, goed vindbare artikelen met een visuele pagina-bouwer.',
     bullets: [
-      '25+ contenttypes, van blog en social tot ads, landingspagina’s en SEO/GEO-longform',
-      'Multivariate output: meerdere invalshoeken + 1 voorkeursvariant per generatie',
-      'Deterministische property-checks per variant (placeholders, PII, verboden zinnen, claims)',
-      'Visuele page-builder met publiceerbare pagina’s op je eigen URL',
-      'Auto-iteratie: bij een score onder de drempel een automatische, feedback-gedreven herschrijving',
+      '25+ soorten content, van blog en social tot advertenties, landingspagina’s en lange artikelen',
+      'Meerdere versies per generatie, zodat je kunt kiezen wat het beste past',
+      'Automatische checks op fouten, zoals vergeten invulvelden, gevoelige gegevens of verboden woorden',
+      'Sleep zelf webpagina’s in elkaar en publiceer ze direct op je eigen URL',
+      'Scoort een tekst te laag, dan herschrijft Branddock hem automatisch opnieuw',
     ],
   },
   agents: {
     title: 'AI-agents die je merk kennen',
-    tagline: 'Negen specialisten, van onderzoek en strategie tot wekelijkse rapporten en 24/7-watchdogs.',
+    tagline: 'Negen specialisten, van marktonderzoek tot wekelijkse rapporten en 24/7-bewaking.',
     description:
-      'Branddock-agents doen echt werk bovenop je merk-DNA: marktonderzoek met bronnen, strategiefundamenten, contentvoorstellen, merk-checks en data-analyse. Elke agent stelt voor, jij keurt goed. Niets gaat live zonder jou.',
+      'Branddock-agents doen echt werk bovenop je merk-DNA: marktonderzoek, strategie, contentvoorstellen, merk-checks en cijferanalyse. Elke agent stelt voor, jij keurt goed — niets gaat live zonder jou.',
     bullets: [
-      'Research-analist: marktonderzoek met bronnen (web + peer-reviewed) in je kennisbibliotheek',
-      'Strateeg & contentmaker: strategiefundamenten en contentvoorstellen via de merk-gevalideerde pipeline',
-      'Merk-bewaker: onafhankelijke merk-checks (F-VAL) op elke tekst',
-      'Rapportage-analist: een klant-klaar wekelijks merkrapport, op schema',
-      'SEO/GEO- & ads-watchdogs: signalen over content-veroudering en ad-moeheid, met verversvoorstellen',
-      'Markt- & data-analisten: concurrentbewegingen en je eigen productiecijfers',
-      'Human-in-the-loop by design: agents stellen voor, jij bevestigt',
+      'Onderzoekt de markt met bronnen en legt dat vast in je eigen kennisbibliotheek',
+      'Bouwt strategie en contentvoorstellen die al op je merk-DNA zijn afgestemd',
+      'Checkt zelfstandig of teksten op merk blijven',
+      'Levert elke week een kant-en-klaar merkrapport',
+      'Houdt bij wanneer content of advertenties verouderen en stelt een update voor',
+      'Volgt concurrenten en je eigen resultaten',
+      'Jij blijft de baas: agents doen voorstellen, jij keurt ze goed',
     ],
   },
   personas: {
     title: 'Persona’s die je doelgroep echt raken',
-    tagline: 'Onderbouwde doelgroep-persona’s, en een chat om mee te sparren.',
+    tagline: 'Een goed onderbouwd beeld van je doelgroep, en een chat om mee te sparren.',
     description:
-      'Bouw persona’s op basis van onderzoek, niet onderbuik. Elke persona voedt je merk-DNA en je content: toon, pijnpunten en drijfveren kloppen. Spar direct met een persona in de persona-chat.',
+      'Bouw persona’s op basis van onderzoek, niet op onderbuikgevoel. Elke persona voedt je merk-DNA en je content, zodat toon, pijnpunten en drijfveren kloppen. Spar er direct mee in de persona-chat.',
     bullets: [
       'Persona’s uit onderzoek, gekoppeld aan je merk-DNA',
       'Persona-chat: test een boodschap direct tegen je doelgroep',
-      'Pijnpunten, drijfveren en bezwaren per persona',
-      'In elke generatie meegewogen: content die de juiste snaar raakt',
+      'Pijnpunten, drijfveren en bezwaren per persona in beeld',
+      'Automatisch meegewogen in elke tekst die je maakt',
     ],
   },
   'trend-radar': {
     title: 'Trend Radar: kansen vóór je concurrent',
     tagline: 'Een trendscan die signalen in je markt oppikt.',
     description:
-      'Branddock scant je markt op opkomende thema’s, gesprekken en kansen, met bronnen. Van signaal naar contentkans, gekoppeld aan je merk-DNA en persona’s, zodat je meebeweegt zonder je merk te verliezen.',
+      'Branddock houdt je markt in de gaten op opkomende thema’s, gesprekken en kansen, met bronnen erbij. Van signaal naar concreet content-idee, afgestemd op je merk-DNA en persona’s.',
     bullets: [
-      'Trendscan met bronnen (web + wetenschappelijk)',
-      'Signalen vertaald naar concrete contentkansen',
-      'Gekoppeld aan je merk-DNA en persona’s',
-      'Van radar naar campagne in één beweging',
+      'Trendscan met bronnen, zowel van het web als wetenschappelijk',
+      'Signalen vertaald naar concrete content-ideeën',
+      'Afgestemd op je merk-DNA en persona’s',
+      'Van signaal naar campagne in één beweging',
     ],
   },
   campaigns: {
-    title: 'Campagnes: van strategie tot deliverables',
-    tagline: 'Bouw een campagnestrategie en zet ’m om in concrete content.',
+    title: 'Campagnes: van strategie tot kant-en-klare content',
+    tagline: 'Bouw een campagnestrategie en zet die direct om in content.',
     description:
-      'De Campaign Strategy Builder maakt een strategisch blueprint (doel, boodschap, architectuur, kanalen en assets) en levert het warm over aan content-generatie. Alles op je merk-DNA, van strategie tot uitvoering.',
+      'De campagnetool maakt een strategie met een duidelijk doel, boodschap, opbouw en kanalen — en zet die direct om in concrete content. Alles op je merk-DNA, van eerste idee tot uitvoering.',
     bullets: [
-      'Strategisch blueprint: doel, boodschap, architectuur, kanalen',
-      'Warm handover naar content-generatie per asset',
-      'Kanaalplan én asset-plan uit één strategie',
+      'Een strategie met doel, boodschap, opbouw en kanalen',
+      'Elk onderdeel van de strategie wordt direct concrete content',
+      'Een kanaalplan én een lijst content-stukken, uit dezelfde strategie',
       'On-brand van eerste idee tot laatste post',
     ],
   },
