@@ -51,6 +51,11 @@ kregen beide resterende merken een nieuwe website, dus 0. Vijf keer een aantal o
 een bron zonder te toetsen wát erin stond — en de vierde correctie werd geschreven door
 iemand die in diezelfde commit precies die fout veroordeelde.
 
+> ⏭️ **Wil je hier ooit een getal bijwerken: tel het na aan de bron** — de tabel in de
+> database, niet de body van de laatste PR. Elk van die vijf correcties was beter dan wat er
+> stond en nog steeds niet het antwoord, telkens omdat iemand een betere bron vond en dáár
+> het getal uit overnam in plaats van opnieuw te tellen. De vijfde moest van Erik komen.
+
 **De drie bugs**, geen ervan zichtbaar in het oorspronkelijke probleem:
 
 1. **`extractFontsFromCss` miste élke gequote fontnaam.** De tekenklasse sloot `"` uit, dus
