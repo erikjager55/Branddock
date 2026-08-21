@@ -1,7 +1,10 @@
 # START HERE
 
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
-> **Laatst bijgewerkt: 2026-08-20** (PR-poort staat op **122 goedkope + 18 database**-bewakers, een flappende
+> **Laatst bijgewerkt: 2026-08-21** (model-routing definitief: de meting kan haar eigen tabel
+> niet dragen, routing blijft staan — zie hieronder. PR-poort staat op **125 goedkope + 18
+> database**-bewakers.)
+> Daarvoor: **2026-08-20** (een flappende
 > `check` op main gerepareerd, judge-variantie gemeten zonder AI-kosten, en de fontlijst
 > bleek voor 15 van de 18 geen echte merkfonts te bevatten; het item is 21-08 afgerond
 > zonder één upload, na drie scraper-bugs waarvan één vijf maanden oud).
@@ -75,10 +78,35 @@ punten, uitschieter 13**. De winnaars liggen 1-4 punten uit elkaar — deze meth
 verschillen dus niet onderscheiden, niet nu en met dezelfde opzet ook niet in mei. De twee
 categorieën die van winnaar wisselden, deden dat op **nul** punten verschil.
 
-Routing bewust ongewijzigd; de comment draagt nu de ruismarge. Wat openblijft is de méthode:
-[`model-routing-herijking`](tasks/model-routing-herijking.md). ⚠️ En een composite-score meet
-niet alles: `gpt-5.6` honoreert een slide-skeleton voor 3 van de 5 titels waar
-`claude-sonnet-5` er 4 van 4 haalt — zelfde run, zelfde instructie.
+⚠️ **Nagemeten met 5 samples (21-08, 240 generaties, $4): in ZEVEN van de acht
+content-types is het verschil tussen winnaar en nummer 2 niet aantoonbaar.** Gemiddelde sd
+2,9 punten, dus een verschil is pas hard vanaf ~5,9 — en de winnaars liggen 1-4 punten uit
+elkaar. De extreemste conditie spreidt **61 tot 86 op identieke invoer** (sd 9,4). Eén
+generatie daaruit trekken en die "de score van dit model" noemen is een greep, geen meting —
+en precies zo is die tabel in mei tot stand gekomen.
+
+**Instructie-trouw discrimineert wél, en kostte nul extra calls**: dezelfde 240 generaties
+opnieuw gescoord tegen het woordbereik dat de briefs zélf stelden. Deterministisch, dus geen
+judge en geen ruis in de meetlat. Opus 4.8 **87%**, Haiku 4.5 **33%** — 54 procentpunten
+spreiding waar de kwaliteitsscore binnen de ruis bleef. ⚠️ Maar bij n=30 overlapt elk
+interval met zijn buur: dit levert **tiers op, geen rangorde**. En de skeleton-instructie
+ordent `sonnet-5` (4/4) en `gpt-5.6` (3/5) precies andersom — één dimensie volstaat niet.
+
+**Besluit: routing blijft staan, geen vervolgmeting** (Erik, 21-08). Er is geen gemeten reden
+om iets te verplaatsen. Wat er lag was niet "de routing is fout" maar "de routing is niet
+aangetoond", en dat repareer je niet door hem alsnog te verzetten op dezelfde ruis. De comment
+in `canvas-model-routing.ts` claimt geen gemeten optimum meer. Taak dicht:
+[`model-routing-herijking`](tasks/model-routing-herijking.md).
+
+⚠️ **Wat NIET is opgelost en bij een volgende modelwissel terugkomt**: er is geen mechanisme
+dat merkt dat de onderbouwing van die tabel veroudert. #226 verving in juli drie modellen
+zonder de meting te herhalen; dat viel pas in augustus op, bij toeval, via een bewaker die
+nergens draaide. Wie de modellen weer ververst, ververst die comment niet vanzelf.
+
+**De nachtelijke `canvas-tweaks` doet wat hij moet.** Run van 21-08 03:45 groen, met de
+verwachte soft-warning: `3/5 slide-titels — missing: Onze aanpak in 3 stappen | De volgende
+stap`. Derde run met exact dezelfde twee ontbrekende titels, dus vastgesteld modelgedrag en
+geen variantie. Groen omdat de afwaardering klopt, niet omdat het probleem weg is.
 
 **Een flappende `check` op main gerepareerd** (#445). Sinds de browserfase aanstond wisselde
 main rood en groen zonder tussenliggende wijziging. De eerste diagnose (`networkidle` is
