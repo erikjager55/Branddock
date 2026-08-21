@@ -21,17 +21,17 @@ export default function MarketingFooter() {
               </Link>
             </li>
             <li>
-              <Link href="/marketing/features/brand-voice" className="hover:text-gray-900">
+              <Link href="/marketing/platform?feature=brand-voice" className="hover:text-gray-900">
                 Merk-DNA &amp; brand voice
               </Link>
             </li>
             <li>
-              <Link href="/marketing/features/content-canvas" className="hover:text-gray-900">
+              <Link href="/marketing/platform?feature=content-canvas" className="hover:text-gray-900">
                 Content Canvas
               </Link>
             </li>
             <li>
-              <Link href="/marketing/features/brand-alignment" className="hover:text-gray-900">
+              <Link href="/marketing/platform?feature=brand-alignment" className="hover:text-gray-900">
                 Merk-check
               </Link>
             </li>
@@ -41,22 +41,22 @@ export default function MarketingFooter() {
               </Link>
             </li>
             <li>
-              <Link href="/marketing/features/agents" className="hover:text-gray-900">
+              <Link href="/marketing/platform?feature=agents" className="hover:text-gray-900">
                 AI-agents
               </Link>
             </li>
             <li>
-              <Link href="/marketing/features/personas" className="hover:text-gray-900">
+              <Link href="/marketing/platform?feature=personas" className="hover:text-gray-900">
                 Persona’s
               </Link>
             </li>
             <li>
-              <Link href="/marketing/features/trend-radar" className="hover:text-gray-900">
+              <Link href="/marketing/platform?feature=trend-radar" className="hover:text-gray-900">
                 Trend Radar
               </Link>
             </li>
             <li>
-              <Link href="/marketing/features/campaigns" className="hover:text-gray-900">
+              <Link href="/marketing/platform?feature=campaigns" className="hover:text-gray-900">
                 Campagnes
               </Link>
             </li>

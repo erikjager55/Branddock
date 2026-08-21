@@ -20,17 +20,6 @@ const ANNOUNCEMENT = {
   cta: 'Bekijk hoe',
 };
 
-const PLATFORM_ITEMS: { label: string; href: string }[] = [
-  { label: 'Platform-overzicht', href: '/marketing/platform' },
-  { label: 'Merk-DNA & brand voice', href: '/marketing/features/brand-voice' },
-  { label: 'Content Canvas', href: '/marketing/features/content-canvas' },
-  { label: 'Merk-check (F-VAL)', href: '/marketing/features/brand-alignment' },
-  { label: 'AI-agents', href: '/marketing/features/agents' },
-  { label: 'Trend Radar', href: '/marketing/features/trend-radar' },
-  { label: 'Campagnes', href: '/marketing/features/campaigns' },
-  { label: 'Persona’s', href: '/marketing/features/personas' },
-];
-
 const SOLUTION_ITEMS: { label: string; href: string }[] = [
   { label: 'Voor marketingteams', href: '/marketing/solutions/marketingteams' },
   { label: 'Voor bureaus', href: '/marketing/solutions/bureaus' },
@@ -96,7 +85,7 @@ function AnnouncementBar() {
   );
 }
 
-type OpenMenu = 'platform' | 'solutions' | null;
+type OpenMenu = 'solutions' | null;
 
 function NavBar() {
   const [open, setOpen] = useState<OpenMenu>(null);
@@ -128,14 +117,9 @@ function NavBar() {
             <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden />
             Voor AI-agents
           </Link>
-          <Dropdown
-            label="Platform"
-            isOpen={open === 'platform'}
-            onToggle={() => setOpen(open === 'platform' ? null : 'platform')}
-            onEnter={() => setOpen('platform')}
-          >
-            <DropdownPanel items={PLATFORM_ITEMS} onNavigate={() => setOpen(null)} />
-          </Dropdown>
+          <Link href="/marketing/platform" className="hover:text-gray-900">
+            Platform
+          </Link>
           <Dropdown
             label="Oplossingen"
             isOpen={open === 'solutions'}
@@ -274,12 +258,9 @@ function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
         <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden />
         Voor AI-agents
       </Link>
-      <div className={section}>Platform</div>
-      {PLATFORM_ITEMS.map((i) => (
-        <Link key={i.href} href={i.href} onClick={onNavigate} className={item}>
-          {i.label}
-        </Link>
-      ))}
+      <Link href="/marketing/platform" onClick={onNavigate} className={`${item} font-medium`}>
+        Platform
+      </Link>
       <div className={section}>Oplossingen</div>
       {[...SOLUTION_ITEMS, ...COMPARE_ITEMS].map((i) => (
         <Link key={i.href} href={i.href} onClick={onNavigate} className={item}>

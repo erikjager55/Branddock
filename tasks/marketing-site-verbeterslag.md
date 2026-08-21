@@ -34,10 +34,13 @@ verzamelbak voor wijzigingen die op élke pagina moeten landen.
 4. Een pagina is `✅` als de wijzigingen erin zitten, `tsc` + `lint` groen zijn en
    de Vercel-preview 'm rendert.
 
-⚠️ **Let op de drie templates.** 12 van de 26 URL's komen uit 3 bestanden
-(`features/[slug]`, `solutions/[slug]`, `vergelijk/[slug]`). Een wijziging in de
-lay-out van zo'n template raakt alle instanties tegelijk; alleen de content per
-slug is losstaand. Bij die groepen scheiden we dus expliciet "template" van "content".
+⚠️ **Let op de resterende twee templates.** 5 van de 19 URL's komen uit 2 bestanden
+(`solutions/[slug]`, `vergelijk/[slug]`). Een wijziging in de lay-out van zo'n template
+raakt alle instanties tegelijk; alleen de content per slug is losstaand. Bij die groepen
+scheiden we dus expliciet "template" van "content".
+
+⚠️ **De derde template (`features/[slug]`, 7 URL's) is per 20-08 (#464) opgegaan in
+pagina #2** — zie sectie B2 hieronder. Vandaar 19 i.p.v. de oorspronkelijke 26 URL's.
 
 ---
 
@@ -48,7 +51,12 @@ slug is losstaand. Bij die groepen scheiden we dus expliciet "template" van "con
 
 | # | Wijziging | Raakt | Status |
 |---|---|---|---|
-| W1 | **Geen em-streepje (—) in Nederlandse copy.** Het is geen Nederlands leesteken. Per geval vervangen door wat de zin vraagt: dubbele punt bij een opsomming of toelichting, komma bij een bijstelling, punt waar het twee zinnen waren, haakjes bij een echte tussenzin, puntkomma bij twee samenhangende hoofdzinnen. Koppeltekens in samenstellingen (merk-DNA, AI-schrijftools, on-brand) blijven staan. | alle pagina's | ✅ **af 18-08** — 174 vervangingen in 18 bestanden (#325) + 3 in gedeelde constanten (#327). Live geverifieerd op 10 pagina's: 0 treffers |
+| W1 | **Geen em-streepje (—) in Nederlandse copy.** Het is geen Nederlands leesteken. Per geval vervangen door wat de zin vraagt: dubbele punt bij een opsomming of toelichting, komma bij een bijstelling, punt waar het twee zinnen waren, haakjes bij een echte tussenzin, puntkomma bij twee samenhangende hoofdzinnen. Koppeltekens in samenstellingen (merk-DNA, AI-schrijftools, on-brand) blijven staan. Comments en dit task-file vallen erbuiten (geen bezoekerscontent); `/brandmd/claim/[token]` is bewust Engels en dus ook uitgezonderd. | alle pagina's | ✅ **af 18-08** — 174 vervangingen in 18 bestanden (#325) + 3 in gedeelde constanten (#327). Live geverifieerd op 10 pagina's: 0 treffers. ✅ **Herbevestigd 21-08**: audit over de 12 resterende pagina's, 0 treffers in zichtbare copy |
+| W2 | **Geen "video" in klantgerichte tekst** (toollijst, REST-tekst, credittabellen, FAQ). Besluit Erik: video is niet beschikbaar in het product. Uitzondering: `/marketing/security`'s sub-verwerkersmelding mag `fal.ai` als "AI-beeld- en videogeneratie" blijven noemen — dat is een AVG-mededeling die moet kloppen met wat er met data gebeurt, niet met wat we adverteren. `generate_video` en `/api/media/ai-videos/generate` bestaan nog en verbruiken credits; die AVG-regel vervalt pas als video echt uitstaat, niet alleen onvermeld is. | alle pagina's behalve de security-uitzondering | ✅ **af** (datum onbekend — was al zo bij aanvang van deze sessie). Geverifieerd 21-08 op de 12 resterende pagina's: 0 treffers behalve de bewuste security-regel |
+| W3 | **"merkplatform" aaneen**, niet "merk-platform" of "merk platform". | alle pagina's | ✅ **af** (datum onbekend). Geverifieerd 21-08: 0 treffers van de foute spelling op de 12 resterende pagina's |
+| W4 | **De moduletegel heet "Beeld"**, nooit "Beeld & video" of "Beeld en video" (volgt uit W2). | alle pagina's met de moduletegel | ✅ **af** (datum onbekend). Geverifieerd 21-08: 0 treffers |
+
+⚠️ W2-W4 waren al geldende besluiten van Erik vóór 21-08, maar stonden nergens als W-rij vastgelegd — alleen mondeling/in sessiegeheugen. Nu pas formeel toegevoegd, zodat een volgende sessie ze niet opnieuw hoeft te ontdekken.
 
 ## Observaties uit de inventarisatie (van Claude — nog geen besluit)
 
@@ -94,9 +102,12 @@ website-brede actie als hij ze als zodanig markeert.
 
 ---
 
-# B. Pagina-inventaris (26 URL's uit 14 route-bestanden)
+# B. Pagina-inventaris (19 URL's uit 13 route-bestanden)
 
-Geverifieerd tegen `MARKETING_SITEMAP_PATHS` — die lijst dekt 23 van de 26; de drie
+Oorspronkelijk 26 URL's uit 14 bestanden (18-08); de 7 `features/[slug]`-URL's zijn per
+20-08 (#464) opgegaan in pagina #2 (zie B2) — vandaar de nieuwe totalen.
+
+Geverifieerd tegen `MARKETING_SITEMAP_PATHS` — die lijst dekt 16 van de 19; de drie
 brand.md-URL's ontbreken er (zie observaties).
 
 ## B1 — Kern / conversie
@@ -104,22 +115,51 @@ brand.md-URL's ontbreken er (zie observaties).
 | # | URL | Bestand | Omvang | Status |
 |---|---|---|---|---|
 | 1 | `/` | `src/app/marketing/page.tsx` | 560 r | ✅ **af 18-08** (#321, #325) |
-| 2 | `/marketing/platform` | `platform/page.tsx` | 266 r | ✅ **af 20-08** (#457) — productshots weg, stappen als genummerde stepper |
+| 2 | `/marketing/platform` | `platform/page.tsx` | 266 r | ✅ **af 20-08** (#457, #464) — productshots weg, stappen als genummerde stepper; de 7 features-detailpagina's zijn erin opgegaan als lightbox per module (zie B2) |
 | 3 | `/marketing/pricing` | `pricing/page.tsx` | 383 r | ⬜ |
 
-## B2 — Features (7 URL's, 1 template)
+## B2 — Features (7 URL's, 1 template) — ✅ **opgegaan in pagina #2, 20-08 (#464)**
 
-Template: `src/app/marketing/features/[slug]/page.tsx` (216 r) · content: `FEATURES`-record
+~~Template: `src/app/marketing/features/[slug]/page.tsx` (216 r) · content: `FEATURES`-record~~
+**Verwijderd.** Inhoud verhuisd naar `platform/module-details.ts`, getoond als lightbox
+per module-tegel op `/marketing/platform` — **alle 7**, ook `brand-alignment` (F-VAL).
+Eerste versie linkte die tegel nog door naar de volledige `/marketing/resources/f-val`-
+pagina; Erik wilde consistentie, dus nu ook een lightbox, met een losse "Lees de volledige
+F-VAL-uitleg"-link erin voor wie dieper wil. Alle 7 oude URL's redirecten (permanent) naar
+`/marketing/platform?feature=<slug>` (opent meteen de juiste lightbox). Nav-item "Platform"
+is van dropdown naar directe link veranderd; footer, homepage-tegels, `HowItWorks`-CTA's en
+de F-VAL-CTA zijn meegerepoint.
 
-| # | URL | Slug | Status |
+⚠️ **Bijvangst gevonden door Erik, in twee rondes**:
+1. De "Merk-DNA"-tegel deelde zijn `slug` met "Brand voice & stijl" (bestond al vóór deze
+   taak — beide linkten altijd naar dezelfde detailpagina), maar in een lightbox viel dat pas
+   echt op: klikken op "Merk-DNA" opende een paneel getiteld "Brand Voice die écht klopt".
+   Eerste fix: niet-klikbaar maken. **Herzien op verzoek van Erik**: Merk-DNA heeft nu zijn
+   eigen `merk-dna`-entry in `MODULE_DETAILS` en is weer klikbaar, met eigen inhoud.
+2. **Alle 7 lightbox-teksten herschreven in gewone taal** — interne product-termen als
+   "voiceguide", "W-1-full embedding", "STRICT-mode", "multivariate output", "deterministische
+   property-checks" en "compliance-dimensie" zijn eruit; de functionaliteit is ongewijzigd,
+   alleen de uitleg is voor een lezer zonder productkennis geschreven.
+
+✅ **Verankerd als merkregel op productie (21-08)**: het "minder jargon"-principe staat nu
+ook als een écht afdwingbare `StyleguideRule` op de eigen `Branddock`-workspace
+(`styleguideId cmrrh309g000f2ems6ubd0awj`, gepubliceerd) — sectie `copy`, `forbidden-words`-
+constraint met de 11 termen die hierboven uit de platformpagina zijn gehaald. Dat is de
+eerste tekst-regel (met constraint) op die styleguide; de bestaande 9 regels zijn allemaal
+visueel (colors/logo/imagery) zonder constraint. Gezet via de Neon-MCP rechtstreeks op
+`branddock-prod`, ná akkoord van Erik op de exacte regeltekst — niet via de Branddock-MCP-
+koppeling zelf, die heeft geen schrijf-tool voor `StyleguideRule` (alleen `get_brand_context`
+/ `score_against_brand` / `rewrite_on_brand` e.d., allemaal lees/genereer/scoor).
+
+| # | URL (oud, redirect nu) | Slug | Status |
 |---|---|---|---|
-| 4 | `/marketing/features/brand-voice` | `brand-voice` | ⬜ |
-| 5 | `/marketing/features/content-canvas` | `content-canvas` | ⬜ |
-| 6 | `/marketing/features/brand-alignment` | `brand-alignment` | ⬜ |
-| 7 | `/marketing/features/agents` | `agents` | ⬜ |
-| 8 | `/marketing/features/personas` | `personas` | ⬜ |
-| 9 | `/marketing/features/trend-radar` | `trend-radar` | ⬜ |
-| 10 | `/marketing/features/campaigns` | `campaigns` | ⬜ |
+| 4 | `/marketing/features/brand-voice` | `brand-voice` | ✅ lightbox |
+| 5 | `/marketing/features/content-canvas` | `content-canvas` | ✅ lightbox |
+| 6 | `/marketing/features/brand-alignment` | `brand-alignment` | ✅ lightbox (+ link naar `/marketing/resources/f-val`) |
+| 7 | `/marketing/features/agents` | `agents` | ✅ lightbox |
+| 8 | `/marketing/features/personas` | `personas` | ✅ lightbox |
+| 9 | `/marketing/features/trend-radar` | `trend-radar` | ✅ lightbox |
+| 10 | `/marketing/features/campaigns` | `campaigns` | ✅ lightbox |
 
 ## B3 — Oplossingen (2 URL's, 1 template)
 
@@ -182,10 +222,14 @@ Redirect: `/marketing/terms` → `/marketing/voorwaarden` (permanent).
 
 ## B10 — Gedeelde chroom (geen eigen URL, wel op elke pagina)
 
+⚠️ Nav en footer kregen op 20-08 (#464) alleen een mechanische href-repoint (de 7
+features-links) door het opgaan van B2 — geen volledige pass. Blijven dus `⬜` tot ze als
+eigen item worden opgepakt.
+
 | Onderdeel | Bestand | Status |
 |---|---|---|
-| Nav + aankondigingsbalk | `MarketingNav.tsx` | ⬜ |
-| Footer | `MarketingFooter.tsx` | ⬜ |
+| Nav + aankondigingsbalk | `MarketingNav.tsx` | ⬜ (Platform-dropdown → directe link, 20-08) |
+| Footer | `MarketingFooter.tsx` | ⬜ (features-links repoint, 20-08) |
 | Layout / metadata / JSON-LD | `marketing/layout.tsx` | ⬜ |
 | Herbruikbare blokken | `SplitHeader` · `HeroModes` · `HowItWorks` · `Mosaic` · `Testimonial` · `CopyBlock` · `TrialNote` · `BookDemoButton` | ⬜ |
 | Sitemap-lijst | `sitemap-pages.ts` | ⬜ |

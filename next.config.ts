@@ -53,6 +53,14 @@ const nextConfig: NextConfig = {
         destination: '/marketing/voorwaarden',
         permanent: true,
       },
+      // De 7 losse feature-detailpagina's zijn opgegaan in de platform-
+      // overzichtspagina — elke tegel opent een lightbox, ook Merk-check
+      // (F-VAL, die verwijst er zelf naar door voor wie dieper wil).
+      {
+        source: '/marketing/features/:slug',
+        destination: '/marketing/platform?feature=:slug',
+        permanent: true,
+      },
     ];
   },
   // Korte connector-URL: https://branddock.app/mcp is de publieke vorm;

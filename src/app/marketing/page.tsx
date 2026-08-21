@@ -70,18 +70,18 @@ function HowSection() {
 // platform-pagina); kaarten zonder eigen pagina blijven bewust statisch
 // zonder pijl — consistent onderscheid.
 const MODULES: { Icon: typeof Dna; title: string; desc: string; href?: string }[] = [
-  { Icon: Dna, title: 'Merk-DNA', desc: '12 canonieke merk-assets als fundament onder alles.' },
-  { Icon: Palette, title: 'Brand voice & stijl', desc: 'De merkstem en visuele stijl, herbruikbaar in elke output.', href: '/marketing/features/brand-voice' },
-  { Icon: Users, title: 'Persona’s', desc: 'Doelgroep-persona’s, inclusief persona-chat om te sparren.', href: '/marketing/features/personas' },
-  { Icon: Swords, title: 'Concurrent-analyse', desc: 'Concurrenten in beeld en meegewogen in je content.' },
-  { Icon: Radar, title: 'Trend Radar', desc: 'Trendscan die kansen en signalen in je markt oppikt.', href: '/marketing/features/trend-radar' },
-  { Icon: PenLine, title: 'Content Canvas', desc: 'On-brand tekst-generatie over alle kanalen.', href: '/marketing/features/content-canvas' },
-  { Icon: Megaphone, title: 'Campagne-strategie', desc: 'Van strategie-blueprint tot concrete deliverables.', href: '/marketing/features/campaigns' },
-  { Icon: Images, title: 'Beeld', desc: 'On-brand visual, direct in het platform.' },
-  { Icon: LayoutTemplate, title: 'Landingspagina’s', desc: 'Publiceren op je eigen subdomein.' },
-  { Icon: Bot, title: '9 AI-agents', desc: 'Collega’s met rollen: ze stellen voor, jij keurt goed.', href: '/marketing/features/agents' },
-  { Icon: BadgeCheck, title: 'Merk-check', desc: 'F-VAL-score bewaakt dat elke output op merk blijft.', href: '/marketing/features/brand-alignment' },
-  { Icon: Languages, title: 'Meertalig', desc: 'Multi-markt content voor internationale merken.' },
+  { Icon: Dna, title: 'Merk-DNA', desc: 'De basis van je merk, één keer vastgelegd en overal automatisch gebruikt.', href: '/marketing/platform?feature=merk-dna' },
+  { Icon: Palette, title: 'Brand voice & stijl', desc: 'Hoe je merk klinkt en eruitziet, gehaald uit je eigen materiaal en overal herbruikbaar.', href: '/marketing/platform?feature=brand-voice' },
+  { Icon: Users, title: 'Persona’s', desc: 'Een goed onderbouwd beeld van je doelgroep, en een chat om er vragen aan te stellen.', href: '/marketing/platform?feature=personas' },
+  { Icon: Swords, title: 'Concurrent-analyse', desc: 'Wie je concurrenten zijn en wat ze doen, meegenomen in je content.' },
+  { Icon: Radar, title: 'Trend Radar', desc: 'Een trendscan die kansen en signalen in je markt oppikt.', href: '/marketing/platform?feature=trend-radar' },
+  { Icon: PenLine, title: 'Content Canvas', desc: 'On-brand teksten voor elk kanaal.', href: '/marketing/platform?feature=content-canvas' },
+  { Icon: Megaphone, title: 'Campagne-strategie', desc: 'Van strategie tot kant-en-klare content, in één beweging.', href: '/marketing/platform?feature=campaigns' },
+  { Icon: Images, title: 'Beeld', desc: 'On-brand beeld, direct in het platform.' },
+  { Icon: LayoutTemplate, title: 'Landingspagina’s', desc: 'Bouwen en publiceren op je eigen subdomein.' },
+  { Icon: Bot, title: '9 AI-agents', desc: 'Collega’s met rollen: ze stellen voor, jij keurt goed.', href: '/marketing/platform?feature=agents' },
+  { Icon: BadgeCheck, title: 'Merk-check', desc: 'Elke tekst krijgt een score voor hoe goed die bij je merk past.', href: '/marketing/platform?feature=brand-alignment' },
+  { Icon: Languages, title: 'Meertalig', desc: 'Content in meerdere talen en markten, op basis van hetzelfde merk-DNA.' },
 ];
 
 function PlatformBreadth() {
@@ -155,7 +155,7 @@ const FOR_WHO: {
     Icon: Megaphone,
     eyebrow: 'Marketingteams',
     title: 'Schaal je content zonder je merk te verwateren',
-    body: 'Volume on-brand content over alle kanalen, uit één plek. Minder tools, minder rework, meetbare merkconsistentie voor je stakeholders.',
+    body: 'Veel on-brand content over alle kanalen, uit één plek. Minder tools, minder dubbel werk, en aantoonbaar consistent voor iedereen die meekijkt.',
     href: '/marketing/solutions/marketingteams',
     cta: 'Bekijk voor marketingteams',
     featured: true,
@@ -172,7 +172,7 @@ const FOR_WHO: {
     Icon: Bot,
     eyebrow: 'Agentic',
     title: 'Werk vanuit Claude, ChatGPT of je eigen agent',
-    body: 'Koppel Branddock als MCP-connector en je AI kent je merk: volledige merkcontext, on-brand genereren en een F-VAL-merk-check op elke uiting.',
+    body: 'Koppel Branddock als MCP-connector en je AI kent je merk: volledige merkcontext, on-brand genereren en een merk-check op elke uiting.',
     href: '/marketing/voor-ai-agents',
     cta: 'Bekijk de koppel-stappen',
   },
