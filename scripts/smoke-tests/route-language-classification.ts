@@ -22,8 +22,8 @@
  *
  * Run: npm run smoke:route-language
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 
 import {
   BILINGUAL_QUERY_ROUTES,
@@ -195,6 +195,43 @@ function zichtbareTekst(bestand: string): string {
   return (src.match(/>[^<>{}]{8,}</g) ?? []).join(' ');
 }
 
+/**
+ * De bestanden die een page.tsx uit zijn EIGEN map importeert, één niveau diep.
+ *
+ * Waarom dit bestaat: `/brandmd` en `/marketing/changelog` gaven "onbepaald — te
+ * weinig tekst", want hun page.tsx is een dunne wrapper en alle zichtbare tekst
+ * zit in een client-component ernaast (`generator-client.tsx`). Een taalregressie
+ * daar was voor deze bewaker onzichtbaar, en `/brandmd` is de e-mailpoort van de
+ * funnel — gemeld door een parallelle sessie die dat blok met de HAND moest
+ * vertalen en meten omdat deze bewaker het niet zag (2026-08-21).
+ *
+ * ⚠️ BEWUST BEGRENSD: alleen relatieve imports, alleen één niveau, alleen
+ * bestanden die naast het page-bestand staan. Geen boomwandeling — die zou
+ * gedeelde componenten meetellen en dan meet je de taal van de hele codebase in
+ * plaats van die van deze route. Blijft een route na dit niveau onbepaald, dan
+ * blijft dat "onbepaald" en niet "goedgekeurd".
+ */
+function lokaleComponenten(paginaPad: string): string[] {
+  let src: string;
+  try {
+    src = readFileSync(paginaPad, 'utf8');
+  } catch {
+    return [];
+  }
+  const map = dirname(paginaPad);
+  const uit: string[] = [];
+  for (const m of src.matchAll(/from\s+'(\.\/[^']+)'/g)) {
+    for (const ext of ['.tsx', '.ts']) {
+      const kandidaat = join(map, m[1].replace(/^\.\//, '') + ext);
+      if (existsSync(kandidaat)) {
+        uit.push(kandidaat);
+        break;
+      }
+    }
+  }
+  return uit;
+}
+
 function paginaBestand(route: string): string {
   const segmenten = route === '/' ? [] : route.slice(1).split('/');
   return join(APP_DIR, ...segmenten, 'page.tsx');
@@ -236,18 +273,31 @@ for (const route of routes) {
     continue; // route-groep of dynamische map: geen direct page-bestand
   }
 
-  const nl = (tekst.match(NL_WOORDEN) ?? []).length;
-  const en = (tekst.match(EN_WOORDEN) ?? []).length;
+  let nl = (tekst.match(NL_WOORDEN) ?? []).length;
+  let en = (tekst.match(EN_WOORDEN) ?? []).length;
+  let bron = 'page';
+
+  // Te weinig in het page-bestand? Lees dan de componenten ernaast mee.
+  if (nl + en < 3) {
+    for (const component of lokaleComponenten(bestand)) {
+      const t = zichtbareTekst(component);
+      nl += (t.match(NL_WOORDEN) ?? []).length;
+      en += (t.match(EN_WOORDEN) ?? []).length;
+    }
+    if (nl + en >= 3) bron = 'page + lokale componenten';
+  }
 
   if (nl + en < 3) {
-    console.log(`  ? ${route.padEnd(40)} onbepaald — te weinig tekst in het page-bestand`);
+    console.log(
+      `  ? ${route.padEnd(40)} onbepaald — te weinig tekst, ook in de lokale componenten`,
+    );
     onbepaald++;
     continue;
   }
 
   const gemeten = nl >= en ? 'nl' : 'en';
   assert(
-    `${route} is ${verwacht} en de tekst leest als ${verwacht} (nl=${nl} en=${en})`,
+    `${route} is ${verwacht} en de tekst leest als ${verwacht} (nl=${nl} en=${en}, ${bron})`,
     gemeten === verwacht,
     `de route is ingedeeld als ${verwacht.toUpperCase()}, maar de zichtbare tekst telt ` +
       `${nl} Nederlandse en ${en} Engelse stopwoorden. Kies er één: vertaal de pagina, ` +

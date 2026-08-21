@@ -137,7 +137,7 @@ GUARDS=(
   # Faalt bij VERGETEN, niet bij toevoegen: wie een publieke pagina bouwt en hem
   # niet indeelt, krijgt hier rood in plaats van stil lang="en" op Nederlandse
   # tekst (de bug van #335). Leest de bestandsboom, niet een lijst.
-  smoke:route-language:44
+  smoke:route-language:49
 
   # Sluit de wortel van de hele slapende-bewakers-survey: `package.json` is niet
   # langer de bron van waarheid voor "welke bewakers bestaan er" — de
