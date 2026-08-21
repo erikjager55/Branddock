@@ -4,10 +4,10 @@
 > **Laatst bijgewerkt: 2026-08-21** (model-routing definitief: de meting kan haar eigen tabel
 > niet dragen, routing blijft staan — zie hieronder. PR-poort staat op **125 goedkope + 18
 > database**-bewakers.)
-> Daarvoor: **2026-08-20** (een flappende
-> `check` op main gerepareerd, judge-variantie gemeten zonder AI-kosten, en de fontlijst
-> bleek voor 15 van de 18 geen echte merkfonts te bevatten; het item is 21-08 afgerond
-> zonder één upload, na drie scraper-bugs waarvan één vijf maanden oud).
+> Daarvoor: **2026-08-20** (een flappende `check` op main gerepareerd, judge-variantie
+> gemeten zonder AI-kosten, en **het fontenprobleem bleek niet te bestaan**: drie
+> scraper-bugs waarvan één sinds 05-03 élke gequote fontnaam miste. Item afgerond zonder
+> één upload; elf workspaces opnieuw gescrapet. ⚠️ Fontdata van vóór 21-08 is onbetrouwbaar).
 > Daarvoor: **2026-08-19** (bewakers-schoonmaak: PR-poort van 18 naar 37 bewakers,
 > nachtelijke prod-bewaker, beslispunt 0 gekrompen).
 > Daarvoor: **2026-08-18, derde helft** (retentie-plafond live, CSP op enforce,
@@ -38,6 +38,57 @@ plus één echte betaal-smoke.
 ---
 
 ## Wat er landde (2026-08-20)
+
+**Het fontenprobleem bestond niet — er lagen drie scraper-bugs onder.**
+`brand-fonts-ontbreken-op-prod` is gesloten **zonder één geüpload bestand**, en dat is de
+juiste uitkomst.
+
+De reeks is **44 → 29 → 18 → 2 → 0**, en de reden is bruikbaarder dan de reeks: **elk van die
+vijf getallen kwam uit een kolom die niemand had nageteld.** 44 was `count(fileUrl IS NULL)` —
+maar Google-fonts hebben nooit een bestand nodig, dus 29. Toen viel de Adobe-kit-route af, dus
+18. Toen bleken de "merkfonts" systeemfonts, plugin-icoonfonts en build-hashes, dus 2. Toen
+kregen beide resterende merken een nieuwe website, dus 0. Vijf keer een aantal overgenomen uit
+een bron zonder te toetsen wát erin stond — en de vierde correctie werd geschreven door
+iemand die in diezelfde commit precies die fout veroordeelde.
+
+**De drie bugs**, geen ervan zichtbaar in het oorspronkelijke probleem:
+
+1. **`extractFontsFromCss` miste élke gequote fontnaam.** De tekenklasse sloot `"` uit, dus
+   `font-family:"Open Sans"` gaf een lege capture. Sinds de eerste implementatie op
+   **2026-03-05** — vijf maanden. ⚠️ **Onzichtbaar juist omdát enkele quotes en ongequote
+   waarden wél werkten**: de scraper vond de ongequote systeemfonts uit de fallback-stack en
+   miste de gequote merkfont die eráán voorafging. De fontlijst oogde gevuld en was precies
+   de ruis zónder het merk — een gevaarlijker faalmodus dan een lege lijst, want een lege
+   lijst valt op.
+2. De `@font-face`-regex kapte multi-woord namen af bij de eerste spatie: `Museo` naast
+   `Museo Sans 300`, zes keer gemeten. Eerst ten onrechte voor een site-eigenaardigheid
+   aangezien — een verklaring die per geval plausibel is, hoort verdacht te worden zodra
+   het geval zich herhaalt.
+3. Systeemfonts, plugin-icoonfonts, build-hashes en query-string-payloads passeerden alle
+   drie de bestaande filters.
+
+**Uitkomst na elf re-analyses op productie**: vier merken hebben nu een commerciële huisletter
+die eerder werd gemist — `Museo Sans` (Adullam), `proxima-nova` (Goed-Bouw), `Avenir Next`
+(Nobox), `Red Hat Display` (Het Nieuwe Golfen). Zes styleguides die nul fonts hadden zijn
+gevuld; elf van de vijftien zijn nu schoon.
+
+⚠️ **Fontdata van vóór 21-08 is onbetrouwbaar** — ze bevat ruis én mist echte merkfonts.
+PartnerSelect en DTS Ede zijn bewust níet opnieuw gescrapet (nieuwe website op komst), dus
+hun rijen zijn nog de oude. PartnerSelects `sourceUrl` is bovendien een **Figma-prototype**,
+wat de twee SHA1-hashes in hun fontlijst verklaart.
+
+⚠️ **Twee regressies onderweg, allebei van mijzelf en allebei pas op productie zichtbaar.**
+De quote-fix liet de match doorlopen tot de `;` en pikte Tailwinds sluithaak mee
+(`Noto Color Emoji")`) — waarmee een bestáánd filter blind werd, want `noto color emoji`
+stond gewoon in de lijst. De reparatie dáárvan sloopte de `var()`-resolutie, en werd gevangen
+door `smoke:wpb-result-audit`: ander onderwerp, andere invoer. Beide keren dezelfde oorzaak —
+getoetst met CSS die ik zelf verzon in plaats van met wat echte sites uitsturen. Dat is de
+reden dat de poort **breed** moet zijn in plaats van diep.
+
+Bewaakt door `smoke:font-scraper-ruis` (50 asserties): elke assertie is een gemeten
+productie-vindplaats, mét tegenproef dat echte merkfonts blijven staan — anders zou een filter
+dat álles weggooit ook groen zijn.
+
 
 **De PR-poort staat op 121 goedkope bewakers** (120 `smoke:` + `eval:lp-variant-golden`),
 plus **18 in de database-poort** (`run-db-guards.sh`). Dat was samen 37 bij de vorige update
