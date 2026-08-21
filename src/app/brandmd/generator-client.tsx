@@ -361,15 +361,15 @@ export function GeneratorClient() {
                   <Check className="mx-auto h-8 w-8" style={{ color: ACCENT_INK }} />
                   <h3 className="mt-2">Je brand.md wordt gedownload</h3>
                   <p className="mt-1 text-sm text-gray-600">
-                    Your full report is on its way to your inbox. Try the recipes above — and
-                    when you want the living, validated version:
+                    Je volledige rapport is onderweg naar je inbox. Probeer de recepten
+                    hierboven uit. En wil je de levende, bevestigde versie:
                   </p>
                   {result.claimUrl && (
                     <a
                       href={result.claimUrl}
                       className="mkt-btn-primary mt-4 inline-flex items-center gap-2 rounded-lg px-6 py-3 font-semibold"
                     >
-                      Claim &amp; complete your brand <ArrowRight className="h-5 w-5" />
+                      Claim je merk en maak het af <ArrowRight className="h-5 w-5" />
                     </a>
                   )}
                 </div>
@@ -377,12 +377,13 @@ export function GeneratorClient() {
                 <>
                   <h3 className="flex items-center gap-2">
                     <Download className="h-5 w-5" style={{ color: ACCENT_INK }} />
-                    Download your brand.md
+                    Download je brand.md
                   </h3>
                   <p className="mt-1 text-sm text-gray-600">
-                    Free — leave your email and your file downloads instantly. We&apos;ll also
-                    email you this full report with your download link, so you can pick it up on
-                    any device. No newsletter — just one reminder before your draft expires.
+                    Gratis. Laat je e-mailadres achter en je bestand wordt meteen gedownload.
+                    We mailen je dit volledige rapport ook toe, mét je downloadlink, zodat je het
+                    op elk apparaat kunt oppakken. Geen nieuwsbrief, alleen één herinnering
+                    voordat je concept verloopt.
                   </p>
                   <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                     <input
@@ -399,7 +400,7 @@ export function GeneratorClient() {
                       className="mkt-btn-primary flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
                     >
                       {gateBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                      Download — free
+                      Gratis downloaden
                     </button>
                   </div>
                   <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-gray-600">
@@ -411,8 +412,8 @@ export function GeneratorClient() {
                       style={{ accentColor: 'var(--primary)' }}
                     />
                     <span>
-                      Also send me 3 short tips on getting more out of my brand.md — about one a
-                      week. Unsubscribe in one click, anytime.
+                      Stuur me ook 3 korte tips om meer uit mijn brand.md te halen, ongeveer
+                      één per week. Uitschrijven kan altijd, met één klik.
                     </span>
                   </label>
                   {gateError && <p className="mt-3 text-sm text-red-600">{gateError}</p>}
@@ -421,12 +422,13 @@ export function GeneratorClient() {
             </div>
 
             <p className="mt-8 text-center text-xs text-gray-500">
-              Built on the open{' '}
+              Gebouwd op de open{' '}
               <a href="https://thebrand.md" className="underline underline-offset-2" rel="noopener">
-                brand.md standard
+                brand.md-standaard
               </a>{' '}
-              (spec v0.3) · fields we couldn&apos;t verify are marked <code>unvalidated</code> —
-              we&apos;d rather ship an honest file than an impressive one.
+              (spec v0.3) · velden die we niet konden bevestigen staan gemarkeerd als{' '}
+              <code>unvalidated</code>. We leveren liever een eerlijk bestand dan een
+              indrukwekkend bestand.
             </p>
           </div>
         )}
