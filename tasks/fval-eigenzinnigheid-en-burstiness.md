@@ -4,13 +4,13 @@ title: Twee gaten in de AI-tell-machinerie, gevonden bij het valideren van een e
 fase: post-launch
 priority: next
 effort: 2-4 dagen (rubriek-dimensie + hermeting van gewichten kost meer dan de code zelf)
-owner: unassigned
-status: open
+owner: claude-code
+status: in-progress
 created: 2026-08-21
 completed: -
 related-adr: -
 related-spec: -
-worktree: -
+worktree: branddock-fval-eigenzinnigheid-burstiness
 ---
 
 # Probleem
@@ -61,13 +61,56 @@ al gedekt door drie losse bestaande signalen (`closing_formula`, `bullet_addicti
 
 # Acceptatiecriteria
 
-- [ ] Burstiness-check gebouwd en getest op ≥10 bestaande teksten (mens vs. AI-baseline)
-- [ ] Voorstel voor de nieuwe rubriek-gewichten, met de verschuiving op bestaande
+- [x] Burstiness-check gebouwd en getest op ≥10 bestaande teksten (mens vs. AI-baseline)
+- [x] Voorstel voor de nieuwe rubriek-gewichten, met de verschuiving op bestaande
       scores gemeten en voorgelegd aan Erik vóór het standaard aan staat
 - [ ] Besluit van Erik vastgelegd: welk gewicht, en of de 6 bestaande dimensies
       proportioneel dalen of dat er één specifiek plaatsmaakt
-- [ ] `npx tsc --noEmit` 0 errors
-- [ ] `npm run lint` 0 errors
+- [x] `npx tsc --noEmit` 0 errors
+- [x] `npm run lint` 0 errors
+
+## ✅ Gebouwd 21-08 — shadow mode, gewicht 0, meting afgerond
+
+**Burstiness-check**: `computeSentenceBurstiness()` in `ai-tell-detector.ts`, als nieuw
+veld `burstiness` op `AiTellResult` (dus automatisch aanwezig op alle 7 bestaande
+call sites van `detectAiTells()`). Variatiecoëfficiënt (stddev/mean zinslengte),
+drempels `MONOTONE` (<0.35) / `MODERATE` / `VARIED` (≥0.55) — eerste versie,
+empirisch ingeschat zoals de bestaande tell-drempels. Sanity-check op 2 handmatige
+teksten: uniforme tekst → CV 0.23 (MONOTONE), gevarieerde tekst → CV 1.14 (VARIED).
+**Bewust niet meegewogen** in `verdict` of de STRICT-mode-rewrite-trigger — puur
+informatief in deze fase.
+
+**Eigenzinnigheid-dimensie**: toegevoegd aan `GEvalDimension`/`DIMENSIONS` in
+`g-eval-rubric.ts` en `DEFAULT_RUBRIC_WEIGHTS` in `fidelity-config.ts`, **gewicht 0**.
+De judge scoort 'm voortaan mee bij elke call (data verzamelen begint nu), maar
+gewicht 0 betekent: contribueert niets aan `weightedComposite`. Geverifieerd met een
+gemockte judge-respons (geen echte AI-call): composite met en zonder een extreme
+eigenzinnigheid-score (2/10) gaf exact hetzelfde resultaat (77 == 77). `MIN_PRESENT_DIMENSIONS`
+opgehoogd van 4→5 (4 van 6 → 5 van 7, zelfde ≈70%-marge).
+
+**Meting** (`scripts/experiments/fval-eigenzinnigheid-burstiness-2026-08-21.ts`,
+12 items uit de lokale dev-DB — echte AI-judge-calls, dus bewust een kleine steekproef):
+
+| Gewicht eigenzinnigheid | Gem. composite | Δ t.o.v. nu |
+|---|---|---|
+| 0 (huidig) | 68.0 | — |
+| 0.05 | 68.2 | +0.2 |
+| 0.10 | 68.6 | +0.6 |
+| 0.15 | 68.9 | +0.9 |
+
+Gemiddelde eigenzinnigheid-score op deze set: **7,6/10** — vrij hoog. Burstiness:
+11 van 12 `VARIED`, 1 `MONOTONE` (een employee-story, CV 0.29) — de check onderscheidt
+dus al zichtbaar op een kleine set.
+
+⚠️ **Beperkingen van deze meting, expliciet**: 12 items, overwegend uit één workspace
+("Branddock Demo"), lokale dev-DB niet productie. Dit is een eerste indicatie, geen
+representatieve steekproef over alle klant-merken en contentsoorten. De verschuiving is
+in deze set klein en positief (bestaande content scoort al relatief eigenzinnig) — dat
+zegt niets over hoe zwakke/AI-leunende content zou reageren, want die zat niet in de set.
+
+**Wat nu van jou wordt gevraagd**: een gewicht kiezen (0.05/0.10/0.15, of iets anders),
+of eerst een grotere/representatievere meting willen (bv. over meerdere workspaces, of
+inclusief expliciet zwakke content) voordat je beslist.
 
 # Bestanden die ik aanraak
 

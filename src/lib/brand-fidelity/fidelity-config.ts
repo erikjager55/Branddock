@@ -16,6 +16,10 @@ const DEFAULT_RUBRIC_WEIGHTS = {
   antiPattern: 0.3,
   coherence: 0.1,
   concreteness: 0.1,
+  // Shadow mode (besluit Erik, 21-08): de judge scoort eigenzinnigheid al
+  // mee, gewicht 0 houdt 'm buiten de composite totdat er een gemeten
+  // voorstel ligt. Zie tasks/fval-eigenzinnigheid-en-burstiness.md.
+  eigenzinnigheid: 0,
 } as const;
 
 export const DEFAULT_FIDELITY_CONFIG = {
