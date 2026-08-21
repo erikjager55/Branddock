@@ -75,6 +75,43 @@ dat er niets staat. Er is geen overzicht en geen signaal. Voorstel: het bestaand
 heeft) laten meetellen dat een gedetecteerde font zónder bestand een openstaand punt is, zodat
 het in de merk-gereedheid opduikt in plaats van onzichtbaar te blijven.
 
+## 🏁 GESLOTEN 2026-08-21 — de cijferreeks was 44 → 29 → 18 → 2 → 0
+
+Erik: *"haal dit van de takenlijst af"*. Het item is afgerond **zonder één geüpload
+fontbestand**, en dat is de juiste uitkomst.
+
+**Wat er werkelijk aan de hand was.** Dit item begon als "44 merkfonts missen hun bestand" en
+eindigde als drie scraper-bugs. Vier keer werd een aantal overgenomen uit een kolom zonder te
+toetsen wát erin stond:
+
+| | claim | wat de meting zei |
+|---|---|---|
+| 18-08 | 44 van 44 fonts missen een bestand | 29 — Google-fonts hebben er nooit een nodig |
+| 19-08 | 29 | 18 — Erik wijst de Adobe-kit-route af |
+| 20-08 | 18 te uploaden | hooguit 2 — de rest is systeem-, plugin- en build-ruis |
+| 20-08 | 2 | **0** — beide merken krijgen een nieuwe website |
+
+**De drie bugs eronder**, geen van drieën zichtbaar in het oorspronkelijke probleem:
+1. `extractFontsFromCss` miste **élke gequote fontnaam** — sinds de eerste implementatie
+   (2026-03-05), vijf maanden. De styleguides bevatten daardoor de ongequote fallback-ruis
+   en niet de gequote merkfont ervóór.
+2. De `@font-face`-regex kapte multi-woord namen af bij de eerste spatie: `Museo` naast
+   `Museo Sans 300`, zes keer gemeten.
+3. Systeemfonts, plugin-icoonfonts, build-hashes en query-string-payloads passeerden alle
+   filters.
+
+**Resultaat na reparatie en re-analyse van elf workspaces**: vier merken hebben nu een
+commerciële huisletter die eerder werd gemist — `Museo Sans` (Adullam), `proxima-nova`
+(Goed-Bouw), `Avenir Next` (Nobox), `Red Hat Display` (Het Nieuwe Golfen). Zes styleguides
+die nul fonts hadden zijn gevuld.
+
+⏭️ **Wat bewust openblijft** (geen taak, alleen vastlegging): die vier commerciële fonts
+renderen nog in een substituut tot iemand een bestand uploadt. PartnerSelect en DTS Ede zijn
+overgeslagen wegens nieuwe websites. `Red` bij Het Nieuwe Golfen is geen scraper-artefact —
+geen enkele CSS-vorm reproduceert het, de site declareert het zelf.
+
+---
+
 ## ✅ AFGEROND 2026-08-20 — geen uploads nodig, en er lag een grotere bug onder
 
 **Besluit Erik**: PartnerSelect en DTS Ede krijgen binnenkort een nieuwe website, dus opzoeken
@@ -167,10 +204,16 @@ re-analyse raakt méér dan alleen fonts.
 
 # Acceptatiecriteria
 
-- [~] Per merk op prod vastgelegd — **deels, per besluit 19-08**: de Adobe-kit-route is
-      expliciet afgewezen door Erik (11 fonts). De 18 `COMMERCIAL`-fonts blijven open;
-      de 15 `GOOGLE_FONTS` hadden nooit een probleem.
-- [ ] Minstens één merk toont in de Typography-tab de échte merkfont (geen substituut-melding)
+- [x] Per merk op prod vastgelegd — ✅ **afgerond 21-08**, al anders dan dit criterium
+      bedoelde. De Adobe-kit-route is 19-08 afgewezen (11 fonts), de uploads voor
+      PartnerSelect en DTS Ede zijn 20-08 vervallen (nieuwe website), en van de resterende
+      `COMMERCIAL`-rijen bleek het merendeel scraper-ruis. Wat er per merk staat is nu
+      gemeten en schoon; wat er níet staat is bewust.
+- [~] Minstens één merk toont in de Typography-tab de échte merkfont — **deels, en het
+      criterium zelf klopte niet**. Voor `GOOGLE_FONTS` was dit altijd al waar (Linfi
+      rendert Oranienbaum en Poppins echt), wat dit criterium over het hoofd zag. Voor de
+      `COMMERCIAL`-fonts blijft het onwaar zolang er geen bestand is — en dat is nu een
+      bewuste keuze, geen openstaand werk.
 - [x] Een gedetecteerde font zonder bestand telt mee in de merk-gereedheid/`dataQuality` —
       ✅ 2026-08-18 (spoor B). `substitutedFontItems()` in
       `src/features/brandstyle/utils/data-quality.ts` beslist op het **renderplan**
@@ -180,13 +223,19 @@ re-analyse raakt méér dan alleen fonts.
       `npm run smoke:brand-font-substitutes` **13/13** inclusief mutatietest: de naïeve
       `fileUrl`-telling geeft 44 waar de echte functie er 29 geeft — zouden die gelijk zijn,
       dan meet de smoke niets.
-- [ ] Her-run van `scripts/dev/storage-url-audit.ts` op prod toont een niet-leeg
-      `StyleguideFont.fileUrl`
-- [ ] `npx tsc --noEmit` 0 errors
-- [ ] `npm run lint` 0 errors
-- [ ] Smoke-test uitgevoerd — `scripts/dev/typography-tab-browser-smoke.ts` op een merk mét
-      een geüpload bestand: de computed `font-family` is dan de merkfont, niet `inter`
-- [ ] Documentatie bijgewerkt indien van toepassing
+- [~] Her-run van `storage-url-audit.ts` toont een niet-leeg `fileUrl` — **vervallen, niet
+      gehaald.** Er is geen enkel bestand geüpload, dus elk `fileUrl` is nog leeg. Dat is de
+      uitkomst van Eriks twee besluiten (Adobe-kits niet, PartnerSelect/DTS Ede nieuwe site),
+      niet een gemiste stap. Het criterium ging uit van een probleem dat na meting grotendeels
+      niet bestond.
+- [x] `npx tsc --noEmit` 0 errors — ✅ bij elke PR (#442, #444, #452, #460)
+- [x] `npm run lint` 0 errors — ✅ idem
+- [~] Smoke-test op een merk mét geüpload bestand — **niet uitvoerbaar**: er ís geen merk met
+      een geüpload bestand. In plaats daarvan is de scraper-kant gedekt door
+      `smoke:font-scraper-ruis` (**50/50**, elke assertie een gemeten productie-vindplaats)
+      plus de bestaande `smoke:brand-font-substitutes` (13/13).
+- [x] Documentatie bijgewerkt — ✅ dit bestand, `START_HERE.md` (top-3 en Volgende-lijst
+      opgeschoond), `gotchas.md` (twee entries), `docs/changelog.md`
 
 # Bestanden die ik aanraak
 

@@ -37,6 +37,51 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-08
 
+### 522. Het fontenprobleem bestond niet — er lagen drie scraper-bugs onder
+
+`brand-fonts-ontbreken-op-prod` is gesloten **zonder één geüpload fontbestand**, en dat is de
+juiste uitkomst. Het item begon als "44 merkfonts missen hun bestand" en eindigde als drie
+bugs in de scraper.
+
+**De cijferreeks is de kern: 44 → 29 → 18 → 2 → 0.** Vier keer werd een aantal overgenomen uit
+een kolom zonder te toetsen wát erin stond. 44 werd 29 toen bleek dat Google-fonts nooit een
+bestand nodig hebben; 29 werd 18 door Eriks besluit over de Adobe-kits; 18 werd 2 toen de
+"merkfonts" systeemfonts, plugin-icoonfonts en build-hashes bleken; en 2 werd 0 omdat beide
+resterende merken een nieuwe website krijgen.
+
+**De drie bugs**, geen van drieën zichtbaar in het oorspronkelijke probleem:
+
+1. **`extractFontsFromCss` miste élke gequote fontnaam** — de tekenklasse sloot `"` uit,
+   waardoor `font-family:"Open Sans"` een lege capture gaf. Sinds de eerste implementatie op
+   2026-03-05: vijf maanden. Onzichtbaar omdat enkele quotes en ongequote waarden wél werkten
+   — de scraper vond dus de ongequote systeemfonts uit de fallback-stack en niet de gequote
+   merkfont die eráán voorafging. **De fontlijst oogde gevuld en was de ruis zonder het merk.**
+2. **De `@font-face`-regex kapte multi-woord namen af** bij de eerste spatie: `Museo` naast
+   `Museo Sans 300`. Zes keer gemeten, en eerst ten onrechte voor een site-eigenaardigheid
+   aangezien — een verklaring die per geval plausibel is, hoort verdacht te worden zodra het
+   geval zich herhaalt.
+3. **Systeemfonts, plugin-icoonfonts, build-hashes en query-string-payloads** passeerden alle
+   filters. Onder meer `SFMono-Regular` (4×), `ETmodules` (Divi), `slick`/`star` (carousel),
+   twee SHA1-strings, en een breakpoint-map die een thema in een `font-family` parkeert.
+
+**Resultaat na elf re-analyses op productie**: vier merken hebben nu een commerciële huisletter
+die eerder werd gemist — `Museo Sans` (Adullam), `proxima-nova` (Goed-Bouw), `Avenir Next`
+(Nobox), `Red Hat Display` (Het Nieuwe Golfen). Zes styleguides die nul fonts hadden zijn
+gevuld; elf van de vijftien zijn nu schoon.
+
+⚠️ **Twee regressies onderweg, allebei van mijzelf en allebei op productie zichtbaar geworden**
+vóór ze gevangen werden. De quote-fix liet de match doorlopen tot de `;` en pikte Tailwinds
+sluithaak mee (`Noto Color Emoji")`), waardoor een bestaand filter blind werd. De reparatie
+daarvan sloopte de `var()`-resolutie — gevangen door een bewaker van een ánder onderwerp.
+Beide keren dezelfde oorzaak: getoetst met zelfgeschreven CSS in plaats van met wat echte
+sites uitsturen. Bewaakt door `smoke:font-scraper-ruis` (**50/50**, elke assertie een gemeten
+productie-vindplaats, mét tegenproef dat echte merkfonts blijven staan).
+
+- Task: [tasks/done/brand-fonts-ontbreken-op-prod.md](../tasks/done/brand-fonts-ontbreken-op-prod.md)
+- ADR: `docs/adr/2026-06-05-typography-font-canonicalization.md`
+- Spec: `-`
+- Commit: PR #442, #444, #452, #460
+
 ### 521. De funnel voor het eerst in zijn geheel doorlopen — vier schakels gemeten, twee bevindingen
 
 Eerste end-to-end-toets van de gratis brand.md-generator op productie, met een echte scan van

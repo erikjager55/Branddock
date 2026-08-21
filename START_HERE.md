@@ -3,7 +3,8 @@
 > Entry point voor mens en agent. Lees deze bij elke sessie-start.
 > **Laatst bijgewerkt: 2026-08-20** (PR-poort staat op **122 goedkope + 18 database**-bewakers, een flappende
 > `check` op main gerepareerd, judge-variantie gemeten zonder AI-kosten, en de fontlijst
-> bleek voor 15 van de 18 geen echte merkfonts te bevatten — zie de top-3 hieronder).
+> bleek voor 15 van de 18 geen echte merkfonts te bevatten; het item is 21-08 afgerond
+> zonder één upload, na drie scraper-bugs waarvan één vijf maanden oud).
 > Daarvoor: **2026-08-19** (bewakers-schoonmaak: PR-poort van 18 naar 37 bewakers,
 > nachtelijke prod-bewaker, beslispunt 0 gekrompen).
 > Daarvoor: **2026-08-18, derde helft** (retentie-plafond live, CSP op enforce,
@@ -363,42 +364,20 @@ een distributie-probleem, en het enige wat de volgende stap tegenhoudt is jouw a
 omarm-strategie plus de outreach naar de maintainer. De upstream-PR's liggen als tekstpakket
 klaar.
 
-**3. 🔤 [`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) — niet 18
-maar hooguit 2 echte merkfonts.** Een klant die zijn eigen styleguide opent en overal Inter
-ziet staan onder "Neue Haas Grotesk Display", ziet het product zijn belofte niet waarmaken.
-Geen bug: het upload-pad bestaat volledig, er is nooit iets geüpload.
+**3. 🔤 ~~`brand-fonts-ontbreken-op-prod`~~ — ✅ AFGEROND 21-08, en er is niets geüpload.**
+Dat is de juiste uitkomst: het werk dat hier lag bestond grotendeels niet. Volledige
+uitkomst en de vier correcties op dit blok staan in
+[`tasks/done/brand-fonts-ontbreken-op-prod.md`](tasks/done/brand-fonts-ontbreken-op-prod.md).
 
-⚠️ **Bijgewerkt 2026-08-20 (#442) — de werklijst was zelf het probleem.** Van de 18 fonts
-die op productie als `COMMERCIAL` stonden, zijn er hooguit **twee** een echt merkfont
-(`Apercu` en `Apercu-Mono`, plus twee twijfelgevallen). De rest: zes systeem-/OS-fonts
-(`SFMono-Regular`, `Geneva`), vier plugin-icoonfonts (`ETmodules` van Divi, `slick`), twee
-build-hashes die als `font-family` waren opgeslagen, en drie uit een smoke-testworkspace.
-
-**Je stond op het punt achttien fontbestanden te gaan zoeken waarvan er vijftien niet
-bestaan.** Dat maakt dit item niet urgenter maar veel kleiner.
-
-> ⚠️ **Dit blok stond hier tot 19-08 met "44 van 44" — twee keer verkeerd.** De correctie
-> stond al sinds 18-08 in het task-file zelf; deze sessie-opener liep erop achter, en dat is
-> de gevaarlijkste plek om achter te lopen, want dit is wat een nieuwe sessie als eerste leest.
+> **De cijferreeks van dit item is het bewaren waard: 44 → 29 → 18 → 2 → 0.** Vier keer werd
+> een aantal overgenomen uit een kolom zonder te toetsen wát erin stond. Wat er onder lag was
+> geen ontbrekend bestand maar drie scraper-bugs — waarvan één sinds de eerste implementatie
+> (05-03) élke gequote fontnaam miste. De styleguides stonden vol systeemfonts en
+> plugin-icoonfonts en misten hun échte merkfont.
 >
-> - **Niet 44 maar 29.** Een leeg `fileUrl` betekent níet dat er een substituut rendert:
->   de 15 `GOOGLE_FONTS` laden bij Google en hebben nooit een bestand nodig. Linfi heeft
->   nul problemen. Het item leidde zijn impact af uit één kolom.
-> - **En sinds vandaag 18, niet 29.** Jouw besluit van 19-08: de drie Adobe-kit-id's doen
->   we niet. Die 11 `ADOBE_FONTS` blijven bewust op het substituut.
->
-> Dat maakt dit **volledig een wacht-op-jou-item**: spoor B (de code) is af sinds #342 —
-> een font zonder bestand telt mee in de merk-gereedheid. Wat rest is per merk een `.woff2`
-> plus de licentie-afweging.
->
-> ⚠️ **De verdeling per merk hieronder is achterhaald sinds #442** (DTS Ede 5,
-> PartnerSelect 5, Zwarthout 3, Nobox 1, sulejman 1 — samen 15). Het merendeel daarvan
-> bleek geen merkfont maar systeem-, plugin- of build-ruis. Lees de actuele lijst uit het
-> task-file, niet uit dit blok.
->
-> **Dit is de vierde correctie op ditzelfde blok** (44 → 29 → 18 → 2). Telkens dezelfde
-> fout: een aantal overnemen uit een kolom zonder te toetsen wat er in staat. Neem het
-> getal hier niet over zonder het na te lopen.
+> Na de reparatie en een re-analyse van elf workspaces: vier merken hebben nu een commerciële
+> huisletter die eerder werd gemist (`Museo Sans`, `proxima-nova`, `Avenir Next`,
+> `Red Hat Display`). PartnerSelect en DTS Ede zijn overgeslagen — nieuwe website op komst.
 
 ---
 
@@ -479,10 +458,6 @@ bestaan.** Dat maakt dit item niet urgenter maar veel kleiner.
 | [`marketing-site-verbeterslag`](tasks/marketing-site-verbeterslag.md) | in-progress — pagina-voor-pagina-doorloop van alle 26 marketing-URL's + verzamelbak voor website-brede wijzigingen |
 
 ### Volgende
-[`brand-fonts-ontbreken-op-prod`](tasks/brand-fonts-ontbreken-op-prod.md) (⚠️ **hooguit 2
-echte merkfonts, niet 18** — per #442, 20-08. De rest bleek systeem-, plugin- en build-ruis plus
-een smoke-workspace. De code is af; dit wacht op uploads van Erik, maar het is een klusje van
-twee bestanden geworden) ·
 [`pg-major-sslmode-semantiek`](tasks/pg-major-sslmode-semantiek.md) (pg v9 maakt van onze
 `sslmode=require` stil een zwakkere modus. ✅ **Code af per 19-08** incl. de bewaker die er
 nooit was aangesloten; wacht nog op één env-handeling van Erik — `verify-full` in de prod-URL,
