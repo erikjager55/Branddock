@@ -27,16 +27,16 @@ export const DUTCH_PUBLIC_PREFIXES = ['/marketing', '/brandmd'] as const;
 export const ENGLISH_PUBLIC_PREFIXES = [
   '/oauth',
   '/reset-password',
-  // Genest ONDER een Nederlandse prefix (`/brandmd`) en daarom afhankelijk van de
-  // langste-match-regel hieronder. De claim-pagina is volledig Engels — gemeten
-  // 2026-08-19 op de zichtbare tekst: 0 Nederlandse tegen 29 Engelse stopwoorden
-  // ("Your brand is already here.", "Claimed. Your workspace is ready.") — terwijl
-  // hij `lang="nl"` erfde van `/brandmd`. Het spiegelbeeld van de bug die deze
-  // module oploste, één niveau dieper dan de prefix.
+  // '/brandmd/claim' stond hier van 2026-08-19 tot 2026-08-21. Die pagina was als
+  // enige van de funnel Engels (gemeten: 0 Nederlandse tegen 29 Engelse
+  // stopwoorden) en kreeg via deze uitzondering een eerlijk `lang="en"`. De
+  // productvraag die daarbij openstond is beantwoord: Erik koos Nederlands, de
+  // copy is vertaald, en dus moet de uitzondering weg — anders staat er nu
+  // `lang="en"` op Nederlandse tekst, precies de bug in spiegelbeeld.
   //
-  // Dit repareert het ATTRIBUUT, niet de copy. Of die pagina Engels hóórt te zijn
-  // terwijl de rest van de funnel NL-first is, staat als productvraag open.
-  '/brandmd/claim',
+  // De langste-match-regel blijft nodig: hij is wat deze uitzondering überhaupt
+  // liet werken onder `/brandmd`, en de volgende geneste uitzondering leunt er
+  // weer op.
 ] as const;
 
 /** Taal van die Engelstalige publieke schermen. */
@@ -190,12 +190,30 @@ export function resolveClientLangDecision(
  * Geen gedragswijziging voor de bestaande routes: `/oauth` en `/reset-password`
  * liggen niet onder een Nederlandse prefix, dus daar is de langste match ook de
  * enige match.
+ *
+ * De lijsten zijn parameters met de echte constanten als default. Reden: de
+ * enige geneste uitzondering (`/brandmd/claim`) is op 2026-08-21 vervallen omdat
+ * die pagina vertaald is, en daarmee verdween ook het enige testgeval dat kon
+ * aantonen dát langste-match werkt. Een regel die niet te toetsen is zonder dat
+ * er toevallig een geneste route bestaat, sneuvelt bij de eerstvolgende
+ * refactor. Met injecteerbare lijsten blijft de regel bewaakt, ook als er
+ * vandaag geen enkele geneste uitzondering in productie staat.
+ *
+ * ⚠️ De twee lijst-parameters bestaan UITSLUITEND om deze regel toetsbaar te
+ * maken. Productiecode geeft ze nooit mee en hoort dat ook nooit te doen: de
+ * defaults zijn de single source of truth waar server en client allebei uit
+ * lezen. Geef je hier een eigen lijst mee, dan heb je een tweede waarheid
+ * gemaakt en is precies datgene stuk wat deze module moest voorkomen.
  */
-function hardcodedLangFor(pathname: string): string | null {
+export function hardcodedLangFor(
+  pathname: string,
+  dutchPrefixes: readonly string[] = DUTCH_PUBLIC_PREFIXES,
+  englishPrefixes: readonly string[] = ENGLISH_PUBLIC_PREFIXES,
+): string | null {
   let beste: { lengte: number; taal: string } | null = null;
   const groepen = [
-    { prefixes: DUTCH_PUBLIC_PREFIXES, taal: PUBLIC_CONTENT_LANG },
-    { prefixes: ENGLISH_PUBLIC_PREFIXES, taal: ENGLISH_PUBLIC_LANG },
+    { prefixes: dutchPrefixes, taal: PUBLIC_CONTENT_LANG },
+    { prefixes: englishPrefixes, taal: ENGLISH_PUBLIC_LANG },
   ] as const;
 
   for (const groep of groepen) {

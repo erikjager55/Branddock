@@ -1,9 +1,10 @@
 'use client';
 
 // =============================================================
-// Claim-pagina (touchpoint 3.1) — endowment + goal gradient:
-// registreren voelt als oogsten ("your brand is already here"),
-// niet als invullen. Voorbereide onderdelen concreet tonen
+// Claim-pagina (touchpoint 3.1): endowment + goal gradient. Registreren voelt
+// als oogsten ("je merk staat al klaar"), niet als invullen. Nederlands sinds
+// 2026-08-21 (besluit Erik) — de pagina was als enige van de funnel Engels en
+// erfde daardoor een taalattribuut dat niet bij de tekst paste. Voorbereide onderdelen concreet tonen
 // (pre-seeding zichtbaar maken — de +30-50%-activatie-les).
 // Styling: marketing-site (licht, mkt-tokens) — integratie 2026-08-14.
 // =============================================================
@@ -42,10 +43,10 @@ export default function BrandMdClaimPage({ params }: { params: Promise<{ token: 
         const res = await fetch(`/api/brandmd/claim/${token}`);
         const data = (await res.json()) as ClaimPreview & { error?: string };
         if (cancelled) return;
-        if (!res.ok) setLoadError(data.error ?? 'This claim link is unknown or expired.');
+        if (!res.ok) setLoadError(data.error ?? 'Deze claim-link is onbekend of verlopen.');
         else setPreview(data);
       } catch {
-        if (!cancelled) setLoadError('Something went wrong loading this draft.');
+        if (!cancelled) setLoadError('Er ging iets mis bij het laden van je concept.');
       }
     })();
     return () => {
@@ -70,13 +71,13 @@ export default function BrandMdClaimPage({ params }: { params: Promise<{ token: 
         return;
       }
       if (!res.ok || !data.workspaceId) {
-        setClaimError(data.error ?? 'Claim failed — please try again.');
+        setClaimError(data.error ?? 'Claimen is niet gelukt. Probeer het opnieuw.');
         return;
       }
       setClaimedWorkspaceId(data.workspaceId);
       setDeepScanStarted(data.deepScanStarted === true);
     } catch {
-      setClaimError('Claim failed — please try again.');
+      setClaimError('Claimen is niet gelukt. Probeer het opnieuw.');
     } finally {
       setClaiming(false);
     }
@@ -87,19 +88,19 @@ export default function BrandMdClaimPage({ params }: { params: Promise<{ token: 
       <div className="mx-auto max-w-xl px-6 py-16">
         {!preview && !loadError && (
           <div className="flex items-center justify-center gap-2 py-20 text-sm text-gray-600">
-            <Loader2 className="h-5 w-5 animate-spin" /> Loading your draft…
+            <Loader2 className="h-5 w-5 animate-spin" /> Je concept wordt geladen…
           </div>
         )}
 
         {loadError && (
           <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-            <p className="text-lg font-semibold text-gray-900">This link is no longer active</p>
+            <p className="text-lg font-semibold text-gray-900">Deze link werkt niet meer</p>
             <p className="mt-2 text-sm text-gray-600">{loadError}</p>
             <a
               href="/brandmd"
               className="mkt-accent mt-4 inline-flex items-center gap-1 text-sm font-medium"
             >
-              Re-scan your site free <ArrowRight className="h-4 w-4" />
+              Scan je site opnieuw, gratis <ArrowRight className="h-4 w-4" />
             </a>
           </div>
         )}
@@ -107,10 +108,10 @@ export default function BrandMdClaimPage({ params }: { params: Promise<{ token: 
         {preview && !claimedWorkspaceId && (
           <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
             <p className="text-sm text-gray-500">{preview.domain}</p>
-            <h1 className="mt-1 text-3xl">Your brand is already here.</h1>
+            <h1 className="mt-1 text-3xl">Je merk staat al klaar.</h1>
             {preview.prepared.length > 0 && (
               <>
-                <p className="mt-4 text-sm text-gray-600">From your scan, we prepared:</p>
+                <p className="mt-4 text-sm text-gray-600">Uit je scan hebben we dit alvast klaargezet:</p>
                 <ul className="mt-2 space-y-1">
                   {preview.prepared.map((item) => (
                     <li key={item} className="flex items-center gap-2 text-sm text-gray-700">
@@ -121,14 +122,14 @@ export default function BrandMdClaimPage({ params }: { params: Promise<{ token: 
               </>
             )}
             <p className="mt-4 text-sm text-gray-600">
-              Claim your workspace to complete the open fields — most brands finish in under 15
-              minutes. Free for 28 days, no card.
+              Claim je workspace en vul de open velden aan. De meeste merken zijn binnen een
+              kwartier klaar. 28 dagen gratis, zonder creditcard.
             </p>
 
             {preview.status === 'CLAIMED' ? (
               <p className="mt-6 text-sm text-gray-600">
-                This draft was already claimed. If that was you, open the app and pick the
-                workspace “{preview.brandName}”.
+                Dit concept is al geclaimd. Was jij dat? Open de app en kies de workspace
+                “{preview.brandName}”.
               </p>
             ) : (
               <button
@@ -137,28 +138,28 @@ export default function BrandMdClaimPage({ params }: { params: Promise<{ token: 
                 className="mkt-btn-primary mt-6 flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-semibold disabled:opacity-60"
               >
                 {claiming ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
-                Claim my brand
+                Claim mijn merk
               </button>
             )}
 
             {needsLogin && (
               <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                You need a (free) account first.{' '}
+                Je hebt eerst een (gratis) account nodig.{' '}
                 {/* appHref: de app draait op app.branddock.app — een relatieve '/'
                     zou op de apex de marketing-homepage tonen. */}
                 <a
                   href={appHref('/?view=register&utm_source=brandmd&utm_medium=claim-login')}
                   className="mkt-accent font-medium underline underline-offset-2"
                 >
-                  Sign in or create one
+                  Inloggen of er een aanmaken
                 </a>
-                , then open this claim link again — it stays yours.
+                . Open daarna deze claim-link opnieuw; hij blijft van jou.
               </div>
             )}
             {claimError && <p className="mt-4 text-sm text-red-600">{claimError}</p>}
             {preview.emailBound && (
               <p className="mt-4 text-xs text-gray-500">
-                This draft is bound to the email address it was generated with.
+                Dit concept is gekoppeld aan het e-mailadres waarmee het is gemaakt.
               </p>
             )}
           </div>
@@ -170,25 +171,25 @@ export default function BrandMdClaimPage({ params }: { params: Promise<{ token: 
             style={{ borderColor: 'var(--primary)' }}
           >
             <Check className="mx-auto h-10 w-10" style={{ color: ACCENT_INK }} />
-            <h1 className="mt-3 text-2xl">Claimed. Your workspace is ready.</h1>
+            <h1 className="mt-3 text-2xl">Geclaimd. Je workspace staat klaar.</h1>
             <p className="mt-2 text-sm text-gray-600">
-              Your brand DNA from the scan is pre-filled — complete the open fields and generate
-              your first on-brand content.
+              Je merk-DNA uit de scan staat al ingevuld. Vul de open velden aan en maak je
+              eerste on-brand content.
             </p>
             {deepScanStarted && (
               <p className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
-                We&apos;ve also started a <span className="font-medium text-gray-900">deep scan</span>{' '}
-                of your site (up to 15 pages) to draft your full brand foundation, personas and
-                visual identity. Review and apply the results under{' '}
-                <span className="font-medium text-gray-900">Website Scanner</span> in your
-                workspace — it takes a few minutes to finish.
+                We zijn ook een <span className="font-medium text-gray-900">diepe scan</span>{' '}
+                van je site gestart (maximaal 15 pagina&apos;s) om je merkfundament, persona&apos;s
+                en visuele identiteit op te stellen. Bekijk en gebruik de resultaten onder{' '}
+                <span className="font-medium text-gray-900">Website Scanner</span> in je
+                workspace; dat duurt een paar minuten.
               </p>
             )}
             <a
               href={appHref('/?utm_source=brandmd&utm_medium=claim-success')}
               className="mkt-btn-primary mt-6 inline-flex items-center gap-2 rounded-lg px-6 py-3 font-semibold"
             >
-              Open your workspace <ArrowRight className="h-5 w-5" />
+              Open je workspace <ArrowRight className="h-5 w-5" />
             </a>
           </div>
         )}
