@@ -212,7 +212,9 @@ function Lightbox({
         <p className="text-gray-700 leading-relaxed mb-6">{detail.description}</p>
 
         <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">Wat je krijgt</h3>
-        <ul className="space-y-2.5 mb-6">
+        {/* flex+gap i.p.v. space-y: space-y-* landt niet in de gecompileerde CSS
+            (bekend, zie gotchas — CLAUDE.md-regel: flex flex-col gap-* gebruiken). */}
+        <ul className="flex flex-col gap-2.5 mb-6">
           {detail.bullets.map((b) => (
             <li key={b} className="flex items-start gap-3 text-sm text-gray-700">
               <span className="text-primary mt-0.5">→</span>
