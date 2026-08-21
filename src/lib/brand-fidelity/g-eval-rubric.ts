@@ -24,7 +24,8 @@ export type GEvalDimension =
   | 'brandRecognition'
   | 'antiPattern'
   | 'coherence'
-  | 'concreteness';
+  | 'concreteness'
+  | 'eigenzinnigheid';
 
 export interface DimensionDefinition {
   key: GEvalDimension;
@@ -121,6 +122,24 @@ Voeg in reasoning een korte verbalisering toe: welke tell-categorieën dragen he
 - 3-4: vage referenties ("in talloze projecten", "diverse studies")
 - 1-2: pure abstracte taal zonder anker`,
   },
+  {
+    key: 'eigenzinnigheid',
+    label: 'Eigenzinnigheid',
+    // Shadow mode (besluit Erik, 21-08): de judge scoort deze dimensie al
+    // mee zodat er data verzameld wordt, maar gewicht 0 houdt 'm buiten de
+    // composite totdat er een gemeten voorstel ligt. Zie
+    // tasks/fval-eigenzinnigheid-en-burstiness.md en het metingscript in
+    // scripts/experiments/.
+    weight: 0,
+    description:
+      'Neemt de output een standpunt in, of blijft hij diplomatiek-neutraal en risicomijdend?',
+    rubric: `Score 1-10 op eigenzinnigheid/authentieke stem — neemt de tekst een positie in?
+- 9-10: expliciet standpunt, durft een mening of scherpte te tonen, geen hedge-taal
+- 7-8: overwegend een eigen invalshoek, met hier en daar een voorzichtige nuance
+- 5-6: neutraal-informatief; klopt, maar neemt geen positie
+- 3-4: opvallend diplomatiek — bijna elke claim wordt genuanceerd of afgezwakt
+- 1-2: puur veilig taalgebruik, zou voor elk standpunt kunnen gelden`,
+  },
 ];
 
 // Map for O(1) lookup
@@ -187,7 +206,7 @@ export interface RubricPromptContext {
   detectorResult: AiTellResult;
 }
 
-export const G_EVAL_SYSTEM_PROMPT = `You are an expert evaluator of brand-aligned content quality. You assess generated content against six independent dimensions:
+export const G_EVAL_SYSTEM_PROMPT = `You are an expert evaluator of brand-aligned content quality. You assess generated content against seven independent dimensions:
 
 1. Strategische verankering (strategic anchoring)
 2. Doelgroep-fit (audience fit)
@@ -195,6 +214,7 @@ export const G_EVAL_SYSTEM_PROMPT = `You are an expert evaluator of brand-aligne
 4. Anti-pattern compliance (AI-tell avoidance — uses pre-computed detector output)
 5. Boodschap-coherentie (narrative coherence)
 6. Concretheid (concreteness, anti-vague)
+7. Eigenzinnigheid (does the content take a position, or stay diplomatically neutral?)
 
 Score each dimension 1-10 INDEPENDENTLY using the rubric provided. Avoid:
 - Halo effect (don't let one strong/weak signal influence other dimensions)
@@ -256,7 +276,8 @@ Return JSON in exactly this shape:
     "brandRecognition":   { "score": <1-10>, "reasoning": "..." },
     "antiPattern":        { "score": <1-10>, "reasoning": "..." },
     "coherence":          { "score": <1-10>, "reasoning": "..." },
-    "concreteness":       { "score": <1-10>, "reasoning": "..." }
+    "concreteness":       { "score": <1-10>, "reasoning": "..." },
+    "eigenzinnigheid":    { "score": <1-10>, "reasoning": "..." }
   }
 }`;
 }
@@ -287,8 +308,11 @@ export interface GEvalResult {
  * a judge response is accepted. Below this the response is rejected: silently
  * defaulting absent dimensions to the neutral midpoint would fabricate a
  * composite of ~50 on the judge pillar (45% of the F-VAL composite).
+ *
+ * 5 van 7 (≈71%) — zelfde robuustheidsmarge als de oorspronkelijke 4 van 6
+ * (≈67%), naar boven afgerond toen eigenzinnigheid als 7e dimensie erbij kwam.
  */
-export const MIN_PRESENT_DIMENSIONS = 4;
+export const MIN_PRESENT_DIMENSIONS = 5;
 
 /**
  * Coerce a raw judge score to a clamped 1-10 integer.
@@ -352,6 +376,7 @@ function extractDimensionScores(
     antiPattern: dim('antiPattern'),
     coherence: dim('coherence'),
     concreteness: dim('concreteness'),
+    eigenzinnigheid: dim('eigenzinnigheid'),
   };
 }
 

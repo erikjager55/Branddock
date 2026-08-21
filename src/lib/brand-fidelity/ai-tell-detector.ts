@@ -100,6 +100,22 @@ export interface AiTellResult {
    * Useful for demo visualization (slider/scale).
    */
   humanBaselinePosition: number;
+  /**
+   * Zinsritme ("burstiness"): menselijke tekst wisselt korte en lange zinnen
+   * af, AI-tekst neigt naar een uniforme, middellange zinslengte. Puur
+   * statistisch (geen AI-call), informatief in deze fase — telt nog niet mee
+   * in `verdict`/`scorePer1000Words` of de STRICT-mode-rewrite-trigger.
+   */
+  burstiness: BurstinessResult;
+}
+
+export interface BurstinessResult {
+  sentenceCount: number;
+  meanSentenceLength: number;
+  stdDevSentenceLength: number;
+  /** stddev / mean — hoger = meer ritme-variatie */
+  coefficientOfVariation: number;
+  classification: 'MONOTONE' | 'MODERATE' | 'VARIED' | 'INSUFFICIENT_DATA';
 }
 
 // ─── Helpers ────────────────────────────────────────────
@@ -639,6 +655,60 @@ function computeHumanBaselinePosition(scorePer1000: number): number {
  *  kan woorden claimen, geen em-dash-lijm. */
 const VOCAB_WHITELIST_CATEGORIES = new Set<TellCategory>(['NL_WORD', 'EN_WORD']);
 
+// Eerste-versie-drempels, empirisch ingeschat (geen apart baseline-corpus
+// beschikbaar zoals bij de lexicon-tells) — net als de tell-drempels bedoeld
+// om bij te stellen zodra er meer gemeten data is (zie het metingscript in
+// scripts/experiments/).
+const BURSTINESS_MONOTONE_MAX = 0.35;
+const BURSTINESS_VARIED_MIN = 0.55;
+const BURSTINESS_MIN_SENTENCES = 3;
+
+function classifyBurstiness(cv: number): BurstinessResult['classification'] {
+  if (cv < BURSTINESS_MONOTONE_MAX) return 'MONOTONE';
+  if (cv >= BURSTINESS_VARIED_MIN) return 'VARIED';
+  return 'MODERATE';
+}
+
+/**
+ * Zinsritme-meting: splitst op zinseinde-interpunctie, telt woorden per zin,
+ * en berekent de variatiecoëfficiënt (stddev/mean) van de zinslengtes. Puur
+ * statistisch, geen AI-call. Naïeve splitter (geen afkortingen-detectie zoals
+ * "Dr." of decimale getallen) — bij grote hoeveelheden zinnen middelt die
+ * ruis uit; bij weinig zinnen (< BURSTINESS_MIN_SENTENCES) is het resultaat
+ * onbetrouwbaar en markeren we dat expliciet i.p.v. een misleidend getal.
+ */
+export function computeSentenceBurstiness(text: string): BurstinessResult {
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const lengths = sentences.map((s) => s.split(/\s+/).filter(Boolean).length);
+
+  if (lengths.length < BURSTINESS_MIN_SENTENCES) {
+    return {
+      sentenceCount: lengths.length,
+      meanSentenceLength: 0,
+      stdDevSentenceLength: 0,
+      coefficientOfVariation: 0,
+      classification: 'INSUFFICIENT_DATA',
+    };
+  }
+
+  const mean = lengths.reduce((sum, n) => sum + n, 0) / lengths.length;
+  const variance = lengths.reduce((sum, n) => sum + (n - mean) ** 2, 0) / lengths.length;
+  const stdDev = Math.sqrt(variance);
+  const coefficientOfVariation = mean > 0 ? stdDev / mean : 0;
+
+  return {
+    sentenceCount: lengths.length,
+    meanSentenceLength: mean,
+    stdDevSentenceLength: stdDev,
+    coefficientOfVariation,
+    classification: classifyBurstiness(coefficientOfVariation),
+  };
+}
+
 export interface DetectAiTellsOptions {
   /**
    * Audit 2026-06-10: merk-eigen vocabulaire (wordsWeUse/vocabularyDo). De
@@ -708,6 +778,7 @@ export function detectAiTells(text: string, options?: DetectAiTellsOptions): AiT
     scorePer1000Words,
     verdict: classifyVerdict(scorePer1000Words),
     humanBaselinePosition: computeHumanBaselinePosition(scorePer1000Words),
+    burstiness: computeSentenceBurstiness(text),
   };
 }
 
@@ -724,6 +795,9 @@ export function formatTellReport(result: AiTellResult, label?: string): string {
   lines.push(`- **Unique tells**: ${result.uniqueTellCount} of ${TELL_DEFINITIONS.length}`);
   lines.push(`- **Total matches**: ${result.totalMatches}`);
   lines.push(`- **Word count**: ${result.wordCount}`);
+  lines.push(
+    `- **Burstiness**: ${result.burstiness.classification} (CV ${result.burstiness.coefficientOfVariation.toFixed(2)}, ${result.burstiness.sentenceCount} zinnen, gem. ${result.burstiness.meanSentenceLength.toFixed(1)} woorden/zin) — informatief, telt nog niet mee`,
+  );
   lines.push('');
 
   lines.push('## By category');
