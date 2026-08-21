@@ -170,7 +170,7 @@ export const MODULE_DETAILS: Record<string, ModuleDetail> = {
     bullets: [
       'Eén centrale plek voor missie, waarden, doelgroep, merkstem en huisstijl',
       'Automatisch meegenomen in elke tekst, elk beeld en elke pagina die je maakt',
-      'Eén keer invullen, overal consistent — geen losse briefing meer per kanaal',
+      'Eén keer invullen, overal consistent: geen losse briefing meer per kanaal',
       'Altijd aan te vullen of bij te werken naarmate je merk groeit',
     ],
   },
@@ -178,10 +178,10 @@ export const MODULE_DETAILS: Record<string, ModuleDetail> = {
     title: 'Merk-check & inzichten',
     tagline: 'Zie waaróm content scoort zoals het scoort.',
     description:
-      'Geen black box: elke tekst krijgt een uitsplitsing van drie dingen — hoe goed de schrijfstijl past, wat een AI-beoordelaar ervan vindt, en of je eigen merkregels worden gevolgd. Bevindingen komen met een duidelijke prioriteit en concrete suggesties om ze op te lossen.',
+      'Geen black box: elke tekst krijgt een uitsplitsing van drie dingen. Hoe goed de schrijfstijl past, wat een AI-beoordelaar ervan vindt, en of je eigen merkregels worden gevolgd. Bevindingen komen met een duidelijke prioriteit en concrete suggesties om ze op te lossen.',
     bullets: [
       'Eén score, opgebouwd uit schrijfstijl, een AI-beoordeling en je eigen merkregels',
-      'Bevindingen ingedeeld naar type — bijvoorbeeld toon, woordkeuze of een claim die onderbouwing mist',
+      'Bevindingen ingedeeld naar type: bijvoorbeeld toon, woordkeuze of een claim die onderbouwing mist',
       'Checkt of beweringen kloppen en of er risico’s spelen die in jouw sector gevoelig liggen',
       'Een dashboard dat laat zien hoe vaak content de norm haalt, per contentsoort',
     ],
@@ -217,7 +217,7 @@ export const MODULE_DETAILS: Record<string, ModuleDetail> = {
     title: 'AI-agents die je merk kennen',
     tagline: 'Negen specialisten, van marktonderzoek tot wekelijkse rapporten en 24/7-bewaking.',
     description:
-      'Branddock-agents doen echt werk bovenop je merk-DNA: marktonderzoek, strategie, contentvoorstellen, merk-checks en cijferanalyse. Elke agent stelt voor, jij keurt goed — niets gaat live zonder jou.',
+      'Branddock-agents doen echt werk bovenop je merk-DNA: marktonderzoek, strategie, contentvoorstellen, merk-checks en cijferanalyse. Elke agent stelt voor, jij keurt goed. Niets gaat live zonder jou.',
     bullets: [
       'Onderzoekt de markt met bronnen en legt dat vast in je eigen kennisbibliotheek',
       'Bouwt strategie en contentvoorstellen die al op je merk-DNA zijn afgestemd',
@@ -256,7 +256,7 @@ export const MODULE_DETAILS: Record<string, ModuleDetail> = {
     title: 'Campagnes: van strategie tot kant-en-klare content',
     tagline: 'Bouw een campagnestrategie en zet die direct om in content.',
     description:
-      'De campagnetool maakt een strategie met een duidelijk doel, boodschap, opbouw en kanalen — en zet die direct om in concrete content. Alles op je merk-DNA, van eerste idee tot uitvoering.',
+      'De campagnetool maakt een strategie met een duidelijk doel, boodschap, opbouw en kanalen, en zet die direct om in concrete content. Alles op je merk-DNA, van eerste idee tot uitvoering.',
     bullets: [
       'Een strategie met doel, boodschap, opbouw en kanalen',
       'Elk onderdeel van de strategie wordt direct concrete content',
