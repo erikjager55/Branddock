@@ -522,17 +522,17 @@ nauwelijks verkeer. De taak draagt vier meetbare triggers plus de SQL om ze te t
 
 ## Losse eindjes uit deze sessie
 
-- 🌙 **`canvas-tweaks` — kijk hier als eerste naar (nacht van 20 op 21-08).** De nachtelijke
-  job in `golden-sets.yml` was op 20-08 rood; de assertie die hem deed vallen is `softCheck`
-  geworden **mét de meting erbij**, dus hij hoort groen te zijn: 12 passed + 1 warning in
-  plaats van 12 + 1 failed. Draait om 03:00.
+- ✅ **`canvas-tweaks` — opgelost, nacht van 20 op 21-08.** De job draaide om 03:45 en gaf
+  exact de voorspelde vorm: **12 passed, 0 failed, 1 soft-warning**. Geen restant, geen
+  bevinding.
 
-  **Is hij rood, dan is dat een echte bevinding en geen restant van gisteren.** Bewust niet
-  handmatig geverifieerd omdat die job AI-calls kost en de nachtrun hem gratis doet — dezelfde
-  afweging waarmee de judge-variantie van 20-08 uit bestaande artefacten kwam in plaats van
-  uit gekochte runs. Controleren met:
+  De soft-warning is de bekende 3/5 slide-titels, met dezelfde twee ontbrekende
+  ("Onze aanpak in 3 stappen", "De volgende stap"). Daarmee is dat gedrag nu **drie keer
+  onafhankelijk identiek** gemeten — twee keer op 20-08, één keer op 21-08. De aanname
+  "reproduceerbaar gedrag, geen flake" staat steviger dan toen hij werd opgeschreven.
 
-      gh run list --workflow=golden-sets.yml --limit 3 --json databaseId,conclusion,event
+  Bijvangst uit diezelfde run: de golden-set haalde **9/10 = 90%**, de eerste nacht met de
+  fixes van 20-08. Zie [`golden-set-blogpost-quality`](tasks/golden-set-blogpost-quality.md).
 
 
 - **F-VAL onder de drempel** bij `linkedin-post` (69), `linkedin-poll` (70), `search-ad`
