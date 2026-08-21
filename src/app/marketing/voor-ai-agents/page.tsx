@@ -239,7 +239,7 @@ export default function GuardrailsPage() {
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <div className="text-4xl font-bold mkt-accent tabular-nums">+7</div>
           <div className="text-sm text-gray-600 mt-2">
-            punten on-brand gemiddeld vs. vanilla-AI, bij een eerlijke, volledige briefing
+            punten on-brand gemiddeld vs. AI zonder merkcontext, bij een eerlijke, volledige briefing
           </div>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-6">

@@ -111,7 +111,7 @@ export default function FvalPage() {
             Onder de norm → automatische herschrijving
           </h3>
           <p className="text-sm text-gray-600">
-            STRICT-mode herschrijft de output op basis van de concrete bevindingen, en meet
+            Een strengere herschrijfmodus verwerkt de concrete bevindingen automatisch, en meet
             opnieuw. Consistentie zonder handwerk.
           </p>
         </div>
@@ -128,8 +128,8 @@ export default function FvalPage() {
       {/* De eerlijke cijfers */}
       <h2 className="text-gray-900 mb-2">Wat het oplevert, eerlijk gemeten</h2>
       <p className="text-gray-600 mb-6 max-w-2xl">
-        In onze pilotmeting vergeleken we Branddock-output met vanilla-AI (zelfde briefing, zelfde
-        scorer) per contenttype:
+        In onze pilotmeting vergeleken we Branddock-output met AI zonder merkcontext (zelfde
+        briefing, zelfde scorer) per contenttype:
       </p>
       <div className="grid sm:grid-cols-2 gap-4 mb-6 max-w-2xl">
         <div className="rounded-xl border border-gray-200 bg-white p-6">
@@ -146,9 +146,9 @@ export default function FvalPage() {
         </div>
       </div>
       <p className="text-xs text-gray-500 mb-14 max-w-2xl">
-        Geen opgeblazen cijfers: het verschil is het grootst bij magere briefings (waar vanilla-AI
-        niets over je merk weet) en bescheidener bij uitgebreide briefings. Dat vertellen we er
-        gewoon bij.
+        Geen opgeblazen cijfers: het verschil is het grootst bij magere briefings (waar AI zonder
+        merkcontext niets over je merk weet) en bescheidener bij uitgebreide briefings. Dat
+        vertellen we er gewoon bij.
       </p>
 
       {/* CTA */}

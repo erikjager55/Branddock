@@ -21,7 +21,7 @@ const PRACTICES = [
   {
     Icon: Server,
     title: 'EU-hosting',
-    body: 'De applicatie draait op Vercel in regio Frankfurt (fra1). De database draait bij Neon in een EU-regio (exacte regio wordt bevestigd).',
+    body: 'De applicatie draait op Vercel in regio Frankfurt. De database draait bij Neon in een EU-regio (exacte regio wordt bevestigd).',
   },
   {
     Icon: Lock,
@@ -47,7 +47,7 @@ const PRACTICES = [
 
 // Sub-verwerkers — afgeleid uit de daadwerkelijke integraties in de codebase.
 const SUBPROCESSORS: { name: string; purpose: string; region: string }[] = [
-  { name: 'Vercel', purpose: 'Hosting & CDN', region: 'EU (Frankfurt, fra1)' },
+  { name: 'Vercel', purpose: 'Hosting & CDN', region: 'EU (Frankfurt)' },
   { name: 'Neon', purpose: 'PostgreSQL-database', region: 'EU (regio wordt bevestigd)' },
   { name: 'Anthropic', purpose: 'AI-tekstgeneratie (Claude)', region: 'VS · server-side' },
   { name: 'OpenAI', purpose: 'AI-tekstgeneratie & embeddings', region: 'VS · server-side' },
