@@ -198,6 +198,12 @@ export function resolveClientLangDecision(
  * er toevallig een geneste route bestaat, sneuvelt bij de eerstvolgende
  * refactor. Met injecteerbare lijsten blijft de regel bewaakt, ook als er
  * vandaag geen enkele geneste uitzondering in productie staat.
+ *
+ * ⚠️ De twee lijst-parameters bestaan UITSLUITEND om deze regel toetsbaar te
+ * maken. Productiecode geeft ze nooit mee en hoort dat ook nooit te doen: de
+ * defaults zijn de single source of truth waar server en client allebei uit
+ * lezen. Geef je hier een eigen lijst mee, dan heb je een tweede waarheid
+ * gemaakt en is precies datgene stuk wat deze module moest voorkomen.
  */
 export function hardcodedLangFor(
   pathname: string,
